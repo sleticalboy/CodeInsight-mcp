@@ -70,8 +70,8 @@ Rust is included early so the project can index itself during development.
 - [x] Extract import/require/use/package dependencies.
 - [ ] Store file-to-file dependencies.
 - [x] Implement `dependency_graph`.
-- [ ] Implement simple textual reference search scoped by indexed files.
-- [ ] Add `find_references` tool.
+- [x] Implement simple textual reference search scoped by indexed files.
+- [x] Add `find_references` tool.
 
 ### Call Graph
 

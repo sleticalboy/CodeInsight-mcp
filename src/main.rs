@@ -24,6 +24,9 @@ async fn main() -> Result<()> {
         Command::Symbols(args) => tools::symbol_search(args.root, args.query, args.limit)?,
         Command::Outline(args) => tools::file_outline(args.path)?,
         Command::DependencyGraph(args) => tools::dependency_graph(args.root, args.limit)?,
+        Command::FindReferences(args) => {
+            tools::find_references(args.root, args.symbol, args.limit, args.include_definitions)?
+        }
         Command::Serve(args) => mcp::serve(args.transport).await?,
     }
 

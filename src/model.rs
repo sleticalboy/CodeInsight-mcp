@@ -75,6 +75,16 @@ pub struct DependencyGraph {
     pub edges: usize,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct ReferenceMatch {
+    pub file: String,
+    pub line: usize,
+    pub column: usize,
+    pub context: String,
+    pub reference_kind: String,
+    pub confidence: f64,
+}
+
 #[derive(Debug, Serialize)]
 pub struct ProjectIndexReport {
     pub root: String,

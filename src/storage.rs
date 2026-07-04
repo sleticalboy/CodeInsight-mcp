@@ -238,6 +238,12 @@ impl Store {
         })
     }
 
+    pub fn indexed_files(&self) -> Result<Vec<String>> {
+        let mut stmt = self.conn.prepare("select path from files order by path")?;
+        let rows = stmt.query_map([], |row| row.get(0))?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
     fn migrate(&self) -> Result<()> {
         self.conn.execute_batch(
             "

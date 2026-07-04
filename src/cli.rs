@@ -22,6 +22,8 @@ pub enum Command {
     Outline(OutlineArgs),
     /// Print the indexed dependency graph.
     DependencyGraph(DependencyGraphArgs),
+    /// Find text references for a symbol in indexed files.
+    FindReferences(FindReferencesArgs),
     /// Start the MCP server.
     Serve(ServeArgs),
 }
@@ -56,6 +58,16 @@ pub struct DependencyGraphArgs {
     pub root: PathBuf,
     #[arg(long, default_value_t = 500)]
     pub limit: usize,
+}
+
+#[derive(Debug, Args)]
+pub struct FindReferencesArgs {
+    pub root: PathBuf,
+    pub symbol: String,
+    #[arg(long, default_value_t = 100)]
+    pub limit: usize,
+    #[arg(long)]
+    pub include_definitions: bool,
 }
 
 #[derive(Debug, Args)]

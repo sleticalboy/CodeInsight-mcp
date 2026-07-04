@@ -111,6 +111,24 @@ fn handle_tool_call(params: Value) -> Result<Value> {
                 .unwrap_or(500) as usize;
             serde_json::to_value(tools::dependency_graph_value(root, limit)?)?
         }
+        "find_references" => {
+            let root = required_path(&arguments, "root")?;
+            let symbol = required_str(&arguments, "symbol")?;
+            let limit = arguments
+                .get("limit")
+                .and_then(Value::as_u64)
+                .unwrap_or(100) as usize;
+            let include_definitions = arguments
+                .get("include_definitions")
+                .and_then(Value::as_bool)
+                .unwrap_or(false);
+            serde_json::to_value(tools::find_references_value(
+                root,
+                symbol,
+                limit,
+                include_definitions,
+            )?)?
+        }
         _ => bail!("unknown tool: {name}"),
     };
 
@@ -184,6 +202,20 @@ fn tool_definitions() -> Value {
                     "limit": {"type": "integer", "minimum": 1}
                 },
                 "required": ["root"]
+            }
+        },
+        {
+            "name": "find_references",
+            "description": "Find text references for a symbol across indexed files.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "root": {"type": "string"},
+                    "symbol": {"type": "string"},
+                    "limit": {"type": "integer", "minimum": 1},
+                    "include_definitions": {"type": "boolean"}
+                },
+                "required": ["root", "symbol"]
             }
         }
     ])
@@ -283,6 +315,20 @@ class AuthService:
         }))
         .unwrap();
         assert_eq!(graph_result["structuredContent"]["edges"].as_u64(), Some(1));
+
+        let refs_result = handle_tool_call(json!({
+            "name": "find_references",
+            "arguments": {
+                "root": dir.path(),
+                "symbol": "AuthService",
+                "include_definitions": true
+            }
+        }))
+        .unwrap();
+        assert_eq!(
+            refs_result["structuredContent"][0]["file"].as_str(),
+            Some("auth.py")
+        );
     }
 
     #[test]
