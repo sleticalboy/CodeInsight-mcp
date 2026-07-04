@@ -39,10 +39,10 @@ Rust is included early so the project can index itself during development.
 
 - [x] `initialize`
 - [x] `tools/list`
-- [ ] `tools/call` for `index_project`
-- [ ] `tools/call` for `project_overview`
-- [ ] `tools/call` for `symbol_search`
-- [ ] `tools/call` for `file_outline`
+- [x] `tools/call` for `index_project`
+- [x] `tools/call` for `project_overview`
+- [x] `tools/call` for `symbol_search`
+- [x] `tools/call` for `file_outline`
 - [ ] JSON schema validation for tool args.
 
 ### Indexing
@@ -130,4 +130,3 @@ Rust is included early so the project can index itself during development.
 - Basic call graph available.
 - More robust TypeScript, Python, Go, and Rust extraction.
 - Benchmark report for token/context reduction.
-

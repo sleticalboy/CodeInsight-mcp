@@ -27,11 +27,10 @@ Implemented:
 - Tree-sitter parsing for TypeScript/JavaScript, Python, Go, and Rust
 - symbol extraction for common declarations
 - `index`, `overview`, `symbols`, and `outline` CLI commands
-- minimal MCP stdio handshake and `tools/list`
+- MCP stdio `initialize`, `tools/list`, and `tools/call` for P0 tools
 
 Next:
 
-- MCP `tools/call` execution
 - dependency graph extraction
 - reference search
 - first `context_pack` implementation
@@ -74,6 +73,21 @@ Start the MCP stdio server scaffold:
 cargo run -- serve --transport stdio
 ```
 
+## MCP Tools
+
+The stdio server currently exposes:
+
+- `index_project`
+- `project_overview`
+- `symbol_search`
+- `file_outline`
+
+Example `tools/call` request:
+
+```json
+{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"symbol_search","arguments":{"root":"/path/to/repo","query":"AuthService","limit":5}}}
+```
+
 ## Development
 
 ```bash
@@ -82,4 +96,3 @@ cargo test
 ```
 
 The first MVP intentionally avoids external services such as Qdrant, pgvector, Neo4j, or Apache AGE. The default path must remain local, single-binary, and low configuration.
-
