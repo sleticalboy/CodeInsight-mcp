@@ -24,6 +24,8 @@ pub enum Command {
     DependencyGraph(DependencyGraphArgs),
     /// Find text references for a symbol in indexed files.
     FindReferences(FindReferencesArgs),
+    /// Build an agent-ready context pack from seed symbols.
+    ContextPack(ContextPackArgs),
     /// Start the MCP server.
     Serve(ServeArgs),
 }
@@ -68,6 +70,17 @@ pub struct FindReferencesArgs {
     pub limit: usize,
     #[arg(long)]
     pub include_definitions: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct ContextPackArgs {
+    pub root: PathBuf,
+    #[arg(long)]
+    pub task: String,
+    #[arg(long = "symbol", required = true)]
+    pub symbols: Vec<String>,
+    #[arg(long, default_value_t = 6000)]
+    pub token_budget: usize,
 }
 
 #[derive(Debug, Args)]

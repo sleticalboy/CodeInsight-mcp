@@ -83,6 +83,7 @@ The stdio server currently exposes:
 - `file_outline`
 - `dependency_graph`
 - `find_references`
+- `context_pack`
 
 Example `tools/call` request:
 
@@ -91,6 +92,8 @@ Example `tools/call` request:
 ```
 
 `find_references` is currently a fast text-reference pass over indexed files. It returns file, line, column, context, an approximate reference kind, and a confidence score. It is not yet a full language-server-grade semantic reference resolver.
+
+`context_pack` combines symbol search and reference search into a token-budgeted context bundle for agents. The first version is deterministic and local-only; it does not use embeddings.
 
 ## Development
 

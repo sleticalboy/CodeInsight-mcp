@@ -27,6 +27,9 @@ async fn main() -> Result<()> {
         Command::FindReferences(args) => {
             tools::find_references(args.root, args.symbol, args.limit, args.include_definitions)?
         }
+        Command::ContextPack(args) => {
+            tools::context_pack(args.root, args.task, args.symbols, args.token_budget)?
+        }
         Command::Serve(args) => mcp::serve(args.transport).await?,
     }
 

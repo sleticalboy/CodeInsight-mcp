@@ -85,6 +85,32 @@ pub struct ReferenceMatch {
     pub confidence: f64,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct ContextPack {
+    pub task: String,
+    pub summary: String,
+    pub files: Vec<ContextFile>,
+    pub symbols: Vec<Symbol>,
+    pub references: Vec<ReferenceMatch>,
+    pub estimated_tokens: usize,
+    pub truncated: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ContextFile {
+    pub file: String,
+    pub reason: String,
+    pub ranges: Vec<ContextRange>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ContextRange {
+    pub start_line: usize,
+    pub end_line: usize,
+    pub importance: String,
+    pub excerpt: String,
+}
+
 #[derive(Debug, Serialize)]
 pub struct ProjectIndexReport {
     pub root: String,

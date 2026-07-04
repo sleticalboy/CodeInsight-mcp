@@ -129,6 +129,21 @@ fn handle_tool_call(params: Value) -> Result<Value> {
                 include_definitions,
             )?)?
         }
+        "context_pack" => {
+            let root = required_path(&arguments, "root")?;
+            let task = required_str(&arguments, "task")?.to_string();
+            let symbols = required_string_array(&arguments, "symbols")?;
+            let token_budget = arguments
+                .get("token_budget")
+                .and_then(Value::as_u64)
+                .unwrap_or(6000) as usize;
+            serde_json::to_value(tools::context_pack_value(
+                root,
+                task,
+                symbols,
+                token_budget,
+            )?)?
+        }
         _ => bail!("unknown tool: {name}"),
     };
 
@@ -217,6 +232,23 @@ fn tool_definitions() -> Value {
                 },
                 "required": ["root", "symbol"]
             }
+        },
+        {
+            "name": "context_pack",
+            "description": "Build an agent-ready context pack from seed symbols and a token budget.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "root": {"type": "string"},
+                    "task": {"type": "string"},
+                    "symbols": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    },
+                    "token_budget": {"type": "integer", "minimum": 500}
+                },
+                "required": ["root", "task", "symbols"]
+            }
         }
     ])
 }
@@ -230,6 +262,22 @@ fn required_str<'a>(arguments: &'a Value, key: &str) -> Result<&'a str> {
         .get(key)
         .and_then(Value::as_str)
         .with_context(|| format!("missing or invalid string argument: {key}"))
+}
+
+fn required_string_array(arguments: &Value, key: &str) -> Result<Vec<String>> {
+    let values = arguments
+        .get(key)
+        .and_then(Value::as_array)
+        .with_context(|| format!("missing or invalid string array argument: {key}"))?;
+    values
+        .iter()
+        .map(|value| {
+            value
+                .as_str()
+                .map(ToOwned::to_owned)
+                .with_context(|| format!("invalid non-string value in argument: {key}"))
+        })
+        .collect()
 }
 
 fn json_success(id: Value, result: Value) -> Value {
@@ -327,6 +375,21 @@ class AuthService:
         .unwrap();
         assert_eq!(
             refs_result["structuredContent"][0]["file"].as_str(),
+            Some("auth.py")
+        );
+
+        let context_result = handle_tool_call(json!({
+            "name": "context_pack",
+            "arguments": {
+                "root": dir.path(),
+                "task": "understand auth service",
+                "symbols": ["AuthService"],
+                "token_budget": 1200
+            }
+        }))
+        .unwrap();
+        assert_eq!(
+            context_result["structuredContent"]["files"][0]["file"].as_str(),
             Some("auth.py")
         );
     }
