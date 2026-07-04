@@ -4,7 +4,8 @@ use anyhow::{Context, Result};
 use rusqlite::{Connection, params};
 
 use crate::model::{
-    DirectoryStat, Language, LanguageStat, ProjectOverview, SourceFile, Symbol, SymbolKind,
+    Dependency, DependencyGraph, DirectoryStat, Language, LanguageStat, ProjectOverview,
+    SourceFile, Symbol, SymbolKind,
 };
 
 pub struct Store {
@@ -25,8 +26,39 @@ impl Store {
 
     pub fn reset(&mut self) -> Result<()> {
         let tx = self.conn.transaction()?;
+        tx.execute("delete from dependencies", [])?;
         tx.execute("delete from symbols", [])?;
         tx.execute("delete from files", [])?;
+        tx.commit()?;
+        Ok(())
+    }
+
+    pub fn replace_dependencies(
+        &mut self,
+        file_id: i64,
+        dependencies: &[Dependency],
+    ) -> Result<()> {
+        let tx = self.conn.transaction()?;
+        tx.execute(
+            "delete from dependencies where source_file_id = ?1",
+            params![file_id],
+        )?;
+        {
+            let mut stmt = tx.prepare(
+                "insert into dependencies
+                 (source_file_id, target, kind, language, line)
+                 values (?1, ?2, ?3, ?4, ?5)",
+            )?;
+            for dependency in dependencies {
+                stmt.execute(params![
+                    file_id,
+                    dependency.target,
+                    dependency.kind,
+                    dependency.language.as_str(),
+                    dependency.line as i64
+                ])?;
+            }
+        }
         tx.commit()?;
         Ok(())
     }
@@ -162,6 +194,50 @@ impl Store {
         Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
     }
 
+    pub fn dependency_graph(&self, root: &Path, limit: usize) -> Result<DependencyGraph> {
+        let mut stmt = self.conn.prepare(
+            "select f.path, d.target, d.kind, d.language, d.line
+             from dependencies d
+             join files f on f.id = d.source_file_id
+             order by f.path, d.line
+             limit ?1",
+        )?;
+        let dependencies = stmt
+            .query_map(params![limit as i64], |row| {
+                let language: String = row.get(3)?;
+                Ok(Dependency {
+                    source_file: row.get(0)?,
+                    target: row.get(1)?,
+                    kind: row.get(2)?,
+                    language: parse_language(&language),
+                    line: row.get::<_, i64>(4)? as usize,
+                })
+            })?
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+
+        let nodes = self.conn.query_row(
+            "select count(*) from (
+                    select path from files
+                    union
+                    select target from dependencies
+                 )",
+            [],
+            |row| row.get::<_, i64>(0),
+        )? as usize;
+        let edges = self
+            .conn
+            .query_row("select count(*) from dependencies", [], |row| {
+                row.get::<_, i64>(0)
+            })? as usize;
+
+        Ok(DependencyGraph {
+            root: root.display().to_string(),
+            dependencies,
+            nodes,
+            edges,
+        })
+    }
+
     fn migrate(&self) -> Result<()> {
         self.conn.execute_batch(
             "
@@ -184,8 +260,19 @@ impl Store {
                 end_line integer not null
             );
 
+            create table if not exists dependencies (
+                id integer primary key autoincrement,
+                source_file_id integer not null references files(id) on delete cascade,
+                target text not null,
+                kind text not null,
+                language text not null,
+                line integer not null
+            );
+
             create index if not exists idx_symbols_name on symbols(name);
             create index if not exists idx_symbols_qualified_name on symbols(qualified_name);
+            create index if not exists idx_dependencies_source on dependencies(source_file_id);
+            create index if not exists idx_dependencies_target on dependencies(target);
             ",
         )?;
         Ok(())

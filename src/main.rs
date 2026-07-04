@@ -23,6 +23,7 @@ async fn main() -> Result<()> {
         Command::Overview(args) => tools::project_overview(args.root)?,
         Command::Symbols(args) => tools::symbol_search(args.root, args.query, args.limit)?,
         Command::Outline(args) => tools::file_outline(args.path)?,
+        Command::DependencyGraph(args) => tools::dependency_graph(args.root, args.limit)?,
         Command::Serve(args) => mcp::serve(args.transport).await?,
     }
 

@@ -103,6 +103,14 @@ fn handle_tool_call(params: Value) -> Result<Value> {
             let path = required_path(&arguments, "path")?;
             serde_json::to_value(tools::file_outline_value(path)?)?
         }
+        "dependency_graph" => {
+            let root = required_path(&arguments, "root")?;
+            let limit = arguments
+                .get("limit")
+                .and_then(Value::as_u64)
+                .unwrap_or(500) as usize;
+            serde_json::to_value(tools::dependency_graph_value(root, limit)?)?
+        }
         _ => bail!("unknown tool: {name}"),
     };
 
@@ -165,6 +173,18 @@ fn tool_definitions() -> Value {
                 },
                 "required": ["path"]
             }
+        },
+        {
+            "name": "dependency_graph",
+            "description": "Return module-level dependencies extracted during indexing.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "root": {"type": "string"},
+                    "limit": {"type": "integer", "minimum": 1}
+                },
+                "required": ["root"]
+            }
         }
     ])
 }
@@ -218,6 +238,8 @@ mod tests {
         std::fs::write(
             &source_path,
             r#"
+import os
+
 class AuthService:
     def login(self):
         pass
@@ -251,6 +273,16 @@ class AuthService:
             search_result["structuredContent"][0]["name"].as_str(),
             Some("AuthService")
         );
+
+        let graph_result = handle_tool_call(json!({
+            "name": "dependency_graph",
+            "arguments": {
+                "root": dir.path(),
+                "limit": 10
+            }
+        }))
+        .unwrap();
+        assert_eq!(graph_result["structuredContent"]["edges"].as_u64(), Some(1));
     }
 
     #[test]

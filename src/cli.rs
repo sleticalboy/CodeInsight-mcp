@@ -20,6 +20,8 @@ pub enum Command {
     Symbols(SymbolArgs),
     /// Print a source file outline.
     Outline(OutlineArgs),
+    /// Print the indexed dependency graph.
+    DependencyGraph(DependencyGraphArgs),
     /// Start the MCP server.
     Serve(ServeArgs),
 }
@@ -47,6 +49,13 @@ pub struct SymbolArgs {
 #[derive(Debug, Args)]
 pub struct OutlineArgs {
     pub path: PathBuf,
+}
+
+#[derive(Debug, Args)]
+pub struct DependencyGraphArgs {
+    pub root: PathBuf,
+    #[arg(long, default_value_t = 500)]
+    pub limit: usize,
 }
 
 #[derive(Debug, Args)]

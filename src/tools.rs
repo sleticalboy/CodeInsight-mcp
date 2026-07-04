@@ -4,7 +4,7 @@ use anyhow::Result;
 
 use crate::{
     index,
-    model::{ProjectIndexReport, ProjectOverview, Symbol},
+    model::{DependencyGraph, ProjectIndexReport, ProjectOverview, Symbol},
     storage::Store,
 };
 
@@ -28,6 +28,11 @@ pub fn file_outline(path: PathBuf) -> Result<()> {
     print_json(&symbols)
 }
 
+pub fn dependency_graph(root: PathBuf, limit: usize) -> Result<()> {
+    let graph = dependency_graph_value(root, limit)?;
+    print_json(&graph)
+}
+
 pub fn index_project_value(root: PathBuf, force: bool) -> Result<ProjectIndexReport> {
     index::index_project(&root, force)
 }
@@ -46,6 +51,12 @@ pub fn symbol_search_value(root: PathBuf, query: &str, limit: usize) -> Result<V
 
 pub fn file_outline_value(path: PathBuf) -> Result<Vec<Symbol>> {
     index::outline_file(&path)
+}
+
+pub fn dependency_graph_value(root: PathBuf, limit: usize) -> Result<DependencyGraph> {
+    let root = root.canonicalize()?;
+    let store = Store::open(&root)?;
+    store.dependency_graph(&root, limit)
 }
 
 fn print_json<T: serde::Serialize>(value: &T) -> Result<()> {

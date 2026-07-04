@@ -58,6 +58,23 @@ pub struct Symbol {
     pub end_line: usize,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct Dependency {
+    pub source_file: String,
+    pub target: String,
+    pub kind: String,
+    pub language: Language,
+    pub line: usize,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DependencyGraph {
+    pub root: String,
+    pub dependencies: Vec<Dependency>,
+    pub nodes: usize,
+    pub edges: usize,
+}
+
 #[derive(Debug, Serialize)]
 pub struct ProjectIndexReport {
     pub root: String,

@@ -81,6 +81,7 @@ The stdio server currently exposes:
 - `project_overview`
 - `symbol_search`
 - `file_outline`
+- `dependency_graph`
 
 Example `tools/call` request:
 

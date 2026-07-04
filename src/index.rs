@@ -12,7 +12,7 @@ use tree_sitter::{Node, Parser, TreeCursor};
 
 use crate::{
     language::{detect_language, tree_sitter_language},
-    model::{Language, ProjectIndexReport, SourceFile, Symbol, SymbolKind},
+    model::{Dependency, Language, ProjectIndexReport, SourceFile, Symbol, SymbolKind},
     storage::Store,
 };
 
@@ -69,8 +69,11 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
         };
         let symbols = extract_symbols(&source, language, &relative_path)
             .with_context(|| format!("failed to parse {}", path.display()))?;
+        let dependencies = extract_dependencies(&source, language, &relative_path)
+            .with_context(|| format!("failed to extract dependencies from {}", path.display()))?;
         let file_id = store.upsert_file(&source_file)?;
         store.replace_symbols(file_id, &symbols)?;
+        store.replace_dependencies(file_id, &dependencies)?;
 
         indexed_files += 1;
         symbol_count += symbols.len();
@@ -111,6 +114,58 @@ pub fn extract_symbols(source: &str, language: Language, file: &str) -> Result<V
     Ok(symbols)
 }
 
+pub fn extract_dependencies(
+    source: &str,
+    language: Language,
+    source_file: &str,
+) -> Result<Vec<Dependency>> {
+    let mut parser = Parser::new();
+    parser.set_language(&tree_sitter_language(language))?;
+    let tree = parser
+        .parse(source, None)
+        .context("tree-sitter parse failed")?;
+    let mut dependencies = Vec::new();
+    visit_dependency_node(
+        tree.root_node(),
+        source.as_bytes(),
+        language,
+        source_file,
+        &mut dependencies,
+    );
+    Ok(dependencies)
+}
+
+fn visit_dependency_node(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+    dependencies: &mut Vec<Dependency>,
+) {
+    dependencies.extend(dependencies_from_node(node, source, language, source_file));
+
+    let mut cursor = node.walk();
+    for child in node_children(&mut cursor) {
+        visit_dependency_node(child, source, language, source_file, dependencies);
+    }
+}
+
+fn dependencies_from_node(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+) -> Vec<Dependency> {
+    match language {
+        Language::Python => python_dependencies(node, source, language, source_file),
+        Language::Go => go_dependencies(node, source, language, source_file),
+        Language::Rust => rust_dependencies(node, source, language, source_file),
+        Language::JavaScript | Language::TypeScript | Language::Tsx => {
+            javascript_like_dependencies(node, source, language, source_file)
+        }
+    }
+}
+
 fn visit_node(
     node: Node<'_>,
     source: &[u8],
@@ -148,6 +203,178 @@ fn visit_node(
     }
 
     visit_children(node, source, language, file, scope, symbols);
+}
+
+fn python_dependencies(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+) -> Vec<Dependency> {
+    match node.kind() {
+        "import_statement" | "import_from_statement" => text_dependencies(
+            node,
+            source,
+            language,
+            source_file,
+            "import",
+            python_import_targets,
+        ),
+        _ => Vec::new(),
+    }
+}
+
+fn go_dependencies(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+) -> Vec<Dependency> {
+    match node.kind() {
+        "import_declaration" => text_dependencies(
+            node,
+            source,
+            language,
+            source_file,
+            "import",
+            string_literal_targets,
+        ),
+        _ => Vec::new(),
+    }
+}
+
+fn rust_dependencies(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+) -> Vec<Dependency> {
+    match node.kind() {
+        "use_declaration" => {
+            text_dependencies(node, source, language, source_file, "use", rust_use_targets)
+        }
+        "mod_item" => {
+            text_dependencies(node, source, language, source_file, "mod", rust_mod_targets)
+        }
+        _ => Vec::new(),
+    }
+}
+
+fn javascript_like_dependencies(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+) -> Vec<Dependency> {
+    match node.kind() {
+        "import_statement" | "export_statement" | "call_expression" => text_dependencies(
+            node,
+            source,
+            language,
+            source_file,
+            "import",
+            string_literal_targets,
+        ),
+        _ => Vec::new(),
+    }
+}
+
+fn text_dependencies(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+    kind: &str,
+    extractor: fn(&str) -> Vec<String>,
+) -> Vec<Dependency> {
+    let text = node.utf8_text(source).unwrap_or_default();
+    extractor(text)
+        .into_iter()
+        .map(|target| Dependency {
+            source_file: source_file.to_string(),
+            target,
+            kind: kind.to_string(),
+            language,
+            line: node.start_position().row + 1,
+        })
+        .collect()
+}
+
+fn string_literal_targets(text: &str) -> Vec<String> {
+    let mut targets = Vec::new();
+    let mut in_quote = false;
+    let mut quote = '\0';
+    let mut current = String::new();
+
+    for ch in text.chars() {
+        if in_quote {
+            if ch == quote {
+                if !current.is_empty() {
+                    targets.push(current.clone());
+                }
+                current.clear();
+                in_quote = false;
+            } else {
+                current.push(ch);
+            }
+        } else if matches!(ch, '"' | '\'' | '`') {
+            in_quote = true;
+            quote = ch;
+        }
+    }
+
+    targets
+}
+
+fn python_import_targets(text: &str) -> Vec<String> {
+    let trimmed = text.trim();
+    if let Some(rest) = trimmed.strip_prefix("from ") {
+        return rest
+            .split_whitespace()
+            .next()
+            .map(|target| vec![target.to_string()])
+            .unwrap_or_default();
+    }
+
+    trimmed
+        .strip_prefix("import ")
+        .map(|rest| {
+            rest.split(',')
+                .filter_map(|part| part.split_whitespace().next())
+                .map(ToOwned::to_owned)
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+fn rust_use_targets(text: &str) -> Vec<String> {
+    text.trim()
+        .strip_prefix("use ")
+        .map(|target| {
+            let cleaned = target
+                .trim_end_matches(';')
+                .trim()
+                .replace("::{", "::")
+                .replace(['{', '}'], "");
+            vec![compact_whitespace(&cleaned)]
+        })
+        .unwrap_or_default()
+}
+
+fn rust_mod_targets(text: &str) -> Vec<String> {
+    text.trim()
+        .strip_prefix("mod ")
+        .and_then(|target| {
+            target
+                .split(|ch: char| ch.is_whitespace() || matches!(ch, ';' | '{'))
+                .find(|part| !part.is_empty())
+        })
+        .map(|target| vec![target.to_string()])
+        .unwrap_or_default()
+}
+
+fn compact_whitespace(text: &str) -> String {
+    text.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
 fn visit_children(
@@ -458,5 +685,30 @@ fn helper() {}
         assert!(names.contains(&"Store"));
         assert!(names.contains(&"open"));
         assert!(names.contains(&"helper"));
+    }
+
+    #[test]
+    fn extracts_dependencies() {
+        let ts = r#"
+import { readFile } from "node:fs";
+const auth = require("./auth");
+"#;
+        let deps = extract_dependencies(ts, Language::TypeScript, "src/index.ts").unwrap();
+        let targets = deps
+            .iter()
+            .map(|dependency| dependency.target.as_str())
+            .collect::<Vec<_>>();
+        assert!(targets.contains(&"node:fs"));
+        assert!(targets.contains(&"./auth"));
+
+        let py = "from app.auth import service\nimport os, sys\n";
+        let deps = extract_dependencies(py, Language::Python, "app/main.py").unwrap();
+        let targets = deps
+            .iter()
+            .map(|dependency| dependency.target.as_str())
+            .collect::<Vec<_>>();
+        assert!(targets.contains(&"app.auth"));
+        assert!(targets.contains(&"os"));
+        assert!(targets.contains(&"sys"));
     }
 }
