@@ -1,0 +1,85 @@
+# CodeInsight MCP Server
+
+CodeInsight MCP Server is a local-first code intelligence layer for AI coding agents.
+
+The MVP focuses on a narrow, verifiable loop:
+
+- index a local repository
+- extract source symbols with Tree-sitter
+- search symbols from a local SQLite index
+- expose an MCP stdio server scaffold
+- build toward agent-ready context packs
+
+The product direction and execution plan live in:
+
+- [Product prototype](docs/product-prototype.md)
+- [Implementation plan](docs/implementation-plan.md)
+- [MVP backlog](docs/mvp-backlog.md)
+
+## Current Status
+
+This repository is an early MVP scaffold. It is not yet a complete MCP code-analysis server.
+
+Implemented:
+
+- Rust CLI entrypoint
+- local SQLite index cache under `.codeinsight/`
+- Tree-sitter parsing for TypeScript/JavaScript, Python, Go, and Rust
+- symbol extraction for common declarations
+- `index`, `overview`, `symbols`, and `outline` CLI commands
+- minimal MCP stdio handshake and `tools/list`
+
+Next:
+
+- MCP `tools/call` execution
+- dependency graph extraction
+- reference search
+- first `context_pack` implementation
+
+## Install From Source
+
+```bash
+cargo install --path .
+```
+
+## CLI Usage
+
+Index a repository:
+
+```bash
+cargo run -- index /path/to/repo --force
+```
+
+Print an overview:
+
+```bash
+cargo run -- overview /path/to/repo
+```
+
+Search symbols:
+
+```bash
+cargo run -- symbols /path/to/repo AuthService
+```
+
+Print a file outline:
+
+```bash
+cargo run -- outline /path/to/repo/src/auth.ts
+```
+
+Start the MCP stdio server scaffold:
+
+```bash
+cargo run -- serve --transport stdio
+```
+
+## Development
+
+```bash
+cargo fmt
+cargo test
+```
+
+The first MVP intentionally avoids external services such as Qdrant, pgvector, Neo4j, or Apache AGE. The default path must remain local, single-binary, and low configuration.
+
