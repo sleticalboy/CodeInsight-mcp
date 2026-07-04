@@ -85,6 +85,53 @@ impl Store {
         )?)
     }
 
+    pub fn file_hash(&self, relative_path: &str) -> Result<Option<String>> {
+        let mut stmt = self
+            .conn
+            .prepare("select hash from files where path = ?1")?;
+        let mut rows = stmt.query(params![relative_path])?;
+        if let Some(row) = rows.next()? {
+            Ok(Some(row.get(0)?))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn count_files(&self) -> Result<usize> {
+        Ok(self
+            .conn
+            .query_row("select count(*) from files", [], |row| row.get::<_, i64>(0))?
+            as usize)
+    }
+
+    pub fn count_symbols(&self) -> Result<usize> {
+        Ok(self
+            .conn
+            .query_row("select count(*) from symbols", [], |row| {
+                row.get::<_, i64>(0)
+            })? as usize)
+    }
+
+    pub fn delete_files_not_in(&mut self, relative_paths: &[String]) -> Result<usize> {
+        let existing = self.indexed_files()?;
+        let current = relative_paths
+            .iter()
+            .collect::<std::collections::HashSet<_>>();
+        let stale = existing
+            .into_iter()
+            .filter(|path| !current.contains(path))
+            .collect::<Vec<_>>();
+        let deleted = stale.len();
+
+        let tx = self.conn.transaction()?;
+        for path in stale {
+            tx.execute("delete from files where path = ?1", params![path])?;
+        }
+        tx.commit()?;
+
+        Ok(deleted)
+    }
+
     pub fn replace_symbols(&mut self, file_id: i64, symbols: &[Symbol]) -> Result<()> {
         let tx = self.conn.transaction()?;
         tx.execute("delete from symbols where file_id = ?1", params![file_id])?;

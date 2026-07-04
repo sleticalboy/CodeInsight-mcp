@@ -115,8 +115,12 @@ pub struct ContextRange {
 pub struct ProjectIndexReport {
     pub root: String,
     pub indexed_files: usize,
+    pub changed_files: usize,
+    pub unchanged_files: usize,
+    pub deleted_files: usize,
     pub skipped_files: usize,
     pub symbols: usize,
+    pub changed_symbols: usize,
     pub duration_ms: u128,
 }
 

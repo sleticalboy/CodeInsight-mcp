@@ -24,9 +24,11 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
         store.reset()?;
     }
 
-    let mut indexed_files = 0;
+    let mut changed_files = 0;
+    let mut unchanged_files = 0;
     let mut skipped_files = 0;
     let mut symbol_count = 0;
+    let mut seen_source_files = Vec::new();
 
     for entry in WalkBuilder::new(&root)
         .hidden(false)
@@ -60,11 +62,18 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
             .unwrap_or(path)
             .to_string_lossy()
             .replace('\\', "/");
+        seen_source_files.push(relative_path.clone());
+        let hash = hash_source(&source);
+        if !force && store.file_hash(&relative_path)?.as_deref() == Some(hash.as_str()) {
+            unchanged_files += 1;
+            continue;
+        }
+
         let source_file = SourceFile {
             path: path.to_path_buf(),
             relative_path: relative_path.clone(),
             language,
-            hash: hash_source(&source),
+            hash,
             line_count: source.lines().count(),
         };
         let symbols = extract_symbols(&source, language, &relative_path)
@@ -75,15 +84,22 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
         store.replace_symbols(file_id, &symbols)?;
         store.replace_dependencies(file_id, &dependencies)?;
 
-        indexed_files += 1;
+        changed_files += 1;
         symbol_count += symbols.len();
     }
+    let deleted_files = store.delete_files_not_in(&seen_source_files)?;
+    let total_indexed_files = store.count_files()?;
+    let total_symbols = store.count_symbols()?;
 
     Ok(ProjectIndexReport {
         root: root.display().to_string(),
-        indexed_files,
+        indexed_files: total_indexed_files,
+        changed_files,
+        unchanged_files,
+        deleted_files,
         skipped_files,
-        symbols: symbol_count,
+        symbols: total_symbols,
+        changed_symbols: symbol_count,
         duration_ms: started.elapsed().as_millis(),
     })
 }
@@ -710,5 +726,27 @@ const auth = require("./auth");
         assert!(targets.contains(&"app.auth"));
         assert!(targets.contains(&"os"));
         assert!(targets.contains(&"sys"));
+    }
+
+    #[test]
+    fn skips_unchanged_files_and_removes_deleted_files() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let source_path = dir.path().join("auth.py");
+        std::fs::write(&source_path, "def login():\n    pass\n").unwrap();
+
+        let first = index_project(dir.path(), false).unwrap();
+        assert_eq!(first.indexed_files, 1);
+        assert_eq!(first.changed_files, 1);
+        assert_eq!(first.unchanged_files, 0);
+
+        let second = index_project(dir.path(), false).unwrap();
+        assert_eq!(second.indexed_files, 1);
+        assert_eq!(second.changed_files, 0);
+        assert_eq!(second.unchanged_files, 1);
+
+        std::fs::remove_file(&source_path).unwrap();
+        let third = index_project(dir.path(), false).unwrap();
+        assert_eq!(third.indexed_files, 0);
+        assert_eq!(third.deleted_files, 1);
     }
 }
