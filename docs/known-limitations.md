@@ -89,6 +89,7 @@ Limitations:
 Current deterministic ranking order:
 
 - File seeds have the highest priority.
+- File seed ranges include header/import context plus primary top-level symbols. Large symbol and merged ranges are capped to keep small budgets useful. If no primary symbols are found, `context_pack` falls back to the first 80 lines.
 - Symbol definition ranges are next.
 - Text references are ranked after definitions, with reference confidence as a small boost.
 - Resolved local dependencies are included as supporting context after direct matches.

@@ -9,13 +9,13 @@ fn cli_indexes_and_queries_fixture_project() {
     let fixture = fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 5);
-    assert_eq!(index["changed_files"], 5);
+    assert_eq!(index["indexed_files"], 6);
+    assert_eq!(index["changed_files"], 6);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let second_index = run_json(["index", fixture.path().to_str().unwrap()]);
     assert_eq!(second_index["changed_files"], 0);
-    assert_eq!(second_index["unchanged_files"], 5);
+    assert_eq!(second_index["unchanged_files"], 6);
 
     let symbols = run_json([
         "symbols",
@@ -122,6 +122,28 @@ fn cli_indexes_and_queries_fixture_project() {
         .collect::<Vec<_>>();
     assert_eq!(context_files.first(), Some(&"src/main.ts"));
     assert!(context_files.contains(&"src/ui.ts"));
+
+    let long_file_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand late entrypoint",
+        "--file",
+        "src/long.ts",
+        "--token-budget",
+        "1600",
+    ]);
+    let long_file = &long_file_context["files"].as_array().unwrap()[0];
+    assert_eq!(long_file["file"], "src/long.ts");
+    let long_excerpt = long_file["ranges"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|range| range["excerpt"].as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert!(long_excerpt.contains("lateEntry"));
+    assert!(!long_excerpt.contains("filler_60"));
 
     let callers = run_json([
         "callers",
@@ -273,6 +295,7 @@ export function render() {
 }
 "#,
     );
+    write_file(&dir, "src/long.ts", &long_typescript_file());
     write_file(
         &dir,
         "src/service.go",
@@ -288,6 +311,15 @@ func Login() {
     );
 
     dir
+}
+
+fn long_typescript_file() -> String {
+    let mut source = String::from("\nimport { render } from \"./ui\";\n\n");
+    for index in 1..=85 {
+        source.push_str(&format!("const filler_{index} = {index};\n"));
+    }
+    source.push_str("\nexport function lateEntry() {\n  render();\n}\n");
+    source
 }
 
 fn write_file(dir: &TempDir, path: &str, contents: &str) {

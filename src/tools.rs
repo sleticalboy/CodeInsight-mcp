@@ -11,15 +11,18 @@ use crate::{
     index,
     model::{
         CallEdge, ContextFile, ContextPack, ContextRange, DependencyGraph, ProjectIndexReport,
-        ProjectOverview, ReferenceMatch, Symbol,
+        ProjectOverview, ReferenceMatch, Symbol, SymbolKind,
     },
     storage::Store,
 };
 
 const CONTEXT_SCORE_SEED_FILE: i32 = 100;
+const CONTEXT_SCORE_SEED_HEADER: i32 = 110;
 const CONTEXT_SCORE_SYMBOL_DEFINITION: i32 = 90;
 const CONTEXT_SCORE_REFERENCE_BASE: i32 = 60;
 const CONTEXT_SCORE_LOCAL_DEPENDENCY: i32 = 40;
+const CONTEXT_MAX_SYMBOL_LINES: usize = 80;
+const CONTEXT_MAX_MERGED_RANGE_LINES: usize = 80;
 
 pub fn index_project(root: PathBuf, force: bool) -> Result<()> {
     let report = index_project_value(root, force)?;
@@ -186,22 +189,16 @@ pub fn context_pack_value(
 
     let mut ranges_by_file: BTreeMap<String, Vec<ContextCandidateRange>> = BTreeMap::new();
     for file in &seed_files {
-        push_context_range(
-            &mut ranges_by_file,
-            file.clone(),
-            1,
-            40,
-            format!("Seed file requested for task: {file}"),
-            CONTEXT_SCORE_SEED_FILE,
-        );
-        push_context_range(
-            &mut ranges_by_file,
-            file.clone(),
-            41,
-            80,
-            format!("Seed file requested for task: {file}"),
-            CONTEXT_SCORE_SEED_FILE,
-        );
+        for range in seed_file_ranges(&root, file, &symbols) {
+            push_context_range(
+                &mut ranges_by_file,
+                file.clone(),
+                range.start_line,
+                range.end_line,
+                range.reason,
+                range.score,
+            );
+        }
     }
     for symbol in &symbols {
         if seed_file_set.contains(&symbol.file) {
@@ -211,7 +208,7 @@ pub fn context_pack_value(
             &mut ranges_by_file,
             symbol.file.clone(),
             symbol.start_line,
-            symbol.end_line,
+            capped_symbol_end_line(symbol),
             format!("Defines symbol {}", symbol.qualified_name),
             CONTEXT_SCORE_SYMBOL_DEFINITION,
         );
@@ -251,7 +248,8 @@ pub fn context_pack_value(
         .into_iter()
         .map(|(file, ranges)| {
             let total_score = ranges.iter().map(|range| range.score).sum();
-            let ranges = merge_ranges(ranges);
+            let mut ranges = merge_ranges(ranges);
+            ranges.sort_by(compare_context_ranges_for_budget);
             let max_score = ranges.iter().map(|range| range.score).max().unwrap_or(0);
             ContextFileCandidate {
                 file,
@@ -364,6 +362,113 @@ struct ContextFileCandidate {
     total_score: i32,
 }
 
+fn seed_file_ranges(root: &Path, file: &str, symbols: &[Symbol]) -> Vec<ContextCandidateRange> {
+    let path = root.join(file);
+    let source = fs::read_to_string(path).unwrap_or_default();
+    let lines = source.lines().collect::<Vec<_>>();
+    let line_count = lines.len().max(1);
+    let mut ranges = Vec::new();
+
+    if let Some(end_line) = header_range_end(&lines) {
+        ranges.push(ContextCandidateRange {
+            start_line: 1,
+            end_line,
+            reason: format!("Seed file header and imports for task: {file}"),
+            score: CONTEXT_SCORE_SEED_HEADER,
+        });
+    }
+
+    let mut primary_symbols = symbols
+        .iter()
+        .filter(|symbol| symbol.file == file && is_primary_seed_symbol(symbol))
+        .collect::<Vec<_>>();
+    primary_symbols.sort_by_key(|symbol| (symbol.start_line, symbol.end_line));
+
+    for symbol in primary_symbols.into_iter().take(12) {
+        ranges.push(ContextCandidateRange {
+            start_line: symbol.start_line.saturating_sub(2).max(1),
+            end_line: (capped_symbol_end_line(symbol) + 2).min(line_count),
+            reason: format!("Seed file defines symbol {}", symbol.qualified_name),
+            score: CONTEXT_SCORE_SEED_FILE,
+        });
+    }
+
+    if ranges.is_empty() {
+        ranges.push(ContextCandidateRange {
+            start_line: 1,
+            end_line: line_count.min(80),
+            reason: format!("Seed file requested for task: {file}"),
+            score: CONTEXT_SCORE_SEED_FILE,
+        });
+    }
+
+    ranges
+}
+
+fn header_range_end(lines: &[&str]) -> Option<usize> {
+    let mut end_line = None;
+    let mut saw_header = false;
+
+    for (index, line) in lines.iter().enumerate().take(40) {
+        let line_number = index + 1;
+        let trimmed = line.trim();
+
+        if trimmed.is_empty() {
+            if saw_header {
+                end_line = Some(line_number);
+            }
+            continue;
+        }
+
+        if is_header_line(trimmed) {
+            saw_header = true;
+            end_line = Some(line_number);
+            continue;
+        }
+
+        if !saw_header && is_leading_comment(trimmed) {
+            end_line = Some(line_number);
+            continue;
+        }
+
+        break;
+    }
+
+    end_line
+}
+
+fn is_primary_seed_symbol(symbol: &Symbol) -> bool {
+    !symbol.qualified_name.contains('.')
+        && matches!(
+            symbol.kind,
+            SymbolKind::Class | SymbolKind::Function | SymbolKind::Interface | SymbolKind::Struct
+        )
+}
+
+fn capped_symbol_end_line(symbol: &Symbol) -> usize {
+    symbol
+        .end_line
+        .min(symbol.start_line + CONTEXT_MAX_SYMBOL_LINES.saturating_sub(1))
+}
+
+fn is_header_line(trimmed: &str) -> bool {
+    trimmed.starts_with("import ")
+        || trimmed.starts_with("from ")
+        || trimmed.starts_with("use ")
+        || trimmed.starts_with("mod ")
+        || trimmed.starts_with("pub mod ")
+        || trimmed.starts_with("extern crate ")
+        || trimmed.starts_with("#![")
+        || trimmed.starts_with("package ")
+}
+
+fn is_leading_comment(trimmed: &str) -> bool {
+    trimmed.starts_with("//")
+        || trimmed.starts_with("/*")
+        || trimmed.starts_with('*')
+        || trimmed.starts_with('#')
+}
+
 fn push_context_range(
     ranges_by_file: &mut BTreeMap<String, Vec<ContextCandidateRange>>,
     file: String,
@@ -394,6 +499,17 @@ fn compare_context_file_candidates(
         .then_with(|| left.file.cmp(&right.file))
 }
 
+fn compare_context_ranges_for_budget(
+    left: &ContextCandidateRange,
+    right: &ContextCandidateRange,
+) -> Ordering {
+    right
+        .score
+        .cmp(&left.score)
+        .then_with(|| left.start_line.cmp(&right.start_line))
+        .then_with(|| left.end_line.cmp(&right.end_line))
+}
+
 fn merge_ranges(mut ranges: Vec<ContextCandidateRange>) -> Vec<ContextCandidateRange> {
     ranges.sort_by_key(|range| (range.start_line, range.end_line));
     let mut merged: Vec<ContextCandidateRange> = Vec::new();
@@ -401,6 +517,7 @@ fn merge_ranges(mut ranges: Vec<ContextCandidateRange>) -> Vec<ContextCandidateR
     for range in ranges {
         if let Some(last) = merged.last_mut()
             && range.start_line <= last.end_line + 2
+            && range_len(last.start_line, range.end_line) <= CONTEXT_MAX_MERGED_RANGE_LINES
         {
             last.end_line = last.end_line.max(range.end_line);
             last.score = last.score.max(range.score);
@@ -414,6 +531,10 @@ fn merge_ranges(mut ranges: Vec<ContextCandidateRange>) -> Vec<ContextCandidateR
     }
 
     merged
+}
+
+fn range_len(start_line: usize, end_line: usize) -> usize {
+    end_line.saturating_sub(start_line) + 1
 }
 
 fn excerpt_lines(lines: &[&str], start_line: usize, end_line: usize) -> String {
