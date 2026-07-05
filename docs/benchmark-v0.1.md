@@ -1,6 +1,6 @@
 # CodeInsight v0.1 Smoke Benchmark
 
-Generated at: 2026-07-05 16:28:11 UTC
+Generated at: 2026-07-05 16:32:21 UTC
 
 This is a benchmark fixture report, not a controlled performance benchmark. It
 verifies that CodeInsight can index real public repositories across the MVP
@@ -18,12 +18,12 @@ Environment:
 
 ## Summary
 
-| Repository | Focus | Commit | Files | Lines | Symbols | Skipped | Errors | Index ms | Index budget ms | Budget status | DB size | Context files | Ranges | Tokens | Truncated | First context file |
-| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | --- | --- |
-| p-limit | TypeScript | `42599eb` | 6 | 1123 | 162 | 10 | 0 | 45 | 5000 | pass | 160K | 1 | 3 | 835 | false | `index.js` |
-| itsdangerous | Python | `672971d` | 15 | 1712 | 144 | 35 | 0 | 41 | 5000 | pass | 168K | 1 | 3 | 1332 | false | `src/itsdangerous/serializer.py` |
-| go-example | Go | `7f05d21` | 38 | 3537 | 189 | 33 | 0 | 75 | 5000 | pass | 204K | 1 | 3 | 414 | false | `hello/hello.go` |
-| memchr | Rust | `e21e9fb` | 64 | 69365 | 4045 | 100 | 0 | 858 | 10000 | pass | 2.1M | 7 | 7 | 1899 | false | `src/lib.rs` |
+| Repository | Focus | Commit | Files | Lines | Symbols | Skipped | Errors | Index ms | Index budget ms | Budget status | DB size | Context files | Ranges | Context lines | Line reduction | Tokens | Truncated | First context file |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| p-limit | TypeScript | `42599eb` | 6 | 1123 | 162 | 10 | 0 | 45 | 5000 | pass | 160K | 1 | 3 | 99 | 91.2% | 835 | false | `index.js` |
+| itsdangerous | Python | `672971d` | 15 | 1712 | 144 | 35 | 0 | 41 | 5000 | pass | 168K | 1 | 3 | 114 | 93.3% | 1332 | false | `src/itsdangerous/serializer.py` |
+| go-example | Go | `7f05d21` | 38 | 3537 | 189 | 33 | 0 | 73 | 5000 | pass | 204K | 1 | 3 | 64 | 98.2% | 414 | false | `hello/hello.go` |
+| memchr | Rust | `e21e9fb` | 64 | 69365 | 4045 | 100 | 0 | 835 | 10000 | pass | 2.1M | 7 | 7 | 196 | 99.7% | 1899 | false | `src/lib.rs` |
 
 ## Details
 
@@ -39,6 +39,7 @@ Environment:
 - Context task: understand limit scheduling behavior
 - Context files: 1
 - Context ranges: 3
+- Context lines: 99 of 1123 (91.2% reduction)
 - Context estimated tokens: 835
 - Context truncated: false
 
@@ -67,6 +68,7 @@ Language breakdown:
 - Context task: understand serializer signing behavior
 - Context files: 1
 - Context ranges: 3
+- Context lines: 114 of 1712 (93.3% reduction)
 - Context estimated tokens: 1332
 - Context truncated: false
 
@@ -88,12 +90,13 @@ Language breakdown:
 - Commit: `7f05d217867b2af52b0a28c6d1c91df97e1b5b39`
 - Indexed files: 38
 - Symbols: 189
-- Duration: 75 ms
+- Duration: 73 ms
 - Index budget: 5000 ms (pass)
 - Context seed file: `hello/hello.go`
 - Context task: understand hello server behavior
 - Context files: 1
 - Context ranges: 3
+- Context lines: 64 of 3537 (98.2% reduction)
 - Context estimated tokens: 414
 - Context truncated: false
 
@@ -116,12 +119,13 @@ Language breakdown:
 - Commit: `e21e9fb47c4362d93a24ce969b20fd778d8618c8`
 - Indexed files: 64
 - Symbols: 4045
-- Duration: 858 ms
+- Duration: 835 ms
 - Index budget: 10000 ms (pass)
 - Context seed file: `src/lib.rs`
 - Context task: understand memchr finder API
 - Context files: 7
 - Context ranges: 7
+- Context lines: 196 of 69365 (99.7% reduction)
 - Context estimated tokens: 1899
 - Context truncated: false
 

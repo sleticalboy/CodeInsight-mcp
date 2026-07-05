@@ -44,7 +44,7 @@ Implemented:
 
 Next:
 
-- add token/context reduction metrics to benchmark reports
+- improve JavaScript symbol extraction for CommonJS export patterns
 
 ## Install From Release
 

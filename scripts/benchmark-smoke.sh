@@ -178,8 +178,8 @@ Environment:
 
 ## Summary
 
-| Repository | Focus | Commit | Files | Lines | Symbols | Skipped | Errors | Index ms | Index budget ms | Budget status | DB size | Context files | Ranges | Tokens | Truncated | First context file |
-| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | --- | --- |
+| Repository | Focus | Commit | Files | Lines | Symbols | Skipped | Errors | Index ms | Index budget ms | Budget status | DB size | Context files | Ranges | Context lines | Line reduction | Tokens | Truncated | First context file |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
 EOF
 }
 
@@ -206,6 +206,25 @@ budget_status() {
   fi
 }
 
+context_lines() {
+  local context_json="$1"
+  jq -r '[.files[].ranges[] | (.end_line - .start_line + 1)] | add // 0' "$context_json"
+}
+
+line_reduction() {
+  local total_lines="$1"
+  local selected_lines="$2"
+  awk -v total="$total_lines" -v selected="$selected_lines" 'BEGIN {
+    if (total <= 0) {
+      printf "n/a"
+    } else {
+      reduction = (1 - (selected / total)) * 100
+      if (reduction < 0) reduction = 0
+      printf "%.1f%%", reduction
+    }
+  }'
+}
+
 append_summary_row() {
   local name="$1"
   local language="$2"
@@ -215,7 +234,7 @@ append_summary_row() {
   local context_json="$6"
   local max_index_ms="$7"
 
-  local commit files lines symbols skipped errors duration budget db_size context_files ranges tokens truncated first_context_file status
+  local commit files lines symbols skipped errors duration budget db_size context_files ranges selected_lines reduction tokens truncated first_context_file status
   commit="$(git -C "$repo_dir" rev-parse --short HEAD)"
   files="$(json_value "$index_json" '.indexed_files')"
   lines="$(json_value "$overview_json" '[.languages[].lines] | add // 0')"
@@ -227,6 +246,8 @@ append_summary_row() {
   db_size="$(du -h "$repo_dir/.codeinsight/index.db" | awk '{print $1}')"
   context_files="$(json_value "$context_json" '.files | length')"
   ranges="$(json_value "$context_json" '[.files[].ranges | length] | add // 0')"
+  selected_lines="$(context_lines "$context_json")"
+  reduction="$(line_reduction "$lines" "$selected_lines")"
   tokens="$(json_value "$context_json" '.estimated_tokens')"
   truncated="$(json_value "$context_json" '.truncated')"
   first_context_file="$(json_value "$context_json" '.files[0].file // "-"')"
@@ -236,9 +257,9 @@ append_summary_row() {
     BUDGET_FAILURES=$((BUDGET_FAILURES + 1))
   fi
 
-  printf "| %s | %s | \`%s\` | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | \`%s\` |\n" \
+  printf "| %s | %s | \`%s\` | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | \`%s\` |\n" \
     "$name" "$language" "$commit" "$files" "$lines" "$symbols" "$skipped" "$errors" "$duration" "$budget" "$status" "$db_size" \
-    "$context_files" "$ranges" "$tokens" "$truncated" "$first_context_file" \
+    "$context_files" "$ranges" "$selected_lines" "$reduction" "$tokens" "$truncated" "$first_context_file" \
     >>"$REPORT_FILE"
 }
 
@@ -252,8 +273,11 @@ append_detail_section() {
   local context_file="$7"
   local context_task="$8"
   local max_index_ms="$9"
-  local duration status
+  local duration total_lines selected_lines reduction status
   duration="$(json_value "$index_json" '.duration_ms')"
+  total_lines="$(json_value "$overview_json" '[.languages[].lines] | add // 0')"
+  selected_lines="$(context_lines "$context_json")"
+  reduction="$(line_reduction "$total_lines" "$selected_lines")"
   status="$(budget_status "$duration" "$max_index_ms")"
 
   {
@@ -270,6 +294,7 @@ append_detail_section() {
     echo "- Context task: $context_task"
     echo "- Context files: $(json_value "$context_json" '.files | length')"
     echo "- Context ranges: $(json_value "$context_json" '[.files[].ranges | length] | add // 0')"
+    echo "- Context lines: $selected_lines of $total_lines ($reduction reduction)"
     echo "- Context estimated tokens: $(json_value "$context_json" '.estimated_tokens')"
     echo "- Context truncated: $(json_value "$context_json" '.truncated')"
     echo
