@@ -44,6 +44,7 @@ Rust is included early so the project can index itself during development.
 - [x] `tools/call` for `symbol_search`
 - [x] `tools/call` for `file_outline`
 - [x] JSON schema validation for tool args.
+- [x] End-to-end stdio smoke script.
 
 ### Indexing
 

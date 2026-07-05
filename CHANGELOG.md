@@ -10,6 +10,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 - Release asset installer for macOS and Linux.
 - Smoke benchmark script for real public repositories.
+- MCP stdio smoke script and client troubleshooting notes.
 
 ## [0.1.0] - 2026-07-05
 

@@ -91,3 +91,6 @@ Example `context_pack` call arguments:
 
 Run `index_project` first for a repository when you want repeatable results from
 the local SQLite index.
+
+For an end-to-end protocol check before configuring a GUI client, see
+[MCP client smoke test](mcp-client-smoke.md).
