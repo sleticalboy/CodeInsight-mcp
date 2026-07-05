@@ -25,7 +25,7 @@ Rust is included early so the project can index itself during development.
 - [x] Add basic symbol extraction tests.
 - [x] Add project planning docs.
 - [ ] Add release build workflow.
-- [ ] Add fixture-based integration tests.
+- [x] Add fixture-based integration tests.
 
 ### CLI
 
@@ -86,7 +86,7 @@ Rust is included early so the project can index itself during development.
 ### Quality
 
 - [ ] Add sample fixture repositories.
-- [ ] Add CLI integration tests with `assert_cmd`.
+- [x] Add CLI integration tests with `assert_cmd`.
 - [ ] Benchmark 10k, 50k, and 100k line repositories.
 - [ ] Document known accuracy limits.
 

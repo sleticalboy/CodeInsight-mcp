@@ -31,6 +31,7 @@ Implemented:
 - symbol extraction for common declarations
 - `index`, `overview`, `symbols`, and `outline` CLI commands
 - MCP stdio `initialize`, `tools/list`, and `tools/call` for P0 tools
+- fixture-based CLI and MCP stdio integration tests
 
 Next:
 
