@@ -9,13 +9,13 @@ fn cli_indexes_and_queries_fixture_project() {
     let fixture = fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 4);
-    assert_eq!(index["changed_files"], 4);
+    assert_eq!(index["indexed_files"], 5);
+    assert_eq!(index["changed_files"], 5);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let second_index = run_json(["index", fixture.path().to_str().unwrap()]);
     assert_eq!(second_index["changed_files"], 0);
-    assert_eq!(second_index["unchanged_files"], 4);
+    assert_eq!(second_index["unchanged_files"], 5);
 
     let symbols = run_json([
         "symbols",
@@ -78,6 +78,15 @@ fn cli_indexes_and_queries_fixture_project() {
             .iter()
             .any(|file| { file["file"] == "src/auth.py" })
     );
+    let auth_context_files = context["files"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|file| file["file"].as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(auth_context_files.first(), Some(&"src/auth.py"));
+    assert!(auth_context_files.contains(&"src/consumer.py"));
+
     let main_context = run_json([
         "context-pack",
         fixture.path().to_str().unwrap(),
@@ -111,7 +120,7 @@ fn cli_indexes_and_queries_fixture_project() {
         .iter()
         .filter_map(|file| file["file"].as_str())
         .collect::<Vec<_>>();
-    assert!(context_files.contains(&"src/main.ts"));
+    assert_eq!(context_files.first(), Some(&"src/main.ts"));
     assert!(context_files.contains(&"src/ui.ts"));
 
     let callers = run_json([
@@ -232,6 +241,16 @@ class AuthService:
 
 def helper():
     return os.getenv("USER")
+"#,
+    );
+    write_file(
+        &dir,
+        "src/consumer.py",
+        r#"
+from auth import AuthService
+
+def build_service():
+    return AuthService()
 "#,
     );
     write_file(

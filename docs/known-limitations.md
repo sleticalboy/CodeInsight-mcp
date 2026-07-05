@@ -86,11 +86,19 @@ Limitations:
 
 `context_pack` combines symbol search, file seeds, reference search, and resolved local dependencies into a token-budgeted bundle.
 
+Current deterministic ranking order:
+
+- File seeds have the highest priority.
+- Symbol definition ranges are next.
+- Text references are ranked after definitions, with reference confidence as a small boost.
+- Resolved local dependencies are included as supporting context after direct matches.
+- Ties are broken by total file score and then stable file path order.
+
 Limitations:
 
 - It is deterministic and local-only.
 - It does not use semantic embeddings.
-- It does not yet rank by call graph, type graph, test relevance, or edit history.
+- It does not yet rank by call graph, type graph, test relevance, semantic similarity, or edit history.
 - Token estimation is approximate and based on character count.
 - It may include noisy references when the seed symbol is common.
 

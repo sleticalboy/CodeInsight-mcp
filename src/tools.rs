@@ -1,4 +1,5 @@
 use std::{
+    cmp::Ordering,
     collections::{BTreeMap, BTreeSet},
     fs,
     path::{Path, PathBuf},
@@ -14,6 +15,11 @@ use crate::{
     },
     storage::Store,
 };
+
+const CONTEXT_SCORE_SEED_FILE: i32 = 100;
+const CONTEXT_SCORE_SYMBOL_DEFINITION: i32 = 90;
+const CONTEXT_SCORE_REFERENCE_BASE: i32 = 60;
+const CONTEXT_SCORE_LOCAL_DEPENDENCY: i32 = 40;
 
 pub fn index_project(root: PathBuf, force: bool) -> Result<()> {
     let report = index_project_value(root, force)?;
@@ -178,108 +184,126 @@ pub fn context_pack_value(
         symbols.extend(file_symbols);
     }
 
-    let mut ranges_by_file: BTreeMap<String, Vec<(usize, usize, String)>> = BTreeMap::new();
+    let mut ranges_by_file: BTreeMap<String, Vec<ContextCandidateRange>> = BTreeMap::new();
     for file in &seed_files {
-        ranges_by_file.entry(file.clone()).or_default().push((
+        push_context_range(
+            &mut ranges_by_file,
+            file.clone(),
             1,
             40,
             format!("Seed file requested for task: {file}"),
-        ));
-        ranges_by_file.entry(file.clone()).or_default().push((
+            CONTEXT_SCORE_SEED_FILE,
+        );
+        push_context_range(
+            &mut ranges_by_file,
+            file.clone(),
             41,
             80,
             format!("Seed file requested for task: {file}"),
-        ));
+            CONTEXT_SCORE_SEED_FILE,
+        );
     }
     for symbol in &symbols {
         if seed_file_set.contains(&symbol.file) {
             continue;
         }
-        ranges_by_file
-            .entry(symbol.file.clone())
-            .or_default()
-            .push((
-                symbol.start_line,
-                symbol.end_line,
-                format!("Defines symbol {}", symbol.qualified_name),
-            ));
+        push_context_range(
+            &mut ranges_by_file,
+            symbol.file.clone(),
+            symbol.start_line,
+            symbol.end_line,
+            format!("Defines symbol {}", symbol.qualified_name),
+            CONTEXT_SCORE_SYMBOL_DEFINITION,
+        );
     }
     for reference in &references {
         let start_line = reference.line.saturating_sub(2).max(1);
         let end_line = reference.line + 2;
-        ranges_by_file
-            .entry(reference.file.clone())
-            .or_default()
-            .push((
-                start_line,
-                end_line,
-                format!("References symbol near line {}", reference.line),
-            ));
+        push_context_range(
+            &mut ranges_by_file,
+            reference.file.clone(),
+            start_line,
+            end_line,
+            format!("References symbol near line {}", reference.line),
+            reference_score(reference),
+        );
     }
 
     let selected_files = ranges_by_file.keys().cloned().collect::<Vec<_>>();
     let store = Store::open(&root)?;
     for dependency in store.resolved_dependencies_for_files(&selected_files)? {
         if let Some(resolved_file) = dependency.resolved_file {
-            ranges_by_file.entry(resolved_file).or_default().push((
+            push_context_range(
+                &mut ranges_by_file,
+                resolved_file,
                 1,
                 40,
                 format!(
                     "Local dependency of {} via {}",
                     dependency.source_file, dependency.target
                 ),
-            ));
+                CONTEXT_SCORE_LOCAL_DEPENDENCY,
+            );
         }
     }
+
+    let mut candidates = ranges_by_file
+        .into_iter()
+        .map(|(file, ranges)| {
+            let total_score = ranges.iter().map(|range| range.score).sum();
+            let ranges = merge_ranges(ranges);
+            let max_score = ranges.iter().map(|range| range.score).max().unwrap_or(0);
+            ContextFileCandidate {
+                file,
+                ranges,
+                max_score,
+                total_score,
+            }
+        })
+        .collect::<Vec<_>>();
+    candidates.sort_by(compare_context_file_candidates);
 
     let mut estimated_tokens = estimate_tokens(&task);
     let mut files = Vec::new();
     let mut truncated = false;
 
-    for (file, ranges) in ranges_by_file {
-        let path = root.join(&file);
+    for candidate in candidates {
+        let path = root.join(&candidate.file);
         let Ok(source) = fs::read_to_string(&path) else {
             continue;
         };
         let lines = source.lines().collect::<Vec<_>>();
         let mut context_ranges = Vec::new();
+        let mut selected_max_score = 0;
 
-        for (start_line, end_line, reason) in merge_ranges(ranges) {
-            let excerpt = excerpt_lines(&lines, start_line, end_line);
+        for range in candidate.ranges {
+            let excerpt = excerpt_lines(&lines, range.start_line, range.end_line);
             let range_tokens = estimate_tokens(&excerpt);
             if estimated_tokens + range_tokens > budget {
                 truncated = true;
                 continue;
             }
             estimated_tokens += range_tokens;
+            selected_max_score = selected_max_score.max(range.score);
             context_ranges.push(ContextRange {
-                start_line,
-                end_line: end_line.min(lines.len().max(1)),
-                importance: importance_for_reason(&reason).to_string(),
+                start_line: range.start_line,
+                end_line: range.end_line.min(lines.len().max(1)),
+                importance: importance_for_score(range.score).to_string(),
                 excerpt,
             });
         }
 
         if !context_ranges.is_empty() {
-            let reason = context_ranges
-                .first()
-                .map(|range| range.importance.clone())
-                .unwrap_or_else(|| "medium".to_string());
             files.push(ContextFile {
-                file,
-                reason: format!("Selected for {reason} relevance to requested task"),
+                file: candidate.file,
+                reason: format!(
+                    "Selected for {} relevance to requested task",
+                    importance_for_score(selected_max_score)
+                ),
                 ranges: context_ranges,
             });
         }
     }
-
-    files.sort_by_key(|file| {
-        if file.ranges.iter().any(|range| range.importance == "high") {
-            0
-        } else {
-            1
-        }
-    });
 
     let summary = if seed_symbols.is_empty() && seed_files.is_empty() {
         "No seed symbols or files were provided; context pack is empty.".to_string()
@@ -324,22 +348,69 @@ pub fn callees_value(root: PathBuf, symbol: &str, limit: usize) -> Result<Vec<Ca
     store.callees(symbol, limit)
 }
 
-fn merge_ranges(mut ranges: Vec<(usize, usize, String)>) -> Vec<(usize, usize, String)> {
-    ranges.sort_by_key(|(start, end, _)| (*start, *end));
-    let mut merged: Vec<(usize, usize, String)> = Vec::new();
+#[derive(Debug, Clone)]
+struct ContextCandidateRange {
+    start_line: usize,
+    end_line: usize,
+    reason: String,
+    score: i32,
+}
 
-    for (start, end, reason) in ranges {
-        if let Some((_, last_end, last_reason)) = merged.last_mut()
-            && start <= *last_end + 2
+#[derive(Debug)]
+struct ContextFileCandidate {
+    file: String,
+    ranges: Vec<ContextCandidateRange>,
+    max_score: i32,
+    total_score: i32,
+}
+
+fn push_context_range(
+    ranges_by_file: &mut BTreeMap<String, Vec<ContextCandidateRange>>,
+    file: String,
+    start_line: usize,
+    end_line: usize,
+    reason: String,
+    score: i32,
+) {
+    ranges_by_file
+        .entry(file)
+        .or_default()
+        .push(ContextCandidateRange {
+            start_line,
+            end_line,
+            reason,
+            score,
+        });
+}
+
+fn compare_context_file_candidates(
+    left: &ContextFileCandidate,
+    right: &ContextFileCandidate,
+) -> Ordering {
+    right
+        .max_score
+        .cmp(&left.max_score)
+        .then_with(|| right.total_score.cmp(&left.total_score))
+        .then_with(|| left.file.cmp(&right.file))
+}
+
+fn merge_ranges(mut ranges: Vec<ContextCandidateRange>) -> Vec<ContextCandidateRange> {
+    ranges.sort_by_key(|range| (range.start_line, range.end_line));
+    let mut merged: Vec<ContextCandidateRange> = Vec::new();
+
+    for range in ranges {
+        if let Some(last) = merged.last_mut()
+            && range.start_line <= last.end_line + 2
         {
-            *last_end = (*last_end).max(end);
-            if !last_reason.contains(&reason) {
-                last_reason.push_str("; ");
-                last_reason.push_str(&reason);
+            last.end_line = last.end_line.max(range.end_line);
+            last.score = last.score.max(range.score);
+            if !last.reason.contains(&range.reason) {
+                last.reason.push_str("; ");
+                last.reason.push_str(&range.reason);
             }
             continue;
         }
-        merged.push((start, end, reason));
+        merged.push(range);
     }
 
     merged
@@ -358,12 +429,16 @@ fn excerpt_lines(lines: &[&str], start_line: usize, end_line: usize) -> String {
         .join("\n")
 }
 
-fn importance_for_reason(reason: &str) -> &'static str {
-    if reason.contains("Defines symbol") || reason.contains("Seed file") {
+fn importance_for_score(score: i32) -> &'static str {
+    if score >= CONTEXT_SCORE_SYMBOL_DEFINITION {
         "high"
     } else {
         "medium"
     }
+}
+
+fn reference_score(reference: &ReferenceMatch) -> i32 {
+    CONTEXT_SCORE_REFERENCE_BASE + (reference.confidence * 10.0).round() as i32
 }
 
 fn normalize_seed_file(root: &Path, file: &str) -> Result<String> {

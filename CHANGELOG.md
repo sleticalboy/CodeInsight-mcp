@@ -9,6 +9,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 ### Added
 
 - `context_pack` now accepts file seeds through CLI `--file` and MCP `files`.
+- `context_pack` now applies explicit candidate scoring before token-budget selection.
 
 ## [0.1.1] - 2026-07-05
 
