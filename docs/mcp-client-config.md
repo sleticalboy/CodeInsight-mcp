@@ -85,6 +85,7 @@ Example `context_pack` call arguments:
   "root": "/absolute/path/to/repo",
   "task": "understand auth flow",
   "symbols": ["AuthService"],
+  "files": ["src/auth.ts"],
   "token_budget": 6000
 }
 ```

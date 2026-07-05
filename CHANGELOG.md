@@ -6,6 +6,10 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ## [Unreleased]
 
+### Added
+
+- `context_pack` now accepts file seeds through CLI `--file` and MCP `files`.
+
 ## [0.1.1] - 2026-07-05
 
 ### Added

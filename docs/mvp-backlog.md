@@ -61,6 +61,7 @@ Rust is included early so the project can index itself during development.
 - [x] Define `context_pack` output schema.
 - [x] Implement token budget estimation.
 - [x] Rank files by seed symbol matches.
+- [x] Support file seeds in `context_pack`.
 - [x] Return line ranges with reasons.
 - [x] Add `context_pack` CLI command.
 - [x] Add `context_pack` MCP tool.

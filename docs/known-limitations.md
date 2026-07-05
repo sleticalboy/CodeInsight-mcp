@@ -84,7 +84,7 @@ Limitations:
 
 ### `context_pack`
 
-`context_pack` combines symbol search, reference search, and resolved local dependencies into a token-budgeted bundle.
+`context_pack` combines symbol search, file seeds, reference search, and resolved local dependencies into a token-budgeted bundle.
 
 Limitations:
 

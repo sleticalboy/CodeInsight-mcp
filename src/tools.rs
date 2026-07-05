@@ -1,6 +1,10 @@
-use std::{collections::BTreeMap, fs, path::PathBuf};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    fs,
+    path::{Path, PathBuf},
+};
 
-use anyhow::Result;
+use anyhow::{Context, Result, bail};
 
 use crate::{
     index,
@@ -50,9 +54,10 @@ pub fn context_pack(
     root: PathBuf,
     task: String,
     symbols: Vec<String>,
+    files: Vec<String>,
     token_budget: usize,
 ) -> Result<()> {
-    let pack = context_pack_value(root, task, symbols, token_budget)?;
+    let pack = context_pack_value(root, task, symbols, files, token_budget)?;
     print_json(&pack)
 }
 
@@ -144,20 +149,52 @@ pub fn context_pack_value(
     root: PathBuf,
     task: String,
     seed_symbols: Vec<String>,
+    seed_files: Vec<String>,
     token_budget: usize,
 ) -> Result<ContextPack> {
     let root = root.canonicalize()?;
+    if seed_symbols.is_empty() && seed_files.is_empty() {
+        bail!("context_pack requires at least one seed symbol or file");
+    }
+
     let budget = token_budget.max(500);
     let mut symbols = Vec::new();
     let mut references = Vec::new();
+    let seed_files = seed_files
+        .iter()
+        .map(|file| normalize_seed_file(&root, file))
+        .collect::<Result<Vec<_>>>()?;
+    let seed_file_set = seed_files.iter().cloned().collect::<BTreeSet<_>>();
 
     for seed in &seed_symbols {
         symbols.extend(symbol_search_value(root.clone(), seed, 8)?);
         references.extend(find_references_value(root.clone(), seed, 20, false)?);
     }
+    for file in &seed_files {
+        let mut file_symbols = file_outline_value(root.join(file))?;
+        for symbol in &mut file_symbols {
+            symbol.file = file.clone();
+        }
+        symbols.extend(file_symbols);
+    }
 
     let mut ranges_by_file: BTreeMap<String, Vec<(usize, usize, String)>> = BTreeMap::new();
+    for file in &seed_files {
+        ranges_by_file.entry(file.clone()).or_default().push((
+            1,
+            40,
+            format!("Seed file requested for task: {file}"),
+        ));
+        ranges_by_file.entry(file.clone()).or_default().push((
+            41,
+            80,
+            format!("Seed file requested for task: {file}"),
+        ));
+    }
     for symbol in &symbols {
+        if seed_file_set.contains(&symbol.file) {
+            continue;
+        }
         ranges_by_file
             .entry(symbol.file.clone())
             .or_default()
@@ -244,12 +281,23 @@ pub fn context_pack_value(
         }
     });
 
-    let summary = if seed_symbols.is_empty() {
-        "No seed symbols were provided; context pack is empty.".to_string()
-    } else {
+    let summary = if seed_symbols.is_empty() && seed_files.is_empty() {
+        "No seed symbols or files were provided; context pack is empty.".to_string()
+    } else if seed_files.is_empty() {
         format!(
             "Context pack for task using seed symbols: {}.",
             seed_symbols.join(", ")
+        )
+    } else if seed_symbols.is_empty() {
+        format!(
+            "Context pack for task using seed files: {}.",
+            seed_files.join(", ")
+        )
+    } else {
+        format!(
+            "Context pack for task using seed symbols: {} and seed files: {}.",
+            seed_symbols.join(", "),
+            seed_files.join(", ")
         )
     };
 
@@ -311,11 +359,27 @@ fn excerpt_lines(lines: &[&str], start_line: usize, end_line: usize) -> String {
 }
 
 fn importance_for_reason(reason: &str) -> &'static str {
-    if reason.contains("Defines symbol") {
+    if reason.contains("Defines symbol") || reason.contains("Seed file") {
         "high"
     } else {
         "medium"
     }
+}
+
+fn normalize_seed_file(root: &Path, file: &str) -> Result<String> {
+    let path = PathBuf::from(file);
+    let absolute = if path.is_absolute() {
+        path
+    } else {
+        root.join(path)
+    };
+    let canonical = absolute
+        .canonicalize()
+        .with_context(|| format!("failed to resolve seed file: {file}"))?;
+    let relative = canonical
+        .strip_prefix(root)
+        .with_context(|| format!("seed file is outside project root: {file}"))?;
+    Ok(relative.to_string_lossy().replace('\\', "/"))
 }
 
 fn estimate_tokens(text: &str) -> usize {

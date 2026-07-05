@@ -117,12 +117,14 @@ fn handle_tool_call(params: Value) -> Result<Value> {
         "context_pack" => {
             let root = required_path(&arguments, "root")?;
             let task = required_str(&arguments, "task")?.to_string();
-            let symbols = required_string_array(&arguments, "symbols")?;
+            let symbols = optional_string_array(&arguments, "symbols")?;
+            let files = optional_string_array(&arguments, "files")?;
             let token_budget = optional_min_usize(&arguments, "token_budget", 6000, 500)?;
             serde_json::to_value(tools::context_pack_value(
                 root,
                 task,
                 symbols,
+                files,
                 token_budget,
             )?)?
         }
@@ -229,7 +231,7 @@ fn tool_definitions() -> Value {
         },
         {
             "name": "context_pack",
-            "description": "Build an agent-ready context pack from seed symbols and a token budget.",
+            "description": "Build an agent-ready context pack from seed symbols, seed files, and a token budget.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -239,9 +241,13 @@ fn tool_definitions() -> Value {
                         "type": "array",
                         "items": {"type": "string"}
                     },
+                    "files": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    },
                     "token_budget": {"type": "integer", "minimum": 500}
                 },
-                "required": ["root", "task", "symbols"]
+                "required": ["root", "task"]
             }
         },
         {
@@ -293,25 +299,23 @@ fn required_str<'a>(arguments: &'a Value, key: &str) -> Result<&'a str> {
         .with_context(|| format!("missing or invalid string argument: {key}"))
 }
 
-fn required_string_array(arguments: &Value, key: &str) -> Result<Vec<String>> {
-    let values = arguments
-        .get(key)
-        .and_then(Value::as_array)
-        .with_context(|| format!("missing or invalid string array argument: {key}"))?;
-    let strings = values
-        .iter()
-        .map(|value| {
-            value
-                .as_str()
-                .filter(|value| !value.trim().is_empty())
-                .map(ToOwned::to_owned)
-                .with_context(|| format!("invalid non-string value in argument: {key}"))
-        })
-        .collect::<Result<Vec<_>>>()?;
-    if strings.is_empty() {
-        bail!("empty string array argument: {key}");
+fn optional_string_array(arguments: &Value, key: &str) -> Result<Vec<String>> {
+    match arguments.get(key) {
+        Some(value) if value.is_array() => value
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|value| {
+                value
+                    .as_str()
+                    .filter(|value| !value.trim().is_empty())
+                    .map(ToOwned::to_owned)
+                    .with_context(|| format!("invalid non-string value in argument: {key}"))
+            })
+            .collect::<Result<Vec<_>>>(),
+        Some(_) => bail!("invalid string array argument: {key}"),
+        None => Ok(Vec::new()),
     }
-    Ok(strings)
 }
 
 fn optional_bool(arguments: &Value, key: &str, default: bool) -> Result<bool> {
@@ -458,6 +462,26 @@ def helper():
             context_result["structuredContent"]["files"][0]["file"].as_str(),
             Some("auth.py")
         );
+        let file_context_result = handle_tool_call(json!({
+            "name": "context_pack",
+            "arguments": {
+                "root": dir.path(),
+                "task": "understand auth file",
+                "files": ["auth.py"],
+                "token_budget": 1200
+            }
+        }))
+        .unwrap();
+        assert_eq!(
+            file_context_result["structuredContent"]["files"][0]["file"].as_str(),
+            Some("auth.py")
+        );
+        assert!(
+            file_context_result["structuredContent"]["summary"]
+                .as_str()
+                .unwrap()
+                .contains("seed files")
+        );
 
         let callers_result = handle_tool_call(json!({
             "name": "callers",
@@ -527,6 +551,6 @@ def helper():
             }
         }))
         .unwrap_err();
-        assert!(error.to_string().contains("symbols"));
+        assert!(error.to_string().contains("symbol or file"));
     }
 }

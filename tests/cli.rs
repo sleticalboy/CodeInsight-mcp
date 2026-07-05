@@ -95,6 +95,24 @@ fn cli_indexes_and_queries_fixture_project() {
             .iter()
             .any(|file| { file["file"] == "src/ui.ts" })
     );
+    let file_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand ui entry file",
+        "--file",
+        "src/main.ts",
+        "--token-budget",
+        "1600",
+    ]);
+    let context_files = file_context["files"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|file| file["file"].as_str())
+        .collect::<Vec<_>>();
+    assert!(context_files.contains(&"src/main.ts"));
+    assert!(context_files.contains(&"src/ui.ts"));
 
     let callers = run_json([
         "callers",

@@ -24,7 +24,7 @@ pub enum Command {
     DependencyGraph(DependencyGraphArgs),
     /// Find text references for a symbol in indexed files.
     FindReferences(FindReferencesArgs),
-    /// Build an agent-ready context pack from seed symbols.
+    /// Build an agent-ready context pack from seed symbols or files.
     ContextPack(ContextPackArgs),
     /// Find callers for a function or method.
     Callers(CallQueryArgs),
@@ -81,8 +81,10 @@ pub struct ContextPackArgs {
     pub root: PathBuf,
     #[arg(long)]
     pub task: String,
-    #[arg(long = "symbol", required = true)]
+    #[arg(long = "symbol")]
     pub symbols: Vec<String>,
+    #[arg(long = "file")]
+    pub files: Vec<String>,
     #[arg(long, default_value_t = 6000)]
     pub token_budget: usize,
 }

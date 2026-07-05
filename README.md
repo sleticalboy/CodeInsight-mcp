@@ -133,6 +133,7 @@ Build an agent context pack:
 
 ```bash
 cargo run -- context-pack /path/to/repo --task "understand auth flow" --symbol AuthService --token-budget 6000
+cargo run -- context-pack /path/to/repo --task "understand auth module" --file src/auth.ts --token-budget 6000
 ```
 
 Inspect same-file call graph:
@@ -172,7 +173,7 @@ For client setup snippets, see [MCP client configuration](docs/mcp-client-config
 
 `find_references` is currently a fast text-reference pass over indexed files. It returns file, line, column, context, an approximate reference kind, and a confidence score. It is not yet a full language-server-grade semantic reference resolver.
 
-`context_pack` combines symbol search, reference search, and resolved local dependencies into a token-budgeted context bundle for agents. The first version is deterministic and local-only; it does not use embeddings.
+`context_pack` combines symbol search, file seeds, reference search, and resolved local dependencies into a token-budgeted context bundle for agents. The first version is deterministic and local-only; it does not use embeddings.
 
 `callers` and `callees` currently use a same-file static call graph. They are useful navigation signals, not full type-aware call hierarchy results.
 
