@@ -16,6 +16,7 @@ The product direction and execution plan live in:
 - [Implementation plan](docs/implementation-plan.md)
 - [MVP backlog](docs/mvp-backlog.md)
 - [Known limitations](docs/known-limitations.md)
+- [MCP client configuration](docs/mcp-client-config.md)
 - [Changelog](CHANGELOG.md)
 
 ## Current Status
@@ -126,6 +127,8 @@ Example `tools/call` request:
 ```json
 {"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"symbol_search","arguments":{"root":"/path/to/repo","query":"AuthService","limit":5}}}
 ```
+
+For client setup snippets, see [MCP client configuration](docs/mcp-client-config.md).
 
 `find_references` is currently a fast text-reference pass over indexed files. It returns file, line, column, context, an approximate reference kind, and a confidence score. It is not yet a full language-server-grade semantic reference resolver.
 
