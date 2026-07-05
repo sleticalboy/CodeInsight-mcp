@@ -111,4 +111,8 @@ cargo test
 
 The `Release Build` workflow can be triggered manually or by pushing a `v*` tag. It builds Linux and macOS artifacts and uploads them as workflow artifacts. It does not create a GitHub Release yet.
 
+## License
+
+CodeInsight MCP Server is licensed under the Apache License 2.0.
+
 The first MVP intentionally avoids external services such as Qdrant, pgvector, Neo4j, or Apache AGE. The default path must remain local, single-binary, and low configuration.
