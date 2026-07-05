@@ -9,6 +9,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 ### Added
 
 - Release asset installer for macOS and Linux.
+- Smoke benchmark script for real public repositories.
 
 ## [0.1.0] - 2026-07-05
 

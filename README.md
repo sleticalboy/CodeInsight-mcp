@@ -17,6 +17,7 @@ The product direction and execution plan live in:
 - [MVP backlog](docs/mvp-backlog.md)
 - [Known limitations](docs/known-limitations.md)
 - [MCP client configuration](docs/mcp-client-config.md)
+- [Smoke benchmark](docs/benchmark-v0.1.md)
 - [Changelog](CHANGELOG.md)
 
 ## Current Status
