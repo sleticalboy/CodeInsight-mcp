@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
-use rusqlite::{Connection, OptionalExtension, params};
+use rusqlite::{Connection, params};
 
 use crate::model::{
     CallEdge, Dependency, DependencyGraph, DirectoryStat, Language, LanguageStat, ProjectOverview,
@@ -421,59 +421,61 @@ impl Store {
     }
 
     pub fn resolve_imported_calls(&self) -> Result<usize> {
-        let unresolved = {
-            let mut stmt = self.conn.prepare(
-                "select id, source_file_id, callee
-                 from calls
-                 where callee_file is null
-                 order by id",
-            )?;
-            stmt.query_map([], |row| {
-                Ok((
-                    row.get::<_, i64>(0)?,
-                    row.get::<_, i64>(1)?,
-                    row.get::<_, String>(2)?,
-                ))
-            })?
-            .collect::<rusqlite::Result<Vec<_>>>()?
-        };
+        self.conn.execute_batch(
+            "
+            drop table if exists temp.imported_call_targets;
 
-        let mut updated = 0;
-        let mut resolve_stmt = self.conn.prepare(
-            "select target_files.path
-             from dependencies d
-             join files target_files on target_files.path = d.resolved_file
-             join symbols s on s.file_id = target_files.id
-             where d.source_file_id = ?1
-               and (
-                 s.name = ?2
-                 or s.qualified_name = ?2
-                 or s.qualified_name like ?3
-               )
-             order by
-               case when s.name = ?2 then 0 else 1 end,
-               length(s.qualified_name),
-               d.line,
-               s.start_line
-             limit 1",
+            create temp table imported_call_targets as
+            select call_id, callee_file
+            from (
+                select
+                    c.id as call_id,
+                    target_files.path as callee_file,
+                    row_number() over (
+                        partition by c.id
+                        order by
+                            case when s.name = c.callee then 0 else 1 end,
+                            length(s.qualified_name),
+                            d.line,
+                            s.start_line
+                    ) as target_rank
+                from calls c
+                join dependencies d on d.source_file_id = c.source_file_id
+                join files target_files on target_files.path = d.resolved_file
+                join symbols s on s.file_id = target_files.id
+                where c.callee_file is null
+                  and (
+                    s.name = c.callee
+                    or s.qualified_name = c.callee
+                    or s.qualified_name like '%.' || c.callee
+                  )
+            )
+            where target_rank = 1;
+
+            create unique index imported_call_targets_call_id
+                on imported_call_targets(call_id);
+            ",
         )?;
-        for (call_id, source_file_id, callee) in unresolved {
-            let suffix = format!("%.{}", callee);
-            let target_file = resolve_stmt
-                .query_row(params![source_file_id, callee, suffix], |row| {
-                    row.get::<_, String>(0)
-                })
-                .optional()?;
-            if let Some(target_file) = target_file {
-                self.conn.execute(
-                    "update calls
-                     set callee_file = ?1, confidence = max(confidence, 0.72)
-                     where id = ?2",
-                    params![target_file, call_id],
-                )?;
-                updated += 1;
-            }
-        }
+
+        let updated = self.conn.execute(
+            "
+            update calls
+            set
+                callee_file = (
+                    select callee_file
+                    from temp.imported_call_targets
+                    where call_id = calls.id
+                ),
+                confidence = max(confidence, 0.72)
+            where id in (
+                select call_id from temp.imported_call_targets
+            )
+            ",
+            [],
+        )?;
+
+        self.conn
+            .execute("drop table if exists temp.imported_call_targets", [])?;
 
         Ok(updated)
     }
@@ -535,14 +537,22 @@ impl Store {
 
             create index if not exists idx_symbols_name on symbols(name);
             create index if not exists idx_symbols_qualified_name on symbols(qualified_name);
+            create index if not exists idx_symbols_file_name on symbols(file_id, name);
+            create index if not exists idx_symbols_file_qualified_name on symbols(file_id, qualified_name);
             create index if not exists idx_dependencies_source on dependencies(source_file_id);
             create index if not exists idx_dependencies_target on dependencies(target);
             create index if not exists idx_calls_caller on calls(caller);
             create index if not exists idx_calls_callee on calls(callee);
+            create index if not exists idx_calls_source_callee on calls(source_file_id, callee);
             ",
         )?;
         self.ensure_column("dependencies", "resolved_file", "resolved_file text")?;
         self.ensure_column("calls", "callee_file", "callee_file text")?;
+        self.conn.execute(
+            "create index if not exists idx_dependencies_source_resolved_file
+             on dependencies(source_file_id, resolved_file)",
+            [],
+        )?;
         Ok(())
     }
 

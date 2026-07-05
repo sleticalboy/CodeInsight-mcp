@@ -44,7 +44,7 @@ Implemented:
 
 Next:
 
-- optimize imported call resolution for JavaScript-heavy repositories
+- add benchmark regression guardrails for large repository fixtures
 
 ## Install From Release
 

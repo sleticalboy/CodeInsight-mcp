@@ -17,6 +17,10 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - `context_pack` now caps large symbol and merged ranges so small token budgets retain useful file context.
 - `context_pack` now uses task keywords as a lightweight relevance boost for symbols, references, and local dependencies.
 
+### Changed
+
+- Imported call target resolution now uses batched SQLite resolution instead of per-call queries.
+
 ## [0.1.1] - 2026-07-05
 
 ### Added
