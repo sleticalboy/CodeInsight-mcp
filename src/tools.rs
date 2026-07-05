@@ -5,7 +5,7 @@ use anyhow::Result;
 use crate::{
     index,
     model::{
-        ContextFile, ContextPack, ContextRange, DependencyGraph, ProjectIndexReport,
+        CallEdge, ContextFile, ContextPack, ContextRange, DependencyGraph, ProjectIndexReport,
         ProjectOverview, ReferenceMatch, Symbol,
     },
     storage::Store,
@@ -54,6 +54,16 @@ pub fn context_pack(
 ) -> Result<()> {
     let pack = context_pack_value(root, task, symbols, token_budget)?;
     print_json(&pack)
+}
+
+pub fn callers(root: PathBuf, symbol: String, limit: usize) -> Result<()> {
+    let calls = callers_value(root, &symbol, limit)?;
+    print_json(&calls)
+}
+
+pub fn callees(root: PathBuf, symbol: String, limit: usize) -> Result<()> {
+    let calls = callees_value(root, &symbol, limit)?;
+    print_json(&calls)
 }
 
 pub fn index_project_value(root: PathBuf, force: bool) -> Result<ProjectIndexReport> {
@@ -237,6 +247,18 @@ pub fn context_pack_value(
         estimated_tokens,
         truncated,
     })
+}
+
+pub fn callers_value(root: PathBuf, symbol: &str, limit: usize) -> Result<Vec<CallEdge>> {
+    let root = root.canonicalize()?;
+    let store = Store::open(&root)?;
+    store.callers(symbol, limit)
+}
+
+pub fn callees_value(root: PathBuf, symbol: &str, limit: usize) -> Result<Vec<CallEdge>> {
+    let root = root.canonicalize()?;
+    let store = Store::open(&root)?;
+    store.callees(symbol, limit)
 }
 
 fn merge_ranges(mut ranges: Vec<(usize, usize, String)>) -> Vec<(usize, usize, String)> {

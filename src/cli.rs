@@ -26,6 +26,10 @@ pub enum Command {
     FindReferences(FindReferencesArgs),
     /// Build an agent-ready context pack from seed symbols.
     ContextPack(ContextPackArgs),
+    /// Find callers for a function or method.
+    Callers(CallQueryArgs),
+    /// Find callees for a function or method.
+    Callees(CallQueryArgs),
     /// Start the MCP server.
     Serve(ServeArgs),
 }
@@ -81,6 +85,14 @@ pub struct ContextPackArgs {
     pub symbols: Vec<String>,
     #[arg(long, default_value_t = 6000)]
     pub token_budget: usize,
+}
+
+#[derive(Debug, Args)]
+pub struct CallQueryArgs {
+    pub root: PathBuf,
+    pub symbol: String,
+    #[arg(long, default_value_t = 50)]
+    pub limit: usize,
 }
 
 #[derive(Debug, Args)]

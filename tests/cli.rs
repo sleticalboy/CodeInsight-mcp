@@ -69,6 +69,31 @@ fn cli_indexes_and_queries_fixture_project() {
             .iter()
             .any(|file| { file["file"] == "src/auth.py" })
     );
+
+    let callers = run_json([
+        "callers",
+        fixture.path().to_str().unwrap(),
+        "helper",
+        "--limit",
+        "5",
+    ]);
+    assert_eq!(callers[0]["caller"], "AuthService.login");
+    assert_eq!(callers[0]["callee"], "helper");
+
+    let callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "AuthService.login",
+        "--limit",
+        "5",
+    ]);
+    assert!(
+        callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| call["callee"] == "helper")
+    );
 }
 
 #[test]
@@ -159,7 +184,10 @@ import os
 
 class AuthService:
     def login(self):
-        return os.getenv("USER")
+        return helper()
+
+def helper():
+    return os.getenv("USER")
 "#,
     );
     write_file(

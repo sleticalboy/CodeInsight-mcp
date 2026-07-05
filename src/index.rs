@@ -12,7 +12,10 @@ use tree_sitter::{Node, Parser, TreeCursor};
 
 use crate::{
     language::{detect_language, tree_sitter_language},
-    model::{Dependency, IndexError, Language, ProjectIndexReport, SourceFile, Symbol, SymbolKind},
+    model::{
+        CallEdge, Dependency, IndexError, Language, ProjectIndexReport, SourceFile, Symbol,
+        SymbolKind,
+    },
     storage::{INDEX_VERSION, SCHEMA_VERSION, Store},
 };
 
@@ -106,6 +109,7 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
                 continue;
             }
         };
+        let calls = extract_calls(&source, language, &relative_path, &symbols);
         let source_file = SourceFile {
             path: path.to_path_buf(),
             relative_path: relative_path.clone(),
@@ -138,6 +142,15 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
             errors.push(IndexError {
                 file: relative_path.clone(),
                 stage: "store_dependencies".to_string(),
+                message: error.to_string(),
+            });
+            skipped_files += 1;
+            continue;
+        }
+        if let Err(error) = store.replace_calls(file_id, &calls) {
+            errors.push(IndexError {
+                file: relative_path.clone(),
+                stage: "store_calls".to_string(),
                 message: error.to_string(),
             });
             skipped_files += 1;
@@ -221,6 +234,116 @@ pub fn extract_dependencies(
         &mut dependencies,
     );
     Ok(dependencies)
+}
+
+pub fn extract_calls(
+    source: &str,
+    language: Language,
+    source_file: &str,
+    symbols: &[Symbol],
+) -> Vec<CallEdge> {
+    let mut parser = Parser::new();
+    if parser
+        .set_language(&tree_sitter_language(language))
+        .is_err()
+    {
+        return Vec::new();
+    }
+    let Some(tree) = parser.parse(source, None) else {
+        return Vec::new();
+    };
+
+    let mut calls = Vec::new();
+    visit_call_node(
+        tree.root_node(),
+        source.as_bytes(),
+        language,
+        source_file,
+        symbols,
+        &mut calls,
+    );
+    calls
+}
+
+fn visit_call_node(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+    symbols: &[Symbol],
+    calls: &mut Vec<CallEdge>,
+) {
+    if is_call_node(node, language)
+        && let Some(raw_target) = call_target_text(node, source)
+        && let Some(callee) = normalize_callee(&raw_target)
+    {
+        let line = node.start_position().row + 1;
+        let caller = caller_for_line(symbols, line).unwrap_or_else(|| "<module>".to_string());
+        calls.push(CallEdge {
+            file: source_file.to_string(),
+            caller,
+            callee,
+            language,
+            line,
+            column: node.start_position().column + 1,
+            confidence: 0.55,
+        });
+    }
+
+    let mut cursor = node.walk();
+    for child in node_children(&mut cursor) {
+        visit_call_node(child, source, language, source_file, symbols, calls);
+    }
+}
+
+fn is_call_node(node: Node<'_>, language: Language) -> bool {
+    match language {
+        Language::Go
+        | Language::Rust
+        | Language::JavaScript
+        | Language::TypeScript
+        | Language::Tsx => node.kind() == "call_expression",
+        Language::Python => node.kind() == "call",
+    }
+}
+
+fn call_target_text(node: Node<'_>, source: &[u8]) -> Option<String> {
+    node.child_by_field_name("function")
+        .or_else(|| node.child_by_field_name("name"))
+        .or_else(|| node.child(0))
+        .and_then(|child| child.utf8_text(source).ok())
+        .map(ToOwned::to_owned)
+}
+
+fn normalize_callee(raw: &str) -> Option<String> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    let candidate = trimmed
+        .rsplit(|ch: char| !(ch == '_' || ch.is_ascii_alphanumeric()))
+        .find(|part| !part.is_empty())?;
+    if candidate
+        .chars()
+        .next()
+        .is_some_and(|ch| ch.is_ascii_digit())
+    {
+        None
+    } else {
+        Some(candidate.to_string())
+    }
+}
+
+fn caller_for_line(symbols: &[Symbol], line: usize) -> Option<String> {
+    symbols
+        .iter()
+        .filter(|symbol| {
+            matches!(symbol.kind, SymbolKind::Function | SymbolKind::Method)
+                && symbol.start_line <= line
+                && line <= symbol.end_line
+        })
+        .max_by_key(|symbol| symbol.start_line)
+        .map(|symbol| symbol.qualified_name.clone())
 }
 
 fn visit_dependency_node(
@@ -798,6 +921,25 @@ const auth = require("./auth");
         assert!(targets.contains(&"app.auth"));
         assert!(targets.contains(&"os"));
         assert!(targets.contains(&"sys"));
+    }
+
+    #[test]
+    fn extracts_same_file_calls() {
+        let source = r#"
+class AuthService:
+    def login(self):
+        return helper()
+
+def helper():
+    return "ok"
+"#;
+        let symbols = extract_symbols(source, Language::Python, "auth.py").unwrap();
+        let calls = extract_calls(source, Language::Python, "auth.py", &symbols);
+        assert!(
+            calls
+                .iter()
+                .any(|call| { call.caller == "AuthService.login" && call.callee == "helper" })
+        );
     }
 
     #[test]

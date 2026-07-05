@@ -30,16 +30,17 @@ Implemented:
 - per-file indexing errors in reports without aborting the whole project scan
 - Tree-sitter parsing for TypeScript/JavaScript, Python, Go, and Rust
 - symbol extraction for common declarations
-- `index`, `overview`, `symbols`, and `outline` CLI commands
+- dependency graph, text reference search, context packs, and same-file call graph tools
+- `index`, `overview`, `symbols`, `outline`, `dependency-graph`, `find-references`, `context-pack`, `callers`, and `callees` CLI commands
 - MCP stdio `initialize`, `tools/list`, and `tools/call` for P0 tools
 - MCP tool argument validation with stable JSON-RPC errors
 - fixture-based CLI and MCP stdio integration tests
 
 Next:
 
-- dependency graph extraction
-- reference search
-- first `context_pack` implementation
+- file-to-file dependency resolution
+- imported call resolution
+- benchmark fixtures for larger repositories
 
 ## Install From Source
 
@@ -90,6 +91,8 @@ The stdio server currently exposes:
 - `dependency_graph`
 - `find_references`
 - `context_pack`
+- `callers`
+- `callees`
 
 Example `tools/call` request:
 
@@ -100,6 +103,8 @@ Example `tools/call` request:
 `find_references` is currently a fast text-reference pass over indexed files. It returns file, line, column, context, an approximate reference kind, and a confidence score. It is not yet a full language-server-grade semantic reference resolver.
 
 `context_pack` combines symbol search and reference search into a token-budgeted context bundle for agents. The first version is deterministic and local-only; it does not use embeddings.
+
+`callers` and `callees` currently use a same-file static call graph. They are useful navigation signals, not full type-aware call hierarchy results.
 
 For accuracy boundaries and current non-goals, see [Known limitations](docs/known-limitations.md).
 

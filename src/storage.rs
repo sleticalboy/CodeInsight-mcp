@@ -4,11 +4,11 @@ use anyhow::{Context, Result};
 use rusqlite::{Connection, params};
 
 use crate::model::{
-    Dependency, DependencyGraph, DirectoryStat, Language, LanguageStat, ProjectOverview,
+    CallEdge, Dependency, DependencyGraph, DirectoryStat, Language, LanguageStat, ProjectOverview,
     SourceFile, Symbol, SymbolKind,
 };
 
-pub const SCHEMA_VERSION: i64 = 1;
+pub const SCHEMA_VERSION: i64 = 2;
 pub const INDEX_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub struct Store {
@@ -30,6 +30,7 @@ impl Store {
 
     pub fn reset(&mut self) -> Result<()> {
         let tx = self.conn.transaction()?;
+        tx.execute("delete from calls", [])?;
         tx.execute("delete from dependencies", [])?;
         tx.execute("delete from symbols", [])?;
         tx.execute("delete from files", [])?;
@@ -67,6 +68,34 @@ impl Store {
                     dependency.kind,
                     dependency.language.as_str(),
                     dependency.line as i64
+                ])?;
+            }
+        }
+        tx.commit()?;
+        Ok(())
+    }
+
+    pub fn replace_calls(&mut self, file_id: i64, calls: &[CallEdge]) -> Result<()> {
+        let tx = self.conn.transaction()?;
+        tx.execute(
+            "delete from calls where source_file_id = ?1",
+            params![file_id],
+        )?;
+        {
+            let mut stmt = tx.prepare(
+                "insert into calls
+                 (source_file_id, caller, callee, language, line, column, confidence)
+                 values (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            )?;
+            for call in calls {
+                stmt.execute(params![
+                    file_id,
+                    call.caller,
+                    call.callee,
+                    call.language.as_str(),
+                    call.line as i64,
+                    call.column as i64,
+                    call.confidence
                 ])?;
             }
         }
@@ -136,6 +165,18 @@ impl Store {
 
         let tx = self.conn.transaction()?;
         for path in stale {
+            tx.execute(
+                "delete from calls where source_file_id in (select id from files where path = ?1)",
+                params![path],
+            )?;
+            tx.execute(
+                "delete from dependencies where source_file_id in (select id from files where path = ?1)",
+                params![path],
+            )?;
+            tx.execute(
+                "delete from symbols where file_id in (select id from files where path = ?1)",
+                params![path],
+            )?;
             tx.execute("delete from files where path = ?1", params![path])?;
         }
         tx.commit()?;
@@ -296,6 +337,57 @@ impl Store {
         })
     }
 
+    pub fn callers(&self, symbol: &str, limit: usize) -> Result<Vec<CallEdge>> {
+        self.call_edges(
+            "select f.path, c.caller, c.callee, c.language, c.line, c.column, c.confidence
+             from calls c
+             join files f on f.id = c.source_file_id
+             where c.callee = ?1 or c.callee like ?2
+             order by f.path, c.line
+             limit ?3",
+            symbol,
+            format!("%.{}", symbol),
+            limit,
+        )
+    }
+
+    pub fn callees(&self, symbol: &str, limit: usize) -> Result<Vec<CallEdge>> {
+        self.call_edges(
+            "select f.path, c.caller, c.callee, c.language, c.line, c.column, c.confidence
+             from calls c
+             join files f on f.id = c.source_file_id
+             where c.caller = ?1 or c.caller like ?2
+             order by f.path, c.line
+             limit ?3",
+            symbol,
+            format!("%.{}", symbol),
+            limit,
+        )
+    }
+
+    fn call_edges(
+        &self,
+        sql: &str,
+        exact: &str,
+        suffix: String,
+        limit: usize,
+    ) -> Result<Vec<CallEdge>> {
+        let mut stmt = self.conn.prepare(sql)?;
+        let rows = stmt.query_map(params![exact, suffix, limit as i64], |row| {
+            let language: String = row.get(3)?;
+            Ok(CallEdge {
+                file: row.get(0)?,
+                caller: row.get(1)?,
+                callee: row.get(2)?,
+                language: parse_language(&language),
+                line: row.get::<_, i64>(4)? as usize,
+                column: row.get::<_, i64>(5)? as usize,
+                confidence: row.get(6)?,
+            })
+        })?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
     pub fn indexed_files(&self) -> Result<Vec<String>> {
         let mut stmt = self.conn.prepare("select path from files order by path")?;
         let rows = stmt.query_map([], |row| row.get(0))?;
@@ -338,10 +430,23 @@ impl Store {
                 line integer not null
             );
 
+            create table if not exists calls (
+                id integer primary key autoincrement,
+                source_file_id integer not null references files(id) on delete cascade,
+                caller text not null,
+                callee text not null,
+                language text not null,
+                line integer not null,
+                column integer not null,
+                confidence real not null
+            );
+
             create index if not exists idx_symbols_name on symbols(name);
             create index if not exists idx_symbols_qualified_name on symbols(qualified_name);
             create index if not exists idx_dependencies_source on dependencies(source_file_id);
             create index if not exists idx_dependencies_target on dependencies(target);
+            create index if not exists idx_calls_caller on calls(caller);
+            create index if not exists idx_calls_callee on calls(callee);
             ",
         )?;
         Ok(())
@@ -352,6 +457,7 @@ impl Store {
             .get_meta("schema_version")?
             .and_then(|value| value.parse::<i64>().ok());
         if version != Some(SCHEMA_VERSION) {
+            self.conn.execute("delete from calls", [])?;
             self.conn.execute("delete from dependencies", [])?;
             self.conn.execute("delete from symbols", [])?;
             self.conn.execute("delete from files", [])?;

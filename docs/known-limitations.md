@@ -27,6 +27,7 @@ These capabilities are useful but approximate:
 
 - Dependency extraction from imports and module declarations.
 - `dependency_graph` output.
+- Same-file `callers` and `callees` output.
 - `context_pack` file/range selection.
 - Reference classification as `definition`, `import`, `call`, or `text`.
 
@@ -92,6 +93,18 @@ Limitations:
 - Token estimation is approximate and based on character count.
 - It may include noisy references when the seed symbol is common.
 
+### `callers` and `callees`
+
+`callers` and `callees` use a same-file static call graph extracted from call expressions.
+
+Limitations:
+
+- Calls are resolved by normalized callee name, not by type information.
+- Cross-file calls are not resolved yet.
+- Imported calls are not linked to their defining file yet.
+- Dynamic dispatch, callbacks, reflection, macros, and higher-order functions are not modeled.
+- Method calls with the same method name on different types may be conflated.
+
 ## Supported Languages
 
 Current MVP support:
@@ -140,8 +153,8 @@ Do not treat current MVP output as a formal static-analysis proof.
 Near-term improvements:
 
 - Store file-to-file resolved dependencies.
-- Extract direct call expressions.
-- Add `callers` and `callees`.
+- Resolve imported calls where obvious.
+- Expand `callers` and `callees` beyond same-file analysis.
 - Improve import alias handling.
 - Exclude or down-rank tests and comments in reference search.
 - Add fixture repositories for each supported language.
@@ -153,4 +166,3 @@ Longer-term improvements:
 - Optional semantic search.
 - PR impact analysis.
 - Team index sharing.
-

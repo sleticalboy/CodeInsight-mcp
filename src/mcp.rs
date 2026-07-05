@@ -126,6 +126,18 @@ fn handle_tool_call(params: Value) -> Result<Value> {
                 token_budget,
             )?)?
         }
+        "callers" => {
+            let root = required_path(&arguments, "root")?;
+            let symbol = required_str(&arguments, "symbol")?;
+            let limit = optional_positive_usize(&arguments, "limit", 50)?;
+            serde_json::to_value(tools::callers_value(root, symbol, limit)?)?
+        }
+        "callees" => {
+            let root = required_path(&arguments, "root")?;
+            let symbol = required_str(&arguments, "symbol")?;
+            let limit = optional_positive_usize(&arguments, "limit", 50)?;
+            serde_json::to_value(tools::callees_value(root, symbol, limit)?)?
+        }
         _ => bail!("unknown tool: {name}"),
     };
 
@@ -230,6 +242,32 @@ fn tool_definitions() -> Value {
                     "token_budget": {"type": "integer", "minimum": 500}
                 },
                 "required": ["root", "task", "symbols"]
+            }
+        },
+        {
+            "name": "callers",
+            "description": "Return same-file static call sites that call a function or method.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "root": {"type": "string"},
+                    "symbol": {"type": "string"},
+                    "limit": {"type": "integer", "minimum": 1}
+                },
+                "required": ["root", "symbol"]
+            }
+        },
+        {
+            "name": "callees",
+            "description": "Return same-file static callees for a function or method.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "root": {"type": "string"},
+                    "symbol": {"type": "string"},
+                    "limit": {"type": "integer", "minimum": 1}
+                },
+                "required": ["root", "symbol"]
             }
         }
     ])
@@ -347,7 +385,10 @@ import os
 
 class AuthService:
     def login(self):
-        pass
+        return helper()
+
+def helper():
+    return "ok"
 "#,
         )
         .unwrap();
@@ -416,6 +457,32 @@ class AuthService:
         assert_eq!(
             context_result["structuredContent"]["files"][0]["file"].as_str(),
             Some("auth.py")
+        );
+
+        let callers_result = handle_tool_call(json!({
+            "name": "callers",
+            "arguments": {
+                "root": dir.path(),
+                "symbol": "helper"
+            }
+        }))
+        .unwrap();
+        assert_eq!(
+            callers_result["structuredContent"][0]["caller"].as_str(),
+            Some("AuthService.login")
+        );
+
+        let callees_result = handle_tool_call(json!({
+            "name": "callees",
+            "arguments": {
+                "root": dir.path(),
+                "symbol": "AuthService.login"
+            }
+        }))
+        .unwrap();
+        assert_eq!(
+            callees_result["structuredContent"][0]["callee"].as_str(),
+            Some("helper")
         );
     }
 

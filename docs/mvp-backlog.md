@@ -76,12 +76,12 @@ Rust is included early so the project can index itself during development.
 
 ### Call Graph
 
-- [ ] Extract function call expressions.
-- [ ] Resolve direct same-file calls.
+- [x] Extract function call expressions.
+- [x] Resolve direct same-file calls.
 - [ ] Resolve imported calls where obvious.
-- [ ] Implement `callers`.
-- [ ] Implement `callees`.
-- [ ] Include confidence score.
+- [x] Implement `callers`.
+- [x] Implement `callees`.
+- [x] Include confidence score.
 
 ### Quality
 
