@@ -53,7 +53,7 @@ Rust is included early so the project can index itself during development.
 - [x] Skip unchanged files during incremental indexing.
 - [ ] Store index metadata and schema version.
 - [x] Remove stale index entries for deleted files.
-- [ ] Report parse errors without failing whole index.
+- [x] Report parse errors without failing whole index.
 
 ### Agent Context
 

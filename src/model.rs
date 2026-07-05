@@ -121,7 +121,15 @@ pub struct ProjectIndexReport {
     pub skipped_files: usize,
     pub symbols: usize,
     pub changed_symbols: usize,
+    pub errors: Vec<IndexError>,
     pub duration_ms: u128,
+}
+
+#[derive(Debug, Serialize)]
+pub struct IndexError {
+    pub file: String,
+    pub stage: String,
+    pub message: String,
 }
 
 #[derive(Debug, Serialize)]

@@ -12,7 +12,7 @@ use tree_sitter::{Node, Parser, TreeCursor};
 
 use crate::{
     language::{detect_language, tree_sitter_language},
-    model::{Dependency, Language, ProjectIndexReport, SourceFile, Symbol, SymbolKind},
+    model::{Dependency, IndexError, Language, ProjectIndexReport, SourceFile, Symbol, SymbolKind},
     storage::Store,
 };
 
@@ -29,13 +29,25 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
     let mut skipped_files = 0;
     let mut symbol_count = 0;
     let mut seen_source_files = Vec::new();
+    let mut errors = Vec::new();
 
     for entry in WalkBuilder::new(&root)
         .hidden(false)
         .filter_entry(|entry| should_enter(entry.path()))
         .build()
     {
-        let entry = entry?;
+        let entry = match entry {
+            Ok(entry) => entry,
+            Err(error) => {
+                errors.push(IndexError {
+                    file: "<walk>".to_string(),
+                    stage: "walk".to_string(),
+                    message: error.to_string(),
+                });
+                skipped_files += 1;
+                continue;
+            }
+        };
         if !entry
             .file_type()
             .is_some_and(|file_type| file_type.is_file())
@@ -51,7 +63,8 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
 
         let source = match fs::read_to_string(path) {
             Ok(source) => source,
-            Err(_) => {
+            Err(error) => {
+                errors.push(index_error(path, "read", error));
                 skipped_files += 1;
                 continue;
             }
@@ -69,6 +82,30 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
             continue;
         }
 
+        let symbols = match extract_symbols(&source, language, &relative_path) {
+            Ok(symbols) => symbols,
+            Err(error) => {
+                errors.push(IndexError {
+                    file: relative_path.clone(),
+                    stage: "parse_symbols".to_string(),
+                    message: error.to_string(),
+                });
+                skipped_files += 1;
+                continue;
+            }
+        };
+        let dependencies = match extract_dependencies(&source, language, &relative_path) {
+            Ok(dependencies) => dependencies,
+            Err(error) => {
+                errors.push(IndexError {
+                    file: relative_path.clone(),
+                    stage: "parse_dependencies".to_string(),
+                    message: error.to_string(),
+                });
+                skipped_files += 1;
+                continue;
+            }
+        };
         let source_file = SourceFile {
             path: path.to_path_buf(),
             relative_path: relative_path.clone(),
@@ -76,13 +113,36 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
             hash,
             line_count: source.lines().count(),
         };
-        let symbols = extract_symbols(&source, language, &relative_path)
-            .with_context(|| format!("failed to parse {}", path.display()))?;
-        let dependencies = extract_dependencies(&source, language, &relative_path)
-            .with_context(|| format!("failed to extract dependencies from {}", path.display()))?;
-        let file_id = store.upsert_file(&source_file)?;
-        store.replace_symbols(file_id, &symbols)?;
-        store.replace_dependencies(file_id, &dependencies)?;
+        let file_id = match store.upsert_file(&source_file) {
+            Ok(file_id) => file_id,
+            Err(error) => {
+                errors.push(IndexError {
+                    file: relative_path.clone(),
+                    stage: "store_file".to_string(),
+                    message: error.to_string(),
+                });
+                skipped_files += 1;
+                continue;
+            }
+        };
+        if let Err(error) = store.replace_symbols(file_id, &symbols) {
+            errors.push(IndexError {
+                file: relative_path.clone(),
+                stage: "store_symbols".to_string(),
+                message: error.to_string(),
+            });
+            skipped_files += 1;
+            continue;
+        }
+        if let Err(error) = store.replace_dependencies(file_id, &dependencies) {
+            errors.push(IndexError {
+                file: relative_path.clone(),
+                stage: "store_dependencies".to_string(),
+                message: error.to_string(),
+            });
+            skipped_files += 1;
+            continue;
+        }
 
         changed_files += 1;
         symbol_count += symbols.len();
@@ -100,8 +160,17 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
         skipped_files,
         symbols: total_symbols,
         changed_symbols: symbol_count,
+        errors,
         duration_ms: started.elapsed().as_millis(),
     })
+}
+
+fn index_error(path: &Path, stage: &str, error: impl std::fmt::Display) -> IndexError {
+    IndexError {
+        file: path.display().to_string(),
+        stage: stage.to_string(),
+        message: error.to_string(),
+    }
 }
 
 pub fn outline_file(path: &Path) -> Result<Vec<Symbol>> {
@@ -738,6 +807,7 @@ const auth = require("./auth");
         assert_eq!(first.indexed_files, 1);
         assert_eq!(first.changed_files, 1);
         assert_eq!(first.unchanged_files, 0);
+        assert!(first.errors.is_empty());
 
         let second = index_project(dir.path(), false).unwrap();
         assert_eq!(second.indexed_files, 1);
