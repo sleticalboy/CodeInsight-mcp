@@ -24,7 +24,7 @@ Rust is included early so the project can index itself during development.
 - [x] Add Tree-sitter parser integration.
 - [x] Add basic symbol extraction tests.
 - [x] Add project planning docs.
-- [ ] Add release build workflow.
+- [x] Add release build workflow.
 - [x] Add fixture-based integration tests.
 
 ### CLI

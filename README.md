@@ -107,4 +107,8 @@ cargo fmt
 cargo test
 ```
 
+## Release Builds
+
+The `Release Build` workflow can be triggered manually or by pushing a `v*` tag. It builds Linux and macOS artifacts and uploads them as workflow artifacts. It does not create a GitHub Release yet.
+
 The first MVP intentionally avoids external services such as Qdrant, pgvector, Neo4j, or Apache AGE. The default path must remain local, single-binary, and low configuration.
