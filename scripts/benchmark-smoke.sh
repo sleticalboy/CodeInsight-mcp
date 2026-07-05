@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WORK_DIR="${CODEINSIGHT_BENCH_WORKDIR:-${TMPDIR:-/tmp}/codeinsight-benchmark}"
 CODEINSIGHT_BIN="${CODEINSIGHT_BIN:-$ROOT_DIR/target/release/codeinsight}"
 BENCH_PROFILE="${CODEINSIGHT_BENCH_PROFILE:-smoke}"
+DISABLE_BUDGETS="${CODEINSIGHT_BENCH_DISABLE_BUDGETS:-0}"
 REPORT_FILE=""
 
 REPO_NAMES=()
@@ -12,7 +13,9 @@ REPO_URLS=()
 REPO_LANGUAGES=()
 REPO_CONTEXT_FILES=()
 REPO_CONTEXT_TASKS=()
+REPO_MAX_INDEX_MS=()
 OUTPUT=""
+BUDGET_FAILURES=0
 
 configure_profile() {
   case "$BENCH_PROFILE" in
@@ -48,6 +51,12 @@ configure_profile() {
         "understand hello server behavior"
         "understand memchr finder API"
       )
+      REPO_MAX_INDEX_MS=(
+        5000
+        5000
+        5000
+        10000
+      )
       ;;
     large)
       OUTPUT="${CODEINSIGHT_BENCH_OUTPUT:-$ROOT_DIR/docs/benchmark-large.md}"
@@ -80,6 +89,12 @@ configure_profile() {
         "understand flask application dispatch behavior"
         "understand gin engine routing behavior"
         "understand tokio runtime public API"
+      )
+      REPO_MAX_INDEX_MS=(
+        10000
+        5000
+        5000
+        20000
       )
       ;;
     *)
@@ -159,12 +174,36 @@ Environment:
 - Work directory: temporary clone directory
 - Index mode: forced clean index per repository
 - Context pack mode: one stable file seed per repository, 6000 token budget
+- Index budget mode: $(budget_mode)
 
 ## Summary
 
-| Repository | Focus | Commit | Files | Lines | Symbols | Skipped | Errors | Index ms | DB size | Context files | Ranges | Tokens | Truncated | First context file |
-| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| Repository | Focus | Commit | Files | Lines | Symbols | Skipped | Errors | Index ms | Index budget ms | Budget status | DB size | Context files | Ranges | Tokens | Truncated | First context file |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | --- | --- |
 EOF
+}
+
+budget_mode() {
+  if [ "$DISABLE_BUDGETS" = "1" ]; then
+    printf "disabled"
+  else
+    printf "enabled"
+  fi
+}
+
+budget_status() {
+  local duration="$1"
+  local budget="$2"
+
+  if [ "$DISABLE_BUDGETS" = "1" ]; then
+    printf "skipped"
+  elif [ "$budget" -le 0 ]; then
+    printf "n/a"
+  elif [ "$duration" -le "$budget" ]; then
+    printf "pass"
+  else
+    printf "fail"
+  fi
 }
 
 append_summary_row() {
@@ -174,8 +213,9 @@ append_summary_row() {
   local index_json="$4"
   local overview_json="$5"
   local context_json="$6"
+  local max_index_ms="$7"
 
-  local commit files lines symbols skipped errors duration db_size context_files ranges tokens truncated first_context_file
+  local commit files lines symbols skipped errors duration budget db_size context_files ranges tokens truncated first_context_file status
   commit="$(git -C "$repo_dir" rev-parse --short HEAD)"
   files="$(json_value "$index_json" '.indexed_files')"
   lines="$(json_value "$overview_json" '[.languages[].lines] | add // 0')"
@@ -183,15 +223,21 @@ append_summary_row() {
   skipped="$(json_value "$index_json" '.skipped_files')"
   errors="$(json_value "$index_json" '.errors | length')"
   duration="$(json_value "$index_json" '.duration_ms')"
+  budget="$max_index_ms"
   db_size="$(du -h "$repo_dir/.codeinsight/index.db" | awk '{print $1}')"
   context_files="$(json_value "$context_json" '.files | length')"
   ranges="$(json_value "$context_json" '[.files[].ranges | length] | add // 0')"
   tokens="$(json_value "$context_json" '.estimated_tokens')"
   truncated="$(json_value "$context_json" '.truncated')"
   first_context_file="$(json_value "$context_json" '.files[0].file // "-"')"
+  status="$(budget_status "$duration" "$budget")"
 
-  printf "| %s | %s | \`%s\` | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | \`%s\` |\n" \
-    "$name" "$language" "$commit" "$files" "$lines" "$symbols" "$skipped" "$errors" "$duration" "$db_size" \
+  if [ "$status" = "fail" ]; then
+    BUDGET_FAILURES=$((BUDGET_FAILURES + 1))
+  fi
+
+  printf "| %s | %s | \`%s\` | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | \`%s\` |\n" \
+    "$name" "$language" "$commit" "$files" "$lines" "$symbols" "$skipped" "$errors" "$duration" "$budget" "$status" "$db_size" \
     "$context_files" "$ranges" "$tokens" "$truncated" "$first_context_file" \
     >>"$REPORT_FILE"
 }
@@ -205,6 +251,10 @@ append_detail_section() {
   local context_json="$6"
   local context_file="$7"
   local context_task="$8"
+  local max_index_ms="$9"
+  local duration status
+  duration="$(json_value "$index_json" '.duration_ms')"
+  status="$(budget_status "$duration" "$max_index_ms")"
 
   {
     echo
@@ -214,7 +264,8 @@ append_detail_section() {
     echo "- Commit: \`$(git -C "$repo_dir" rev-parse HEAD)\`"
     echo "- Indexed files: $(json_value "$index_json" '.indexed_files')"
     echo "- Symbols: $(json_value "$index_json" '.symbols')"
-    echo "- Duration: $(json_value "$index_json" '.duration_ms') ms"
+    echo "- Duration: $duration ms"
+    echo "- Index budget: $max_index_ms ms ($status)"
     echo "- Context seed file: \`$context_file\`"
     echo "- Context task: $context_task"
     echo "- Context files: $(json_value "$context_json" '.files | length')"
@@ -278,6 +329,7 @@ main() {
     language="${REPO_LANGUAGES[$i]}"
     context_file="${REPO_CONTEXT_FILES[$i]}"
     context_task="${REPO_CONTEXT_TASKS[$i]}"
+    max_index_ms="${REPO_MAX_INDEX_MS[$i]}"
     repo_dir="$WORK_DIR/repos/$name"
     index_json="$WORK_DIR/results/$name-index.json"
     overview_json="$WORK_DIR/results/$name-overview.json"
@@ -292,7 +344,7 @@ main() {
       --file "$context_file" \
       --token-budget 6000 \
       >"$context_json"
-    append_summary_row "$name" "$language" "$repo_dir" "$index_json" "$overview_json" "$context_json"
+    append_summary_row "$name" "$language" "$repo_dir" "$index_json" "$overview_json" "$context_json" "$max_index_ms"
   done
 
   cat >>"$REPORT_FILE" <<EOF
@@ -309,11 +361,16 @@ EOF
     context_json="$WORK_DIR/results/$name-context.json"
     context_file="${REPO_CONTEXT_FILES[$i]}"
     context_task="${REPO_CONTEXT_TASKS[$i]}"
-    append_detail_section "$name" "$url" "$repo_dir" "$index_json" "$overview_json" "$context_json" "$context_file" "$context_task"
+    max_index_ms="${REPO_MAX_INDEX_MS[$i]}"
+    append_detail_section "$name" "$url" "$repo_dir" "$index_json" "$overview_json" "$context_json" "$context_file" "$context_task" "$max_index_ms"
   done
 
   mv "$REPORT_FILE" "$OUTPUT"
   echo "wrote $OUTPUT"
+  if [ "$BUDGET_FAILURES" -gt 0 ]; then
+    echo "benchmark budget failures: $BUDGET_FAILURES" >&2
+    exit 1
+  fi
 }
 
 main "$@"

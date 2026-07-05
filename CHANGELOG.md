@@ -8,6 +8,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ### Added
 
+- Benchmark profiles now report index budgets and fail when fixture index times exceed guardrail thresholds.
 - Large repository benchmark profile and generated report for Express, Flask, Gin, and Tokio.
 - `callers` and `callees` now include imported callee file hints when a call target matches a symbol in a resolved local dependency.
 - Release install smoke script and CI coverage for packaged installer artifacts.

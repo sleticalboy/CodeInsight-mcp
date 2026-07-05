@@ -44,7 +44,7 @@ Implemented:
 
 Next:
 
-- add benchmark regression guardrails for large repository fixtures
+- add token/context reduction metrics to benchmark reports
 
 ## Install From Release
 
@@ -197,6 +197,10 @@ Run benchmark profiles:
 scripts/benchmark-smoke.sh
 CODEINSIGHT_BENCH_PROFILE=large scripts/benchmark-smoke.sh
 ```
+
+Benchmark profiles fail if index times exceed fixture guardrail budgets. To
+refresh reports without enforcing budgets, set
+`CODEINSIGHT_BENCH_DISABLE_BUDGETS=1`.
 
 ## Release Builds
 
