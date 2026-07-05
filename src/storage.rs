@@ -480,6 +480,19 @@ impl Store {
             create index if not exists idx_calls_callee on calls(callee);
             ",
         )?;
+        self.ensure_column("dependencies", "resolved_file", "resolved_file text")?;
+        Ok(())
+    }
+
+    fn ensure_column(&self, table: &str, column: &str, definition: &str) -> Result<()> {
+        let mut stmt = self.conn.prepare(&format!("pragma table_info({table})"))?;
+        let columns = stmt
+            .query_map([], |row| row.get::<_, String>(1))?
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+        if !columns.iter().any(|existing| existing == column) {
+            self.conn
+                .execute(&format!("alter table {table} add column {definition}"), [])?;
+        }
         Ok(())
     }
 
@@ -565,4 +578,95 @@ fn unix_timestamp() -> i64 {
         .duration_since(std::time::UNIX_EPOCH)
         .map(|duration| duration.as_secs() as i64)
         .unwrap_or_default()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn migrates_missing_resolved_file_column_even_when_meta_is_current() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let cache = cache_dir(temp.path());
+        std::fs::create_dir_all(&cache)?;
+        let conn = Connection::open(cache.join("index.db"))?;
+        conn.execute_batch(
+            "
+            create table index_meta (
+                key text primary key,
+                value text not null
+            );
+            insert into index_meta (key, value) values ('schema_version', '3');
+
+            create table files (
+                id integer primary key autoincrement,
+                path text not null unique,
+                language text not null,
+                hash text not null,
+                line_count integer not null
+            );
+
+            create table symbols (
+                id integer primary key autoincrement,
+                file_id integer not null references files(id) on delete cascade,
+                name text not null,
+                qualified_name text not null,
+                kind text not null,
+                language text not null,
+                start_line integer not null,
+                end_line integer not null
+            );
+
+            create table dependencies (
+                id integer primary key autoincrement,
+                source_file_id integer not null references files(id) on delete cascade,
+                target text not null,
+                kind text not null,
+                language text not null,
+                line integer not null
+            );
+
+            create table calls (
+                id integer primary key autoincrement,
+                source_file_id integer not null references files(id) on delete cascade,
+                caller text not null,
+                callee text not null,
+                language text not null,
+                line integer not null,
+                column integer not null,
+                confidence real not null
+            );
+            ",
+        )?;
+        drop(conn);
+
+        let mut store = Store::open(temp.path())?;
+        let file_id = store.upsert_file(&SourceFile {
+            path: temp.path().join("src/main.rs"),
+            relative_path: "src/main.rs".to_string(),
+            language: Language::Rust,
+            hash: "hash".to_string(),
+            line_count: 1,
+        })?;
+        store.replace_dependencies(
+            file_id,
+            &[Dependency {
+                source_file: "src/main.rs".to_string(),
+                target: "crate::lib".to_string(),
+                resolved_file: Some("src/lib.rs".to_string()),
+                kind: "use".to_string(),
+                language: Language::Rust,
+                line: 1,
+            }],
+        )?;
+
+        let graph = store.dependency_graph(temp.path(), 10)?;
+        assert_eq!(graph.dependencies.len(), 1);
+        assert_eq!(
+            graph.dependencies[0].resolved_file.as_deref(),
+            Some("src/lib.rs")
+        );
+
+        Ok(())
+    }
 }
