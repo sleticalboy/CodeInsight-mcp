@@ -1,14 +1,14 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
-use rusqlite::{Connection, params};
+use rusqlite::{Connection, OptionalExtension, params};
 
 use crate::model::{
     CallEdge, Dependency, DependencyGraph, DirectoryStat, Language, LanguageStat, ProjectOverview,
     SourceFile, Symbol, SymbolKind,
 };
 
-pub const SCHEMA_VERSION: i64 = 3;
+pub const SCHEMA_VERSION: i64 = 4;
 pub const INDEX_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub struct Store {
@@ -85,14 +85,15 @@ impl Store {
         {
             let mut stmt = tx.prepare(
                 "insert into calls
-                 (source_file_id, caller, callee, language, line, column, confidence)
-                 values (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                 (source_file_id, caller, callee, callee_file, language, line, column, confidence)
+                 values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
             )?;
             for call in calls {
                 stmt.execute(params![
                     file_id,
                     call.caller,
                     call.callee,
+                    call.callee_file,
                     call.language.as_str(),
                     call.line as i64,
                     call.column as i64,
@@ -369,7 +370,7 @@ impl Store {
 
     pub fn callers(&self, symbol: &str, limit: usize) -> Result<Vec<CallEdge>> {
         self.call_edges(
-            "select f.path, c.caller, c.callee, c.language, c.line, c.column, c.confidence
+            "select f.path, c.caller, c.callee, c.callee_file, c.language, c.line, c.column, c.confidence
              from calls c
              join files f on f.id = c.source_file_id
              where c.callee = ?1 or c.callee like ?2
@@ -383,7 +384,7 @@ impl Store {
 
     pub fn callees(&self, symbol: &str, limit: usize) -> Result<Vec<CallEdge>> {
         self.call_edges(
-            "select f.path, c.caller, c.callee, c.language, c.line, c.column, c.confidence
+            "select f.path, c.caller, c.callee, c.callee_file, c.language, c.line, c.column, c.confidence
              from calls c
              join files f on f.id = c.source_file_id
              where c.caller = ?1 or c.caller like ?2
@@ -404,18 +405,77 @@ impl Store {
     ) -> Result<Vec<CallEdge>> {
         let mut stmt = self.conn.prepare(sql)?;
         let rows = stmt.query_map(params![exact, suffix, limit as i64], |row| {
-            let language: String = row.get(3)?;
+            let language: String = row.get(4)?;
             Ok(CallEdge {
                 file: row.get(0)?,
                 caller: row.get(1)?,
                 callee: row.get(2)?,
+                callee_file: row.get(3)?,
                 language: parse_language(&language),
-                line: row.get::<_, i64>(4)? as usize,
-                column: row.get::<_, i64>(5)? as usize,
-                confidence: row.get(6)?,
+                line: row.get::<_, i64>(5)? as usize,
+                column: row.get::<_, i64>(6)? as usize,
+                confidence: row.get(7)?,
             })
         })?;
         Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
+    pub fn resolve_imported_calls(&self) -> Result<usize> {
+        let unresolved = {
+            let mut stmt = self.conn.prepare(
+                "select id, source_file_id, callee
+                 from calls
+                 where callee_file is null
+                 order by id",
+            )?;
+            stmt.query_map([], |row| {
+                Ok((
+                    row.get::<_, i64>(0)?,
+                    row.get::<_, i64>(1)?,
+                    row.get::<_, String>(2)?,
+                ))
+            })?
+            .collect::<rusqlite::Result<Vec<_>>>()?
+        };
+
+        let mut updated = 0;
+        let mut resolve_stmt = self.conn.prepare(
+            "select target_files.path
+             from dependencies d
+             join files target_files on target_files.path = d.resolved_file
+             join symbols s on s.file_id = target_files.id
+             where d.source_file_id = ?1
+               and (
+                 s.name = ?2
+                 or s.qualified_name = ?2
+                 or s.qualified_name like ?3
+               )
+             order by
+               case when s.name = ?2 then 0 else 1 end,
+               length(s.qualified_name),
+               d.line,
+               s.start_line
+             limit 1",
+        )?;
+        for (call_id, source_file_id, callee) in unresolved {
+            let suffix = format!("%.{}", callee);
+            let target_file = resolve_stmt
+                .query_row(params![source_file_id, callee, suffix], |row| {
+                    row.get::<_, String>(0)
+                })
+                .optional()?;
+            if let Some(target_file) = target_file {
+                self.conn.execute(
+                    "update calls
+                     set callee_file = ?1, confidence = max(confidence, 0.72)
+                     where id = ?2",
+                    params![target_file, call_id],
+                )?;
+                updated += 1;
+            }
+        }
+
+        Ok(updated)
     }
 
     pub fn indexed_files(&self) -> Result<Vec<String>> {
@@ -466,6 +526,7 @@ impl Store {
                 source_file_id integer not null references files(id) on delete cascade,
                 caller text not null,
                 callee text not null,
+                callee_file text,
                 language text not null,
                 line integer not null,
                 column integer not null,
@@ -481,6 +542,7 @@ impl Store {
             ",
         )?;
         self.ensure_column("dependencies", "resolved_file", "resolved_file text")?;
+        self.ensure_column("calls", "callee_file", "callee_file text")?;
         Ok(())
     }
 
@@ -666,6 +728,91 @@ mod tests {
             graph.dependencies[0].resolved_file.as_deref(),
             Some("src/lib.rs")
         );
+
+        Ok(())
+    }
+
+    #[test]
+    fn migrates_missing_call_callee_file_column_even_when_meta_is_current() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let cache = cache_dir(temp.path());
+        std::fs::create_dir_all(&cache)?;
+        let conn = Connection::open(cache.join("index.db"))?;
+        conn.execute_batch(
+            "
+            create table index_meta (
+                key text primary key,
+                value text not null
+            );
+            insert into index_meta (key, value) values ('schema_version', '4');
+
+            create table files (
+                id integer primary key autoincrement,
+                path text not null unique,
+                language text not null,
+                hash text not null,
+                line_count integer not null
+            );
+
+            create table symbols (
+                id integer primary key autoincrement,
+                file_id integer not null references files(id) on delete cascade,
+                name text not null,
+                qualified_name text not null,
+                kind text not null,
+                language text not null,
+                start_line integer not null,
+                end_line integer not null
+            );
+
+            create table dependencies (
+                id integer primary key autoincrement,
+                source_file_id integer not null references files(id) on delete cascade,
+                target text not null,
+                resolved_file text,
+                kind text not null,
+                language text not null,
+                line integer not null
+            );
+
+            create table calls (
+                id integer primary key autoincrement,
+                source_file_id integer not null references files(id) on delete cascade,
+                caller text not null,
+                callee text not null,
+                language text not null,
+                line integer not null,
+                column integer not null,
+                confidence real not null
+            );
+            ",
+        )?;
+        drop(conn);
+
+        let mut store = Store::open(temp.path())?;
+        let file_id = store.upsert_file(&SourceFile {
+            path: temp.path().join("src/main.ts"),
+            relative_path: "src/main.ts".to_string(),
+            language: Language::TypeScript,
+            hash: "hash".to_string(),
+            line_count: 1,
+        })?;
+        store.replace_calls(
+            file_id,
+            &[CallEdge {
+                file: "src/main.ts".to_string(),
+                caller: "main".to_string(),
+                callee: "render".to_string(),
+                callee_file: Some("src/ui.ts".to_string()),
+                language: Language::TypeScript,
+                line: 1,
+                column: 1,
+                confidence: 0.72,
+            }],
+        )?;
+
+        let calls = store.callees("main", 10)?;
+        assert_eq!(calls[0].callee_file.as_deref(), Some("src/ui.ts"));
 
         Ok(())
     }

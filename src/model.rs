@@ -91,6 +91,7 @@ pub struct CallEdge {
     pub file: String,
     pub caller: String,
     pub callee: String,
+    pub callee_file: Option<String>,
     pub language: Language,
     pub line: usize,
     pub column: usize,

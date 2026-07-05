@@ -209,6 +209,21 @@ fn cli_indexes_and_queries_fixture_project() {
             .iter()
             .any(|call| call["callee"] == "helper")
     );
+
+    let imported_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "main",
+        "--limit",
+        "5",
+    ]);
+    assert!(
+        imported_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| { call["callee"] == "render" && call["callee_file"] == "src/ui.ts" })
+    );
 }
 
 #[test]

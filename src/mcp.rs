@@ -252,7 +252,7 @@ fn tool_definitions() -> Value {
         },
         {
             "name": "callers",
-            "description": "Return same-file static call sites that call a function or method.",
+            "description": "Return static call sites that call a function or method, including imported target file hints when available.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -265,7 +265,7 @@ fn tool_definitions() -> Value {
         },
         {
             "name": "callees",
-            "description": "Return same-file static callees for a function or method.",
+            "description": "Return static callees for a function or method, including imported target file hints when available.",
             "inputSchema": {
                 "type": "object",
                 "properties": {

@@ -8,6 +8,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ### Added
 
+- `callers` and `callees` now include imported callee file hints when a call target matches a symbol in a resolved local dependency.
 - Release install smoke script and CI coverage for packaged installer artifacts.
 - `context_pack` now accepts file seeds through CLI `--file` and MCP `files`.
 - `context_pack` now applies explicit candidate scoring before token-budget selection.

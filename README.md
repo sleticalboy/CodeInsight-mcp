@@ -34,7 +34,7 @@ Implemented:
 - per-file indexing errors in reports without aborting the whole project scan
 - Tree-sitter parsing for TypeScript/JavaScript, Python, Go, and Rust
 - symbol extraction for common declarations
-- dependency graph, text reference search, context packs, and same-file call graph tools
+- dependency graph, text reference search, context packs, and call graph tools with imported target hints
 - relative file resolution for local dependency graph edges
 - `index`, `overview`, `symbols`, `outline`, `dependency-graph`, `find-references`, `context-pack`, `callers`, and `callees` CLI commands
 - MCP stdio `initialize`, `tools/list`, and `tools/call` for P0 tools
@@ -43,7 +43,6 @@ Implemented:
 
 Next:
 
-- imported call resolution
 - benchmark fixtures for larger repositories
 
 ## Install From Release
@@ -141,7 +140,7 @@ cargo run -- context-pack /path/to/repo --task "understand auth flow" --symbol A
 cargo run -- context-pack /path/to/repo --task "understand auth module" --file src/auth.ts --token-budget 6000
 ```
 
-Inspect same-file call graph:
+Inspect the static call graph:
 
 ```bash
 cargo run -- callers /path/to/repo helper
@@ -180,7 +179,7 @@ For client setup snippets, see [MCP client configuration](docs/mcp-client-config
 
 `context_pack` combines symbol search, file seeds, reference search, and resolved local dependencies into a token-budgeted context bundle for agents. It ranks candidates before applying the token budget: explicit file seeds first, then symbol definitions, references, and resolved local dependencies, with task keywords used as a lightweight relevance boost. File seeds include header/import context and primary top-level symbols instead of blindly copying the first chunk of a file. The first version is deterministic and local-only; it does not use embeddings.
 
-`callers` and `callees` currently use a same-file static call graph. They are useful navigation signals, not full type-aware call hierarchy results.
+`callers` and `callees` use a static call graph. Calls include same-file caller/callee names, and simple imported calls can include `callee_file` when an import resolves to an indexed local file with a matching symbol. They are useful navigation signals, not full type-aware call hierarchy results.
 
 For accuracy boundaries and current non-goals, see [Known limitations](docs/known-limitations.md).
 

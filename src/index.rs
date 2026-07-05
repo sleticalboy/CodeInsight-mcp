@@ -162,6 +162,7 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
         symbol_count += symbols.len();
     }
     let deleted_files = store.delete_files_not_in(&seen_source_files)?;
+    store.resolve_imported_calls()?;
     let total_indexed_files = store.count_files()?;
     let total_symbols = store.count_symbols()?;
     store.mark_indexed()?;
@@ -284,6 +285,7 @@ fn visit_call_node(
             file: source_file.to_string(),
             caller,
             callee,
+            callee_file: None,
             language,
             line,
             column: node.start_position().column + 1,
