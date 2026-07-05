@@ -16,6 +16,7 @@ The product direction and execution plan live in:
 - [Implementation plan](docs/implementation-plan.md)
 - [MVP backlog](docs/mvp-backlog.md)
 - [Known limitations](docs/known-limitations.md)
+- [Changelog](CHANGELOG.md)
 
 ## Current Status
 
@@ -39,9 +40,9 @@ Implemented:
 
 Next:
 
-- file-to-file dependency resolution
 - imported call resolution
 - benchmark fixtures for larger repositories
+- v0.1.0 release packaging
 
 ## Install From Source
 
@@ -73,6 +74,31 @@ Print a file outline:
 
 ```bash
 cargo run -- outline /path/to/repo/src/auth.ts
+```
+
+Print local dependencies:
+
+```bash
+cargo run -- dependency-graph /path/to/repo --limit 50
+```
+
+Find references:
+
+```bash
+cargo run -- find-references /path/to/repo AuthService --include-definitions
+```
+
+Build an agent context pack:
+
+```bash
+cargo run -- context-pack /path/to/repo --task "understand auth flow" --symbol AuthService --token-budget 6000
+```
+
+Inspect same-file call graph:
+
+```bash
+cargo run -- callers /path/to/repo helper
+cargo run -- callees /path/to/repo AuthService.login
 ```
 
 Start the MCP stdio server scaffold:
