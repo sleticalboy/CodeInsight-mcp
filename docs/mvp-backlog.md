@@ -88,7 +88,7 @@ Rust is included early so the project can index itself during development.
 - [ ] Add sample fixture repositories.
 - [x] Add CLI integration tests with `assert_cmd`.
 - [ ] Benchmark 10k, 50k, and 100k line repositories.
-- [ ] Document known accuracy limits.
+- [x] Document known accuracy limits.
 
 ## P2
 

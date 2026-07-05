@@ -15,6 +15,7 @@ The product direction and execution plan live in:
 - [Product prototype](docs/product-prototype.md)
 - [Implementation plan](docs/implementation-plan.md)
 - [MVP backlog](docs/mvp-backlog.md)
+- [Known limitations](docs/known-limitations.md)
 
 ## Current Status
 
@@ -99,6 +100,8 @@ Example `tools/call` request:
 `find_references` is currently a fast text-reference pass over indexed files. It returns file, line, column, context, an approximate reference kind, and a confidence score. It is not yet a full language-server-grade semantic reference resolver.
 
 `context_pack` combines symbol search and reference search into a token-budgeted context bundle for agents. The first version is deterministic and local-only; it does not use embeddings.
+
+For accuracy boundaries and current non-goals, see [Known limitations](docs/known-limitations.md).
 
 ## Development
 
