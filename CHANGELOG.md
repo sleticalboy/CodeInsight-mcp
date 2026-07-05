@@ -6,6 +6,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-07-05
+
 ### Added
 
 - Release asset installer for macOS and Linux.
