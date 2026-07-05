@@ -339,6 +339,34 @@ impl Store {
         })
     }
 
+    pub fn resolved_dependencies_for_files(&self, files: &[String]) -> Result<Vec<Dependency>> {
+        let mut dependencies = Vec::new();
+        let mut stmt = self.conn.prepare(
+            "select f.path, d.target, d.resolved_file, d.kind, d.language, d.line
+             from dependencies d
+             join files f on f.id = d.source_file_id
+             where f.path = ?1 and d.resolved_file is not null
+             order by d.line",
+        )?;
+
+        for file in files {
+            let rows = stmt.query_map(params![file], |row| {
+                let language: String = row.get(4)?;
+                Ok(Dependency {
+                    source_file: row.get(0)?,
+                    target: row.get(1)?,
+                    resolved_file: row.get(2)?,
+                    kind: row.get(3)?,
+                    language: parse_language(&language),
+                    line: row.get::<_, i64>(5)? as usize,
+                })
+            })?;
+            dependencies.extend(rows.collect::<rusqlite::Result<Vec<_>>>()?);
+        }
+
+        Ok(dependencies)
+    }
+
     pub fn callers(&self, symbol: &str, limit: usize) -> Result<Vec<CallEdge>> {
         self.call_edges(
             "select f.path, c.caller, c.callee, c.language, c.line, c.column, c.confidence

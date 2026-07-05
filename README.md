@@ -103,7 +103,7 @@ Example `tools/call` request:
 
 `find_references` is currently a fast text-reference pass over indexed files. It returns file, line, column, context, an approximate reference kind, and a confidence score. It is not yet a full language-server-grade semantic reference resolver.
 
-`context_pack` combines symbol search and reference search into a token-budgeted context bundle for agents. The first version is deterministic and local-only; it does not use embeddings.
+`context_pack` combines symbol search, reference search, and resolved local dependencies into a token-budgeted context bundle for agents. The first version is deterministic and local-only; it does not use embeddings.
 
 `callers` and `callees` currently use a same-file static call graph. They are useful navigation signals, not full type-aware call hierarchy results.
 

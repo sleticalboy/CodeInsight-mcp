@@ -78,6 +78,23 @@ fn cli_indexes_and_queries_fixture_project() {
             .iter()
             .any(|file| { file["file"] == "src/auth.py" })
     );
+    let main_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand ui flow",
+        "--symbol",
+        "main",
+        "--token-budget",
+        "1600",
+    ]);
+    assert!(
+        main_context["files"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|file| { file["file"] == "src/ui.ts" })
+    );
 
     let callers = run_json([
         "callers",

@@ -180,6 +180,21 @@ pub fn context_pack_value(
             ));
     }
 
+    let selected_files = ranges_by_file.keys().cloned().collect::<Vec<_>>();
+    let store = Store::open(&root)?;
+    for dependency in store.resolved_dependencies_for_files(&selected_files)? {
+        if let Some(resolved_file) = dependency.resolved_file {
+            ranges_by_file.entry(resolved_file).or_default().push((
+                1,
+                40,
+                format!(
+                    "Local dependency of {} via {}",
+                    dependency.source_file, dependency.target
+                ),
+            ));
+        }
+    }
+
     let mut estimated_tokens = estimate_tokens(&task);
     let mut files = Vec::new();
     let mut truncated = false;
