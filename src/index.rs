@@ -97,7 +97,7 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
                 continue;
             }
         };
-        let dependencies = match extract_dependencies(&source, language, &relative_path) {
+        let mut dependencies = match extract_dependencies(&source, language, &relative_path) {
             Ok(dependencies) => dependencies,
             Err(error) => {
                 errors.push(IndexError {
@@ -109,6 +109,7 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
                 continue;
             }
         };
+        resolve_dependencies(&root, &mut dependencies);
         let calls = extract_calls(&source, language, &relative_path, &symbols);
         let source_file = SourceFile {
             path: path.to_path_buf(),
@@ -503,12 +504,103 @@ fn text_dependencies(
         .into_iter()
         .map(|target| Dependency {
             source_file: source_file.to_string(),
+            resolved_file: None,
             target,
             kind: kind.to_string(),
             language,
             line: node.start_position().row + 1,
         })
         .collect()
+}
+
+fn resolve_dependencies(root: &Path, dependencies: &mut [Dependency]) {
+    for dependency in dependencies {
+        dependency.resolved_file = resolve_dependency(root, dependency);
+    }
+}
+
+fn resolve_dependency(root: &Path, dependency: &Dependency) -> Option<String> {
+    match dependency.language {
+        Language::JavaScript | Language::TypeScript | Language::Tsx => resolve_relative_target(
+            root,
+            &dependency.source_file,
+            &dependency.target,
+            &["ts", "tsx", "js", "jsx", "mjs", "cjs"],
+        ),
+        Language::Python => resolve_python_target(root, dependency),
+        Language::Rust => resolve_rust_target(root, dependency),
+        Language::Go => None,
+    }
+}
+
+fn resolve_python_target(root: &Path, dependency: &Dependency) -> Option<String> {
+    if dependency.target.starts_with('.') {
+        let relative = dependency.target.replace('.', "/");
+        resolve_relative_target(root, &dependency.source_file, &relative, &["py"])
+    } else {
+        resolve_module_target(root, &dependency.target.replace('.', "/"), &["py"])
+    }
+}
+
+fn resolve_rust_target(root: &Path, dependency: &Dependency) -> Option<String> {
+    if dependency.kind == "mod" {
+        let source_dir = Path::new(&dependency.source_file)
+            .parent()
+            .unwrap_or(Path::new(""));
+        let direct = source_dir.join(format!("{}.rs", dependency.target));
+        let nested = source_dir.join(&dependency.target).join("mod.rs");
+        return existing_relative(root, vec![direct, nested]);
+    }
+
+    None
+}
+
+fn resolve_relative_target(
+    root: &Path,
+    source_file: &str,
+    target: &str,
+    extensions: &[&str],
+) -> Option<String> {
+    if !(target.starts_with("./") || target.starts_with("../") || target.starts_with('/')) {
+        return None;
+    }
+
+    let source_dir = Path::new(source_file).parent().unwrap_or(Path::new(""));
+    let base = if let Some(stripped) = target.strip_prefix('/') {
+        PathBuf::from(stripped)
+    } else {
+        source_dir.join(target)
+    };
+
+    resolve_base(root, base, extensions)
+}
+
+fn resolve_module_target(root: &Path, target: &str, extensions: &[&str]) -> Option<String> {
+    resolve_base(root, PathBuf::from(target), extensions)
+}
+
+fn resolve_base(root: &Path, base: PathBuf, extensions: &[&str]) -> Option<String> {
+    let mut candidates = vec![base.clone()];
+    for extension in extensions {
+        candidates.push(base.with_extension(extension));
+        candidates.push(base.join(format!("index.{extension}")));
+        candidates.push(base.join(format!("__init__.{extension}")));
+    }
+    existing_relative(root, candidates)
+}
+
+fn existing_relative<I>(root: &Path, candidates: I) -> Option<String>
+where
+    I: IntoIterator<Item = PathBuf>,
+{
+    for candidate in candidates {
+        let full = root.join(&candidate);
+        if full.is_file() {
+            let normalized = normalize_path(&candidate);
+            return Some(normalized.to_string_lossy().replace('\\', "/"));
+        }
+    }
+    None
 }
 
 fn string_literal_targets(text: &str) -> Vec<String> {
@@ -921,6 +1013,30 @@ const auth = require("./auth");
         assert!(targets.contains(&"app.auth"));
         assert!(targets.contains(&"os"));
         assert!(targets.contains(&"sys"));
+    }
+
+    #[test]
+    fn resolves_relative_dependencies() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let src = dir.path().join("src");
+        std::fs::create_dir_all(&src).unwrap();
+        std::fs::write(
+            src.join("main.ts"),
+            "import { AuthService } from './auth';\n",
+        )
+        .unwrap();
+        std::fs::write(src.join("auth.ts"), "export class AuthService {}\n").unwrap();
+
+        let report = index_project(dir.path(), false).unwrap();
+        assert_eq!(report.errors.len(), 0);
+
+        let store = Store::open(dir.path()).unwrap();
+        let graph = store.dependency_graph(dir.path(), 10).unwrap();
+        assert!(graph.dependencies.iter().any(|dependency| {
+            dependency.source_file == "src/main.ts"
+                && dependency.target == "./auth"
+                && dependency.resolved_file.as_deref() == Some("src/auth.ts")
+        }));
     }
 
     #[test]

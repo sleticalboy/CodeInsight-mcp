@@ -9,13 +9,13 @@ fn cli_indexes_and_queries_fixture_project() {
     let fixture = fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 3);
-    assert_eq!(index["changed_files"], 3);
+    assert_eq!(index["indexed_files"], 4);
+    assert_eq!(index["changed_files"], 4);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let second_index = run_json(["index", fixture.path().to_str().unwrap()]);
     assert_eq!(second_index["changed_files"], 0);
-    assert_eq!(second_index["unchanged_files"], 3);
+    assert_eq!(second_index["unchanged_files"], 4);
 
     let symbols = run_json([
         "symbols",
@@ -39,7 +39,16 @@ fn cli_indexes_and_queries_fixture_project() {
         .filter_map(|dependency| dependency["target"].as_str())
         .collect::<Vec<_>>();
     assert!(targets.contains(&"os"));
-    assert!(targets.contains(&"./auth"));
+    assert!(targets.contains(&"./ui"));
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "./ui" && dependency["resolved_file"] == "src/ui.ts"
+            })
+    );
 
     let refs = run_json([
         "find-references",
@@ -194,10 +203,19 @@ def helper():
         &dir,
         "src/main.ts",
         r#"
-import { AuthService } from "./auth";
+import { render } from "./ui";
 
 export function main() {
-  return AuthService;
+  render();
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/ui.ts",
+        r#"
+export function render() {
+  return "ok";
 }
 "#,
     );

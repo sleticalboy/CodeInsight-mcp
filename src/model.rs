@@ -62,6 +62,7 @@ pub struct Symbol {
 pub struct Dependency {
     pub source_file: String,
     pub target: String,
+    pub resolved_file: Option<String>,
     pub kind: String,
     pub language: Language,
     pub line: usize,

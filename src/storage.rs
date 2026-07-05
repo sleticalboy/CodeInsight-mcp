@@ -8,7 +8,7 @@ use crate::model::{
     SourceFile, Symbol, SymbolKind,
 };
 
-pub const SCHEMA_VERSION: i64 = 2;
+pub const SCHEMA_VERSION: i64 = 3;
 pub const INDEX_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub struct Store {
@@ -58,13 +58,14 @@ impl Store {
         {
             let mut stmt = tx.prepare(
                 "insert into dependencies
-                 (source_file_id, target, kind, language, line)
-                 values (?1, ?2, ?3, ?4, ?5)",
+                 (source_file_id, target, resolved_file, kind, language, line)
+                 values (?1, ?2, ?3, ?4, ?5, ?6)",
             )?;
             for dependency in dependencies {
                 stmt.execute(params![
                     file_id,
                     dependency.target,
+                    dependency.resolved_file,
                     dependency.kind,
                     dependency.language.as_str(),
                     dependency.line as i64
@@ -295,7 +296,7 @@ impl Store {
 
     pub fn dependency_graph(&self, root: &Path, limit: usize) -> Result<DependencyGraph> {
         let mut stmt = self.conn.prepare(
-            "select f.path, d.target, d.kind, d.language, d.line
+            "select f.path, d.target, d.resolved_file, d.kind, d.language, d.line
              from dependencies d
              join files f on f.id = d.source_file_id
              order by f.path, d.line
@@ -303,13 +304,14 @@ impl Store {
         )?;
         let dependencies = stmt
             .query_map(params![limit as i64], |row| {
-                let language: String = row.get(3)?;
+                let language: String = row.get(4)?;
                 Ok(Dependency {
                     source_file: row.get(0)?,
                     target: row.get(1)?,
-                    kind: row.get(2)?,
+                    resolved_file: row.get(2)?,
+                    kind: row.get(3)?,
                     language: parse_language(&language),
-                    line: row.get::<_, i64>(4)? as usize,
+                    line: row.get::<_, i64>(5)? as usize,
                 })
             })?
             .collect::<rusqlite::Result<Vec<_>>>()?;
@@ -425,6 +427,7 @@ impl Store {
                 id integer primary key autoincrement,
                 source_file_id integer not null references files(id) on delete cascade,
                 target text not null,
+                resolved_file text,
                 kind text not null,
                 language text not null,
                 line integer not null

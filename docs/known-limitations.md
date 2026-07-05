@@ -72,14 +72,15 @@ Limitations:
 
 ### `dependency_graph`
 
-`dependency_graph` records module targets found in import-like syntax.
+`dependency_graph` records module targets found in import-like syntax and resolves some local file targets.
 
 Limitations:
 
-- Targets are stored as module strings, not guaranteed resolved file paths.
+- Targets are always stored as module strings; `resolved_file` is only populated when a local file can be resolved cheaply.
 - Grouped imports may be compacted rather than expanded precisely.
 - Package manager metadata is not analyzed yet.
 - Monorepo workspace boundaries are not modeled yet.
+- Go import paths are not resolved to files yet.
 
 ### `context_pack`
 

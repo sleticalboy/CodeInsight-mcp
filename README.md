@@ -31,6 +31,7 @@ Implemented:
 - Tree-sitter parsing for TypeScript/JavaScript, Python, Go, and Rust
 - symbol extraction for common declarations
 - dependency graph, text reference search, context packs, and same-file call graph tools
+- relative file resolution for local dependency graph edges
 - `index`, `overview`, `symbols`, `outline`, `dependency-graph`, `find-references`, `context-pack`, `callers`, and `callees` CLI commands
 - MCP stdio `initialize`, `tools/list`, and `tools/call` for P0 tools
 - MCP tool argument validation with stable JSON-RPC errors
