@@ -63,6 +63,13 @@ jobs:
           cp README.md LICENSE* "dist/${name}/" 2>/dev/null || true
           tar -C dist -czf "dist/${name}.tar.gz" "${name}"
 
+      - name: Smoke release install
+        shell: bash
+        env:
+          CODEINSIGHT_TARGET: ${{ matrix.target }}
+          CODEINSIGHT_SMOKE_ASSET: dist/codeinsight-${{ matrix.target }}.tar.gz
+        run: scripts/release-install-smoke.sh
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:

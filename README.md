@@ -43,7 +43,6 @@ Implemented:
 
 Next:
 
-- release install smoke tests across supported platforms
 - imported call resolution
 - benchmark fixtures for larger repositories
 
@@ -84,6 +83,12 @@ sh scripts/install.sh
 
 Without GitHub CLI, the installer falls back to `curl`. Set `GITHUB_TOKEN` if
 the release assets require authentication.
+
+Smoke test the packaged installer path locally:
+
+```bash
+scripts/release-install-smoke.sh
+```
 
 ## Install From Source
 

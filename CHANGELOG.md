@@ -8,6 +8,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ### Added
 
+- Release install smoke script and CI coverage for packaged installer artifacts.
 - `context_pack` now accepts file seeds through CLI `--file` and MCP `files`.
 - `context_pack` now applies explicit candidate scoring before token-budget selection.
 - File-seeded `context_pack` output now selects header/import context and primary top-level symbols instead of fixed first-file chunks.

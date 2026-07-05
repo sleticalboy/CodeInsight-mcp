@@ -69,8 +69,25 @@ download_with_curl() {
     fi
 }
 
+download_local_asset() {
+    asset="$1"
+    tmp_dir="$2"
+    local_asset="${CODEINSIGHT_ASSET_PATH:-}"
+
+    if [ -z "$local_asset" ]; then
+        return 1
+    fi
+
+    if [ ! -f "$local_asset" ]; then
+        echo "local release asset not found: $local_asset" >&2
+        exit 1
+    fi
+
+    cp "$local_asset" "$tmp_dir/$asset"
+}
+
 main() {
-    target="$(detect_target)"
+    target="${CODEINSIGHT_TARGET:-$(detect_target)}"
     asset="codeinsight-$target.tar.gz"
     install_dir="${INSTALL_DIR:-$(default_install_dir)}"
     tmp_dir="$(mktemp -d)"
@@ -82,7 +99,9 @@ main() {
 
     mkdir -p "$install_dir"
 
-    if command -v gh >/dev/null 2>&1; then
+    if [ -n "${CODEINSIGHT_ASSET_PATH:-}" ]; then
+        download_local_asset "$asset" "$tmp_dir"
+    elif command -v gh >/dev/null 2>&1; then
         download_with_gh "$asset" "$tmp_dir"
     elif command -v curl >/dev/null 2>&1; then
         download_with_curl "$asset" "$tmp_dir"
@@ -94,7 +113,9 @@ main() {
     tar -xzf "$tmp_dir/$asset" -C "$tmp_dir"
     install -m 755 "$tmp_dir/codeinsight-$target/codeinsight" "$install_dir/codeinsight"
 
-    "$install_dir/codeinsight" --help >/dev/null
+    if [ "${CODEINSIGHT_SKIP_VERIFY:-}" != "1" ]; then
+        "$install_dir/codeinsight" --help >/dev/null
+    fi
 
     echo "codeinsight installed to $install_dir/codeinsight"
     echo "run: $install_dir/codeinsight --help"

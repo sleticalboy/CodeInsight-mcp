@@ -16,3 +16,19 @@ jobs:
       - run: cargo fmt --check
       - run: cargo test --locked
 
+  release-install-smoke:
+    name: release-install-smoke-${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-install-smoke-${{ matrix.os }}
+      - run: scripts/release-install-smoke.sh
