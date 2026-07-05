@@ -2,13 +2,15 @@
 
 Generated at: 2026-07-05 15:16:33 UTC
 
-This is a smoke benchmark, not a controlled performance benchmark. It verifies
-that CodeInsight can index real public repositories across the MVP language set
-and produce stable project summaries and context packs without crashing.
+This is a benchmark fixture report, not a controlled performance benchmark. It
+verifies that CodeInsight can index real public repositories across the MVP
+language set and produce stable project summaries and context packs without
+crashing.
 
 Environment:
 
 - Command: `target/release/codeinsight`
+- Profile: `smoke`
 - Work directory: temporary clone directory
 - Index mode: forced clean index per repository
 - Context pack mode: one stable file seed per repository, 6000 token budget

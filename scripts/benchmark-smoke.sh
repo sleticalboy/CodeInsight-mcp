@@ -3,44 +3,92 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WORK_DIR="${CODEINSIGHT_BENCH_WORKDIR:-${TMPDIR:-/tmp}/codeinsight-benchmark}"
-OUTPUT="${CODEINSIGHT_BENCH_OUTPUT:-$ROOT_DIR/docs/benchmark-v0.1.md}"
 CODEINSIGHT_BIN="${CODEINSIGHT_BIN:-$ROOT_DIR/target/release/codeinsight}"
+BENCH_PROFILE="${CODEINSIGHT_BENCH_PROFILE:-smoke}"
 REPORT_FILE=""
 
-REPO_NAMES=(
-  "p-limit"
-  "itsdangerous"
-  "go-example"
-  "memchr"
-)
+REPO_NAMES=()
+REPO_URLS=()
+REPO_LANGUAGES=()
+REPO_CONTEXT_FILES=()
+REPO_CONTEXT_TASKS=()
+OUTPUT=""
 
-REPO_URLS=(
-  "https://github.com/sindresorhus/p-limit.git"
-  "https://github.com/pallets/itsdangerous.git"
-  "https://github.com/golang/example.git"
-  "https://github.com/BurntSushi/memchr.git"
-)
-
-REPO_LANGUAGES=(
-  "TypeScript"
-  "Python"
-  "Go"
-  "Rust"
-)
-
-REPO_CONTEXT_FILES=(
-  "index.js"
-  "src/itsdangerous/serializer.py"
-  "hello/hello.go"
-  "src/lib.rs"
-)
-
-REPO_CONTEXT_TASKS=(
-  "understand limit scheduling behavior"
-  "understand serializer signing behavior"
-  "understand hello server behavior"
-  "understand memchr finder API"
-)
+configure_profile() {
+  case "$BENCH_PROFILE" in
+    smoke)
+      OUTPUT="${CODEINSIGHT_BENCH_OUTPUT:-$ROOT_DIR/docs/benchmark-v0.1.md}"
+      REPO_NAMES=(
+        "p-limit"
+        "itsdangerous"
+        "go-example"
+        "memchr"
+      )
+      REPO_URLS=(
+        "https://github.com/sindresorhus/p-limit.git"
+        "https://github.com/pallets/itsdangerous.git"
+        "https://github.com/golang/example.git"
+        "https://github.com/BurntSushi/memchr.git"
+      )
+      REPO_LANGUAGES=(
+        "TypeScript"
+        "Python"
+        "Go"
+        "Rust"
+      )
+      REPO_CONTEXT_FILES=(
+        "index.js"
+        "src/itsdangerous/serializer.py"
+        "hello/hello.go"
+        "src/lib.rs"
+      )
+      REPO_CONTEXT_TASKS=(
+        "understand limit scheduling behavior"
+        "understand serializer signing behavior"
+        "understand hello server behavior"
+        "understand memchr finder API"
+      )
+      ;;
+    large)
+      OUTPUT="${CODEINSIGHT_BENCH_OUTPUT:-$ROOT_DIR/docs/benchmark-large.md}"
+      REPO_NAMES=(
+        "express"
+        "flask"
+        "gin"
+        "tokio"
+      )
+      REPO_URLS=(
+        "https://github.com/expressjs/express.git"
+        "https://github.com/pallets/flask.git"
+        "https://github.com/gin-gonic/gin.git"
+        "https://github.com/tokio-rs/tokio.git"
+      )
+      REPO_LANGUAGES=(
+        "JavaScript"
+        "Python"
+        "Go"
+        "Rust"
+      )
+      REPO_CONTEXT_FILES=(
+        "lib/application.js"
+        "src/flask/app.py"
+        "gin.go"
+        "tokio/src/lib.rs"
+      )
+      REPO_CONTEXT_TASKS=(
+        "understand express application routing behavior"
+        "understand flask application dispatch behavior"
+        "understand gin engine routing behavior"
+        "understand tokio runtime public API"
+      )
+      ;;
+    *)
+      echo "unknown benchmark profile: $BENCH_PROFILE" >&2
+      echo "supported profiles: smoke, large" >&2
+      exit 1
+      ;;
+  esac
+}
 
 require_command() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -84,22 +132,30 @@ json_value() {
 write_report_header() {
   local generated_at
   local display_bin
+  local profile_title
   generated_at="$(date -u +"%Y-%m-%d %H:%M:%S UTC")"
   display_bin="$CODEINSIGHT_BIN"
   display_bin="${display_bin/#$ROOT_DIR\//}"
+  case "$BENCH_PROFILE" in
+    smoke) profile_title="Smoke" ;;
+    large) profile_title="Large Repository" ;;
+    *) profile_title="$BENCH_PROFILE" ;;
+  esac
 
   cat >"$REPORT_FILE" <<EOF
-# CodeInsight v0.1 Smoke Benchmark
+# CodeInsight v0.1 $profile_title Benchmark
 
 Generated at: $generated_at
 
-This is a smoke benchmark, not a controlled performance benchmark. It verifies
-that CodeInsight can index real public repositories across the MVP language set
-and produce stable project summaries and context packs without crashing.
+This is a benchmark fixture report, not a controlled performance benchmark. It
+verifies that CodeInsight can index real public repositories across the MVP
+language set and produce stable project summaries and context packs without
+crashing.
 
 Environment:
 
 - Command: \`$display_bin\`
+- Profile: \`$BENCH_PROFILE\`
 - Work directory: temporary clone directory
 - Index mode: forced clean index per repository
 - Context pack mode: one stable file seed per repository, 6000 token budget
@@ -200,6 +256,8 @@ append_detail_section() {
 }
 
 main() {
+  configure_profile
+
   require_command git
   require_command jq
   require_command cargo

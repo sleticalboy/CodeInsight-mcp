@@ -19,6 +19,7 @@ The product direction and execution plan live in:
 - [MCP client configuration](docs/mcp-client-config.md)
 - [MCP client smoke test](docs/mcp-client-smoke.md)
 - [Smoke benchmark](docs/benchmark-v0.1.md)
+- [Large repository benchmark](docs/benchmark-large.md)
 - [Changelog](CHANGELOG.md)
 
 ## Current Status
@@ -43,7 +44,7 @@ Implemented:
 
 Next:
 
-- benchmark fixtures for larger repositories
+- optimize imported call resolution for JavaScript-heavy repositories
 
 ## Install From Release
 
@@ -188,6 +189,13 @@ For accuracy boundaries and current non-goals, see [Known limitations](docs/know
 ```bash
 cargo fmt
 cargo test
+```
+
+Run benchmark profiles:
+
+```bash
+scripts/benchmark-smoke.sh
+CODEINSIGHT_BENCH_PROFILE=large scripts/benchmark-smoke.sh
 ```
 
 ## Release Builds

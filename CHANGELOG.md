@@ -8,6 +8,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ### Added
 
+- Large repository benchmark profile and generated report for Express, Flask, Gin, and Tokio.
 - `callers` and `callees` now include imported callee file hints when a call target matches a symbol in a resolved local dependency.
 - Release install smoke script and CI coverage for packaged installer artifacts.
 - `context_pack` now accepts file seeds through CLI `--file` and MCP `files`.
