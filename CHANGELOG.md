@@ -11,6 +11,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - JavaScript indexing now extracts CommonJS assignment symbols such as `module.exports`, `exports.foo`, and object method assignments.
 - JavaScript indexing now extracts computed assignment method placeholders such as `app.<dynamic>` for dynamic method registration loops.
 - JavaScript call graph indexing now preserves member call targets such as `app.get`, resolves string computed calls such as `app["post"]`, and records variable computed calls as `app.<dynamic>`.
+- Benchmark profiles can assert static call target guardrails; the large Express fixture now checks `app.get` and `app.<dynamic>` callers.
 - Benchmark profiles now report context lines and line-reduction percentages for context packs.
 - Benchmark profiles now report index budgets and fail when fixture index times exceed guardrail thresholds.
 - Large repository benchmark profile and generated report for Express, Flask, Gin, and Tokio.

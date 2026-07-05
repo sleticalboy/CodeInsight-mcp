@@ -44,7 +44,7 @@ Implemented:
 
 Next:
 
-- add benchmark regression coverage for JavaScript member and dynamic call targets
+- improve JavaScript call graph coverage for chained and optional member calls
 
 ## Install From Release
 

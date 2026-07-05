@@ -14,8 +14,10 @@ REPO_LANGUAGES=()
 REPO_CONTEXT_FILES=()
 REPO_CONTEXT_TASKS=()
 REPO_MAX_INDEX_MS=()
+REPO_CALL_TARGETS=()
 OUTPUT=""
 BUDGET_FAILURES=0
+CALL_TARGET_FAILURES=0
 
 configure_profile() {
   case "$BENCH_PROFILE" in
@@ -57,6 +59,12 @@ configure_profile() {
         5000
         10000
       )
+      REPO_CALL_TARGETS=(
+        ""
+        ""
+        ""
+        ""
+      )
       ;;
     large)
       OUTPUT="${CODEINSIGHT_BENCH_OUTPUT:-$ROOT_DIR/docs/benchmark-large.md}"
@@ -95,6 +103,12 @@ configure_profile() {
         5000
         5000
         20000
+      )
+      REPO_CALL_TARGETS=(
+        "app.get:1|app.<dynamic>:1"
+        ""
+        ""
+        ""
       )
       ;;
     *)
@@ -211,6 +225,34 @@ context_lines() {
   jq -r '[.files[].ranges[] | (.end_line - .start_line + 1)] | add // 0' "$context_json"
 }
 
+validate_call_target_guardrails() {
+  local name="$1"
+  local repo_dir="$2"
+  local specs="$3"
+  local output="$4"
+  local checks check target minimum count status
+
+  : >"$output"
+  if [ -z "$specs" ]; then
+    return
+  fi
+
+  IFS="|" read -r -a checks <<<"$specs"
+  for check in "${checks[@]}"; do
+    target="${check%%:*}"
+    minimum="${check##*:}"
+    count="$("$CODEINSIGHT_BIN" callers "$repo_dir" "$target" --limit 1000 | jq -r 'length')"
+    status="pass"
+    if [ "$count" -lt "$minimum" ]; then
+      status="fail"
+      CALL_TARGET_FAILURES=$((CALL_TARGET_FAILURES + 1))
+    fi
+
+    printf "%s\t%s\t%s\t%s\n" "$target" "$minimum" "$count" "$status" >>"$output"
+    echo "call target guardrail $name $target: $count >= $minimum ($status)"
+  done
+}
+
 line_reduction() {
   local total_lines="$1"
   local selected_lines="$2"
@@ -273,6 +315,7 @@ append_detail_section() {
   local context_file="$7"
   local context_task="$8"
   local max_index_ms="$9"
+  local call_targets_file="${10}"
   local duration total_lines selected_lines reduction status
   duration="$(json_value "$index_json" '.duration_ms')"
   total_lines="$(json_value "$overview_json" '[.languages[].lines] | add // 0')"
@@ -329,6 +372,20 @@ append_detail_section() {
     } >>"$REPORT_FILE"
     jq -r '.errors[:10][] | "- `\(.file)` during `\(.stage)`: \(.message)"' "$index_json" >>"$REPORT_FILE"
   fi
+
+  if [ -s "$call_targets_file" ]; then
+    {
+      echo
+      echo "Call target guardrails:"
+      echo
+      echo "| Target | Minimum calls | Observed calls | Status |"
+      echo "| --- | ---: | ---: | --- |"
+    } >>"$REPORT_FILE"
+
+    while IFS=$'\t' read -r target minimum count guardrail_status; do
+      printf "| \`%s\` | %s | %s | %s |\n" "$target" "$minimum" "$count" "$guardrail_status" >>"$REPORT_FILE"
+    done <"$call_targets_file"
+  fi
 }
 
 main() {
@@ -355,10 +412,12 @@ main() {
     context_file="${REPO_CONTEXT_FILES[$i]}"
     context_task="${REPO_CONTEXT_TASKS[$i]}"
     max_index_ms="${REPO_MAX_INDEX_MS[$i]}"
+    call_targets="${REPO_CALL_TARGETS[$i]}"
     repo_dir="$WORK_DIR/repos/$name"
     index_json="$WORK_DIR/results/$name-index.json"
     overview_json="$WORK_DIR/results/$name-overview.json"
     context_json="$WORK_DIR/results/$name-context.json"
+    call_targets_file="$WORK_DIR/results/$name-call-targets.tsv"
 
     echo "benchmarking $name"
     clone_repo "$name" "$url"
@@ -369,6 +428,7 @@ main() {
       --file "$context_file" \
       --token-budget 6000 \
       >"$context_json"
+    validate_call_target_guardrails "$name" "$repo_dir" "$call_targets" "$call_targets_file"
     append_summary_row "$name" "$language" "$repo_dir" "$index_json" "$overview_json" "$context_json" "$max_index_ms"
   done
 
@@ -387,13 +447,18 @@ EOF
     context_file="${REPO_CONTEXT_FILES[$i]}"
     context_task="${REPO_CONTEXT_TASKS[$i]}"
     max_index_ms="${REPO_MAX_INDEX_MS[$i]}"
-    append_detail_section "$name" "$url" "$repo_dir" "$index_json" "$overview_json" "$context_json" "$context_file" "$context_task" "$max_index_ms"
+    call_targets_file="$WORK_DIR/results/$name-call-targets.tsv"
+    append_detail_section "$name" "$url" "$repo_dir" "$index_json" "$overview_json" "$context_json" "$context_file" "$context_task" "$max_index_ms" "$call_targets_file"
   done
 
   mv "$REPORT_FILE" "$OUTPUT"
   echo "wrote $OUTPUT"
   if [ "$BUDGET_FAILURES" -gt 0 ]; then
     echo "benchmark budget failures: $BUDGET_FAILURES" >&2
+    exit 1
+  fi
+  if [ "$CALL_TARGET_FAILURES" -gt 0 ]; then
+    echo "call target guardrail failures: $CALL_TARGET_FAILURES" >&2
     exit 1
   fi
 }
