@@ -44,7 +44,7 @@ Implemented:
 
 Next:
 
-- improve JavaScript symbol extraction for CommonJS export patterns
+- improve JavaScript symbol extraction for dynamic method registration patterns
 
 ## Install From Release
 

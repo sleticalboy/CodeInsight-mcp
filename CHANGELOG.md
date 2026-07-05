@@ -8,6 +8,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ### Added
 
+- JavaScript indexing now extracts CommonJS assignment symbols such as `module.exports`, `exports.foo`, and object method assignments.
 - Benchmark profiles now report context lines and line-reduction percentages for context packs.
 - Benchmark profiles now report index budgets and fail when fixture index times exceed guardrail thresholds.
 - Large repository benchmark profile and generated report for Express, Flask, Gin, and Tokio.

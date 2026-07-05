@@ -793,8 +793,96 @@ fn javascript_like_symbol(node: Node<'_>, source: &[u8]) -> Option<(String, Symb
         "lexical_declaration" | "variable_declaration" => {
             find_js_variable_name(node, source).map(|name| (name, SymbolKind::Variable))
         }
+        "assignment_expression" => javascript_assignment_symbol(node, source),
         _ => None,
     }
+}
+
+fn javascript_assignment_symbol(node: Node<'_>, source: &[u8]) -> Option<(String, SymbolKind)> {
+    let left = node
+        .child_by_field_name("left")
+        .or_else(|| node.child(0))
+        .and_then(|child| child.utf8_text(source).ok())?
+        .trim();
+    let right = node
+        .child_by_field_name("right")
+        .or_else(|| node.child(2))
+        .and_then(|child| child.utf8_text(source).ok())
+        .unwrap_or_default()
+        .trim();
+
+    let name = commonjs_assignment_name(left, right)?;
+    let kind = if right.starts_with("function") || right.contains("=>") {
+        SymbolKind::Method
+    } else {
+        SymbolKind::Variable
+    };
+    Some((name, kind))
+}
+
+fn commonjs_assignment_name(left: &str, right: &str) -> Option<String> {
+    let left = left.trim();
+    if left == "module.exports" || left == "exports" {
+        return assignment_export_name(left, right);
+    }
+
+    if let Some(name) = left.strip_prefix("exports.") {
+        return clean_js_property_name(name).map(|property| format!("exports.{property}"));
+    }
+
+    if let Some(name) = left.strip_prefix("module.exports.") {
+        return clean_js_property_name(name).map(|property| format!("module.exports.{property}"));
+    }
+
+    if let Some((object, property)) = left.rsplit_once('.') {
+        let object = object.trim();
+        if is_js_identifier(object) {
+            return clean_js_property_name(property).map(|property| format!("{object}.{property}"));
+        }
+    }
+
+    None
+}
+
+fn assignment_export_name(left: &str, right: &str) -> Option<String> {
+    if let Some(function_rest) = right.strip_prefix("function") {
+        let name = function_rest
+            .trim_start()
+            .split(|ch: char| ch == '(' || ch.is_whitespace())
+            .find(|part| !part.is_empty());
+        return name
+            .filter(|candidate| is_js_identifier(candidate))
+            .map(ToOwned::to_owned)
+            .or_else(|| Some(left.to_string()));
+    }
+
+    if let Some(identifier) = right.split_whitespace().next()
+        && is_js_identifier(identifier)
+    {
+        return Some(identifier.to_string());
+    }
+
+    Some(left.to_string())
+}
+
+fn clean_js_property_name(property: &str) -> Option<&str> {
+    let property = property.trim();
+    if is_js_identifier(property) {
+        Some(property)
+    } else {
+        None
+    }
+}
+
+fn is_js_identifier(value: &str) -> bool {
+    let mut chars = value.chars();
+    let Some(first) = chars.next() else {
+        return false;
+    };
+    if !(first == '_' || first == '$' || first.is_ascii_alphabetic()) {
+        return false;
+    }
+    chars.all(|ch| ch == '_' || ch == '$' || ch.is_ascii_alphanumeric())
 }
 
 fn child_text(node: Node<'_>, field: &str, source: &[u8]) -> Option<String> {
@@ -948,6 +1036,29 @@ const token = "x";
         assert!(names.contains(&"AuthService.login"));
         assert!(names.contains(&"helper"));
         assert!(names.contains(&"token"));
+    }
+
+    #[test]
+    fn extracts_commonjs_assignment_symbols() {
+        let source = r#"
+module.exports = View;
+exports.normalizeType = function(type) {
+  return type;
+};
+app.use = function use(fn) {
+  return fn;
+};
+module.exports.create = function create() {};
+"#;
+        let symbols = extract_symbols(source, Language::JavaScript, "express.js").unwrap();
+        let names = symbols
+            .iter()
+            .map(|symbol| symbol.qualified_name.as_str())
+            .collect::<Vec<_>>();
+        assert!(names.contains(&"View"));
+        assert!(names.contains(&"exports.normalizeType"));
+        assert!(names.contains(&"app.use"));
+        assert!(names.contains(&"module.exports.create"));
     }
 
     #[test]
