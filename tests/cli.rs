@@ -9,13 +9,13 @@ fn cli_indexes_and_queries_fixture_project() {
     let fixture = fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 6);
-    assert_eq!(index["changed_files"], 6);
+    assert_eq!(index["indexed_files"], 7);
+    assert_eq!(index["changed_files"], 7);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let second_index = run_json(["index", fixture.path().to_str().unwrap()]);
     assert_eq!(second_index["changed_files"], 0);
-    assert_eq!(second_index["unchanged_files"], 6);
+    assert_eq!(second_index["unchanged_files"], 7);
 
     let symbols = run_json([
         "symbols",
@@ -87,6 +87,24 @@ fn cli_indexes_and_queries_fixture_project() {
     assert_eq!(auth_context_files.first(), Some(&"src/auth.py"));
     assert!(auth_context_files.contains(&"src/consumer.py"));
 
+    let billing_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand billing payment behavior",
+        "--symbol",
+        "Service",
+        "--token-budget",
+        "1600",
+    ]);
+    let billing_context_files = billing_context["files"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|file| file["file"].as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(billing_context_files.first(), Some(&"src/billing.py"));
+
     let main_context = run_json([
         "context-pack",
         fixture.path().to_str().unwrap(),
@@ -144,6 +162,28 @@ fn cli_indexes_and_queries_fixture_project() {
         .join("\n");
     assert!(long_excerpt.contains("lateEntry"));
     assert!(!long_excerpt.contains("filler_60"));
+
+    let small_budget_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand late entrypoint",
+        "--file",
+        "src/long.ts",
+        "--token-budget",
+        "500",
+    ]);
+    let small_budget_file = &small_budget_context["files"].as_array().unwrap()[0];
+    assert_eq!(small_budget_file["file"], "src/long.ts");
+    let small_budget_excerpt = small_budget_file["ranges"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|range| range["excerpt"].as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert!(small_budget_excerpt.contains("import { render }"));
+    assert!(!small_budget_excerpt.contains("filler_60"));
 
     let callers = run_json([
         "callers",
@@ -263,6 +303,15 @@ class AuthService:
 
 def helper():
     return os.getenv("USER")
+"#,
+    );
+    write_file(
+        &dir,
+        "src/billing.py",
+        r#"
+class BillingService:
+    def charge(self):
+        return "paid"
 "#,
     );
     write_file(

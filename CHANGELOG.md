@@ -12,6 +12,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - `context_pack` now applies explicit candidate scoring before token-budget selection.
 - File-seeded `context_pack` output now selects header/import context and primary top-level symbols instead of fixed first-file chunks.
 - `context_pack` now caps large symbol and merged ranges so small token budgets retain useful file context.
+- `context_pack` now uses task keywords as a lightweight relevance boost for symbols, references, and local dependencies.
 
 ## [0.1.1] - 2026-07-05
 

@@ -21,6 +21,7 @@ const CONTEXT_SCORE_SEED_HEADER: i32 = 110;
 const CONTEXT_SCORE_SYMBOL_DEFINITION: i32 = 90;
 const CONTEXT_SCORE_REFERENCE_BASE: i32 = 60;
 const CONTEXT_SCORE_LOCAL_DEPENDENCY: i32 = 40;
+const CONTEXT_SCORE_TASK_MATCH_BOOST: i32 = 30;
 const CONTEXT_MAX_SYMBOL_LINES: usize = 80;
 const CONTEXT_MAX_MERGED_RANGE_LINES: usize = 80;
 
@@ -167,6 +168,7 @@ pub fn context_pack_value(
     }
 
     let budget = token_budget.max(500);
+    let task_keywords = task_keywords(&task);
     let mut symbols = Vec::new();
     let mut references = Vec::new();
     let seed_files = seed_files
@@ -210,7 +212,7 @@ pub fn context_pack_value(
             symbol.start_line,
             capped_symbol_end_line(symbol),
             format!("Defines symbol {}", symbol.qualified_name),
-            CONTEXT_SCORE_SYMBOL_DEFINITION,
+            CONTEXT_SCORE_SYMBOL_DEFINITION + symbol_task_boost(symbol, &task_keywords),
         );
     }
     for reference in &references {
@@ -222,13 +224,15 @@ pub fn context_pack_value(
             start_line,
             end_line,
             format!("References symbol near line {}", reference.line),
-            reference_score(reference),
+            reference_score(reference) + reference_task_boost(reference, &task_keywords),
         );
     }
 
     let selected_files = ranges_by_file.keys().cloned().collect::<Vec<_>>();
     let store = Store::open(&root)?;
     for dependency in store.resolved_dependencies_for_files(&selected_files)? {
+        let score =
+            CONTEXT_SCORE_LOCAL_DEPENDENCY + dependency_task_boost(&dependency, &task_keywords);
         if let Some(resolved_file) = dependency.resolved_file {
             push_context_range(
                 &mut ranges_by_file,
@@ -239,7 +243,7 @@ pub fn context_pack_value(
                     "Local dependency of {} via {}",
                     dependency.source_file, dependency.target
                 ),
-                CONTEXT_SCORE_LOCAL_DEPENDENCY,
+                score,
             );
         }
     }
@@ -560,6 +564,85 @@ fn importance_for_score(score: i32) -> &'static str {
 
 fn reference_score(reference: &ReferenceMatch) -> i32 {
     CONTEXT_SCORE_REFERENCE_BASE + (reference.confidence * 10.0).round() as i32
+}
+
+fn symbol_task_boost(symbol: &Symbol, keywords: &[String]) -> i32 {
+    task_match_boost(
+        keywords,
+        [
+            symbol.name.as_str(),
+            symbol.qualified_name.as_str(),
+            symbol.file.as_str(),
+        ]
+        .into_iter(),
+    )
+}
+
+fn reference_task_boost(reference: &ReferenceMatch, keywords: &[String]) -> i32 {
+    task_match_boost(
+        keywords,
+        [
+            reference.file.as_str(),
+            reference.context.as_str(),
+            reference.reference_kind.as_str(),
+        ]
+        .into_iter(),
+    )
+}
+
+fn dependency_task_boost(dependency: &crate::model::Dependency, keywords: &[String]) -> i32 {
+    task_match_boost(
+        keywords,
+        [
+            dependency.source_file.as_str(),
+            dependency.target.as_str(),
+            dependency.resolved_file.as_deref().unwrap_or_default(),
+        ]
+        .into_iter(),
+    )
+}
+
+fn task_match_boost<'a>(keywords: &[String], fields: impl Iterator<Item = &'a str>) -> i32 {
+    if keywords.is_empty() {
+        return 0;
+    }
+
+    let haystack = fields
+        .map(|field| field.to_ascii_lowercase())
+        .collect::<Vec<_>>()
+        .join(" ");
+    if keywords.iter().any(|keyword| haystack.contains(keyword)) {
+        CONTEXT_SCORE_TASK_MATCH_BOOST
+    } else {
+        0
+    }
+}
+
+fn task_keywords(task: &str) -> Vec<String> {
+    task.split(|ch: char| !ch.is_ascii_alphanumeric())
+        .map(str::to_ascii_lowercase)
+        .filter(|word| word.len() >= 3 && !is_task_stop_word(word))
+        .take(16)
+        .collect()
+}
+
+fn is_task_stop_word(word: &str) -> bool {
+    matches!(
+        word,
+        "the"
+            | "and"
+            | "for"
+            | "with"
+            | "from"
+            | "into"
+            | "this"
+            | "that"
+            | "understand"
+            | "flow"
+            | "code"
+            | "file"
+            | "module"
+    )
 }
 
 fn normalize_seed_file(root: &Path, file: &str) -> Result<String> {

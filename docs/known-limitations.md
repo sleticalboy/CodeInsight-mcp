@@ -93,6 +93,7 @@ Current deterministic ranking order:
 - Symbol definition ranges are next.
 - Text references are ranked after definitions, with reference confidence as a small boost.
 - Resolved local dependencies are included as supporting context after direct matches.
+- Task keywords provide a lightweight boost when they match symbol names, file paths, reference context, or dependency targets.
 - Ties are broken by total file score and then stable file path order.
 
 Limitations:
@@ -100,6 +101,7 @@ Limitations:
 - It is deterministic and local-only.
 - It does not use semantic embeddings.
 - It does not yet rank by call graph, type graph, test relevance, semantic similarity, or edit history.
+- Task relevance is lexical only and uses simple ASCII keyword matching.
 - Token estimation is approximate and based on character count.
 - It may include noisy references when the seed symbol is common.
 
