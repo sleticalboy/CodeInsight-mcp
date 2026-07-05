@@ -13,7 +13,7 @@ use tree_sitter::{Node, Parser, TreeCursor};
 use crate::{
     language::{detect_language, tree_sitter_language},
     model::{Dependency, IndexError, Language, ProjectIndexReport, SourceFile, Symbol, SymbolKind},
-    storage::Store,
+    storage::{INDEX_VERSION, SCHEMA_VERSION, Store},
 };
 
 pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
@@ -150,9 +150,12 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
     let deleted_files = store.delete_files_not_in(&seen_source_files)?;
     let total_indexed_files = store.count_files()?;
     let total_symbols = store.count_symbols()?;
+    store.mark_indexed()?;
 
     Ok(ProjectIndexReport {
         root: root.display().to_string(),
+        schema_version: SCHEMA_VERSION,
+        index_version: INDEX_VERSION.to_string(),
         indexed_files: total_indexed_files,
         changed_files,
         unchanged_files,
@@ -804,6 +807,8 @@ const auth = require("./auth");
         std::fs::write(&source_path, "def login():\n    pass\n").unwrap();
 
         let first = index_project(dir.path(), false).unwrap();
+        assert_eq!(first.schema_version, SCHEMA_VERSION);
+        assert_eq!(first.index_version, INDEX_VERSION);
         assert_eq!(first.indexed_files, 1);
         assert_eq!(first.changed_files, 1);
         assert_eq!(first.unchanged_files, 0);

@@ -8,6 +8,9 @@ use crate::model::{
     SourceFile, Symbol, SymbolKind,
 };
 
+pub const SCHEMA_VERSION: i64 = 1;
+pub const INDEX_VERSION: &str = env!("CARGO_PKG_VERSION");
+
 pub struct Store {
     conn: Connection,
 }
@@ -21,6 +24,7 @@ impl Store {
         let conn = Connection::open(db_path)?;
         let store = Self { conn };
         store.migrate()?;
+        store.ensure_schema_version()?;
         Ok(store)
     }
 
@@ -30,6 +34,13 @@ impl Store {
         tx.execute("delete from symbols", [])?;
         tx.execute("delete from files", [])?;
         tx.commit()?;
+        Ok(())
+    }
+
+    pub fn mark_indexed(&self) -> Result<()> {
+        self.set_meta("schema_version", &SCHEMA_VERSION.to_string())?;
+        self.set_meta("index_version", INDEX_VERSION)?;
+        self.set_meta("last_indexed_at", &unix_timestamp().to_string())?;
         Ok(())
     }
 
@@ -294,6 +305,11 @@ impl Store {
     fn migrate(&self) -> Result<()> {
         self.conn.execute_batch(
             "
+            create table if not exists index_meta (
+                key text primary key,
+                value text not null
+            );
+
             create table if not exists files (
                 id integer primary key autoincrement,
                 path text not null unique,
@@ -327,6 +343,42 @@ impl Store {
             create index if not exists idx_dependencies_source on dependencies(source_file_id);
             create index if not exists idx_dependencies_target on dependencies(target);
             ",
+        )?;
+        Ok(())
+    }
+
+    fn ensure_schema_version(&self) -> Result<()> {
+        let version = self
+            .get_meta("schema_version")?
+            .and_then(|value| value.parse::<i64>().ok());
+        if version != Some(SCHEMA_VERSION) {
+            self.conn.execute("delete from dependencies", [])?;
+            self.conn.execute("delete from symbols", [])?;
+            self.conn.execute("delete from files", [])?;
+            self.set_meta("schema_version", &SCHEMA_VERSION.to_string())?;
+            self.set_meta("index_version", INDEX_VERSION)?;
+        }
+        Ok(())
+    }
+
+    fn get_meta(&self, key: &str) -> Result<Option<String>> {
+        let mut stmt = self
+            .conn
+            .prepare("select value from index_meta where key = ?1")?;
+        let mut rows = stmt.query(params![key])?;
+        if let Some(row) = rows.next()? {
+            Ok(Some(row.get(0)?))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn set_meta(&self, key: &str, value: &str) -> Result<()> {
+        self.conn.execute(
+            "insert into index_meta (key, value)
+             values (?1, ?2)
+             on conflict(key) do update set value = excluded.value",
+            params![key, value],
         )?;
         Ok(())
     }
@@ -369,4 +421,11 @@ fn parse_language(language: &str) -> Language {
         "tsx" => Language::Tsx,
         _ => Language::JavaScript,
     }
+}
+
+fn unix_timestamp() -> i64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|duration| duration.as_secs() as i64)
+        .unwrap_or_default()
 }

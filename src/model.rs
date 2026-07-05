@@ -114,6 +114,8 @@ pub struct ContextRange {
 #[derive(Debug, Serialize)]
 pub struct ProjectIndexReport {
     pub root: String,
+    pub schema_version: i64,
+    pub index_version: String,
     pub indexed_files: usize,
     pub changed_files: usize,
     pub unchanged_files: usize,

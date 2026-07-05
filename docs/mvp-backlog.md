@@ -51,7 +51,7 @@ Rust is included early so the project can index itself during development.
 - [x] Store files and symbols.
 - [x] Track file hash.
 - [x] Skip unchanged files during incremental indexing.
-- [ ] Store index metadata and schema version.
+- [x] Store index metadata and schema version.
 - [x] Remove stale index entries for deleted files.
 - [x] Report parse errors without failing whole index.
 

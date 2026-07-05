@@ -25,6 +25,7 @@ Implemented:
 - Rust CLI entrypoint
 - local SQLite index cache under `.codeinsight/`
 - incremental indexing with file-hash skips and stale file cleanup
+- index metadata with schema and index version tracking
 - per-file indexing errors in reports without aborting the whole project scan
 - Tree-sitter parsing for TypeScript/JavaScript, Python, Go, and Rust
 - symbol extraction for common declarations
