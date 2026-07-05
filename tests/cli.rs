@@ -103,6 +103,38 @@ fn mcp_stdio_executes_symbol_search() {
     );
 }
 
+#[test]
+fn mcp_stdio_rejects_invalid_tool_arguments() {
+    let request = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 2,
+        "method": "tools/call",
+        "params": {
+            "name": "symbol_search",
+            "arguments": {
+                "root": ".",
+                "query": "AuthService",
+                "limit": 0
+            }
+        }
+    });
+
+    let mut command = Command::cargo_bin("codeinsight").unwrap();
+    command.args(["serve", "--transport", "stdio"]);
+    command.write_stdin(format!("{request}\n"));
+    let output = command.assert().success().get_output().stdout.clone();
+    let response: Value = serde_json::from_slice(&output).unwrap();
+
+    assert_eq!(response["id"], 2);
+    assert_eq!(response["error"]["code"], -32602);
+    assert!(
+        response["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("limit")
+    );
+}
+
 fn run_json<const N: usize>(args: [&str; N]) -> Value {
     let output = Command::cargo_bin("codeinsight")
         .unwrap()

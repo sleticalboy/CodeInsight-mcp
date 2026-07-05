@@ -75,18 +75,12 @@ fn handle_tool_call(params: Value) -> Result<Value> {
         .get("name")
         .and_then(Value::as_str)
         .context("missing tool name")?;
-    let arguments = params
-        .get("arguments")
-        .cloned()
-        .unwrap_or_else(|| json!({}));
+    let arguments = optional_object(&params, "arguments")?;
 
     let result = match name {
         "index_project" => {
             let root = required_path(&arguments, "root")?;
-            let force = arguments
-                .get("force")
-                .and_then(Value::as_bool)
-                .unwrap_or(false);
+            let force = optional_bool(&arguments, "force", false)?;
             serde_json::to_value(tools::index_project_value(root, force)?)?
         }
         "project_overview" => {
@@ -96,7 +90,7 @@ fn handle_tool_call(params: Value) -> Result<Value> {
         "symbol_search" => {
             let root = required_path(&arguments, "root")?;
             let query = required_str(&arguments, "query")?;
-            let limit = arguments.get("limit").and_then(Value::as_u64).unwrap_or(20) as usize;
+            let limit = optional_positive_usize(&arguments, "limit", 20)?;
             serde_json::to_value(tools::symbol_search_value(root, query, limit)?)?
         }
         "file_outline" => {
@@ -105,23 +99,14 @@ fn handle_tool_call(params: Value) -> Result<Value> {
         }
         "dependency_graph" => {
             let root = required_path(&arguments, "root")?;
-            let limit = arguments
-                .get("limit")
-                .and_then(Value::as_u64)
-                .unwrap_or(500) as usize;
+            let limit = optional_positive_usize(&arguments, "limit", 500)?;
             serde_json::to_value(tools::dependency_graph_value(root, limit)?)?
         }
         "find_references" => {
             let root = required_path(&arguments, "root")?;
             let symbol = required_str(&arguments, "symbol")?;
-            let limit = arguments
-                .get("limit")
-                .and_then(Value::as_u64)
-                .unwrap_or(100) as usize;
-            let include_definitions = arguments
-                .get("include_definitions")
-                .and_then(Value::as_bool)
-                .unwrap_or(false);
+            let limit = optional_positive_usize(&arguments, "limit", 100)?;
+            let include_definitions = optional_bool(&arguments, "include_definitions", false)?;
             serde_json::to_value(tools::find_references_value(
                 root,
                 symbol,
@@ -133,10 +118,7 @@ fn handle_tool_call(params: Value) -> Result<Value> {
             let root = required_path(&arguments, "root")?;
             let task = required_str(&arguments, "task")?.to_string();
             let symbols = required_string_array(&arguments, "symbols")?;
-            let token_budget = arguments
-                .get("token_budget")
-                .and_then(Value::as_u64)
-                .unwrap_or(6000) as usize;
+            let token_budget = optional_min_usize(&arguments, "token_budget", 6000, 500)?;
             serde_json::to_value(tools::context_pack_value(
                 root,
                 task,
@@ -257,10 +239,19 @@ fn required_path(arguments: &Value, key: &str) -> Result<PathBuf> {
     Ok(PathBuf::from(required_str(arguments, key)?))
 }
 
+fn optional_object(value: &Value, key: &str) -> Result<Value> {
+    match value.get(key) {
+        Some(arguments) if arguments.is_object() => Ok(arguments.clone()),
+        Some(_) => bail!("invalid object argument: {key}"),
+        None => Ok(json!({})),
+    }
+}
+
 fn required_str<'a>(arguments: &'a Value, key: &str) -> Result<&'a str> {
     arguments
         .get(key)
         .and_then(Value::as_str)
+        .filter(|value| !value.trim().is_empty())
         .with_context(|| format!("missing or invalid string argument: {key}"))
 }
 
@@ -269,15 +260,49 @@ fn required_string_array(arguments: &Value, key: &str) -> Result<Vec<String>> {
         .get(key)
         .and_then(Value::as_array)
         .with_context(|| format!("missing or invalid string array argument: {key}"))?;
-    values
+    let strings = values
         .iter()
         .map(|value| {
             value
                 .as_str()
+                .filter(|value| !value.trim().is_empty())
                 .map(ToOwned::to_owned)
                 .with_context(|| format!("invalid non-string value in argument: {key}"))
         })
-        .collect()
+        .collect::<Result<Vec<_>>>()?;
+    if strings.is_empty() {
+        bail!("empty string array argument: {key}");
+    }
+    Ok(strings)
+}
+
+fn optional_bool(arguments: &Value, key: &str, default: bool) -> Result<bool> {
+    match arguments.get(key) {
+        Some(value) => value
+            .as_bool()
+            .with_context(|| format!("invalid boolean argument: {key}")),
+        None => Ok(default),
+    }
+}
+
+fn optional_positive_usize(arguments: &Value, key: &str, default: usize) -> Result<usize> {
+    optional_min_usize(arguments, key, default, 1)
+}
+
+fn optional_min_usize(arguments: &Value, key: &str, default: usize, min: usize) -> Result<usize> {
+    match arguments.get(key) {
+        Some(value) => {
+            let value = value
+                .as_u64()
+                .with_context(|| format!("invalid integer argument: {key}"))?
+                as usize;
+            if value < min {
+                bail!("integer argument {key} must be >= {min}");
+            }
+            Ok(value)
+        }
+        None => Ok(default),
+    }
 }
 
 fn json_success(id: Value, result: Value) -> Value {
@@ -404,5 +429,37 @@ class AuthService:
         }))
         .unwrap_err();
         assert!(error.to_string().contains("root"));
+    }
+
+    #[test]
+    fn rejects_invalid_argument_shapes() {
+        let error = handle_tool_call(json!({
+            "name": "symbol_search",
+            "arguments": []
+        }))
+        .unwrap_err();
+        assert!(error.to_string().contains("arguments"));
+
+        let error = handle_tool_call(json!({
+            "name": "symbol_search",
+            "arguments": {
+                "root": ".",
+                "query": "AuthService",
+                "limit": 0
+            }
+        }))
+        .unwrap_err();
+        assert!(error.to_string().contains("limit"));
+
+        let error = handle_tool_call(json!({
+            "name": "context_pack",
+            "arguments": {
+                "root": ".",
+                "task": "x",
+                "symbols": []
+            }
+        }))
+        .unwrap_err();
+        assert!(error.to_string().contains("symbols"));
     }
 }

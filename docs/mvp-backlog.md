@@ -43,7 +43,7 @@ Rust is included early so the project can index itself during development.
 - [x] `tools/call` for `project_overview`
 - [x] `tools/call` for `symbol_search`
 - [x] `tools/call` for `file_outline`
-- [ ] JSON schema validation for tool args.
+- [x] JSON schema validation for tool args.
 
 ### Indexing
 
