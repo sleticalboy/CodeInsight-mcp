@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WORK_DIR="${CODEINSIGHT_BENCH_WORKDIR:-${TMPDIR:-/tmp}/codeinsight-benchmark}"
 OUTPUT="${CODEINSIGHT_BENCH_OUTPUT:-$ROOT_DIR/docs/benchmark-v0.1.md}"
 CODEINSIGHT_BIN="${CODEINSIGHT_BIN:-$ROOT_DIR/target/release/codeinsight}"
+REPORT_FILE=""
 
 REPO_NAMES=(
   "p-limit"
@@ -27,6 +28,20 @@ REPO_LANGUAGES=(
   "Rust"
 )
 
+REPO_CONTEXT_FILES=(
+  "index.js"
+  "src/itsdangerous/serializer.py"
+  "hello/hello.go"
+  "src/lib.rs"
+)
+
+REPO_CONTEXT_TASKS=(
+  "understand limit scheduling behavior"
+  "understand serializer signing behavior"
+  "understand hello server behavior"
+  "understand memchr finder API"
+)
+
 require_command() {
   if ! command -v "$1" >/dev/null 2>&1; then
     echo "missing required command: $1" >&2
@@ -38,9 +53,25 @@ clone_repo() {
   local name="$1"
   local url="$2"
   local repo_dir="$WORK_DIR/repos/$name"
+  local attempts=3
 
   rm -rf "$repo_dir"
-  git clone --quiet --depth 1 "$url" "$repo_dir"
+
+  for attempt in $(seq 1 "$attempts"); do
+    if git -c http.version=HTTP/1.1 clone --quiet --depth 1 "$url" "$repo_dir"; then
+      break
+    fi
+
+    rm -rf "$repo_dir"
+    if [ "$attempt" -eq "$attempts" ]; then
+      echo "failed to clone $url after $attempts attempts" >&2
+      exit 1
+    fi
+
+    echo "clone failed for $name, retrying ($attempt/$attempts)" >&2
+    sleep "$attempt"
+  done
+
   rm -rf "$repo_dir/.codeinsight"
 }
 
@@ -57,25 +88,26 @@ write_report_header() {
   display_bin="$CODEINSIGHT_BIN"
   display_bin="${display_bin/#$ROOT_DIR\//}"
 
-  cat >"$OUTPUT" <<EOF
+  cat >"$REPORT_FILE" <<EOF
 # CodeInsight v0.1 Smoke Benchmark
 
 Generated at: $generated_at
 
 This is a smoke benchmark, not a controlled performance benchmark. It verifies
 that CodeInsight can index real public repositories across the MVP language set
-and produce stable project summaries without crashing.
+and produce stable project summaries and context packs without crashing.
 
 Environment:
 
 - Command: \`$display_bin\`
 - Work directory: temporary clone directory
 - Index mode: forced clean index per repository
+- Context pack mode: one stable file seed per repository, 6000 token budget
 
 ## Summary
 
-| Repository | Focus | Commit | Files | Lines | Symbols | Skipped | Errors | Index ms | DB size |
-| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Repository | Focus | Commit | Files | Lines | Symbols | Skipped | Errors | Index ms | DB size | Context files | Ranges | Tokens | Truncated | First context file |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
 EOF
 }
 
@@ -85,8 +117,9 @@ append_summary_row() {
   local repo_dir="$3"
   local index_json="$4"
   local overview_json="$5"
+  local context_json="$6"
 
-  local commit files lines symbols skipped errors duration db_size
+  local commit files lines symbols skipped errors duration db_size context_files ranges tokens truncated first_context_file
   commit="$(git -C "$repo_dir" rev-parse --short HEAD)"
   files="$(json_value "$index_json" '.indexed_files')"
   lines="$(json_value "$overview_json" '[.languages[].lines] | add // 0')"
@@ -95,10 +128,16 @@ append_summary_row() {
   errors="$(json_value "$index_json" '.errors | length')"
   duration="$(json_value "$index_json" '.duration_ms')"
   db_size="$(du -h "$repo_dir/.codeinsight/index.db" | awk '{print $1}')"
+  context_files="$(json_value "$context_json" '.files | length')"
+  ranges="$(json_value "$context_json" '[.files[].ranges | length] | add // 0')"
+  tokens="$(json_value "$context_json" '.estimated_tokens')"
+  truncated="$(json_value "$context_json" '.truncated')"
+  first_context_file="$(json_value "$context_json" '.files[0].file // "-"')"
 
-  printf "| %s | %s | \`%s\` | %s | %s | %s | %s | %s | %s | %s |\n" \
+  printf "| %s | %s | \`%s\` | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | \`%s\` |\n" \
     "$name" "$language" "$commit" "$files" "$lines" "$symbols" "$skipped" "$errors" "$duration" "$db_size" \
-    >>"$OUTPUT"
+    "$context_files" "$ranges" "$tokens" "$truncated" "$first_context_file" \
+    >>"$REPORT_FILE"
 }
 
 append_detail_section() {
@@ -107,6 +146,9 @@ append_detail_section() {
   local repo_dir="$3"
   local index_json="$4"
   local overview_json="$5"
+  local context_json="$6"
+  local context_file="$7"
+  local context_task="$8"
 
   {
     echo
@@ -117,14 +159,33 @@ append_detail_section() {
     echo "- Indexed files: $(json_value "$index_json" '.indexed_files')"
     echo "- Symbols: $(json_value "$index_json" '.symbols')"
     echo "- Duration: $(json_value "$index_json" '.duration_ms') ms"
+    echo "- Context seed file: \`$context_file\`"
+    echo "- Context task: $context_task"
+    echo "- Context files: $(json_value "$context_json" '.files | length')"
+    echo "- Context ranges: $(json_value "$context_json" '[.files[].ranges | length] | add // 0')"
+    echo "- Context estimated tokens: $(json_value "$context_json" '.estimated_tokens')"
+    echo "- Context truncated: $(json_value "$context_json" '.truncated')"
+    echo
+    echo "Context pack files:"
+    echo
+    echo "| File | Ranges | First range | Importances |"
+    echo "| --- | ---: | --- | --- |"
+  } >>"$REPORT_FILE"
+
+  jq -r '
+    .files[]
+    | "| `\(.file)` | \(.ranges | length) | \((.ranges[0].start_line | tostring) + "-" + (.ranges[0].end_line | tostring)) | \([.ranges[].importance] | unique | join(", ")) |"
+  ' "$context_json" >>"$REPORT_FILE"
+
+  {
     echo
     echo "Language breakdown:"
     echo
     echo "| Language | Files | Lines |"
     echo "| --- | ---: | ---: |"
-  } >>"$OUTPUT"
+  } >>"$REPORT_FILE"
 
-  jq -r '.languages[] | "| \(.language) | \(.files) | \(.lines) |"' "$overview_json" >>"$OUTPUT"
+  jq -r '.languages[] | "| \(.language) | \(.files) | \(.lines) |"' "$overview_json" >>"$REPORT_FILE"
 
   local error_count
   error_count="$(json_value "$index_json" '.errors | length')"
@@ -133,8 +194,8 @@ append_detail_section() {
       echo
       echo "Index errors:"
       echo
-    } >>"$OUTPUT"
-    jq -r '.errors[:10][] | "- `\(.file)` during `\(.stage)`: \(.message)"' "$index_json" >>"$OUTPUT"
+    } >>"$REPORT_FILE"
+    jq -r '.errors[:10][] | "- `\(.file)` during `\(.stage)`: \(.message)"' "$index_json" >>"$REPORT_FILE"
   fi
 }
 
@@ -146,6 +207,7 @@ main() {
   require_command awk
 
   mkdir -p "$WORK_DIR/results" "$(dirname "$OUTPUT")"
+  REPORT_FILE="$WORK_DIR/results/benchmark-report.md"
 
   echo "building release binary"
   cargo build --locked --release --manifest-path "$ROOT_DIR/Cargo.toml"
@@ -156,18 +218,26 @@ main() {
     name="${REPO_NAMES[$i]}"
     url="${REPO_URLS[$i]}"
     language="${REPO_LANGUAGES[$i]}"
+    context_file="${REPO_CONTEXT_FILES[$i]}"
+    context_task="${REPO_CONTEXT_TASKS[$i]}"
     repo_dir="$WORK_DIR/repos/$name"
     index_json="$WORK_DIR/results/$name-index.json"
     overview_json="$WORK_DIR/results/$name-overview.json"
+    context_json="$WORK_DIR/results/$name-context.json"
 
     echo "benchmarking $name"
     clone_repo "$name" "$url"
     "$CODEINSIGHT_BIN" index "$repo_dir" --force >"$index_json"
     "$CODEINSIGHT_BIN" overview "$repo_dir" >"$overview_json"
-    append_summary_row "$name" "$language" "$repo_dir" "$index_json" "$overview_json"
+    "$CODEINSIGHT_BIN" context-pack "$repo_dir" \
+      --task "$context_task" \
+      --file "$context_file" \
+      --token-budget 6000 \
+      >"$context_json"
+    append_summary_row "$name" "$language" "$repo_dir" "$index_json" "$overview_json" "$context_json"
   done
 
-  cat >>"$OUTPUT" <<EOF
+  cat >>"$REPORT_FILE" <<EOF
 
 ## Details
 EOF
@@ -178,9 +248,13 @@ EOF
     repo_dir="$WORK_DIR/repos/$name"
     index_json="$WORK_DIR/results/$name-index.json"
     overview_json="$WORK_DIR/results/$name-overview.json"
-    append_detail_section "$name" "$url" "$repo_dir" "$index_json" "$overview_json"
+    context_json="$WORK_DIR/results/$name-context.json"
+    context_file="${REPO_CONTEXT_FILES[$i]}"
+    context_task="${REPO_CONTEXT_TASKS[$i]}"
+    append_detail_section "$name" "$url" "$repo_dir" "$index_json" "$overview_json" "$context_json" "$context_file" "$context_task"
   done
 
+  mv "$REPORT_FILE" "$OUTPUT"
   echo "wrote $OUTPUT"
 }
 
