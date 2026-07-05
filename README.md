@@ -44,7 +44,7 @@ Implemented:
 
 Next:
 
-- improve JavaScript symbol extraction for dynamic method registration patterns
+- improve JavaScript call target normalization for member and computed calls
 
 ## Install From Release
 

@@ -811,7 +811,8 @@ fn javascript_assignment_symbol(node: Node<'_>, source: &[u8]) -> Option<(String
         .unwrap_or_default()
         .trim();
 
-    let name = commonjs_assignment_name(left, right)?;
+    let name =
+        commonjs_assignment_name(left, right).or_else(|| computed_assignment_name(left, right))?;
     let kind = if right.starts_with("function") || right.contains("=>") {
         SymbolKind::Method
     } else {
@@ -842,6 +843,26 @@ fn commonjs_assignment_name(left: &str, right: &str) -> Option<String> {
     }
 
     None
+}
+
+fn computed_assignment_name(left: &str, right: &str) -> Option<String> {
+    if !(right.starts_with("function") || right.contains("=>")) {
+        return None;
+    }
+
+    let open = left.find('[')?;
+    let close = left.rfind(']')?;
+    if close <= open {
+        return None;
+    }
+
+    let object = left[..open].trim();
+    let property = left[open + 1..close].trim();
+    if !is_js_identifier(object) || !is_js_identifier(property) {
+        return None;
+    }
+
+    Some(format!("{object}.<dynamic>"))
 }
 
 fn assignment_export_name(left: &str, right: &str) -> Option<String> {
@@ -1049,6 +1070,11 @@ app.use = function use(fn) {
   return fn;
 };
 module.exports.create = function create() {};
+methods.forEach(function (method) {
+  app[method] = function (path) {
+    return path;
+  };
+});
 "#;
         let symbols = extract_symbols(source, Language::JavaScript, "express.js").unwrap();
         let names = symbols
@@ -1059,6 +1085,7 @@ module.exports.create = function create() {};
         assert!(names.contains(&"exports.normalizeType"));
         assert!(names.contains(&"app.use"));
         assert!(names.contains(&"module.exports.create"));
+        assert!(names.contains(&"app.<dynamic>"));
     }
 
     #[test]
