@@ -277,7 +277,7 @@ fn visit_call_node(
 ) {
     if is_call_node(node, language)
         && let Some(raw_target) = call_target_text(node, source)
-        && let Some(callee) = normalize_callee(&raw_target)
+        && let Some(callee) = normalize_callee(&raw_target, language)
     {
         let line = node.start_position().row + 1;
         let caller = caller_for_line(symbols, line).unwrap_or_else(|| "<module>".to_string());
@@ -318,7 +318,76 @@ fn call_target_text(node: Node<'_>, source: &[u8]) -> Option<String> {
         .map(ToOwned::to_owned)
 }
 
-fn normalize_callee(raw: &str) -> Option<String> {
+fn normalize_callee(raw: &str, language: Language) -> Option<String> {
+    if matches!(
+        language,
+        Language::JavaScript | Language::TypeScript | Language::Tsx
+    ) {
+        return normalize_javascript_callee(raw);
+    }
+
+    normalize_simple_callee(raw)
+}
+
+fn normalize_javascript_callee(raw: &str) -> Option<String> {
+    let trimmed = raw.trim().replace("?.", ".");
+    if trimmed.is_empty() {
+        return None;
+    }
+
+    if let Some((object, property)) = computed_member_parts(&trimmed) {
+        let object = normalize_js_member_path(object)?;
+        if let Some(property) = string_literal_value(property)
+            && is_js_identifier(&property)
+        {
+            return Some(format!("{object}.{property}"));
+        }
+
+        if is_js_identifier(property.trim()) {
+            return Some(format!("{object}.<dynamic>"));
+        }
+    }
+
+    normalize_js_member_path(&trimmed).or_else(|| normalize_simple_callee(&trimmed))
+}
+
+fn computed_member_parts(raw: &str) -> Option<(&str, &str)> {
+    let open = raw.rfind('[')?;
+    let close = raw.rfind(']')?;
+    if close != raw.len() - 1 || close <= open {
+        return None;
+    }
+
+    Some((raw[..open].trim(), raw[open + 1..close].trim()))
+}
+
+fn normalize_js_member_path(raw: &str) -> Option<String> {
+    let parts = raw.split('.').collect::<Vec<_>>();
+    if parts.is_empty() || parts.iter().any(|part| !is_js_identifier(part.trim())) {
+        return None;
+    }
+
+    Some(
+        parts
+            .into_iter()
+            .map(str::trim)
+            .collect::<Vec<_>>()
+            .join("."),
+    )
+}
+
+fn string_literal_value(raw: &str) -> Option<String> {
+    let trimmed = raw.trim();
+    let mut chars = trimmed.chars();
+    let quote = chars.next()?;
+    if !matches!(quote, '"' | '\'' | '`') || !trimmed.ends_with(quote) || trimmed.len() < 2 {
+        return None;
+    }
+
+    Some(trimmed[quote.len_utf8()..trimmed.len() - quote.len_utf8()].to_string())
+}
+
+fn normalize_simple_callee(raw: &str) -> Option<String> {
     let trimmed = raw.trim();
     if trimmed.is_empty() {
         return None;
@@ -1196,6 +1265,31 @@ def helper():
                 .iter()
                 .any(|call| { call.caller == "AuthService.login" && call.callee == "helper" })
         );
+    }
+
+    #[test]
+    fn normalizes_javascript_member_and_computed_calls() {
+        let source = r#"
+function register(app, method, handler) {
+  app.get("/ok", handler);
+  app["post"]("/ok", handler);
+  app[method]("/ok", handler);
+  module.exports.create();
+  helper();
+}
+"#;
+        let symbols = extract_symbols(source, Language::JavaScript, "routes.js").unwrap();
+        let calls = extract_calls(source, Language::JavaScript, "routes.js", &symbols);
+        let callees = calls
+            .iter()
+            .map(|call| call.callee.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(callees.contains(&"app.get"));
+        assert!(callees.contains(&"app.post"));
+        assert!(callees.contains(&"app.<dynamic>"));
+        assert!(callees.contains(&"module.exports.create"));
+        assert!(callees.contains(&"helper"));
     }
 
     #[test]

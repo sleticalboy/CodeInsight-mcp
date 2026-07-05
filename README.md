@@ -44,7 +44,7 @@ Implemented:
 
 Next:
 
-- improve JavaScript call target normalization for member and computed calls
+- add benchmark regression coverage for JavaScript member and dynamic call targets
 
 ## Install From Release
 
