@@ -8,6 +8,14 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ### Added
 
+- Release asset installer for macOS and Linux.
+
+## [0.1.0] - 2026-07-05
+
+Initial MVP release.
+
+### Added
+
 - Local-first Rust CLI and MCP stdio server.
 - Tree-sitter based parsing for Python, JavaScript/TypeScript, Go, and Rust.
 - Local SQLite index cache under `.codeinsight/`.
@@ -34,8 +42,3 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - Dependency resolution is partial and local-first.
 - Call graph support is same-file only.
 - `context_pack` uses approximate token estimation and deterministic local heuristics.
-
-## [0.1.0] - Planned
-
-Initial MVP release.
-

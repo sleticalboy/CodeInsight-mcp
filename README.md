@@ -41,9 +41,47 @@ Implemented:
 
 Next:
 
+- release install smoke tests across supported platforms
 - imported call resolution
 - benchmark fixtures for larger repositories
-- v0.1.0 release packaging
+
+## Install From Release
+
+Install the latest release for the current macOS or Linux platform:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/sleticalboy/CodeInsight-mcp/main/scripts/install.sh | sh
+```
+
+Install a specific version:
+
+```bash
+CODEINSIGHT_VERSION=v0.1.0 sh scripts/install.sh
+```
+
+Choose a custom install directory:
+
+```bash
+INSTALL_DIR="$HOME/bin" sh scripts/install.sh
+```
+
+The installer supports:
+
+- `x86_64-unknown-linux-gnu`
+- `aarch64-unknown-linux-gnu`
+- `x86_64-apple-darwin`
+- `aarch64-apple-darwin`
+
+For private repositories or rate-limited environments, install and authenticate
+GitHub CLI first:
+
+```bash
+gh auth login
+sh scripts/install.sh
+```
+
+Without GitHub CLI, the installer falls back to `curl`. Set `GITHUB_TOKEN` if
+the release assets require authentication.
 
 ## Install From Source
 
