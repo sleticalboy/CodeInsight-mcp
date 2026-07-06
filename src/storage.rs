@@ -5,10 +5,10 @@ use rusqlite::{Connection, params};
 
 use crate::model::{
     CallEdge, Dependency, DependencyGraph, DirectoryStat, Language, LanguageStat, ProjectOverview,
-    SourceFile, Symbol, SymbolKind,
+    SemanticChunkInput, SourceFile, Symbol, SymbolKind,
 };
 
-pub const SCHEMA_VERSION: i64 = 21;
+pub const SCHEMA_VERSION: i64 = 22;
 pub const INDEX_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub struct Store {
@@ -30,6 +30,8 @@ impl Store {
 
     pub fn reset(&mut self) -> Result<()> {
         let tx = self.conn.transaction()?;
+        tx.execute("delete from semantic_embeddings", [])?;
+        tx.execute("delete from semantic_chunks", [])?;
         tx.execute("delete from calls", [])?;
         tx.execute("delete from dependencies", [])?;
         tx.execute("delete from symbols", [])?;
@@ -170,6 +172,19 @@ impl Store {
         let tx = self.conn.transaction()?;
         for path in stale {
             tx.execute(
+                "delete from semantic_embeddings
+                 where chunk_id in (
+                   select sc.id from semantic_chunks sc
+                   join files f on f.id = sc.file_id
+                   where f.path = ?1
+                 )",
+                params![path],
+            )?;
+            tx.execute(
+                "delete from semantic_chunks where file_id in (select id from files where path = ?1)",
+                params![path],
+            )?;
+            tx.execute(
                 "delete from calls where source_file_id in (select id from files where path = ?1)",
                 params![path],
             )?;
@@ -211,6 +226,45 @@ impl Store {
         }
         tx.commit()?;
         Ok(())
+    }
+
+    pub fn replace_semantic_chunks(&mut self, chunks: &[SemanticChunkInput]) -> Result<usize> {
+        let tx = self.conn.transaction()?;
+        tx.execute("delete from semantic_embeddings", [])?;
+        tx.execute("delete from semantic_chunks", [])?;
+
+        let mut inserted = 0;
+        let updated_at = unix_timestamp();
+        {
+            let mut stmt = tx.prepare(
+                "insert into semantic_chunks
+                 (file_id, start_line, end_line, content_hash, token_estimate, text, updated_at)
+                 select id, ?2, ?3, ?4, ?5, ?6, ?7
+                 from files
+                 where path = ?1",
+            )?;
+            for chunk in chunks {
+                inserted += stmt.execute(params![
+                    chunk.file,
+                    chunk.start_line as i64,
+                    chunk.end_line as i64,
+                    chunk.content_hash,
+                    chunk.token_estimate as i64,
+                    chunk.text,
+                    updated_at,
+                ])?;
+            }
+        }
+        tx.commit()?;
+        Ok(inserted)
+    }
+
+    pub fn count_semantic_embeddings(&self) -> Result<usize> {
+        Ok(self
+            .conn
+            .query_row("select count(*) from semantic_embeddings", [], |row| {
+                row.get::<_, i64>(0)
+            })? as usize)
     }
 
     pub fn overview(&self, root: &Path) -> Result<ProjectOverview> {
@@ -810,6 +864,29 @@ impl Store {
                 confidence real not null
             );
 
+            create table if not exists semantic_chunks (
+                id integer primary key autoincrement,
+                file_id integer not null references files(id) on delete cascade,
+                start_line integer not null,
+                end_line integer not null,
+                content_hash text not null,
+                token_estimate integer not null,
+                text text not null,
+                updated_at integer not null,
+                unique(file_id, start_line, end_line)
+            );
+
+            create table if not exists semantic_embeddings (
+                id integer primary key autoincrement,
+                chunk_id integer not null references semantic_chunks(id) on delete cascade,
+                provider text not null,
+                model text not null,
+                dimensions integer not null,
+                vector blob not null,
+                updated_at integer not null,
+                unique(chunk_id, provider, model)
+            );
+
             create index if not exists idx_symbols_name on symbols(name);
             create index if not exists idx_symbols_qualified_name on symbols(qualified_name);
             create index if not exists idx_symbols_file_name on symbols(file_id, name);
@@ -819,6 +896,10 @@ impl Store {
             create index if not exists idx_calls_caller on calls(caller);
             create index if not exists idx_calls_callee on calls(callee);
             create index if not exists idx_calls_source_callee on calls(source_file_id, callee);
+            create index if not exists idx_semantic_chunks_file on semantic_chunks(file_id);
+            create index if not exists idx_semantic_chunks_hash on semantic_chunks(content_hash);
+            create index if not exists idx_semantic_embeddings_provider_model
+                on semantic_embeddings(provider, model);
             ",
         )?;
         self.ensure_column("dependencies", "resolved_file", "resolved_file text")?;
@@ -855,6 +936,8 @@ impl Store {
             .get_meta("schema_version")?
             .and_then(|value| value.parse::<i64>().ok());
         if version != Some(SCHEMA_VERSION) {
+            self.conn.execute("delete from semantic_embeddings", [])?;
+            self.conn.execute("delete from semantic_chunks", [])?;
             self.conn.execute("delete from calls", [])?;
             self.conn.execute("delete from dependencies", [])?;
             self.conn.execute("delete from symbols", [])?;

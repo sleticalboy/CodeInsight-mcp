@@ -107,7 +107,7 @@ Rust is included early so the project can index itself during development.
 ### Semantic Search
 
 - [x] Provider interface for embeddings.
-- [ ] Optional local embedding index.
+- [x] Optional local embedding index.
 - [ ] Hybrid symbol + semantic ranking.
 
 ### Distribution

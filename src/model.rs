@@ -114,6 +114,28 @@ pub struct SemanticSearchResult {
     pub excerpt: String,
 }
 
+#[derive(Debug, Serialize)]
+pub struct SemanticIndexReport {
+    pub root: String,
+    pub indexed_files: usize,
+    pub chunks: usize,
+    pub embeddings: usize,
+    pub chunk_lines: usize,
+    pub provider: String,
+    pub vector_status: String,
+    pub errors: Vec<IndexError>,
+}
+
+#[derive(Debug, Clone)]
+pub struct SemanticChunkInput {
+    pub file: String,
+    pub start_line: usize,
+    pub end_line: usize,
+    pub content_hash: String,
+    pub token_estimate: usize,
+    pub text: String,
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct CallEdge {
     pub file: String,

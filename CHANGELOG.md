@@ -39,6 +39,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - PHP indexing for common classes, interfaces, traits, enums, functions, methods, properties, constants, use declarations, and calls.
 - Ruby indexing for common classes, modules, methods, singleton methods, constants, require directives, and calls.
 - Embedding provider interface and preview `semantic_search` CLI/MCP contract with explicit unconfigured-provider errors.
+- Local semantic chunk index storage and `semantic_index` CLI/MCP entry point for future embedding generation.
 
 ### Changed
 

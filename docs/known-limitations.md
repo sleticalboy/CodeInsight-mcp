@@ -76,12 +76,12 @@ Limitations:
 
 ### `semantic_search`
 
-`semantic_search` is currently a preview contract for embedding-backed search.
+`semantic_search` is currently a preview contract for embedding-backed search. `semantic_index` can build local source-text chunks, but vectors are not generated until an embedding backend is added and enabled.
 
 Limitations:
 
 - The embedding provider interface exists, but no provider is enabled by default.
-- No local vector index is built or queried yet.
+- Local semantic chunks can be stored, but no vector embeddings are built or queried yet.
 - Calls fail with a clear provider-configuration error until a supported backend is enabled.
 - `context_pack` still uses deterministic lexical, symbol, reference, dependency, and call graph signals.
 

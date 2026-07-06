@@ -120,6 +120,11 @@ fn handle_tool_call(params: Value) -> Result<Value> {
             let limit = optional_positive_usize(&arguments, "limit", 20)?;
             serde_json::to_value(tools::semantic_search_value(root, query, limit)?)?
         }
+        "semantic_index" => {
+            let root = required_path(&arguments, "root")?;
+            let chunk_lines = optional_positive_usize(&arguments, "chunk_lines", 80)?;
+            serde_json::to_value(tools::semantic_index_value(root, chunk_lines)?)?
+        }
         "context_pack" => {
             let root = required_path(&arguments, "root")?;
             let task = required_str(&arguments, "task")?.to_string();
@@ -246,6 +251,18 @@ fn tool_definitions() -> Value {
                     "limit": {"type": "integer", "minimum": 1}
                 },
                 "required": ["root", "query"]
+            }
+        },
+        {
+            "name": "semantic_index",
+            "description": "Build local semantic text chunks for a previously indexed repository.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "root": {"type": "string"},
+                    "chunk_lines": {"type": "integer", "minimum": 1}
+                },
+                "required": ["root"]
             }
         },
         {
@@ -480,6 +497,23 @@ def helper():
             semantic_error
                 .to_string()
                 .contains("embedding provider is not configured")
+        );
+
+        let semantic_index_result = handle_tool_call(json!({
+            "name": "semantic_index",
+            "arguments": {
+                "root": dir.path(),
+                "chunk_lines": 20
+            }
+        }))
+        .unwrap();
+        assert_eq!(
+            semantic_index_result["structuredContent"]["vector_status"].as_str(),
+            Some("chunks_indexed_without_embeddings")
+        );
+        assert_eq!(
+            semantic_index_result["structuredContent"]["chunks"].as_u64(),
+            Some(1)
         );
 
         let context_result = handle_tool_call(json!({

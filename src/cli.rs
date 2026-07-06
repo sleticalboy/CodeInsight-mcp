@@ -26,6 +26,8 @@ pub enum Command {
     FindReferences(FindReferencesArgs),
     /// Search indexed code with an embedding provider.
     SemanticSearch(SemanticSearchArgs),
+    /// Build or refresh local semantic index chunks.
+    SemanticIndex(SemanticIndexArgs),
     /// Build an agent-ready context pack from seed symbols or files.
     ContextPack(ContextPackArgs),
     /// Find callers for a function or method.
@@ -84,6 +86,13 @@ pub struct SemanticSearchArgs {
     pub query: String,
     #[arg(long, default_value_t = 20)]
     pub limit: usize,
+}
+
+#[derive(Debug, Args)]
+pub struct SemanticIndexArgs {
+    pub root: PathBuf,
+    #[arg(long, default_value_t = 80)]
+    pub chunk_lines: usize,
 }
 
 #[derive(Debug, Args)]

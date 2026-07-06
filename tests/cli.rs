@@ -19,6 +19,18 @@ fn cli_indexes_and_queries_fixture_project() {
     assert_eq!(second_index["changed_files"], 0);
     assert_eq!(second_index["unchanged_files"], 16);
 
+    let semantic_index = run_json([
+        "semantic-index",
+        fixture.path().to_str().unwrap(),
+        "--chunk-lines",
+        "20",
+    ]);
+    assert_eq!(
+        semantic_index["vector_status"],
+        "chunks_indexed_without_embeddings"
+    );
+    assert!(semantic_index["chunks"].as_u64().unwrap() > 0);
+
     let symbols = run_json([
         "symbols",
         fixture.path().to_str().unwrap(),

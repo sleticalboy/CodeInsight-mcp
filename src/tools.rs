@@ -6,12 +6,14 @@ use std::{
 };
 
 use anyhow::{Context, Result, bail};
+use sha2::{Digest, Sha256};
 
 use crate::{
     embedding, index,
     model::{
-        CallEdge, ContextFile, ContextPack, ContextRange, DependencyGraph, ProjectIndexReport,
-        ProjectOverview, ReferenceMatch, SemanticSearchResult, Symbol, SymbolKind,
+        CallEdge, ContextFile, ContextPack, ContextRange, DependencyGraph, IndexError,
+        ProjectIndexReport, ProjectOverview, ReferenceMatch, SemanticChunkInput,
+        SemanticIndexReport, SemanticSearchResult, Symbol, SymbolKind,
     },
     storage::Store,
 };
@@ -65,6 +67,11 @@ pub fn find_references(
 pub fn semantic_search(root: PathBuf, query: String, limit: usize) -> Result<()> {
     let results = semantic_search_value(root, &query, limit)?;
     print_json(&results)
+}
+
+pub fn semantic_index(root: PathBuf, chunk_lines: usize) -> Result<()> {
+    let report = semantic_index_value(root, chunk_lines)?;
+    print_json(&report)
 }
 
 pub fn context_pack(
@@ -171,6 +178,52 @@ pub fn semantic_search_value(
     let provider = embedding::provider_from_env()?;
     let _query_embedding = embedding::embed_query(provider.as_ref(), query)?;
     bail!("semantic search index is not available yet")
+}
+
+pub fn semantic_index_value(root: PathBuf, chunk_lines: usize) -> Result<SemanticIndexReport> {
+    let root = root.canonicalize()?;
+    let chunk_lines = chunk_lines.max(1);
+    let mut store = Store::open(&root)?;
+    let files = store.indexed_files()?;
+    if files.is_empty() {
+        bail!("semantic_index requires an existing project index; run index first")
+    }
+
+    let mut chunks = Vec::new();
+    let mut errors = Vec::new();
+    for file in &files {
+        let path = root.join(file);
+        match fs::read_to_string(&path) {
+            Ok(source) => chunks.extend(semantic_chunks_for_file(file, &source, chunk_lines)),
+            Err(error) => errors.push(IndexError {
+                file: file.clone(),
+                stage: "semantic_read".to_string(),
+                message: error.to_string(),
+            }),
+        }
+    }
+
+    let chunks_written = store.replace_semantic_chunks(&chunks)?;
+    let embeddings = store.count_semantic_embeddings()?;
+    let provider = std::env::var(embedding::PROVIDER_ENV)
+        .ok()
+        .filter(|value| !value.trim().is_empty())
+        .unwrap_or_else(|| "disabled".to_string());
+
+    Ok(SemanticIndexReport {
+        root: root.display().to_string(),
+        indexed_files: files.len(),
+        chunks: chunks_written,
+        embeddings,
+        chunk_lines,
+        provider,
+        vector_status: if embeddings == 0 {
+            "chunks_indexed_without_embeddings".to_string()
+        } else {
+            "embeddings_indexed".to_string()
+        },
+        errors,
+    })
 }
 
 pub fn context_pack_value(
@@ -430,6 +483,42 @@ pub fn context_pack_value(
         estimated_tokens,
         truncated,
     })
+}
+
+fn semantic_chunks_for_file(
+    file: &str,
+    source: &str,
+    chunk_lines: usize,
+) -> Vec<SemanticChunkInput> {
+    let lines = source.lines().collect::<Vec<_>>();
+    if lines.is_empty() {
+        return Vec::new();
+    }
+
+    let mut chunks = Vec::new();
+    for (chunk_index, chunk) in lines.chunks(chunk_lines).enumerate() {
+        let text = chunk.join("\n");
+        if text.trim().is_empty() {
+            continue;
+        }
+        let start_line = chunk_index * chunk_lines + 1;
+        let end_line = start_line + chunk.len() - 1;
+        chunks.push(SemanticChunkInput {
+            file: file.to_string(),
+            start_line,
+            end_line,
+            content_hash: hash_text(&text),
+            token_estimate: estimate_tokens(&text),
+            text,
+        });
+    }
+    chunks
+}
+
+fn hash_text(text: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(text.as_bytes());
+    format!("{:x}", hasher.finalize())
 }
 
 pub fn callers_value(root: PathBuf, symbol: &str, limit: usize) -> Result<Vec<CallEdge>> {
