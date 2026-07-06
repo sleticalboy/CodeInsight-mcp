@@ -46,6 +46,7 @@ fn cli_indexes_and_queries_fixture_project() {
     assert!(targets.contains(&"fixture-lib/package-ui"));
     assert!(targets.contains(&"dep-lib/feature"));
     assert!(targets.contains(&"dep-lib/node-feature"));
+    assert!(targets.contains(&"legacy-lib"));
     assert!(
         deps["dependencies"]
             .as_array()
@@ -53,6 +54,16 @@ fn cli_indexes_and_queries_fixture_project() {
             .iter()
             .any(|dependency| {
                 dependency["target"] == "./ui" && dependency["resolved_file"] == "src/ui.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "legacy-lib"
+                    && dependency["resolved_file"] == "node_modules/legacy-lib/dist/index.js"
             })
     );
     assert!(
@@ -761,6 +772,7 @@ import { sharedRender } from "shared";
 import { packageRender } from "fixture-lib/package-ui";
 import { depRender } from "dep-lib/feature";
 import { depNodeRender } from "dep-lib/node-feature";
+import { legacyRender } from "legacy-lib";
 const { render: draw } = require("./ui");
 const uiModule = require("./ui");
 const computedUiModule = require("./" + "ui");
@@ -855,6 +867,7 @@ export function packageExportMain() {
 export function dependencyPackageMain() {
   depRender();
   depNodeRender();
+  legacyRender();
 }
 "#,
     );
@@ -875,6 +888,26 @@ export function dependencyPackageMain() {
       "default": "./dist/default-feature.js"
     }
   }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/legacy-lib/package.json",
+        r#"
+{
+  "name": "legacy-lib",
+  "module": "./dist/index.js",
+  "main": "./dist/cjs.js"
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/legacy-lib/dist/index.js",
+        r#"
+export function legacyRender() {
+  return "legacy";
 }
 "#,
     );

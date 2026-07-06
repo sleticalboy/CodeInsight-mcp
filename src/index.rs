@@ -1680,9 +1680,11 @@ fn resolve_package_exports_target(
     let package: Value = serde_json::from_str(&package_text).ok()?;
     let name = package.get("name")?.as_str()?;
     let subpath = package_export_subpath(name, &dependency.target)?;
-    let exports = package.get("exports")?;
     let package_dir = package_path.parent().unwrap_or(Path::new(""));
-    let mapped = package_export_mapping(exports, &subpath)?;
+    let mapped = package
+        .get("exports")
+        .and_then(|exports| package_export_mapping(exports, &subpath))
+        .or_else(|| package_metadata_entry(&package, &subpath))?;
     resolve_base(root, package_dir.join(mapped), extensions)
 }
 
@@ -1700,9 +1702,11 @@ fn resolve_node_modules_package_exports_target(
         find_node_modules_package_json(root, &dependency.source_file, &package_name)?;
     let package_text = fs::read_to_string(root.join(&package_path)).ok()?;
     let package: Value = serde_json::from_str(&package_text).ok()?;
-    let exports = package.get("exports")?;
     let package_dir = package_path.parent().unwrap_or(Path::new(""));
-    let mapped = package_export_mapping(exports, &subpath)?;
+    let mapped = package
+        .get("exports")
+        .and_then(|exports| package_export_mapping(exports, &subpath))
+        .or_else(|| package_metadata_entry(&package, &subpath))?;
     resolve_base(root, package_dir.join(mapped), extensions)
 }
 
@@ -1804,6 +1808,19 @@ fn package_export_mapping(exports: &Value, subpath: &str) -> Option<PathBuf> {
         let target = package_export_target(value)?;
         let mapped = apply_tsconfig_path_mapping(&target, wildcard.as_deref())?;
         return Some(mapped);
+    }
+    None
+}
+
+fn package_metadata_entry(package: &Value, subpath: &str) -> Option<PathBuf> {
+    if subpath != "." {
+        return None;
+    }
+
+    for field in ["module", "main", "types", "typings"] {
+        if let Some(target) = package.get(field).and_then(Value::as_str) {
+            return Some(PathBuf::from(target));
+        }
     }
     None
 }
