@@ -923,6 +923,7 @@ fn parse_language(language: &str) -> Language {
         "csharp" => Language::CSharp,
         "go" => Language::Go,
         "java" => Language::Java,
+        "php" => Language::Php,
         "python" => Language::Python,
         "rust" => Language::Rust,
         "typescript" => Language::TypeScript,

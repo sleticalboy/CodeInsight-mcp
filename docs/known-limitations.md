@@ -20,6 +20,7 @@ These capabilities are expected to be reliable for common source files in suppor
   - Java classes, interfaces, enums, records, methods, constructors, fields, package declarations, and imports.
   - C/C++ functions, structs/classes, enums, typedefs, macro constants, local includes, and basic calls.
   - C# classes, interfaces, structs, enums, records, methods, constructors, properties, fields, using directives, and basic calls.
+  - PHP classes, interfaces, traits, enums, functions, methods, properties, constants, namespace use declarations, and basic calls.
 - Caching indexed files by content hash.
 - Skipping unchanged files during incremental indexing.
 - Removing stale index records for deleted files.
@@ -153,12 +154,13 @@ Current MVP support:
 - Java
 - C / C++
 - C#
+- PHP
 
 Rust support exists partly so the project can index itself during development.
 
 Planned expansion:
 
-- PHP or Ruby
+- Ruby
 
 ## Non-Goals For v0.1.0
 

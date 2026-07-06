@@ -13,6 +13,7 @@ pub enum Language {
     Java,
     #[serde(rename = "javascript")]
     JavaScript,
+    Php,
     Python,
     Rust,
     #[serde(rename = "typescript")]
@@ -29,6 +30,7 @@ impl Language {
             Self::Go => "go",
             Self::Java => "java",
             Self::JavaScript => "javascript",
+            Self::Php => "php",
             Self::Python => "python",
             Self::Rust => "rust",
             Self::TypeScript => "typescript",

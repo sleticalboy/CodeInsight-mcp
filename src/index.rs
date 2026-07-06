@@ -277,7 +277,7 @@ fn visit_call_node(
     calls: &mut Vec<CallEdge>,
 ) {
     if is_call_node(node, language)
-        && let Some(raw_target) = call_target_text(node, source)
+        && let Some(raw_target) = call_target_text(node, source, language)
         && let Some(callee) = normalize_callee(&raw_target, language)
     {
         let line = node.start_position().row + 1;
@@ -318,17 +318,49 @@ fn is_call_node(node: Node<'_>, language: Language) -> bool {
             node.kind(),
             "method_invocation" | "object_creation_expression"
         ),
+        Language::Php => matches!(
+            node.kind(),
+            "function_call_expression"
+                | "member_call_expression"
+                | "nullsafe_member_call_expression"
+                | "object_creation_expression"
+                | "scoped_call_expression"
+        ),
         Language::Python => node.kind() == "call",
     }
 }
 
-fn call_target_text(node: Node<'_>, source: &[u8]) -> Option<String> {
+fn call_target_text(node: Node<'_>, source: &[u8], language: Language) -> Option<String> {
+    if language == Language::Php
+        && let Some(target) = php_call_target_text(node, source)
+    {
+        return Some(target);
+    }
+
     node.child_by_field_name("function")
         .or_else(|| node.child_by_field_name("name"))
         .or_else(|| node.child_by_field_name("type"))
         .or_else(|| node.child(0))
         .and_then(|child| child.utf8_text(source).ok())
         .map(ToOwned::to_owned)
+}
+
+fn php_call_target_text(node: Node<'_>, source: &[u8]) -> Option<String> {
+    match node.kind() {
+        "function_call_expression" => child_text(node, "function", source),
+        "member_call_expression" | "nullsafe_member_call_expression" => {
+            child_text(node, "name", source)
+        }
+        "scoped_call_expression" => {
+            let scope = child_text(node, "scope", source)?;
+            let name = child_text(node, "name", source)?;
+            Some(format!("{scope}::{name}"))
+        }
+        "object_creation_expression" => {
+            first_child_text(node, source, &["name", "qualified_name", "relative_name"])
+        }
+        _ => None,
+    }
 }
 
 fn normalize_callee(raw: &str, language: Language) -> Option<String> {
@@ -622,6 +654,7 @@ fn dependencies_from_node(
     match language {
         Language::C | Language::Cpp => c_like_dependencies(node, source, language, source_file),
         Language::CSharp => csharp_dependencies(node, source, language, source_file),
+        Language::Php => php_dependencies(node, source, language, source_file),
         Language::Python => python_dependencies(node, source, language, source_file),
         Language::Go => go_dependencies(node, source, language, source_file),
         Language::Java => java_dependencies(node, source, language, source_file),
@@ -792,6 +825,20 @@ fn csharp_dependencies(
             "using",
             csharp_using_targets,
         ),
+        _ => Vec::new(),
+    }
+}
+
+fn php_dependencies(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+) -> Vec<Dependency> {
+    match node.kind() {
+        "namespace_use_declaration" => {
+            text_dependencies(node, source, language, source_file, "use", php_use_targets)
+        }
         _ => Vec::new(),
     }
 }
@@ -1590,7 +1637,7 @@ fn resolve_dependency(root: &Path, dependency: &Dependency) -> Option<String> {
         Language::CSharp => None,
         Language::Python => resolve_python_target(root, dependency),
         Language::Rust => resolve_rust_target(root, dependency),
-        Language::Go | Language::Java => None,
+        Language::Go | Language::Java | Language::Php => None,
     }
 }
 
@@ -2102,6 +2149,27 @@ fn csharp_using_targets(text: &str) -> Vec<String> {
         .unwrap_or_default()
 }
 
+fn php_use_targets(text: &str) -> Vec<String> {
+    text.trim()
+        .strip_prefix("use ")
+        .map(|target| {
+            target
+                .trim_start_matches("function ")
+                .trim_start_matches("const ")
+                .trim_end_matches(';')
+        })
+        .map(|target| {
+            target
+                .split(',')
+                .filter_map(|part| part.split(" as ").next())
+                .map(str::trim)
+                .filter(|part| !part.is_empty() && !part.contains('{'))
+                .map(ToOwned::to_owned)
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
 fn rust_use_targets(text: &str) -> Vec<String> {
     text.trim()
         .strip_prefix("use ")
@@ -2168,6 +2236,7 @@ fn symbol_from_node(
     match language {
         Language::C | Language::Cpp => c_like_symbol(node, source),
         Language::CSharp => csharp_symbol(node, source),
+        Language::Php => php_symbol(node, source),
         Language::Python => python_symbol(node, source),
         Language::Rust => rust_symbol(node, source),
         Language::Go => go_symbol(node, source),
@@ -2264,6 +2333,29 @@ fn csharp_symbol(node: Node<'_>, source: &[u8]) -> Option<(String, SymbolKind)> 
             child_text(node, "name", source).map(|name| (name, SymbolKind::Method))
         }
         "field_declaration" => find_csharp_field_name(node, source),
+        _ => None,
+    }
+}
+
+fn php_symbol(node: Node<'_>, source: &[u8]) -> Option<(String, SymbolKind)> {
+    match node.kind() {
+        "class_declaration" => {
+            child_text(node, "name", source).map(|name| (name, SymbolKind::Class))
+        }
+        "interface_declaration" => {
+            child_text(node, "name", source).map(|name| (name, SymbolKind::Interface))
+        }
+        "trait_declaration" | "enum_declaration" => {
+            child_text(node, "name", source).map(|name| (name, SymbolKind::Struct))
+        }
+        "function_definition" => {
+            child_text(node, "name", source).map(|name| (name, SymbolKind::Function))
+        }
+        "method_declaration" => {
+            child_text(node, "name", source).map(|name| (name, SymbolKind::Method))
+        }
+        "property_declaration" => find_php_property_name(node, source),
+        "const_declaration" => find_php_const_name(node, source),
         _ => None,
     }
 }
@@ -2664,6 +2756,16 @@ fn child_text(node: Node<'_>, field: &str, source: &[u8]) -> Option<String> {
         .map(ToOwned::to_owned)
 }
 
+fn first_child_text(node: Node<'_>, source: &[u8], kinds: &[&str]) -> Option<String> {
+    let mut cursor = node.walk();
+    for child in node_children(&mut cursor) {
+        if kinds.contains(&child.kind()) {
+            return child.utf8_text(source).ok().map(ToOwned::to_owned);
+        }
+    }
+    None
+}
+
 fn find_go_type_name(node: Node<'_>, source: &[u8]) -> Option<(String, SymbolKind)> {
     let mut cursor = node.walk();
     for child in node_children(&mut cursor) {
@@ -2731,6 +2833,30 @@ fn find_csharp_variable_name(node: Node<'_>, source: &[u8]) -> Option<String> {
             if let Some(name) = find_c_declarator_identifier(child, source) {
                 return Some(name);
             }
+        }
+    }
+    None
+}
+
+fn find_php_property_name(node: Node<'_>, source: &[u8]) -> Option<(String, SymbolKind)> {
+    let mut cursor = node.walk();
+    for child in node_children(&mut cursor) {
+        if child.kind() == "property_element" {
+            let name = child_text(child, "name", source)?
+                .trim_start_matches('$')
+                .to_string();
+            return Some((name, SymbolKind::Variable));
+        }
+    }
+    None
+}
+
+fn find_php_const_name(node: Node<'_>, source: &[u8]) -> Option<(String, SymbolKind)> {
+    let mut cursor = node.walk();
+    for child in node_children(&mut cursor) {
+        if child.kind() == "const_element" {
+            let name = first_child_text(child, source, &["name"])?;
+            return Some((name, SymbolKind::Constant));
         }
     }
     None
@@ -3201,6 +3327,65 @@ public interface UserRepository {
             calls
                 .iter()
                 .any(|call| call.caller == "AuthService.Login" && call.callee == "Audit")
+        );
+    }
+
+    #[test]
+    fn extracts_php_symbols_dependencies_and_calls() {
+        let source = r#"<?php
+namespace App\Controller;
+
+use App\Repository\UserRepository;
+use function App\Support\audit_login;
+
+class AuthController {
+    private UserRepository $users;
+    public const GUARD = 'web';
+
+    public function __construct(UserRepository $users) {
+        $this->users = $users;
+    }
+
+    public function login(string $id): bool {
+        $user = $this->users->find($id);
+        $this->audit($user);
+        return true;
+    }
+
+    private function audit(User $user): void {}
+}
+
+interface UserRepository {
+    public function find(string $id): User;
+}
+"#;
+        let symbols = extract_symbols(source, Language::Php, "AuthController.php").unwrap();
+        let names = symbols
+            .iter()
+            .map(|symbol| symbol.qualified_name.as_str())
+            .collect::<Vec<_>>();
+        assert!(names.contains(&"AuthController"));
+        assert!(names.contains(&"AuthController.users"));
+        assert!(names.contains(&"AuthController.GUARD"));
+        assert!(names.contains(&"AuthController.__construct"));
+        assert!(names.contains(&"AuthController.login"));
+        assert!(names.contains(&"AuthController.audit"));
+        assert!(names.contains(&"UserRepository"));
+        assert!(names.contains(&"UserRepository.find"));
+
+        let deps = extract_dependencies(source, Language::Php, "AuthController.php").unwrap();
+        let targets = deps
+            .iter()
+            .map(|dependency| dependency.target.as_str())
+            .collect::<Vec<_>>();
+        assert!(targets.contains(&"App\\Repository\\UserRepository"));
+        assert!(targets.contains(&"App\\Support\\audit_login"));
+
+        let calls = extract_calls(source, Language::Php, "AuthController.php", &symbols);
+        assert!(
+            calls
+                .iter()
+                .any(|call| call.caller == "AuthController.login" && call.callee == "audit")
         );
     }
 
