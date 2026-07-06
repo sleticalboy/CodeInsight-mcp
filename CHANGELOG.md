@@ -43,6 +43,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - Deterministic hybrid ranking skeleton that lets `context_pack` use local semantic chunks as supporting context.
 - Optional local-hash embedding generation for semantic chunks when `CODEINSIGHT_EMBEDDING_PROVIDER=local-hash`.
 - Local semantic vector search over generated embeddings with cosine ranking.
+- Semantic smoke script and docs for the local `semantic-index` plus `semantic-search` loop.
 
 ### Changed
 

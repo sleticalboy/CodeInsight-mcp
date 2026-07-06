@@ -18,6 +18,7 @@ The product direction and execution plan live in:
 - [Known limitations](docs/known-limitations.md)
 - [MCP client configuration](docs/mcp-client-config.md)
 - [MCP client smoke test](docs/mcp-client-smoke.md)
+- [Semantic smoke test](docs/semantic-smoke.md)
 - [Smoke benchmark](docs/benchmark-v0.1.md)
 - [Large repository benchmark](docs/benchmark-large.md)
 - [Changelog](CHANGELOG.md)
@@ -43,6 +44,7 @@ Implemented:
 - MCP stdio `initialize`, `tools/list`, and `tools/call` for P0 tools
 - MCP tool argument validation with stable JSON-RPC errors
 - fixture-based CLI and MCP stdio integration tests
+- local smoke scripts for MCP stdio, semantic search, Docker, release install, and benchmark fixtures
 
 Next:
 

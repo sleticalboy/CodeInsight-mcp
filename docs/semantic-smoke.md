@@ -1,0 +1,28 @@
+# Semantic Smoke Test
+
+`scripts/semantic-smoke.sh` verifies the local semantic search loop without any
+external embedding service.
+
+It creates a temporary Python fixture and checks:
+
+- `index` builds a clean project index.
+- `semantic-search` fails clearly when `CODEINSIGHT_EMBEDDING_PROVIDER` is not configured.
+- `semantic-index` stores source-text chunks without embeddings by default.
+- `CODEINSIGHT_EMBEDDING_PROVIDER=local-hash semantic-index` generates deterministic local embeddings.
+- `CODEINSIGHT_EMBEDDING_PROVIDER=local-hash semantic-search` returns a relevant chunk with a positive score.
+
+Run it from the repository root:
+
+```bash
+scripts/semantic-smoke.sh
+```
+
+Use an existing binary:
+
+```bash
+CODEINSIGHT_BIN=target/release/codeinsight scripts/semantic-smoke.sh
+```
+
+The smoke test is deterministic and local-only. It is meant as a release gate
+for the preview `semantic-index` and `semantic-search` path, not as a quality
+benchmark for production embeddings.
