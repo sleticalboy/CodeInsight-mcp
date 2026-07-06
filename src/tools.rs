@@ -19,6 +19,7 @@ use crate::{
 const CONTEXT_SCORE_SEED_FILE: i32 = 100;
 const CONTEXT_SCORE_SEED_HEADER: i32 = 110;
 const CONTEXT_SCORE_SYMBOL_DEFINITION: i32 = 90;
+const CONTEXT_SCORE_CALL_GRAPH: i32 = 75;
 const CONTEXT_SCORE_REFERENCE_BASE: i32 = 60;
 const CONTEXT_SCORE_LOCAL_DEPENDENCY: i32 = 40;
 const CONTEXT_SCORE_TASK_MATCH_BOOST: i32 = 30;
@@ -228,8 +229,24 @@ pub fn context_pack_value(
         );
     }
 
-    let selected_files = ranges_by_file.keys().cloned().collect::<Vec<_>>();
     let store = Store::open(&root)?;
+    for seed in &seed_symbols {
+        for call in store.callees(seed, 20)? {
+            let Some(callee_file) = call.callee_file.clone() else {
+                continue;
+            };
+            push_context_range(
+                &mut ranges_by_file,
+                callee_file,
+                1,
+                40,
+                format!("Call graph target of {} via {}", call.caller, call.callee),
+                CONTEXT_SCORE_CALL_GRAPH + call_task_boost(&call, &task_keywords),
+            );
+        }
+    }
+
+    let selected_files = ranges_by_file.keys().cloned().collect::<Vec<_>>();
     for dependency in store.resolved_dependencies_for_files(&selected_files)? {
         let score =
             CONTEXT_SCORE_LOCAL_DEPENDENCY + dependency_task_boost(&dependency, &task_keywords);
@@ -597,6 +614,19 @@ fn dependency_task_boost(dependency: &crate::model::Dependency, keywords: &[Stri
             dependency.source_file.as_str(),
             dependency.target.as_str(),
             dependency.resolved_file.as_deref().unwrap_or_default(),
+        ]
+        .into_iter(),
+    )
+}
+
+fn call_task_boost(call: &CallEdge, keywords: &[String]) -> i32 {
+    task_match_boost(
+        keywords,
+        [
+            call.file.as_str(),
+            call.caller.as_str(),
+            call.callee.as_str(),
+            call.callee_file.as_deref().unwrap_or_default(),
         ]
         .into_iter(),
     )

@@ -9,13 +9,13 @@ fn cli_indexes_and_queries_fixture_project() {
     let fixture = fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 13);
-    assert_eq!(index["changed_files"], 13);
+    assert_eq!(index["indexed_files"], 14);
+    assert_eq!(index["changed_files"], 14);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let second_index = run_json(["index", fixture.path().to_str().unwrap()]);
     assert_eq!(second_index["changed_files"], 0);
-    assert_eq!(second_index["unchanged_files"], 13);
+    assert_eq!(second_index["unchanged_files"], 14);
 
     let symbols = run_json([
         "symbols",
@@ -228,6 +228,26 @@ fn cli_indexes_and_queries_fixture_project() {
         .collect::<Vec<_>>();
     assert_eq!(context_files.first(), Some(&"src/main.ts"));
     assert!(context_files.contains(&"src/ui.ts"));
+
+    let call_graph_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand call graph target",
+        "--symbol",
+        "callGraphEntry",
+        "--token-budget",
+        "1600",
+    ]);
+    let call_graph_context_files = call_graph_context["files"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|file| file["file"].as_str())
+        .collect::<Vec<_>>();
+    assert!(call_graph_context_files.contains(&"src/call-entry.ts"));
+    assert!(call_graph_context_files.contains(&"src/barrel.ts"));
+    assert!(call_graph_context_files.contains(&"src/ui.ts"));
 
     let long_file_context = run_json([
         "context-pack",
@@ -881,6 +901,17 @@ export function dependencyPackageMain() {
   depNodeRender();
   legacyRender();
   legacyPluginRender();
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/call-entry.ts",
+        r#"
+import { relayRender } from "./barrel";
+
+export function callGraphEntry() {
+  relayRender();
 }
 "#,
     );

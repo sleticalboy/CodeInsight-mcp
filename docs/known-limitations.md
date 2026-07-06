@@ -93,7 +93,8 @@ Current deterministic ranking order:
 - File seeds have the highest priority.
 - File seed ranges include header/import context plus primary top-level symbols. Large symbol and merged ranges are capped to keep small budgets useful. If no primary symbols are found, `context_pack` falls back to the first 80 lines.
 - Symbol definition ranges are next.
-- Text references are ranked after definitions, with reference confidence as a small boost.
+- Static call graph target files from seed symbols are ranked after definitions.
+- Text references are ranked after call graph targets, with reference confidence as a small boost.
 - Resolved local dependencies are included as supporting context after direct matches.
 - Task keywords provide a lightweight boost when they match symbol names, file paths, reference context, or dependency targets.
 - Ties are broken by total file score and then stable file path order.
@@ -102,7 +103,7 @@ Limitations:
 
 - It is deterministic and local-only.
 - It does not use semantic embeddings.
-- It does not yet rank by call graph, type graph, test relevance, semantic similarity, or edit history.
+- It does not yet rank by type graph, test relevance, semantic similarity, or edit history.
 - Task relevance is lexical only and uses simple ASCII keyword matching.
 - Token estimation is approximate and based on character count.
 - It may include noisy references when the seed symbol is common.
@@ -186,7 +187,7 @@ Near-term improvements:
 
 - Improve external dynamic import handlers and variable-based `require(...)` handling where obvious.
 - Add broader TypeScript path alias edge cases and package manager metadata handling.
-- Use call graph hints in `context_pack` ranking.
+- Use broader graph hints in `context_pack` ranking.
 - Exclude or down-rank tests and comments in reference search.
 - Add fixture repositories for each supported language.
 
