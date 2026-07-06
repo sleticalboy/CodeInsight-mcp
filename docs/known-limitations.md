@@ -79,7 +79,7 @@ Limitations:
 - Grouped imports may be compacted rather than expanded precisely.
 - Local package self-reference `exports` resolution supports JSON-compatible `package.json` files with exact or single-wildcard string mappings.
 - Dependency package `exports` resolution supports nearest `node_modules` packages with exact or single-wildcard mappings and common condition objects.
-- Package metadata fallback supports root package specifiers through `module`, `main`, `types`, and `typings`.
+- Package metadata fallback supports root package specifiers through `module`, `main`, `types`, and `typings`, plus package subpaths resolved as package-relative files or index files.
 - TypeScript and JavaScript `baseUrl`/`paths` resolution supports JSON-compatible `tsconfig.json` and `jsconfig.json` files with exact or single-wildcard path mappings, multiple fallback mappings, and directory index files.
 - Monorepo workspace boundaries are not modeled yet.
 - Go import paths are not resolved to files yet.
@@ -185,7 +185,7 @@ Do not treat current MVP output as a formal static-analysis proof.
 Near-term improvements:
 
 - Improve external dynamic import handlers and variable-based `require(...)` handling where obvious.
-- Add subpath package metadata fallback and broader TypeScript path alias edge cases.
+- Add broader TypeScript path alias edge cases and package manager metadata handling.
 - Use call graph hints in `context_pack` ranking.
 - Exclude or down-rank tests and comments in reference search.
 - Add fixture repositories for each supported language.

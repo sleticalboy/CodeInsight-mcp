@@ -44,7 +44,7 @@ Implemented:
 
 Next:
 
-- improve subpath package metadata fallback and broader TypeScript path alias edge cases
+- improve broader TypeScript path alias edge cases and package manager metadata handling
 
 ## Install From Release
 

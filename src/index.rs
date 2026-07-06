@@ -1813,16 +1813,16 @@ fn package_export_mapping(exports: &Value, subpath: &str) -> Option<PathBuf> {
 }
 
 fn package_metadata_entry(package: &Value, subpath: &str) -> Option<PathBuf> {
-    if subpath != "." {
+    if subpath == "." {
+        for field in ["module", "main", "types", "typings"] {
+            if let Some(target) = package.get(field).and_then(Value::as_str) {
+                return Some(PathBuf::from(target));
+            }
+        }
         return None;
     }
 
-    for field in ["module", "main", "types", "typings"] {
-        if let Some(target) = package.get(field).and_then(Value::as_str) {
-            return Some(PathBuf::from(target));
-        }
-    }
-    None
+    subpath.strip_prefix("./").map(PathBuf::from)
 }
 
 fn package_export_target(value: &Value) -> Option<String> {
