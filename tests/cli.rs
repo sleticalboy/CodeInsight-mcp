@@ -9,13 +9,13 @@ fn cli_indexes_and_queries_fixture_project() {
     let fixture = fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 11);
-    assert_eq!(index["changed_files"], 11);
+    assert_eq!(index["indexed_files"], 13);
+    assert_eq!(index["changed_files"], 13);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let second_index = run_json(["index", fixture.path().to_str().unwrap()]);
     assert_eq!(second_index["changed_files"], 0);
-    assert_eq!(second_index["unchanged_files"], 11);
+    assert_eq!(second_index["unchanged_files"], 13);
 
     let symbols = run_json([
         "symbols",
@@ -41,6 +41,8 @@ fn cli_indexes_and_queries_fixture_project() {
     assert!(targets.contains(&"os"));
     assert!(targets.contains(&"./ui"));
     assert!(targets.contains(&"@app/path-ui"));
+    assert!(targets.contains(&"@fallback/fallback-ui"));
+    assert!(targets.contains(&"shared"));
     assert!(targets.contains(&"fixture-lib/package-ui"));
     assert!(targets.contains(&"dep-lib/feature"));
     assert!(targets.contains(&"dep-lib/node-feature"));
@@ -51,6 +53,26 @@ fn cli_indexes_and_queries_fixture_project() {
             .iter()
             .any(|dependency| {
                 dependency["target"] == "./ui" && dependency["resolved_file"] == "src/ui.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "@fallback/fallback-ui"
+                    && dependency["resolved_file"] == "src/fallback-ui.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "shared"
+                    && dependency["resolved_file"] == "src/shared/index.ts"
             })
     );
     assert!(
@@ -532,6 +554,40 @@ fn cli_indexes_and_queries_fixture_project() {
         })
     );
 
+    let fallback_alias_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "fallbackAliasMain",
+        "--limit",
+        "5",
+    ]);
+    assert!(
+        fallback_alias_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| {
+                call["callee"] == "fallbackRender" && call["callee_file"] == "src/fallback-ui.ts"
+            })
+    );
+
+    let base_url_index_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "baseUrlIndexMain",
+        "--limit",
+        "5",
+    ]);
+    assert!(
+        base_url_index_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| {
+                call["callee"] == "sharedRender" && call["callee_file"] == "src/shared/index.ts"
+            })
+    );
+
     let package_export_callees = run_json([
         "callees",
         fixture.path().to_str().unwrap(),
@@ -647,9 +703,10 @@ fn fixture_project() -> TempDir {
         r#"
 {
   "compilerOptions": {
-    "baseUrl": ".",
+    "baseUrl": "src",
     "paths": {
-      "@app/*": ["src/*"]
+      "@app/*": ["*"],
+      "@fallback/*": ["missing/*", "*"]
     }
   }
 }
@@ -699,6 +756,8 @@ import { relayRender, relayDefault, render as starRender, uiApi } from "./barrel
 import { finalApi, finalDefault, finalRender } from "./barrel2";
 import * as ui from "./ui";
 import { pathRender } from "@app/path-ui";
+import { fallbackRender } from "@fallback/fallback-ui";
+import { sharedRender } from "shared";
 import { packageRender } from "fixture-lib/package-ui";
 import { depRender } from "dep-lib/feature";
 import { depNodeRender } from "dep-lib/node-feature";
@@ -779,6 +838,14 @@ export function dynamicImportThenMain() {
 
 export function pathAliasMain() {
   pathRender();
+}
+
+export function fallbackAliasMain() {
+  fallbackRender();
+}
+
+export function baseUrlIndexMain() {
+  sharedRender();
 }
 
 export function packageExportMain() {
@@ -864,6 +931,24 @@ export default function defaultRender() {
         r#"
 export function pathRender() {
   return "path";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/fallback-ui.ts",
+        r#"
+export function fallbackRender() {
+  return "fallback";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/shared/index.ts",
+        r#"
+export function sharedRender() {
+  return "shared";
 }
 "#,
     );

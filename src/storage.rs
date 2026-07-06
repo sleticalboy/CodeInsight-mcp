@@ -8,7 +8,7 @@ use crate::model::{
     SourceFile, Symbol, SymbolKind,
 };
 
-pub const SCHEMA_VERSION: i64 = 18;
+pub const SCHEMA_VERSION: i64 = 19;
 pub const INDEX_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub struct Store {
@@ -1038,7 +1038,7 @@ mod tests {
                 key text primary key,
                 value text not null
             );
-            insert into index_meta (key, value) values ('schema_version', '18');
+            insert into index_meta (key, value) values ('schema_version', '19');
 
             create table files (
                 id integer primary key autoincrement,
