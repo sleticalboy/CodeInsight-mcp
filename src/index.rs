@@ -757,7 +757,24 @@ fn javascript_like_dependencies(
             ));
             dependencies
         }
-        "export_statement" | "call_expression" => text_dependencies(
+        "export_statement" => {
+            let mut dependencies = text_dependencies(
+                node,
+                source,
+                language,
+                source_file,
+                "import",
+                string_literal_targets,
+            );
+            dependencies.extend(javascript_export_alias_dependencies(
+                node,
+                source,
+                language,
+                source_file,
+            ));
+            dependencies
+        }
+        "call_expression" => text_dependencies(
             node,
             source,
             language,
@@ -849,6 +866,35 @@ fn javascript_import_alias_dependencies(
             }),
     );
     dependencies
+}
+
+fn javascript_export_alias_dependencies(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+) -> Vec<Dependency> {
+    let text = node.utf8_text(source).unwrap_or_default();
+    let Some(target) = string_literal_targets(text).into_iter().next() else {
+        return Vec::new();
+    };
+    let Some(named_exports) = braced_segment(text) else {
+        return Vec::new();
+    };
+
+    import_named_aliases(named_exports)
+        .into_iter()
+        .map(|(imported_symbol, local_alias)| Dependency {
+            source_file: source_file.to_string(),
+            target: target.clone(),
+            resolved_file: None,
+            local_alias: Some(local_alias),
+            imported_symbol: Some(imported_symbol),
+            kind: "export_alias".to_string(),
+            language,
+            line: node.start_position().row + 1,
+        })
+        .collect()
 }
 
 fn import_default_alias(raw: &str) -> Option<String> {
@@ -2106,6 +2152,7 @@ import * as pathApi from "node:path";
 const auth = require("./auth");
 const { render: draw } = require("./ui");
 const uiModule = require("./ui");
+export { render as relayRender, default as relayDefault } from "./ui";
 "#;
         let deps = extract_dependencies(ts, Language::TypeScript, "src/index.ts").unwrap();
         let targets = deps
@@ -2138,6 +2185,18 @@ const uiModule = require("./ui");
             dependency.target == "./ui"
                 && dependency.local_alias.as_deref() == Some("uiModule")
                 && dependency.imported_symbol.as_deref() == Some("*")
+        }));
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "./ui"
+                && dependency.kind == "export_alias"
+                && dependency.local_alias.as_deref() == Some("relayRender")
+                && dependency.imported_symbol.as_deref() == Some("render")
+        }));
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "./ui"
+                && dependency.kind == "export_alias"
+                && dependency.local_alias.as_deref() == Some("relayDefault")
+                && dependency.imported_symbol.as_deref() == Some("default")
         }));
 
         let py = "from app.auth import service\nimport os, sys\n";

@@ -1,6 +1,6 @@
 # CodeInsight v0.1 Smoke Benchmark
 
-Generated at: 2026-07-06 03:15:26 UTC
+Generated at: 2026-07-06 03:21:43 UTC
 
 This is a benchmark fixture report, not a controlled performance benchmark. It
 verifies that CodeInsight can index real public repositories across the MVP
@@ -20,10 +20,10 @@ Environment:
 
 | Repository | Focus | Commit | Files | Lines | Symbols | Skipped | Errors | Index ms | Index budget ms | Budget status | DB size | Context files | Ranges | Context lines | Line reduction | Tokens | Truncated | First context file |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
-| p-limit | TypeScript | `42599eb` | 6 | 1123 | 184 | 10 | 0 | 43 | 5000 | pass | 176K | 1 | 5 | 188 | 83.3% | 1584 | false | `index.js` |
+| p-limit | TypeScript | `42599eb` | 6 | 1123 | 184 | 10 | 0 | 41 | 5000 | pass | 176K | 1 | 5 | 188 | 83.3% | 1584 | false | `index.js` |
 | itsdangerous | Python | `672971d` | 15 | 1712 | 144 | 35 | 0 | 46 | 5000 | pass | 172K | 1 | 3 | 114 | 93.3% | 1332 | false | `src/itsdangerous/serializer.py` |
-| go-example | Go | `7f05d21` | 38 | 3537 | 189 | 33 | 0 | 90 | 5000 | pass | 208K | 1 | 3 | 64 | 98.2% | 414 | false | `hello/hello.go` |
-| memchr | Rust | `e21e9fb` | 64 | 69365 | 4045 | 100 | 0 | 819 | 10000 | pass | 2.2M | 7 | 7 | 196 | 99.7% | 1899 | false | `src/lib.rs` |
+| go-example | Go | `7f05d21` | 38 | 3537 | 189 | 33 | 0 | 107 | 5000 | pass | 208K | 1 | 3 | 64 | 98.2% | 414 | false | `hello/hello.go` |
+| memchr | Rust | `e21e9fb` | 64 | 69365 | 4045 | 100 | 0 | 1071 | 10000 | pass | 2.2M | 7 | 7 | 196 | 99.7% | 1899 | false | `src/lib.rs` |
 
 ## Details
 
@@ -33,7 +33,7 @@ Environment:
 - Commit: `42599ebbbb1228a5bdab381fcf8f4ac20eb8d551`
 - Indexed files: 6
 - Symbols: 184
-- Duration: 43 ms
+- Duration: 41 ms
 - Index budget: 5000 ms (pass)
 - Context seed file: `index.js`
 - Context task: understand limit scheduling behavior
@@ -90,7 +90,7 @@ Language breakdown:
 - Commit: `7f05d217867b2af52b0a28c6d1c91df97e1b5b39`
 - Indexed files: 38
 - Symbols: 189
-- Duration: 90 ms
+- Duration: 107 ms
 - Index budget: 5000 ms (pass)
 - Context seed file: `hello/hello.go`
 - Context task: understand hello server behavior
@@ -119,7 +119,7 @@ Language breakdown:
 - Commit: `e21e9fb47c4362d93a24ce969b20fd778d8618c8`
 - Indexed files: 64
 - Symbols: 4045
-- Duration: 819 ms
+- Duration: 1071 ms
 - Index budget: 10000 ms (pass)
 - Context seed file: `src/lib.rs`
 - Context task: understand memchr finder API

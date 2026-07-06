@@ -9,13 +9,13 @@ fn cli_indexes_and_queries_fixture_project() {
     let fixture = fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 7);
-    assert_eq!(index["changed_files"], 7);
+    assert_eq!(index["indexed_files"], 8);
+    assert_eq!(index["changed_files"], 8);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let second_index = run_json(["index", fixture.path().to_str().unwrap()]);
     assert_eq!(second_index["changed_files"], 0);
-    assert_eq!(second_index["unchanged_files"], 7);
+    assert_eq!(second_index["unchanged_files"], 8);
 
     let symbols = run_json([
         "symbols",
@@ -282,6 +282,36 @@ fn cli_indexes_and_queries_fixture_project() {
             .iter()
             .any(|call| { call["callee"] == "drawDefault" && call["callee_file"] == "src/ui.ts" })
     );
+
+    let reexport_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "reexportMain",
+        "--limit",
+        "5",
+    ]);
+    assert!(
+        reexport_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| { call["callee"] == "relayRender" && call["callee_file"] == "src/ui.ts" })
+    );
+
+    let reexport_default_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "reexportDefaultMain",
+        "--limit",
+        "5",
+    ]);
+    assert!(
+        reexport_default_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| { call["callee"] == "relayDefault" && call["callee_file"] == "src/ui.ts" })
+    );
 }
 
 #[test]
@@ -403,6 +433,7 @@ def build_service():
         r#"
 import { render } from "./ui";
 import drawDefault from "./ui";
+import { relayRender, relayDefault } from "./barrel";
 import * as ui from "./ui";
 const { render: draw } = require("./ui");
 const uiModule = require("./ui");
@@ -426,6 +457,21 @@ export function moduleAliasMain() {
 export function defaultMain() {
   drawDefault();
 }
+
+export function reexportMain() {
+  relayRender();
+}
+
+export function reexportDefaultMain() {
+  relayDefault();
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/barrel.ts",
+        r#"
+export { render as relayRender, default as relayDefault } from "./ui";
 "#,
     );
     write_file(

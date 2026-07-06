@@ -8,7 +8,7 @@ use crate::model::{
     SourceFile, Symbol, SymbolKind,
 };
 
-pub const SCHEMA_VERSION: i64 = 7;
+pub const SCHEMA_VERSION: i64 = 8;
 pub const INDEX_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub struct Store {
@@ -435,63 +435,105 @@ impl Store {
             select call_id, callee_file
             from (
                 select
-                    c.id as call_id,
-                    target_files.path as callee_file,
+                    call_id,
+                    callee_file,
                     row_number() over (
-                        partition by c.id
-                        order by
-                            case
-                                when d.local_alias = c.callee
-                                  and d.imported_symbol is not null
-                                  and (
-                                    s.name = d.imported_symbol
-                                    or s.qualified_name = d.imported_symbol
-                                    or s.qualified_name like '%.' || d.imported_symbol
-                                  )
-                                    then 0
-                                when d.imported_symbol = '*'
-                                  and c.callee like d.local_alias || '.%'
-                                  and (
-                                    s.name = substr(c.callee, length(d.local_alias) + 2)
-                                    or s.qualified_name = substr(c.callee, length(d.local_alias) + 2)
-                                    or s.qualified_name like '%.' || substr(c.callee, length(d.local_alias) + 2)
-                                  )
-                                    then 0
-                                when s.name = c.callee then 1
-                                else 2
-                            end,
-                            length(s.qualified_name),
-                            d.line,
-                            s.start_line
+                        partition by call_id
+                        order by match_rank, length(qualified_name), dependency_line, start_line
                     ) as target_rank
-                from calls c
-                join dependencies d on d.source_file_id = c.source_file_id
-                join files target_files on target_files.path = d.resolved_file
-                join symbols s on s.file_id = target_files.id
-                where c.callee_file is null
-                  and (
-                    s.name = c.callee
-                    or s.qualified_name = c.callee
-                    or s.qualified_name like '%.' || c.callee
-                    or (
-                        d.local_alias = c.callee
-                        and d.imported_symbol is not null
-                        and (
-                            s.name = d.imported_symbol
-                            or s.qualified_name = d.imported_symbol
-                            or s.qualified_name like '%.' || d.imported_symbol
+                from (
+                    select
+                        c.id as call_id,
+                        target_files.path as callee_file,
+                        s.qualified_name as qualified_name,
+                        d.line as dependency_line,
+                        s.start_line as start_line,
+                        case
+                            when d.local_alias = c.callee
+                              and d.imported_symbol is not null
+                              and (
+                                s.name = d.imported_symbol
+                                or s.qualified_name = d.imported_symbol
+                                or s.qualified_name like '%.' || d.imported_symbol
+                              )
+                                then 0
+                            when d.imported_symbol = '*'
+                              and c.callee like d.local_alias || '.%'
+                              and (
+                                s.name = substr(c.callee, length(d.local_alias) + 2)
+                                or s.qualified_name = substr(c.callee, length(d.local_alias) + 2)
+                                or s.qualified_name like '%.' || substr(c.callee, length(d.local_alias) + 2)
+                              )
+                                then 0
+                            when s.name = c.callee then 1
+                            else 2
+                        end as match_rank
+                    from calls c
+                    join dependencies d on d.source_file_id = c.source_file_id
+                    join files target_files on target_files.path = d.resolved_file
+                    join symbols s on s.file_id = target_files.id
+                    where c.callee_file is null
+                      and (
+                        s.name = c.callee
+                        or s.qualified_name = c.callee
+                        or s.qualified_name like '%.' || c.callee
+                        or (
+                            d.local_alias = c.callee
+                            and d.imported_symbol is not null
+                            and (
+                                s.name = d.imported_symbol
+                                or s.qualified_name = d.imported_symbol
+                                or s.qualified_name like '%.' || d.imported_symbol
+                            )
                         )
-                    )
-                    or (
-                        d.imported_symbol = '*'
-                        and c.callee like d.local_alias || '.%'
-                        and (
-                            s.name = substr(c.callee, length(d.local_alias) + 2)
-                            or s.qualified_name = substr(c.callee, length(d.local_alias) + 2)
-                            or s.qualified_name like '%.' || substr(c.callee, length(d.local_alias) + 2)
+                        or (
+                            d.imported_symbol = '*'
+                            and c.callee like d.local_alias || '.%'
+                            and (
+                                s.name = substr(c.callee, length(d.local_alias) + 2)
+                                or s.qualified_name = substr(c.callee, length(d.local_alias) + 2)
+                                or s.qualified_name like '%.' || substr(c.callee, length(d.local_alias) + 2)
+                            )
                         )
-                    )
-                  )
+                      )
+
+                    union all
+
+                    select
+                        c.id as call_id,
+                        reexport_files.path as callee_file,
+                        s.qualified_name as qualified_name,
+                        d.line as dependency_line,
+                        s.start_line as start_line,
+                        -1 as match_rank
+                    from calls c
+                    join dependencies d on d.source_file_id = c.source_file_id
+                    join files target_files on target_files.path = d.resolved_file
+                    join dependencies rd on rd.source_file_id = target_files.id
+                    join files reexport_files on reexport_files.path = rd.resolved_file
+                    join symbols s on s.file_id = reexport_files.id
+                    where c.callee_file is null
+                      and rd.kind = 'export_alias'
+                      and (
+                        rd.local_alias = c.callee
+                        or (
+                            d.local_alias = c.callee
+                            and d.imported_symbol is not null
+                            and d.imported_symbol != '*'
+                            and rd.local_alias = d.imported_symbol
+                        )
+                        or (
+                            d.imported_symbol = '*'
+                            and c.callee like d.local_alias || '.%'
+                            and rd.local_alias = substr(c.callee, length(d.local_alias) + 2)
+                        )
+                      )
+                      and (
+                        s.name = rd.imported_symbol
+                        or s.qualified_name = rd.imported_symbol
+                        or s.qualified_name like '%.' || rd.imported_symbol
+                      )
+                )
             )
             where target_rank = 1;
 
@@ -808,7 +850,7 @@ mod tests {
                 key text primary key,
                 value text not null
             );
-            insert into index_meta (key, value) values ('schema_version', '7');
+            insert into index_meta (key, value) values ('schema_version', '8');
 
             create table files (
                 id integer primary key autoincrement,
