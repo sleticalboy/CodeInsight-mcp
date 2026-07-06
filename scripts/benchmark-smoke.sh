@@ -105,7 +105,7 @@ configure_profile() {
         20000
       )
       REPO_CALL_TARGETS=(
-        "app.get:1|app.<dynamic>:1"
+        "app.get:1|app.<dynamic>:1|app.route.get:1|router.route.get:1"
         ""
         ""
         ""

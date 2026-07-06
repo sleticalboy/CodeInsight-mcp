@@ -44,7 +44,7 @@ Implemented:
 
 Next:
 
-- improve JavaScript call graph coverage for chained and optional member calls
+- improve JavaScript call graph caller attribution for callback-heavy code
 
 ## Install From Release
 

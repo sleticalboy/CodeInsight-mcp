@@ -330,50 +330,156 @@ fn normalize_callee(raw: &str, language: Language) -> Option<String> {
 }
 
 fn normalize_javascript_callee(raw: &str) -> Option<String> {
-    let trimmed = raw.trim().replace("?.", ".");
+    let trimmed = raw
+        .trim()
+        .replace("?.[", "[")
+        .replace("?.(", "(")
+        .replace("?.", ".");
     if trimmed.is_empty() {
         return None;
-    }
-
-    if let Some((object, property)) = computed_member_parts(&trimmed) {
-        let object = normalize_js_member_path(object)?;
-        if let Some(property) = string_literal_value(property)
-            && is_js_identifier(&property)
-        {
-            return Some(format!("{object}.{property}"));
-        }
-
-        if is_js_identifier(property.trim()) {
-            return Some(format!("{object}.<dynamic>"));
-        }
     }
 
     normalize_js_member_path(&trimmed).or_else(|| normalize_simple_callee(&trimmed))
 }
 
-fn computed_member_parts(raw: &str) -> Option<(&str, &str)> {
-    let open = raw.rfind('[')?;
-    let close = raw.rfind(']')?;
-    if close != raw.len() - 1 || close <= open {
+fn normalize_js_member_path(raw: &str) -> Option<String> {
+    let mut parts = Vec::new();
+    for segment in split_js_member_segments(raw) {
+        append_js_member_segment(segment, &mut parts)?;
+    }
+
+    if parts.is_empty() {
         return None;
     }
 
-    Some((raw[..open].trim(), raw[open + 1..close].trim()))
+    Some(parts.join("."))
 }
 
-fn normalize_js_member_path(raw: &str) -> Option<String> {
-    let parts = raw.split('.').collect::<Vec<_>>();
-    if parts.is_empty() || parts.iter().any(|part| !is_js_identifier(part.trim())) {
+fn split_js_member_segments(raw: &str) -> Vec<&str> {
+    let mut segments = Vec::new();
+    let mut start = 0;
+    let mut paren_depth = 0;
+    let mut bracket_depth = 0;
+    let mut quote = None;
+    let mut escaped = false;
+
+    for (index, ch) in raw.char_indices() {
+        if let Some(active_quote) = quote {
+            if escaped {
+                escaped = false;
+            } else if ch == '\\' {
+                escaped = true;
+            } else if ch == active_quote {
+                quote = None;
+            }
+            continue;
+        }
+
+        match ch {
+            '"' | '\'' | '`' => quote = Some(ch),
+            '(' => paren_depth += 1,
+            ')' if paren_depth > 0 => paren_depth -= 1,
+            '[' => bracket_depth += 1,
+            ']' if bracket_depth > 0 => bracket_depth -= 1,
+            '.' if paren_depth == 0 && bracket_depth == 0 => {
+                segments.push(raw[start..index].trim());
+                start = index + ch.len_utf8();
+            }
+            _ => {}
+        }
+    }
+
+    segments.push(raw[start..].trim());
+    segments
+}
+
+fn append_js_member_segment(segment: &str, parts: &mut Vec<String>) -> Option<()> {
+    let segment = segment.trim().trim_end_matches('?').trim();
+    if segment.is_empty() {
         return None;
     }
 
-    Some(
-        parts
-            .into_iter()
-            .map(str::trim)
-            .collect::<Vec<_>>()
-            .join("."),
-    )
+    if let Some(open) = top_level_index(segment, '[') {
+        let base = segment[..open].trim();
+        if !base.is_empty() {
+            parts.push(normalize_js_call_or_identifier_segment(base)?);
+        }
+
+        let close = segment.rfind(']')?;
+        if close <= open {
+            return None;
+        }
+
+        let property = segment[open + 1..close].trim();
+        if let Some(property) = string_literal_value(property)
+            && is_js_identifier(&property)
+        {
+            parts.push(property);
+        } else if is_js_identifier(property) {
+            parts.push("<dynamic>".to_string());
+        } else {
+            return None;
+        }
+
+        return Some(());
+    }
+
+    parts.push(normalize_js_call_or_identifier_segment(segment)?);
+    Some(())
+}
+
+fn normalize_js_call_or_identifier_segment(segment: &str) -> Option<String> {
+    let segment = segment.trim().trim_end_matches('?').trim();
+    let name = if let Some(open) = top_level_index(segment, '(') {
+        let close = segment.rfind(')')?;
+        if close <= open {
+            return None;
+        }
+        segment[..open].trim()
+    } else {
+        segment
+    };
+
+    if is_js_identifier(name) {
+        Some(name.to_string())
+    } else {
+        None
+    }
+}
+
+fn top_level_index(raw: &str, needle: char) -> Option<usize> {
+    let mut paren_depth = 0;
+    let mut bracket_depth = 0;
+    let mut quote = None;
+    let mut escaped = false;
+
+    for (index, ch) in raw.char_indices() {
+        if let Some(active_quote) = quote {
+            if escaped {
+                escaped = false;
+            } else if ch == '\\' {
+                escaped = true;
+            } else if ch == active_quote {
+                quote = None;
+            }
+            continue;
+        }
+
+        match ch {
+            '"' | '\'' | '`' => quote = Some(ch),
+            '(' if needle != '(' => paren_depth += 1,
+            ')' if needle != ')' && paren_depth > 0 => paren_depth -= 1,
+            '[' if needle != '[' => bracket_depth += 1,
+            ']' if needle != ']' && bracket_depth > 0 => bracket_depth -= 1,
+            _ => {}
+        }
+
+        if ch == needle && paren_depth == 0 && bracket_depth == 0 {
+            return Some(index);
+        }
+    }
+
+    None
 }
 
 fn string_literal_value(raw: &str) -> Option<String> {
@@ -1272,8 +1378,11 @@ def helper():
         let source = r#"
 function register(app, method, handler) {
   app.get("/ok", handler);
+  app?.put("/ok", handler);
+  app.delete?.("/ok", handler);
   app["post"]("/ok", handler);
   app[method]("/ok", handler);
+  router.route("/ok").patch(handler);
   module.exports.create();
   helper();
 }
@@ -1286,8 +1395,11 @@ function register(app, method, handler) {
             .collect::<Vec<_>>();
 
         assert!(callees.contains(&"app.get"));
+        assert!(callees.contains(&"app.put"));
+        assert!(callees.contains(&"app.delete"));
         assert!(callees.contains(&"app.post"));
         assert!(callees.contains(&"app.<dynamic>"));
+        assert!(callees.contains(&"router.route.patch"));
         assert!(callees.contains(&"module.exports.create"));
         assert!(callees.contains(&"helper"));
     }
