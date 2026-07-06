@@ -423,6 +423,23 @@ fn cli_indexes_and_queries_fixture_project() {
                 call["callee"] == "loadedUi.render" && call["callee_file"] == "src/ui.ts"
             })
     );
+
+    let dynamic_import_callback_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "import.then.<callback>",
+        "--limit",
+        "5",
+    ]);
+    assert!(
+        dynamic_import_callback_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| {
+                call["callee"] == "thenUi.render" && call["callee_file"] == "src/ui.ts"
+            })
+    );
 }
 
 #[test]
@@ -605,6 +622,12 @@ export function requireMemberMain() {
 export async function dynamicImportMain() {
   const loadedUi = await import("./ui");
   loadedUi.render();
+}
+
+export function dynamicImportThenMain() {
+  import("./ui").then((thenUi) => {
+    thenUi.render();
+  });
 }
 "#,
     );

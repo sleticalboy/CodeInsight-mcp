@@ -774,14 +774,9 @@ fn javascript_like_dependencies(
             ));
             dependencies
         }
-        "call_expression" => text_dependencies(
-            node,
-            source,
-            language,
-            source_file,
-            "import",
-            string_literal_targets,
-        ),
+        "call_expression" => {
+            javascript_call_expression_dependencies(node, source, language, source_file)
+        }
         "variable_declarator" => {
             javascript_variable_module_alias_dependencies(node, source, language, source_file)
         }
@@ -907,6 +902,62 @@ fn javascript_export_alias_dependencies(
         },
     ));
     dependencies
+}
+
+fn javascript_call_expression_dependencies(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+) -> Vec<Dependency> {
+    let mut dependencies = text_dependencies(
+        node,
+        source,
+        language,
+        source_file,
+        "import",
+        string_literal_targets,
+    );
+    dependencies.extend(javascript_dynamic_import_callback_alias_dependencies(
+        node,
+        source,
+        language,
+        source_file,
+    ));
+    dependencies
+}
+
+fn javascript_dynamic_import_callback_alias_dependencies(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+) -> Vec<Dependency> {
+    let text = node.utf8_text(source).unwrap_or_default();
+    let trimmed = text.trim_start();
+    let Some(then_index) = trimmed.find(".then") else {
+        return Vec::new();
+    };
+    if !is_static_dynamic_import(&trimmed[..then_index]) {
+        return Vec::new();
+    }
+    let Some(target) = string_literal_targets(&trimmed[..then_index])
+        .into_iter()
+        .next()
+    else {
+        return Vec::new();
+    };
+    let Some(local_alias) = dynamic_import_then_callback_alias(&trimmed[then_index + 5..]) else {
+        return Vec::new();
+    };
+
+    vec![namespace_dependency(
+        source_file,
+        &target,
+        language,
+        node.start_position().row + 1,
+        local_alias,
+    )]
 }
 
 fn export_namespace_alias(raw: &str) -> Option<Option<String>> {
@@ -1097,6 +1148,50 @@ fn is_static_dynamic_import(value: &str) -> bool {
         return false;
     };
     rest.trim_start().starts_with('(')
+}
+
+fn dynamic_import_then_callback_alias(raw_after_then: &str) -> Option<String> {
+    let rest = raw_after_then.trim_start().strip_prefix('(')?.trim_start();
+    let callback = strip_async_callback_prefix(rest);
+
+    if callback.starts_with('(') {
+        let close = matching_delimiter(callback, 0, '(', ')')?;
+        let alias = callback[1..close].trim();
+        let after_params = callback[close + 1..].trim_start();
+        if is_js_identifier(alias) && after_params.starts_with("=>") {
+            return Some(alias.to_string());
+        }
+        return None;
+    }
+
+    let alias_end = callback
+        .char_indices()
+        .find_map(|(index, ch)| {
+            if ch.is_whitespace() || matches!(ch, ',' | '=') {
+                Some(index)
+            } else {
+                None
+            }
+        })
+        .unwrap_or(callback.len());
+    let alias = callback[..alias_end].trim();
+    let after_alias = callback[alias_end..].trim_start();
+    if is_js_identifier(alias) && after_alias.starts_with("=>") {
+        Some(alias.to_string())
+    } else {
+        None
+    }
+}
+
+fn strip_async_callback_prefix(raw: &str) -> &str {
+    let Some(rest) = raw.strip_prefix("async") else {
+        return raw;
+    };
+    if rest.chars().next().is_some_and(char::is_whitespace) {
+        rest.trim_start()
+    } else {
+        raw
+    }
 }
 
 fn alias_dependency(
@@ -2272,6 +2367,7 @@ const auth = require("./auth");
 const { render: draw } = require("./ui");
 const uiModule = require("./ui");
 const loadedUi = await import("./ui");
+import("./ui").then((thenUi) => thenUi.render());
 export { render as relayRender, default as relayDefault } from "./ui";
 export * from "./all-ui";
 export * as uiApi from "./ui";
@@ -2312,6 +2408,12 @@ export * as uiApi from "./ui";
             dependency.target == "./ui"
                 && dependency.kind == "import_namespace"
                 && dependency.local_alias.as_deref() == Some("loadedUi")
+                && dependency.imported_symbol.as_deref() == Some("*")
+        }));
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "./ui"
+                && dependency.kind == "import_namespace"
+                && dependency.local_alias.as_deref() == Some("thenUi")
                 && dependency.imported_symbol.as_deref() == Some("*")
         }));
         assert!(deps.iter().any(|dependency| {
