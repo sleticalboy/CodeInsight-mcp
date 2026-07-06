@@ -32,6 +32,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - Checked-in polyglot fixture coverage for TypeScript, JavaScript, Python, Go, and Rust indexing.
 - Homebrew formula for installing release assets.
 - Docker image definition and smoke test script.
+- GitHub Container Registry image publishing workflow for tagged releases.
 
 ### Changed
 

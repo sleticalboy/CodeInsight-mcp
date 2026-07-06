@@ -114,6 +114,13 @@ docker build -t codeinsight:local .
 docker run --rm -v "$PWD:/workspace" codeinsight:local overview /workspace
 ```
 
+Tagged releases publish a GHCR image:
+
+```bash
+docker pull ghcr.io/sleticalboy/codeinsight-mcp:latest
+docker run --rm -v "$PWD:/workspace" ghcr.io/sleticalboy/codeinsight-mcp:latest overview /workspace
+```
+
 Smoke test the Docker image locally:
 
 ```bash
