@@ -303,10 +303,11 @@ MVP 只做静态近似分析，不承诺完整类型系统精度。
 
 ```json
 {
+  "root": "/absolute/path/to/repo",
   "task": "fix login token refresh bug",
-  "seed_symbols": ["RefreshToken", "AuthService"],
-  "token_budget": 6000,
-  "include_tests": true
+  "symbols": ["RefreshToken", "AuthService"],
+  "files": ["src/auth/AuthService.ts"],
+  "token_budget": 6000
 }
 ```
 
@@ -330,8 +331,9 @@ MVP 只做静态近似分析，不承诺完整类型系统精度。
     }
   ],
   "symbols": [],
-  "relationships": [],
-  "estimated_tokens": 4210
+  "references": [],
+  "estimated_tokens": 4210,
+  "truncated": false
 }
 ```
 
