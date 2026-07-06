@@ -8,7 +8,7 @@ use crate::model::{
     SourceFile, Symbol, SymbolKind,
 };
 
-pub const SCHEMA_VERSION: i64 = 4;
+pub const SCHEMA_VERSION: i64 = 5;
 pub const INDEX_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub struct Store {
@@ -58,14 +58,16 @@ impl Store {
         {
             let mut stmt = tx.prepare(
                 "insert into dependencies
-                 (source_file_id, target, resolved_file, kind, language, line)
-                 values (?1, ?2, ?3, ?4, ?5, ?6)",
+                 (source_file_id, target, resolved_file, local_alias, imported_symbol, kind, language, line)
+                 values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
             )?;
             for dependency in dependencies {
                 stmt.execute(params![
                     file_id,
                     dependency.target,
                     dependency.resolved_file,
+                    dependency.local_alias,
+                    dependency.imported_symbol,
                     dependency.kind,
                     dependency.language.as_str(),
                     dependency.line as i64
@@ -297,7 +299,7 @@ impl Store {
 
     pub fn dependency_graph(&self, root: &Path, limit: usize) -> Result<DependencyGraph> {
         let mut stmt = self.conn.prepare(
-            "select f.path, d.target, d.resolved_file, d.kind, d.language, d.line
+            "select f.path, d.target, d.resolved_file, d.local_alias, d.imported_symbol, d.kind, d.language, d.line
              from dependencies d
              join files f on f.id = d.source_file_id
              order by f.path, d.line
@@ -305,14 +307,16 @@ impl Store {
         )?;
         let dependencies = stmt
             .query_map(params![limit as i64], |row| {
-                let language: String = row.get(4)?;
+                let language: String = row.get(6)?;
                 Ok(Dependency {
                     source_file: row.get(0)?,
                     target: row.get(1)?,
                     resolved_file: row.get(2)?,
-                    kind: row.get(3)?,
+                    local_alias: row.get(3)?,
+                    imported_symbol: row.get(4)?,
+                    kind: row.get(5)?,
                     language: parse_language(&language),
-                    line: row.get::<_, i64>(5)? as usize,
+                    line: row.get::<_, i64>(7)? as usize,
                 })
             })?
             .collect::<rusqlite::Result<Vec<_>>>()?;
@@ -343,7 +347,7 @@ impl Store {
     pub fn resolved_dependencies_for_files(&self, files: &[String]) -> Result<Vec<Dependency>> {
         let mut dependencies = Vec::new();
         let mut stmt = self.conn.prepare(
-            "select f.path, d.target, d.resolved_file, d.kind, d.language, d.line
+            "select f.path, d.target, d.resolved_file, d.local_alias, d.imported_symbol, d.kind, d.language, d.line
              from dependencies d
              join files f on f.id = d.source_file_id
              where f.path = ?1 and d.resolved_file is not null
@@ -352,14 +356,16 @@ impl Store {
 
         for file in files {
             let rows = stmt.query_map(params![file], |row| {
-                let language: String = row.get(4)?;
+                let language: String = row.get(6)?;
                 Ok(Dependency {
                     source_file: row.get(0)?,
                     target: row.get(1)?,
                     resolved_file: row.get(2)?,
-                    kind: row.get(3)?,
+                    local_alias: row.get(3)?,
+                    imported_symbol: row.get(4)?,
+                    kind: row.get(5)?,
                     language: parse_language(&language),
-                    line: row.get::<_, i64>(5)? as usize,
+                    line: row.get::<_, i64>(7)? as usize,
                 })
             })?;
             dependencies.extend(rows.collect::<rusqlite::Result<Vec<_>>>()?);
@@ -434,7 +440,14 @@ impl Store {
                     row_number() over (
                         partition by c.id
                         order by
-                            case when s.name = c.callee then 0 else 1 end,
+                            case
+                                when d.local_alias = c.callee
+                                  and d.imported_symbol is not null
+                                  and (s.name = d.imported_symbol or s.qualified_name = d.imported_symbol)
+                                    then 0
+                                when s.name = c.callee then 1
+                                else 2
+                            end,
                             length(s.qualified_name),
                             d.line,
                             s.start_line
@@ -448,6 +461,15 @@ impl Store {
                     s.name = c.callee
                     or s.qualified_name = c.callee
                     or s.qualified_name like '%.' || c.callee
+                    or (
+                        d.local_alias = c.callee
+                        and d.imported_symbol is not null
+                        and (
+                            s.name = d.imported_symbol
+                            or s.qualified_name = d.imported_symbol
+                            or s.qualified_name like '%.' || d.imported_symbol
+                        )
+                    )
                   )
             )
             where target_rank = 1;
@@ -518,6 +540,8 @@ impl Store {
                 source_file_id integer not null references files(id) on delete cascade,
                 target text not null,
                 resolved_file text,
+                local_alias text,
+                imported_symbol text,
                 kind text not null,
                 language text not null,
                 line integer not null
@@ -547,10 +571,17 @@ impl Store {
             ",
         )?;
         self.ensure_column("dependencies", "resolved_file", "resolved_file text")?;
+        self.ensure_column("dependencies", "local_alias", "local_alias text")?;
+        self.ensure_column("dependencies", "imported_symbol", "imported_symbol text")?;
         self.ensure_column("calls", "callee_file", "callee_file text")?;
         self.conn.execute(
             "create index if not exists idx_dependencies_source_resolved_file
              on dependencies(source_file_id, resolved_file)",
+            [],
+        )?;
+        self.conn.execute(
+            "create index if not exists idx_dependencies_alias
+             on dependencies(source_file_id, local_alias, imported_symbol, resolved_file)",
             [],
         )?;
         Ok(())
@@ -726,6 +757,8 @@ mod tests {
                 source_file: "src/main.rs".to_string(),
                 target: "crate::lib".to_string(),
                 resolved_file: Some("src/lib.rs".to_string()),
+                local_alias: None,
+                imported_symbol: None,
                 kind: "use".to_string(),
                 language: Language::Rust,
                 line: 1,
@@ -754,7 +787,7 @@ mod tests {
                 key text primary key,
                 value text not null
             );
-            insert into index_meta (key, value) values ('schema_version', '4');
+            insert into index_meta (key, value) values ('schema_version', '5');
 
             create table files (
                 id integer primary key autoincrement,

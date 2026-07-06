@@ -740,7 +740,24 @@ fn javascript_like_dependencies(
     source_file: &str,
 ) -> Vec<Dependency> {
     match node.kind() {
-        "import_statement" | "export_statement" | "call_expression" => text_dependencies(
+        "import_statement" => {
+            let mut dependencies = text_dependencies(
+                node,
+                source,
+                language,
+                source_file,
+                "import",
+                string_literal_targets,
+            );
+            dependencies.extend(javascript_import_alias_dependencies(
+                node,
+                source,
+                language,
+                source_file,
+            ));
+            dependencies
+        }
+        "export_statement" | "call_expression" => text_dependencies(
             node,
             source,
             language,
@@ -748,6 +765,9 @@ fn javascript_like_dependencies(
             "import",
             string_literal_targets,
         ),
+        "variable_declarator" => {
+            javascript_require_alias_dependencies(node, source, language, source_file)
+        }
         _ => Vec::new(),
     }
 }
@@ -767,11 +787,262 @@ fn text_dependencies(
             source_file: source_file.to_string(),
             resolved_file: None,
             target,
+            local_alias: None,
+            imported_symbol: None,
             kind: kind.to_string(),
             language,
             line: node.start_position().row + 1,
         })
         .collect()
+}
+
+fn javascript_import_alias_dependencies(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+) -> Vec<Dependency> {
+    let text = node.utf8_text(source).unwrap_or_default();
+    let Some(named_imports) = braced_segment(text) else {
+        return Vec::new();
+    };
+    let Some(target) = string_literal_targets(text).into_iter().next() else {
+        return Vec::new();
+    };
+
+    import_named_aliases(named_imports)
+        .into_iter()
+        .filter(|(imported_symbol, local_alias)| imported_symbol != local_alias)
+        .map(|(imported_symbol, local_alias)| {
+            alias_dependency(
+                source_file,
+                &target,
+                language,
+                node.start_position().row + 1,
+                imported_symbol,
+                local_alias,
+            )
+        })
+        .collect()
+}
+
+fn javascript_require_alias_dependencies(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+) -> Vec<Dependency> {
+    let Some(name_node) = node.child_by_field_name("name").or_else(|| node.child(0)) else {
+        return Vec::new();
+    };
+    let Ok(name) = name_node.utf8_text(source) else {
+        return Vec::new();
+    };
+    let name = name.trim();
+    if !name.starts_with('{') {
+        return Vec::new();
+    }
+
+    let value = node
+        .child_by_field_name("value")
+        .or_else(|| node.child_by_field_name("right"))
+        .and_then(|child| child.utf8_text(source).ok())
+        .unwrap_or_default();
+    if !value.contains("require") {
+        return Vec::new();
+    }
+    let Some(target) = string_literal_targets(value).into_iter().next() else {
+        return Vec::new();
+    };
+    let Some(bindings) = braced_segment(name) else {
+        return Vec::new();
+    };
+
+    object_pattern_aliases(bindings)
+        .into_iter()
+        .filter(|(imported_symbol, local_alias)| imported_symbol != local_alias)
+        .map(|(imported_symbol, local_alias)| {
+            alias_dependency(
+                source_file,
+                &target,
+                language,
+                node.start_position().row + 1,
+                imported_symbol,
+                local_alias,
+            )
+        })
+        .collect()
+}
+
+fn alias_dependency(
+    source_file: &str,
+    target: &str,
+    language: Language,
+    line: usize,
+    imported_symbol: String,
+    local_alias: String,
+) -> Dependency {
+    Dependency {
+        source_file: source_file.to_string(),
+        target: target.to_string(),
+        resolved_file: None,
+        local_alias: Some(local_alias),
+        imported_symbol: Some(imported_symbol),
+        kind: "import_alias".to_string(),
+        language,
+        line,
+    }
+}
+
+fn braced_segment(raw: &str) -> Option<&str> {
+    let open = raw.find('{')?;
+    let close = matching_delimiter(raw, open, '{', '}')?;
+    Some(&raw[open + 1..close])
+}
+
+fn import_named_aliases(raw: &str) -> Vec<(String, String)> {
+    split_top_level_commas(raw)
+        .into_iter()
+        .filter_map(|entry| {
+            let entry = entry.trim().strip_prefix("type ").unwrap_or(entry.trim());
+            if entry.is_empty() {
+                return None;
+            }
+
+            let parts = entry.split_whitespace().collect::<Vec<_>>();
+            match parts.as_slice() {
+                [imported, "as", local] => clean_js_property_key(imported)
+                    .filter(|_| is_js_identifier(local))
+                    .map(|imported| (imported.to_string(), (*local).to_string())),
+                [name] => clean_js_property_key(name)
+                    .filter(|_| is_js_identifier(name))
+                    .map(|name| (name.to_string(), name.to_string())),
+                _ => None,
+            }
+        })
+        .collect()
+}
+
+fn object_pattern_aliases(raw: &str) -> Vec<(String, String)> {
+    split_top_level_commas(raw)
+        .into_iter()
+        .filter_map(|entry| {
+            let entry = entry.trim();
+            if entry.is_empty() || entry.starts_with("...") {
+                return None;
+            }
+
+            if let Some(colon) = top_level_char_index(entry, ':') {
+                let imported = clean_js_property_key(&entry[..colon])?;
+                let local = local_binding_identifier(&entry[colon + 1..])?;
+                return Some((imported.to_string(), local));
+            }
+
+            let local = local_binding_identifier(entry)?;
+            Some((local.clone(), local))
+        })
+        .collect()
+}
+
+fn local_binding_identifier(raw: &str) -> Option<String> {
+    let without_default = top_level_char_index(raw, '=')
+        .map(|equals| &raw[..equals])
+        .unwrap_or(raw)
+        .trim()
+        .trim_start_matches("...")
+        .trim();
+    if is_js_identifier(without_default) {
+        Some(without_default.to_string())
+    } else {
+        None
+    }
+}
+
+fn split_top_level_commas(raw: &str) -> Vec<&str> {
+    let mut parts = Vec::new();
+    let mut start = 0;
+    for index in top_level_char_indices(raw, ',') {
+        parts.push(&raw[start..index]);
+        start = index + 1;
+    }
+    parts.push(&raw[start..]);
+    parts
+}
+
+fn top_level_char_index(raw: &str, needle: char) -> Option<usize> {
+    top_level_char_indices(raw, needle).into_iter().next()
+}
+
+fn top_level_char_indices(raw: &str, needle: char) -> Vec<usize> {
+    let mut indices = Vec::new();
+    let mut paren_depth = 0;
+    let mut bracket_depth = 0;
+    let mut brace_depth = 0;
+    let mut quote = None;
+    let mut escaped = false;
+
+    for (index, ch) in raw.char_indices() {
+        if let Some(active_quote) = quote {
+            if escaped {
+                escaped = false;
+            } else if ch == '\\' {
+                escaped = true;
+            } else if ch == active_quote {
+                quote = None;
+            }
+            continue;
+        }
+
+        match ch {
+            '"' | '\'' | '`' => quote = Some(ch),
+            '(' if needle != '(' => paren_depth += 1,
+            ')' if needle != ')' && paren_depth > 0 => paren_depth -= 1,
+            '[' if needle != '[' => bracket_depth += 1,
+            ']' if needle != ']' && bracket_depth > 0 => bracket_depth -= 1,
+            '{' if needle != '{' => brace_depth += 1,
+            '}' if needle != '}' && brace_depth > 0 => brace_depth -= 1,
+            _ => {}
+        }
+
+        if ch == needle && paren_depth == 0 && bracket_depth == 0 && brace_depth == 0 {
+            indices.push(index);
+        }
+    }
+
+    indices
+}
+
+fn matching_delimiter(raw: &str, open_index: usize, open: char, close: char) -> Option<usize> {
+    let mut depth = 0;
+    let mut quote = None;
+    let mut escaped = false;
+
+    for (index, ch) in raw.char_indices().filter(|(index, _)| *index >= open_index) {
+        if let Some(active_quote) = quote {
+            if escaped {
+                escaped = false;
+            } else if ch == '\\' {
+                escaped = true;
+            } else if ch == active_quote {
+                quote = None;
+            }
+            continue;
+        }
+
+        match ch {
+            '"' | '\'' | '`' => quote = Some(ch),
+            ch if ch == open => depth += 1,
+            ch if ch == close => {
+                depth -= 1;
+                if depth == 0 {
+                    return Some(index);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    None
 }
 
 fn resolve_dependencies(root: &Path, dependencies: &mut [Dependency]) {
@@ -1703,8 +1974,9 @@ fn helper() {}
     #[test]
     fn extracts_dependencies() {
         let ts = r#"
-import { readFile } from "node:fs";
+import { readFile as loadFile } from "node:fs";
 const auth = require("./auth");
+const { render: draw } = require("./ui");
 "#;
         let deps = extract_dependencies(ts, Language::TypeScript, "src/index.ts").unwrap();
         let targets = deps
@@ -1713,6 +1985,16 @@ const auth = require("./auth");
             .collect::<Vec<_>>();
         assert!(targets.contains(&"node:fs"));
         assert!(targets.contains(&"./auth"));
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "node:fs"
+                && dependency.local_alias.as_deref() == Some("loadFile")
+                && dependency.imported_symbol.as_deref() == Some("readFile")
+        }));
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "./ui"
+                && dependency.local_alias.as_deref() == Some("draw")
+                && dependency.imported_symbol.as_deref() == Some("render")
+        }));
 
         let py = "from app.auth import service\nimport os, sys\n";
         let deps = extract_dependencies(py, Language::Python, "app/main.py").unwrap();

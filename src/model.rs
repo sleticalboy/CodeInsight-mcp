@@ -63,6 +63,10 @@ pub struct Dependency {
     pub source_file: String,
     pub target: String,
     pub resolved_file: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub local_alias: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub imported_symbol: Option<String>,
     pub kind: String,
     pub language: Language,
     pub line: usize,

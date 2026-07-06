@@ -224,6 +224,21 @@ fn cli_indexes_and_queries_fixture_project() {
             .iter()
             .any(|call| { call["callee"] == "render" && call["callee_file"] == "src/ui.ts" })
     );
+
+    let aliased_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "aliasMain",
+        "--limit",
+        "5",
+    ]);
+    assert!(
+        aliased_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| { call["callee"] == "draw" && call["callee_file"] == "src/ui.ts" })
+    );
 }
 
 #[test]
@@ -344,9 +359,14 @@ def build_service():
         "src/main.ts",
         r#"
 import { render } from "./ui";
+const { render: draw } = require("./ui");
 
 export function main() {
   render();
+}
+
+export function aliasMain() {
+  draw();
 }
 "#,
     );
