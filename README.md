@@ -44,7 +44,7 @@ Implemented:
 
 Next:
 
-- improve JavaScript call graph resolution for destructured imported functions
+- improve JavaScript dynamic import and `require().member()` call graph resolution
 
 ## Install From Release
 
@@ -180,7 +180,7 @@ For client setup snippets, see [MCP client configuration](docs/mcp-client-config
 
 `context_pack` combines symbol search, file seeds, reference search, and resolved local dependencies into a token-budgeted context bundle for agents. It ranks candidates before applying the token budget: explicit file seeds first, then symbol definitions, references, and resolved local dependencies, with task keywords used as a lightweight relevance boost. File seeds include header/import context and primary top-level symbols instead of blindly copying the first chunk of a file. The first version is deterministic and local-only; it does not use embeddings.
 
-`callers` and `callees` use a static call graph. Calls include same-file caller/callee names, and simple imported calls can include `callee_file` when an import resolves to an indexed local file with a matching symbol. They are useful navigation signals, not full type-aware call hierarchy results.
+`callers` and `callees` use a static call graph. Calls include same-file caller/callee names, and obvious JavaScript/TypeScript imported calls can include `callee_file` when local imports, aliases, namespace imports, default imports, and re-exports resolve to indexed files with matching symbols. They are useful navigation signals, not full type-aware call hierarchy results.
 
 For accuracy boundaries and current non-goals, see [Known limitations](docs/known-limitations.md).
 

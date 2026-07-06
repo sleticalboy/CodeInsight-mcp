@@ -27,7 +27,7 @@ These capabilities are useful but approximate:
 
 - Dependency extraction from imports and module declarations.
 - `dependency_graph` output.
-- Same-file `callers` and `callees` output.
+- Same-file `callers` and `callees` output, plus obvious local JavaScript/TypeScript imported call target hints.
 - `context_pack` file/range selection.
 - Reference classification as `definition`, `import`, `call`, or `text`.
 
@@ -37,11 +37,10 @@ The output is meant to guide an AI agent toward relevant files and line ranges, 
 
 These capabilities are intentionally basic in the MVP:
 
-- Cross-file symbol resolution.
 - Dynamic language call resolution.
 - Method dispatch and inheritance resolution.
-- Aliased imports.
-- Re-export chains.
+- Cross-file symbol resolution outside explicit local import/export edges.
+- Arbitrary-depth re-export chains.
 - Generated code awareness.
 - Macro-expanded Rust code.
 - Type-driven references.
@@ -107,13 +106,24 @@ Limitations:
 
 ### `callers` and `callees`
 
-`callers` and `callees` use a same-file static call graph extracted from call expressions.
+`callers` and `callees` use a static call graph extracted from call expressions. Same-file calls are recorded by normalized callee name. JavaScript and TypeScript calls can also receive a `callee_file` hint when an obvious local import/export edge resolves to an indexed file with a matching symbol.
+
+Currently supported JavaScript/TypeScript imported target hints:
+
+- Named imports: `import { render } from "./ui"; render()`.
+- Aliased named imports: `import { render as draw } from "./ui"; draw()`.
+- CommonJS destructuring: `const { render: draw } = require("./ui"); draw()`.
+- Namespace imports and module aliases: `import * as ui from "./ui"; ui.render()` and `const ui = require("./ui"); ui.render()`.
+- Default imports when the target has an indexed `export default` symbol.
+- One-hop named/default re-exports, `export * from`, and `export * as`.
+- Two-hop named/default re-export aliases and two-hop namespace re-export aliases.
 
 Limitations:
 
 - Calls are resolved by normalized callee name, not by type information.
-- Cross-file calls are not resolved yet.
-- Imported calls are not linked to their defining file yet.
+- `callee_file` is a best-effort file hint, not a proof of the exact runtime function.
+- Re-export following is intentionally bounded; arbitrary-depth barrel chains are not expanded.
+- Dynamic `import()`, computed `require(...)`, package exports, TypeScript path aliases, and bundler resolution are not modeled yet.
 - Dynamic dispatch, callbacks, reflection, macros, and higher-order functions are not modeled.
 - Method calls with the same method name on different types may be conflated.
 
@@ -164,10 +174,9 @@ Do not treat current MVP output as a formal static-analysis proof.
 
 Near-term improvements:
 
-- Store file-to-file resolved dependencies.
-- Resolve imported calls where obvious.
-- Expand `callers` and `callees` beyond same-file analysis.
-- Improve import alias handling.
+- Improve dynamic `import()` and `require().member()` handling where obvious.
+- Add configurable TypeScript path alias and package export resolution.
+- Use call graph hints in `context_pack` ranking.
 - Exclude or down-rank tests and comments in reference search.
 - Add fixture repositories for each supported language.
 

@@ -80,7 +80,7 @@ Rust is included early so the project can index itself during development.
 
 - [x] Extract function call expressions.
 - [x] Resolve direct same-file calls.
-- [ ] Resolve imported calls where obvious.
+- [x] Resolve imported calls where obvious.
 - [x] Implement `callers`.
 - [x] Implement `callees`.
 - [x] Include confidence score.
