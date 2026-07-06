@@ -1,4 +1,5 @@
 mod cli;
+mod embedding;
 mod index;
 mod language;
 mod mcp;
@@ -27,6 +28,7 @@ async fn main() -> Result<()> {
         Command::FindReferences(args) => {
             tools::find_references(args.root, args.symbol, args.limit, args.include_definitions)?
         }
+        Command::SemanticSearch(args) => tools::semantic_search(args.root, args.query, args.limit)?,
         Command::ContextPack(args) => tools::context_pack(
             args.root,
             args.task,

@@ -2,6 +2,7 @@ use std::io::Write;
 use std::path::Path;
 
 use assert_cmd::Command;
+use predicates::str::contains;
 use serde_json::Value;
 use tempfile::TempDir;
 
@@ -792,6 +793,22 @@ fn cli_indexes_checked_in_polyglot_fixture() {
             "missing {query} symbol for {expected_language}"
         );
     }
+}
+
+#[test]
+fn cli_semantic_search_requires_embedding_provider() {
+    let fixture = fixture_project();
+
+    Command::cargo_bin("codeinsight")
+        .unwrap()
+        .args([
+            "semantic-search",
+            fixture.path().to_str().unwrap(),
+            "authentication flow",
+        ])
+        .assert()
+        .failure()
+        .stderr(contains("embedding provider is not configured"));
 }
 
 #[test]

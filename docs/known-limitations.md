@@ -2,7 +2,7 @@
 
 This document defines the accuracy boundaries for the current CodeInsight MCP Server MVP.
 
-The project is intentionally local-first and lightweight. It uses Tree-sitter syntax parsing plus local SQLite indexes. It does not yet use language servers, compiler APIs, type checkers, embeddings, or external graph databases.
+The project is intentionally local-first and lightweight. It uses Tree-sitter syntax parsing plus local SQLite indexes. It does not yet use language servers, compiler APIs, type checkers, enabled embeddings, or external graph databases.
 
 ## Current Accuracy Model
 
@@ -74,6 +74,17 @@ Limitations:
 - It can miss references through aliases, dynamic property access, reflection, macros, or generated code.
 - `reference_kind` is inferred from line text and should be treated as approximate.
 
+### `semantic_search`
+
+`semantic_search` is currently a preview contract for embedding-backed search.
+
+Limitations:
+
+- The embedding provider interface exists, but no provider is enabled by default.
+- No local vector index is built or queried yet.
+- Calls fail with a clear provider-configuration error until a supported backend is enabled.
+- `context_pack` still uses deterministic lexical, symbol, reference, dependency, and call graph signals.
+
 ### `dependency_graph`
 
 `dependency_graph` records module targets found in import-like syntax and resolves some local file targets.
@@ -108,7 +119,7 @@ Current deterministic ranking order:
 Limitations:
 
 - It is deterministic and local-only.
-- It does not use semantic embeddings.
+- It does not use semantic embeddings yet.
 - It does not yet rank by type graph, test relevance, semantic similarity, or edit history.
 - Task relevance is lexical only and uses simple ASCII keyword matching.
 - Token estimation is approximate and based on character count.

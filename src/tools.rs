@@ -8,10 +8,10 @@ use std::{
 use anyhow::{Context, Result, bail};
 
 use crate::{
-    index,
+    embedding, index,
     model::{
         CallEdge, ContextFile, ContextPack, ContextRange, DependencyGraph, ProjectIndexReport,
-        ProjectOverview, ReferenceMatch, Symbol, SymbolKind,
+        ProjectOverview, ReferenceMatch, SemanticSearchResult, Symbol, SymbolKind,
     },
     storage::Store,
 };
@@ -60,6 +60,11 @@ pub fn find_references(
 ) -> Result<()> {
     let references = find_references_value(root, &symbol, limit, include_definitions)?;
     print_json(&references)
+}
+
+pub fn semantic_search(root: PathBuf, query: String, limit: usize) -> Result<()> {
+    let results = semantic_search_value(root, &query, limit)?;
+    print_json(&results)
 }
 
 pub fn context_pack(
@@ -155,6 +160,17 @@ pub fn find_references_value(
     }
 
     Ok(matches)
+}
+
+pub fn semantic_search_value(
+    root: PathBuf,
+    query: &str,
+    _limit: usize,
+) -> Result<Vec<SemanticSearchResult>> {
+    let _root = root.canonicalize()?;
+    let provider = embedding::provider_from_env()?;
+    let _query_embedding = embedding::embed_query(provider.as_ref(), query)?;
+    bail!("semantic search index is not available yet")
 }
 
 pub fn context_pack_value(

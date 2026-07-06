@@ -114,6 +114,12 @@ fn handle_tool_call(params: Value) -> Result<Value> {
                 include_definitions,
             )?)?
         }
+        "semantic_search" => {
+            let root = required_path(&arguments, "root")?;
+            let query = required_str(&arguments, "query")?;
+            let limit = optional_positive_usize(&arguments, "limit", 20)?;
+            serde_json::to_value(tools::semantic_search_value(root, query, limit)?)?
+        }
         "context_pack" => {
             let root = required_path(&arguments, "root")?;
             let task = required_str(&arguments, "task")?.to_string();
@@ -227,6 +233,19 @@ fn tool_definitions() -> Value {
                     "include_definitions": {"type": "boolean"}
                 },
                 "required": ["root", "symbol"]
+            }
+        },
+        {
+            "name": "semantic_search",
+            "description": "Preview semantic code search through a configured embedding provider.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "root": {"type": "string"},
+                    "query": {"type": "string"},
+                    "limit": {"type": "integer", "minimum": 1}
+                },
+                "required": ["root", "query"]
             }
         },
         {
@@ -446,6 +465,21 @@ def helper():
         assert_eq!(
             refs_result["structuredContent"][0]["file"].as_str(),
             Some("auth.py")
+        );
+
+        let semantic_error = handle_tool_call(json!({
+            "name": "semantic_search",
+            "arguments": {
+                "root": dir.path(),
+                "query": "authentication flow",
+                "limit": 5
+            }
+        }))
+        .unwrap_err();
+        assert!(
+            semantic_error
+                .to_string()
+                .contains("embedding provider is not configured")
         );
 
         let context_result = handle_tool_call(json!({

@@ -38,6 +38,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - C# indexing for common classes, interfaces, structs, enums, records, methods, constructors, properties, fields, using directives, and calls.
 - PHP indexing for common classes, interfaces, traits, enums, functions, methods, properties, constants, use declarations, and calls.
 - Ruby indexing for common classes, modules, methods, singleton methods, constants, require directives, and calls.
+- Embedding provider interface and preview `semantic_search` CLI/MCP contract with explicit unconfigured-provider errors.
 
 ### Changed
 

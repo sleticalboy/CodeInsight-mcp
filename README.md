@@ -37,7 +37,8 @@ Implemented:
 - symbol extraction for common declarations
 - dependency graph, text reference search, context packs, and call graph tools with imported target hints
 - relative file resolution for local dependency graph edges
-- `index`, `overview`, `symbols`, `outline`, `dependency-graph`, `find-references`, `context-pack`, `callers`, and `callees` CLI commands
+- embedding provider interface and a preview `semantic-search` command that fails clearly until a provider is configured
+- `index`, `overview`, `symbols`, `outline`, `dependency-graph`, `find-references`, `semantic-search`, `context-pack`, `callers`, and `callees` CLI commands
 - MCP stdio `initialize`, `tools/list`, and `tools/call` for P0 tools
 - MCP tool argument validation with stable JSON-RPC errors
 - fixture-based CLI and MCP stdio integration tests
@@ -195,6 +196,7 @@ The stdio server currently exposes:
 - `file_outline`
 - `dependency_graph`
 - `find_references`
+- `semantic_search`
 - `context_pack`
 - `callers`
 - `callees`
@@ -208,6 +210,8 @@ Example `tools/call` request:
 For client setup snippets, see [MCP client configuration](docs/mcp-client-config.md).
 
 `find_references` is currently a fast text-reference pass over indexed files. It returns file, line, column, context, an approximate reference kind, and a confidence score. It is not yet a full language-server-grade semantic reference resolver.
+
+`semantic_search` is a preview contract for embedding-backed search. The provider interface is present, but no embedding backend or vector index is enabled by default. Until a supported provider is configured through `CODEINSIGHT_EMBEDDING_PROVIDER`, the command returns a clear configuration error instead of silently falling back to lexical search.
 
 `context_pack` combines symbol search, file seeds, reference search, static call graph hints, and resolved local dependencies into a token-budgeted context bundle for agents. It ranks candidates before applying the token budget: explicit file seeds first, then symbol definitions, call graph targets, references, and resolved local dependencies, with task keywords used as a lightweight relevance boost. File seeds include header/import context and primary top-level symbols instead of blindly copying the first chunk of a file; oversized seed ranges can be shortened to fit small budgets. Returned ranges include `reason` and `excerpt`, are trimmed to avoid duplicate lines, and are ordered by source line within each file. The first version is deterministic and local-only; it does not use embeddings.
 

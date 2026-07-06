@@ -106,6 +106,15 @@ pub struct ReferenceMatch {
 }
 
 #[derive(Debug, Clone, Serialize)]
+pub struct SemanticSearchResult {
+    pub file: String,
+    pub start_line: usize,
+    pub end_line: usize,
+    pub score: f64,
+    pub excerpt: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct CallEdge {
     pub file: String,
     pub caller: String,

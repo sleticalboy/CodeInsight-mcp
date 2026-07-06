@@ -24,6 +24,8 @@ pub enum Command {
     DependencyGraph(DependencyGraphArgs),
     /// Find text references for a symbol in indexed files.
     FindReferences(FindReferencesArgs),
+    /// Search indexed code with an embedding provider.
+    SemanticSearch(SemanticSearchArgs),
     /// Build an agent-ready context pack from seed symbols or files.
     ContextPack(ContextPackArgs),
     /// Find callers for a function or method.
@@ -74,6 +76,14 @@ pub struct FindReferencesArgs {
     pub limit: usize,
     #[arg(long)]
     pub include_definitions: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct SemanticSearchArgs {
+    pub root: PathBuf,
+    pub query: String,
+    #[arg(long, default_value_t = 20)]
+    pub limit: usize,
 }
 
 #[derive(Debug, Args)]
