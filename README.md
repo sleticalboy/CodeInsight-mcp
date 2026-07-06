@@ -44,7 +44,7 @@ Implemented:
 
 Next:
 
-- improve package export resolution and broader TypeScript path alias coverage
+- improve dependency package export resolution and broader TypeScript path alias coverage
 
 ## Install From Release
 

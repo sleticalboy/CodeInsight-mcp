@@ -77,7 +77,7 @@ Limitations:
 
 - Targets are always stored as module strings; `resolved_file` is only populated when a local file can be resolved cheaply.
 - Grouped imports may be compacted rather than expanded precisely.
-- Package manager metadata is not analyzed yet.
+- Local package self-reference `exports` resolution supports JSON-compatible `package.json` files with exact or single-wildcard string mappings.
 - TypeScript and JavaScript `baseUrl`/`paths` resolution supports JSON-compatible `tsconfig.json` and `jsconfig.json` files with exact or single-wildcard path mappings.
 - Monorepo workspace boundaries are not modeled yet.
 - Go import paths are not resolved to files yet.
@@ -120,6 +120,7 @@ Currently supported JavaScript/TypeScript imported target hints:
 - Static-string dynamic import aliases: `const ui = await import("./ui"); ui.render()`.
 - Static-string dynamic import callback aliases: `import("./ui").then((ui) => ui.render())`.
 - TypeScript and JavaScript `baseUrl`/`paths` imports when the target resolves to an indexed local file.
+- Local package self-reference `exports` imports when the target resolves to an indexed local file.
 - Default imports when the target has an indexed `export default` symbol.
 - One-hop named/default re-exports, `export * from`, and `export * as`.
 - Two-hop named/default re-export aliases and two-hop namespace re-export aliases.
@@ -129,7 +130,7 @@ Limitations:
 - Calls are resolved by normalized callee name, not by type information.
 - `callee_file` is a best-effort file hint, not a proof of the exact runtime function.
 - Re-export following is intentionally bounded; arbitrary-depth barrel chains are not expanded.
-- Non-literal dynamic `import()`, external dynamic import handlers, variable-based `require(...)` targets, package exports, multi-wildcard TypeScript path aliases, and bundler resolution are not modeled yet.
+- Non-literal dynamic `import()`, external dynamic import handlers, variable-based `require(...)` targets, dependency `node_modules` package exports, multi-wildcard aliases/exports, and bundler resolution are not modeled yet.
 - Dynamic dispatch, callbacks, reflection, macros, and higher-order functions are not modeled.
 - Method calls with the same method name on different types may be conflated.
 
@@ -181,7 +182,7 @@ Do not treat current MVP output as a formal static-analysis proof.
 Near-term improvements:
 
 - Improve external dynamic import handlers and variable-based `require(...)` handling where obvious.
-- Add package export resolution and broader TypeScript path alias coverage.
+- Add dependency package export resolution and broader TypeScript path alias coverage.
 - Use call graph hints in `context_pack` ranking.
 - Exclude or down-rank tests and comments in reference search.
 - Add fixture repositories for each supported language.

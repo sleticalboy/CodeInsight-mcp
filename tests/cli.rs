@@ -9,13 +9,13 @@ fn cli_indexes_and_queries_fixture_project() {
     let fixture = fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 10);
-    assert_eq!(index["changed_files"], 10);
+    assert_eq!(index["indexed_files"], 11);
+    assert_eq!(index["changed_files"], 11);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let second_index = run_json(["index", fixture.path().to_str().unwrap()]);
     assert_eq!(second_index["changed_files"], 0);
-    assert_eq!(second_index["unchanged_files"], 10);
+    assert_eq!(second_index["unchanged_files"], 11);
 
     let symbols = run_json([
         "symbols",
@@ -41,6 +41,7 @@ fn cli_indexes_and_queries_fixture_project() {
     assert!(targets.contains(&"os"));
     assert!(targets.contains(&"./ui"));
     assert!(targets.contains(&"@app/path-ui"));
+    assert!(targets.contains(&"fixture-lib/package-ui"));
     assert!(
         deps["dependencies"]
             .as_array()
@@ -48,6 +49,16 @@ fn cli_indexes_and_queries_fixture_project() {
             .iter()
             .any(|dependency| {
                 dependency["target"] == "./ui" && dependency["resolved_file"] == "src/ui.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "fixture-lib/package-ui"
+                    && dependency["resolved_file"] == "src/package-ui.ts"
             })
     );
     assert!(
@@ -498,6 +509,23 @@ fn cli_indexes_and_queries_fixture_project() {
             call["callee"] == "pathRender" && call["callee_file"] == "src/path-ui.ts"
         })
     );
+
+    let package_export_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "packageExportMain",
+        "--limit",
+        "5",
+    ]);
+    assert!(
+        package_export_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| {
+                call["callee"] == "packageRender" && call["callee_file"] == "src/package-ui.ts"
+            })
+    );
 }
 
 #[test]
@@ -581,6 +609,18 @@ fn fixture_project() -> TempDir {
     std::fs::create_dir_all(dir.path().join("src")).unwrap();
     write_file(
         &dir,
+        "package.json",
+        r#"
+{
+  "name": "fixture-lib",
+  "exports": {
+    "./package-*": "./src/package-*.ts"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
         "tsconfig.json",
         r#"
 {
@@ -637,6 +677,7 @@ import { relayRender, relayDefault, render as starRender, uiApi } from "./barrel
 import { finalApi, finalDefault, finalRender } from "./barrel2";
 import * as ui from "./ui";
 import { pathRender } from "@app/path-ui";
+import { packageRender } from "fixture-lib/package-ui";
 const { render: draw } = require("./ui");
 const uiModule = require("./ui");
 const computedUiModule = require("./" + "ui");
@@ -715,6 +756,10 @@ export function dynamicImportThenMain() {
 export function pathAliasMain() {
   pathRender();
 }
+
+export function packageExportMain() {
+  packageRender();
+}
 "#,
     );
     write_file(
@@ -752,6 +797,15 @@ export default function defaultRender() {
         r#"
 export function pathRender() {
   return "path";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/package-ui.ts",
+        r#"
+export function packageRender() {
+  return "package";
 }
 "#,
     );

@@ -1544,6 +1544,7 @@ fn resolve_javascript_like_target(root: &Path, dependency: &Dependency) -> Optio
         EXTENSIONS,
     )
     .or_else(|| resolve_tsconfig_target(root, dependency, EXTENSIONS))
+    .or_else(|| resolve_package_exports_target(root, dependency, EXTENSIONS))
 }
 
 fn resolve_tsconfig_target(
@@ -1660,6 +1661,90 @@ fn apply_tsconfig_path_mapping(mapping: &str, wildcard: Option<&str>) -> Option<
     }
 
     Some(PathBuf::from(mapping))
+}
+
+fn resolve_package_exports_target(
+    root: &Path,
+    dependency: &Dependency,
+    extensions: &[&str],
+) -> Option<String> {
+    if dependency.target.starts_with('.') || dependency.target.starts_with('/') {
+        return None;
+    }
+
+    let package_path = find_package_json(root, &dependency.source_file)?;
+    let package_text = fs::read_to_string(root.join(&package_path)).ok()?;
+    let package: Value = serde_json::from_str(&package_text).ok()?;
+    let name = package.get("name")?.as_str()?;
+    let subpath = package_export_subpath(name, &dependency.target)?;
+    let exports = package.get("exports")?;
+    let package_dir = package_path.parent().unwrap_or(Path::new(""));
+    let mapped = package_export_mapping(exports, &subpath)?;
+    resolve_base(root, package_dir.join(mapped), extensions)
+}
+
+fn find_package_json(root: &Path, source_file: &str) -> Option<PathBuf> {
+    let mut current = Path::new(source_file)
+        .parent()
+        .unwrap_or(Path::new(""))
+        .to_path_buf();
+
+    loop {
+        let candidate = current.join("package.json");
+        if root.join(&candidate).is_file() {
+            return Some(candidate);
+        }
+
+        if current.as_os_str().is_empty() {
+            return None;
+        }
+        current.pop();
+    }
+}
+
+fn package_export_subpath(package_name: &str, target: &str) -> Option<String> {
+    if target == package_name {
+        return Some(".".to_string());
+    }
+    target
+        .strip_prefix(package_name)
+        .and_then(|rest| rest.strip_prefix('/'))
+        .map(|rest| format!("./{rest}"))
+}
+
+fn package_export_mapping(exports: &Value, subpath: &str) -> Option<PathBuf> {
+    if subpath == "."
+        && let Some(target) = package_export_target(exports)
+    {
+        return Some(PathBuf::from(target));
+    }
+
+    let entries = exports.as_object()?;
+    for (pattern, value) in entries {
+        let wildcard = tsconfig_path_wildcard(pattern, subpath)?;
+        let target = package_export_target(value)?;
+        let mapped = apply_tsconfig_path_mapping(&target, wildcard.as_deref())?;
+        return Some(mapped);
+    }
+    None
+}
+
+fn package_export_target(value: &Value) -> Option<String> {
+    if let Some(target) = value.as_str() {
+        return Some(target.to_string());
+    }
+
+    if let Some(targets) = value.as_array() {
+        return targets.iter().find_map(package_export_target);
+    }
+
+    let object = value.as_object()?;
+    for condition in ["import", "default", "require"] {
+        if let Some(target) = object.get(condition).and_then(package_export_target) {
+            return Some(target);
+        }
+    }
+    None
 }
 
 fn resolve_relative_target(
