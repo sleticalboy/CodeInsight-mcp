@@ -21,6 +21,7 @@ These capabilities are expected to be reliable for common source files in suppor
   - C/C++ functions, structs/classes, enums, typedefs, macro constants, local includes, and basic calls.
   - C# classes, interfaces, structs, enums, records, methods, constructors, properties, fields, using directives, and basic calls.
   - PHP classes, interfaces, traits, enums, functions, methods, properties, constants, namespace use declarations, and basic calls.
+  - Ruby classes, modules, methods, singleton methods, constants, require directives, and basic calls.
 - Caching indexed files by content hash.
 - Skipping unchanged files during incremental indexing.
 - Removing stale index records for deleted files.
@@ -155,12 +156,9 @@ Current MVP support:
 - C / C++
 - C#
 - PHP
+- Ruby
 
 Rust support exists partly so the project can index itself during development.
-
-Planned expansion:
-
-- Ruby
 
 ## Non-Goals For v0.1.0
 

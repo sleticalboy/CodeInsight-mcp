@@ -15,6 +15,7 @@ pub enum Language {
     JavaScript,
     Php,
     Python,
+    Ruby,
     Rust,
     #[serde(rename = "typescript")]
     TypeScript,
@@ -32,6 +33,7 @@ impl Language {
             Self::JavaScript => "javascript",
             Self::Php => "php",
             Self::Python => "python",
+            Self::Ruby => "ruby",
             Self::Rust => "rust",
             Self::TypeScript => "typescript",
             Self::Tsx => "tsx",

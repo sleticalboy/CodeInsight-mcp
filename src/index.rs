@@ -326,6 +326,7 @@ fn is_call_node(node: Node<'_>, language: Language) -> bool {
                 | "object_creation_expression"
                 | "scoped_call_expression"
         ),
+        Language::Ruby => node.kind() == "call",
         Language::Python => node.kind() == "call",
     }
 }
@@ -336,6 +337,11 @@ fn call_target_text(node: Node<'_>, source: &[u8], language: Language) -> Option
     {
         return Some(target);
     }
+    if language == Language::Ruby
+        && let Some(target) = ruby_call_target_text(node, source)
+    {
+        return Some(target);
+    }
 
     node.child_by_field_name("function")
         .or_else(|| node.child_by_field_name("name"))
@@ -343,6 +349,16 @@ fn call_target_text(node: Node<'_>, source: &[u8], language: Language) -> Option
         .or_else(|| node.child(0))
         .and_then(|child| child.utf8_text(source).ok())
         .map(ToOwned::to_owned)
+}
+
+fn ruby_call_target_text(node: Node<'_>, source: &[u8]) -> Option<String> {
+    child_text(node, "method", source)
+        .or_else(|| child_text(node, "name", source))
+        .or_else(|| {
+            node.child(0)
+                .and_then(|child| child.utf8_text(source).ok())
+                .map(ToOwned::to_owned)
+        })
 }
 
 fn php_call_target_text(node: Node<'_>, source: &[u8]) -> Option<String> {
@@ -656,6 +672,7 @@ fn dependencies_from_node(
         Language::CSharp => csharp_dependencies(node, source, language, source_file),
         Language::Php => php_dependencies(node, source, language, source_file),
         Language::Python => python_dependencies(node, source, language, source_file),
+        Language::Ruby => ruby_dependencies(node, source, language, source_file),
         Language::Go => go_dependencies(node, source, language, source_file),
         Language::Java => java_dependencies(node, source, language, source_file),
         Language::Rust => rust_dependencies(node, source, language, source_file),
@@ -841,6 +858,37 @@ fn php_dependencies(
         }
         _ => Vec::new(),
     }
+}
+
+fn ruby_dependencies(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+) -> Vec<Dependency> {
+    if node.kind() != "call" {
+        return Vec::new();
+    }
+    let Some(method) = child_text(node, "method", source) else {
+        return Vec::new();
+    };
+    if !matches!(method.as_str(), "require" | "require_relative") {
+        return Vec::new();
+    }
+
+    ruby_string_argument_targets(node, source)
+        .into_iter()
+        .map(|target| Dependency {
+            source_file: source_file.to_string(),
+            target,
+            resolved_file: None,
+            local_alias: None,
+            imported_symbol: None,
+            kind: method.clone(),
+            language,
+            line: node.start_position().row + 1,
+        })
+        .collect()
 }
 
 fn rust_dependencies(
@@ -1636,6 +1684,7 @@ fn resolve_dependency(root: &Path, dependency: &Dependency) -> Option<String> {
         Language::C | Language::Cpp => resolve_c_like_target(root, dependency),
         Language::CSharp => None,
         Language::Python => resolve_python_target(root, dependency),
+        Language::Ruby => None,
         Language::Rust => resolve_rust_target(root, dependency),
         Language::Go | Language::Java | Language::Php => None,
     }
@@ -2238,6 +2287,7 @@ fn symbol_from_node(
         Language::CSharp => csharp_symbol(node, source),
         Language::Php => php_symbol(node, source),
         Language::Python => python_symbol(node, source),
+        Language::Ruby => ruby_symbol(node, source),
         Language::Rust => rust_symbol(node, source),
         Language::Go => go_symbol(node, source),
         Language::Java => java_symbol(node, source),
@@ -2356,6 +2406,18 @@ fn php_symbol(node: Node<'_>, source: &[u8]) -> Option<(String, SymbolKind)> {
         }
         "property_declaration" => find_php_property_name(node, source),
         "const_declaration" => find_php_const_name(node, source),
+        _ => None,
+    }
+}
+
+fn ruby_symbol(node: Node<'_>, source: &[u8]) -> Option<(String, SymbolKind)> {
+    match node.kind() {
+        "class" => child_text(node, "name", source).map(|name| (name, SymbolKind::Class)),
+        "module" => child_text(node, "name", source).map(|name| (name, SymbolKind::Interface)),
+        "method" | "singleton_method" => {
+            child_text(node, "name", source).map(|name| (name, SymbolKind::Method))
+        }
+        "assignment" => find_ruby_constant_assignment(node, source),
         _ => None,
     }
 }
@@ -2858,6 +2920,40 @@ fn find_php_const_name(node: Node<'_>, source: &[u8]) -> Option<(String, SymbolK
             let name = first_child_text(child, source, &["name"])?;
             return Some((name, SymbolKind::Constant));
         }
+    }
+    None
+}
+
+fn ruby_string_argument_targets(node: Node<'_>, source: &[u8]) -> Vec<String> {
+    let Some(arguments) = node.child_by_field_name("arguments") else {
+        return Vec::new();
+    };
+    let mut targets = Vec::new();
+    collect_string_content(arguments, source, &mut targets);
+    targets
+}
+
+fn collect_string_content(node: Node<'_>, source: &[u8], targets: &mut Vec<String>) {
+    if node.kind() == "string_content"
+        && let Ok(text) = node.utf8_text(source)
+        && !text.trim().is_empty()
+    {
+        targets.push(text.trim().to_string());
+    }
+
+    let mut cursor = node.walk();
+    for child in node_children(&mut cursor) {
+        collect_string_content(child, source, targets);
+    }
+}
+
+fn find_ruby_constant_assignment(node: Node<'_>, source: &[u8]) -> Option<(String, SymbolKind)> {
+    let left = node.child_by_field_name("left")?;
+    if matches!(left.kind(), "constant" | "scope_resolution") {
+        return left
+            .utf8_text(source)
+            .ok()
+            .map(|name| (name.to_string(), SymbolKind::Constant));
     }
     None
 }
@@ -3386,6 +3482,66 @@ interface UserRepository {
             calls
                 .iter()
                 .any(|call| call.caller == "AuthController.login" && call.callee == "audit")
+        );
+    }
+
+    #[test]
+    fn extracts_ruby_symbols_dependencies_and_calls() {
+        let source = r#"
+require "json"
+require_relative "support/audit"
+
+module Example
+  class AuthService
+    TOKEN = "web"
+
+    def initialize(repository)
+      @repository = repository
+    end
+
+    def login(id)
+      user = @repository.find(id)
+      audit(user)
+      true
+    end
+
+    def self.build(repository)
+      new(repository)
+    end
+
+    private
+
+    def audit(user)
+    end
+  end
+end
+"#;
+        let symbols = extract_symbols(source, Language::Ruby, "auth_service.rb").unwrap();
+        let names = symbols
+            .iter()
+            .map(|symbol| symbol.qualified_name.as_str())
+            .collect::<Vec<_>>();
+        assert!(names.contains(&"Example"));
+        assert!(names.contains(&"Example.AuthService"));
+        assert!(names.contains(&"Example.AuthService.TOKEN"));
+        assert!(names.contains(&"Example.AuthService.initialize"));
+        assert!(names.contains(&"Example.AuthService.login"));
+        assert!(names.contains(&"Example.AuthService.build"));
+        assert!(names.contains(&"Example.AuthService.audit"));
+
+        let deps = extract_dependencies(source, Language::Ruby, "auth_service.rb").unwrap();
+        let targets = deps
+            .iter()
+            .map(|dependency| dependency.target.as_str())
+            .collect::<Vec<_>>();
+        assert!(targets.contains(&"json"));
+        assert!(targets.contains(&"support/audit"));
+
+        let calls = extract_calls(source, Language::Ruby, "auth_service.rb", &symbols);
+        assert!(
+            calls
+                .iter()
+                .any(|call| call.caller == "Example.AuthService.login" && call.callee == "audit")
         );
     }
 

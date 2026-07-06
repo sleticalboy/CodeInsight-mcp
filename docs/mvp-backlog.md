@@ -102,7 +102,7 @@ Rust is included early so the project can index itself during development.
 - [x] C / C++
 - [x] C#
 - [x] PHP
-- [ ] Ruby
+- [x] Ruby
 
 ### Semantic Search
 
@@ -135,5 +135,5 @@ Rust is included early so the project can index itself during development.
 ### v0.3.0
 
 - Basic call graph available.
-- More robust TypeScript, Python, Go, Rust, Java, C/C++, C#, and PHP extraction.
+- More robust TypeScript, Python, Go, Rust, Java, C/C++, C#, PHP, and Ruby extraction.
 - Benchmark report for token/context reduction.
