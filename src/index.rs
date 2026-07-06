@@ -783,7 +783,7 @@ fn javascript_like_dependencies(
             string_literal_targets,
         ),
         "variable_declarator" => {
-            javascript_require_alias_dependencies(node, source, language, source_file)
+            javascript_variable_module_alias_dependencies(node, source, language, source_file)
         }
         _ => Vec::new(),
     }
@@ -1030,6 +1030,73 @@ fn javascript_require_alias_dependencies(
             )
         })
         .collect()
+}
+
+fn javascript_variable_module_alias_dependencies(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+) -> Vec<Dependency> {
+    let mut dependencies =
+        javascript_require_alias_dependencies(node, source, language, source_file);
+    dependencies.extend(javascript_dynamic_import_alias_dependencies(
+        node,
+        source,
+        language,
+        source_file,
+    ));
+    dependencies
+}
+
+fn javascript_dynamic_import_alias_dependencies(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+) -> Vec<Dependency> {
+    let Some(name_node) = node.child_by_field_name("name").or_else(|| node.child(0)) else {
+        return Vec::new();
+    };
+    let Ok(name) = name_node.utf8_text(source) else {
+        return Vec::new();
+    };
+    let name = name.trim();
+    if !is_js_identifier(name) {
+        return Vec::new();
+    }
+
+    let value = node
+        .child_by_field_name("value")
+        .or_else(|| node.child_by_field_name("right"))
+        .and_then(|child| child.utf8_text(source).ok())
+        .unwrap_or_default();
+    if !is_static_dynamic_import(value) {
+        return Vec::new();
+    }
+    let Some(target) = string_literal_targets(value).into_iter().next() else {
+        return Vec::new();
+    };
+
+    vec![namespace_dependency(
+        source_file,
+        &target,
+        language,
+        node.start_position().row + 1,
+        name.to_string(),
+    )]
+}
+
+fn is_static_dynamic_import(value: &str) -> bool {
+    let trimmed = value.trim();
+    let expression = trimmed
+        .strip_prefix("await ")
+        .map(str::trim_start)
+        .unwrap_or(trimmed);
+    let Some(rest) = expression.strip_prefix("import") else {
+        return false;
+    };
+    rest.trim_start().starts_with('(')
 }
 
 fn alias_dependency(
@@ -2204,6 +2271,7 @@ import * as pathApi from "node:path";
 const auth = require("./auth");
 const { render: draw } = require("./ui");
 const uiModule = require("./ui");
+const loadedUi = await import("./ui");
 export { render as relayRender, default as relayDefault } from "./ui";
 export * from "./all-ui";
 export * as uiApi from "./ui";
@@ -2238,6 +2306,12 @@ export * as uiApi from "./ui";
         assert!(deps.iter().any(|dependency| {
             dependency.target == "./ui"
                 && dependency.local_alias.as_deref() == Some("uiModule")
+                && dependency.imported_symbol.as_deref() == Some("*")
+        }));
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "./ui"
+                && dependency.kind == "import_namespace"
+                && dependency.local_alias.as_deref() == Some("loadedUi")
                 && dependency.imported_symbol.as_deref() == Some("*")
         }));
         assert!(deps.iter().any(|dependency| {

@@ -115,6 +115,7 @@ Currently supported JavaScript/TypeScript imported target hints:
 - CommonJS destructuring: `const { render: draw } = require("./ui"); draw()`.
 - Direct CommonJS member calls: `require("./ui").render()`.
 - Namespace imports and module aliases: `import * as ui from "./ui"; ui.render()` and `const ui = require("./ui"); ui.render()`.
+- Static-string dynamic import aliases: `const ui = await import("./ui"); ui.render()`.
 - Default imports when the target has an indexed `export default` symbol.
 - One-hop named/default re-exports, `export * from`, and `export * as`.
 - Two-hop named/default re-export aliases and two-hop namespace re-export aliases.
@@ -124,7 +125,7 @@ Limitations:
 - Calls are resolved by normalized callee name, not by type information.
 - `callee_file` is a best-effort file hint, not a proof of the exact runtime function.
 - Re-export following is intentionally bounded; arbitrary-depth barrel chains are not expanded.
-- Dynamic `import()`, computed `require(...)`, package exports, TypeScript path aliases, and bundler resolution are not modeled yet.
+- Non-literal dynamic `import()`, dynamic import callback flows, computed `require(...)`, package exports, TypeScript path aliases, and bundler resolution are not modeled yet.
 - Dynamic dispatch, callbacks, reflection, macros, and higher-order functions are not modeled.
 - Method calls with the same method name on different types may be conflated.
 
@@ -175,7 +176,7 @@ Do not treat current MVP output as a formal static-analysis proof.
 
 Near-term improvements:
 
-- Improve dynamic `import()` and computed `require(...)` handling where obvious.
+- Improve dynamic import callback flows and computed `require(...)` handling where obvious.
 - Add configurable TypeScript path alias and package export resolution.
 - Use call graph hints in `context_pack` ranking.
 - Exclude or down-rank tests and comments in reference search.

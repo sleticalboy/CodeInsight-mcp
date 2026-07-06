@@ -406,6 +406,23 @@ fn cli_indexes_and_queries_fixture_project() {
                 call["callee"] == "require.render" && call["callee_file"] == "src/ui.ts"
             })
     );
+
+    let dynamic_import_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "dynamicImportMain",
+        "--limit",
+        "5",
+    ]);
+    assert!(
+        dynamic_import_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| {
+                call["callee"] == "loadedUi.render" && call["callee_file"] == "src/ui.ts"
+            })
+    );
 }
 
 #[test]
@@ -583,6 +600,11 @@ export function twoHopNamespaceMain() {
 
 export function requireMemberMain() {
   require("./ui").render();
+}
+
+export async function dynamicImportMain() {
+  const loadedUi = await import("./ui");
+  loadedUi.render();
 }
 "#,
     );
