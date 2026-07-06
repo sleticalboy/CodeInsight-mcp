@@ -44,7 +44,7 @@ Implemented:
 
 Next:
 
-- improve JavaScript external dynamic import handlers and computed `require(...)` call graph resolution
+- improve JavaScript external dynamic import handlers and variable-based `require(...)` call graph resolution
 
 ## Install From Release
 

@@ -916,7 +916,7 @@ fn javascript_call_expression_dependencies(
         language,
         source_file,
         "import",
-        string_literal_targets,
+        javascript_call_expression_targets,
     );
     dependencies.extend(javascript_dynamic_import_callback_alias_dependencies(
         node,
@@ -941,7 +941,7 @@ fn javascript_dynamic_import_callback_alias_dependencies(
     if !is_static_dynamic_import(&trimmed[..then_index]) {
         return Vec::new();
     }
-    let Some(target) = string_literal_targets(&trimmed[..then_index])
+    let Some(target) = static_js_module_call_targets(&trimmed[..then_index])
         .into_iter()
         .next()
     else {
@@ -1046,7 +1046,7 @@ fn javascript_require_alias_dependencies(
     if !value.contains("require") {
         return Vec::new();
     }
-    let Some(target) = string_literal_targets(value).into_iter().next() else {
+    let Some(target) = static_js_module_call_targets(value).into_iter().next() else {
         return Vec::new();
     };
 
@@ -1125,7 +1125,7 @@ fn javascript_dynamic_import_alias_dependencies(
     if !is_static_dynamic_import(value) {
         return Vec::new();
     }
-    let Some(target) = string_literal_targets(value).into_iter().next() else {
+    let Some(target) = static_js_module_call_targets(value).into_iter().next() else {
         return Vec::new();
     };
 
@@ -1192,6 +1192,98 @@ fn strip_async_callback_prefix(raw: &str) -> &str {
     } else {
         raw
     }
+}
+
+fn javascript_call_expression_targets(text: &str) -> Vec<String> {
+    let static_targets = static_js_module_call_targets(text);
+    if static_targets.is_empty() {
+        string_literal_targets(text)
+    } else {
+        static_targets
+    }
+}
+
+fn static_js_module_call_targets(text: &str) -> Vec<String> {
+    let mut targets = Vec::new();
+    targets.extend(static_js_module_call_targets_for_keyword(text, "require"));
+    targets.extend(static_js_module_call_targets_for_keyword(text, "import"));
+    targets
+}
+
+fn static_js_module_call_targets_for_keyword(text: &str, keyword: &str) -> Vec<String> {
+    let mut targets = Vec::new();
+    let mut search_start = 0;
+    while let Some(relative_start) = text[search_start..].find(keyword) {
+        let keyword_start = search_start + relative_start;
+        let after_keyword = keyword_start + keyword.len();
+        if !has_js_identifier_boundaries(text, keyword_start, after_keyword) {
+            search_start = after_keyword;
+            continue;
+        }
+
+        let open = skip_ascii_whitespace(text, after_keyword);
+        if !text[open..].starts_with('(') {
+            search_start = after_keyword;
+            continue;
+        }
+
+        let Some(close) = matching_delimiter(text, open, '(', ')') else {
+            search_start = open + 1;
+            continue;
+        };
+        if let Some(target) = static_js_string_expression_value(&text[open + 1..close]) {
+            targets.push(target);
+        }
+        search_start = close + 1;
+    }
+    targets
+}
+
+fn static_js_string_expression_value(raw: &str) -> Option<String> {
+    let first_arg = top_level_char_index(raw, ',')
+        .map(|comma| &raw[..comma])
+        .unwrap_or(raw)
+        .trim();
+    if first_arg.is_empty() {
+        return None;
+    }
+
+    let plus_indices = top_level_char_indices(first_arg, '+');
+    if plus_indices.is_empty() {
+        return string_literal_value(first_arg);
+    }
+
+    let mut value = String::new();
+    let mut start = 0;
+    for plus in plus_indices {
+        value.push_str(&string_literal_value(first_arg[start..plus].trim())?);
+        start = plus + 1;
+    }
+    value.push_str(&string_literal_value(first_arg[start..].trim())?);
+    Some(value)
+}
+
+fn has_js_identifier_boundaries(raw: &str, start: usize, end: usize) -> bool {
+    !raw[..start]
+        .chars()
+        .next_back()
+        .is_some_and(is_js_identifier_part)
+        && !raw[end..].chars().next().is_some_and(is_js_identifier_part)
+}
+
+fn is_js_identifier_part(ch: char) -> bool {
+    ch == '_' || ch == '$' || ch.is_ascii_alphanumeric()
+}
+
+fn skip_ascii_whitespace(raw: &str, mut index: usize) -> usize {
+    while index < raw.len() {
+        let ch = raw[index..].chars().next().expect("valid char boundary");
+        if !ch.is_ascii_whitespace() {
+            break;
+        }
+        index += ch.len_utf8();
+    }
+    index
 }
 
 fn alias_dependency(
@@ -2367,7 +2459,9 @@ const auth = require("./auth");
 const { render: draw } = require("./ui");
 const uiModule = require("./ui");
 const loadedUi = await import("./ui");
+const computedUi = require("./" + "ui");
 import("./ui").then((thenUi) => thenUi.render());
+require("./" + "ui").render();
 export { render as relayRender, default as relayDefault } from "./ui";
 export * from "./all-ui";
 export * as uiApi from "./ui";
@@ -2402,6 +2496,11 @@ export * as uiApi from "./ui";
         assert!(deps.iter().any(|dependency| {
             dependency.target == "./ui"
                 && dependency.local_alias.as_deref() == Some("uiModule")
+                && dependency.imported_symbol.as_deref() == Some("*")
+        }));
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "./ui"
+                && dependency.local_alias.as_deref() == Some("computedUi")
                 && dependency.imported_symbol.as_deref() == Some("*")
         }));
         assert!(deps.iter().any(|dependency| {

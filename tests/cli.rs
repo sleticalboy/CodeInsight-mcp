@@ -268,6 +268,23 @@ fn cli_indexes_and_queries_fixture_project() {
         })
     );
 
+    let computed_module_alias_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "computedModuleAliasMain",
+        "--limit",
+        "5",
+    ]);
+    assert!(
+        computed_module_alias_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| {
+                call["callee"] == "computedUiModule.render" && call["callee_file"] == "src/ui.ts"
+            })
+    );
+
     let default_callees = run_json([
         "callees",
         fixture.path().to_str().unwrap(),
@@ -399,6 +416,23 @@ fn cli_indexes_and_queries_fixture_project() {
     ]);
     assert!(
         require_member_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| {
+                call["callee"] == "require.render" && call["callee_file"] == "src/ui.ts"
+            })
+    );
+
+    let computed_require_member_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "computedRequireMemberMain",
+        "--limit",
+        "5",
+    ]);
+    assert!(
+        computed_require_member_callees
             .as_array()
             .unwrap()
             .iter()
@@ -566,6 +600,7 @@ import { finalApi, finalDefault, finalRender } from "./barrel2";
 import * as ui from "./ui";
 const { render: draw } = require("./ui");
 const uiModule = require("./ui");
+const computedUiModule = require("./" + "ui");
 
 export function main() {
   render();
@@ -581,6 +616,10 @@ export function namespaceMain() {
 
 export function moduleAliasMain() {
   uiModule.render();
+}
+
+export function computedModuleAliasMain() {
+  computedUiModule.render();
 }
 
 export function defaultMain() {
@@ -617,6 +656,10 @@ export function twoHopNamespaceMain() {
 
 export function requireMemberMain() {
   require("./ui").render();
+}
+
+export function computedRequireMemberMain() {
+  require("./" + "ui").render();
 }
 
 export async function dynamicImportMain() {
