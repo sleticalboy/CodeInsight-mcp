@@ -121,7 +121,7 @@ configure_profile() {
         20000
       )
       REPO_SYMBOL_TARGETS=(
-        "createError:1|handleError:1"
+        "createError:1|handleError:1|User.index:1|User.range:1|users.list:1"
         ""
         ""
         ""

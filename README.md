@@ -44,7 +44,7 @@ Implemented:
 
 Next:
 
-- add benchmark symbol guardrails for JavaScript object literal function properties
+- improve JavaScript symbol extraction for destructured function assignments
 
 ## Install From Release
 
