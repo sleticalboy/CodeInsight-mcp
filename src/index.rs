@@ -808,6 +808,17 @@ fn javascript_import_alias_dependencies(
     };
     let mut dependencies = Vec::new();
 
+    if let Some(local_alias) = import_default_alias(text) {
+        dependencies.push(alias_dependency(
+            source_file,
+            &target,
+            language,
+            node.start_position().row + 1,
+            "default".to_string(),
+            local_alias,
+        ));
+    }
+
     if let Some(local_alias) = import_namespace_alias(text) {
         dependencies.push(namespace_dependency(
             source_file,
@@ -838,6 +849,31 @@ fn javascript_import_alias_dependencies(
             }),
     );
     dependencies
+}
+
+fn import_default_alias(raw: &str) -> Option<String> {
+    let specifier = raw.trim().strip_prefix("import")?.trim();
+    let specifier = specifier.strip_prefix("type ").unwrap_or(specifier).trim();
+    if specifier.starts_with('*') || specifier.starts_with('{') {
+        return None;
+    }
+
+    let alias = if let Some(comma) = top_level_char_index(specifier, ',') {
+        specifier[..comma].trim()
+    } else {
+        let mut parts = specifier.split_whitespace();
+        let alias = parts.next()?;
+        if parts.next()? != "from" {
+            return None;
+        }
+        alias
+    };
+
+    if is_js_identifier(alias) {
+        Some(alias.to_string())
+    } else {
+        None
+    }
 }
 
 fn import_namespace_alias(raw: &str) -> Option<String> {
@@ -1370,6 +1406,7 @@ fn go_symbol(node: Node<'_>, source: &[u8]) -> Option<(String, SymbolKind)> {
 
 fn javascript_like_symbol(node: Node<'_>, source: &[u8]) -> Option<(String, SymbolKind)> {
     match node.kind() {
+        "export_statement" => javascript_default_export_symbol(node, source),
         "function_declaration" => {
             child_text(node, "name", source).map(|name| (name, SymbolKind::Function))
         }
@@ -1390,6 +1427,16 @@ fn javascript_like_symbol(node: Node<'_>, source: &[u8]) -> Option<(String, Symb
         "assignment_expression" => javascript_assignment_symbol(node, source),
         _ => None,
     }
+}
+
+fn javascript_default_export_symbol(node: Node<'_>, source: &[u8]) -> Option<(String, SymbolKind)> {
+    let text = node.utf8_text(source).ok()?.trim_start();
+    let mut parts = text.split_whitespace();
+    if parts.next()? != "export" || parts.next()? != "default" {
+        return None;
+    }
+
+    Some(("default".to_string(), SymbolKind::Function))
 }
 
 fn javascript_method_symbol(node: Node<'_>, source: &[u8]) -> Option<(String, SymbolKind)> {
@@ -1992,6 +2039,23 @@ const [firstHandler, , thirdHandler] = handlers;
     }
 
     #[test]
+    fn extracts_javascript_default_export_symbol() {
+        let source = r#"
+export default function renderDefault() {
+  return "ok";
+}
+"#;
+        let symbols = extract_symbols(source, Language::TypeScript, "ui.ts").unwrap();
+        let names = symbols
+            .iter()
+            .map(|symbol| symbol.qualified_name.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(names.contains(&"default"));
+        assert!(names.contains(&"renderDefault"));
+    }
+
+    #[test]
     fn extracts_go_symbols() {
         let source = r#"
 package auth
@@ -2037,6 +2101,7 @@ fn helper() {}
     fn extracts_dependencies() {
         let ts = r#"
 import { readFile as loadFile } from "node:fs";
+import loadDefault from "node:fs";
 import * as pathApi from "node:path";
 const auth = require("./auth");
 const { render: draw } = require("./ui");
@@ -2053,6 +2118,11 @@ const uiModule = require("./ui");
             dependency.target == "node:fs"
                 && dependency.local_alias.as_deref() == Some("loadFile")
                 && dependency.imported_symbol.as_deref() == Some("readFile")
+        }));
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "node:fs"
+                && dependency.local_alias.as_deref() == Some("loadDefault")
+                && dependency.imported_symbol.as_deref() == Some("default")
         }));
         assert!(deps.iter().any(|dependency| {
             dependency.target == "./ui"

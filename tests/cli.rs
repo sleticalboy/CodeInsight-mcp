@@ -267,6 +267,21 @@ fn cli_indexes_and_queries_fixture_project() {
             call["callee"] == "uiModule.render" && call["callee_file"] == "src/ui.ts"
         })
     );
+
+    let default_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "defaultMain",
+        "--limit",
+        "5",
+    ]);
+    assert!(
+        default_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| { call["callee"] == "drawDefault" && call["callee_file"] == "src/ui.ts" })
+    );
 }
 
 #[test]
@@ -387,6 +402,7 @@ def build_service():
         "src/main.ts",
         r#"
 import { render } from "./ui";
+import drawDefault from "./ui";
 import * as ui from "./ui";
 const { render: draw } = require("./ui");
 const uiModule = require("./ui");
@@ -406,6 +422,10 @@ export function namespaceMain() {
 export function moduleAliasMain() {
   uiModule.render();
 }
+
+export function defaultMain() {
+  drawDefault();
+}
 "#,
     );
     write_file(
@@ -414,6 +434,10 @@ export function moduleAliasMain() {
         r#"
 export function render() {
   return "ok";
+}
+
+export default function defaultRender() {
+  return "default";
 }
 "#,
     );
