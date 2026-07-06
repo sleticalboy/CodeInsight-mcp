@@ -312,6 +312,36 @@ fn cli_indexes_and_queries_fixture_project() {
             .iter()
             .any(|call| { call["callee"] == "relayDefault" && call["callee_file"] == "src/ui.ts" })
     );
+
+    let export_star_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "exportStarMain",
+        "--limit",
+        "5",
+    ]);
+    assert!(
+        export_star_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| { call["callee"] == "starRender" && call["callee_file"] == "src/ui.ts" })
+    );
+
+    let namespace_reexport_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "namespaceReexportMain",
+        "--limit",
+        "5",
+    ]);
+    assert!(
+        namespace_reexport_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| { call["callee"] == "uiApi.render" && call["callee_file"] == "src/ui.ts" })
+    );
 }
 
 #[test]
@@ -433,7 +463,7 @@ def build_service():
         r#"
 import { render } from "./ui";
 import drawDefault from "./ui";
-import { relayRender, relayDefault } from "./barrel";
+import { relayRender, relayDefault, render as starRender, uiApi } from "./barrel";
 import * as ui from "./ui";
 const { render: draw } = require("./ui");
 const uiModule = require("./ui");
@@ -465,6 +495,14 @@ export function reexportMain() {
 export function reexportDefaultMain() {
   relayDefault();
 }
+
+export function exportStarMain() {
+  starRender();
+}
+
+export function namespaceReexportMain() {
+  uiApi.render();
+}
 "#,
     );
     write_file(
@@ -472,6 +510,8 @@ export function reexportDefaultMain() {
         "src/barrel.ts",
         r#"
 export { render as relayRender, default as relayDefault } from "./ui";
+export * from "./ui";
+export * as uiApi from "./ui";
 "#,
     );
     write_file(

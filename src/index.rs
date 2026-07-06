@@ -878,13 +878,24 @@ fn javascript_export_alias_dependencies(
     let Some(target) = string_literal_targets(text).into_iter().next() else {
         return Vec::new();
     };
+    let mut dependencies = Vec::new();
+
+    if let Some(local_alias) = export_namespace_alias(text) {
+        dependencies.push(export_namespace_dependency(
+            source_file,
+            &target,
+            language,
+            node.start_position().row + 1,
+            local_alias,
+        ));
+    }
+
     let Some(named_exports) = braced_segment(text) else {
-        return Vec::new();
+        return dependencies;
     };
 
-    import_named_aliases(named_exports)
-        .into_iter()
-        .map(|(imported_symbol, local_alias)| Dependency {
+    dependencies.extend(import_named_aliases(named_exports).into_iter().map(
+        |(imported_symbol, local_alias)| Dependency {
             source_file: source_file.to_string(),
             target: target.clone(),
             resolved_file: None,
@@ -893,8 +904,30 @@ fn javascript_export_alias_dependencies(
             kind: "export_alias".to_string(),
             language,
             line: node.start_position().row + 1,
-        })
-        .collect()
+        },
+    ));
+    dependencies
+}
+
+fn export_namespace_alias(raw: &str) -> Option<Option<String>> {
+    let specifier = raw.trim().strip_prefix("export")?.trim();
+    let mut parts = specifier.split_whitespace();
+    if parts.next()? != "*" {
+        return None;
+    }
+
+    match parts.next()? {
+        "from" => Some(None),
+        "as" => {
+            let alias = parts.next()?;
+            if parts.next() == Some("from") && is_js_identifier(alias) {
+                Some(Some(alias.to_string()))
+            } else {
+                None
+            }
+        }
+        _ => None,
+    }
 }
 
 fn import_default_alias(raw: &str) -> Option<String> {
@@ -1033,6 +1066,25 @@ fn namespace_dependency(
         local_alias: Some(local_alias),
         imported_symbol: Some("*".to_string()),
         kind: "import_namespace".to_string(),
+        language,
+        line,
+    }
+}
+
+fn export_namespace_dependency(
+    source_file: &str,
+    target: &str,
+    language: Language,
+    line: usize,
+    local_alias: Option<String>,
+) -> Dependency {
+    Dependency {
+        source_file: source_file.to_string(),
+        target: target.to_string(),
+        resolved_file: None,
+        local_alias,
+        imported_symbol: Some("*".to_string()),
+        kind: "export_namespace".to_string(),
         language,
         line,
     }
@@ -2153,6 +2205,8 @@ const auth = require("./auth");
 const { render: draw } = require("./ui");
 const uiModule = require("./ui");
 export { render as relayRender, default as relayDefault } from "./ui";
+export * from "./all-ui";
+export * as uiApi from "./ui";
 "#;
         let deps = extract_dependencies(ts, Language::TypeScript, "src/index.ts").unwrap();
         let targets = deps
@@ -2197,6 +2251,18 @@ export { render as relayRender, default as relayDefault } from "./ui";
                 && dependency.kind == "export_alias"
                 && dependency.local_alias.as_deref() == Some("relayDefault")
                 && dependency.imported_symbol.as_deref() == Some("default")
+        }));
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "./all-ui"
+                && dependency.kind == "export_namespace"
+                && dependency.local_alias.is_none()
+                && dependency.imported_symbol.as_deref() == Some("*")
+        }));
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "./ui"
+                && dependency.kind == "export_namespace"
+                && dependency.local_alias.as_deref() == Some("uiApi")
+                && dependency.imported_symbol.as_deref() == Some("*")
         }));
 
         let py = "from app.auth import service\nimport os, sys\n";
