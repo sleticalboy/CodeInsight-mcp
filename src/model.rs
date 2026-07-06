@@ -6,9 +6,11 @@ use serde::Serialize;
 #[serde(rename_all = "snake_case")]
 pub enum Language {
     Go,
+    #[serde(rename = "javascript")]
     JavaScript,
     Python,
     Rust,
+    #[serde(rename = "typescript")]
     TypeScript,
     Tsx,
 }

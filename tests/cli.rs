@@ -1,4 +1,5 @@
 use std::io::Write;
+use std::path::Path;
 
 use assert_cmd::Command;
 use serde_json::Value;
@@ -756,6 +757,38 @@ fn cli_indexes_and_queries_fixture_project() {
 }
 
 #[test]
+fn cli_indexes_checked_in_polyglot_fixture() {
+    let fixture = copy_fixture("tests/fixtures/polyglot");
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 5);
+    assert_eq!(index["changed_files"], 5);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    for (query, expected_language) in [
+        ("WebController", "typescript"),
+        ("legacyRender", "javascript"),
+        ("AuthService", "python"),
+        ("StartServer", "go"),
+        ("RenderService", "rust"),
+    ] {
+        let symbols = run_json([
+            "symbols",
+            fixture.path().to_str().unwrap(),
+            query,
+            "--limit",
+            "5",
+        ]);
+        assert!(
+            symbols.as_array().unwrap().iter().any(|symbol| {
+                symbol["name"] == query && symbol["language"] == expected_language
+            }),
+            "missing {query} symbol for {expected_language}"
+        );
+    }
+}
+
+#[test]
 fn mcp_stdio_executes_symbol_search() {
     let fixture = fixture_project();
     run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
@@ -1236,6 +1269,26 @@ fn multi_long_typescript_file() -> String {
     source.push_str("  return unrelated_filler_1;\n}\n\n");
     source.push_str("export function targetLater() {\n  return \"target\";\n}\n");
     source
+}
+
+fn copy_fixture(relative_path: &str) -> TempDir {
+    let dir = TempDir::new().unwrap();
+    copy_dir(Path::new(relative_path), dir.path());
+    dir
+}
+
+fn copy_dir(source: &Path, destination: &Path) {
+    std::fs::create_dir_all(destination).unwrap();
+    for entry in std::fs::read_dir(source).unwrap() {
+        let entry = entry.unwrap();
+        let source_path = entry.path();
+        let destination_path = destination.join(entry.file_name());
+        if source_path.is_dir() {
+            copy_dir(&source_path, &destination_path);
+        } else {
+            std::fs::copy(source_path, destination_path).unwrap();
+        }
+    }
 }
 
 fn write_file(dir: &TempDir, path: &str, contents: &str) {

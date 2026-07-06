@@ -29,10 +29,12 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - File-seeded `context_pack` output now selects header/import context and primary top-level symbols instead of fixed first-file chunks.
 - `context_pack` now caps large symbol and merged ranges so small token budgets retain useful file context.
 - `context_pack` now uses task keywords as a lightweight relevance boost for symbols, references, and local dependencies.
+- Checked-in polyglot fixture coverage for TypeScript, JavaScript, Python, Go, and Rust indexing.
 
 ### Changed
 
 - Imported call target resolution now uses batched SQLite resolution instead of per-call queries.
+- JSON output now serializes language names as `javascript` and `typescript` instead of enum-derived `java_script` and `type_script`.
 
 ## [0.1.1] - 2026-07-05
 
