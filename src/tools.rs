@@ -13,7 +13,7 @@ use crate::{
     model::{
         CallEdge, ContextFile, ContextPack, ContextRange, DependencyGraph, IndexError,
         ProjectIndexReport, ProjectOverview, ReferenceMatch, SemanticChunk, SemanticChunkInput,
-        SemanticIndexReport, SemanticSearchResult, Symbol, SymbolKind,
+        SemanticEmbeddingInput, SemanticIndexReport, SemanticSearchResult, Symbol, SymbolKind,
     },
     storage::Store,
 };
@@ -205,11 +205,18 @@ pub fn semantic_index_value(root: PathBuf, chunk_lines: usize) -> Result<Semanti
     }
 
     let chunks_written = store.replace_semantic_chunks(&chunks)?;
+    let provider = embedding::provider_from_env()?;
+    if provider.is_configured() && chunks_written > 0 {
+        let stored_chunks = store.semantic_chunks()?;
+        let semantic_embeddings =
+            semantic_embeddings_for_chunks(provider.as_ref(), &stored_chunks)?;
+        store.replace_semantic_embeddings(
+            provider.provider_name(),
+            provider.model_name(),
+            &semantic_embeddings,
+        )?;
+    }
     let embeddings = store.count_semantic_embeddings()?;
-    let provider = std::env::var(embedding::PROVIDER_ENV)
-        .ok()
-        .filter(|value| !value.trim().is_empty())
-        .unwrap_or_else(|| "disabled".to_string());
 
     Ok(SemanticIndexReport {
         root: root.display().to_string(),
@@ -217,7 +224,7 @@ pub fn semantic_index_value(root: PathBuf, chunk_lines: usize) -> Result<Semanti
         chunks: chunks_written,
         embeddings,
         chunk_lines,
-        provider,
+        provider: provider.provider_name().to_string(),
         vector_status: if embeddings == 0 {
             "chunks_indexed_without_embeddings".to_string()
         } else {
@@ -225,6 +232,33 @@ pub fn semantic_index_value(root: PathBuf, chunk_lines: usize) -> Result<Semanti
         },
         errors,
     })
+}
+
+fn semantic_embeddings_for_chunks(
+    provider: &dyn embedding::EmbeddingProvider,
+    chunks: &[SemanticChunk],
+) -> Result<Vec<SemanticEmbeddingInput>> {
+    let inputs = chunks
+        .iter()
+        .map(|chunk| chunk.text.clone())
+        .collect::<Vec<_>>();
+    let embeddings = provider.embed(&inputs)?;
+    if embeddings.len() != chunks.len() {
+        bail!(
+            "embedding provider returned {} vectors for {} chunks",
+            embeddings.len(),
+            chunks.len()
+        );
+    }
+
+    Ok(chunks
+        .iter()
+        .zip(embeddings)
+        .map(|(chunk, embedding)| SemanticEmbeddingInput {
+            chunk_id: chunk.id,
+            vector: embedding.values,
+        })
+        .collect())
 }
 
 pub fn context_pack_value(

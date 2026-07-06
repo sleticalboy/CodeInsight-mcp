@@ -2,7 +2,7 @@
 
 This document defines the accuracy boundaries for the current CodeInsight MCP Server MVP.
 
-The project is intentionally local-first and lightweight. It uses Tree-sitter syntax parsing plus local SQLite indexes. It does not yet use language servers, compiler APIs, type checkers, enabled embeddings, or external graph databases.
+The project is intentionally local-first and lightweight. It uses Tree-sitter syntax parsing plus local SQLite indexes. It does not yet use language servers, compiler APIs, type checkers, enabled-by-default embeddings, or external graph databases.
 
 ## Current Accuracy Model
 
@@ -76,12 +76,13 @@ Limitations:
 
 ### `semantic_search`
 
-`semantic_search` is currently a preview contract for embedding-backed search. `semantic_index` can build local source-text chunks, but vectors are not generated until an embedding backend is added and enabled.
+`semantic_search` is currently a preview contract for embedding-backed search. `semantic_index` can build local source-text chunks and optional local-hash vectors, but vector query ranking is not enabled yet.
 
 Limitations:
 
 - The embedding provider interface exists, but no provider is enabled by default.
-- Local semantic chunks can be stored and used as deterministic lexical ranking hints in `context_pack`, but no vector embeddings are built or queried yet.
+- Local semantic chunks can be stored and used as deterministic lexical ranking hints in `context_pack`.
+- `CODEINSIGHT_EMBEDDING_PROVIDER=local-hash` can build deterministic local vectors, but those vectors are not queried yet.
 - Calls fail with a clear provider-configuration error until a supported backend is enabled.
 - `context_pack` still uses deterministic lexical, symbol, reference, dependency, call graph, and semantic chunk metadata signals.
 

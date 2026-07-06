@@ -138,11 +138,18 @@ pub struct SemanticChunkInput {
 
 #[derive(Debug, Clone)]
 pub struct SemanticChunk {
+    pub id: i64,
     pub file: String,
     pub start_line: usize,
     pub end_line: usize,
     pub token_estimate: usize,
     pub text: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct SemanticEmbeddingInput {
+    pub chunk_id: i64,
+    pub vector: Vec<f32>,
 }
 
 #[derive(Debug, Clone, Serialize)]

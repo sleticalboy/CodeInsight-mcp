@@ -1,11 +1,11 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
-use rusqlite::{Connection, params, params_from_iter};
+use rusqlite::{Connection, Row, params, params_from_iter};
 
 use crate::model::{
     CallEdge, Dependency, DependencyGraph, DirectoryStat, Language, LanguageStat, ProjectOverview,
-    SemanticChunk, SemanticChunkInput, SourceFile, Symbol, SymbolKind,
+    SemanticChunk, SemanticChunkInput, SemanticEmbeddingInput, SourceFile, Symbol, SymbolKind,
 };
 
 pub const SCHEMA_VERSION: i64 = 22;
@@ -267,6 +267,52 @@ impl Store {
             })? as usize)
     }
 
+    pub fn semantic_chunks(&self) -> Result<Vec<SemanticChunk>> {
+        let mut stmt = self.conn.prepare(
+            "select sc.id, f.path, sc.start_line, sc.end_line, sc.token_estimate, sc.text
+             from semantic_chunks sc
+             join files f on f.id = sc.file_id
+             order by f.path, sc.start_line",
+        )?;
+        let rows = stmt.query_map([], semantic_chunk_from_row)?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
+    pub fn replace_semantic_embeddings(
+        &mut self,
+        provider: &str,
+        model: &str,
+        embeddings: &[SemanticEmbeddingInput],
+    ) -> Result<usize> {
+        let tx = self.conn.transaction()?;
+        tx.execute(
+            "delete from semantic_embeddings where provider = ?1 and model = ?2",
+            params![provider, model],
+        )?;
+
+        let updated_at = unix_timestamp();
+        let mut inserted = 0;
+        {
+            let mut stmt = tx.prepare(
+                "insert into semantic_embeddings
+                 (chunk_id, provider, model, dimensions, vector, updated_at)
+                 values (?1, ?2, ?3, ?4, ?5, ?6)",
+            )?;
+            for embedding in embeddings {
+                inserted += stmt.execute(params![
+                    embedding.chunk_id,
+                    provider,
+                    model,
+                    embedding.vector.len() as i64,
+                    encode_f32_vector(&embedding.vector),
+                    updated_at,
+                ])?;
+            }
+        }
+        tx.commit()?;
+        Ok(inserted)
+    }
+
     pub fn semantic_chunks_matching(
         &self,
         terms: &[String],
@@ -292,7 +338,7 @@ impl Store {
             .collect::<Vec<_>>()
             .join(" or ");
         let sql = format!(
-            "select f.path, sc.start_line, sc.end_line, sc.token_estimate, sc.text
+            "select sc.id, f.path, sc.start_line, sc.end_line, sc.token_estimate, sc.text
              from semantic_chunks sc
              join files f on f.id = sc.file_id
              where {conditions}
@@ -303,15 +349,7 @@ impl Store {
             .map(|term| format!("%{term}%"))
             .collect::<Vec<_>>();
         let mut stmt = self.conn.prepare(&sql)?;
-        let rows = stmt.query_map(params_from_iter(patterns.iter()), |row| {
-            Ok(SemanticChunk {
-                file: row.get(0)?,
-                start_line: row.get::<_, i64>(1)? as usize,
-                end_line: row.get::<_, i64>(2)? as usize,
-                token_estimate: row.get::<_, i64>(3)? as usize,
-                text: row.get(4)?,
-            })
-        })?;
+        let rows = stmt.query_map(params_from_iter(patterns.iter()), semantic_chunk_from_row)?;
 
         let mut chunks = rows.collect::<rusqlite::Result<Vec<_>>>()?;
         chunks.truncate(limit);
@@ -1024,6 +1062,25 @@ impl Store {
 
 pub fn cache_dir(root: &Path) -> PathBuf {
     root.join(".codeinsight")
+}
+
+fn semantic_chunk_from_row(row: &Row<'_>) -> rusqlite::Result<SemanticChunk> {
+    Ok(SemanticChunk {
+        id: row.get(0)?,
+        file: row.get(1)?,
+        start_line: row.get::<_, i64>(2)? as usize,
+        end_line: row.get::<_, i64>(3)? as usize,
+        token_estimate: row.get::<_, i64>(4)? as usize,
+        text: row.get(5)?,
+    })
+}
+
+fn encode_f32_vector(vector: &[f32]) -> Vec<u8> {
+    let mut bytes = Vec::with_capacity(vector.len() * std::mem::size_of::<f32>());
+    for value in vector {
+        bytes.extend_from_slice(&value.to_le_bytes());
+    }
+    bytes
 }
 
 fn symbol_kind(kind: SymbolKind) -> &'static str {

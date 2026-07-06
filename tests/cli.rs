@@ -29,7 +29,28 @@ fn cli_indexes_and_queries_fixture_project() {
         semantic_index["vector_status"],
         "chunks_indexed_without_embeddings"
     );
-    assert!(semantic_index["chunks"].as_u64().unwrap() > 0);
+    let semantic_chunks = semantic_index["chunks"].as_u64().unwrap();
+    assert!(semantic_chunks > 0);
+    assert_eq!(semantic_index["embeddings"].as_u64(), Some(0));
+
+    let semantic_index_with_embeddings = run_json_with_env(
+        [
+            "semantic-index",
+            fixture.path().to_str().unwrap(),
+            "--chunk-lines",
+            "20",
+        ],
+        [("CODEINSIGHT_EMBEDDING_PROVIDER", "local-hash")],
+    );
+    assert_eq!(semantic_index_with_embeddings["provider"], "local-hash");
+    assert_eq!(
+        semantic_index_with_embeddings["vector_status"],
+        "embeddings_indexed"
+    );
+    assert_eq!(
+        semantic_index_with_embeddings["embeddings"].as_u64(),
+        Some(semantic_chunks)
+    );
 
     let symbols = run_json([
         "symbols",
@@ -840,6 +861,7 @@ fn cli_semantic_search_requires_embedding_provider() {
 
     Command::cargo_bin("codeinsight")
         .unwrap()
+        .env_remove("CODEINSIGHT_EMBEDDING_PROVIDER")
         .args([
             "semantic-search",
             fixture.path().to_str().unwrap(),
@@ -923,6 +945,19 @@ fn run_json<const N: usize>(args: [&str; N]) -> Value {
         .get_output()
         .stdout
         .clone();
+    serde_json::from_slice(&output).unwrap()
+}
+
+fn run_json_with_env<const N: usize, const M: usize>(
+    args: [&str; N],
+    envs: [(&str, &str); M],
+) -> Value {
+    let mut command = Command::cargo_bin("codeinsight").unwrap();
+    command.args(args);
+    for (key, value) in envs {
+        command.env(key, value);
+    }
+    let output = command.assert().success().get_output().stdout.clone();
     serde_json::from_slice(&output).unwrap()
 }
 
