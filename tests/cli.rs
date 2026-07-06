@@ -288,6 +288,13 @@ fn cli_indexes_and_queries_fixture_project() {
     assert_eq!(seed_file_caller_context_files.first(), Some(&"src/ui.ts"));
     assert!(seed_file_caller_context_files.contains(&"src/ui.ts"));
     assert!(seed_file_caller_context_files.contains(&"src/main.ts"));
+    let seed_file_caller_file = seed_file_caller_context["files"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|file| file["file"] == "src/ui.ts")
+        .unwrap();
+    assert_context_file_has_no_duplicate_lines(seed_file_caller_file);
 
     let long_file_context = run_json([
         "context-pack",
@@ -807,6 +814,17 @@ fn run_json<const N: usize>(args: [&str; N]) -> Value {
         .stdout
         .clone();
     serde_json::from_slice(&output).unwrap()
+}
+
+fn assert_context_file_has_no_duplicate_lines(file: &Value) {
+    let mut seen = std::collections::BTreeSet::new();
+    for range in file["ranges"].as_array().unwrap() {
+        let start_line = range["start_line"].as_u64().unwrap();
+        let end_line = range["end_line"].as_u64().unwrap();
+        for line in start_line..=end_line {
+            assert!(seen.insert(line), "duplicate context line {line}");
+        }
+    }
 }
 
 fn fixture_project() -> TempDir {

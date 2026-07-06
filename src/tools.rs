@@ -324,23 +324,25 @@ pub fn context_pack_value(
         };
         let lines = source.lines().collect::<Vec<_>>();
         let mut context_ranges = Vec::new();
+        let mut selected_line_ranges = Vec::new();
         let mut selected_max_score = 0;
 
         for range in candidate.ranges {
-            let mut end_line = range.end_line.min(lines.len().max(1));
-            let mut excerpt = excerpt_lines(&lines, range.start_line, end_line);
+            let Some((start_line, mut end_line)) = first_uncovered_segment(
+                range.start_line,
+                range.end_line.min(lines.len().max(1)),
+                &selected_line_ranges,
+            ) else {
+                continue;
+            };
+            let mut excerpt = excerpt_lines(&lines, start_line, end_line);
             let mut range_tokens = estimate_tokens(&excerpt);
             if estimated_tokens + range_tokens > budget {
                 truncated = true;
                 if range.score >= CONTEXT_SCORE_SEED_FILE {
                     let remaining_budget = budget.saturating_sub(estimated_tokens);
                     if let Some((fitted_end_line, fitted_excerpt, fitted_tokens)) =
-                        fit_context_range_to_budget(
-                            &lines,
-                            range.start_line,
-                            end_line,
-                            remaining_budget,
-                        )
+                        fit_context_range_to_budget(&lines, start_line, end_line, remaining_budget)
                     {
                         end_line = fitted_end_line;
                         excerpt = fitted_excerpt;
@@ -354,8 +356,9 @@ pub fn context_pack_value(
             }
             estimated_tokens += range_tokens;
             selected_max_score = selected_max_score.max(range.score);
+            selected_line_ranges.push((start_line, end_line));
             context_ranges.push(ContextRange {
-                start_line: range.start_line,
+                start_line,
                 end_line,
                 importance: importance_for_score(range.score).to_string(),
                 excerpt,
@@ -612,6 +615,41 @@ fn merge_ranges(mut ranges: Vec<ContextCandidateRange>) -> Vec<ContextCandidateR
 
 fn range_len(start_line: usize, end_line: usize) -> usize {
     end_line.saturating_sub(start_line) + 1
+}
+
+fn first_uncovered_segment(
+    start_line: usize,
+    end_line: usize,
+    selected_ranges: &[(usize, usize)],
+) -> Option<(usize, usize)> {
+    if start_line > end_line {
+        return None;
+    }
+
+    let mut cursor = start_line;
+    let mut overlaps = selected_ranges
+        .iter()
+        .copied()
+        .filter(|(selected_start, selected_end)| {
+            *selected_end >= start_line && *selected_start <= end_line
+        })
+        .collect::<Vec<_>>();
+    overlaps.sort_by_key(|(selected_start, selected_end)| (*selected_start, *selected_end));
+
+    for (selected_start, selected_end) in overlaps {
+        if selected_end < cursor {
+            continue;
+        }
+        if selected_start > cursor {
+            return Some((cursor, (selected_start - 1).min(end_line)));
+        }
+        cursor = cursor.max(selected_end.saturating_add(1));
+        if cursor > end_line {
+            return None;
+        }
+    }
+
+    Some((cursor, end_line))
 }
 
 fn excerpt_lines(lines: &[&str], start_line: usize, end_line: usize) -> String {

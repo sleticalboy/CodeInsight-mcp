@@ -20,9 +20,9 @@ Environment:
 
 | Repository | Focus | Commit | Files | Lines | Symbols | Skipped | Errors | Index ms | Index budget ms | Budget status | DB size | Context files | Ranges | Context lines | Line reduction | Tokens | Truncated | First context file |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
-| p-limit | TypeScript | `42599eb` | 6 | 1123 | 184 | 10 | 0 | 45 | 5000 | pass | 176K | 1 | 7 | 245 | 78.2% | 2095 | false | `index.js` |
-| itsdangerous | Python | `672971d` | 15 | 1712 | 144 | 35 | 0 | 41 | 5000 | pass | 172K | 1 | 5 | 124 | 92.8% | 1420 | false | `src/itsdangerous/serializer.py` |
-| go-example | Go | `7f05d21` | 38 | 3537 | 189 | 33 | 0 | 90 | 5000 | pass | 208K | 2 | 5 | 74 | 97.9% | 463 | false | `hello/hello.go` |
+| p-limit | TypeScript | `42599eb` | 6 | 1123 | 184 | 10 | 0 | 45 | 5000 | pass | 176K | 1 | 5 | 102 | 90.9% | 875 | false | `index.js` |
+| itsdangerous | Python | `672971d` | 15 | 1712 | 144 | 35 | 0 | 41 | 5000 | pass | 172K | 1 | 5 | 122 | 92.9% | 1417 | false | `src/itsdangerous/serializer.py` |
+| go-example | Go | `7f05d21` | 38 | 3537 | 189 | 33 | 0 | 90 | 5000 | pass | 208K | 2 | 4 | 69 | 98.0% | 436 | false | `hello/hello.go` |
 | memchr | Rust | `e21e9fb` | 64 | 69365 | 4045 | 100 | 0 | 1471 | 10000 | pass | 2.2M | 7 | 7 | 196 | 99.7% | 1899 | false | `src/lib.rs` |
 
 ## Details
@@ -38,16 +38,16 @@ Environment:
 - Context seed file: `index.js`
 - Context task: understand limit scheduling behavior
 - Context files: 1
-- Context ranges: 7
-- Context lines: 245 of 1123 (78.2% reduction)
-- Context estimated tokens: 2095
+- Context ranges: 5
+- Context lines: 102 of 1123 (90.9% reduction)
+- Context estimated tokens: 875
 - Context truncated: false
 
 Context pack files:
 
 | File | Ranges | First range | Importances |
 | --- | ---: | --- | --- |
-| `index.js` | 7 | 1-2 | high |
+| `index.js` | 5 | 1-2 | high |
 
 Language breakdown:
 
@@ -68,8 +68,8 @@ Language breakdown:
 - Context task: understand serializer signing behavior
 - Context files: 1
 - Context ranges: 5
-- Context lines: 124 of 1712 (92.8% reduction)
-- Context estimated tokens: 1420
+- Context lines: 122 of 1712 (92.9% reduction)
+- Context estimated tokens: 1417
 - Context truncated: false
 
 Context pack files:
@@ -95,16 +95,16 @@ Language breakdown:
 - Context seed file: `hello/hello.go`
 - Context task: understand hello server behavior
 - Context files: 2
-- Context ranges: 5
-- Context lines: 74 of 3537 (97.9% reduction)
-- Context estimated tokens: 463
+- Context ranges: 4
+- Context lines: 69 of 3537 (98.0% reduction)
+- Context estimated tokens: 436
 - Context truncated: false
 
 Context pack files:
 
 | File | Ranges | First range | Importances |
 | --- | ---: | --- | --- |
-| `hello/hello.go` | 4 | 1-24 | high |
+| `hello/hello.go` | 3 | 1-24 | high |
 | `helloserver/server.go` | 1 | 41-45 | high |
 
 Language breakdown:
