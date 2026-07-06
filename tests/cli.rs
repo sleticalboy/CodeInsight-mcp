@@ -9,13 +9,13 @@ fn cli_indexes_and_queries_fixture_project() {
     let fixture = fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 14);
-    assert_eq!(index["changed_files"], 14);
+    assert_eq!(index["indexed_files"], 15);
+    assert_eq!(index["changed_files"], 15);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let second_index = run_json(["index", fixture.path().to_str().unwrap()]);
     assert_eq!(second_index["changed_files"], 0);
-    assert_eq!(second_index["unchanged_files"], 14);
+    assert_eq!(second_index["unchanged_files"], 15);
 
     let symbols = run_json([
         "symbols",
@@ -30,7 +30,7 @@ fn cli_indexes_and_queries_fixture_project() {
         "dependency-graph",
         fixture.path().to_str().unwrap(),
         "--limit",
-        "50",
+        "200",
     ]);
     let targets = deps["dependencies"]
         .as_array()
@@ -332,6 +332,28 @@ fn cli_indexes_and_queries_fixture_project() {
         .join("\n");
     assert!(small_budget_excerpt.contains("import { render }"));
     assert!(!small_budget_excerpt.contains("filler_60"));
+
+    let huge_seed_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand huge entrypoint",
+        "--file",
+        "src/huge.ts",
+        "--token-budget",
+        "500",
+    ]);
+    let huge_seed_file = &huge_seed_context["files"].as_array().unwrap()[0];
+    assert_eq!(huge_seed_file["file"], "src/huge.ts");
+    let huge_seed_excerpt = huge_seed_file["ranges"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|range| range["excerpt"].as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert!(huge_seed_excerpt.contains("hugeEntry"));
+    assert!(!huge_seed_excerpt.contains("huge_filler_80"));
 
     let callers = run_json([
         "callers",
@@ -1088,6 +1110,7 @@ export function packageRender() {
 "#,
     );
     write_file(&dir, "src/long.ts", &long_typescript_file());
+    write_file(&dir, "src/huge.ts", &huge_typescript_file());
     write_file(
         &dir,
         "src/service.go",
@@ -1111,6 +1134,17 @@ fn long_typescript_file() -> String {
         source.push_str(&format!("const filler_{index} = {index};\n"));
     }
     source.push_str("\nexport function lateEntry() {\n  render();\n}\n");
+    source
+}
+
+fn huge_typescript_file() -> String {
+    let mut source = String::from("export function hugeEntry() {\n");
+    for index in 1..=90 {
+        source.push_str(&format!(
+            "  const huge_filler_{index} = \"large context filler value {index} with enough text to exceed the tiny context budget\";\n"
+        ));
+    }
+    source.push_str("  return huge_filler_1;\n}\n");
     source
 }
 

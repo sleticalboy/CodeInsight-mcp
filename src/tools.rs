@@ -326,17 +326,36 @@ pub fn context_pack_value(
         let mut selected_max_score = 0;
 
         for range in candidate.ranges {
-            let excerpt = excerpt_lines(&lines, range.start_line, range.end_line);
-            let range_tokens = estimate_tokens(&excerpt);
+            let mut end_line = range.end_line.min(lines.len().max(1));
+            let mut excerpt = excerpt_lines(&lines, range.start_line, end_line);
+            let mut range_tokens = estimate_tokens(&excerpt);
             if estimated_tokens + range_tokens > budget {
                 truncated = true;
-                continue;
+                if range.score >= CONTEXT_SCORE_SEED_FILE {
+                    let remaining_budget = budget.saturating_sub(estimated_tokens);
+                    if let Some((fitted_end_line, fitted_excerpt, fitted_tokens)) =
+                        fit_context_range_to_budget(
+                            &lines,
+                            range.start_line,
+                            end_line,
+                            remaining_budget,
+                        )
+                    {
+                        end_line = fitted_end_line;
+                        excerpt = fitted_excerpt;
+                        range_tokens = fitted_tokens;
+                    } else {
+                        continue;
+                    }
+                } else {
+                    continue;
+                }
             }
             estimated_tokens += range_tokens;
             selected_max_score = selected_max_score.max(range.score);
             context_ranges.push(ContextRange {
                 start_line: range.start_line,
-                end_line: range.end_line.min(lines.len().max(1)),
+                end_line,
                 importance: importance_for_score(range.score).to_string(),
                 excerpt,
             });
@@ -599,6 +618,50 @@ fn excerpt_lines(lines: &[&str], start_line: usize, end_line: usize) -> String {
         .map(|(index, line)| format!("{:>4}: {}", start + index + 1, line))
         .collect::<Vec<_>>()
         .join("\n")
+}
+
+fn fit_context_range_to_budget(
+    lines: &[&str],
+    start_line: usize,
+    end_line: usize,
+    token_budget: usize,
+) -> Option<(usize, String, usize)> {
+    if token_budget == 0 {
+        return None;
+    }
+
+    let max_end_line = end_line.min(lines.len().max(1));
+    if start_line > max_end_line {
+        return None;
+    }
+
+    let first_excerpt = excerpt_lines(lines, start_line, start_line);
+    let first_tokens = estimate_tokens(&first_excerpt);
+    if first_tokens > token_budget {
+        return None;
+    }
+
+    let mut best_end_line = start_line;
+    let mut best_excerpt = first_excerpt;
+    let mut best_tokens = first_tokens;
+    let mut low = start_line + 1;
+    let mut high = max_end_line;
+
+    while low <= high {
+        let mid = low + (high - low) / 2;
+        let excerpt = excerpt_lines(lines, start_line, mid);
+        let tokens = estimate_tokens(&excerpt);
+        if tokens <= token_budget {
+            best_end_line = mid;
+            best_excerpt = excerpt;
+            best_tokens = tokens;
+            low = mid + 1;
+        } else {
+            high = mid.saturating_sub(1);
+        }
+    }
+
+    Some((best_end_line, best_excerpt, best_tokens))
 }
 
 fn importance_for_score(score: i32) -> &'static str {
