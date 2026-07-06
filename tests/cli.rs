@@ -285,6 +285,7 @@ fn cli_indexes_and_queries_fixture_project() {
         .iter()
         .filter_map(|file| file["file"].as_str())
         .collect::<Vec<_>>();
+    assert_eq!(seed_file_caller_context_files.first(), Some(&"src/ui.ts"));
     assert!(seed_file_caller_context_files.contains(&"src/ui.ts"));
     assert!(seed_file_caller_context_files.contains(&"src/main.ts"));
 
