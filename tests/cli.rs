@@ -357,6 +357,38 @@ fn cli_indexes_and_queries_fixture_project() {
             .iter()
             .any(|call| { call["callee"] == "finalRender" && call["callee_file"] == "src/ui.ts" })
     );
+
+    let two_hop_default_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "twoHopDefaultMain",
+        "--limit",
+        "5",
+    ]);
+    assert!(
+        two_hop_default_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| { call["callee"] == "finalDefault" && call["callee_file"] == "src/ui.ts" })
+    );
+
+    let two_hop_namespace_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "twoHopNamespaceMain",
+        "--limit",
+        "5",
+    ]);
+    assert!(
+        two_hop_namespace_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| {
+                call["callee"] == "finalApi.render" && call["callee_file"] == "src/ui.ts"
+            })
+    );
 }
 
 #[test]
@@ -479,7 +511,7 @@ def build_service():
 import { render } from "./ui";
 import drawDefault from "./ui";
 import { relayRender, relayDefault, render as starRender, uiApi } from "./barrel";
-import { finalRender } from "./barrel2";
+import { finalApi, finalDefault, finalRender } from "./barrel2";
 import * as ui from "./ui";
 const { render: draw } = require("./ui");
 const uiModule = require("./ui");
@@ -523,6 +555,14 @@ export function namespaceReexportMain() {
 export function twoHopReexportMain() {
   finalRender();
 }
+
+export function twoHopDefaultMain() {
+  finalDefault();
+}
+
+export function twoHopNamespaceMain() {
+  finalApi.render();
+}
 "#,
     );
     write_file(
@@ -538,7 +578,7 @@ export * as uiApi from "./ui";
         &dir,
         "src/barrel2.ts",
         r#"
-export { relayRender as finalRender } from "./barrel";
+export { relayRender as finalRender, relayDefault as finalDefault, uiApi as finalApi } from "./barrel";
 "#,
     );
     write_file(
