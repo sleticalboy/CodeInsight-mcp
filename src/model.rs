@@ -136,6 +136,15 @@ pub struct SemanticChunkInput {
     pub text: String,
 }
 
+#[derive(Debug, Clone)]
+pub struct SemanticChunk {
+    pub file: String,
+    pub start_line: usize,
+    pub end_line: usize,
+    pub token_estimate: usize,
+    pub text: String,
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct CallEdge {
     pub file: String,

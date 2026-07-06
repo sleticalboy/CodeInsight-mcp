@@ -12,7 +12,7 @@ use crate::{
     embedding, index,
     model::{
         CallEdge, ContextFile, ContextPack, ContextRange, DependencyGraph, IndexError,
-        ProjectIndexReport, ProjectOverview, ReferenceMatch, SemanticChunkInput,
+        ProjectIndexReport, ProjectOverview, ReferenceMatch, SemanticChunk, SemanticChunkInput,
         SemanticIndexReport, SemanticSearchResult, Symbol, SymbolKind,
     },
     storage::Store,
@@ -23,6 +23,7 @@ const CONTEXT_SCORE_SEED_HEADER: i32 = 140;
 const CONTEXT_SCORE_SYMBOL_DEFINITION: i32 = 90;
 const CONTEXT_SCORE_CALL_GRAPH: i32 = 75;
 const CONTEXT_SCORE_REFERENCE_BASE: i32 = 60;
+const CONTEXT_SCORE_SEMANTIC_CHUNK: i32 = 50;
 const CONTEXT_SCORE_LOCAL_DEPENDENCY: i32 = 40;
 const CONTEXT_SCORE_TASK_MATCH_BOOST: i32 = 30;
 const CONTEXT_SCORE_SEED_SYMBOL_TASK_MATCH_BOOST: i32 = 5;
@@ -363,6 +364,23 @@ pub fn context_pack_value(
                 score,
             );
         }
+    }
+    for chunk in store
+        .semantic_chunks_matching(&semantic_ranking_terms(&task_keywords, &seed_symbols), 20)?
+    {
+        push_context_range(
+            &mut ranges_by_file,
+            chunk.file.clone(),
+            chunk.start_line,
+            chunk.end_line,
+            format!(
+                "Semantic chunk match for task near lines {}-{}",
+                chunk.start_line, chunk.end_line
+            ),
+            CONTEXT_SCORE_SEMANTIC_CHUNK
+                + semantic_chunk_task_boost(&chunk, &task_keywords)
+                + semantic_chunk_density_boost(&chunk),
+        );
     }
 
     let mut candidates = ranges_by_file
@@ -891,6 +909,33 @@ fn call_task_boost(call: &CallEdge, keywords: &[String]) -> i32 {
         ]
         .into_iter(),
     )
+}
+
+fn semantic_chunk_task_boost(chunk: &SemanticChunk, keywords: &[String]) -> i32 {
+    task_match_boost(
+        keywords,
+        [chunk.file.as_str(), chunk.text.as_str()].into_iter(),
+    )
+}
+
+fn semantic_chunk_density_boost(chunk: &SemanticChunk) -> i32 {
+    if chunk.token_estimate <= 120 { 5 } else { 0 }
+}
+
+fn semantic_ranking_terms(task_keywords: &[String], seed_symbols: &[String]) -> Vec<String> {
+    let mut terms = task_keywords.to_vec();
+    for symbol in seed_symbols {
+        terms.extend(
+            symbol
+                .split(|ch: char| !ch.is_ascii_alphanumeric())
+                .map(str::to_ascii_lowercase)
+                .filter(|term| term.len() >= 3),
+        );
+    }
+    terms.sort();
+    terms.dedup();
+    terms.truncate(24);
+    terms
 }
 
 fn task_match_boost<'a>(keywords: &[String], fields: impl Iterator<Item = &'a str>) -> i32 {

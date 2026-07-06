@@ -81,9 +81,9 @@ Limitations:
 Limitations:
 
 - The embedding provider interface exists, but no provider is enabled by default.
-- Local semantic chunks can be stored, but no vector embeddings are built or queried yet.
+- Local semantic chunks can be stored and used as deterministic lexical ranking hints in `context_pack`, but no vector embeddings are built or queried yet.
 - Calls fail with a clear provider-configuration error until a supported backend is enabled.
-- `context_pack` still uses deterministic lexical, symbol, reference, dependency, and call graph signals.
+- `context_pack` still uses deterministic lexical, symbol, reference, dependency, call graph, and semantic chunk metadata signals.
 
 ### `dependency_graph`
 
@@ -103,7 +103,7 @@ Limitations:
 
 ### `context_pack`
 
-`context_pack` combines symbol search, file seeds, reference search, static call graph hints, and resolved local dependencies into a token-budgeted bundle.
+`context_pack` combines symbol search, file seeds, reference search, static call graph hints, resolved local dependencies, and local semantic chunk hints into a token-budgeted bundle.
 
 Current deterministic ranking order:
 
@@ -112,6 +112,7 @@ Current deterministic ranking order:
 - Symbol definition ranges are next.
 - Static call graph target files from seed symbols and seed file primary symbols are ranked after definitions. Bounded caller files are also included for seed symbols and small seed files.
 - Text references are ranked after call graph targets, with reference confidence as a small boost.
+- Local semantic chunks are ranked after references when their text matches task or seed symbol terms.
 - Resolved local dependencies are included as supporting context after direct matches.
 - Task keywords provide a lightweight boost when they match symbol names, file paths, reference context, or dependency targets.
 - Ties are broken by total file score and then stable file path order.
@@ -119,7 +120,7 @@ Current deterministic ranking order:
 Limitations:
 
 - It is deterministic and local-only.
-- It does not use semantic embeddings yet.
+- It does not use vector embeddings yet.
 - It does not yet rank by type graph, test relevance, semantic similarity, or edit history.
 - Task relevance is lexical only and uses simple ASCII keyword matching.
 - Token estimation is approximate and based on character count.

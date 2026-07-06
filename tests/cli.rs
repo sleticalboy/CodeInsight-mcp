@@ -11,13 +11,13 @@ fn cli_indexes_and_queries_fixture_project() {
     let fixture = fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 16);
-    assert_eq!(index["changed_files"], 16);
+    assert_eq!(index["indexed_files"], 17);
+    assert_eq!(index["changed_files"], 17);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let second_index = run_json(["index", fixture.path().to_str().unwrap()]);
     assert_eq!(second_index["changed_files"], 0);
-    assert_eq!(second_index["unchanged_files"], 16);
+    assert_eq!(second_index["unchanged_files"], 17);
 
     let semantic_index = run_json([
         "semantic-index",
@@ -188,6 +188,33 @@ fn cli_indexes_and_queries_fixture_project() {
         .collect::<Vec<_>>();
     assert_eq!(auth_context_files.first(), Some(&"src/auth.py"));
     assert!(auth_context_files.contains(&"src/consumer.py"));
+
+    let semantic_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "session cookie behavior",
+        "--symbol",
+        "AuthService",
+        "--token-budget",
+        "1600",
+    ]);
+    let semantic_file = semantic_context["files"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|file| file["file"] == "src/auth_notes.py")
+        .unwrap();
+    assert!(
+        semantic_file["ranges"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|range| range["reason"]
+                .as_str()
+                .unwrap()
+                .contains("Semantic chunk match"))
+    );
 
     let billing_context = run_json([
         "context-pack",
@@ -993,6 +1020,14 @@ from auth import AuthService
 
 def build_service():
     return AuthService()
+"#,
+    );
+    write_file(
+        &dir,
+        "src/auth_notes.py",
+        r#"
+# Session cookie behavior note.
+# Refresh cookie expiry should stay aligned with login state.
 "#,
     );
     write_file(

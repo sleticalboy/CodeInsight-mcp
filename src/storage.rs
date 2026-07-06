@@ -1,11 +1,11 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
-use rusqlite::{Connection, params};
+use rusqlite::{Connection, params, params_from_iter};
 
 use crate::model::{
     CallEdge, Dependency, DependencyGraph, DirectoryStat, Language, LanguageStat, ProjectOverview,
-    SemanticChunkInput, SourceFile, Symbol, SymbolKind,
+    SemanticChunk, SemanticChunkInput, SourceFile, Symbol, SymbolKind,
 };
 
 pub const SCHEMA_VERSION: i64 = 22;
@@ -265,6 +265,57 @@ impl Store {
             .query_row("select count(*) from semantic_embeddings", [], |row| {
                 row.get::<_, i64>(0)
             })? as usize)
+    }
+
+    pub fn semantic_chunks_matching(
+        &self,
+        terms: &[String],
+        limit: usize,
+    ) -> Result<Vec<SemanticChunk>> {
+        let terms = terms
+            .iter()
+            .map(|term| term.trim().to_ascii_lowercase())
+            .filter(|term| term.len() >= 3)
+            .collect::<std::collections::BTreeSet<_>>()
+            .into_iter()
+            .take(16)
+            .collect::<Vec<_>>();
+        if terms.is_empty() || limit == 0 {
+            return Ok(Vec::new());
+        }
+
+        let conditions = (0..terms.len())
+            .map(|index| {
+                let placeholder = index + 1;
+                format!("lower(sc.text) like ?{placeholder}")
+            })
+            .collect::<Vec<_>>()
+            .join(" or ");
+        let sql = format!(
+            "select f.path, sc.start_line, sc.end_line, sc.token_estimate, sc.text
+             from semantic_chunks sc
+             join files f on f.id = sc.file_id
+             where {conditions}
+             order by f.path, sc.start_line"
+        );
+        let patterns = terms
+            .iter()
+            .map(|term| format!("%{term}%"))
+            .collect::<Vec<_>>();
+        let mut stmt = self.conn.prepare(&sql)?;
+        let rows = stmt.query_map(params_from_iter(patterns.iter()), |row| {
+            Ok(SemanticChunk {
+                file: row.get(0)?,
+                start_line: row.get::<_, i64>(1)? as usize,
+                end_line: row.get::<_, i64>(2)? as usize,
+                token_estimate: row.get::<_, i64>(3)? as usize,
+                text: row.get(4)?,
+            })
+        })?;
+
+        let mut chunks = rows.collect::<rusqlite::Result<Vec<_>>>()?;
+        chunks.truncate(limit);
+        Ok(chunks)
     }
 
     pub fn overview(&self, root: &Path) -> Result<ProjectOverview> {
