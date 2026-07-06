@@ -8,7 +8,7 @@ use crate::model::{
     SourceFile, Symbol, SymbolKind,
 };
 
-pub const SCHEMA_VERSION: i64 = 9;
+pub const SCHEMA_VERSION: i64 = 10;
 pub const INDEX_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub struct Store {
@@ -612,6 +612,47 @@ impl Store {
                             )
                         )
                       )
+
+                    union all
+
+                    select
+                        c.id as call_id,
+                        second_reexport_files.path as callee_file,
+                        s.qualified_name as qualified_name,
+                        d.line as dependency_line,
+                        s.start_line as start_line,
+                        -2 as match_rank
+                    from calls c
+                    join dependencies d on d.source_file_id = c.source_file_id
+                    join files target_files on target_files.path = d.resolved_file
+                    join dependencies rd on rd.source_file_id = target_files.id
+                    join files first_reexport_files on first_reexport_files.path = rd.resolved_file
+                    join dependencies rd2 on rd2.source_file_id = first_reexport_files.id
+                    join files second_reexport_files on second_reexport_files.path = rd2.resolved_file
+                    join symbols s on s.file_id = second_reexport_files.id
+                    where c.callee_file is null
+                      and rd.kind = 'export_alias'
+                      and rd2.kind = 'export_alias'
+                      and rd2.local_alias = rd.imported_symbol
+                      and (
+                        rd.local_alias = c.callee
+                        or (
+                            d.local_alias = c.callee
+                            and d.imported_symbol is not null
+                            and d.imported_symbol != '*'
+                            and rd.local_alias = d.imported_symbol
+                        )
+                        or (
+                            d.imported_symbol = '*'
+                            and c.callee like d.local_alias || '.%'
+                            and rd.local_alias = substr(c.callee, length(d.local_alias) + 2)
+                        )
+                      )
+                      and (
+                        s.name = rd2.imported_symbol
+                        or s.qualified_name = rd2.imported_symbol
+                        or s.qualified_name like '%.' || rd2.imported_symbol
+                      )
                 )
             )
             where target_rank = 1;
@@ -929,7 +970,7 @@ mod tests {
                 key text primary key,
                 value text not null
             );
-            insert into index_meta (key, value) values ('schema_version', '9');
+            insert into index_meta (key, value) values ('schema_version', '10');
 
             create table files (
                 id integer primary key autoincrement,

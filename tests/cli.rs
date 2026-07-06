@@ -9,13 +9,13 @@ fn cli_indexes_and_queries_fixture_project() {
     let fixture = fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 8);
-    assert_eq!(index["changed_files"], 8);
+    assert_eq!(index["indexed_files"], 9);
+    assert_eq!(index["changed_files"], 9);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let second_index = run_json(["index", fixture.path().to_str().unwrap()]);
     assert_eq!(second_index["changed_files"], 0);
-    assert_eq!(second_index["unchanged_files"], 8);
+    assert_eq!(second_index["unchanged_files"], 9);
 
     let symbols = run_json([
         "symbols",
@@ -342,6 +342,21 @@ fn cli_indexes_and_queries_fixture_project() {
             .iter()
             .any(|call| { call["callee"] == "uiApi.render" && call["callee_file"] == "src/ui.ts" })
     );
+
+    let two_hop_reexport_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "twoHopReexportMain",
+        "--limit",
+        "5",
+    ]);
+    assert!(
+        two_hop_reexport_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| { call["callee"] == "finalRender" && call["callee_file"] == "src/ui.ts" })
+    );
 }
 
 #[test]
@@ -464,6 +479,7 @@ def build_service():
 import { render } from "./ui";
 import drawDefault from "./ui";
 import { relayRender, relayDefault, render as starRender, uiApi } from "./barrel";
+import { finalRender } from "./barrel2";
 import * as ui from "./ui";
 const { render: draw } = require("./ui");
 const uiModule = require("./ui");
@@ -503,6 +519,10 @@ export function exportStarMain() {
 export function namespaceReexportMain() {
   uiApi.render();
 }
+
+export function twoHopReexportMain() {
+  finalRender();
+}
 "#,
     );
     write_file(
@@ -512,6 +532,13 @@ export function namespaceReexportMain() {
 export { render as relayRender, default as relayDefault } from "./ui";
 export * from "./ui";
 export * as uiApi from "./ui";
+"#,
+    );
+    write_file(
+        &dir,
+        "src/barrel2.ts",
+        r#"
+export { relayRender as finalRender } from "./barrel";
 "#,
     );
     write_file(
