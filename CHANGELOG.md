@@ -30,6 +30,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - `context_pack` now caps large symbol and merged ranges so small token budgets retain useful file context.
 - `context_pack` now uses task keywords as a lightweight relevance boost for symbols, references, and local dependencies.
 - Checked-in polyglot fixture coverage for TypeScript, JavaScript, Python, Go, and Rust indexing.
+- Homebrew formula for installing release assets.
 
 ### Changed
 

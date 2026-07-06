@@ -90,6 +90,14 @@ Smoke test the packaged installer path locally:
 scripts/release-install-smoke.sh
 ```
 
+## Install With Homebrew
+
+Install directly from the formula in this repository:
+
+```bash
+brew install --formula https://raw.githubusercontent.com/sleticalboy/CodeInsight-mcp/main/Formula/codeinsight.rb
+```
+
 ## Install From Source
 
 ```bash
