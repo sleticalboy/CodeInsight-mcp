@@ -1024,9 +1024,11 @@ fn javascript_like_symbol(node: Node<'_>, source: &[u8]) -> Option<(String, Symb
         "class_declaration" => {
             child_text(node, "name", source).map(|name| (name, SymbolKind::Class))
         }
-        "method_definition" | "public_field_definition" => {
+        "method_definition" => javascript_method_symbol(node, source),
+        "public_field_definition" => {
             child_text(node, "name", source).map(|name| (name, SymbolKind::Method))
         }
+        "pair" => javascript_object_pair_symbol(node, source),
         "interface_declaration" => {
             child_text(node, "name", source).map(|name| (name, SymbolKind::Interface))
         }
@@ -1034,6 +1036,37 @@ fn javascript_like_symbol(node: Node<'_>, source: &[u8]) -> Option<(String, Symb
         "assignment_expression" => javascript_assignment_symbol(node, source),
         _ => None,
     }
+}
+
+fn javascript_method_symbol(node: Node<'_>, source: &[u8]) -> Option<(String, SymbolKind)> {
+    if let Some(property) = child_text(node, "name", source)
+        .and_then(|name| clean_js_property_key(&name).map(|property| property.to_string()))
+        && let Some(object) = object_literal_context_name(node, source)
+    {
+        return Some((format!("{object}.{property}"), SymbolKind::Method));
+    }
+
+    child_text(node, "name", source).map(|name| (name, SymbolKind::Method))
+}
+
+fn javascript_object_pair_symbol(node: Node<'_>, source: &[u8]) -> Option<(String, SymbolKind)> {
+    let key = node
+        .child_by_field_name("key")
+        .or_else(|| node.child(0))
+        .and_then(|child| child.utf8_text(source).ok())?;
+    let property = clean_js_property_key(key)?;
+    let value = node
+        .child_by_field_name("value")
+        .and_then(|child| child.utf8_text(source).ok())?
+        .trim();
+    if !is_js_function_value(value) {
+        return None;
+    }
+
+    let name = object_literal_context_name(node, source)
+        .map(|object| format!("{object}.{property}"))
+        .unwrap_or_else(|| property.to_string());
+    Some((name, SymbolKind::Method))
 }
 
 fn javascript_variable_declarator_symbol(
@@ -1174,6 +1207,69 @@ fn clean_js_property_name(property: &str) -> Option<&str> {
         Some(property)
     } else {
         None
+    }
+}
+
+fn clean_js_property_key(property: &str) -> Option<&str> {
+    let property = property.trim();
+    if is_js_identifier(property) {
+        return Some(property);
+    }
+
+    let value = string_literal_value(property)?;
+    if is_js_identifier(&value) {
+        Some(property[1..property.len() - 1].trim())
+    } else {
+        None
+    }
+}
+
+fn object_literal_context_name(node: Node<'_>, source: &[u8]) -> Option<String> {
+    let mut current = node.parent();
+    while let Some(parent) = current {
+        if parent.kind() == "object" {
+            return object_literal_owner_name(parent, source);
+        }
+        current = parent.parent();
+    }
+
+    None
+}
+
+fn object_literal_owner_name(object: Node<'_>, source: &[u8]) -> Option<String> {
+    let parent = object.parent()?;
+    match parent.kind() {
+        "variable_declarator" => child_text(parent, "name", source)
+            .filter(|name| is_js_identifier(name))
+            .or_else(|| {
+                parent
+                    .child(0)?
+                    .utf8_text(source)
+                    .ok()
+                    .map(ToOwned::to_owned)
+            }),
+        "assignment_expression" => {
+            let left = parent
+                .child_by_field_name("left")
+                .or_else(|| parent.child(0))
+                .and_then(|child| child.utf8_text(source).ok())?
+                .trim();
+            if is_js_identifier(left) {
+                Some(left.to_string())
+            } else {
+                commonjs_assignment_name(left, "{}")
+            }
+        }
+        "pair" => {
+            let property = parent
+                .child_by_field_name("key")
+                .or_else(|| parent.child(0))
+                .and_then(|child| child.utf8_text(source).ok())
+                .and_then(clean_js_property_key)?;
+            let object = object_literal_context_name(parent, source)?;
+            Some(format!("{object}.{property}"))
+        }
+        _ => None,
     }
 }
 
@@ -1381,6 +1477,49 @@ handler = () => true;
         assert_eq!(kind_for("inlineHandler"), Some(SymbolKind::Function));
         assert_eq!(kind_for("handler"), Some(SymbolKind::Function));
         assert_eq!(kind_for("count"), Some(SymbolKind::Variable));
+    }
+
+    #[test]
+    fn extracts_javascript_object_literal_function_symbols() {
+        let source = r#"
+const handlers = {
+  getUser(req, res) {
+    return res;
+  },
+  saveUser: (req, res) => res,
+  removeUser: function removeUserImpl(req, res) {
+    return res;
+  },
+  count: 1,
+  nested: {
+    ping() {
+      return true;
+    }
+  }
+};
+module.exports = {
+  create() {}
+};
+exports.tools = {
+  run: async () => {}
+};
+"#;
+        let symbols = extract_symbols(source, Language::JavaScript, "handlers.js").unwrap();
+        let kind_for = |name: &str| {
+            symbols
+                .iter()
+                .find(|symbol| symbol.qualified_name == name)
+                .map(|symbol| symbol.kind.clone())
+        };
+
+        assert_eq!(kind_for("handlers.getUser"), Some(SymbolKind::Method));
+        assert_eq!(kind_for("handlers.saveUser"), Some(SymbolKind::Method));
+        assert_eq!(kind_for("handlers.removeUser"), Some(SymbolKind::Method));
+        assert_eq!(kind_for("removeUserImpl"), Some(SymbolKind::Function));
+        assert_eq!(kind_for("handlers.nested.ping"), Some(SymbolKind::Method));
+        assert_eq!(kind_for("module.exports.create"), Some(SymbolKind::Method));
+        assert_eq!(kind_for("exports.tools.run"), Some(SymbolKind::Method));
+        assert_eq!(kind_for("handlers.count"), None);
     }
 
     #[test]

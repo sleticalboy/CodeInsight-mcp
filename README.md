@@ -44,7 +44,7 @@ Implemented:
 
 Next:
 
-- improve JavaScript symbol extraction for object literal function properties
+- add benchmark symbol guardrails for JavaScript object literal function properties
 
 ## Install From Release
 
