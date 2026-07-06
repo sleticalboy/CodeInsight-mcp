@@ -323,7 +323,8 @@ MVP 只做静态近似分析，不承诺完整类型系统精度。
         {
           "start_line": 18,
           "end_line": 94,
-          "importance": "high"
+          "importance": "high",
+          "reason": "Defines symbol AuthService"
         }
       ]
     }

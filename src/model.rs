@@ -125,6 +125,7 @@ pub struct ContextRange {
     pub start_line: usize,
     pub end_line: usize,
     pub importance: String,
+    pub reason: String,
     pub excerpt: String,
 }
 

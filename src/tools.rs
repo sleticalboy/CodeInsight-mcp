@@ -366,6 +366,7 @@ pub fn context_pack_value(
                     start_line,
                     end_line,
                     importance: importance_for_score(range.score).to_string(),
+                    reason: range.reason.clone(),
                     excerpt,
                 });
             }

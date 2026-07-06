@@ -295,6 +295,7 @@ fn cli_indexes_and_queries_fixture_project() {
         .find(|file| file["file"] == "src/ui.ts")
         .unwrap();
     assert_context_file_has_no_duplicate_lines(seed_file_caller_file);
+    assert_context_file_ranges_have_reasons(seed_file_caller_file);
 
     let long_file_context = run_json([
         "context-pack",
@@ -850,6 +851,15 @@ fn assert_context_file_ranges_are_sorted(file: &Value) {
             "context ranges are not sorted"
         );
         previous_start_line = start_line;
+    }
+}
+
+fn assert_context_file_ranges_have_reasons(file: &Value) {
+    for range in file["ranges"].as_array().unwrap() {
+        assert!(
+            !range["reason"].as_str().unwrap_or_default().is_empty(),
+            "context range reason is empty"
+        );
     }
 }
 
