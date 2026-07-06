@@ -63,3 +63,4 @@ jobs:
           ruby -c /tmp/codeinsight.rb
           grep -q 'releases/download/v9.8.7' /tmp/codeinsight.rb
           grep -q 'codeinsight-x86_64-unknown-linux-gnu.tar.gz' /tmp/codeinsight.rb
+      - run: bash -n scripts/sync-homebrew-tap.sh

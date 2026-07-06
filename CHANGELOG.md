@@ -10,6 +10,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 - Release automation now publishes only the changelog section for the current tag.
 - Release automation can update the shared Homebrew tap formula from packaged release assets when `HOMEBREW_TAP_TOKEN` is configured.
+- Release automation now supports manual Homebrew tap sync for an existing tag through `workflow_dispatch` input `tag`.
 - Homebrew install docs now point at the shared `sleticalboy/tap`.
 
 ## [0.1.2] - 2026-07-06
