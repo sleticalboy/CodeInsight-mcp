@@ -6,6 +6,10 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ## [Unreleased]
 
+### Changed
+
+- Release automation now publishes only the changelog section for the current tag.
+
 ## [0.1.2] - 2026-07-06
 
 ### Added
