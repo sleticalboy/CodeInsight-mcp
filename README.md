@@ -44,7 +44,7 @@ Implemented:
 
 Next:
 
-- add benchmark symbol guardrails for JavaScript destructured bindings
+- improve JavaScript call graph resolution for destructured imported functions
 
 ## Install From Release
 
