@@ -1,0 +1,9 @@
+/target/
+/dist/
+/.codeinsight/
+/.git/
+/.github/
+/.DS_Store
+*.db
+*.db-shm
+*.db-wal

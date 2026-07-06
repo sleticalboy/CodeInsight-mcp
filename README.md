@@ -105,6 +105,21 @@ brew install sleticalboy/codeinsight-mcp/codeinsight
 cargo install --path .
 ```
 
+## Run With Docker
+
+Build and run the local image:
+
+```bash
+docker build -t codeinsight:local .
+docker run --rm -v "$PWD:/workspace" codeinsight:local overview /workspace
+```
+
+Smoke test the Docker image locally:
+
+```bash
+scripts/docker-smoke.sh
+```
+
 ## CLI Usage
 
 Index a repository:

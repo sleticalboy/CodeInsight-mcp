@@ -113,7 +113,7 @@ Rust is included early so the project can index itself during development.
 - [x] GitHub release workflow.
 - [x] Release install script.
 - [x] Homebrew formula.
-- [ ] Docker image.
+- [x] Docker image.
 - [x] MCP client configuration examples.
 
 ## Near-Term Milestones
