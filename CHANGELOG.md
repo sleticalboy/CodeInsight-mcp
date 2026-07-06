@@ -16,6 +16,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - JavaScript call graph indexing now attributes calls inside anonymous callbacks to contextual callers such as `it.<callback>` and `app.get.<callback>`.
 - Benchmark profiles can assert static call target guardrails; the large Express fixture now checks `app.get`, `app.<dynamic>`, `app.route.get`, and `router.route.get` callers.
 - Benchmark profiles can assert static call edge guardrails; the large Express fixture now checks callback caller attribution for `it.<callback> -> app.route.get` and `app.get.<callback> -> res.send`.
+- Benchmark profiles can assert static symbol guardrails; the large Express fixture now checks function-value symbols such as `createError` and `handleError`.
 - Benchmark profiles now report context lines and line-reduction percentages for context packs.
 - Benchmark profiles now report index budgets and fail when fixture index times exceed guardrail thresholds.
 - Large repository benchmark profile and generated report for Express, Flask, Gin, and Tokio.
