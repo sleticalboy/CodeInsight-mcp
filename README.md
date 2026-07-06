@@ -44,7 +44,7 @@ Implemented:
 
 Next:
 
-- improve JavaScript dynamic import and `require().member()` call graph resolution
+- improve JavaScript dynamic import and computed `require(...)` call graph resolution
 
 ## Install From Release
 

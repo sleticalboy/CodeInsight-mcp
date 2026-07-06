@@ -389,6 +389,23 @@ fn cli_indexes_and_queries_fixture_project() {
                 call["callee"] == "finalApi.render" && call["callee_file"] == "src/ui.ts"
             })
     );
+
+    let require_member_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "requireMemberMain",
+        "--limit",
+        "5",
+    ]);
+    assert!(
+        require_member_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| {
+                call["callee"] == "require.render" && call["callee_file"] == "src/ui.ts"
+            })
+    );
 }
 
 #[test]
@@ -562,6 +579,10 @@ export function twoHopDefaultMain() {
 
 export function twoHopNamespaceMain() {
   finalApi.render();
+}
+
+export function requireMemberMain() {
+  require("./ui").render();
 }
 "#,
     );

@@ -2330,6 +2330,7 @@ function register(app, method, handler) {
   app[method]("/ok", handler);
   router.route("/ok").patch(handler);
   module.exports.create();
+  require("./ui").render();
   helper();
 }
 "#;
@@ -2347,6 +2348,7 @@ function register(app, method, handler) {
         assert!(callees.contains(&"app.<dynamic>"));
         assert!(callees.contains(&"router.route.patch"));
         assert!(callees.contains(&"module.exports.create"));
+        assert!(callees.contains(&"require.render"));
         assert!(callees.contains(&"helper"));
     }
 

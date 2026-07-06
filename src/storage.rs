@@ -465,6 +465,14 @@ impl Store {
                                 or s.qualified_name like '%.' || substr(c.callee, length(d.local_alias) + 2)
                               )
                                 then 0
+                            when c.callee like 'require.%'
+                              and d.line = c.line
+                              and (
+                                s.name = substr(c.callee, length('require') + 2)
+                                or s.qualified_name = substr(c.callee, length('require') + 2)
+                                or s.qualified_name like '%.' || substr(c.callee, length('require') + 2)
+                              )
+                                then 0
                             when s.name = c.callee then 1
                             else 2
                         end as match_rank
@@ -493,6 +501,15 @@ impl Store {
                                 s.name = substr(c.callee, length(d.local_alias) + 2)
                                 or s.qualified_name = substr(c.callee, length(d.local_alias) + 2)
                                 or s.qualified_name like '%.' || substr(c.callee, length(d.local_alias) + 2)
+                            )
+                        )
+                        or (
+                            c.callee like 'require.%'
+                            and d.line = c.line
+                            and (
+                                s.name = substr(c.callee, length('require') + 2)
+                                or s.qualified_name = substr(c.callee, length('require') + 2)
+                                or s.qualified_name like '%.' || substr(c.callee, length('require') + 2)
                             )
                         )
                       )

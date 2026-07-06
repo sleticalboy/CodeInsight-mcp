@@ -113,6 +113,7 @@ Currently supported JavaScript/TypeScript imported target hints:
 - Named imports: `import { render } from "./ui"; render()`.
 - Aliased named imports: `import { render as draw } from "./ui"; draw()`.
 - CommonJS destructuring: `const { render: draw } = require("./ui"); draw()`.
+- Direct CommonJS member calls: `require("./ui").render()`.
 - Namespace imports and module aliases: `import * as ui from "./ui"; ui.render()` and `const ui = require("./ui"); ui.render()`.
 - Default imports when the target has an indexed `export default` symbol.
 - One-hop named/default re-exports, `export * from`, and `export * as`.
@@ -174,7 +175,7 @@ Do not treat current MVP output as a formal static-analysis proof.
 
 Near-term improvements:
 
-- Improve dynamic `import()` and `require().member()` handling where obvious.
+- Improve dynamic `import()` and computed `require(...)` handling where obvious.
 - Add configurable TypeScript path alias and package export resolution.
 - Use call graph hints in `context_pack` ranking.
 - Exclude or down-rank tests and comments in reference search.
