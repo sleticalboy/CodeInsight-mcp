@@ -10,6 +10,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 - JavaScript indexing now extracts CommonJS assignment symbols such as `module.exports`, `exports.foo`, and object method assignments.
 - JavaScript indexing now extracts computed assignment method placeholders such as `app.<dynamic>` for dynamic method registration loops.
+- JavaScript indexing now extracts function-valued variable declarations, named function expressions, and simple arrow-function assignments as callable symbols.
 - JavaScript call graph indexing now preserves member call targets such as `app.get`, resolves string computed calls such as `app["post"]`, and records variable computed calls as `app.<dynamic>`.
 - JavaScript call graph indexing now preserves chained and optional member call targets such as `router.route.get`, `app.route.get`, and `app?.put`.
 - JavaScript call graph indexing now attributes calls inside anonymous callbacks to contextual callers such as `it.<callback>` and `app.get.<callback>`.

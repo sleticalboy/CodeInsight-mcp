@@ -1018,6 +1018,9 @@ fn javascript_like_symbol(node: Node<'_>, source: &[u8]) -> Option<(String, Symb
         "function_declaration" => {
             child_text(node, "name", source).map(|name| (name, SymbolKind::Function))
         }
+        "function_expression" => {
+            child_text(node, "name", source).map(|name| (name, SymbolKind::Function))
+        }
         "class_declaration" => {
             child_text(node, "name", source).map(|name| (name, SymbolKind::Class))
         }
@@ -1027,12 +1030,34 @@ fn javascript_like_symbol(node: Node<'_>, source: &[u8]) -> Option<(String, Symb
         "interface_declaration" => {
             child_text(node, "name", source).map(|name| (name, SymbolKind::Interface))
         }
-        "lexical_declaration" | "variable_declaration" => {
-            find_js_variable_name(node, source).map(|name| (name, SymbolKind::Variable))
-        }
+        "variable_declarator" => javascript_variable_declarator_symbol(node, source),
         "assignment_expression" => javascript_assignment_symbol(node, source),
         _ => None,
     }
+}
+
+fn javascript_variable_declarator_symbol(
+    node: Node<'_>,
+    source: &[u8],
+) -> Option<(String, SymbolKind)> {
+    let name = child_text(node, "name", source)?;
+    if !is_js_identifier(&name) {
+        return None;
+    }
+
+    let value = node
+        .child_by_field_name("value")
+        .or_else(|| node.child_by_field_name("right"))
+        .and_then(|child| child.utf8_text(source).ok())
+        .unwrap_or_default()
+        .trim();
+    let kind = if is_js_function_value(value) {
+        SymbolKind::Function
+    } else {
+        SymbolKind::Variable
+    };
+
+    Some((name, kind))
 }
 
 fn javascript_assignment_symbol(node: Node<'_>, source: &[u8]) -> Option<(String, SymbolKind)> {
@@ -1048,9 +1073,13 @@ fn javascript_assignment_symbol(node: Node<'_>, source: &[u8]) -> Option<(String
         .unwrap_or_default()
         .trim();
 
-    let name =
-        commonjs_assignment_name(left, right).or_else(|| computed_assignment_name(left, right))?;
-    let kind = if right.starts_with("function") || right.contains("=>") {
+    let simple_function_name = simple_function_assignment_name(left, right);
+    let name = commonjs_assignment_name(left, right)
+        .or_else(|| computed_assignment_name(left, right))
+        .or_else(|| simple_function_name.clone())?;
+    let kind = if simple_function_name.as_deref() == Some(name.as_str()) {
+        SymbolKind::Function
+    } else if is_js_function_value(right) {
         SymbolKind::Method
     } else {
         SymbolKind::Variable
@@ -1083,7 +1112,7 @@ fn commonjs_assignment_name(left: &str, right: &str) -> Option<String> {
 }
 
 fn computed_assignment_name(left: &str, right: &str) -> Option<String> {
-    if !(right.starts_with("function") || right.contains("=>")) {
+    if !is_js_function_value(right) {
         return None;
     }
 
@@ -1100,6 +1129,22 @@ fn computed_assignment_name(left: &str, right: &str) -> Option<String> {
     }
 
     Some(format!("{object}.<dynamic>"))
+}
+
+fn simple_function_assignment_name(left: &str, right: &str) -> Option<String> {
+    if is_js_identifier(left.trim()) && is_js_function_value(right) {
+        Some(left.trim().to_string())
+    } else {
+        None
+    }
+}
+
+fn is_js_function_value(value: &str) -> bool {
+    let value = value.trim();
+    value.starts_with("function")
+        || value.starts_with("async function")
+        || value.starts_with("async ")
+        || value.contains("=>")
 }
 
 fn assignment_export_name(left: &str, right: &str) -> Option<String> {
@@ -1178,19 +1223,6 @@ fn find_go_value_name(
         if matches!(child.kind(), "const_spec" | "var_spec") {
             let name = child_text(child, "name", source)?;
             return Some((name, kind));
-        }
-    }
-    None
-}
-
-fn find_js_variable_name(node: Node<'_>, source: &[u8]) -> Option<String> {
-    let mut cursor = node.walk();
-    for child in node_children(&mut cursor) {
-        if child.kind() != "variable_declarator" {
-            continue;
-        }
-        if let Some(name) = child_text(child, "name", source) {
-            return Some(name);
         }
     }
     None
@@ -1323,6 +1355,32 @@ methods.forEach(function (method) {
         assert!(names.contains(&"app.use"));
         assert!(names.contains(&"module.exports.create"));
         assert!(names.contains(&"app.<dynamic>"));
+    }
+
+    #[test]
+    fn extracts_javascript_function_value_symbols() {
+        let source = r#"
+const namedHandler = function handleNamed(req, res) {
+  return res;
+};
+const arrowHandler = (req, res) => res;
+const count = 1, inlineHandler = async (req) => req;
+handler = () => true;
+"#;
+        let symbols = extract_symbols(source, Language::JavaScript, "handlers.js").unwrap();
+        let kind_for = |name: &str| {
+            symbols
+                .iter()
+                .find(|symbol| symbol.qualified_name == name)
+                .map(|symbol| symbol.kind.clone())
+        };
+
+        assert_eq!(kind_for("namedHandler"), Some(SymbolKind::Function));
+        assert_eq!(kind_for("handleNamed"), Some(SymbolKind::Function));
+        assert_eq!(kind_for("arrowHandler"), Some(SymbolKind::Function));
+        assert_eq!(kind_for("inlineHandler"), Some(SymbolKind::Function));
+        assert_eq!(kind_for("handler"), Some(SymbolKind::Function));
+        assert_eq!(kind_for("count"), Some(SymbolKind::Variable));
     }
 
     #[test]

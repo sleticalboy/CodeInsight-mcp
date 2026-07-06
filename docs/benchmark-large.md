@@ -1,6 +1,6 @@
 # CodeInsight v0.1 Large Repository Benchmark
 
-Generated at: 2026-07-06 01:07:29 UTC
+Generated at: 2026-07-06 01:53:28 UTC
 
 This is a benchmark fixture report, not a controlled performance benchmark. It
 verifies that CodeInsight can index real public repositories across the MVP
@@ -20,10 +20,10 @@ Environment:
 
 | Repository | Focus | Commit | Files | Lines | Symbols | Skipped | Errors | Index ms | Index budget ms | Budget status | DB size | Context files | Ranges | Context lines | Line reduction | Tokens | Truncated | First context file |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
-| express | JavaScript | `66878d3` | 141 | 21440 | 2201 | 72 | 0 | 1330 | 10000 | pass | 4.9M | 3 | 5 | 104 | 99.5% | 645 | false | `lib/application.js` |
-| flask | Python | `36e4a82` | 83 | 18337 | 1620 | 153 | 0 | 274 | 5000 | pass | 952K | 1 | 4 | 159 | 99.1% | 1834 | false | `src/flask/app.py` |
-| gin | Go | `34dac20` | 99 | 24099 | 1857 | 31 | 0 | 414 | 5000 | pass | 1.6M | 1 | 9 | 229 | 99.0% | 2387 | false | `gin.go` |
-| tokio | Rust | `c637f6e` | 789 | 177186 | 8447 | 75 | 0 | 3065 | 20000 | pass | 5.8M | 5 | 7 | 135 | 99.9% | 979 | false | `tokio/src/lib.rs` |
+| express | JavaScript | `66878d3` | 141 | 21440 | 2358 | 72 | 0 | 1490 | 10000 | pass | 5.0M | 3 | 12 | 351 | 98.4% | 2287 | false | `lib/application.js` |
+| flask | Python | `36e4a82` | 83 | 18337 | 1620 | 153 | 0 | 344 | 5000 | pass | 952K | 1 | 4 | 159 | 99.1% | 1834 | false | `src/flask/app.py` |
+| gin | Go | `34dac20` | 99 | 24099 | 1857 | 31 | 0 | 468 | 5000 | pass | 1.6M | 1 | 9 | 229 | 99.0% | 2387 | false | `gin.go` |
+| tokio | Rust | `c637f6e` | 789 | 177186 | 8447 | 75 | 0 | 3168 | 20000 | pass | 5.8M | 5 | 7 | 135 | 99.9% | 979 | false | `tokio/src/lib.rs` |
 
 ## Details
 
@@ -32,22 +32,22 @@ Environment:
 - URL: https://github.com/expressjs/express.git
 - Commit: `66878d3e70437ba7b887ec519a3e33edc5bca0c7`
 - Indexed files: 141
-- Symbols: 2201
-- Duration: 1330 ms
+- Symbols: 2358
+- Duration: 1490 ms
 - Index budget: 10000 ms (pass)
 - Context seed file: `lib/application.js`
 - Context task: understand express application routing behavior
 - Context files: 3
-- Context ranges: 5
-- Context lines: 104 of 21440 (99.5% reduction)
-- Context estimated tokens: 645
+- Context ranges: 12
+- Context lines: 351 of 21440 (98.4% reduction)
+- Context estimated tokens: 2287
 - Context truncated: false
 
 Context pack files:
 
 | File | Ranges | First range | Importances |
 | --- | ---: | --- | --- |
-| `lib/application.js` | 3 | 1-7 | high |
+| `lib/application.js` | 10 | 1-7 | high |
 | `lib/utils.js` | 1 | 1-40 | medium |
 | `lib/view.js` | 1 | 1-40 | medium |
 
@@ -79,7 +79,7 @@ Call edge guardrails:
 - Commit: `36e4a824f340fdee7ed50937ba8e7f6bc7d17f81`
 - Indexed files: 83
 - Symbols: 1620
-- Duration: 274 ms
+- Duration: 344 ms
 - Index budget: 5000 ms (pass)
 - Context seed file: `src/flask/app.py`
 - Context task: understand flask application dispatch behavior
@@ -107,7 +107,7 @@ Language breakdown:
 - Commit: `34dac209ffb6ef85cc78c5d217bbb7ad001d68fd`
 - Indexed files: 99
 - Symbols: 1857
-- Duration: 414 ms
+- Duration: 468 ms
 - Index budget: 5000 ms (pass)
 - Context seed file: `gin.go`
 - Context task: understand gin engine routing behavior
@@ -135,7 +135,7 @@ Language breakdown:
 - Commit: `c637f6e73d06f36d933cc3edaf45111c06b79c18`
 - Indexed files: 789
 - Symbols: 8447
-- Duration: 3065 ms
+- Duration: 3168 ms
 - Index budget: 20000 ms (pass)
 - Context seed file: `tokio/src/lib.rs`
 - Context task: understand tokio runtime public API

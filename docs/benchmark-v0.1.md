@@ -1,6 +1,6 @@
 # CodeInsight v0.1 Smoke Benchmark
 
-Generated at: 2026-07-06 01:07:39 UTC
+Generated at: 2026-07-06 01:53:40 UTC
 
 This is a benchmark fixture report, not a controlled performance benchmark. It
 verifies that CodeInsight can index real public repositories across the MVP
@@ -20,10 +20,10 @@ Environment:
 
 | Repository | Focus | Commit | Files | Lines | Symbols | Skipped | Errors | Index ms | Index budget ms | Budget status | DB size | Context files | Ranges | Context lines | Line reduction | Tokens | Truncated | First context file |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
-| p-limit | TypeScript | `42599eb` | 6 | 1123 | 169 | 10 | 0 | 38 | 5000 | pass | 168K | 1 | 3 | 99 | 91.2% | 835 | false | `index.js` |
-| itsdangerous | Python | `672971d` | 15 | 1712 | 144 | 35 | 0 | 40 | 5000 | pass | 168K | 1 | 3 | 114 | 93.3% | 1332 | false | `src/itsdangerous/serializer.py` |
-| go-example | Go | `7f05d21` | 38 | 3537 | 189 | 33 | 0 | 78 | 5000 | pass | 204K | 1 | 3 | 64 | 98.2% | 414 | false | `hello/hello.go` |
-| memchr | Rust | `e21e9fb` | 64 | 69365 | 4045 | 100 | 0 | 854 | 10000 | pass | 2.1M | 7 | 7 | 196 | 99.7% | 1899 | false | `src/lib.rs` |
+| p-limit | TypeScript | `42599eb` | 6 | 1123 | 167 | 10 | 0 | 53 | 5000 | pass | 168K | 1 | 4 | 104 | 90.7% | 887 | false | `index.js` |
+| itsdangerous | Python | `672971d` | 15 | 1712 | 144 | 35 | 0 | 45 | 5000 | pass | 168K | 1 | 3 | 114 | 93.3% | 1332 | false | `src/itsdangerous/serializer.py` |
+| go-example | Go | `7f05d21` | 38 | 3537 | 189 | 33 | 0 | 93 | 5000 | pass | 204K | 1 | 3 | 64 | 98.2% | 414 | false | `hello/hello.go` |
+| memchr | Rust | `e21e9fb` | 64 | 69365 | 4045 | 100 | 0 | 1029 | 10000 | pass | 2.1M | 7 | 7 | 196 | 99.7% | 1899 | false | `src/lib.rs` |
 
 ## Details
 
@@ -32,22 +32,22 @@ Environment:
 - URL: https://github.com/sindresorhus/p-limit.git
 - Commit: `42599ebbbb1228a5bdab381fcf8f4ac20eb8d551`
 - Indexed files: 6
-- Symbols: 169
-- Duration: 38 ms
+- Symbols: 167
+- Duration: 53 ms
 - Index budget: 5000 ms (pass)
 - Context seed file: `index.js`
 - Context task: understand limit scheduling behavior
 - Context files: 1
-- Context ranges: 3
-- Context lines: 99 of 1123 (91.2% reduction)
-- Context estimated tokens: 835
+- Context ranges: 4
+- Context lines: 104 of 1123 (90.7% reduction)
+- Context estimated tokens: 887
 - Context truncated: false
 
 Context pack files:
 
 | File | Ranges | First range | Importances |
 | --- | ---: | --- | --- |
-| `index.js` | 3 | 1-2 | high |
+| `index.js` | 4 | 1-2 | high |
 
 Language breakdown:
 
@@ -62,7 +62,7 @@ Language breakdown:
 - Commit: `672971d66a2ef9f85151e53283113f33d642dabd`
 - Indexed files: 15
 - Symbols: 144
-- Duration: 40 ms
+- Duration: 45 ms
 - Index budget: 5000 ms (pass)
 - Context seed file: `src/itsdangerous/serializer.py`
 - Context task: understand serializer signing behavior
@@ -90,7 +90,7 @@ Language breakdown:
 - Commit: `7f05d217867b2af52b0a28c6d1c91df97e1b5b39`
 - Indexed files: 38
 - Symbols: 189
-- Duration: 78 ms
+- Duration: 93 ms
 - Index budget: 5000 ms (pass)
 - Context seed file: `hello/hello.go`
 - Context task: understand hello server behavior
@@ -119,7 +119,7 @@ Language breakdown:
 - Commit: `e21e9fb47c4362d93a24ce969b20fd778d8618c8`
 - Indexed files: 64
 - Symbols: 4045
-- Duration: 854 ms
+- Duration: 1029 ms
 - Index budget: 10000 ms (pass)
 - Context seed file: `src/lib.rs`
 - Context task: understand memchr finder API

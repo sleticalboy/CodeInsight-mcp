@@ -44,7 +44,7 @@ Implemented:
 
 Next:
 
-- improve JavaScript symbol extraction for named function expressions and arrow assignments
+- add benchmark symbol guardrails for JavaScript function-value extraction
 
 ## Install From Release
 
