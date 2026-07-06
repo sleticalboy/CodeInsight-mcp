@@ -6,6 +6,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-07-06
+
 ### Added
 
 - JavaScript indexing now extracts CommonJS assignment symbols such as `module.exports`, `exports.foo`, and object method assignments.

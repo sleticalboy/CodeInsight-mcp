@@ -61,7 +61,7 @@ curl -fsSL https://raw.githubusercontent.com/sleticalboy/CodeInsight-mcp/main/sc
 Install a specific version:
 
 ```bash
-CODEINSIGHT_VERSION=v0.1.0 sh scripts/install.sh
+CODEINSIGHT_VERSION=v0.1.2 sh scripts/install.sh
 ```
 
 Choose a custom install directory:
