@@ -249,6 +249,26 @@ fn cli_indexes_and_queries_fixture_project() {
     assert!(call_graph_context_files.contains(&"src/barrel.ts"));
     assert!(call_graph_context_files.contains(&"src/ui.ts"));
 
+    let seed_file_call_graph_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand call graph target",
+        "--file",
+        "src/call-entry.ts",
+        "--token-budget",
+        "1600",
+    ]);
+    let seed_file_call_graph_context_files = seed_file_call_graph_context["files"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|file| file["file"].as_str())
+        .collect::<Vec<_>>();
+    assert!(seed_file_call_graph_context_files.contains(&"src/call-entry.ts"));
+    assert!(seed_file_call_graph_context_files.contains(&"src/barrel.ts"));
+    assert!(seed_file_call_graph_context_files.contains(&"src/ui.ts"));
+
     let long_file_context = run_json([
         "context-pack",
         fixture.path().to_str().unwrap(),

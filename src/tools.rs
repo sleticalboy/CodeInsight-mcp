@@ -229,8 +229,15 @@ pub fn context_pack_value(
         );
     }
 
+    let mut call_graph_seeds = seed_symbols.iter().cloned().collect::<BTreeSet<_>>();
+    for symbol in &symbols {
+        if seed_file_set.contains(&symbol.file) && is_primary_seed_symbol(symbol) {
+            call_graph_seeds.insert(symbol.qualified_name.clone());
+        }
+    }
+
     let store = Store::open(&root)?;
-    for seed in &seed_symbols {
+    for seed in &call_graph_seeds {
         for call in store.callees(seed, 20)? {
             let Some(callee_file) = call.callee_file.clone() else {
                 continue;
