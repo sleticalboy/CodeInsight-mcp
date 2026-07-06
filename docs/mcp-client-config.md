@@ -90,6 +90,10 @@ Example `context_pack` call arguments:
 }
 ```
 
+`context_pack` returns `files[].ranges[]` entries with `start_line`, `end_line`,
+`importance`, `reason`, and `excerpt`, so clients can explain why each snippet
+was selected without inferring it from the file-level summary.
+
 Run `index_project` first for a repository when you want repeatable results from
 the local SQLite index.
 

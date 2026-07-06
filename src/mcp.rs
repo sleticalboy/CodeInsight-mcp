@@ -462,6 +462,11 @@ def helper():
             context_result["structuredContent"]["files"][0]["file"].as_str(),
             Some("auth.py")
         );
+        assert!(
+            context_result["structuredContent"]["files"][0]["ranges"][0]["reason"]
+                .as_str()
+                .is_some_and(|reason| !reason.is_empty())
+        );
         let file_context_result = handle_tool_call(json!({
             "name": "context_pack",
             "arguments": {
