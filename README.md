@@ -96,11 +96,11 @@ scripts/release-install-smoke.sh
 
 ## Install With Homebrew
 
-Install directly from the formula in this repository:
+Install from the shared Homebrew tap:
 
 ```bash
-brew tap sleticalboy/codeinsight-mcp https://github.com/sleticalboy/CodeInsight-mcp
-brew install sleticalboy/codeinsight-mcp/codeinsight
+brew tap sleticalboy/tap
+brew install codeinsight
 ```
 
 ## Install From Source

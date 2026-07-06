@@ -52,3 +52,14 @@ jobs:
           set -euo pipefail
           grep -q "Semantic smoke script" /tmp/codeinsight-release-notes.md
           ! grep -q "0.1.1" /tmp/codeinsight-release-notes.md
+      - run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          printf darwin-arm >"$tmp/codeinsight-aarch64-apple-darwin.tar.gz"
+          printf darwin-intel >"$tmp/codeinsight-x86_64-apple-darwin.tar.gz"
+          printf linux-arm >"$tmp/codeinsight-aarch64-unknown-linux-gnu.tar.gz"
+          printf linux-intel >"$tmp/codeinsight-x86_64-unknown-linux-gnu.tar.gz"
+          scripts/update-homebrew-formula.sh v9.8.7 "$tmp" /tmp/codeinsight.rb
+          ruby -c /tmp/codeinsight.rb
+          grep -q 'version "9.8.7"' /tmp/codeinsight.rb
+          grep -q 'codeinsight-x86_64-unknown-linux-gnu.tar.gz' /tmp/codeinsight.rb

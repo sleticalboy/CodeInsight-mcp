@@ -1,25 +1,30 @@
 class Codeinsight < Formula
   desc "Local-first code intelligence MCP server for AI agents"
   homepage "https://github.com/sleticalboy/CodeInsight-mcp"
+  version "0.1.2"
   license "Apache-2.0"
 
   on_macos do
-    if Hardware::CPU.arm?
-      url "https://github.com/sleticalboy/CodeInsight-mcp/releases/download/v0.1.1/codeinsight-aarch64-apple-darwin.tar.gz"
-      sha256 "40251ce737d1808260062d358aed43cebef5cbbc4162e98ce5c306f59ae0f0c4"
-    else
-      url "https://github.com/sleticalboy/CodeInsight-mcp/releases/download/v0.1.1/codeinsight-x86_64-apple-darwin.tar.gz"
-      sha256 "43ef42bfdef901ba49bb3bd65fd1ceb3568678c51e7553c03317b5d59e0bfe56"
+    on_arm do
+      url "https://github.com/sleticalboy/CodeInsight-mcp/releases/download/v0.1.2/codeinsight-aarch64-apple-darwin.tar.gz"
+      sha256 "2df85a498465c47f24a0e920f355a579556804f8be062bd474cd08a5e5161979"
+    end
+
+    on_intel do
+      url "https://github.com/sleticalboy/CodeInsight-mcp/releases/download/v0.1.2/codeinsight-x86_64-apple-darwin.tar.gz"
+      sha256 "4892ccf6fb569b66788cc5ea519b4137bf2288b1af5db48ce620b8e7385f3a6e"
     end
   end
 
   on_linux do
-    if Hardware::CPU.arm?
-      url "https://github.com/sleticalboy/CodeInsight-mcp/releases/download/v0.1.1/codeinsight-aarch64-unknown-linux-gnu.tar.gz"
-      sha256 "b8785eb2f647f2ef5ae2af96e3368411184f318b0f69d8ed1b31a0b57203c10d"
-    else
-      url "https://github.com/sleticalboy/CodeInsight-mcp/releases/download/v0.1.1/codeinsight-x86_64-unknown-linux-gnu.tar.gz"
-      sha256 "e777c420936f4ee440b6a737c13fe421aeabb800f7f4fdbda49147eca76d6c97"
+    on_arm do
+      url "https://github.com/sleticalboy/CodeInsight-mcp/releases/download/v0.1.2/codeinsight-aarch64-unknown-linux-gnu.tar.gz"
+      sha256 "e081d9e61b5bf3fe98bb5b3779f3d6462ee4d0d13455837134c64ecbf98e342c"
+    end
+
+    on_intel do
+      url "https://github.com/sleticalboy/CodeInsight-mcp/releases/download/v0.1.2/codeinsight-x86_64-unknown-linux-gnu.tar.gz"
+      sha256 "48185f291e7e3c62d6c5ffe32ab28af6580ab1a1859a8aba5dafa1c0eb9908c4"
     end
   end
 
