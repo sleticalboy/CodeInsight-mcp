@@ -78,7 +78,7 @@ Limitations:
 - Targets are always stored as module strings; `resolved_file` is only populated when a local file can be resolved cheaply.
 - Grouped imports may be compacted rather than expanded precisely.
 - Local package self-reference `exports` resolution supports JSON-compatible `package.json` files with exact or single-wildcard string mappings.
-- Dependency package `exports` resolution supports nearest `node_modules` packages with exact or single-wildcard string mappings.
+- Dependency package `exports` resolution supports nearest `node_modules` packages with exact or single-wildcard mappings and common condition objects.
 - TypeScript and JavaScript `baseUrl`/`paths` resolution supports JSON-compatible `tsconfig.json` and `jsconfig.json` files with exact or single-wildcard path mappings.
 - Monorepo workspace boundaries are not modeled yet.
 - Go import paths are not resolved to files yet.
@@ -184,7 +184,7 @@ Do not treat current MVP output as a formal static-analysis proof.
 Near-term improvements:
 
 - Improve external dynamic import handlers and variable-based `require(...)` handling where obvious.
-- Add broader package export condition handling and TypeScript path alias coverage.
+- Add broader TypeScript path alias coverage and package manager metadata handling.
 - Use call graph hints in `context_pack` ranking.
 - Exclude or down-rank tests and comments in reference search.
 - Add fixture repositories for each supported language.

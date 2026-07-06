@@ -43,6 +43,7 @@ fn cli_indexes_and_queries_fixture_project() {
     assert!(targets.contains(&"@app/path-ui"));
     assert!(targets.contains(&"fixture-lib/package-ui"));
     assert!(targets.contains(&"dep-lib/feature"));
+    assert!(targets.contains(&"dep-lib/node-feature"));
     assert!(
         deps["dependencies"]
             .as_array()
@@ -50,6 +51,16 @@ fn cli_indexes_and_queries_fixture_project() {
             .iter()
             .any(|dependency| {
                 dependency["target"] == "./ui" && dependency["resolved_file"] == "src/ui.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "dep-lib/node-feature"
+                    && dependency["resolved_file"] == "node_modules/dep-lib/dist/node-feature.js"
             })
     );
     assert!(
@@ -690,6 +701,7 @@ import * as ui from "./ui";
 import { pathRender } from "@app/path-ui";
 import { packageRender } from "fixture-lib/package-ui";
 import { depRender } from "dep-lib/feature";
+import { depNodeRender } from "dep-lib/node-feature";
 const { render: draw } = require("./ui");
 const uiModule = require("./ui");
 const computedUiModule = require("./" + "ui");
@@ -775,6 +787,7 @@ export function packageExportMain() {
 
 export function dependencyPackageMain() {
   depRender();
+  depNodeRender();
 }
 "#,
     );
@@ -787,6 +800,12 @@ export function dependencyPackageMain() {
   "exports": {
     "./feature": {
       "import": "./dist/feature.js"
+    },
+    "./node-feature": {
+      "node": {
+        "import": "./dist/node-feature.js"
+      },
+      "default": "./dist/default-feature.js"
     }
   }
 }
@@ -798,6 +817,15 @@ export function dependencyPackageMain() {
         r#"
 export function depRender() {
   return "dep";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/dep-lib/dist/node-feature.js",
+        r#"
+export function depNodeRender() {
+  return "node";
 }
 "#,
     );

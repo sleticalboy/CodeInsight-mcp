@@ -1818,7 +1818,15 @@ fn package_export_target(value: &Value) -> Option<String> {
     }
 
     let object = value.as_object()?;
-    for condition in ["import", "default", "require"] {
+    for condition in [
+        "import",
+        "node",
+        "browser",
+        "default",
+        "require",
+        "development",
+        "production",
+    ] {
         if let Some(target) = object.get(condition).and_then(package_export_target) {
             return Some(target);
         }
