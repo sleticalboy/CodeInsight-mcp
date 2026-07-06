@@ -23,6 +23,7 @@ const CONTEXT_SCORE_CALL_GRAPH: i32 = 75;
 const CONTEXT_SCORE_REFERENCE_BASE: i32 = 60;
 const CONTEXT_SCORE_LOCAL_DEPENDENCY: i32 = 40;
 const CONTEXT_SCORE_TASK_MATCH_BOOST: i32 = 30;
+const CONTEXT_SCORE_SEED_SYMBOL_TASK_MATCH_BOOST: i32 = 5;
 const CONTEXT_MAX_SYMBOL_LINES: usize = 80;
 const CONTEXT_MAX_MERGED_RANGE_LINES: usize = 80;
 
@@ -192,7 +193,7 @@ pub fn context_pack_value(
 
     let mut ranges_by_file: BTreeMap<String, Vec<ContextCandidateRange>> = BTreeMap::new();
     for file in &seed_files {
-        for range in seed_file_ranges(&root, file, &symbols) {
+        for range in seed_file_ranges(&root, file, &symbols, &task_keywords) {
             push_context_range(
                 &mut ranges_by_file,
                 file.clone(),
@@ -432,7 +433,12 @@ struct ContextFileCandidate {
     total_score: i32,
 }
 
-fn seed_file_ranges(root: &Path, file: &str, symbols: &[Symbol]) -> Vec<ContextCandidateRange> {
+fn seed_file_ranges(
+    root: &Path,
+    file: &str,
+    symbols: &[Symbol],
+    task_keywords: &[String],
+) -> Vec<ContextCandidateRange> {
     let path = root.join(file);
     let source = fs::read_to_string(path).unwrap_or_default();
     let lines = source.lines().collect::<Vec<_>>();
@@ -459,7 +465,7 @@ fn seed_file_ranges(root: &Path, file: &str, symbols: &[Symbol]) -> Vec<ContextC
             start_line: symbol.start_line.saturating_sub(2).max(1),
             end_line: (capped_symbol_end_line(symbol) + 2).min(line_count),
             reason: format!("Seed file defines symbol {}", symbol.qualified_name),
-            score: CONTEXT_SCORE_SEED_FILE,
+            score: CONTEXT_SCORE_SEED_FILE + seed_symbol_task_boost(symbol, task_keywords),
         });
     }
 
@@ -587,6 +593,7 @@ fn merge_ranges(mut ranges: Vec<ContextCandidateRange>) -> Vec<ContextCandidateR
     for range in ranges {
         if let Some(last) = merged.last_mut()
             && range.start_line <= last.end_line + 2
+            && range.score == last.score
             && range_len(last.start_line, range.end_line) <= CONTEXT_MAX_MERGED_RANGE_LINES
         {
             last.end_line = last.end_line.max(range.end_line);
@@ -686,6 +693,14 @@ fn symbol_task_boost(symbol: &Symbol, keywords: &[String]) -> i32 {
         ]
         .into_iter(),
     )
+}
+
+fn seed_symbol_task_boost(symbol: &Symbol, keywords: &[String]) -> i32 {
+    if symbol_task_boost(symbol, keywords) > 0 {
+        CONTEXT_SCORE_SEED_SYMBOL_TASK_MATCH_BOOST
+    } else {
+        0
+    }
 }
 
 fn reference_task_boost(reference: &ReferenceMatch, keywords: &[String]) -> i32 {

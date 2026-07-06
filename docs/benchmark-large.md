@@ -20,7 +20,7 @@ Environment:
 
 | Repository | Focus | Commit | Files | Lines | Symbols | Skipped | Errors | Index ms | Index budget ms | Budget status | DB size | Context files | Ranges | Context lines | Line reduction | Tokens | Truncated | First context file |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
-| express | JavaScript | `66878d3` | 141 | 21440 | 2428 | 72 | 0 | 3205 | 10000 | pass | 5.6M | 4 | 13 | 362 | 98.3% | 2360 | false | `lib/application.js` |
+| express | JavaScript | `66878d3` | 141 | 21440 | 2428 | 72 | 0 | 3205 | 10000 | pass | 5.6M | 4 | 15 | 442 | 97.9% | 2851 | false | `lib/application.js` |
 | flask | Python | `36e4a82` | 83 | 18337 | 1620 | 153 | 0 | 292 | 5000 | pass | 968K | 1 | 4 | 159 | 99.1% | 1834 | false | `src/flask/app.py` |
 | gin | Go | `34dac20` | 99 | 24099 | 1857 | 31 | 0 | 453 | 5000 | pass | 1.6M | 1 | 9 | 229 | 99.0% | 2387 | false | `gin.go` |
 | tokio | Rust | `c637f6e` | 789 | 177186 | 8447 | 75 | 0 | 3049 | 20000 | pass | 5.8M | 11 | 15 | 188 | 99.9% | 1389 | false | `tokio/src/lib.rs` |
@@ -38,9 +38,9 @@ Environment:
 - Context seed file: `lib/application.js`
 - Context task: understand express application routing behavior
 - Context files: 4
-- Context ranges: 13
-- Context lines: 362 of 21440 (98.3% reduction)
-- Context estimated tokens: 2360
+- Context ranges: 15
+- Context lines: 442 of 21440 (97.9% reduction)
+- Context estimated tokens: 2851
 - Context truncated: false
 
 Context pack files:
@@ -48,8 +48,8 @@ Context pack files:
 | File | Ranges | First range | Importances |
 | --- | ---: | --- | --- |
 | `lib/application.js` | 10 | 1-7 | high |
-| `lib/utils.js` | 1 | 1-40 | high |
-| `lib/view.js` | 1 | 1-40 | high |
+| `lib/utils.js` | 2 | 1-40 | high, medium |
+| `lib/view.js` | 2 | 1-40 | high, medium |
 | `index.js` | 1 | 1-11 | medium |
 
 Language breakdown:

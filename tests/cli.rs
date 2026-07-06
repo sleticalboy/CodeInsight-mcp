@@ -9,13 +9,13 @@ fn cli_indexes_and_queries_fixture_project() {
     let fixture = fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 15);
-    assert_eq!(index["changed_files"], 15);
+    assert_eq!(index["indexed_files"], 16);
+    assert_eq!(index["changed_files"], 16);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let second_index = run_json(["index", fixture.path().to_str().unwrap()]);
     assert_eq!(second_index["changed_files"], 0);
-    assert_eq!(second_index["unchanged_files"], 15);
+    assert_eq!(second_index["unchanged_files"], 16);
 
     let symbols = run_json([
         "symbols",
@@ -331,6 +331,7 @@ fn cli_indexes_and_queries_fixture_project() {
         .collect::<Vec<_>>()
         .join("\n");
     assert!(small_budget_excerpt.contains("import { render }"));
+    assert!(small_budget_excerpt.contains("lateEntry"));
     assert!(!small_budget_excerpt.contains("filler_60"));
 
     let huge_seed_context = run_json([
@@ -354,6 +355,28 @@ fn cli_indexes_and_queries_fixture_project() {
         .join("\n");
     assert!(huge_seed_excerpt.contains("hugeEntry"));
     assert!(!huge_seed_excerpt.contains("huge_filler_80"));
+
+    let multi_seed_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "targetLater behavior",
+        "--file",
+        "src/multi-long.ts",
+        "--token-budget",
+        "500",
+    ]);
+    let multi_seed_file = &multi_seed_context["files"].as_array().unwrap()[0];
+    assert_eq!(multi_seed_file["file"], "src/multi-long.ts");
+    let multi_seed_excerpt = multi_seed_file["ranges"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|range| range["excerpt"].as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert!(multi_seed_excerpt.contains("targetLater"));
+    assert!(!multi_seed_excerpt.contains("unrelated_filler_40"));
 
     let callers = run_json([
         "callers",
@@ -1111,6 +1134,7 @@ export function packageRender() {
     );
     write_file(&dir, "src/long.ts", &long_typescript_file());
     write_file(&dir, "src/huge.ts", &huge_typescript_file());
+    write_file(&dir, "src/multi-long.ts", &multi_long_typescript_file());
     write_file(
         &dir,
         "src/service.go",
@@ -1145,6 +1169,18 @@ fn huge_typescript_file() -> String {
         ));
     }
     source.push_str("  return huge_filler_1;\n}\n");
+    source
+}
+
+fn multi_long_typescript_file() -> String {
+    let mut source = String::from("export function unrelatedLarge() {\n");
+    for index in 1..=70 {
+        source.push_str(&format!(
+            "  const unrelated_filler_{index} = \"large unrelated context filler value {index} that can consume the tiny budget\";\n"
+        ));
+    }
+    source.push_str("  return unrelated_filler_1;\n}\n\n");
+    source.push_str("export function targetLater() {\n  return \"target\";\n}\n");
     source
 }
 
