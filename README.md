@@ -33,7 +33,7 @@ Implemented:
 - incremental indexing with file-hash skips and stale file cleanup
 - index metadata with schema and index version tracking
 - per-file indexing errors in reports without aborting the whole project scan
-- Tree-sitter parsing for TypeScript/JavaScript, Python, Go, Rust, and Java
+- Tree-sitter parsing for TypeScript/JavaScript, Python, Go, Rust, Java, C, and C++
 - symbol extraction for common declarations
 - dependency graph, text reference search, context packs, and call graph tools with imported target hints
 - relative file resolution for local dependency graph edges

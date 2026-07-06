@@ -29,11 +29,12 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - File-seeded `context_pack` output now selects header/import context and primary top-level symbols instead of fixed first-file chunks.
 - `context_pack` now caps large symbol and merged ranges so small token budgets retain useful file context.
 - `context_pack` now uses task keywords as a lightweight relevance boost for symbols, references, and local dependencies.
-- Checked-in polyglot fixture coverage for TypeScript, JavaScript, Python, Go, Rust, and Java indexing.
+- Checked-in polyglot fixture coverage for TypeScript, JavaScript, Python, Go, Rust, Java, C, and C++ indexing.
 - Homebrew formula for installing release assets.
 - Docker image definition and smoke test script.
 - GitHub Container Registry image publishing workflow for tagged releases.
 - Java indexing for common classes, interfaces, enums, records, methods, constructors, fields, packages, imports, and method calls.
+- C/C++ indexing for common functions, structs/classes, enums, typedefs, macro constants, includes, and calls.
 
 ### Changed
 

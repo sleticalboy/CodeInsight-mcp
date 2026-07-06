@@ -99,7 +99,7 @@ Rust is included early so the project can index itself during development.
 ### Language Expansion
 
 - [x] Java
-- [ ] C / C++
+- [x] C / C++
 - [ ] C#
 - [ ] PHP or Ruby
 
@@ -134,5 +134,5 @@ Rust is included early so the project can index itself during development.
 ### v0.3.0
 
 - Basic call graph available.
-- More robust TypeScript, Python, Go, Rust, and Java extraction.
+- More robust TypeScript, Python, Go, Rust, Java, and C/C++ extraction.
 - Benchmark report for token/context reduction.

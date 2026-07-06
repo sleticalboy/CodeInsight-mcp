@@ -303,7 +303,9 @@ fn visit_call_node(
 
 fn is_call_node(node: Node<'_>, language: Language) -> bool {
     match language {
-        Language::Go
+        Language::C
+        | Language::Cpp
+        | Language::Go
         | Language::Rust
         | Language::JavaScript
         | Language::TypeScript
@@ -614,6 +616,7 @@ fn dependencies_from_node(
     source_file: &str,
 ) -> Vec<Dependency> {
     match language {
+        Language::C | Language::Cpp => c_like_dependencies(node, source, language, source_file),
         Language::Python => python_dependencies(node, source, language, source_file),
         Language::Go => go_dependencies(node, source, language, source_file),
         Language::Java => java_dependencies(node, source, language, source_file),
@@ -745,6 +748,25 @@ fn java_dependencies(
             source_file,
             "package",
             java_package_targets,
+        ),
+        _ => Vec::new(),
+    }
+}
+
+fn c_like_dependencies(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+) -> Vec<Dependency> {
+    match node.kind() {
+        "preproc_include" => text_dependencies(
+            node,
+            source,
+            language,
+            source_file,
+            "include",
+            c_include_targets,
         ),
         _ => Vec::new(),
     }
@@ -1540,6 +1562,7 @@ fn resolve_dependency(root: &Path, dependency: &Dependency) -> Option<String> {
         Language::JavaScript | Language::TypeScript | Language::Tsx => {
             resolve_javascript_like_target(root, dependency)
         }
+        Language::C | Language::Cpp => resolve_c_like_target(root, dependency),
         Language::Python => resolve_python_target(root, dependency),
         Language::Rust => resolve_rust_target(root, dependency),
         Language::Go | Language::Java => None,
@@ -1566,6 +1589,19 @@ fn resolve_rust_target(root: &Path, dependency: &Dependency) -> Option<String> {
     }
 
     None
+}
+
+fn resolve_c_like_target(root: &Path, dependency: &Dependency) -> Option<String> {
+    if dependency.target.starts_with('<') {
+        return None;
+    }
+
+    resolve_relative_target(
+        root,
+        &dependency.source_file,
+        &dependency.target,
+        &["h", "hpp", "hh", "hxx", "c", "cc", "cpp", "cxx"],
+    )
 }
 
 fn resolve_javascript_like_target(root: &Path, dependency: &Dependency) -> Option<String> {
@@ -1998,6 +2034,23 @@ fn java_package_targets(text: &str) -> Vec<String> {
         .unwrap_or_default()
 }
 
+fn c_include_targets(text: &str) -> Vec<String> {
+    let trimmed = text.trim();
+    if let Some(start) = trimmed.find('"')
+        && let Some(end) = trimmed[start + 1..].find('"')
+    {
+        return vec![trimmed[start + 1..start + 1 + end].to_string()];
+    }
+
+    if let Some(start) = trimmed.find('<')
+        && let Some(end) = trimmed[start + 1..].find('>')
+    {
+        return vec![format!("<{}>", &trimmed[start + 1..start + 1 + end])];
+    }
+
+    Vec::new()
+}
+
 fn rust_use_targets(text: &str) -> Vec<String> {
     text.trim()
         .strip_prefix("use ")
@@ -2062,6 +2115,7 @@ fn symbol_from_node(
     language: Language,
 ) -> Option<(String, SymbolKind)> {
     match language {
+        Language::C | Language::Cpp => c_like_symbol(node, source),
         Language::Python => python_symbol(node, source),
         Language::Rust => rust_symbol(node, source),
         Language::Go => go_symbol(node, source),
@@ -2119,6 +2173,23 @@ fn go_symbol(node: Node<'_>, source: &[u8]) -> Option<(String, SymbolKind)> {
         "type_declaration" => find_go_type_name(node, source),
         "const_declaration" => find_go_value_name(node, source, SymbolKind::Constant),
         "var_declaration" => find_go_value_name(node, source, SymbolKind::Variable),
+        _ => None,
+    }
+}
+
+fn c_like_symbol(node: Node<'_>, source: &[u8]) -> Option<(String, SymbolKind)> {
+    match node.kind() {
+        "function_definition" => {
+            find_c_function_name(node, source).map(|name| (name, SymbolKind::Function))
+        }
+        "struct_specifier" | "union_specifier" | "class_specifier" => {
+            child_text(node, "name", source).map(|name| (name, SymbolKind::Struct))
+        }
+        "enum_specifier" => child_text(node, "name", source).map(|name| (name, SymbolKind::Struct)),
+        "type_definition" => find_c_typedef_name(node, source),
+        "preproc_function_def" | "preproc_def" => {
+            child_text(node, "name", source).map(|name| (name, SymbolKind::Constant))
+        }
         _ => None,
     }
 }
@@ -2564,6 +2635,51 @@ fn find_java_field_name(node: Node<'_>, source: &[u8]) -> Option<(String, Symbol
     None
 }
 
+fn find_c_function_name(node: Node<'_>, source: &[u8]) -> Option<String> {
+    find_c_declarator_identifier(node.child_by_field_name("declarator")?, source)
+}
+
+fn find_c_typedef_name(node: Node<'_>, source: &[u8]) -> Option<(String, SymbolKind)> {
+    let declarator = node.child_by_field_name("declarator").or_else(|| {
+        let mut cursor = node.walk();
+        node_children(&mut cursor)
+            .into_iter()
+            .find(|child| child.kind().contains("declarator"))
+    })?;
+    let name = find_c_declarator_identifier(declarator, source)?;
+    let kind = node
+        .child_by_field_name("type")
+        .is_some_and(|type_node| matches!(type_node.kind(), "struct_specifier" | "class_specifier"))
+        .then_some(SymbolKind::Struct)
+        .unwrap_or(SymbolKind::Interface);
+    Some((name, kind))
+}
+
+fn find_c_declarator_identifier(node: Node<'_>, source: &[u8]) -> Option<String> {
+    if matches!(node.kind(), "identifier" | "field_identifier") {
+        return node.utf8_text(source).ok().map(ToOwned::to_owned);
+    }
+
+    if let Some(declarator) = node.child_by_field_name("declarator")
+        && let Some(name) = find_c_declarator_identifier(declarator, source)
+    {
+        return Some(name);
+    }
+
+    if let Some(name) = child_text(node, "name", source) {
+        return Some(name);
+    }
+
+    let mut cursor = node.walk();
+    for child in node_children(&mut cursor) {
+        if let Some(name) = find_c_declarator_identifier(child, source) {
+            return Some(name);
+        }
+    }
+
+    None
+}
+
 fn is_inside_class(node: Node<'_>) -> bool {
     let mut current = node.parent();
     while let Some(parent) = current {
@@ -2825,6 +2941,105 @@ func (s *Service) Login() {}
         assert!(names.contains(&"Service"));
         assert!(names.contains(&"NewService"));
         assert!(names.contains(&"Login"));
+    }
+
+    #[test]
+    fn extracts_c_symbols_dependencies_and_calls() {
+        let source = r#"
+#include "auth.h"
+#include <stdio.h>
+#define AUTH_MAX 8
+
+typedef struct AuthService {
+  int count;
+} AuthService;
+
+int helper(int value) {
+  return value + 1;
+}
+
+int login(AuthService *service) {
+  return helper(service->count);
+}
+"#;
+        let symbols = extract_symbols(source, Language::C, "auth.c").unwrap();
+        let names = symbols
+            .iter()
+            .map(|symbol| symbol.qualified_name.as_str())
+            .collect::<Vec<_>>();
+        assert!(names.contains(&"AUTH_MAX"));
+        assert!(names.contains(&"AuthService"));
+        assert!(names.contains(&"helper"));
+        assert!(names.contains(&"login"));
+
+        let deps = extract_dependencies(source, Language::C, "auth.c").unwrap();
+        let targets = deps
+            .iter()
+            .map(|dependency| dependency.target.as_str())
+            .collect::<Vec<_>>();
+        assert!(targets.contains(&"auth.h"));
+        assert!(targets.contains(&"<stdio.h>"));
+
+        let calls = extract_calls(source, Language::C, "auth.c", &symbols);
+        assert!(
+            calls
+                .iter()
+                .any(|call| call.caller == "login" && call.callee == "helper")
+        );
+    }
+
+    #[test]
+    fn extracts_cpp_symbols_dependencies_and_calls() {
+        let source = r#"
+#include "auth.hpp"
+#include <string>
+
+class AuthService {
+public:
+  int login() {
+    return helper();
+  }
+
+private:
+  int helper() {
+    return 1;
+  }
+};
+
+int make_service() {
+  AuthService service;
+  return service.login();
+}
+"#;
+        let symbols = extract_symbols(source, Language::Cpp, "auth.cpp").unwrap();
+        let names = symbols
+            .iter()
+            .map(|symbol| symbol.qualified_name.as_str())
+            .collect::<Vec<_>>();
+        assert!(names.contains(&"AuthService"));
+        assert!(names.contains(&"AuthService.login"));
+        assert!(names.contains(&"AuthService.helper"));
+        assert!(names.contains(&"make_service"));
+
+        let deps = extract_dependencies(source, Language::Cpp, "auth.cpp").unwrap();
+        let targets = deps
+            .iter()
+            .map(|dependency| dependency.target.as_str())
+            .collect::<Vec<_>>();
+        assert!(targets.contains(&"auth.hpp"));
+        assert!(targets.contains(&"<string>"));
+
+        let calls = extract_calls(source, Language::Cpp, "auth.cpp", &symbols);
+        assert!(
+            calls
+                .iter()
+                .any(|call| call.caller == "AuthService.login" && call.callee == "helper")
+        );
+        assert!(
+            calls
+                .iter()
+                .any(|call| call.caller == "make_service" && call.callee == "login")
+        );
     }
 
     #[test]

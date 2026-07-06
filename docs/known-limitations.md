@@ -18,6 +18,7 @@ These capabilities are expected to be reliable for common source files in suppor
   - Go functions, methods, type declarations, consts, and vars.
   - Rust functions, structs, enums, traits, consts, statics, and simple impl methods.
   - Java classes, interfaces, enums, records, methods, constructors, fields, package declarations, and imports.
+  - C/C++ functions, structs/classes, enums, typedefs, macro constants, local includes, and basic calls.
 - Caching indexed files by content hash.
 - Skipping unchanged files during incremental indexing.
 - Removing stale index records for deleted files.
@@ -84,6 +85,7 @@ Limitations:
 - TypeScript and JavaScript `baseUrl`/`paths` resolution supports JSON-compatible `tsconfig.json` and `jsconfig.json` files with exact or single-wildcard path mappings, multiple fallback mappings, and directory index files.
 - Monorepo workspace boundaries are not modeled yet.
 - Go and Java import paths are not resolved to files yet.
+- C/C++ quoted local includes are resolved when the target file is obvious; system includes such as `<stdio.h>` are recorded but not resolved.
 
 ### `context_pack`
 
@@ -148,12 +150,12 @@ Current MVP support:
 - Go
 - Rust
 - Java
+- C / C++
 
 Rust support exists partly so the project can index itself during development.
 
 Planned expansion:
 
-- C / C++
 - C#
 - PHP or Ruby
 

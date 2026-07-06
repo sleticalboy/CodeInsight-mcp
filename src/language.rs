@@ -6,6 +6,10 @@ use crate::model::Language;
 
 pub fn detect_language(path: &Path) -> Option<Language> {
     match path.extension().and_then(|value| value.to_str()) {
+        Some("c") | Some("h") => Some(Language::C),
+        Some("cc") | Some("cpp") | Some("cxx") | Some("hh") | Some("hpp") | Some("hxx") => {
+            Some(Language::Cpp)
+        }
         Some("go") => Some(Language::Go),
         Some("java") => Some(Language::Java),
         Some("js") | Some("mjs") | Some("cjs") => Some(Language::JavaScript),
@@ -19,6 +23,8 @@ pub fn detect_language(path: &Path) -> Option<Language> {
 
 pub fn tree_sitter_language(language: Language) -> TsLanguage {
     match language {
+        Language::C => tree_sitter_c::LANGUAGE.into(),
+        Language::Cpp => tree_sitter_cpp::LANGUAGE.into(),
         Language::Go => tree_sitter_go::LANGUAGE.into(),
         Language::Java => tree_sitter_java::LANGUAGE.into(),
         Language::JavaScript => tree_sitter_javascript::LANGUAGE.into(),
