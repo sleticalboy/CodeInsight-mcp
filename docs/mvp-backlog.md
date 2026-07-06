@@ -12,6 +12,7 @@ Initial supported languages:
 - Python
 - Go
 - Rust
+- Java
 
 Rust is included early so the project can index itself during development.
 
@@ -97,7 +98,7 @@ Rust is included early so the project can index itself during development.
 
 ### Language Expansion
 
-- [ ] Java
+- [x] Java
 - [ ] C / C++
 - [ ] C#
 - [ ] PHP or Ruby
@@ -133,5 +134,5 @@ Rust is included early so the project can index itself during development.
 ### v0.3.0
 
 - Basic call graph available.
-- More robust TypeScript, Python, Go, and Rust extraction.
+- More robust TypeScript, Python, Go, Rust, and Java extraction.
 - Benchmark report for token/context reduction.

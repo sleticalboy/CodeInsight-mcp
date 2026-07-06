@@ -761,8 +761,8 @@ fn cli_indexes_checked_in_polyglot_fixture() {
     let fixture = copy_fixture("tests/fixtures/polyglot");
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 5);
-    assert_eq!(index["changed_files"], 5);
+    assert_eq!(index["indexed_files"], 6);
+    assert_eq!(index["changed_files"], 6);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     for (query, expected_language) in [
@@ -770,6 +770,7 @@ fn cli_indexes_checked_in_polyglot_fixture() {
         ("legacyRender", "javascript"),
         ("AuthService", "python"),
         ("StartServer", "go"),
+        ("JavaService", "java"),
         ("RenderService", "rust"),
     ] {
         let symbols = run_json([

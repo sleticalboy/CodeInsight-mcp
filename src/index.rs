@@ -308,6 +308,10 @@ fn is_call_node(node: Node<'_>, language: Language) -> bool {
         | Language::JavaScript
         | Language::TypeScript
         | Language::Tsx => node.kind() == "call_expression",
+        Language::Java => matches!(
+            node.kind(),
+            "method_invocation" | "object_creation_expression"
+        ),
         Language::Python => node.kind() == "call",
     }
 }
@@ -315,6 +319,7 @@ fn is_call_node(node: Node<'_>, language: Language) -> bool {
 fn call_target_text(node: Node<'_>, source: &[u8]) -> Option<String> {
     node.child_by_field_name("function")
         .or_else(|| node.child_by_field_name("name"))
+        .or_else(|| node.child_by_field_name("type"))
         .or_else(|| node.child(0))
         .and_then(|child| child.utf8_text(source).ok())
         .map(ToOwned::to_owned)
@@ -611,6 +616,7 @@ fn dependencies_from_node(
     match language {
         Language::Python => python_dependencies(node, source, language, source_file),
         Language::Go => go_dependencies(node, source, language, source_file),
+        Language::Java => java_dependencies(node, source, language, source_file),
         Language::Rust => rust_dependencies(node, source, language, source_file),
         Language::JavaScript | Language::TypeScript | Language::Tsx => {
             javascript_like_dependencies(node, source, language, source_file)
@@ -712,6 +718,33 @@ fn go_dependencies(
             source_file,
             "import",
             string_literal_targets,
+        ),
+        _ => Vec::new(),
+    }
+}
+
+fn java_dependencies(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+) -> Vec<Dependency> {
+    match node.kind() {
+        "import_declaration" => text_dependencies(
+            node,
+            source,
+            language,
+            source_file,
+            "import",
+            java_import_targets,
+        ),
+        "package_declaration" => text_dependencies(
+            node,
+            source,
+            language,
+            source_file,
+            "package",
+            java_package_targets,
         ),
         _ => Vec::new(),
     }
@@ -1509,7 +1542,7 @@ fn resolve_dependency(root: &Path, dependency: &Dependency) -> Option<String> {
         }
         Language::Python => resolve_python_target(root, dependency),
         Language::Rust => resolve_rust_target(root, dependency),
-        Language::Go => None,
+        Language::Go | Language::Java => None,
     }
 }
 
@@ -1946,6 +1979,25 @@ fn python_import_targets(text: &str) -> Vec<String> {
         .unwrap_or_default()
 }
 
+fn java_import_targets(text: &str) -> Vec<String> {
+    text.trim()
+        .strip_prefix("import ")
+        .map(|target| target.trim_start_matches("static ").trim())
+        .map(|target| target.trim_end_matches(';').trim())
+        .filter(|target| !target.is_empty())
+        .map(|target| vec![target.to_string()])
+        .unwrap_or_default()
+}
+
+fn java_package_targets(text: &str) -> Vec<String> {
+    text.trim()
+        .strip_prefix("package ")
+        .map(|target| target.trim_end_matches(';').trim())
+        .filter(|target| !target.is_empty())
+        .map(|target| vec![target.to_string()])
+        .unwrap_or_default()
+}
+
 fn rust_use_targets(text: &str) -> Vec<String> {
     text.trim()
         .strip_prefix("use ")
@@ -2013,6 +2065,7 @@ fn symbol_from_node(
         Language::Python => python_symbol(node, source),
         Language::Rust => rust_symbol(node, source),
         Language::Go => go_symbol(node, source),
+        Language::Java => java_symbol(node, source),
         Language::JavaScript | Language::TypeScript | Language::Tsx => {
             javascript_like_symbol(node, source)
         }
@@ -2066,6 +2119,25 @@ fn go_symbol(node: Node<'_>, source: &[u8]) -> Option<(String, SymbolKind)> {
         "type_declaration" => find_go_type_name(node, source),
         "const_declaration" => find_go_value_name(node, source, SymbolKind::Constant),
         "var_declaration" => find_go_value_name(node, source, SymbolKind::Variable),
+        _ => None,
+    }
+}
+
+fn java_symbol(node: Node<'_>, source: &[u8]) -> Option<(String, SymbolKind)> {
+    match node.kind() {
+        "class_declaration" => {
+            child_text(node, "name", source).map(|name| (name, SymbolKind::Class))
+        }
+        "interface_declaration" | "annotation_type_declaration" => {
+            child_text(node, "name", source).map(|name| (name, SymbolKind::Interface))
+        }
+        "enum_declaration" | "record_declaration" => {
+            child_text(node, "name", source).map(|name| (name, SymbolKind::Struct))
+        }
+        "method_declaration" | "constructor_declaration" => {
+            child_text(node, "name", source).map(|name| (name, SymbolKind::Method))
+        }
+        "field_declaration" => find_java_field_name(node, source),
         _ => None,
     }
 }
@@ -2481,6 +2553,17 @@ fn find_go_value_name(
     None
 }
 
+fn find_java_field_name(node: Node<'_>, source: &[u8]) -> Option<(String, SymbolKind)> {
+    let mut cursor = node.walk();
+    for child in node_children(&mut cursor) {
+        if child.kind() == "variable_declarator" {
+            let name = child_text(child, "name", source)?;
+            return Some((name, SymbolKind::Variable));
+        }
+    }
+    None
+}
+
 fn is_inside_class(node: Node<'_>) -> bool {
     let mut current = node.parent();
     while let Some(parent) = current {
@@ -2742,6 +2825,61 @@ func (s *Service) Login() {}
         assert!(names.contains(&"Service"));
         assert!(names.contains(&"NewService"));
         assert!(names.contains(&"Login"));
+    }
+
+    #[test]
+    fn extracts_java_symbols_dependencies_and_calls() {
+        let source = r#"
+package com.example.auth;
+
+import java.util.List;
+import static java.util.Collections.emptyList;
+
+public class AuthService {
+    private String token;
+
+    public AuthService() {}
+
+    public boolean login(User user) {
+        audit(user);
+        return true;
+    }
+
+    private void audit(User user) {}
+}
+
+interface UserRepository {
+    User find(String id);
+}
+"#;
+        let symbols = extract_symbols(source, Language::Java, "AuthService.java").unwrap();
+        let names = symbols
+            .iter()
+            .map(|symbol| symbol.qualified_name.as_str())
+            .collect::<Vec<_>>();
+        assert!(names.contains(&"AuthService"));
+        assert!(names.contains(&"AuthService.token"));
+        assert!(names.contains(&"AuthService.AuthService"));
+        assert!(names.contains(&"AuthService.login"));
+        assert!(names.contains(&"AuthService.audit"));
+        assert!(names.contains(&"UserRepository"));
+        assert!(names.contains(&"UserRepository.find"));
+
+        let deps = extract_dependencies(source, Language::Java, "AuthService.java").unwrap();
+        let targets = deps
+            .iter()
+            .map(|dependency| dependency.target.as_str())
+            .collect::<Vec<_>>();
+        assert!(targets.contains(&"com.example.auth"));
+        assert!(targets.contains(&"java.util.List"));
+        assert!(targets.contains(&"java.util.Collections.emptyList"));
+
+        let calls = extract_calls(source, Language::Java, "AuthService.java", &symbols);
+        assert!(
+            calls
+                .iter()
+                .any(|call| call.caller == "AuthService.login" && call.callee == "audit")
+        );
     }
 
     #[test]

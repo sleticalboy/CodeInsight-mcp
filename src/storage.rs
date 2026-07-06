@@ -919,6 +919,7 @@ fn parse_symbol_kind(kind: &str) -> SymbolKind {
 fn parse_language(language: &str) -> Language {
     match language {
         "go" => Language::Go,
+        "java" => Language::Java,
         "python" => Language::Python,
         "rust" => Language::Rust,
         "typescript" => Language::TypeScript,

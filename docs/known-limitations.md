@@ -17,6 +17,7 @@ These capabilities are expected to be reliable for common source files in suppor
   - TypeScript/JavaScript classes, functions, interfaces, methods, and variables.
   - Go functions, methods, type declarations, consts, and vars.
   - Rust functions, structs, enums, traits, consts, statics, and simple impl methods.
+  - Java classes, interfaces, enums, records, methods, constructors, fields, package declarations, and imports.
 - Caching indexed files by content hash.
 - Skipping unchanged files during incremental indexing.
 - Removing stale index records for deleted files.
@@ -82,7 +83,7 @@ Limitations:
 - Package metadata fallback supports root package specifiers through `module`, `main`, `types`, and `typings`, plus package subpaths resolved as package-relative files or index files.
 - TypeScript and JavaScript `baseUrl`/`paths` resolution supports JSON-compatible `tsconfig.json` and `jsconfig.json` files with exact or single-wildcard path mappings, multiple fallback mappings, and directory index files.
 - Monorepo workspace boundaries are not modeled yet.
-- Go import paths are not resolved to files yet.
+- Go and Java import paths are not resolved to files yet.
 
 ### `context_pack`
 
@@ -110,7 +111,7 @@ Limitations:
 
 ### `callers` and `callees`
 
-`callers` and `callees` use a static call graph extracted from call expressions. Same-file calls are recorded by normalized callee name. JavaScript and TypeScript calls can also receive a `callee_file` hint when an obvious local import/export edge resolves to an indexed file with a matching symbol.
+`callers` and `callees` use a static call graph extracted from call expressions and Java method invocations. Same-file calls are recorded by normalized callee name. JavaScript and TypeScript calls can also receive a `callee_file` hint when an obvious local import/export edge resolves to an indexed file with a matching symbol.
 
 Currently supported JavaScript/TypeScript imported target hints:
 
@@ -146,12 +147,12 @@ Current MVP support:
 - JavaScript / TypeScript
 - Go
 - Rust
+- Java
 
 Rust support exists partly so the project can index itself during development.
 
 Planned expansion:
 
-- Java
 - C / C++
 - C#
 - PHP or Ruby

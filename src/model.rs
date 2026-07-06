@@ -6,6 +6,7 @@ use serde::Serialize;
 #[serde(rename_all = "snake_case")]
 pub enum Language {
     Go,
+    Java,
     #[serde(rename = "javascript")]
     JavaScript,
     Python,
@@ -19,6 +20,7 @@ impl Language {
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Go => "go",
+            Self::Java => "java",
             Self::JavaScript => "javascript",
             Self::Python => "python",
             Self::Rust => "rust",
