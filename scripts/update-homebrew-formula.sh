@@ -40,7 +40,6 @@ cat >"$formula_path" <<EOF
 class Codeinsight < Formula
   desc "Local-first code intelligence MCP server for AI agents"
   homepage "https://github.com/${repo}"
-  version "${version}"
   license "Apache-2.0"
 
   on_macos do
