@@ -166,14 +166,14 @@ MVP 不追求“支持最多语言”，而追求“核心场景闭环可用”�
 
 ### 5.3 `symbol_search`
 
-用途：按名称、类型和语言搜索符号。
+用途：按名称搜索符号。
 
 输入：
 
 ```json
 {
+  "root": "/absolute/path/to/repo",
   "query": "PaymentService",
-  "kind": ["class", "function", "method"],
   "limit": 20
 }
 ```
@@ -181,21 +181,17 @@ MVP 不追求“支持最多语言”，而追求“核心场景闭环可用”�
 输出：
 
 ```json
-{
-  "matches": [
-    {
-      "name": "PaymentService",
-      "kind": "class",
-      "language": "typescript",
-      "file": "src/payment/PaymentService.ts",
-      "range": {
-        "start_line": 12,
-        "end_line": 96
-      },
-      "score": 0.98
-    }
-  ]
-}
+[
+  {
+    "name": "PaymentService",
+    "qualified_name": "PaymentService",
+    "kind": "class",
+    "language": "typescript",
+    "file": "src/payment/PaymentService.ts",
+    "start_line": 12,
+    "end_line": 96
+  }
+]
 ```
 
 ### 5.4 `file_outline`
@@ -221,8 +217,9 @@ MVP 不追求“支持最多语言”，而追求“核心场景闭环可用”�
 
 ```json
 {
-  "symbol_id": "typescript:src/payment/PaymentService.ts:PaymentService",
-  "include_tests": true,
+  "root": "/absolute/path/to/repo",
+  "symbol": "PaymentService",
+  "include_definitions": false,
   "limit": 100
 }
 ```
@@ -233,6 +230,7 @@ MVP 不追求“支持最多语言”，而追求“核心场景闭环可用”�
 - 引用行号
 - 引用类型：调用、导入、继承、实现、赋值、读取
 - 上下文片段
+- 置信度
 
 ### 5.6 `callers`
 
@@ -242,17 +240,17 @@ MVP 不追求“支持最多语言”，而追求“核心场景闭环可用”�
 
 ```json
 {
-  "symbol_id": "go:internal/auth/service.go:ValidateToken",
-  "depth": 2,
+  "root": "/absolute/path/to/repo",
+  "symbol": "ValidateToken",
   "limit": 50
 }
 ```
 
 输出重点：
 
-- BFS 调用层级
-- 调用路径
+- 静态调用点
 - 文件和行号
+- 可解析时的 imported target file hint
 - 置信度
 
 ### 5.7 `callees`
@@ -269,17 +267,18 @@ MVP 不追求“支持最多语言”，而追求“核心场景闭环可用”�
 
 ```json
 {
-  "level": "directory",
-  "max_depth": 3
+  "root": "/absolute/path/to/repo",
+  "limit": 500
 }
 ```
 
 输出重点：
 
-- 节点：目录、包、模块
-- 边：import、require、use、mod、package dependency
-- 循环依赖候选
-- 高入度模块
+- root
+- dependencies
+- nodes
+- edges
+- 已解析的本地文件路径提示
 
 ### 5.9 `impact_analysis_basic`
 
@@ -510,4 +509,3 @@ MVP 先把 MCP 工具和 CLI 做稳定，再考虑 IDE 插件。
 - 每月活跃安装达到 1000。
 - 支持 8 种主流语言。
 - 真实用户反馈中，代码理解和定位问题场景有明确收益。
-
