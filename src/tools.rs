@@ -229,15 +229,38 @@ pub fn context_pack_value(
         );
     }
 
-    let mut call_graph_seeds = seed_symbols.iter().cloned().collect::<BTreeSet<_>>();
+    let mut callee_graph_seeds = seed_symbols.iter().cloned().collect::<BTreeSet<_>>();
+    let mut caller_graph_seeds = seed_symbols.iter().cloned().collect::<BTreeSet<_>>();
+    let mut seed_file_primary_symbols: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     for symbol in &symbols {
         if seed_file_set.contains(&symbol.file) && is_primary_seed_symbol(symbol) {
-            call_graph_seeds.insert(symbol.qualified_name.clone());
+            callee_graph_seeds.insert(symbol.qualified_name.clone());
+            seed_file_primary_symbols
+                .entry(symbol.file.clone())
+                .or_default()
+                .insert(symbol.qualified_name.clone());
+        }
+    }
+    for symbols in seed_file_primary_symbols.values() {
+        if symbols.len() <= 4 {
+            caller_graph_seeds.extend(symbols.iter().cloned());
         }
     }
 
     let store = Store::open(&root)?;
-    for seed in &call_graph_seeds {
+    for seed in &caller_graph_seeds {
+        for call in store.callers(seed, 20)? {
+            push_context_range(
+                &mut ranges_by_file,
+                call.file.clone(),
+                call.line.saturating_sub(2).max(1),
+                call.line + 2,
+                format!("Call graph caller of {} via {}", call.callee, call.caller),
+                CONTEXT_SCORE_CALL_GRAPH + call_task_boost(&call, &task_keywords),
+            );
+        }
+    }
+    for seed in &callee_graph_seeds {
         for call in store.callees(seed, 20)? {
             let Some(callee_file) = call.callee_file.clone() else {
                 continue;

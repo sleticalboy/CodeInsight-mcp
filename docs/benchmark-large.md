@@ -23,7 +23,7 @@ Environment:
 | express | JavaScript | `66878d3` | 141 | 21440 | 2428 | 72 | 0 | 3205 | 10000 | pass | 5.6M | 4 | 13 | 362 | 98.3% | 2360 | false | `lib/application.js` |
 | flask | Python | `36e4a82` | 83 | 18337 | 1620 | 153 | 0 | 292 | 5000 | pass | 968K | 1 | 4 | 159 | 99.1% | 1834 | false | `src/flask/app.py` |
 | gin | Go | `34dac20` | 99 | 24099 | 1857 | 31 | 0 | 453 | 5000 | pass | 1.6M | 1 | 9 | 229 | 99.0% | 2387 | false | `gin.go` |
-| tokio | Rust | `c637f6e` | 789 | 177186 | 8447 | 75 | 0 | 3049 | 20000 | pass | 5.8M | 5 | 7 | 135 | 99.9% | 979 | false | `tokio/src/lib.rs` |
+| tokio | Rust | `c637f6e` | 789 | 177186 | 8447 | 75 | 0 | 3049 | 20000 | pass | 5.8M | 11 | 15 | 188 | 99.9% | 1389 | false | `tokio/src/lib.rs` |
 
 ## Details
 
@@ -154,10 +154,10 @@ Language breakdown:
 - Index budget: 20000 ms (pass)
 - Context seed file: `tokio/src/lib.rs`
 - Context task: understand tokio runtime public API
-- Context files: 5
-- Context ranges: 7
-- Context lines: 135 of 177186 (99.9% reduction)
-- Context estimated tokens: 979
+- Context files: 11
+- Context ranges: 15
+- Context lines: 188 of 177186 (99.9% reduction)
+- Context estimated tokens: 1389
 - Context truncated: false
 
 Context pack files:
@@ -165,9 +165,15 @@ Context pack files:
 | File | Ranges | First range | Importances |
 | --- | ---: | --- | --- |
 | `tokio/src/lib.rs` | 3 | 1-1 | high |
+| `tokio/src/sync/once_cell.rs` | 2 | 353-357 | high |
+| `tokio/src/sync/watch.rs` | 2 | 985-989 | high |
+| `tokio/src/sync/barrier.rs` | 1 | 138-142 | high |
+| `tokio/src/sync/mpsc/bounded.rs` | 1 | 1271-1275 | high |
+| `tokio/src/sync/mutex.rs` | 1 | 654-658 | high |
 | `tokio/src/blocking.rs` | 1 | 1-40 | medium |
 | `tokio/src/future/mod.rs` | 1 | 1-28 | medium |
 | `tokio/src/loom/mod.rs` | 1 | 1-14 | medium |
+| `tokio/src/sync/tests/mod.rs` | 1 | 1-18 | medium |
 | `tokio/src/util/mod.rs` | 1 | 1-40 | medium |
 
 Language breakdown:

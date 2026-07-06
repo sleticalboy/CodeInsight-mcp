@@ -93,7 +93,7 @@ Current deterministic ranking order:
 - File seeds have the highest priority.
 - File seed ranges include header/import context plus primary top-level symbols. Large symbol and merged ranges are capped to keep small budgets useful. If no primary symbols are found, `context_pack` falls back to the first 80 lines.
 - Symbol definition ranges are next.
-- Static call graph target files from seed symbols and seed file primary symbols are ranked after definitions.
+- Static call graph target files from seed symbols and seed file primary symbols are ranked after definitions. Bounded caller files are also included for seed symbols and small seed files.
 - Text references are ranked after call graph targets, with reference confidence as a small boost.
 - Resolved local dependencies are included as supporting context after direct matches.
 - Task keywords provide a lightweight boost when they match symbol names, file paths, reference context, or dependency targets.
