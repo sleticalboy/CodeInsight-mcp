@@ -103,11 +103,12 @@ CodeInsight MCP Server
 
 ### 4.2 MVP 支持语言
 
-建议第一版只支持 3 种语言：
+当前 MVP 支持少量核心语言：
 
 - TypeScript / JavaScript
 - Python
 - Go
+- Rust
 
 原因：
 
@@ -116,7 +117,7 @@ CodeInsight MCP Server
 - 依赖关系和符号提取复杂度适中。
 - 可以快速验证 Agent 场景。
 
-Rust 和 Java 放到 MVP+，不要阻塞第一版。
+Java 放到 MVP+，不要阻塞第一版。Rust 已作为自索引和开发验证语言纳入当前支持范围。
 
 ### 4.3 MVP 必做功能
 
@@ -212,7 +213,7 @@ Rust 和 Java 放到 MVP+，不要阻塞第一版。
 
 交付物：
 
-- TypeScript/JavaScript、Python、Go 的 AST 解析。
+- TypeScript/JavaScript、Python、Go、Rust 的 AST 解析。
 - `file_outline` 可返回文件大纲。
 - `symbol_search` 可按名称查询。
 
@@ -248,8 +249,8 @@ Rust 和 Java 放到 MVP+，不要阻塞第一版。
 
 技术任务：
 
-- BFS 调用图查询。
-- 输出 confidence。
+- 基础 callers/callees 查询。
+- JavaScript/TypeScript imported target hints。
 - 增加性能采样日志。
 - 建立真实仓库 smoke test。
 
@@ -278,7 +279,7 @@ Rust 和 Java 放到 MVP+，不要阻塞第一版。
 
 目标：
 
-- 增加 Rust、Java 支持。
+- 完善 Rust 支持并评估 Java 支持。
 - 提升引用解析准确率。
 - 增加跨文件符号解析。
 - 支持 monorepo 多 package 识别。
@@ -495,7 +496,7 @@ Tree-sitter 只提供语法树，不等同于完整语义理解。跨文件引�
 
 应对：
 
-- MVP 限定 3 种语言。
+- MVP 限定少量核心语言，避免一次性扩展到 16 种语言。
 - 每个版本只围绕一个主目标。
 - 把 `context_pack` 定义为第一壁垒。
 
@@ -534,4 +535,3 @@ MCP 协议、SDK 和传输方式仍在演进。
 3. 能否让 AI Agent 少读文件并更快定位关键代码？
 
 如果这三个问题成立，再扩展语义搜索、安全分析、团队协作和商业化能力。
-
