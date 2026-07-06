@@ -328,41 +328,47 @@ pub fn context_pack_value(
         let mut selected_max_score = 0;
 
         for range in candidate.ranges {
-            let Some((start_line, mut end_line)) = first_uncovered_segment(
+            let uncovered_segments = uncovered_segments(
                 range.start_line,
                 range.end_line.min(lines.len().max(1)),
                 &selected_line_ranges,
-            ) else {
-                continue;
-            };
-            let mut excerpt = excerpt_lines(&lines, start_line, end_line);
-            let mut range_tokens = estimate_tokens(&excerpt);
-            if estimated_tokens + range_tokens > budget {
-                truncated = true;
-                if range.score >= CONTEXT_SCORE_SEED_FILE {
-                    let remaining_budget = budget.saturating_sub(estimated_tokens);
-                    if let Some((fitted_end_line, fitted_excerpt, fitted_tokens)) =
-                        fit_context_range_to_budget(&lines, start_line, end_line, remaining_budget)
-                    {
-                        end_line = fitted_end_line;
-                        excerpt = fitted_excerpt;
-                        range_tokens = fitted_tokens;
+            );
+
+            for (start_line, mut end_line) in uncovered_segments {
+                let mut excerpt = excerpt_lines(&lines, start_line, end_line);
+                let mut range_tokens = estimate_tokens(&excerpt);
+                if estimated_tokens + range_tokens > budget {
+                    truncated = true;
+                    if range.score >= CONTEXT_SCORE_SEED_FILE {
+                        let remaining_budget = budget.saturating_sub(estimated_tokens);
+                        if let Some((fitted_end_line, fitted_excerpt, fitted_tokens)) =
+                            fit_context_range_to_budget(
+                                &lines,
+                                start_line,
+                                end_line,
+                                remaining_budget,
+                            )
+                        {
+                            end_line = fitted_end_line;
+                            excerpt = fitted_excerpt;
+                            range_tokens = fitted_tokens;
+                        } else {
+                            continue;
+                        }
                     } else {
                         continue;
                     }
-                } else {
-                    continue;
                 }
+                estimated_tokens += range_tokens;
+                selected_max_score = selected_max_score.max(range.score);
+                selected_line_ranges.push((start_line, end_line));
+                context_ranges.push(ContextRange {
+                    start_line,
+                    end_line,
+                    importance: importance_for_score(range.score).to_string(),
+                    excerpt,
+                });
             }
-            estimated_tokens += range_tokens;
-            selected_max_score = selected_max_score.max(range.score);
-            selected_line_ranges.push((start_line, end_line));
-            context_ranges.push(ContextRange {
-                start_line,
-                end_line,
-                importance: importance_for_score(range.score).to_string(),
-                excerpt,
-            });
         }
 
         if !context_ranges.is_empty() {
@@ -617,16 +623,17 @@ fn range_len(start_line: usize, end_line: usize) -> usize {
     end_line.saturating_sub(start_line) + 1
 }
 
-fn first_uncovered_segment(
+fn uncovered_segments(
     start_line: usize,
     end_line: usize,
     selected_ranges: &[(usize, usize)],
-) -> Option<(usize, usize)> {
+) -> Vec<(usize, usize)> {
     if start_line > end_line {
-        return None;
+        return Vec::new();
     }
 
     let mut cursor = start_line;
+    let mut segments = Vec::new();
     let mut overlaps = selected_ranges
         .iter()
         .copied()
@@ -641,15 +648,16 @@ fn first_uncovered_segment(
             continue;
         }
         if selected_start > cursor {
-            return Some((cursor, (selected_start - 1).min(end_line)));
+            segments.push((cursor, (selected_start - 1).min(end_line)));
         }
         cursor = cursor.max(selected_end.saturating_add(1));
         if cursor > end_line {
-            return None;
+            return segments;
         }
     }
 
-    Some((cursor, end_line))
+    segments.push((cursor, end_line));
+    segments
 }
 
 fn excerpt_lines(lines: &[&str], start_line: usize, end_line: usize) -> String {
@@ -835,6 +843,16 @@ fn normalize_seed_file(root: &Path, file: &str) -> Result<String> {
         .strip_prefix(root)
         .with_context(|| format!("seed file is outside project root: {file}"))?;
     Ok(relative.to_string_lossy().replace('\\', "/"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn uncovered_segments_keeps_ranges_after_selected_overlap() {
+        assert_eq!(uncovered_segments(1, 10, &[(4, 6)]), vec![(1, 3), (7, 10)]);
+    }
 }
 
 fn estimate_tokens(text: &str) -> usize {
