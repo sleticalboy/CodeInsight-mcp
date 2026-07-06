@@ -95,7 +95,8 @@ scripts/release-install-smoke.sh
 Install directly from the formula in this repository:
 
 ```bash
-brew install --formula https://raw.githubusercontent.com/sleticalboy/CodeInsight-mcp/main/Formula/codeinsight.rb
+brew tap sleticalboy/codeinsight-mcp https://github.com/sleticalboy/CodeInsight-mcp
+brew install sleticalboy/codeinsight-mcp/codeinsight
 ```
 
 ## Install From Source
