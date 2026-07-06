@@ -1,12 +1,13 @@
 use std::{
     collections::HashSet,
     fs,
-    path::{Path, PathBuf},
+    path::{Component, Path, PathBuf},
     time::Instant,
 };
 
 use anyhow::{Context, Result};
 use ignore::WalkBuilder;
+use serde_json::Value;
 use sha2::{Digest, Sha256};
 use tree_sitter::{Node, Parser, TreeCursor};
 
@@ -1503,12 +1504,9 @@ fn resolve_dependencies(root: &Path, dependencies: &mut [Dependency]) {
 
 fn resolve_dependency(root: &Path, dependency: &Dependency) -> Option<String> {
     match dependency.language {
-        Language::JavaScript | Language::TypeScript | Language::Tsx => resolve_relative_target(
-            root,
-            &dependency.source_file,
-            &dependency.target,
-            &["ts", "tsx", "js", "jsx", "mjs", "cjs"],
-        ),
+        Language::JavaScript | Language::TypeScript | Language::Tsx => {
+            resolve_javascript_like_target(root, dependency)
+        }
         Language::Python => resolve_python_target(root, dependency),
         Language::Rust => resolve_rust_target(root, dependency),
         Language::Go => None,
@@ -1535,6 +1533,133 @@ fn resolve_rust_target(root: &Path, dependency: &Dependency) -> Option<String> {
     }
 
     None
+}
+
+fn resolve_javascript_like_target(root: &Path, dependency: &Dependency) -> Option<String> {
+    const EXTENSIONS: &[&str] = &["ts", "tsx", "js", "jsx", "mjs", "cjs"];
+    resolve_relative_target(
+        root,
+        &dependency.source_file,
+        &dependency.target,
+        EXTENSIONS,
+    )
+    .or_else(|| resolve_tsconfig_target(root, dependency, EXTENSIONS))
+}
+
+fn resolve_tsconfig_target(
+    root: &Path,
+    dependency: &Dependency,
+    extensions: &[&str],
+) -> Option<String> {
+    if dependency.target.starts_with('.') || dependency.target.starts_with('/') {
+        return None;
+    }
+
+    let config_path = find_javascript_config(root, &dependency.source_file)?;
+    let config_text = fs::read_to_string(root.join(&config_path)).ok()?;
+    let config: Value = serde_json::from_str(&config_text).ok()?;
+    let compiler_options = config.get("compilerOptions")?;
+    let config_dir = config_path.parent().unwrap_or(Path::new(""));
+    let base_dir = compiler_options
+        .get("baseUrl")
+        .and_then(Value::as_str)
+        .map(|base_url| config_dir.join(base_url))
+        .unwrap_or_else(|| config_dir.to_path_buf());
+
+    if let Some(paths_target) = resolve_tsconfig_paths_target(
+        root,
+        &dependency.target,
+        compiler_options,
+        &base_dir,
+        extensions,
+    ) {
+        return Some(paths_target);
+    }
+
+    resolve_base(root, base_dir.join(&dependency.target), extensions)
+}
+
+fn find_javascript_config(root: &Path, source_file: &str) -> Option<PathBuf> {
+    let mut current = Path::new(source_file)
+        .parent()
+        .unwrap_or(Path::new(""))
+        .to_path_buf();
+
+    loop {
+        for filename in ["tsconfig.json", "jsconfig.json"] {
+            let candidate = current.join(filename);
+            if root.join(&candidate).is_file() {
+                return Some(candidate);
+            }
+        }
+
+        if current.as_os_str().is_empty() {
+            return None;
+        }
+        current.pop();
+    }
+}
+
+fn resolve_tsconfig_paths_target(
+    root: &Path,
+    target: &str,
+    compiler_options: &Value,
+    base_dir: &Path,
+    extensions: &[&str],
+) -> Option<String> {
+    let paths = compiler_options.get("paths")?.as_object()?;
+    for (pattern, mappings) in paths {
+        let wildcard = tsconfig_path_wildcard(pattern, target)?;
+        let Some(mapping_values) = mappings.as_array() else {
+            continue;
+        };
+        for mapping in mapping_values.iter().filter_map(Value::as_str) {
+            let mapped = apply_tsconfig_path_mapping(mapping, wildcard.as_deref())?;
+            if let Some(resolved) = resolve_base(root, base_dir.join(mapped), extensions) {
+                return Some(resolved);
+            }
+        }
+    }
+    None
+}
+
+fn tsconfig_path_wildcard(pattern: &str, target: &str) -> Option<Option<String>> {
+    let Some(star_index) = pattern.find('*') else {
+        return (pattern == target).then_some(None);
+    };
+    if pattern[star_index + 1..].contains('*') {
+        return None;
+    }
+
+    let prefix = &pattern[..star_index];
+    let suffix = &pattern[star_index + 1..];
+    if target.starts_with(prefix)
+        && target.ends_with(suffix)
+        && target.len() >= prefix.len() + suffix.len()
+    {
+        Some(Some(
+            target[prefix.len()..target.len() - suffix.len()].to_string(),
+        ))
+    } else {
+        None
+    }
+}
+
+fn apply_tsconfig_path_mapping(mapping: &str, wildcard: Option<&str>) -> Option<PathBuf> {
+    if let Some(star_index) = mapping.find('*') {
+        if mapping[star_index + 1..].contains('*') {
+            return None;
+        }
+        let wildcard = wildcard?;
+        return Some(PathBuf::from(format!(
+            "{}{}{}",
+            &mapping[..star_index],
+            wildcard,
+            &mapping[star_index + 1..]
+        )));
+    }
+
+    Some(PathBuf::from(mapping))
 }
 
 fn resolve_relative_target(
@@ -2218,7 +2343,9 @@ fn should_enter(path: &Path) -> bool {
 
 #[allow(dead_code)]
 fn normalize_path(path: &Path) -> PathBuf {
-    path.components().collect()
+    path.components()
+        .filter(|component| !matches!(component, Component::CurDir))
+        .collect()
 }
 
 #[cfg(test)]

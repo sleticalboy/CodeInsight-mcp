@@ -44,7 +44,7 @@ Implemented:
 
 Next:
 
-- improve JavaScript external dynamic import handlers and variable-based `require(...)` call graph resolution
+- improve package export resolution and broader TypeScript path alias coverage
 
 ## Install From Release
 

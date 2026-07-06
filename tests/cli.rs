@@ -9,13 +9,13 @@ fn cli_indexes_and_queries_fixture_project() {
     let fixture = fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 9);
-    assert_eq!(index["changed_files"], 9);
+    assert_eq!(index["indexed_files"], 10);
+    assert_eq!(index["changed_files"], 10);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let second_index = run_json(["index", fixture.path().to_str().unwrap()]);
     assert_eq!(second_index["changed_files"], 0);
-    assert_eq!(second_index["unchanged_files"], 9);
+    assert_eq!(second_index["unchanged_files"], 10);
 
     let symbols = run_json([
         "symbols",
@@ -30,7 +30,7 @@ fn cli_indexes_and_queries_fixture_project() {
         "dependency-graph",
         fixture.path().to_str().unwrap(),
         "--limit",
-        "20",
+        "50",
     ]);
     let targets = deps["dependencies"]
         .as_array()
@@ -40,6 +40,7 @@ fn cli_indexes_and_queries_fixture_project() {
         .collect::<Vec<_>>();
     assert!(targets.contains(&"os"));
     assert!(targets.contains(&"./ui"));
+    assert!(targets.contains(&"@app/path-ui"));
     assert!(
         deps["dependencies"]
             .as_array()
@@ -47,6 +48,16 @@ fn cli_indexes_and_queries_fixture_project() {
             .iter()
             .any(|dependency| {
                 dependency["target"] == "./ui" && dependency["resolved_file"] == "src/ui.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "@app/path-ui"
+                    && dependency["resolved_file"] == "src/path-ui.ts"
             })
     );
 
@@ -474,6 +485,19 @@ fn cli_indexes_and_queries_fixture_project() {
                 call["callee"] == "thenUi.render" && call["callee_file"] == "src/ui.ts"
             })
     );
+
+    let path_alias_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "pathAliasMain",
+        "--limit",
+        "5",
+    ]);
+    assert!(
+        path_alias_callees.as_array().unwrap().iter().any(|call| {
+            call["callee"] == "pathRender" && call["callee_file"] == "src/path-ui.ts"
+        })
+    );
 }
 
 #[test]
@@ -555,6 +579,20 @@ fn run_json<const N: usize>(args: [&str; N]) -> Value {
 fn fixture_project() -> TempDir {
     let dir = TempDir::new().unwrap();
     std::fs::create_dir_all(dir.path().join("src")).unwrap();
+    write_file(
+        &dir,
+        "tsconfig.json",
+        r#"
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@app/*": ["src/*"]
+    }
+  }
+}
+"#,
+    );
 
     write_file(
         &dir,
@@ -598,6 +636,7 @@ import drawDefault from "./ui";
 import { relayRender, relayDefault, render as starRender, uiApi } from "./barrel";
 import { finalApi, finalDefault, finalRender } from "./barrel2";
 import * as ui from "./ui";
+import { pathRender } from "@app/path-ui";
 const { render: draw } = require("./ui");
 const uiModule = require("./ui");
 const computedUiModule = require("./" + "ui");
@@ -672,6 +711,10 @@ export function dynamicImportThenMain() {
     thenUi.render();
   });
 }
+
+export function pathAliasMain() {
+  pathRender();
+}
 "#,
     );
     write_file(
@@ -700,6 +743,15 @@ export function render() {
 
 export default function defaultRender() {
   return "default";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/path-ui.ts",
+        r#"
+export function pathRender() {
+  return "path";
 }
 "#,
     );
