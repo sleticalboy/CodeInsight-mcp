@@ -8,7 +8,7 @@ use crate::model::{
     SourceFile, Symbol, SymbolKind,
 };
 
-pub const SCHEMA_VERSION: i64 = 5;
+pub const SCHEMA_VERSION: i64 = 6;
 pub const INDEX_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub struct Store {
@@ -443,7 +443,19 @@ impl Store {
                             case
                                 when d.local_alias = c.callee
                                   and d.imported_symbol is not null
-                                  and (s.name = d.imported_symbol or s.qualified_name = d.imported_symbol)
+                                  and (
+                                    s.name = d.imported_symbol
+                                    or s.qualified_name = d.imported_symbol
+                                    or s.qualified_name like '%.' || d.imported_symbol
+                                  )
+                                    then 0
+                                when d.imported_symbol = '*'
+                                  and c.callee like d.local_alias || '.%'
+                                  and (
+                                    s.name = substr(c.callee, length(d.local_alias) + 2)
+                                    or s.qualified_name = substr(c.callee, length(d.local_alias) + 2)
+                                    or s.qualified_name like '%.' || substr(c.callee, length(d.local_alias) + 2)
+                                  )
                                     then 0
                                 when s.name = c.callee then 1
                                 else 2
@@ -468,6 +480,15 @@ impl Store {
                             s.name = d.imported_symbol
                             or s.qualified_name = d.imported_symbol
                             or s.qualified_name like '%.' || d.imported_symbol
+                        )
+                    )
+                    or (
+                        d.imported_symbol = '*'
+                        and c.callee like d.local_alias || '.%'
+                        and (
+                            s.name = substr(c.callee, length(d.local_alias) + 2)
+                            or s.qualified_name = substr(c.callee, length(d.local_alias) + 2)
+                            or s.qualified_name like '%.' || substr(c.callee, length(d.local_alias) + 2)
                         )
                     )
                   )
@@ -787,7 +808,7 @@ mod tests {
                 key text primary key,
                 value text not null
             );
-            insert into index_meta (key, value) values ('schema_version', '5');
+            insert into index_meta (key, value) values ('schema_version', '6');
 
             create table files (
                 id integer primary key autoincrement,

@@ -239,6 +239,34 @@ fn cli_indexes_and_queries_fixture_project() {
             .iter()
             .any(|call| { call["callee"] == "draw" && call["callee_file"] == "src/ui.ts" })
     );
+
+    let namespace_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "namespaceMain",
+        "--limit",
+        "5",
+    ]);
+    assert!(
+        namespace_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| { call["callee"] == "ui.render" && call["callee_file"] == "src/ui.ts" })
+    );
+
+    let module_alias_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "moduleAliasMain",
+        "--limit",
+        "5",
+    ]);
+    assert!(
+        module_alias_callees.as_array().unwrap().iter().any(|call| {
+            call["callee"] == "uiModule.render" && call["callee_file"] == "src/ui.ts"
+        })
+    );
 }
 
 #[test]
@@ -359,7 +387,9 @@ def build_service():
         "src/main.ts",
         r#"
 import { render } from "./ui";
+import * as ui from "./ui";
 const { render: draw } = require("./ui");
+const uiModule = require("./ui");
 
 export function main() {
   render();
@@ -367,6 +397,14 @@ export function main() {
 
 export function aliasMain() {
   draw();
+}
+
+export function namespaceMain() {
+  ui.render();
+}
+
+export function moduleAliasMain() {
+  uiModule.render();
 }
 "#,
     );

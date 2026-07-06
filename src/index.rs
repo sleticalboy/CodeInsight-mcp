@@ -803,27 +803,59 @@ fn javascript_import_alias_dependencies(
     source_file: &str,
 ) -> Vec<Dependency> {
     let text = node.utf8_text(source).unwrap_or_default();
-    let Some(named_imports) = braced_segment(text) else {
-        return Vec::new();
-    };
     let Some(target) = string_literal_targets(text).into_iter().next() else {
         return Vec::new();
     };
+    let mut dependencies = Vec::new();
 
-    import_named_aliases(named_imports)
-        .into_iter()
-        .filter(|(imported_symbol, local_alias)| imported_symbol != local_alias)
-        .map(|(imported_symbol, local_alias)| {
-            alias_dependency(
-                source_file,
-                &target,
-                language,
-                node.start_position().row + 1,
-                imported_symbol,
-                local_alias,
-            )
-        })
-        .collect()
+    if let Some(local_alias) = import_namespace_alias(text) {
+        dependencies.push(namespace_dependency(
+            source_file,
+            &target,
+            language,
+            node.start_position().row + 1,
+            local_alias,
+        ));
+    }
+
+    let Some(named_imports) = braced_segment(text) else {
+        return dependencies;
+    };
+
+    dependencies.extend(
+        import_named_aliases(named_imports)
+            .into_iter()
+            .filter(|(imported_symbol, local_alias)| imported_symbol != local_alias)
+            .map(|(imported_symbol, local_alias)| {
+                alias_dependency(
+                    source_file,
+                    &target,
+                    language,
+                    node.start_position().row + 1,
+                    imported_symbol,
+                    local_alias,
+                )
+            }),
+    );
+    dependencies
+}
+
+fn import_namespace_alias(raw: &str) -> Option<String> {
+    let specifier = raw.trim().strip_prefix("import")?.trim();
+    let mut parts = specifier.split_whitespace();
+    if parts.clone().next() == Some("type") {
+        parts.next();
+    }
+    if parts.next()? != "*" || parts.next()? != "as" {
+        return None;
+    }
+
+    let alias = parts.next()?;
+    if parts.next() == Some("from") && is_js_identifier(alias) {
+        Some(alias.to_string())
+    } else {
+        None
+    }
 }
 
 fn javascript_require_alias_dependencies(
@@ -839,9 +871,6 @@ fn javascript_require_alias_dependencies(
         return Vec::new();
     };
     let name = name.trim();
-    if !name.starts_with('{') {
-        return Vec::new();
-    }
 
     let value = node
         .child_by_field_name("value")
@@ -854,6 +883,20 @@ fn javascript_require_alias_dependencies(
     let Some(target) = string_literal_targets(value).into_iter().next() else {
         return Vec::new();
     };
+
+    if is_js_identifier(name) {
+        return vec![namespace_dependency(
+            source_file,
+            &target,
+            language,
+            node.start_position().row + 1,
+            name.to_string(),
+        )];
+    }
+
+    if !name.starts_with('{') {
+        return Vec::new();
+    }
     let Some(bindings) = braced_segment(name) else {
         return Vec::new();
     };
@@ -889,6 +932,25 @@ fn alias_dependency(
         local_alias: Some(local_alias),
         imported_symbol: Some(imported_symbol),
         kind: "import_alias".to_string(),
+        language,
+        line,
+    }
+}
+
+fn namespace_dependency(
+    source_file: &str,
+    target: &str,
+    language: Language,
+    line: usize,
+    local_alias: String,
+) -> Dependency {
+    Dependency {
+        source_file: source_file.to_string(),
+        target: target.to_string(),
+        resolved_file: None,
+        local_alias: Some(local_alias),
+        imported_symbol: Some("*".to_string()),
+        kind: "import_namespace".to_string(),
         language,
         line,
     }
@@ -1975,8 +2037,10 @@ fn helper() {}
     fn extracts_dependencies() {
         let ts = r#"
 import { readFile as loadFile } from "node:fs";
+import * as pathApi from "node:path";
 const auth = require("./auth");
 const { render: draw } = require("./ui");
+const uiModule = require("./ui");
 "#;
         let deps = extract_dependencies(ts, Language::TypeScript, "src/index.ts").unwrap();
         let targets = deps
@@ -1994,6 +2058,16 @@ const { render: draw } = require("./ui");
             dependency.target == "./ui"
                 && dependency.local_alias.as_deref() == Some("draw")
                 && dependency.imported_symbol.as_deref() == Some("render")
+        }));
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "node:path"
+                && dependency.local_alias.as_deref() == Some("pathApi")
+                && dependency.imported_symbol.as_deref() == Some("*")
+        }));
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "./ui"
+                && dependency.local_alias.as_deref() == Some("uiModule")
+                && dependency.imported_symbol.as_deref() == Some("*")
         }));
 
         let py = "from app.auth import service\nimport os, sys\n";
