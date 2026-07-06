@@ -280,7 +280,8 @@ fn visit_call_node(
         && let Some(callee) = normalize_callee(&raw_target, language)
     {
         let line = node.start_position().row + 1;
-        let caller = caller_for_line(symbols, line).unwrap_or_else(|| "<module>".to_string());
+        let caller = caller_for_call_node(node, source, language, symbols, line)
+            .unwrap_or_else(|| "<module>".to_string());
         calls.push(CallEdge {
             file: source_file.to_string(),
             caller,
@@ -522,6 +523,67 @@ fn caller_for_line(symbols: &[Symbol], line: usize) -> Option<String> {
         })
         .max_by_key(|symbol| symbol.start_line)
         .map(|symbol| symbol.qualified_name.clone())
+}
+
+fn caller_for_call_node(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    symbols: &[Symbol],
+    line: usize,
+) -> Option<String> {
+    if matches!(
+        language,
+        Language::JavaScript | Language::TypeScript | Language::Tsx
+    ) && let Some(caller) = javascript_callback_caller(node, source, language)
+    {
+        return Some(caller);
+    }
+
+    caller_for_line(symbols, line)
+}
+
+fn javascript_callback_caller(node: Node<'_>, source: &[u8], language: Language) -> Option<String> {
+    let mut current = node.parent();
+    while let Some(parent) = current {
+        if matches!(parent.kind(), "function_expression" | "arrow_function")
+            && let Some(caller) = javascript_callback_context(parent, source, language)
+        {
+            return Some(caller);
+        }
+        current = parent.parent();
+    }
+
+    None
+}
+
+fn javascript_callback_context(
+    function_node: Node<'_>,
+    source: &[u8],
+    language: Language,
+) -> Option<String> {
+    let mut current = function_node.parent();
+    while let Some(parent) = current {
+        if parent.kind() == "call_expression" {
+            let target_node = parent
+                .child_by_field_name("function")
+                .or_else(|| parent.child_by_field_name("name"))
+                .or_else(|| parent.child(0))?;
+            if target_node.start_byte() <= function_node.start_byte()
+                && function_node.end_byte() <= target_node.end_byte()
+            {
+                return None;
+            }
+
+            let raw_target = target_node.utf8_text(source).ok()?;
+            let callee = normalize_callee(raw_target, language)?;
+            return Some(format!("{callee}.<callback>"));
+        }
+
+        current = parent.parent();
+    }
+
+    None
 }
 
 fn visit_dependency_node(
@@ -1402,6 +1464,35 @@ function register(app, method, handler) {
         assert!(callees.contains(&"router.route.patch"));
         assert!(callees.contains(&"module.exports.create"));
         assert!(callees.contains(&"helper"));
+    }
+
+    #[test]
+    fn attributes_javascript_callback_callers() {
+        let source = r#"
+describe("routes", function () {
+  it("registers", function () {
+    app.route("/ok").get(function (req, res) {
+      res.send("ok");
+    });
+  });
+});
+"#;
+        let symbols = extract_symbols(source, Language::JavaScript, "routes.test.js").unwrap();
+        let calls = extract_calls(source, Language::JavaScript, "routes.test.js", &symbols);
+
+        assert!(
+            calls
+                .iter()
+                .any(|call| { call.caller == "describe.<callback>" && call.callee == "it" })
+        );
+        assert!(
+            calls
+                .iter()
+                .any(|call| { call.caller == "it.<callback>" && call.callee == "app.route.get" })
+        );
+        assert!(calls.iter().any(|call| {
+            call.caller == "app.route.get.<callback>" && call.callee == "res.send"
+        }));
     }
 
     #[test]

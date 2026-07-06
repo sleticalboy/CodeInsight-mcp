@@ -44,7 +44,7 @@ Implemented:
 
 Next:
 
-- improve JavaScript call graph caller attribution for callback-heavy code
+- improve JavaScript symbol extraction for named function expressions and arrow assignments
 
 ## Install From Release
 
