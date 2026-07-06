@@ -44,7 +44,7 @@ Implemented:
 
 Next:
 
-- improve JavaScript symbol extraction for destructured function assignments
+- add benchmark symbol guardrails for JavaScript destructured bindings
 
 ## Install From Release
 

@@ -625,6 +625,28 @@ fn visit_node(
     scope: &mut Vec<String>,
     symbols: &mut Vec<Symbol>,
 ) {
+    if matches!(
+        language,
+        Language::JavaScript | Language::TypeScript | Language::Tsx
+    ) && node.kind() == "variable_declarator"
+    {
+        for (name, kind) in javascript_variable_declarator_symbols(node, source) {
+            symbols.push(Symbol {
+                name: name.clone(),
+                qualified_name: if scope.is_empty() {
+                    name
+                } else {
+                    format!("{}.{}", scope.join("."), name)
+                },
+                kind,
+                language,
+                file: file.to_string(),
+                start_line: node.start_position().row + 1,
+                end_line: node.end_position().row + 1,
+            });
+        }
+    }
+
     if let Some((name, kind)) = symbol_from_node(node, source, language) {
         let qualified_name = if scope.is_empty() {
             name.clone()
@@ -1032,7 +1054,6 @@ fn javascript_like_symbol(node: Node<'_>, source: &[u8]) -> Option<(String, Symb
         "interface_declaration" => {
             child_text(node, "name", source).map(|name| (name, SymbolKind::Interface))
         }
-        "variable_declarator" => javascript_variable_declarator_symbol(node, source),
         "assignment_expression" => javascript_assignment_symbol(node, source),
         _ => None,
     }
@@ -1069,28 +1090,118 @@ fn javascript_object_pair_symbol(node: Node<'_>, source: &[u8]) -> Option<(Strin
     Some((name, SymbolKind::Method))
 }
 
-fn javascript_variable_declarator_symbol(
+fn javascript_variable_declarator_symbols(
     node: Node<'_>,
     source: &[u8],
-) -> Option<(String, SymbolKind)> {
-    let name = child_text(node, "name", source)?;
-    if !is_js_identifier(&name) {
-        return None;
-    }
-
+) -> Vec<(String, SymbolKind)> {
+    let Some(name_node) = node.child_by_field_name("name").or_else(|| node.child(0)) else {
+        return Vec::new();
+    };
     let value = node
         .child_by_field_name("value")
         .or_else(|| node.child_by_field_name("right"))
         .and_then(|child| child.utf8_text(source).ok())
         .unwrap_or_default()
         .trim();
-    let kind = if is_js_function_value(value) {
-        SymbolKind::Function
-    } else {
-        SymbolKind::Variable
-    };
 
-    Some((name, kind))
+    if let Ok(name) = name_node.utf8_text(source)
+        && is_js_identifier(name.trim())
+    {
+        let kind = if is_js_function_value(value) {
+            SymbolKind::Function
+        } else {
+            SymbolKind::Variable
+        };
+        return vec![(name.trim().to_string(), kind)];
+    }
+
+    let mut symbols = Vec::new();
+    collect_js_binding_symbols(name_node, source, SymbolKind::Variable, &mut symbols);
+    symbols
+}
+
+fn collect_js_binding_symbols(
+    node: Node<'_>,
+    source: &[u8],
+    fallback_kind: SymbolKind,
+    symbols: &mut Vec<(String, SymbolKind)>,
+) {
+    match node.kind() {
+        "identifier" | "shorthand_property_identifier_pattern" => {
+            if let Ok(name) = node.utf8_text(source)
+                && is_js_identifier(name.trim())
+                && !symbols.iter().any(|(existing, _)| existing == name.trim())
+            {
+                symbols.push((name.trim().to_string(), fallback_kind));
+            }
+        }
+        "pair_pattern" => {
+            if let Some(value) = node.child_by_field_name("value") {
+                collect_js_binding_symbols(value, source, fallback_kind, symbols);
+            } else if let Some(key) = node.child_by_field_name("key") {
+                collect_js_binding_symbols(key, source, fallback_kind, symbols);
+            }
+        }
+        "assignment_pattern" => {
+            let field_default_is_function = node
+                .child_by_field_name("right")
+                .or_else(|| node.child_by_field_name("value"))
+                .and_then(|child| child.utf8_text(source).ok())
+                .is_some_and(is_js_function_value);
+            let text_default_is_function = node
+                .utf8_text(source)
+                .ok()
+                .and_then(|text| {
+                    let equals = top_level_index(text, '=')?;
+                    Some(text[equals + 1..].trim())
+                })
+                .is_some_and(is_js_function_value);
+            let kind = if field_default_is_function || text_default_is_function {
+                SymbolKind::Function
+            } else {
+                fallback_kind
+            };
+            if let Some(left) = node.child_by_field_name("left").or_else(|| node.child(0)) {
+                collect_js_binding_symbols(left, source, kind, symbols);
+            }
+        }
+        "rest_pattern" => {
+            let mut cursor = node.walk();
+            for child in node_children(&mut cursor)
+                .into_iter()
+                .filter(|child| child.is_named())
+            {
+                collect_js_binding_symbols(child, source, fallback_kind.clone(), symbols);
+            }
+        }
+        "object_pattern" | "array_pattern" => {
+            let mut cursor = node.walk();
+            for child in node_children(&mut cursor)
+                .into_iter()
+                .filter(|child| child.is_named())
+            {
+                collect_js_binding_symbols(child, source, fallback_kind.clone(), symbols);
+            }
+        }
+        _ => {
+            if let Ok(text) = node.utf8_text(source)
+                && let Some(equals) = top_level_index(text, '=')
+                && is_js_function_value(text[equals + 1..].trim())
+                && let Some(left) = node.child(0)
+            {
+                collect_js_binding_symbols(left, source, SymbolKind::Function, symbols);
+                return;
+            }
+
+            let mut cursor = node.walk();
+            for child in node_children(&mut cursor)
+                .into_iter()
+                .filter(|child| child.is_named())
+            {
+                collect_js_binding_symbols(child, source, fallback_kind.clone(), symbols);
+            }
+        }
+    }
 }
 
 fn javascript_assignment_symbol(node: Node<'_>, source: &[u8]) -> Option<(String, SymbolKind)> {
@@ -1520,6 +1631,31 @@ exports.tools = {
         assert_eq!(kind_for("module.exports.create"), Some(SymbolKind::Method));
         assert_eq!(kind_for("exports.tools.run"), Some(SymbolKind::Method));
         assert_eq!(kind_for("handlers.count"), None);
+    }
+
+    #[test]
+    fn extracts_javascript_destructured_binding_symbols() {
+        let source = r#"
+const { handler, getUser: userHandler, nested: { saveUser }, list = () => true, ...rest } = controllers;
+const [firstHandler, , thirdHandler] = handlers;
+"#;
+        let symbols = extract_symbols(source, Language::JavaScript, "bindings.js").unwrap();
+        let kind_for = |name: &str| {
+            symbols
+                .iter()
+                .find(|symbol| symbol.qualified_name == name)
+                .map(|symbol| symbol.kind.clone())
+        };
+
+        assert_eq!(kind_for("handler"), Some(SymbolKind::Variable));
+        assert_eq!(kind_for("userHandler"), Some(SymbolKind::Variable));
+        assert_eq!(kind_for("saveUser"), Some(SymbolKind::Variable));
+        assert_eq!(kind_for("list"), Some(SymbolKind::Function));
+        assert_eq!(kind_for("rest"), Some(SymbolKind::Variable));
+        assert_eq!(kind_for("firstHandler"), Some(SymbolKind::Variable));
+        assert_eq!(kind_for("thirdHandler"), Some(SymbolKind::Variable));
+        assert_eq!(kind_for("getUser"), None);
+        assert_eq!(kind_for("nested"), None);
     }
 
     #[test]
