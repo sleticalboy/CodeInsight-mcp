@@ -111,6 +111,7 @@ CodeInsight MCP Server
 - Rust
 - Java
 - C / C++
+- C#
 
 原因：
 
@@ -119,7 +120,7 @@ CodeInsight MCP Server
 - 依赖关系和符号提取复杂度适中。
 - 可以快速验证 Agent 场景。
 
-Java 和 C/C++ 已作为语法级基础索引语言纳入当前支持范围。Rust 已作为自索引和开发验证语言纳入当前支持范围。
+Java、C/C++ 和 C# 已作为语法级基础索引语言纳入当前支持范围。Rust 已作为自索引和开发验证语言纳入当前支持范围。
 
 ### 4.3 MVP 必做功能
 
@@ -215,7 +216,7 @@ Java 和 C/C++ 已作为语法级基础索引语言纳入当前支持范围。Ru
 
 交付物：
 
-- TypeScript/JavaScript、Python、Go、Rust、Java、C/C++ 的 AST 解析。
+- TypeScript/JavaScript、Python、Go、Rust、Java、C/C++、C# 的 AST 解析。
 - `file_outline` 可返回文件大纲。
 - `symbol_search` 可按名称查询。
 
@@ -281,7 +282,7 @@ Java 和 C/C++ 已作为语法级基础索引语言纳入当前支持范围。Ru
 
 目标：
 
-- 完善 Rust、Java 和 C/C++ 支持。
+- 完善 Rust、Java、C/C++ 和 C# 支持。
 - 提升引用解析准确率。
 - 增加跨文件符号解析。
 - 支持 monorepo 多 package 识别。

@@ -7,6 +7,8 @@ use serde::Serialize;
 pub enum Language {
     C,
     Cpp,
+    #[serde(rename = "csharp")]
+    CSharp,
     Go,
     Java,
     #[serde(rename = "javascript")]
@@ -23,6 +25,7 @@ impl Language {
         match self {
             Self::C => "c",
             Self::Cpp => "cpp",
+            Self::CSharp => "csharp",
             Self::Go => "go",
             Self::Java => "java",
             Self::JavaScript => "javascript",

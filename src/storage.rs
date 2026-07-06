@@ -920,6 +920,7 @@ fn parse_language(language: &str) -> Language {
     match language {
         "c" => Language::C,
         "cpp" => Language::Cpp,
+        "csharp" => Language::CSharp,
         "go" => Language::Go,
         "java" => Language::Java,
         "python" => Language::Python,

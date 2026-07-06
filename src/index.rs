@@ -310,6 +310,10 @@ fn is_call_node(node: Node<'_>, language: Language) -> bool {
         | Language::JavaScript
         | Language::TypeScript
         | Language::Tsx => node.kind() == "call_expression",
+        Language::CSharp => matches!(
+            node.kind(),
+            "invocation_expression" | "object_creation_expression"
+        ),
         Language::Java => matches!(
             node.kind(),
             "method_invocation" | "object_creation_expression"
@@ -617,6 +621,7 @@ fn dependencies_from_node(
 ) -> Vec<Dependency> {
     match language {
         Language::C | Language::Cpp => c_like_dependencies(node, source, language, source_file),
+        Language::CSharp => csharp_dependencies(node, source, language, source_file),
         Language::Python => python_dependencies(node, source, language, source_file),
         Language::Go => go_dependencies(node, source, language, source_file),
         Language::Java => java_dependencies(node, source, language, source_file),
@@ -767,6 +772,25 @@ fn c_like_dependencies(
             source_file,
             "include",
             c_include_targets,
+        ),
+        _ => Vec::new(),
+    }
+}
+
+fn csharp_dependencies(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+) -> Vec<Dependency> {
+    match node.kind() {
+        "using_directive" => text_dependencies(
+            node,
+            source,
+            language,
+            source_file,
+            "using",
+            csharp_using_targets,
         ),
         _ => Vec::new(),
     }
@@ -1563,6 +1587,7 @@ fn resolve_dependency(root: &Path, dependency: &Dependency) -> Option<String> {
             resolve_javascript_like_target(root, dependency)
         }
         Language::C | Language::Cpp => resolve_c_like_target(root, dependency),
+        Language::CSharp => None,
         Language::Python => resolve_python_target(root, dependency),
         Language::Rust => resolve_rust_target(root, dependency),
         Language::Go | Language::Java => None,
@@ -2051,6 +2076,32 @@ fn c_include_targets(text: &str) -> Vec<String> {
     Vec::new()
 }
 
+fn csharp_using_targets(text: &str) -> Vec<String> {
+    let trimmed = text.trim();
+    if trimmed.starts_with("using static ") {
+        return trimmed
+            .strip_prefix("using static ")
+            .map(|target| target.trim_end_matches(';').trim())
+            .filter(|target| !target.is_empty())
+            .map(|target| vec![target.to_string()])
+            .unwrap_or_default();
+    }
+
+    trimmed
+        .strip_prefix("using ")
+        .map(|target| {
+            target
+                .split('=')
+                .next_back()
+                .unwrap_or(target)
+                .trim_end_matches(';')
+                .trim()
+        })
+        .filter(|target| !target.is_empty() && !target.starts_with('('))
+        .map(|target| vec![target.to_string()])
+        .unwrap_or_default()
+}
+
 fn rust_use_targets(text: &str) -> Vec<String> {
     text.trim()
         .strip_prefix("use ")
@@ -2116,6 +2167,7 @@ fn symbol_from_node(
 ) -> Option<(String, SymbolKind)> {
     match language {
         Language::C | Language::Cpp => c_like_symbol(node, source),
+        Language::CSharp => csharp_symbol(node, source),
         Language::Python => python_symbol(node, source),
         Language::Rust => rust_symbol(node, source),
         Language::Go => go_symbol(node, source),
@@ -2190,6 +2242,28 @@ fn c_like_symbol(node: Node<'_>, source: &[u8]) -> Option<(String, SymbolKind)> 
         "preproc_function_def" | "preproc_def" => {
             child_text(node, "name", source).map(|name| (name, SymbolKind::Constant))
         }
+        _ => None,
+    }
+}
+
+fn csharp_symbol(node: Node<'_>, source: &[u8]) -> Option<(String, SymbolKind)> {
+    match node.kind() {
+        "class_declaration" => {
+            child_text(node, "name", source).map(|name| (name, SymbolKind::Class))
+        }
+        "interface_declaration" => {
+            child_text(node, "name", source).map(|name| (name, SymbolKind::Interface))
+        }
+        "struct_declaration" | "enum_declaration" | "record_declaration" => {
+            child_text(node, "name", source).map(|name| (name, SymbolKind::Struct))
+        }
+        "method_declaration" | "constructor_declaration" => {
+            child_text(node, "name", source).map(|name| (name, SymbolKind::Method))
+        }
+        "property_declaration" => {
+            child_text(node, "name", source).map(|name| (name, SymbolKind::Method))
+        }
+        "field_declaration" => find_csharp_field_name(node, source),
         _ => None,
     }
 }
@@ -2635,6 +2709,33 @@ fn find_java_field_name(node: Node<'_>, source: &[u8]) -> Option<(String, Symbol
     None
 }
 
+fn find_csharp_field_name(node: Node<'_>, source: &[u8]) -> Option<(String, SymbolKind)> {
+    let mut cursor = node.walk();
+    for child in node_children(&mut cursor) {
+        if child.kind() == "variable_declaration"
+            && let Some(name) = find_csharp_variable_name(child, source)
+        {
+            return Some((name, SymbolKind::Variable));
+        }
+    }
+    None
+}
+
+fn find_csharp_variable_name(node: Node<'_>, source: &[u8]) -> Option<String> {
+    let mut cursor = node.walk();
+    for child in node_children(&mut cursor) {
+        if child.kind() == "variable_declarator" {
+            if let Some(name) = child_text(child, "name", source) {
+                return Some(name);
+            }
+            if let Some(name) = find_c_declarator_identifier(child, source) {
+                return Some(name);
+            }
+        }
+    }
+    None
+}
+
 fn find_c_function_name(node: Node<'_>, source: &[u8]) -> Option<String> {
     find_c_declarator_identifier(node.child_by_field_name("declarator")?, source)
 }
@@ -3039,6 +3140,67 @@ int make_service() {
             calls
                 .iter()
                 .any(|call| call.caller == "make_service" && call.callee == "login")
+        );
+    }
+
+    #[test]
+    fn extracts_csharp_symbols_dependencies_and_calls() {
+        let source = r#"
+using System;
+using Alias = System.Text.StringBuilder;
+using static System.Math;
+
+namespace Example.Auth;
+
+public class AuthService {
+    private string token;
+
+    public AuthService(string token) {
+        this.token = token;
+    }
+
+    public int Count { get; set; }
+
+    public bool Login(User user) {
+        Audit(user);
+        return true;
+    }
+
+    private void Audit(User user) {}
+}
+
+public interface UserRepository {
+    User Find(string id);
+}
+"#;
+        let symbols = extract_symbols(source, Language::CSharp, "AuthService.cs").unwrap();
+        let names = symbols
+            .iter()
+            .map(|symbol| symbol.qualified_name.as_str())
+            .collect::<Vec<_>>();
+        assert!(names.contains(&"AuthService"));
+        assert!(names.contains(&"AuthService.token"));
+        assert!(names.contains(&"AuthService.AuthService"));
+        assert!(names.contains(&"AuthService.Count"));
+        assert!(names.contains(&"AuthService.Login"));
+        assert!(names.contains(&"AuthService.Audit"));
+        assert!(names.contains(&"UserRepository"));
+        assert!(names.contains(&"UserRepository.Find"));
+
+        let deps = extract_dependencies(source, Language::CSharp, "AuthService.cs").unwrap();
+        let targets = deps
+            .iter()
+            .map(|dependency| dependency.target.as_str())
+            .collect::<Vec<_>>();
+        assert!(targets.contains(&"System"));
+        assert!(targets.contains(&"System.Text.StringBuilder"));
+        assert!(targets.contains(&"System.Math"));
+
+        let calls = extract_calls(source, Language::CSharp, "AuthService.cs", &symbols);
+        assert!(
+            calls
+                .iter()
+                .any(|call| call.caller == "AuthService.Login" && call.callee == "Audit")
         );
     }
 

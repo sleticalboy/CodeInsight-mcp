@@ -10,6 +10,7 @@ pub fn detect_language(path: &Path) -> Option<Language> {
         Some("cc") | Some("cpp") | Some("cxx") | Some("hh") | Some("hpp") | Some("hxx") => {
             Some(Language::Cpp)
         }
+        Some("cs") => Some(Language::CSharp),
         Some("go") => Some(Language::Go),
         Some("java") => Some(Language::Java),
         Some("js") | Some("mjs") | Some("cjs") => Some(Language::JavaScript),
@@ -25,6 +26,7 @@ pub fn tree_sitter_language(language: Language) -> TsLanguage {
     match language {
         Language::C => tree_sitter_c::LANGUAGE.into(),
         Language::Cpp => tree_sitter_cpp::LANGUAGE.into(),
+        Language::CSharp => tree_sitter_c_sharp::LANGUAGE.into(),
         Language::Go => tree_sitter_go::LANGUAGE.into(),
         Language::Java => tree_sitter_java::LANGUAGE.into(),
         Language::JavaScript => tree_sitter_javascript::LANGUAGE.into(),
