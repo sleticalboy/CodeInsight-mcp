@@ -78,6 +78,7 @@ Limitations:
 - Targets are always stored as module strings; `resolved_file` is only populated when a local file can be resolved cheaply.
 - Grouped imports may be compacted rather than expanded precisely.
 - Local package self-reference `exports` resolution supports JSON-compatible `package.json` files with exact or single-wildcard string mappings.
+- Dependency package `exports` resolution supports nearest `node_modules` packages with exact or single-wildcard string mappings.
 - TypeScript and JavaScript `baseUrl`/`paths` resolution supports JSON-compatible `tsconfig.json` and `jsconfig.json` files with exact or single-wildcard path mappings.
 - Monorepo workspace boundaries are not modeled yet.
 - Go import paths are not resolved to files yet.
@@ -130,7 +131,8 @@ Limitations:
 - Calls are resolved by normalized callee name, not by type information.
 - `callee_file` is a best-effort file hint, not a proof of the exact runtime function.
 - Re-export following is intentionally bounded; arbitrary-depth barrel chains are not expanded.
-- Non-literal dynamic `import()`, external dynamic import handlers, variable-based `require(...)` targets, dependency `node_modules` package exports, multi-wildcard aliases/exports, and bundler resolution are not modeled yet.
+- Dependency packages under `node_modules` are skipped during indexing by default, so package export resolution can populate `dependency_graph.resolved_file` without producing `callee_file` hints for those packages.
+- Non-literal dynamic `import()`, external dynamic import handlers, variable-based `require(...)` targets, multi-wildcard aliases/exports, and bundler resolution are not modeled yet.
 - Dynamic dispatch, callbacks, reflection, macros, and higher-order functions are not modeled.
 - Method calls with the same method name on different types may be conflated.
 
@@ -182,7 +184,7 @@ Do not treat current MVP output as a formal static-analysis proof.
 Near-term improvements:
 
 - Improve external dynamic import handlers and variable-based `require(...)` handling where obvious.
-- Add dependency package export resolution and broader TypeScript path alias coverage.
+- Add broader package export condition handling and TypeScript path alias coverage.
 - Use call graph hints in `context_pack` ranking.
 - Exclude or down-rank tests and comments in reference search.
 - Add fixture repositories for each supported language.

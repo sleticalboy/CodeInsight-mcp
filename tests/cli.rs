@@ -42,6 +42,7 @@ fn cli_indexes_and_queries_fixture_project() {
     assert!(targets.contains(&"./ui"));
     assert!(targets.contains(&"@app/path-ui"));
     assert!(targets.contains(&"fixture-lib/package-ui"));
+    assert!(targets.contains(&"dep-lib/feature"));
     assert!(
         deps["dependencies"]
             .as_array()
@@ -49,6 +50,16 @@ fn cli_indexes_and_queries_fixture_project() {
             .iter()
             .any(|dependency| {
                 dependency["target"] == "./ui" && dependency["resolved_file"] == "src/ui.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "dep-lib/feature"
+                    && dependency["resolved_file"] == "node_modules/dep-lib/dist/feature.js"
             })
     );
     assert!(
@@ -678,6 +689,7 @@ import { finalApi, finalDefault, finalRender } from "./barrel2";
 import * as ui from "./ui";
 import { pathRender } from "@app/path-ui";
 import { packageRender } from "fixture-lib/package-ui";
+import { depRender } from "dep-lib/feature";
 const { render: draw } = require("./ui");
 const uiModule = require("./ui");
 const computedUiModule = require("./" + "ui");
@@ -760,6 +772,33 @@ export function pathAliasMain() {
 export function packageExportMain() {
   packageRender();
 }
+
+export function dependencyPackageMain() {
+  depRender();
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/dep-lib/package.json",
+        r#"
+{
+  "name": "dep-lib",
+  "exports": {
+    "./feature": {
+      "import": "./dist/feature.js"
+    }
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/dep-lib/dist/feature.js",
+        r#"
+export function depRender() {
+  return "dep";
+}
 "#,
     );
     write_file(
@@ -837,6 +876,10 @@ fn long_typescript_file() -> String {
 }
 
 fn write_file(dir: &TempDir, path: &str, contents: &str) {
-    let mut file = std::fs::File::create(dir.path().join(path)).unwrap();
+    let path = dir.path().join(path);
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).unwrap();
+    }
+    let mut file = std::fs::File::create(path).unwrap();
     file.write_all(contents.as_bytes()).unwrap();
 }

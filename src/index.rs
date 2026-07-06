@@ -1545,6 +1545,7 @@ fn resolve_javascript_like_target(root: &Path, dependency: &Dependency) -> Optio
     )
     .or_else(|| resolve_tsconfig_target(root, dependency, EXTENSIONS))
     .or_else(|| resolve_package_exports_target(root, dependency, EXTENSIONS))
+    .or_else(|| resolve_node_modules_package_exports_target(root, dependency, EXTENSIONS))
 }
 
 fn resolve_tsconfig_target(
@@ -1610,7 +1611,9 @@ fn resolve_tsconfig_paths_target(
 ) -> Option<String> {
     let paths = compiler_options.get("paths")?.as_object()?;
     for (pattern, mappings) in paths {
-        let wildcard = tsconfig_path_wildcard(pattern, target)?;
+        let Some(wildcard) = tsconfig_path_wildcard(pattern, target) else {
+            continue;
+        };
         let Some(mapping_values) = mappings.as_array() else {
             continue;
         };
@@ -1683,6 +1686,26 @@ fn resolve_package_exports_target(
     resolve_base(root, package_dir.join(mapped), extensions)
 }
 
+fn resolve_node_modules_package_exports_target(
+    root: &Path,
+    dependency: &Dependency,
+    extensions: &[&str],
+) -> Option<String> {
+    if dependency.target.starts_with('.') || dependency.target.starts_with('/') {
+        return None;
+    }
+
+    let (package_name, subpath) = package_specifier_parts(&dependency.target)?;
+    let package_path =
+        find_node_modules_package_json(root, &dependency.source_file, &package_name)?;
+    let package_text = fs::read_to_string(root.join(&package_path)).ok()?;
+    let package: Value = serde_json::from_str(&package_text).ok()?;
+    let exports = package.get("exports")?;
+    let package_dir = package_path.parent().unwrap_or(Path::new(""));
+    let mapped = package_export_mapping(exports, &subpath)?;
+    resolve_base(root, package_dir.join(mapped), extensions)
+}
+
 fn find_package_json(root: &Path, source_file: &str) -> Option<PathBuf> {
     let mut current = Path::new(source_file)
         .parent()
@@ -1700,6 +1723,60 @@ fn find_package_json(root: &Path, source_file: &str) -> Option<PathBuf> {
         }
         current.pop();
     }
+}
+
+fn find_node_modules_package_json(
+    root: &Path,
+    source_file: &str,
+    package_name: &str,
+) -> Option<PathBuf> {
+    let mut current = Path::new(source_file)
+        .parent()
+        .unwrap_or(Path::new(""))
+        .to_path_buf();
+
+    loop {
+        let candidate = current
+            .join("node_modules")
+            .join(package_name)
+            .join("package.json");
+        if root.join(&candidate).is_file() {
+            return Some(candidate);
+        }
+
+        if current.as_os_str().is_empty() {
+            return None;
+        }
+        current.pop();
+    }
+}
+
+fn package_specifier_parts(target: &str) -> Option<(String, String)> {
+    if target.starts_with('@') {
+        let mut parts = target.splitn(3, '/');
+        let scope = parts.next()?;
+        let name = parts.next()?;
+        if scope.len() <= 1 || name.is_empty() {
+            return None;
+        }
+        let package_name = format!("{scope}/{name}");
+        let subpath = parts
+            .next()
+            .map(|rest| format!("./{rest}"))
+            .unwrap_or_else(|| ".".to_string());
+        return Some((package_name, subpath));
+    }
+
+    let mut parts = target.splitn(2, '/');
+    let package_name = parts.next()?;
+    if package_name.is_empty() {
+        return None;
+    }
+    let subpath = parts
+        .next()
+        .map(|rest| format!("./{rest}"))
+        .unwrap_or_else(|| ".".to_string());
+    Some((package_name.to_string(), subpath))
 }
 
 fn package_export_subpath(package_name: &str, target: &str) -> Option<String> {
@@ -1721,7 +1798,9 @@ fn package_export_mapping(exports: &Value, subpath: &str) -> Option<PathBuf> {
 
     let entries = exports.as_object()?;
     for (pattern, value) in entries {
-        let wildcard = tsconfig_path_wildcard(pattern, subpath)?;
+        let Some(wildcard) = tsconfig_path_wildcard(pattern, subpath) else {
+            continue;
+        };
         let target = package_export_target(value)?;
         let mapped = apply_tsconfig_path_mapping(&target, wildcard.as_deref())?;
         return Some(mapped);
