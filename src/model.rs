@@ -152,6 +152,12 @@ pub struct SemanticEmbeddingInput {
     pub vector: Vec<f32>,
 }
 
+#[derive(Debug, Clone)]
+pub struct SemanticEmbeddingMatch {
+    pub chunk: SemanticChunk,
+    pub vector: Vec<f32>,
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct CallEdge {
     pub file: String,

@@ -13,7 +13,8 @@ use crate::{
     model::{
         CallEdge, ContextFile, ContextPack, ContextRange, DependencyGraph, IndexError,
         ProjectIndexReport, ProjectOverview, ReferenceMatch, SemanticChunk, SemanticChunkInput,
-        SemanticEmbeddingInput, SemanticIndexReport, SemanticSearchResult, Symbol, SymbolKind,
+        SemanticEmbeddingInput, SemanticEmbeddingMatch, SemanticIndexReport, SemanticSearchResult,
+        Symbol, SymbolKind,
     },
     storage::Store,
 };
@@ -173,12 +174,30 @@ pub fn find_references_value(
 pub fn semantic_search_value(
     root: PathBuf,
     query: &str,
-    _limit: usize,
+    limit: usize,
 ) -> Result<Vec<SemanticSearchResult>> {
-    let _root = root.canonicalize()?;
+    let root = root.canonicalize()?;
     let provider = embedding::provider_from_env()?;
-    let _query_embedding = embedding::embed_query(provider.as_ref(), query)?;
-    bail!("semantic search index is not available yet")
+    let query_embedding = embedding::embed_query(provider.as_ref(), query)?;
+    let store = Store::open(&root)?;
+    let mut matches = store
+        .semantic_embedding_matches(provider.provider_name(), provider.model_name())?
+        .into_iter()
+        .filter_map(|candidate| semantic_search_result(candidate, &query_embedding.values))
+        .collect::<Vec<_>>();
+    if matches.is_empty() {
+        bail!(
+            "semantic search index is empty for provider '{}' model '{}'; run semantic-index with {PROVIDER_ENV}={}",
+            provider.provider_name(),
+            provider.model_name(),
+            provider.provider_name(),
+            PROVIDER_ENV = embedding::PROVIDER_ENV
+        )
+    }
+
+    matches.sort_by(compare_semantic_search_results);
+    matches.truncate(limit.max(1));
+    Ok(matches)
 }
 
 pub fn semantic_index_value(root: PathBuf, chunk_lines: usize) -> Result<SemanticIndexReport> {
@@ -259,6 +278,65 @@ fn semantic_embeddings_for_chunks(
             vector: embedding.values,
         })
         .collect())
+}
+
+fn semantic_search_result(
+    candidate: SemanticEmbeddingMatch,
+    query_embedding: &[f32],
+) -> Option<SemanticSearchResult> {
+    let score = cosine_similarity(query_embedding, &candidate.vector)?;
+    let excerpt = excerpt_chunk_text(&candidate.chunk);
+    Some(SemanticSearchResult {
+        file: candidate.chunk.file,
+        start_line: candidate.chunk.start_line,
+        end_line: candidate.chunk.end_line,
+        score,
+        excerpt,
+    })
+}
+
+fn compare_semantic_search_results(
+    left: &SemanticSearchResult,
+    right: &SemanticSearchResult,
+) -> Ordering {
+    right
+        .score
+        .partial_cmp(&left.score)
+        .unwrap_or(Ordering::Equal)
+        .then_with(|| left.file.cmp(&right.file))
+        .then_with(|| left.start_line.cmp(&right.start_line))
+        .then_with(|| left.end_line.cmp(&right.end_line))
+}
+
+fn cosine_similarity(left: &[f32], right: &[f32]) -> Option<f64> {
+    if left.len() != right.len() || left.is_empty() {
+        return None;
+    }
+
+    let mut dot = 0.0_f64;
+    let mut left_norm = 0.0_f64;
+    let mut right_norm = 0.0_f64;
+    for (left, right) in left.iter().zip(right) {
+        let left = *left as f64;
+        let right = *right as f64;
+        dot += left * right;
+        left_norm += left * left;
+        right_norm += right * right;
+    }
+    if left_norm == 0.0 || right_norm == 0.0 {
+        return None;
+    }
+    Some(dot / (left_norm.sqrt() * right_norm.sqrt()))
+}
+
+fn excerpt_chunk_text(chunk: &SemanticChunk) -> String {
+    chunk
+        .text
+        .lines()
+        .enumerate()
+        .map(|(index, line)| format!("{:>4}: {}", chunk.start_line + index, line))
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 pub fn context_pack_value(

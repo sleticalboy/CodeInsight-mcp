@@ -51,6 +51,21 @@ fn cli_indexes_and_queries_fixture_project() {
         semantic_index_with_embeddings["embeddings"].as_u64(),
         Some(semantic_chunks)
     );
+    let semantic_search = run_json_with_env(
+        [
+            "semantic-search",
+            fixture.path().to_str().unwrap(),
+            "session cookie behavior",
+            "--limit",
+            "5",
+        ],
+        [("CODEINSIGHT_EMBEDDING_PROVIDER", "local-hash")],
+    );
+    assert!(semantic_search.as_array().unwrap().iter().any(|result| {
+        result["file"] == "src/auth_notes.py"
+            && result["excerpt"].as_str().unwrap().contains("cookie")
+            && result["score"].as_f64().unwrap() > 0.0
+    }));
 
     let symbols = run_json([
         "symbols",
@@ -939,6 +954,7 @@ fn mcp_stdio_rejects_invalid_tool_arguments() {
 fn run_json<const N: usize>(args: [&str; N]) -> Value {
     let output = Command::cargo_bin("codeinsight")
         .unwrap()
+        .env_remove("CODEINSIGHT_EMBEDDING_PROVIDER")
         .args(args)
         .assert()
         .success()

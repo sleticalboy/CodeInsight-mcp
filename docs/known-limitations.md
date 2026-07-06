@@ -76,14 +76,15 @@ Limitations:
 
 ### `semantic_search`
 
-`semantic_search` is currently a preview contract for embedding-backed search. `semantic_index` can build local source-text chunks and optional local-hash vectors, but vector query ranking is not enabled yet.
+`semantic_search` can query local semantic vectors for a configured embedding provider. `semantic_index` can build local source-text chunks and optional local-hash vectors.
 
 Limitations:
 
 - The embedding provider interface exists, but no provider is enabled by default.
 - Local semantic chunks can be stored and used as deterministic lexical ranking hints in `context_pack`.
-- `CODEINSIGHT_EMBEDDING_PROVIDER=local-hash` can build deterministic local vectors, but those vectors are not queried yet.
-- Calls fail with a clear provider-configuration error until a supported backend is enabled.
+- `CODEINSIGHT_EMBEDDING_PROVIDER=local-hash` can build and query deterministic local vectors.
+- Calls fail with a clear provider-configuration error until a supported backend is enabled, and fail with an empty-index error until `semantic-index` has generated vectors for that provider/model.
+- External embedding providers are not implemented yet.
 - `context_pack` still uses deterministic lexical, symbol, reference, dependency, call graph, and semantic chunk metadata signals.
 
 ### `dependency_graph`

@@ -1,11 +1,12 @@
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, bail};
 use rusqlite::{Connection, Row, params, params_from_iter};
 
 use crate::model::{
     CallEdge, Dependency, DependencyGraph, DirectoryStat, Language, LanguageStat, ProjectOverview,
-    SemanticChunk, SemanticChunkInput, SemanticEmbeddingInput, SourceFile, Symbol, SymbolKind,
+    SemanticChunk, SemanticChunkInput, SemanticEmbeddingInput, SemanticEmbeddingMatch, SourceFile,
+    Symbol, SymbolKind,
 };
 
 pub const SCHEMA_VERSION: i64 = 22;
@@ -311,6 +312,40 @@ impl Store {
         }
         tx.commit()?;
         Ok(inserted)
+    }
+
+    pub fn semantic_embedding_matches(
+        &self,
+        provider: &str,
+        model: &str,
+    ) -> Result<Vec<SemanticEmbeddingMatch>> {
+        let mut stmt = self.conn.prepare(
+            "select sc.id, f.path, sc.start_line, sc.end_line, sc.token_estimate, sc.text,
+                    se.dimensions, se.vector
+             from semantic_embeddings se
+             join semantic_chunks sc on sc.id = se.chunk_id
+             join files f on f.id = sc.file_id
+             where se.provider = ?1 and se.model = ?2
+             order by f.path, sc.start_line",
+        )?;
+        let mut rows = stmt.query(params![provider, model])?;
+        let mut matches = Vec::new();
+        while let Some(row) = rows.next()? {
+            let dimensions = row.get::<_, i64>(6)? as usize;
+            let vector_blob = row.get::<_, Vec<u8>>(7)?;
+            matches.push(SemanticEmbeddingMatch {
+                chunk: SemanticChunk {
+                    id: row.get(0)?,
+                    file: row.get(1)?,
+                    start_line: row.get::<_, i64>(2)? as usize,
+                    end_line: row.get::<_, i64>(3)? as usize,
+                    token_estimate: row.get::<_, i64>(4)? as usize,
+                    text: row.get(5)?,
+                },
+                vector: decode_f32_vector(&vector_blob, dimensions)?,
+            });
+        }
+        Ok(matches)
     }
 
     pub fn semantic_chunks_matching(
@@ -1081,6 +1116,22 @@ fn encode_f32_vector(vector: &[f32]) -> Vec<u8> {
         bytes.extend_from_slice(&value.to_le_bytes());
     }
     bytes
+}
+
+fn decode_f32_vector(bytes: &[u8], dimensions: usize) -> Result<Vec<f32>> {
+    let expected_bytes = dimensions * std::mem::size_of::<f32>();
+    if bytes.len() != expected_bytes {
+        bail!(
+            "semantic embedding vector has {} bytes, expected {}",
+            bytes.len(),
+            expected_bytes
+        );
+    }
+
+    Ok(bytes
+        .chunks_exact(std::mem::size_of::<f32>())
+        .map(|chunk| f32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]))
+        .collect())
 }
 
 fn symbol_kind(kind: SymbolKind) -> &'static str {
