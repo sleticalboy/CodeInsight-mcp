@@ -16,6 +16,16 @@ jobs:
       - run: cargo fmt --check
       - run: cargo test --locked
 
+  semantic-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: semantic-smoke
+      - run: scripts/semantic-smoke.sh
+
   release-install-smoke:
     name: release-install-smoke-${{ matrix.os }}
     runs-on: ${{ matrix.os }}
