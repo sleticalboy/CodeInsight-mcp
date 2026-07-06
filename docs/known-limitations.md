@@ -91,7 +91,7 @@ Limitations:
 Current deterministic ranking order:
 
 - File seeds have the highest priority.
-- File seed ranges include header/import context plus primary top-level symbols. Task-matching seed symbols get a small same-file ordering boost, large same-score merged ranges are capped, oversized seed ranges can be shortened to fit small budgets, and selected output ranges are trimmed to avoid duplicate lines. If no primary symbols are found, `context_pack` falls back to the first 80 lines.
+- File seed ranges include header/import context plus primary top-level symbols. Task-matching seed symbols get a small same-file ordering boost, large same-score merged ranges are capped, oversized seed ranges can be shortened to fit small budgets, and selected output ranges are trimmed to avoid duplicate lines before being returned in source order. If no primary symbols are found, `context_pack` falls back to the first 80 lines.
 - Symbol definition ranges are next.
 - Static call graph target files from seed symbols and seed file primary symbols are ranked after definitions. Bounded caller files are also included for seed symbols and small seed files.
 - Text references are ranked after call graph targets, with reference confidence as a small boost.

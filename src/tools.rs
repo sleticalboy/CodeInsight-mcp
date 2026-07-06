@@ -372,6 +372,7 @@ pub fn context_pack_value(
         }
 
         if !context_ranges.is_empty() {
+            context_ranges.sort_by_key(|range| (range.start_line, range.end_line));
             files.push(ContextFile {
                 file: candidate.file,
                 reason: format!(

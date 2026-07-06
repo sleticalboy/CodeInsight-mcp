@@ -385,6 +385,20 @@ fn cli_indexes_and_queries_fixture_project() {
     assert!(multi_seed_excerpt.contains("targetLater"));
     assert!(!multi_seed_excerpt.contains("unrelated_filler_40"));
 
+    let multi_readable_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "targetLater behavior",
+        "--file",
+        "src/multi-long.ts",
+        "--token-budget",
+        "1600",
+    ]);
+    let multi_readable_file = &multi_readable_context["files"].as_array().unwrap()[0];
+    assert_eq!(multi_readable_file["file"], "src/multi-long.ts");
+    assert_context_file_ranges_are_sorted(multi_readable_file);
+
     let callers = run_json([
         "callers",
         fixture.path().to_str().unwrap(),
@@ -824,6 +838,18 @@ fn assert_context_file_has_no_duplicate_lines(file: &Value) {
         for line in start_line..=end_line {
             assert!(seen.insert(line), "duplicate context line {line}");
         }
+    }
+}
+
+fn assert_context_file_ranges_are_sorted(file: &Value) {
+    let mut previous_start_line = 0;
+    for range in file["ranges"].as_array().unwrap() {
+        let start_line = range["start_line"].as_u64().unwrap();
+        assert!(
+            start_line >= previous_start_line,
+            "context ranges are not sorted"
+        );
+        previous_start_line = start_line;
     }
 }
 
