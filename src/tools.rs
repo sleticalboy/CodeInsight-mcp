@@ -15,7 +15,7 @@ use crate::{
         EmbeddingProviderStatus, IndexError, OllamaEmbeddingStatus, OpenAiEmbeddingStatus,
         ProjectIndexReport, ProjectOverview, ReferenceMatch, SemanticChunk, SemanticChunkInput,
         SemanticEmbeddingInput, SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus,
-        SemanticSearchResult, Symbol, SymbolKind,
+        SemanticSearchResult, Symbol, SymbolKind, VersionInfo,
     },
     storage::Store,
 };
@@ -102,6 +102,19 @@ pub fn callers(root: PathBuf, symbol: String, limit: usize) -> Result<()> {
 pub fn callees(root: PathBuf, symbol: String, limit: usize) -> Result<()> {
     let calls = callees_value(root, &symbol, limit)?;
     print_json(&calls)
+}
+
+pub fn version() -> Result<()> {
+    print_json(&version_value())
+}
+
+pub fn version_value() -> VersionInfo {
+    VersionInfo {
+        name: env!("CARGO_PKG_NAME").to_string(),
+        version: env!("CARGO_PKG_VERSION").to_string(),
+        target_arch: std::env::consts::ARCH.to_string(),
+        target_os: std::env::consts::OS.to_string(),
+    }
 }
 
 pub fn index_project_value(root: PathBuf, force: bool) -> Result<ProjectIndexReport> {

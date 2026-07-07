@@ -58,6 +58,7 @@ cleanup() {
 
 main() {
   require_command cargo
+  require_command jq
   require_command tar
 
   local native_target target asset install_dir skip_verify
@@ -89,6 +90,7 @@ main() {
   test -x "$install_dir/codeinsight"
 
   if [ "$skip_verify" != "1" ]; then
+    "$install_dir/codeinsight" version | jq -e '.name == "codeinsight" and (.version | length > 0)' >/dev/null
     CODEINSIGHT_BIN="$install_dir/codeinsight" "$ROOT_DIR/scripts/mcp-stdio-smoke.sh"
   fi
 

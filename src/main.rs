@@ -41,6 +41,7 @@ async fn main() -> Result<()> {
         Command::Callers(args) => tools::callers(args.root, args.symbol, args.limit)?,
         Command::Callees(args) => tools::callees(args.root, args.symbol, args.limit)?,
         Command::Serve(args) => mcp::serve(args.transport).await?,
+        Command::Version => tools::version()?,
     }
 
     Ok(())

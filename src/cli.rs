@@ -5,6 +5,7 @@ use clap::{Args, Parser, Subcommand, ValueEnum};
 #[derive(Debug, Parser)]
 #[command(name = "codeinsight")]
 #[command(about = "Local-first code intelligence MCP server for AI agents")]
+#[command(version)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Command,
@@ -38,6 +39,8 @@ pub enum Command {
     Callees(CallQueryArgs),
     /// Start the MCP server.
     Serve(ServeArgs),
+    /// Print build version information.
+    Version,
 }
 
 #[derive(Debug, Args)]

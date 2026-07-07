@@ -2,7 +2,7 @@ use std::io::Write;
 use std::path::Path;
 
 use assert_cmd::Command;
-use predicates::str::contains;
+use predicates::str::{contains, is_match};
 use serde_json::Value;
 use tempfile::TempDir;
 
@@ -945,6 +945,31 @@ fn cli_indexes_and_queries_fixture_project() {
             .any(|call| {
                 call["callee"] == "packageRender" && call["callee_file"] == "src/package-ui.ts"
             })
+    );
+}
+
+#[test]
+fn cli_reports_version_information() {
+    Command::cargo_bin("codeinsight")
+        .unwrap()
+        .arg("--version")
+        .assert()
+        .success()
+        .stdout(is_match(r"^codeinsight \d+\.\d+\.\d+\n$").unwrap());
+
+    let version = run_json(["version"]);
+
+    assert_eq!(version["name"], "codeinsight");
+    assert_eq!(version["version"], env!("CARGO_PKG_VERSION"));
+    assert!(
+        version["target_arch"]
+            .as_str()
+            .is_some_and(|value| !value.is_empty())
+    );
+    assert!(
+        version["target_os"]
+            .as_str()
+            .is_some_and(|value| !value.is_empty())
     );
 }
 

@@ -173,6 +173,14 @@ pub struct SemanticIndexStatus {
     pub vector_status: String,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct VersionInfo {
+    pub name: String,
+    pub version: String,
+    pub target_arch: String,
+    pub target_os: String,
+}
+
 #[derive(Debug, Clone)]
 pub struct SemanticChunkInput {
     pub file: String,

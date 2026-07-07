@@ -107,7 +107,7 @@ try:
 
     tools = request({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
     tool_names = {tool["name"] for tool in tools["result"]["tools"]}
-    for expected in ("index_project", "symbol_search", "embedding_status", "context_pack"):
+    for expected in ("index_project", "symbol_search", "embedding_status", "context_pack", "version"):
         assert expected in tool_names, expected
 
     indexed = request(
@@ -156,10 +156,25 @@ try:
     assert embedding_result["provider"] == "disabled"
     assert embedding_result["index"]["vector_status"] == "semantic_chunks_missing"
 
-    context = request(
+    version = request(
         {
             "jsonrpc": "2.0",
             "id": 6,
+            "method": "tools/call",
+            "params": {
+                "name": "version",
+                "arguments": {},
+            },
+        }
+    )
+    version_result = version["result"]["structuredContent"]
+    assert version_result["name"] == "codeinsight"
+    assert version_result["version"]
+
+    context = request(
+        {
+            "jsonrpc": "2.0",
+            "id": 7,
             "method": "tools/call",
             "params": {
                 "name": "context_pack",

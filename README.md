@@ -135,6 +135,13 @@ scripts/docker-smoke.sh
 
 ## CLI Usage
 
+Print version information:
+
+```bash
+codeinsight version
+codeinsight --version
+```
+
 Index a repository:
 
 ```bash

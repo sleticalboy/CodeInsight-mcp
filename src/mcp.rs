@@ -129,6 +129,7 @@ fn handle_tool_call(params: Value) -> Result<Value> {
             let root = optional_path(&arguments, "root")?;
             serde_json::to_value(tools::embedding_status_value(root)?)?
         }
+        "version" => serde_json::to_value(tools::version_value())?,
         "context_pack" => {
             let root = required_path(&arguments, "root")?;
             let task = required_str(&arguments, "task")?.to_string();
@@ -277,6 +278,14 @@ fn tool_definitions() -> Value {
                 "properties": {
                     "root": {"type": "string"}
                 }
+            }
+        },
+        {
+            "name": "version",
+            "description": "Return CodeInsight package version and target platform information.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {}
             }
         },
         {
@@ -568,6 +577,20 @@ def helper():
         assert_eq!(
             embedding_status_result["structuredContent"]["index"]["vector_status"].as_str(),
             Some("provider_not_configured")
+        );
+
+        let version_result = handle_tool_call(json!({
+            "name": "version",
+            "arguments": {}
+        }))
+        .unwrap();
+        assert_eq!(
+            version_result["structuredContent"]["name"].as_str(),
+            Some("codeinsight")
+        );
+        assert_eq!(
+            version_result["structuredContent"]["version"].as_str(),
+            Some(env!("CARGO_PKG_VERSION"))
         );
 
         let context_result = handle_tool_call(json!({
