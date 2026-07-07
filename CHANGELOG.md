@@ -6,6 +6,10 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ## [Unreleased]
 
+### Added
+
+- Protocol-level mock HTTP tests for Ollama embedding requests, chunked responses, non-200 responses, and vector-count mismatches.
+
 ## [0.1.3] - 2026-07-07
 
 ### Added

@@ -285,6 +285,13 @@ fn ollama_embed(
     let response_body = http_post_json(&parsed, &path, &body, timeout)?;
     let response = serde_json::from_str::<OllamaEmbedResponse>(&response_body)
         .context("ollama embedding provider returned invalid JSON")?;
+    if response.embeddings.len() != inputs.len() {
+        bail!(
+            "ollama embedding provider returned {} vectors for {} inputs",
+            response.embeddings.len(),
+            inputs.len()
+        );
+    }
     Ok(response
         .embeddings
         .into_iter()
@@ -313,9 +320,14 @@ fn http_post_json(
     stream.set_read_timeout(Some(timeout))?;
     stream.set_write_timeout(Some(timeout))?;
 
+    let host_header = if base_url.port == 80 {
+        base_url.host.clone()
+    } else {
+        format!("{}:{}", base_url.host, base_url.port)
+    };
     let request = format!(
         "POST {path} HTTP/1.1\r\nHost: {host}\r\nContent-Type: application/json\r\nAccept: application/json\r\nContent-Length: {length}\r\nConnection: close\r\n\r\n{body}",
-        host = base_url.host,
+        host = host_header,
         length = body.len(),
     );
     stream
@@ -369,7 +381,21 @@ fn decode_chunked_body(body: &str) -> Result<String> {
 
 #[cfg(test)]
 mod tests {
+    use std::{
+        io::{Read, Write},
+        net::TcpListener,
+        thread::{self, JoinHandle},
+    };
+
     use super::*;
+    use serde_json::Value;
+
+    #[derive(Debug)]
+    struct MockRequest {
+        request_line: String,
+        headers: String,
+        body: String,
+    }
 
     #[test]
     fn disabled_provider_returns_stable_error() {
@@ -438,5 +464,167 @@ mod tests {
     fn decodes_chunked_ollama_response_body() {
         let decoded = decode_chunked_body("7\r\n{\"a\":1}\r\n0\r\n\r\n").unwrap();
         assert_eq!(decoded, "{\"a\":1}");
+    }
+
+    #[test]
+    fn ollama_provider_posts_expected_embed_request_body() {
+        let response = json_response(r#"{"embeddings":[[1.0,0.0],[0.0,1.0]]}"#);
+        let (base_url, handle) = serve_one_ollama_request(response);
+
+        let embeddings = ollama_embed(
+            &base_url,
+            "unit-embed",
+            &["alpha".to_string(), "beta".to_string()],
+            Duration::from_secs(2),
+        )
+        .unwrap();
+        assert_eq!(
+            embeddings,
+            vec![
+                Embedding {
+                    values: vec![1.0, 0.0]
+                },
+                Embedding {
+                    values: vec![0.0, 1.0]
+                }
+            ]
+        );
+
+        let request = handle.join().unwrap();
+        assert_eq!(request.request_line, "POST /api/embed HTTP/1.1");
+        assert!(request.headers.contains("Content-Type: application/json"));
+        assert!(request.headers.contains("Accept: application/json"));
+        let body = serde_json::from_str::<Value>(&request.body).unwrap();
+        assert_eq!(body["model"], "unit-embed");
+        assert_eq!(body["input"], serde_json::json!(["alpha", "beta"]));
+    }
+
+    #[test]
+    fn ollama_provider_accepts_chunked_embed_response() {
+        let body = r#"{"embeddings":[[0.25],[0.75]]}"#;
+        let response = format!(
+            "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n{}",
+            chunked_body(body)
+        );
+        let (base_url, handle) = serve_one_ollama_request(response);
+
+        let embeddings = ollama_embed(
+            &base_url,
+            "unit-embed",
+            &["first".to_string(), "second".to_string()],
+            Duration::from_secs(2),
+        )
+        .unwrap();
+
+        assert_eq!(embeddings[0].values, vec![0.25]);
+        assert_eq!(embeddings[1].values, vec![0.75]);
+        let request = handle.join().unwrap();
+        assert_eq!(request.request_line, "POST /api/embed HTTP/1.1");
+    }
+
+    #[test]
+    fn ollama_provider_reports_non_200_response() {
+        let response = "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 4\r\nConnection: close\r\n\r\nboom".to_string();
+        let (base_url, handle) = serve_one_ollama_request(response);
+
+        let error = ollama_embed(
+            &base_url,
+            "unit-embed",
+            &["alpha".to_string()],
+            Duration::from_secs(2),
+        )
+        .unwrap_err();
+
+        assert!(error.to_string().contains("500 Internal Server Error"));
+        let _request = handle.join().unwrap();
+    }
+
+    #[test]
+    fn ollama_provider_rejects_embedding_count_mismatch() {
+        let response = json_response(r#"{"embeddings":[[1.0]]}"#);
+        let (base_url, handle) = serve_one_ollama_request(response);
+
+        let error = ollama_embed(
+            &base_url,
+            "unit-embed",
+            &["alpha".to_string(), "beta".to_string()],
+            Duration::from_secs(2),
+        )
+        .unwrap_err();
+
+        assert!(
+            error
+                .to_string()
+                .contains("returned 1 vectors for 2 inputs")
+        );
+        let _request = handle.join().unwrap();
+    }
+
+    fn serve_one_ollama_request(response: String) -> (String, JoinHandle<MockRequest>) {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        let handle = thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut request = Vec::new();
+            let mut buffer = [0_u8; 512];
+            let header_end = loop {
+                let read = stream.read(&mut buffer).unwrap();
+                assert!(read > 0, "client closed connection before headers");
+                request.extend_from_slice(&buffer[..read]);
+                if let Some(header_end) = find_header_end(&request) {
+                    break header_end;
+                }
+            };
+
+            let headers = String::from_utf8(request[..header_end].to_vec()).unwrap();
+            let content_length = content_length(&headers);
+            let body_start = header_end + 4;
+            while request.len() < body_start + content_length {
+                let read = stream.read(&mut buffer).unwrap();
+                assert!(read > 0, "client closed connection before body");
+                request.extend_from_slice(&buffer[..read]);
+            }
+
+            stream.write_all(response.as_bytes()).unwrap();
+            let body = String::from_utf8(request[body_start..body_start + content_length].to_vec())
+                .unwrap();
+            MockRequest {
+                request_line: headers.lines().next().unwrap_or_default().to_string(),
+                headers,
+                body,
+            }
+        });
+
+        (format!("http://{address}"), handle)
+    }
+
+    fn find_header_end(bytes: &[u8]) -> Option<usize> {
+        bytes.windows(4).position(|window| window == b"\r\n\r\n")
+    }
+
+    fn content_length(headers: &str) -> usize {
+        headers
+            .lines()
+            .find_map(|line| {
+                let (name, value) = line.split_once(':')?;
+                if name.eq_ignore_ascii_case("content-length") {
+                    Some(value.trim().parse::<usize>().unwrap())
+                } else {
+                    None
+                }
+            })
+            .unwrap_or(0)
+    }
+
+    fn json_response(body: &str) -> String {
+        format!(
+            "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+            body.len(),
+            body
+        )
+    }
+
+    fn chunked_body(body: &str) -> String {
+        format!("{:x}\r\n{}\r\n0\r\n\r\n", body.len(), body)
     }
 }
