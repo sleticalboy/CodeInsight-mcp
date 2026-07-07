@@ -235,8 +235,9 @@ pub fn semantic_index_value(root: PathBuf, chunk_lines: usize) -> Result<Semanti
     let provider = embedding::provider_from_env()?;
     if provider.is_configured() && chunks_written > 0 {
         let stored_chunks = store.semantic_chunks()?;
+        let batch_size = embedding::batch_size_from_env()?;
         let semantic_embeddings =
-            semantic_embeddings_for_chunks(provider.as_ref(), &stored_chunks)?;
+            semantic_embeddings_for_chunks(provider.as_ref(), &stored_chunks, batch_size)?;
         store.replace_semantic_embeddings(
             provider.provider_name(),
             provider.model_name(),
@@ -327,28 +328,40 @@ fn semantic_vector_status(configured: bool, chunks: usize, embeddings: usize) ->
 fn semantic_embeddings_for_chunks(
     provider: &dyn embedding::EmbeddingProvider,
     chunks: &[SemanticChunk],
+    batch_size: usize,
 ) -> Result<Vec<SemanticEmbeddingInput>> {
-    let inputs = chunks
-        .iter()
-        .map(|chunk| chunk.text.clone())
-        .collect::<Vec<_>>();
-    let embeddings = provider.embed(&inputs)?;
-    if embeddings.len() != chunks.len() {
-        bail!(
-            "embedding provider returned {} vectors for {} chunks",
-            embeddings.len(),
-            chunks.len()
+    let batch_size = batch_size.max(1);
+    let mut semantic_embeddings = Vec::with_capacity(chunks.len());
+
+    for (batch_index, chunk_batch) in chunks.chunks(batch_size).enumerate() {
+        let inputs = chunk_batch
+            .iter()
+            .map(|chunk| chunk.text.clone())
+            .collect::<Vec<_>>();
+        let embeddings = provider
+            .embed(&inputs)
+            .with_context(|| format!("embedding provider failed in batch {}", batch_index + 1))?;
+        if embeddings.len() != chunk_batch.len() {
+            bail!(
+                "embedding provider returned {} vectors for {} chunks in batch {}",
+                embeddings.len(),
+                chunk_batch.len(),
+                batch_index + 1
+            );
+        }
+
+        semantic_embeddings.extend(
+            chunk_batch
+                .iter()
+                .zip(embeddings)
+                .map(|(chunk, embedding)| SemanticEmbeddingInput {
+                    chunk_id: chunk.id,
+                    vector: embedding.values,
+                }),
         );
     }
 
-    Ok(chunks
-        .iter()
-        .zip(embeddings)
-        .map(|(chunk, embedding)| SemanticEmbeddingInput {
-            chunk_id: chunk.id,
-            vector: embedding.values,
-        })
-        .collect())
+    Ok(semantic_embeddings)
 }
 
 fn semantic_search_result(
@@ -829,15 +842,13 @@ fn context_semantic_recommendation(status: &ContextSemanticStatus) -> String {
     if status.vector_status == "provider_not_configured" {
         if status.fallback_candidates > 0 {
             return format!(
-                "set {}=local-hash or {}=ollama and run semantic-index to enable vector matches; deterministic semantic chunk fallback was available",
-                embedding::PROVIDER_ENV,
-                embedding::PROVIDER_ENV
+                "{} and run semantic-index to enable vector matches; deterministic semantic chunk fallback was available",
+                embedding::provider_help()
             );
         }
         return format!(
-            "set {}=local-hash or {}=ollama and run semantic-index to enable semantic context",
-            embedding::PROVIDER_ENV,
-            embedding::PROVIDER_ENV
+            "{} and run semantic-index to enable semantic context",
+            embedding::provider_help()
         );
     }
     if status.vector_status == "embeddings_missing_for_provider" {
@@ -1376,10 +1387,109 @@ fn normalize_seed_file(root: &Path, file: &str) -> Result<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Mutex;
 
     #[test]
     fn uncovered_segments_keeps_ranges_after_selected_overlap() {
         assert_eq!(uncovered_segments(1, 10, &[(4, 6)]), vec![(1, 3), (7, 10)]);
+    }
+
+    #[test]
+    fn semantic_embeddings_for_chunks_batches_provider_requests() {
+        let provider = RecordingEmbeddingProvider::default();
+        let chunks = (1..=5)
+            .map(|id| SemanticChunk {
+                id,
+                file: format!("src/file{id}.rs"),
+                start_line: 1,
+                end_line: 1,
+                token_estimate: 1,
+                text: format!("chunk {id}"),
+            })
+            .collect::<Vec<_>>();
+
+        let embeddings = semantic_embeddings_for_chunks(&provider, &chunks, 2).unwrap();
+
+        assert_eq!(
+            provider.calls.lock().unwrap().as_slice(),
+            &[
+                vec!["chunk 1".to_string(), "chunk 2".to_string()],
+                vec!["chunk 3".to_string(), "chunk 4".to_string()],
+                vec!["chunk 5".to_string()],
+            ]
+        );
+        assert_eq!(
+            embeddings
+                .iter()
+                .map(|embedding| embedding.chunk_id)
+                .collect::<Vec<_>>(),
+            vec![1, 2, 3, 4, 5]
+        );
+        assert_eq!(embeddings[4].vector, vec![7.0]);
+    }
+
+    #[test]
+    fn semantic_embeddings_for_chunks_reports_batch_mismatch() {
+        let provider = ShortEmbeddingProvider;
+        let chunks = (1..=3)
+            .map(|id| SemanticChunk {
+                id,
+                file: format!("src/file{id}.rs"),
+                start_line: 1,
+                end_line: 1,
+                token_estimate: 1,
+                text: format!("chunk {id}"),
+            })
+            .collect::<Vec<_>>();
+
+        let error = semantic_embeddings_for_chunks(&provider, &chunks, 2).unwrap_err();
+
+        assert!(
+            error
+                .to_string()
+                .contains("returned 1 vectors for 2 chunks in batch 1")
+        );
+    }
+
+    #[derive(Default)]
+    struct RecordingEmbeddingProvider {
+        calls: Mutex<Vec<Vec<String>>>,
+    }
+
+    impl embedding::EmbeddingProvider for RecordingEmbeddingProvider {
+        fn provider_name(&self) -> &str {
+            "recording"
+        }
+
+        fn model_name(&self) -> &str {
+            "recording-v1"
+        }
+
+        fn embed(&self, inputs: &[String]) -> Result<Vec<embedding::Embedding>> {
+            self.calls.lock().unwrap().push(inputs.to_vec());
+            Ok(inputs
+                .iter()
+                .map(|input| embedding::Embedding {
+                    values: vec![input.len() as f32],
+                })
+                .collect())
+        }
+    }
+
+    struct ShortEmbeddingProvider;
+
+    impl embedding::EmbeddingProvider for ShortEmbeddingProvider {
+        fn provider_name(&self) -> &str {
+            "short"
+        }
+
+        fn model_name(&self) -> &str {
+            "short-v1"
+        }
+
+        fn embed(&self, _inputs: &[String]) -> Result<Vec<embedding::Embedding>> {
+            Ok(vec![embedding::Embedding { values: vec![1.0] }])
+        }
     }
 }
 

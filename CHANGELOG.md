@@ -9,6 +9,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 ### Added
 
 - OpenAI-compatible embedding HTTP transport for `/embeddings` with redacted API-key handling, response index ordering, and response-shape validation.
+- `semantic-index` now batches embedding provider requests with `CODEINSIGHT_EMBEDDING_BATCH_SIZE`, defaulting to 64 chunks per request.
 - `openai` embedding provider config skeleton with environment validation and redacted `embedding-status` reporting.
 
 ## [0.1.4] - 2026-07-07

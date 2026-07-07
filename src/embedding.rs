@@ -22,6 +22,7 @@ pub const OPENAI_API_KEY_ENV: &str = "CODEINSIGHT_OPENAI_API_KEY";
 pub const OPENAI_BASE_URL_ENV: &str = "CODEINSIGHT_OPENAI_BASE_URL";
 pub const OPENAI_MODEL_ENV: &str = "CODEINSIGHT_OPENAI_EMBEDDING_MODEL";
 pub const OPENAI_TIMEOUT_SECS_ENV: &str = "CODEINSIGHT_OPENAI_TIMEOUT_SECS";
+pub const BATCH_SIZE_ENV: &str = "CODEINSIGHT_EMBEDDING_BATCH_SIZE";
 pub const DEFAULT_OPENAI_BASE_URL: &str = "https://api.openai.com/v1";
 pub const DEFAULT_OPENAI_MODEL: &str = "text-embedding-3-small";
 pub const SUPPORTED_PROVIDER_NAMES: &[&str] = &[
@@ -35,6 +36,7 @@ pub const SUPPORTED_PROVIDER_NAMES: &[&str] = &[
 const LOCAL_HASH_DIMENSIONS: usize = 64;
 pub const DEFAULT_OLLAMA_TIMEOUT_SECS: u64 = 30;
 pub const DEFAULT_OPENAI_TIMEOUT_SECS: u64 = 30;
+pub const DEFAULT_EMBEDDING_BATCH_SIZE: usize = 64;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EmbeddingProviderConfig {
@@ -290,6 +292,21 @@ pub fn provider_help() -> String {
     format!(
         "set {PROVIDER_ENV}=local-hash for deterministic local preview embeddings, {PROVIDER_ENV}=ollama for local Ollama embeddings, or {PROVIDER_ENV}=openai for OpenAI-compatible embeddings"
     )
+}
+
+pub fn batch_size_from_env() -> Result<usize> {
+    match std::env::var(BATCH_SIZE_ENV)
+        .ok()
+        .map(|value| value.trim().to_string())
+    {
+        Some(value) if !value.is_empty() => {
+            let parsed = value
+                .parse::<usize>()
+                .with_context(|| format!("{BATCH_SIZE_ENV} must be a positive integer"))?;
+            Ok(parsed.max(1))
+        }
+        _ => Ok(DEFAULT_EMBEDDING_BATCH_SIZE),
+    }
 }
 
 pub fn embed_query(provider: &dyn EmbeddingProvider, query: &str) -> Result<Embedding> {
@@ -724,6 +741,46 @@ mod tests {
         assert_eq!(config.ollama, None);
         assert_eq!(config.openai, None);
         restore_env(PROVIDER_ENV, previous);
+    }
+
+    #[test]
+    fn batch_size_from_env_reports_default_and_normalizes_zero() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        let previous = std::env::var(BATCH_SIZE_ENV).ok();
+        unsafe {
+            std::env::remove_var(BATCH_SIZE_ENV);
+        }
+        assert_eq!(batch_size_from_env().unwrap(), DEFAULT_EMBEDDING_BATCH_SIZE);
+
+        unsafe {
+            std::env::set_var(BATCH_SIZE_ENV, "3");
+        }
+        assert_eq!(batch_size_from_env().unwrap(), 3);
+
+        unsafe {
+            std::env::set_var(BATCH_SIZE_ENV, "0");
+        }
+        assert_eq!(batch_size_from_env().unwrap(), 1);
+
+        restore_env(BATCH_SIZE_ENV, previous);
+    }
+
+    #[test]
+    fn batch_size_from_env_rejects_non_integer() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        let previous = std::env::var(BATCH_SIZE_ENV).ok();
+        unsafe {
+            std::env::set_var(BATCH_SIZE_ENV, "large");
+        }
+
+        let error = batch_size_from_env().unwrap_err();
+
+        assert!(
+            error
+                .to_string()
+                .contains("CODEINSIGHT_EMBEDDING_BATCH_SIZE must be a positive integer")
+        );
+        restore_env(BATCH_SIZE_ENV, previous);
     }
 
     #[test]

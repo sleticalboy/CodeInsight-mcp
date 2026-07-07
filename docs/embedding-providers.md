@@ -81,6 +81,7 @@ Defaults:
 - `CODEINSIGHT_OLLAMA_BASE_URL=http://127.0.0.1:11434`
 - `CODEINSIGHT_OLLAMA_EMBEDDING_MODEL=embeddinggemma`
 - `CODEINSIGHT_OLLAMA_TIMEOUT_SECS=30`
+- `CODEINSIGHT_EMBEDDING_BATCH_SIZE=64`
 
 Example:
 
@@ -131,6 +132,7 @@ Defaults:
 - `CODEINSIGHT_OPENAI_BASE_URL=https://api.openai.com/v1`
 - `CODEINSIGHT_OPENAI_EMBEDDING_MODEL=text-embedding-3-small`
 - `CODEINSIGHT_OPENAI_TIMEOUT_SECS=30`
+- `CODEINSIGHT_EMBEDDING_BATCH_SIZE=64`
 
 Example status check:
 
@@ -157,8 +159,8 @@ codeinsight semantic-search /path/to/repo "request validation"
 
 Current limitations:
 
-- The provider uses one request for the full chunk batch produced by
-  `semantic-index`; batching controls will be added later.
+- `semantic-index` batches embedding requests with
+  `CODEINSIGHT_EMBEDDING_BATCH_SIZE`, defaulting to 64 chunks per request.
 - It does not retry rate limits or transient HTTP failures yet.
 - It stores vectors under `(provider, model)` like all other providers.
 
@@ -172,6 +174,9 @@ Additional external providers should follow this contract:
   arguments or MCP payloads.
 - `semantic-index` must write vectors under `(provider, model)` so multiple
   providers can coexist in SQLite.
+- `semantic-index` must batch external provider requests with
+  `CODEINSIGHT_EMBEDDING_BATCH_SIZE` so large repositories do not require one
+  huge provider request.
 - `semantic-search` must query only vectors matching the configured provider
   and model.
 - Provider errors must be explicit: missing credentials, failed network calls,
@@ -204,7 +209,7 @@ Expected errors:
 - Missing vector index:
   `semantic search index is empty for provider ... model ...; run semantic-index ...`
 - Bad provider response:
-  `embedding provider returned N vectors for M chunks`
+  `embedding provider returned N vectors for M chunks in batch B`
 - Ollama unavailable:
   `ollama embedding provider is unreachable at ...`
 - OpenAI unavailable or rejected:
