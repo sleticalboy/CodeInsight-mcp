@@ -54,6 +54,7 @@ main() {
   local index_json="$TEMP_DIR/index.json"
   local chunks_json="$TEMP_DIR/chunks.json"
   local embeddings_json="$TEMP_DIR/embeddings.json"
+  local reused_embeddings_json="$TEMP_DIR/reused-embeddings.json"
   local search_json="$TEMP_DIR/search.json"
   local error_log="$TEMP_DIR/search-error.log"
 
@@ -71,7 +72,11 @@ main() {
 
   CODEINSIGHT_EMBEDDING_PROVIDER=local-hash \
     "$CODEINSIGHT_BIN" semantic-index "$repo_dir" --chunk-lines 10 >"$embeddings_json"
-  jq -e '.provider == "local-hash" and .vector_status == "embeddings_indexed" and .embeddings == .chunks and .embeddings > 0' "$embeddings_json" >/dev/null
+  jq -e '.provider == "local-hash" and .vector_status == "embeddings_indexed" and .embeddings == .chunks and .embeddings > 0 and .embeddings_generated == .chunks and .embeddings_reused == 0' "$embeddings_json" >/dev/null
+
+  CODEINSIGHT_EMBEDDING_PROVIDER=local-hash \
+    "$CODEINSIGHT_BIN" semantic-index "$repo_dir" --chunk-lines 10 >"$reused_embeddings_json"
+  jq -e '.provider == "local-hash" and .vector_status == "embeddings_indexed" and .embeddings == .chunks and .embeddings_generated == 0 and .embeddings_reused == .chunks' "$reused_embeddings_json" >/dev/null
 
   CODEINSIGHT_EMBEDDING_PROVIDER=local-hash \
     "$CODEINSIGHT_BIN" semantic-search "$repo_dir" "session cookie behavior" --limit 5 >"$search_json"

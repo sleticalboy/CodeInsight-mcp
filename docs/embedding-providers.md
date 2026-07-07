@@ -175,6 +175,9 @@ Current limitations:
   `CODEINSIGHT_EMBEDDING_BATCH_SIZE`, defaulting to 64 chunks per request.
 - `semantic-index` preserves existing vectors for unchanged chunks and only
   calls the selected provider for chunks missing vectors.
+- `semantic-index` reports cache-effectiveness counters through
+  `chunks_added`, `chunks_updated`, `chunks_removed`, `embeddings_generated`,
+  and `embeddings_reused`.
 - It does not retry rate limits or transient HTTP failures yet.
 - It stores vectors under `(provider, model)` like all other providers.
 

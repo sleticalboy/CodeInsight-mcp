@@ -31,7 +31,15 @@ fn cli_indexes_and_queries_fixture_project() {
     );
     let semantic_chunks = semantic_index["chunks"].as_u64().unwrap();
     assert!(semantic_chunks > 0);
+    assert_eq!(
+        semantic_index["chunks_added"].as_u64(),
+        Some(semantic_chunks)
+    );
+    assert_eq!(semantic_index["chunks_updated"].as_u64(), Some(0));
+    assert_eq!(semantic_index["chunks_removed"].as_u64(), Some(0));
     assert_eq!(semantic_index["embeddings"].as_u64(), Some(0));
+    assert_eq!(semantic_index["embeddings_generated"].as_u64(), Some(0));
+    assert_eq!(semantic_index["embeddings_reused"].as_u64(), Some(0));
 
     let embedding_status = run_json(["embedding-status", fixture.path().to_str().unwrap()]);
     assert_eq!(embedding_status["provider"], "disabled");
@@ -100,6 +108,43 @@ fn cli_indexes_and_queries_fixture_project() {
     );
     assert_eq!(
         semantic_index_with_embeddings["embeddings"].as_u64(),
+        Some(semantic_chunks)
+    );
+    assert_eq!(
+        semantic_index_with_embeddings["chunks_added"].as_u64(),
+        Some(0)
+    );
+    assert_eq!(
+        semantic_index_with_embeddings["chunks_updated"].as_u64(),
+        Some(0)
+    );
+    assert_eq!(
+        semantic_index_with_embeddings["chunks_removed"].as_u64(),
+        Some(0)
+    );
+    assert_eq!(
+        semantic_index_with_embeddings["embeddings_generated"].as_u64(),
+        Some(semantic_chunks)
+    );
+    assert_eq!(
+        semantic_index_with_embeddings["embeddings_reused"].as_u64(),
+        Some(0)
+    );
+    let repeated_semantic_index_with_embeddings = run_json_with_env(
+        [
+            "semantic-index",
+            fixture.path().to_str().unwrap(),
+            "--chunk-lines",
+            "20",
+        ],
+        [("CODEINSIGHT_EMBEDDING_PROVIDER", "local-hash")],
+    );
+    assert_eq!(
+        repeated_semantic_index_with_embeddings["embeddings_generated"].as_u64(),
+        Some(0)
+    );
+    assert_eq!(
+        repeated_semantic_index_with_embeddings["embeddings_reused"].as_u64(),
         Some(semantic_chunks)
     );
     let embedding_status_with_provider = run_json_with_env(

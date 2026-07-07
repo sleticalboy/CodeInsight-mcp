@@ -5,8 +5,8 @@ use rusqlite::{Connection, Row, params, params_from_iter};
 
 use crate::model::{
     CallEdge, Dependency, DependencyGraph, DirectoryStat, Language, LanguageStat, ProjectOverview,
-    SemanticChunk, SemanticChunkInput, SemanticEmbeddingInput, SemanticEmbeddingMatch, SourceFile,
-    Symbol, SymbolKind,
+    SemanticChunk, SemanticChunkInput, SemanticChunkWriteStats, SemanticEmbeddingInput,
+    SemanticEmbeddingMatch, SourceFile, Symbol, SymbolKind,
 };
 
 pub const SCHEMA_VERSION: i64 = 22;
@@ -229,7 +229,10 @@ impl Store {
         Ok(())
     }
 
-    pub fn replace_semantic_chunks(&mut self, chunks: &[SemanticChunkInput]) -> Result<usize> {
+    pub fn replace_semantic_chunks(
+        &mut self,
+        chunks: &[SemanticChunkInput],
+    ) -> Result<SemanticChunkWriteStats> {
         let tx = self.conn.transaction()?;
         let updated_at = unix_timestamp();
 
@@ -265,6 +268,40 @@ impl Store {
                 ])?;
             }
         }
+
+        let removed = tx.query_row(
+            "select count(*)
+             from semantic_chunks sc
+             left join temp.desired_semantic_chunks d
+                on d.file_id = sc.file_id
+                and d.start_line = sc.start_line
+                and d.end_line = sc.end_line
+             where d.file_id is null",
+            [],
+            |row| row.get::<_, i64>(0),
+        )? as usize;
+        let updated = tx.query_row(
+            "select count(*)
+             from semantic_chunks sc
+             join temp.desired_semantic_chunks d
+                on d.file_id = sc.file_id
+                and d.start_line = sc.start_line
+                and d.end_line = sc.end_line
+             where d.content_hash != sc.content_hash",
+            [],
+            |row| row.get::<_, i64>(0),
+        )? as usize;
+        let added = tx.query_row(
+            "select count(*)
+             from temp.desired_semantic_chunks d
+             left join semantic_chunks sc
+                on sc.file_id = d.file_id
+                and sc.start_line = d.start_line
+                and sc.end_line = d.end_line
+             where sc.id is null",
+            [],
+            |row| row.get::<_, i64>(0),
+        )? as usize;
 
         tx.execute(
             "delete from semantic_embeddings
@@ -345,7 +382,12 @@ impl Store {
             row.get::<_, i64>(0)
         })? as usize;
         tx.commit()?;
-        Ok(total)
+        Ok(SemanticChunkWriteStats {
+            total,
+            added,
+            updated,
+            removed,
+        })
     }
 
     pub fn count_semantic_chunks(&self) -> Result<usize> {
@@ -1322,10 +1364,11 @@ mod tests {
             text: "fn main() {}".to_string(),
         };
 
-        assert_eq!(
-            store.replace_semantic_chunks(std::slice::from_ref(&chunk))?,
-            1
-        );
+        let first_stats = store.replace_semantic_chunks(std::slice::from_ref(&chunk))?;
+        assert_eq!(first_stats.total, 1);
+        assert_eq!(first_stats.added, 1);
+        assert_eq!(first_stats.updated, 0);
+        assert_eq!(first_stats.removed, 0);
         let chunks = store.semantic_chunks()?;
         store.upsert_semantic_embeddings(
             "local-hash",
@@ -1336,10 +1379,11 @@ mod tests {
             }],
         )?;
 
-        assert_eq!(
-            store.replace_semantic_chunks(std::slice::from_ref(&chunk))?,
-            1
-        );
+        let unchanged_stats = store.replace_semantic_chunks(std::slice::from_ref(&chunk))?;
+        assert_eq!(unchanged_stats.total, 1);
+        assert_eq!(unchanged_stats.added, 0);
+        assert_eq!(unchanged_stats.updated, 0);
+        assert_eq!(unchanged_stats.removed, 0);
 
         assert_eq!(
             store.count_semantic_embeddings_for("local-hash", "local-hash-v1")?,
@@ -1357,10 +1401,11 @@ mod tests {
             ..chunk
         };
 
-        assert_eq!(
-            store.replace_semantic_chunks(std::slice::from_ref(&changed_chunk))?,
-            1
-        );
+        let changed_stats = store.replace_semantic_chunks(std::slice::from_ref(&changed_chunk))?;
+        assert_eq!(changed_stats.total, 1);
+        assert_eq!(changed_stats.added, 0);
+        assert_eq!(changed_stats.updated, 1);
+        assert_eq!(changed_stats.removed, 0);
 
         assert_eq!(
             store.count_semantic_embeddings_for("local-hash", "local-hash-v1")?,
@@ -1372,6 +1417,12 @@ mod tests {
                 .len(),
             1
         );
+
+        let removed_stats = store.replace_semantic_chunks(&[])?;
+        assert_eq!(removed_stats.total, 0);
+        assert_eq!(removed_stats.added, 0);
+        assert_eq!(removed_stats.updated, 0);
+        assert_eq!(removed_stats.removed, 1);
 
         Ok(())
     }

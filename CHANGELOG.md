@@ -10,6 +10,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 - `version` CLI/MCP command and top-level `--version` flag for release verification and client diagnostics.
 - `semantic-index` now preserves existing embeddings for unchanged chunks and only embeds chunks missing vectors for the selected provider/model.
+- `semantic-index` now reports incremental chunk and embedding stats: `chunks_added`, `chunks_updated`, `chunks_removed`, `embeddings_generated`, and `embeddings_reused`.
 
 ## [0.1.5] - 2026-07-07
 

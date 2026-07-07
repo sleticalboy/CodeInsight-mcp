@@ -550,6 +550,10 @@ def helper():
             semantic_index_result["structuredContent"]["chunks"].as_u64(),
             Some(1)
         );
+        assert_eq!(
+            semantic_index_result["structuredContent"]["chunks_added"].as_u64(),
+            Some(1)
+        );
 
         let embedding_status_result = handle_tool_call(json!({
             "name": "embedding_status",

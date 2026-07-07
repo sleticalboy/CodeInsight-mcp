@@ -244,11 +244,13 @@ pub fn semantic_index_value(root: PathBuf, chunk_lines: usize) -> Result<Semanti
         }
     }
 
-    let chunks_indexed = store.replace_semantic_chunks(&chunks)?;
+    let chunk_stats = store.replace_semantic_chunks(&chunks)?;
     let provider = embedding::provider_from_env()?;
-    if provider.is_configured() && chunks_indexed > 0 {
+    let mut embeddings_generated = 0;
+    if provider.is_configured() && chunk_stats.total > 0 {
         let stored_chunks = store
             .semantic_chunks_missing_embeddings(provider.provider_name(), provider.model_name())?;
+        embeddings_generated = stored_chunks.len();
         let batch_size = embedding::batch_size_from_env()?;
         let semantic_embeddings =
             semantic_embeddings_for_chunks(provider.as_ref(), &stored_chunks, batch_size)?;
@@ -263,12 +265,22 @@ pub fn semantic_index_value(root: PathBuf, chunk_lines: usize) -> Result<Semanti
     } else {
         0
     };
+    let embeddings_reused = if provider.is_configured() {
+        embeddings.saturating_sub(embeddings_generated)
+    } else {
+        0
+    };
 
     Ok(SemanticIndexReport {
         root: root.display().to_string(),
         indexed_files: files.len(),
-        chunks: chunks_indexed,
+        chunks: chunk_stats.total,
+        chunks_added: chunk_stats.added,
+        chunks_updated: chunk_stats.updated,
+        chunks_removed: chunk_stats.removed,
         embeddings,
+        embeddings_generated,
+        embeddings_reused,
         chunk_lines,
         provider: provider.provider_name().to_string(),
         vector_status: if embeddings == 0 {

@@ -119,11 +119,24 @@ pub struct SemanticIndexReport {
     pub root: String,
     pub indexed_files: usize,
     pub chunks: usize,
+    pub chunks_added: usize,
+    pub chunks_updated: usize,
+    pub chunks_removed: usize,
     pub embeddings: usize,
+    pub embeddings_generated: usize,
+    pub embeddings_reused: usize,
     pub chunk_lines: usize,
     pub provider: String,
     pub vector_status: String,
     pub errors: Vec<IndexError>,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct SemanticChunkWriteStats {
+    pub total: usize,
+    pub added: usize,
+    pub updated: usize,
+    pub removed: usize,
 }
 
 #[derive(Debug, Clone, Serialize)]
