@@ -157,6 +157,17 @@ CODEINSIGHT_OPENAI_API_KEY=... \
 codeinsight semantic-search /path/to/repo "request validation"
 ```
 
+Optional smoke test:
+
+```bash
+CODEINSIGHT_OPENAI_API_KEY=... scripts/openai-semantic-smoke.sh
+```
+
+The smoke test uses a tiny temporary fixture, defaults to
+`CODEINSIGHT_EMBEDDING_BATCH_SIZE=1` to exercise batched indexing, verifies
+that `embedding-status` redacts the API key, and skips clearly when
+`CODEINSIGHT_OPENAI_API_KEY` is not configured.
+
 Current limitations:
 
 - `semantic-index` batches embedding requests with

@@ -35,3 +35,14 @@ scripts/ollama-semantic-smoke.sh
 
 That script uses `CODEINSIGHT_EMBEDDING_PROVIDER=ollama` and skips when Ollama
 is unreachable or the selected model is missing.
+
+For an optional OpenAI-compatible embedding smoke test, run:
+
+```bash
+CODEINSIGHT_OPENAI_API_KEY=... scripts/openai-semantic-smoke.sh
+```
+
+That script uses `CODEINSIGHT_EMBEDDING_PROVIDER=openai`, defaults to
+`CODEINSIGHT_EMBEDDING_BATCH_SIZE=1` to exercise batched indexing, checks that
+`embedding-status` does not print the API key, and skips clearly when
+`CODEINSIGHT_OPENAI_API_KEY` is not configured.
