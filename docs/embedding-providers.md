@@ -178,6 +178,8 @@ Current limitations:
 - `semantic-index` reports cache-effectiveness counters through
   `chunks_added`, `chunks_updated`, `chunks_removed`, `embeddings_generated`,
   and `embeddings_reused`.
+- `semantic-index --explain` and MCP `semantic_index` `explain: true` include
+  per-chunk `changes` entries with add/update/remove ranges and content hashes.
 - It does not retry rate limits or transient HTTP failures yet.
 - It stores vectors under `(provider, model)` like all other providers.
 

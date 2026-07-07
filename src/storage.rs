@@ -5,8 +5,8 @@ use rusqlite::{Connection, Row, params, params_from_iter};
 
 use crate::model::{
     CallEdge, Dependency, DependencyGraph, DirectoryStat, Language, LanguageStat, ProjectOverview,
-    SemanticChunk, SemanticChunkInput, SemanticChunkWriteStats, SemanticEmbeddingInput,
-    SemanticEmbeddingMatch, SourceFile, Symbol, SymbolKind,
+    SemanticChunk, SemanticChunkChange, SemanticChunkInput, SemanticChunkWriteStats,
+    SemanticEmbeddingInput, SemanticEmbeddingMatch, SourceFile, Symbol, SymbolKind,
 };
 
 pub const SCHEMA_VERSION: i64 = 22;
@@ -232,6 +232,7 @@ impl Store {
     pub fn replace_semantic_chunks(
         &mut self,
         chunks: &[SemanticChunkInput],
+        explain_changes: bool,
     ) -> Result<SemanticChunkWriteStats> {
         let tx = self.conn.transaction()?;
         let updated_at = unix_timestamp();
@@ -302,6 +303,71 @@ impl Store {
             [],
             |row| row.get::<_, i64>(0),
         )? as usize;
+        let changes = if explain_changes {
+            let mut stmt = tx.prepare(
+                "select change, file, start_line, end_line, previous_hash, content_hash
+                 from (
+                    select
+                        'removed' as change,
+                        f.path as file,
+                        sc.start_line as start_line,
+                        sc.end_line as end_line,
+                        sc.content_hash as previous_hash,
+                        null as content_hash
+                    from semantic_chunks sc
+                    join files f on f.id = sc.file_id
+                    left join temp.desired_semantic_chunks d
+                        on d.file_id = sc.file_id
+                        and d.start_line = sc.start_line
+                        and d.end_line = sc.end_line
+                    where d.file_id is null
+                    union all
+                    select
+                        'updated' as change,
+                        f.path as file,
+                        sc.start_line as start_line,
+                        sc.end_line as end_line,
+                        sc.content_hash as previous_hash,
+                        d.content_hash as content_hash
+                    from semantic_chunks sc
+                    join files f on f.id = sc.file_id
+                    join temp.desired_semantic_chunks d
+                        on d.file_id = sc.file_id
+                        and d.start_line = sc.start_line
+                        and d.end_line = sc.end_line
+                    where d.content_hash != sc.content_hash
+                    union all
+                    select
+                        'added' as change,
+                        f.path as file,
+                        d.start_line as start_line,
+                        d.end_line as end_line,
+                        null as previous_hash,
+                        d.content_hash as content_hash
+                    from temp.desired_semantic_chunks d
+                    join files f on f.id = d.file_id
+                    left join semantic_chunks sc
+                        on sc.file_id = d.file_id
+                        and sc.start_line = d.start_line
+                        and sc.end_line = d.end_line
+                    where sc.id is null
+                 )
+                 order by file, start_line, end_line, change",
+            )?;
+            let rows = stmt.query_map([], |row| {
+                Ok(SemanticChunkChange {
+                    change: row.get(0)?,
+                    file: row.get(1)?,
+                    start_line: row.get::<_, i64>(2)? as usize,
+                    end_line: row.get::<_, i64>(3)? as usize,
+                    previous_hash: row.get(4)?,
+                    content_hash: row.get(5)?,
+                })
+            })?;
+            rows.collect::<rusqlite::Result<Vec<_>>>()?
+        } else {
+            Vec::new()
+        };
 
         tx.execute(
             "delete from semantic_embeddings
@@ -387,6 +453,7 @@ impl Store {
             added,
             updated,
             removed,
+            changes,
         })
     }
 
@@ -1364,11 +1431,21 @@ mod tests {
             text: "fn main() {}".to_string(),
         };
 
-        let first_stats = store.replace_semantic_chunks(std::slice::from_ref(&chunk))?;
+        let first_stats = store.replace_semantic_chunks(std::slice::from_ref(&chunk), true)?;
         assert_eq!(first_stats.total, 1);
         assert_eq!(first_stats.added, 1);
         assert_eq!(first_stats.updated, 0);
         assert_eq!(first_stats.removed, 0);
+        assert_eq!(first_stats.changes.len(), 1);
+        assert_eq!(first_stats.changes[0].change, "added");
+        assert_eq!(first_stats.changes[0].file, "src/main.rs");
+        assert_eq!(first_stats.changes[0].start_line, 1);
+        assert_eq!(first_stats.changes[0].end_line, 2);
+        assert_eq!(first_stats.changes[0].previous_hash, None);
+        assert_eq!(
+            first_stats.changes[0].content_hash.as_deref(),
+            Some("chunk-a")
+        );
         let chunks = store.semantic_chunks()?;
         store.upsert_semantic_embeddings(
             "local-hash",
@@ -1379,11 +1456,12 @@ mod tests {
             }],
         )?;
 
-        let unchanged_stats = store.replace_semantic_chunks(std::slice::from_ref(&chunk))?;
+        let unchanged_stats = store.replace_semantic_chunks(std::slice::from_ref(&chunk), true)?;
         assert_eq!(unchanged_stats.total, 1);
         assert_eq!(unchanged_stats.added, 0);
         assert_eq!(unchanged_stats.updated, 0);
         assert_eq!(unchanged_stats.removed, 0);
+        assert!(unchanged_stats.changes.is_empty());
 
         assert_eq!(
             store.count_semantic_embeddings_for("local-hash", "local-hash-v1")?,
@@ -1401,11 +1479,22 @@ mod tests {
             ..chunk
         };
 
-        let changed_stats = store.replace_semantic_chunks(std::slice::from_ref(&changed_chunk))?;
+        let changed_stats =
+            store.replace_semantic_chunks(std::slice::from_ref(&changed_chunk), true)?;
         assert_eq!(changed_stats.total, 1);
         assert_eq!(changed_stats.added, 0);
         assert_eq!(changed_stats.updated, 1);
         assert_eq!(changed_stats.removed, 0);
+        assert_eq!(changed_stats.changes.len(), 1);
+        assert_eq!(changed_stats.changes[0].change, "updated");
+        assert_eq!(
+            changed_stats.changes[0].previous_hash.as_deref(),
+            Some("chunk-a")
+        );
+        assert_eq!(
+            changed_stats.changes[0].content_hash.as_deref(),
+            Some("chunk-b")
+        );
 
         assert_eq!(
             store.count_semantic_embeddings_for("local-hash", "local-hash-v1")?,
@@ -1418,11 +1507,18 @@ mod tests {
             1
         );
 
-        let removed_stats = store.replace_semantic_chunks(&[])?;
+        let removed_stats = store.replace_semantic_chunks(&[], true)?;
         assert_eq!(removed_stats.total, 0);
         assert_eq!(removed_stats.added, 0);
         assert_eq!(removed_stats.updated, 0);
         assert_eq!(removed_stats.removed, 1);
+        assert_eq!(removed_stats.changes.len(), 1);
+        assert_eq!(removed_stats.changes[0].change, "removed");
+        assert_eq!(
+            removed_stats.changes[0].previous_hash.as_deref(),
+            Some("chunk-b")
+        );
+        assert_eq!(removed_stats.changes[0].content_hash, None);
 
         Ok(())
     }

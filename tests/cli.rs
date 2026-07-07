@@ -1057,6 +1057,52 @@ fn cli_indexes_checked_in_polyglot_fixture() {
 }
 
 #[test]
+fn cli_semantic_index_explain_reports_chunk_changes() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        "src/auth.py",
+        r#"
+class AuthService:
+    def login(self, session):
+        return session.get("cookie") == "fresh"
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 1);
+
+    let semantic_index = run_json([
+        "semantic-index",
+        fixture.path().to_str().unwrap(),
+        "--chunk-lines",
+        "20",
+        "--explain",
+    ]);
+    let semantic_chunks = semantic_index["chunks"].as_u64().unwrap();
+    assert_eq!(
+        semantic_index["chunks_added"].as_u64(),
+        Some(semantic_chunks)
+    );
+    let changes = semantic_index["changes"].as_array().unwrap();
+    assert_eq!(changes.len() as u64, semantic_chunks);
+    assert_eq!(changes[0]["change"], "added");
+    assert_eq!(changes[0]["file"], "src/auth.py");
+    assert_eq!(changes[0]["start_line"].as_u64(), Some(1));
+    assert!(changes[0].get("previous_hash").is_none());
+    assert!(changes[0]["content_hash"].as_str().unwrap().len() >= 32);
+
+    let repeated_semantic_index = run_json([
+        "semantic-index",
+        fixture.path().to_str().unwrap(),
+        "--chunk-lines",
+        "20",
+    ]);
+    assert_eq!(repeated_semantic_index["chunks_added"].as_u64(), Some(0));
+    assert!(repeated_semantic_index.get("changes").is_none());
+}
+
+#[test]
 fn cli_semantic_search_requires_embedding_provider() {
     let fixture = fixture_project();
 

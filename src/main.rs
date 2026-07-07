@@ -29,7 +29,9 @@ async fn main() -> Result<()> {
             tools::find_references(args.root, args.symbol, args.limit, args.include_definitions)?
         }
         Command::SemanticSearch(args) => tools::semantic_search(args.root, args.query, args.limit)?,
-        Command::SemanticIndex(args) => tools::semantic_index(args.root, args.chunk_lines)?,
+        Command::SemanticIndex(args) => {
+            tools::semantic_index(args.root, args.chunk_lines, args.explain)?
+        }
         Command::EmbeddingStatus(args) => tools::embedding_status(args.root)?,
         Command::ContextPack(args) => tools::context_pack(
             args.root,

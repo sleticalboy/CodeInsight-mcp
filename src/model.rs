@@ -129,14 +129,29 @@ pub struct SemanticIndexReport {
     pub provider: String,
     pub vector_status: String,
     pub errors: Vec<IndexError>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub changes: Option<Vec<SemanticChunkChange>>,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct SemanticChunkWriteStats {
     pub total: usize,
     pub added: usize,
     pub updated: usize,
     pub removed: usize,
+    pub changes: Vec<SemanticChunkChange>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct SemanticChunkChange {
+    pub change: String,
+    pub file: String,
+    pub start_line: usize,
+    pub end_line: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub previous_hash: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub content_hash: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]

@@ -123,7 +123,8 @@ fn handle_tool_call(params: Value) -> Result<Value> {
         "semantic_index" => {
             let root = required_path(&arguments, "root")?;
             let chunk_lines = optional_positive_usize(&arguments, "chunk_lines", 80)?;
-            serde_json::to_value(tools::semantic_index_value(root, chunk_lines)?)?
+            let explain = optional_bool(&arguments, "explain", false)?;
+            serde_json::to_value(tools::semantic_index_value(root, chunk_lines, explain)?)?
         }
         "embedding_status" => {
             let root = optional_path(&arguments, "root")?;
@@ -260,12 +261,13 @@ fn tool_definitions() -> Value {
         },
         {
             "name": "semantic_index",
-            "description": "Build local semantic text chunks for a previously indexed repository.",
+            "description": "Build local semantic text chunks for a previously indexed repository, optionally returning per-chunk change details.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
                     "root": {"type": "string"},
-                    "chunk_lines": {"type": "integer", "minimum": 1}
+                    "chunk_lines": {"type": "integer", "minimum": 1},
+                    "explain": {"type": "boolean"}
                 },
                 "required": ["root"]
             }
@@ -538,7 +540,8 @@ def helper():
             "name": "semantic_index",
             "arguments": {
                 "root": dir.path(),
-                "chunk_lines": 20
+                "chunk_lines": 20,
+                "explain": true
             }
         }))
         .unwrap();
@@ -553,6 +556,14 @@ def helper():
         assert_eq!(
             semantic_index_result["structuredContent"]["chunks_added"].as_u64(),
             Some(1)
+        );
+        assert_eq!(
+            semantic_index_result["structuredContent"]["changes"][0]["change"].as_str(),
+            Some("added")
+        );
+        assert_eq!(
+            semantic_index_result["structuredContent"]["changes"][0]["file"].as_str(),
+            Some("auth.py")
         );
 
         let embedding_status_result = handle_tool_call(json!({

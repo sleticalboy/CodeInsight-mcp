@@ -73,8 +73,8 @@ pub fn semantic_search(root: PathBuf, query: String, limit: usize) -> Result<()>
     print_json(&results)
 }
 
-pub fn semantic_index(root: PathBuf, chunk_lines: usize) -> Result<()> {
-    let report = semantic_index_value(root, chunk_lines)?;
+pub fn semantic_index(root: PathBuf, chunk_lines: usize, explain: bool) -> Result<()> {
+    let report = semantic_index_value(root, chunk_lines, explain)?;
     print_json(&report)
 }
 
@@ -221,7 +221,11 @@ pub fn semantic_search_value(
     Ok(matches)
 }
 
-pub fn semantic_index_value(root: PathBuf, chunk_lines: usize) -> Result<SemanticIndexReport> {
+pub fn semantic_index_value(
+    root: PathBuf,
+    chunk_lines: usize,
+    explain: bool,
+) -> Result<SemanticIndexReport> {
     let root = root.canonicalize()?;
     let chunk_lines = chunk_lines.max(1);
     let mut store = Store::open(&root)?;
@@ -244,7 +248,7 @@ pub fn semantic_index_value(root: PathBuf, chunk_lines: usize) -> Result<Semanti
         }
     }
 
-    let chunk_stats = store.replace_semantic_chunks(&chunks)?;
+    let chunk_stats = store.replace_semantic_chunks(&chunks, explain)?;
     let provider = embedding::provider_from_env()?;
     let mut embeddings_generated = 0;
     if provider.is_configured() && chunk_stats.total > 0 {
@@ -289,6 +293,7 @@ pub fn semantic_index_value(root: PathBuf, chunk_lines: usize) -> Result<Semanti
             "embeddings_indexed".to_string()
         },
         errors,
+        changes: explain.then_some(chunk_stats.changes),
     })
 }
 

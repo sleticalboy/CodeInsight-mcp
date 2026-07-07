@@ -98,6 +98,8 @@ pub struct SemanticIndexArgs {
     pub root: PathBuf,
     #[arg(long, default_value_t = 80)]
     pub chunk_lines: usize,
+    #[arg(long)]
+    pub explain: bool,
 }
 
 #[derive(Debug, Args)]
