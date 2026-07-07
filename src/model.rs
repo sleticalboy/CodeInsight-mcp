@@ -317,6 +317,8 @@ pub struct ImpactAnalysisReport {
     pub root: String,
     pub summary: String,
     pub depth: usize,
+    pub format: String,
+    pub evidence_limit: usize,
     pub seed_symbols: Vec<String>,
     pub seed_files: Vec<String>,
     pub impacted_files: Vec<ImpactFile>,

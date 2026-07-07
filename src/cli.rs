@@ -88,6 +88,10 @@ pub struct ImpactAnalysisArgs {
     pub limit: usize,
     #[arg(long, default_value_t = 1)]
     pub depth: usize,
+    #[arg(long, default_value = "full")]
+    pub format: String,
+    #[arg(long, default_value_t = 20)]
+    pub evidence_limit: usize,
 }
 
 #[derive(Debug, Args)]

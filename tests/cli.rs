@@ -658,6 +658,8 @@ fn cli_indexes_and_queries_fixture_project() {
         "--limit",
         "10",
     ]);
+    assert_eq!(impact["format"], "full");
+    assert_eq!(impact["evidence_limit"].as_u64(), Some(20));
     assert_eq!(impact["seed_symbols"][0], "helper");
     assert_eq!(impact["seed_files"][0], "src/auth.py");
     assert!(
@@ -1185,8 +1187,19 @@ export function route() {
         "2",
         "--limit",
         "20",
+        "--format",
+        "summary",
+        "--evidence-limit",
+        "1",
     ]);
     assert_eq!(impact["depth"].as_u64(), Some(2));
+    assert_eq!(impact["format"], "summary");
+    assert_eq!(impact["evidence_limit"].as_u64(), Some(1));
+    assert!(impact["symbols"].as_array().unwrap().len() <= 1);
+    assert!(impact["references"].as_array().unwrap().len() <= 1);
+    assert!(impact["callers"].as_array().unwrap().len() <= 1);
+    assert!(impact["callees"].as_array().unwrap().len() <= 1);
+    assert!(impact["dependencies"].as_array().unwrap().len() <= 1);
     assert!(
         impact["impacted_files"]
             .as_array()

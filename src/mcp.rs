@@ -108,8 +108,16 @@ fn handle_tool_call(params: Value) -> Result<Value> {
             let files = optional_string_array(&arguments, "files")?;
             let limit = optional_positive_usize(&arguments, "limit", 50)?;
             let depth = optional_positive_usize(&arguments, "depth", 1)?;
+            let format = optional_str(&arguments, "format", "full")?.to_string();
+            let evidence_limit = optional_positive_usize(&arguments, "evidence_limit", 20)?;
             serde_json::to_value(tools::impact_analysis_value(
-                root, symbols, files, limit, depth,
+                root,
+                symbols,
+                files,
+                limit,
+                depth,
+                format,
+                evidence_limit,
             )?)?
         }
         "find_references" => {
@@ -258,7 +266,9 @@ fn tool_definitions() -> Value {
                         "items": {"type": "string"}
                     },
                     "limit": {"type": "integer", "minimum": 1},
-                    "depth": {"type": "integer", "minimum": 1}
+                    "depth": {"type": "integer", "minimum": 1},
+                    "format": {"type": "string", "enum": ["summary", "full"]},
+                    "evidence_limit": {"type": "integer", "minimum": 1}
                 },
                 "required": ["root"]
             }
@@ -403,6 +413,16 @@ fn required_str<'a>(arguments: &'a Value, key: &str) -> Result<&'a str> {
         .with_context(|| format!("missing or invalid string argument: {key}"))
 }
 
+fn optional_str<'a>(arguments: &'a Value, key: &str, default: &'a str) -> Result<&'a str> {
+    match arguments.get(key) {
+        Some(value) => value
+            .as_str()
+            .filter(|value| !value.trim().is_empty())
+            .with_context(|| format!("invalid string argument: {key}")),
+        None => Ok(default),
+    }
+}
+
 fn optional_string_array(arguments: &Value, key: &str) -> Result<Vec<String>> {
     match arguments.get(key) {
         Some(value) if value.is_array() => value
@@ -545,13 +565,23 @@ def helper():
                 "symbols": ["helper"],
                 "files": ["auth.py"],
                 "limit": 10,
-                "depth": 2
+                "depth": 2,
+                "format": "summary",
+                "evidence_limit": 1
             }
         }))
         .unwrap();
         assert_eq!(
             impact_result["structuredContent"]["depth"].as_u64(),
             Some(2)
+        );
+        assert_eq!(
+            impact_result["structuredContent"]["format"].as_str(),
+            Some("summary")
+        );
+        assert_eq!(
+            impact_result["structuredContent"]["evidence_limit"].as_u64(),
+            Some(1)
         );
         assert_eq!(
             impact_result["structuredContent"]["seed_symbols"][0].as_str(),

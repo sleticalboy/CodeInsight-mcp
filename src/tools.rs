@@ -65,8 +65,10 @@ pub fn impact_analysis(
     files: Vec<String>,
     limit: usize,
     depth: usize,
+    format: String,
+    evidence_limit: usize,
 ) -> Result<()> {
-    let report = impact_analysis_value(root, symbols, files, limit, depth)?;
+    let report = impact_analysis_value(root, symbols, files, limit, depth, format, evidence_limit)?;
     print_json(&report)
 }
 
@@ -161,10 +163,14 @@ pub fn impact_analysis_value(
     seed_files: Vec<String>,
     limit: usize,
     depth: usize,
+    format: String,
+    evidence_limit: usize,
 ) -> Result<ImpactAnalysisReport> {
     let root = root.canonicalize()?;
     let limit = limit.max(1);
     let depth = depth.max(1);
+    let format = normalize_impact_format(&format)?;
+    let evidence_limit = evidence_limit.max(1);
     let store = Store::open(&root)?;
     let indexed_files = store.indexed_files()?;
     if seed_symbols.is_empty() && seed_files.is_empty() {
@@ -352,10 +358,20 @@ pub fn impact_analysis_value(
         normalized_seed_files.len()
     );
 
+    if format == "summary" {
+        symbols.truncate(evidence_limit);
+        references.truncate(evidence_limit);
+        callers.truncate(evidence_limit);
+        callees.truncate(evidence_limit);
+        dependencies.truncate(evidence_limit);
+    }
+
     Ok(ImpactAnalysisReport {
         root: root.display().to_string(),
         summary,
         depth,
+        format,
+        evidence_limit,
         seed_symbols,
         seed_files: normalized_seed_files,
         impacted_files,
@@ -1184,6 +1200,16 @@ pub fn callees_value(root: PathBuf, symbol: &str, limit: usize) -> Result<Vec<Ca
     let root = root.canonicalize()?;
     let store = Store::open(&root)?;
     store.callees(symbol, limit)
+}
+
+fn normalize_impact_format(format: &str) -> Result<String> {
+    match format.trim().to_ascii_lowercase().as_str() {
+        "full" => Ok("full".to_string()),
+        "summary" => Ok("summary".to_string()),
+        other => {
+            bail!("unsupported impact analysis format '{other}'; expected 'summary' or 'full'")
+        }
+    }
 }
 
 fn impact_call_paths(

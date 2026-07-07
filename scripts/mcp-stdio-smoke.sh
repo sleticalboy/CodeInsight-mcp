@@ -154,11 +154,14 @@ try:
                     "files": ["src/auth.py"],
                     "limit": 10,
                     "depth": 2,
+                    "format": "summary",
+                    "evidence_limit": 2,
                 },
             },
         }
     )
     assert impact["result"]["structuredContent"]["depth"] == 2
+    assert impact["result"]["structuredContent"]["format"] == "summary"
     assert any(
         item["file"] == "src/auth.py"
         for item in impact["result"]["structuredContent"]["impacted_files"]
