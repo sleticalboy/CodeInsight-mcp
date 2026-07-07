@@ -8,7 +8,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ### Added
 
-- `openai` embedding provider config skeleton with environment validation, redacted `embedding-status` reporting, and explicit not-implemented transport errors.
+- OpenAI-compatible embedding HTTP transport for `/embeddings` with redacted API-key handling, response index ordering, and response-shape validation.
+- `openai` embedding provider config skeleton with environment validation and redacted `embedding-status` reporting.
 
 ## [0.1.4] - 2026-07-07
 

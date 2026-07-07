@@ -18,7 +18,8 @@ CODEINSIGHT_EMBEDDING_PROVIDER=local-hash codeinsight semantic-search /path/to/r
 CODEINSIGHT_EMBEDDING_PROVIDER=ollama codeinsight semantic-index /path/to/repo
 CODEINSIGHT_EMBEDDING_PROVIDER=ollama codeinsight semantic-search /path/to/repo "auth flow"
 
-CODEINSIGHT_EMBEDDING_PROVIDER=openai CODEINSIGHT_OPENAI_API_KEY=... codeinsight embedding-status
+CODEINSIGHT_EMBEDDING_PROVIDER=openai CODEINSIGHT_OPENAI_API_KEY=... codeinsight semantic-index /path/to/repo
+CODEINSIGHT_EMBEDDING_PROVIDER=openai CODEINSIGHT_OPENAI_API_KEY=... codeinsight semantic-search /path/to/repo "auth flow"
 ```
 
 Supported provider values:
@@ -28,7 +29,7 @@ Supported provider values:
 | `local-hash` | Implemented | `local-hash-v1` | No | Deterministic preview vectors for smoke tests and local-only demos |
 | `local` | Alias | `local-hash-v1` | No | Short alias for `local-hash` |
 | `ollama` | Implemented preview | `embeddinggemma` by default | Local HTTP | Local Ollama embeddings through `/api/embed` |
-| `openai` | Config preview | `text-embedding-3-small` by default | Not yet | OpenAI-compatible env validation and status reporting |
+| `openai` | Implemented preview | `text-embedding-3-small` by default | HTTPS | OpenAI-compatible embeddings through `/embeddings` |
 | `disabled` | Implemented | `disabled` | No | Explicitly disable embedding generation |
 | `none` | Alias | `disabled` | No | Short alias for `disabled` |
 
@@ -116,9 +117,10 @@ Current limitations:
 
 ## OpenAI-Compatible Boundary
 
-`openai` is currently a configuration skeleton for future OpenAI-compatible
-HTTP embeddings. It validates and reports provider settings, but embedding
-transport is intentionally not implemented yet.
+`openai` is the first external HTTPS embedding provider. It calls an
+OpenAI-compatible `/embeddings` endpoint with `model`, `input`, and
+`encoding_format: "float"`, then orders returned vectors by the response
+`data[].index` field.
 
 Required:
 
@@ -139,8 +141,26 @@ codeinsight embedding-status
 ```
 
 `embedding-status` reports whether the API key is configured, but never prints
-the key value. `semantic-index` and `semantic-search` return a clear
-not-implemented error for `openai` until the HTTP transport is added.
+the key value.
+
+Example indexing and search:
+
+```bash
+CODEINSIGHT_EMBEDDING_PROVIDER=openai \
+CODEINSIGHT_OPENAI_API_KEY=... \
+codeinsight semantic-index /path/to/repo
+
+CODEINSIGHT_EMBEDDING_PROVIDER=openai \
+CODEINSIGHT_OPENAI_API_KEY=... \
+codeinsight semantic-search /path/to/repo "request validation"
+```
+
+Current limitations:
+
+- The provider uses one request for the full chunk batch produced by
+  `semantic-index`; batching controls will be added later.
+- It does not retry rate limits or transient HTTP failures yet.
+- It stores vectors under `(provider, model)` like all other providers.
 
 ## External Provider Contract
 
@@ -187,8 +207,8 @@ Expected errors:
   `embedding provider returned N vectors for M chunks`
 - Ollama unavailable:
   `ollama embedding provider is unreachable at ...`
-- OpenAI transport not implemented:
-  `openai embedding provider transport is not implemented yet ...`
+- OpenAI unavailable or rejected:
+  `openai embedding provider returned HTTP ...`
 
 These messages are part of the CLI/MCP contract and should stay stable enough
 for AI agents to recover by running the next command.

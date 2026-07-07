@@ -163,6 +163,7 @@ impl EmbeddingProvider for OllamaEmbeddingProvider {
 pub struct OpenAiEmbeddingProvider {
     base_url: String,
     model: String,
+    api_key: String,
     timeout: Duration,
 }
 
@@ -172,9 +173,17 @@ impl OpenAiEmbeddingProvider {
         if !config.api_key_configured {
             bail!("{OPENAI_API_KEY_ENV} is required for the openai embedding provider");
         }
+        let api_key = std::env::var(OPENAI_API_KEY_ENV)
+            .ok()
+            .map(|value| value.trim().to_string())
+            .filter(|value| !value.is_empty())
+            .with_context(|| {
+                format!("{OPENAI_API_KEY_ENV} is required for the openai embedding provider")
+            })?;
         Ok(Self {
             base_url: config.base_url,
             model: env_or_default(OPENAI_MODEL_ENV, DEFAULT_OPENAI_MODEL),
+            api_key,
             timeout: Duration::from_secs(config.timeout_secs),
         })
     }
@@ -189,10 +198,13 @@ impl EmbeddingProvider for OpenAiEmbeddingProvider {
         &self.model
     }
 
-    fn embed(&self, _inputs: &[String]) -> Result<Vec<Embedding>> {
-        let _ = (&self.base_url, self.timeout);
-        bail!(
-            "openai embedding provider transport is not implemented yet; config is validated through embedding-status"
+    fn embed(&self, inputs: &[String]) -> Result<Vec<Embedding>> {
+        openai_embed(
+            &self.base_url,
+            &self.model,
+            &self.api_key,
+            inputs,
+            self.timeout,
         )
     }
 }
@@ -276,7 +288,7 @@ pub fn provider_from_name(name: Option<&str>) -> Result<Box<dyn EmbeddingProvide
 
 pub fn provider_help() -> String {
     format!(
-        "set {PROVIDER_ENV}=local-hash for deterministic local preview embeddings or {PROVIDER_ENV}=ollama for local Ollama embeddings; {PROVIDER_ENV}=openai currently validates config only"
+        "set {PROVIDER_ENV}=local-hash for deterministic local preview embeddings, {PROVIDER_ENV}=ollama for local Ollama embeddings, or {PROVIDER_ENV}=openai for OpenAI-compatible embeddings"
     )
 }
 
@@ -333,6 +345,17 @@ struct HttpBaseUrl {
 #[derive(Debug, Deserialize)]
 struct OllamaEmbedResponse {
     embeddings: Vec<Vec<f32>>,
+}
+
+#[derive(Debug, Deserialize)]
+struct OpenAiEmbedResponse {
+    data: Vec<OpenAiEmbeddingData>,
+}
+
+#[derive(Debug, Deserialize)]
+struct OpenAiEmbeddingData {
+    embedding: Vec<f32>,
+    index: usize,
 }
 
 fn env_or_default(key: &str, default: &str) -> String {
@@ -468,6 +491,98 @@ fn ollama_embed(
         .into_iter()
         .map(|values| Embedding { values })
         .collect())
+}
+
+fn openai_embed(
+    base_url: &str,
+    model: &str,
+    api_key: &str,
+    inputs: &[String],
+    timeout: Duration,
+) -> Result<Vec<Embedding>> {
+    if inputs.is_empty() {
+        return Ok(Vec::new());
+    }
+    let api_key = api_key.trim();
+    if api_key.is_empty() {
+        bail!("{OPENAI_API_KEY_ENV} is required for the openai embedding provider");
+    }
+    let endpoint = openai_embeddings_endpoint(base_url)?;
+    let client = reqwest::blocking::Client::builder()
+        .timeout(timeout)
+        .build()
+        .context("failed to build openai embedding HTTP client")?;
+    let response = client
+        .post(&endpoint)
+        .bearer_auth(api_key)
+        .json(&serde_json::json!({
+            "model": model,
+            "input": inputs,
+            "encoding_format": "float",
+        }))
+        .send()
+        .with_context(|| {
+            format!(
+                "openai embedding provider is unreachable at {endpoint}; set {OPENAI_BASE_URL_ENV}"
+            )
+        })?;
+    let status = response.status();
+    let body = response
+        .text()
+        .context("failed to read openai embedding response")?;
+    if !status.is_success() {
+        bail!("openai embedding provider returned HTTP {status}: {body}");
+    }
+    let response = serde_json::from_str::<OpenAiEmbedResponse>(&body)
+        .context("openai embedding provider returned invalid JSON")?;
+    openai_embeddings_from_response(response, inputs.len())
+}
+
+fn openai_embeddings_endpoint(base_url: &str) -> Result<String> {
+    let base_url = normalize_http_or_https_base_url(base_url)?;
+    Ok(format!("{base_url}/embeddings"))
+}
+
+fn openai_embeddings_from_response(
+    response: OpenAiEmbedResponse,
+    input_count: usize,
+) -> Result<Vec<Embedding>> {
+    if response.data.len() != input_count {
+        bail!(
+            "openai embedding provider returned {} vectors for {} inputs",
+            response.data.len(),
+            input_count
+        );
+    }
+    let mut embeddings = vec![None; input_count];
+    for item in response.data {
+        if item.index >= input_count {
+            bail!(
+                "openai embedding provider returned index {} for {} inputs",
+                item.index,
+                input_count
+            );
+        }
+        if embeddings[item.index].is_some() {
+            bail!(
+                "openai embedding provider returned duplicate index {}",
+                item.index
+            );
+        }
+        embeddings[item.index] = Some(Embedding {
+            values: item.embedding,
+        });
+    }
+
+    embeddings
+        .into_iter()
+        .enumerate()
+        .map(|(index, embedding)| {
+            embedding.with_context(|| {
+                format!("openai embedding provider omitted index {index} from response")
+            })
+        })
+        .collect()
 }
 
 fn http_post_json(
@@ -727,21 +842,6 @@ mod tests {
     }
 
     #[test]
-    fn openai_provider_reports_transport_not_implemented() {
-        let _guard = ENV_LOCK.lock().unwrap();
-        let previous_api_key = std::env::var(OPENAI_API_KEY_ENV).ok();
-        unsafe {
-            std::env::set_var(OPENAI_API_KEY_ENV, "sk-test-secret");
-        }
-
-        let provider = provider_from_name(Some(OPENAI_PROVIDER)).unwrap();
-        let error = embed_query(provider.as_ref(), "auth service").unwrap_err();
-
-        assert!(error.to_string().contains("not implemented yet"));
-        restore_env(OPENAI_API_KEY_ENV, previous_api_key);
-    }
-
-    #[test]
     fn rejects_invalid_openai_base_url_scheme() {
         let error = normalize_http_or_https_base_url("ftp://example.test/v1").unwrap_err();
         assert!(
@@ -749,6 +849,109 @@ mod tests {
                 .to_string()
                 .contains("must start with http:// or https://")
         );
+    }
+
+    #[test]
+    fn openai_provider_posts_expected_embeddings_request_body() {
+        let response = json_response(
+            r#"{"data":[{"embedding":[0.0,1.0],"index":1},{"embedding":[1.0,0.0],"index":0}]}"#,
+        );
+        let (base_url, handle) = serve_one_ollama_request(response);
+        let embeddings = openai_embed(
+            &format!("{base_url}/v1"),
+            "text-embedding-test",
+            "sk-test-secret",
+            &["alpha".to_string(), "beta".to_string()],
+            Duration::from_secs(2),
+        )
+        .unwrap();
+
+        assert_eq!(
+            embeddings,
+            vec![
+                Embedding {
+                    values: vec![1.0, 0.0]
+                },
+                Embedding {
+                    values: vec![0.0, 1.0]
+                }
+            ]
+        );
+        let request = handle.join().unwrap();
+        assert_eq!(request.request_line, "POST /v1/embeddings HTTP/1.1");
+        assert!(
+            request
+                .headers
+                .contains("authorization: Bearer sk-test-secret")
+        );
+        assert!(request.headers.contains("content-type: application/json"));
+        let body = serde_json::from_str::<Value>(&request.body).unwrap();
+        assert_eq!(body["model"], "text-embedding-test");
+        assert_eq!(body["input"], serde_json::json!(["alpha", "beta"]));
+        assert_eq!(body["encoding_format"], "float");
+    }
+
+    #[test]
+    fn openai_provider_reports_non_200_response_without_api_key() {
+        let response =
+            "HTTP/1.1 401 Unauthorized\r\nContent-Length: 7\r\nConnection: close\r\n\r\ndenied!"
+                .to_string();
+        let (base_url, handle) = serve_one_ollama_request(response);
+
+        let error = openai_embed(
+            &base_url,
+            "text-embedding-test",
+            "sk-test-secret",
+            &["alpha".to_string()],
+            Duration::from_secs(2),
+        )
+        .unwrap_err();
+
+        assert!(error.to_string().contains("401 Unauthorized"));
+        assert!(!error.to_string().contains("sk-test-secret"));
+        let _request = handle.join().unwrap();
+    }
+
+    #[test]
+    fn openai_provider_rejects_embedding_count_mismatch() {
+        let response = json_response(r#"{"data":[{"embedding":[1.0],"index":0}]}"#);
+        let (base_url, handle) = serve_one_ollama_request(response);
+
+        let error = openai_embed(
+            &base_url,
+            "text-embedding-test",
+            "sk-test-secret",
+            &["alpha".to_string(), "beta".to_string()],
+            Duration::from_secs(2),
+        )
+        .unwrap_err();
+
+        assert!(
+            error
+                .to_string()
+                .contains("returned 1 vectors for 2 inputs")
+        );
+        let _request = handle.join().unwrap();
+    }
+
+    #[test]
+    fn openai_provider_rejects_duplicate_embedding_index() {
+        let response = json_response(
+            r#"{"data":[{"embedding":[1.0],"index":0},{"embedding":[2.0],"index":0}]}"#,
+        );
+        let (base_url, handle) = serve_one_ollama_request(response);
+
+        let error = openai_embed(
+            &base_url,
+            "text-embedding-test",
+            "sk-test-secret",
+            &["alpha".to_string(), "beta".to_string()],
+            Duration::from_secs(2),
+        )
+        .unwrap_err();
+
+        assert!(error.to_string().contains("duplicate index 0"));
+        let _request = handle.join().unwrap();
     }
 
     #[test]
