@@ -40,9 +40,9 @@ Implemented:
 - symbol extraction for common declarations
 - dependency graph, text reference search, context packs, and call graph tools with imported target hints
 - relative file resolution for local dependency graph edges
-- embedding provider interface and a local-hash `semantic-search` path over local vectors
+- embedding provider interface, provider status reporting, and local semantic search paths over local vectors
 - local semantic chunk index storage with optional deterministic local-hash embedding generation
-- `index`, `overview`, `symbols`, `outline`, `dependency-graph`, `find-references`, `semantic-search`, `semantic-index`, `context-pack`, `callers`, and `callees` CLI commands
+- `index`, `overview`, `symbols`, `outline`, `dependency-graph`, `find-references`, `semantic-search`, `semantic-index`, `embedding-status`, `context-pack`, `callers`, and `callees` CLI commands
 - MCP stdio `initialize`, `tools/list`, and `tools/call` for P0 tools
 - MCP tool argument validation with stable JSON-RPC errors
 - fixture-based CLI and MCP stdio integration tests
@@ -203,6 +203,7 @@ The stdio server currently exposes:
 - `find_references`
 - `semantic_search`
 - `semantic_index`
+- `embedding_status`
 - `context_pack`
 - `callers`
 - `callees`
@@ -220,6 +221,8 @@ For client setup snippets, see [MCP client configuration](docs/mcp-client-config
 `semantic_search` queries local semantic vectors for a configured embedding provider. With `CODEINSIGHT_EMBEDDING_PROVIDER=local-hash`, run `semantic-index` first to build deterministic local vectors, then `semantic-search` ranks chunks by cosine similarity. With `CODEINSIGHT_EMBEDDING_PROVIDER=ollama`, CodeInsight calls a local Ollama `/api/embed` endpoint. Without a configured provider, the command returns a clear configuration error instead of silently falling back to lexical search. See [Embedding providers](docs/embedding-providers.md) for the current provider contract and planned external-provider boundary.
 
 `semantic_index` builds local source-text chunks from the existing project index and stores them in SQLite as the local boundary for semantic search. It is deterministic and zero-network by default. Set `CODEINSIGHT_EMBEDDING_PROVIDER=local-hash` to also generate deterministic local embeddings for those chunks.
+
+`embedding_status` reports the configured embedding provider, selected model, supported provider names, Ollama local endpoint settings when selected, and optional semantic chunk/vector counts for a repository. It does not call external services.
 
 `context_pack` combines symbol search, file seeds, reference search, static call graph hints, resolved local dependencies, and any available local semantic chunks into a token-budgeted context bundle for agents. It ranks candidates before applying the token budget: explicit file seeds first, then symbol definitions, call graph targets, references, semantic chunk matches, and resolved local dependencies, with task keywords used as a lightweight relevance boost. File seeds include header/import context and primary top-level symbols instead of blindly copying the first chunk of a file; oversized seed ranges can be shortened to fit small budgets. Returned ranges include `reason` and `excerpt`, are trimmed to avoid duplicate lines, and are ordered by source line within each file. The current hybrid ranking path is deterministic and local-only.
 

@@ -32,6 +32,18 @@ Supported provider values:
 If `CODEINSIGHT_EMBEDDING_PROVIDER` is unset, `semantic-index` stores chunks
 without vectors and `semantic-search` fails with a configuration error.
 
+Check the current provider configuration without making a network call:
+
+```bash
+codeinsight embedding-status
+codeinsight embedding-status /path/to/repo
+```
+
+The optional repository argument adds local semantic chunk counts and the
+number of vectors stored for the currently selected provider/model. MCP
+clients can use the equivalent `embedding_status` tool before deciding whether
+to run `semantic_index` or `semantic_search`.
+
 ## Local-Hash Boundary
 
 `local-hash` is intentionally simple:
@@ -104,6 +116,7 @@ Additional external providers should follow this contract:
 - Provider errors must be explicit: missing credentials, failed network calls,
   invalid response shape, dimension mismatch, and rate limits should be
   distinguishable.
+- Provider status reporting must not make network requests.
 - A provider must return exactly one vector per input text chunk.
 - Vector dimensions must be stored with each embedding row.
 - Network providers must preserve the local-first default: no outbound request

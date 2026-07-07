@@ -33,6 +33,19 @@ fn cli_indexes_and_queries_fixture_project() {
     assert!(semantic_chunks > 0);
     assert_eq!(semantic_index["embeddings"].as_u64(), Some(0));
 
+    let embedding_status = run_json(["embedding-status", fixture.path().to_str().unwrap()]);
+    assert_eq!(embedding_status["provider"], "disabled");
+    assert_eq!(embedding_status["configured"], false);
+    assert_eq!(embedding_status["source"], "default");
+    assert_eq!(
+        embedding_status["index"]["vector_status"],
+        "provider_not_configured"
+    );
+    assert_eq!(
+        embedding_status["index"]["chunks"].as_u64(),
+        Some(semantic_chunks)
+    );
+
     let semantic_index_with_embeddings = run_json_with_env(
         [
             "semantic-index",
@@ -49,6 +62,21 @@ fn cli_indexes_and_queries_fixture_project() {
     );
     assert_eq!(
         semantic_index_with_embeddings["embeddings"].as_u64(),
+        Some(semantic_chunks)
+    );
+    let embedding_status_with_provider = run_json_with_env(
+        ["embedding-status", fixture.path().to_str().unwrap()],
+        [("CODEINSIGHT_EMBEDDING_PROVIDER", "local-hash")],
+    );
+    assert_eq!(embedding_status_with_provider["provider"], "local-hash");
+    assert_eq!(embedding_status_with_provider["model"], "local-hash-v1");
+    assert_eq!(embedding_status_with_provider["configured"], true);
+    assert_eq!(
+        embedding_status_with_provider["index"]["vector_status"],
+        "embeddings_indexed"
+    );
+    assert_eq!(
+        embedding_status_with_provider["index"]["embeddings"].as_u64(),
         Some(semantic_chunks)
     );
     let semantic_search = run_json_with_env(
@@ -885,6 +913,25 @@ fn cli_semantic_search_requires_embedding_provider() {
         .assert()
         .failure()
         .stderr(contains("CODEINSIGHT_EMBEDDING_PROVIDER=local-hash"));
+}
+
+#[test]
+fn cli_embedding_status_reports_ollama_config_without_network_call() {
+    let status = run_json_with_env(
+        ["embedding-status"],
+        [
+            ("CODEINSIGHT_EMBEDDING_PROVIDER", "ollama"),
+            ("CODEINSIGHT_OLLAMA_BASE_URL", "http://127.0.0.1:9999"),
+            ("CODEINSIGHT_OLLAMA_EMBEDDING_MODEL", "nomic-embed-text"),
+            ("CODEINSIGHT_OLLAMA_TIMEOUT_SECS", "7"),
+        ],
+    );
+
+    assert_eq!(status["provider"], "ollama");
+    assert_eq!(status["model"], "nomic-embed-text");
+    assert_eq!(status["configured"], true);
+    assert_eq!(status["ollama"]["base_url"], "http://127.0.0.1:9999");
+    assert_eq!(status["ollama"]["timeout_secs"].as_u64(), Some(7));
 }
 
 #[test]

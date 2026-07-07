@@ -25,7 +25,22 @@ pub const SUPPORTED_PROVIDER_NAMES: &[&str] = &[
     "none",
 ];
 const LOCAL_HASH_DIMENSIONS: usize = 64;
-const DEFAULT_OLLAMA_TIMEOUT_SECS: u64 = 30;
+pub const DEFAULT_OLLAMA_TIMEOUT_SECS: u64 = 30;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EmbeddingProviderConfig {
+    pub provider_name: String,
+    pub model_name: String,
+    pub configured: bool,
+    pub source: String,
+    pub ollama: Option<OllamaProviderConfig>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OllamaProviderConfig {
+    pub base_url: String,
+    pub timeout_secs: u64,
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Embedding {
@@ -129,6 +144,52 @@ impl EmbeddingProvider for OllamaEmbeddingProvider {
 
 pub fn provider_from_env() -> Result<Box<dyn EmbeddingProvider>> {
     provider_from_name(std::env::var(PROVIDER_ENV).ok().as_deref())
+}
+
+pub fn provider_config_from_env() -> Result<EmbeddingProviderConfig> {
+    let raw_provider = std::env::var(PROVIDER_ENV)
+        .ok()
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty());
+    let source = if raw_provider.is_some() {
+        "environment"
+    } else {
+        "default"
+    };
+
+    match raw_provider.as_deref() {
+        None | Some("none" | "disabled") => Ok(EmbeddingProviderConfig {
+            provider_name: "disabled".to_string(),
+            model_name: "disabled".to_string(),
+            configured: false,
+            source: source.to_string(),
+            ollama: None,
+        }),
+        Some("local" | LOCAL_HASH_PROVIDER) => Ok(EmbeddingProviderConfig {
+            provider_name: LOCAL_HASH_PROVIDER.to_string(),
+            model_name: LOCAL_HASH_MODEL.to_string(),
+            configured: true,
+            source: source.to_string(),
+            ollama: None,
+        }),
+        Some(OLLAMA_PROVIDER) => {
+            let provider = OllamaEmbeddingProvider::from_env()?;
+            Ok(EmbeddingProviderConfig {
+                provider_name: OLLAMA_PROVIDER.to_string(),
+                model_name: provider.model.clone(),
+                configured: true,
+                source: source.to_string(),
+                ollama: Some(OllamaProviderConfig {
+                    base_url: provider.base_url,
+                    timeout_secs: provider.timeout.as_secs(),
+                }),
+            })
+        }
+        Some(name) => bail!(
+            "unsupported embedding provider '{name}'; supported providers: {}",
+            SUPPORTED_PROVIDER_NAMES.join(", ")
+        ),
+    }
 }
 
 pub fn provider_from_name(name: Option<&str>) -> Result<Box<dyn EmbeddingProvider>> {
@@ -384,11 +445,14 @@ mod tests {
     use std::{
         io::{Read, Write},
         net::TcpListener,
+        sync::Mutex,
         thread::{self, JoinHandle},
     };
 
     use super::*;
     use serde_json::Value;
+
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
 
     #[derive(Debug)]
     struct MockRequest {
@@ -416,6 +480,57 @@ mod tests {
         };
         assert!(error.to_string().contains("unsupported embedding provider"));
         assert!(error.to_string().contains("local-hash"));
+    }
+
+    #[test]
+    fn provider_config_reports_default_disabled_provider() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        let previous = std::env::var(PROVIDER_ENV).ok();
+        unsafe {
+            std::env::remove_var(PROVIDER_ENV);
+        }
+
+        let config = provider_config_from_env().unwrap();
+
+        assert_eq!(config.provider_name, "disabled");
+        assert_eq!(config.model_name, "disabled");
+        assert!(!config.configured);
+        assert_eq!(config.source, "default");
+        assert_eq!(config.ollama, None);
+        restore_env(PROVIDER_ENV, previous);
+    }
+
+    #[test]
+    fn provider_config_reports_ollama_settings() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        let previous_provider = std::env::var(PROVIDER_ENV).ok();
+        let previous_base_url = std::env::var(OLLAMA_BASE_URL_ENV).ok();
+        let previous_model = std::env::var(OLLAMA_MODEL_ENV).ok();
+        let previous_timeout = std::env::var(OLLAMA_TIMEOUT_SECS_ENV).ok();
+        unsafe {
+            std::env::set_var(PROVIDER_ENV, OLLAMA_PROVIDER);
+            std::env::set_var(OLLAMA_BASE_URL_ENV, "http://127.0.0.1:9999/custom");
+            std::env::set_var(OLLAMA_MODEL_ENV, "nomic-embed-text");
+            std::env::set_var(OLLAMA_TIMEOUT_SECS_ENV, "5");
+        }
+
+        let config = provider_config_from_env().unwrap();
+
+        assert_eq!(config.provider_name, OLLAMA_PROVIDER);
+        assert_eq!(config.model_name, "nomic-embed-text");
+        assert!(config.configured);
+        assert_eq!(config.source, "environment");
+        assert_eq!(
+            config.ollama,
+            Some(OllamaProviderConfig {
+                base_url: "http://127.0.0.1:9999/custom".to_string(),
+                timeout_secs: 5,
+            })
+        );
+        restore_env(PROVIDER_ENV, previous_provider);
+        restore_env(OLLAMA_BASE_URL_ENV, previous_base_url);
+        restore_env(OLLAMA_MODEL_ENV, previous_model);
+        restore_env(OLLAMA_TIMEOUT_SECS_ENV, previous_timeout);
     }
 
     #[test]
@@ -626,5 +741,14 @@ mod tests {
 
     fn chunked_body(body: &str) -> String {
         format!("{:x}\r\n{}\r\n0\r\n\r\n", body.len(), body)
+    }
+
+    fn restore_env(key: &str, value: Option<String>) {
+        unsafe {
+            match value {
+                Some(value) => std::env::set_var(key, value),
+                None => std::env::remove_var(key),
+            }
+        }
     }
 }

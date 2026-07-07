@@ -8,6 +8,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ### Added
 
+- `embedding-status` CLI command and `embedding_status` MCP tool for reporting provider config and local semantic vector status without network calls.
 - Protocol-level mock HTTP tests for Ollama embedding requests, chunked responses, non-200 responses, and vector-count mismatches.
 
 ## [0.1.3] - 2026-07-07

@@ -46,7 +46,8 @@ sequence:
 2. `tools/list`
 3. `tools/call` for `index_project`
 4. `tools/call` for `symbol_search`
-5. `tools/call` for `context_pack`
+5. `tools/call` for `embedding_status`
+6. `tools/call` for `context_pack`
 
 Use a real repository instead of the generated fixture:
 
@@ -74,7 +75,7 @@ CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/mcp-stdio-smoke.sh
 MCP stdio smoke passed
 root: /path/to/repo
 symbol: AuthService
-tools: 11
+tools: 12
 indexed_files: 3
 ```
 

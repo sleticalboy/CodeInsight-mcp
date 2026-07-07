@@ -107,7 +107,7 @@ try:
 
     tools = request({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
     tool_names = {tool["name"] for tool in tools["result"]["tools"]}
-    for expected in ("index_project", "symbol_search", "context_pack"):
+    for expected in ("index_project", "symbol_search", "embedding_status", "context_pack"):
         assert expected in tool_names, expected
 
     indexed = request(
@@ -141,10 +141,25 @@ try:
         for symbol in symbols["result"]["structuredContent"]
     ), f"symbol not found: {smoke_symbol}"
 
-    context = request(
+    embedding_status = request(
         {
             "jsonrpc": "2.0",
             "id": 5,
+            "method": "tools/call",
+            "params": {
+                "name": "embedding_status",
+                "arguments": {"root": smoke_root},
+            },
+        }
+    )
+    embedding_result = embedding_status["result"]["structuredContent"]
+    assert embedding_result["provider"] == "disabled"
+    assert embedding_result["index"]["vector_status"] == "semantic_chunks_missing"
+
+    context = request(
+        {
+            "jsonrpc": "2.0",
+            "id": 6,
             "method": "tools/call",
             "params": {
                 "name": "context_pack",

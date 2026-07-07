@@ -30,6 +30,7 @@ async fn main() -> Result<()> {
         }
         Command::SemanticSearch(args) => tools::semantic_search(args.root, args.query, args.limit)?,
         Command::SemanticIndex(args) => tools::semantic_index(args.root, args.chunk_lines)?,
+        Command::EmbeddingStatus(args) => tools::embedding_status(args.root)?,
         Command::ContextPack(args) => tools::context_pack(
             args.root,
             args.task,

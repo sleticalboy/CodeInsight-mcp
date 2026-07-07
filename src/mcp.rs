@@ -125,6 +125,10 @@ fn handle_tool_call(params: Value) -> Result<Value> {
             let chunk_lines = optional_positive_usize(&arguments, "chunk_lines", 80)?;
             serde_json::to_value(tools::semantic_index_value(root, chunk_lines)?)?
         }
+        "embedding_status" => {
+            let root = optional_path(&arguments, "root")?;
+            serde_json::to_value(tools::embedding_status_value(root)?)?
+        }
         "context_pack" => {
             let root = required_path(&arguments, "root")?;
             let task = required_str(&arguments, "task")?.to_string();
@@ -266,6 +270,16 @@ fn tool_definitions() -> Value {
             }
         },
         {
+            "name": "embedding_status",
+            "description": "Return the configured embedding provider and optional local semantic index status without making network requests.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "root": {"type": "string"}
+                }
+            }
+        },
+        {
             "name": "context_pack",
             "description": "Build an agent-ready context pack from seed symbols, seed files, and a token budget.",
             "inputSchema": {
@@ -317,6 +331,18 @@ fn tool_definitions() -> Value {
 
 fn required_path(arguments: &Value, key: &str) -> Result<PathBuf> {
     Ok(PathBuf::from(required_str(arguments, key)?))
+}
+
+fn optional_path(arguments: &Value, key: &str) -> Result<Option<PathBuf>> {
+    match arguments.get(key) {
+        Some(value) => Ok(Some(PathBuf::from(
+            value
+                .as_str()
+                .filter(|value| !value.trim().is_empty())
+                .with_context(|| format!("invalid path argument: {key}"))?,
+        ))),
+        None => Ok(None),
+    }
 }
 
 fn optional_object(value: &Value, key: &str) -> Result<Value> {
@@ -514,6 +540,26 @@ def helper():
         assert_eq!(
             semantic_index_result["structuredContent"]["chunks"].as_u64(),
             Some(1)
+        );
+
+        let embedding_status_result = handle_tool_call(json!({
+            "name": "embedding_status",
+            "arguments": {
+                "root": dir.path()
+            }
+        }))
+        .unwrap();
+        assert_eq!(
+            embedding_status_result["structuredContent"]["provider"].as_str(),
+            Some("disabled")
+        );
+        assert_eq!(
+            embedding_status_result["structuredContent"]["index"]["chunks"].as_u64(),
+            Some(1)
+        );
+        assert_eq!(
+            embedding_status_result["structuredContent"]["index"]["vector_status"].as_str(),
+            Some("provider_not_configured")
         );
 
         let context_result = handle_tool_call(json!({

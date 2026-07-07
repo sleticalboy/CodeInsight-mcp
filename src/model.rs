@@ -126,6 +126,38 @@ pub struct SemanticIndexReport {
     pub errors: Vec<IndexError>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct EmbeddingProviderStatus {
+    pub provider: String,
+    pub model: String,
+    pub configured: bool,
+    pub source: String,
+    pub provider_env: String,
+    pub supported_providers: Vec<String>,
+    pub help: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ollama: Option<OllamaEmbeddingStatus>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub index: Option<SemanticIndexStatus>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct OllamaEmbeddingStatus {
+    pub base_url: String,
+    pub base_url_env: String,
+    pub model_env: String,
+    pub timeout_secs: u64,
+    pub timeout_secs_env: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct SemanticIndexStatus {
+    pub root: String,
+    pub chunks: usize,
+    pub embeddings: usize,
+    pub vector_status: String,
+}
+
 #[derive(Debug, Clone)]
 pub struct SemanticChunkInput {
     pub file: String,

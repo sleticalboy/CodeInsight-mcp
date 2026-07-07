@@ -268,6 +268,22 @@ impl Store {
             })? as usize)
     }
 
+    pub fn count_semantic_chunks(&self) -> Result<usize> {
+        Ok(self
+            .conn
+            .query_row("select count(*) from semantic_chunks", [], |row| {
+                row.get::<_, i64>(0)
+            })? as usize)
+    }
+
+    pub fn count_semantic_embeddings_for(&self, provider: &str, model: &str) -> Result<usize> {
+        Ok(self.conn.query_row(
+            "select count(*) from semantic_embeddings where provider = ?1 and model = ?2",
+            params![provider, model],
+            |row| row.get::<_, i64>(0),
+        )? as usize)
+    }
+
     pub fn semantic_chunks(&self) -> Result<Vec<SemanticChunk>> {
         let mut stmt = self.conn.prepare(
             "select sc.id, f.path, sc.start_line, sc.end_line, sc.token_estimate, sc.text

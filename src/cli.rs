@@ -28,6 +28,8 @@ pub enum Command {
     SemanticSearch(SemanticSearchArgs),
     /// Build or refresh local semantic index chunks.
     SemanticIndex(SemanticIndexArgs),
+    /// Print configured embedding provider and optional local semantic index status.
+    EmbeddingStatus(EmbeddingStatusArgs),
     /// Build an agent-ready context pack from seed symbols or files.
     ContextPack(ContextPackArgs),
     /// Find callers for a function or method.
@@ -93,6 +95,11 @@ pub struct SemanticIndexArgs {
     pub root: PathBuf,
     #[arg(long, default_value_t = 80)]
     pub chunk_lines: usize,
+}
+
+#[derive(Debug, Args)]
+pub struct EmbeddingStatusArgs {
+    pub root: Option<PathBuf>,
 }
 
 #[derive(Debug, Args)]

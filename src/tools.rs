@@ -11,10 +11,10 @@ use sha2::{Digest, Sha256};
 use crate::{
     embedding, index,
     model::{
-        CallEdge, ContextFile, ContextPack, ContextRange, DependencyGraph, IndexError,
-        ProjectIndexReport, ProjectOverview, ReferenceMatch, SemanticChunk, SemanticChunkInput,
-        SemanticEmbeddingInput, SemanticEmbeddingMatch, SemanticIndexReport, SemanticSearchResult,
-        Symbol, SymbolKind,
+        CallEdge, ContextFile, ContextPack, ContextRange, DependencyGraph, EmbeddingProviderStatus,
+        IndexError, OllamaEmbeddingStatus, ProjectIndexReport, ProjectOverview, ReferenceMatch,
+        SemanticChunk, SemanticChunkInput, SemanticEmbeddingInput, SemanticEmbeddingMatch,
+        SemanticIndexReport, SemanticIndexStatus, SemanticSearchResult, Symbol, SymbolKind,
     },
     storage::Store,
 };
@@ -74,6 +74,11 @@ pub fn semantic_search(root: PathBuf, query: String, limit: usize) -> Result<()>
 pub fn semantic_index(root: PathBuf, chunk_lines: usize) -> Result<()> {
     let report = semantic_index_value(root, chunk_lines)?;
     print_json(&report)
+}
+
+pub fn embedding_status(root: Option<PathBuf>) -> Result<()> {
+    let status = embedding_status_value(root)?;
+    print_json(&status)
 }
 
 pub fn context_pack(
@@ -252,6 +257,60 @@ pub fn semantic_index_value(root: PathBuf, chunk_lines: usize) -> Result<Semanti
         },
         errors,
     })
+}
+
+pub fn embedding_status_value(root: Option<PathBuf>) -> Result<EmbeddingProviderStatus> {
+    let config = embedding::provider_config_from_env()?;
+    let index = match root {
+        Some(root) => {
+            let root = root.canonicalize()?;
+            let store = Store::open(&root)?;
+            let chunks = store.count_semantic_chunks()?;
+            let embeddings =
+                store.count_semantic_embeddings_for(&config.provider_name, &config.model_name)?;
+            Some(SemanticIndexStatus {
+                root: root.display().to_string(),
+                chunks,
+                embeddings,
+                vector_status: semantic_vector_status(config.configured, chunks, embeddings)
+                    .to_string(),
+            })
+        }
+        None => None,
+    };
+
+    Ok(EmbeddingProviderStatus {
+        provider: config.provider_name,
+        model: config.model_name,
+        configured: config.configured,
+        source: config.source,
+        provider_env: embedding::PROVIDER_ENV.to_string(),
+        supported_providers: embedding::SUPPORTED_PROVIDER_NAMES
+            .iter()
+            .map(|provider| (*provider).to_string())
+            .collect(),
+        help: embedding::provider_help(),
+        ollama: config.ollama.map(|ollama| OllamaEmbeddingStatus {
+            base_url: ollama.base_url,
+            base_url_env: embedding::OLLAMA_BASE_URL_ENV.to_string(),
+            model_env: embedding::OLLAMA_MODEL_ENV.to_string(),
+            timeout_secs: ollama.timeout_secs,
+            timeout_secs_env: embedding::OLLAMA_TIMEOUT_SECS_ENV.to_string(),
+        }),
+        index,
+    })
+}
+
+fn semantic_vector_status(configured: bool, chunks: usize, embeddings: usize) -> &'static str {
+    if chunks == 0 {
+        "semantic_chunks_missing"
+    } else if !configured {
+        "provider_not_configured"
+    } else if embeddings == 0 {
+        "embeddings_missing_for_provider"
+    } else {
+        "embeddings_indexed"
+    }
 }
 
 fn semantic_embeddings_for_chunks(
