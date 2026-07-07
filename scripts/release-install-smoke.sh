@@ -65,7 +65,9 @@ main() {
   target="${CODEINSIGHT_TARGET:-$native_target}"
   asset="${CODEINSIGHT_SMOKE_ASSET:-$ROOT_DIR/dist/codeinsight-$target.tar.gz}"
 
-  if [ ! -f "$asset" ]; then
+  if [ -z "${CODEINSIGHT_SMOKE_ASSET:-}" ]; then
+    package_current_target "$target" "$asset"
+  elif [ ! -f "$asset" ]; then
     package_current_target "$target" "$asset"
   fi
 

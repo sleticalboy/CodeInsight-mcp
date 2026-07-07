@@ -6,6 +6,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-07-07
+
 ### Added
 
 - `context_pack` now returns `semantic_status` so clients can tell whether semantic vector or fallback ranges were available and selected.
