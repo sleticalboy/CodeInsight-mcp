@@ -162,6 +162,8 @@ try:
     )
     assert impact["result"]["structuredContent"]["depth"] == 2
     assert impact["result"]["structuredContent"]["format"] == "summary"
+    assert impact["result"]["structuredContent"]["risk_level"] in ("low", "medium", "high")
+    assert impact["result"]["structuredContent"]["impact_counts"]["impacted_files"] >= 1
     assert any(
         item["file"] == "src/auth.py"
         for item in impact["result"]["structuredContent"]["impacted_files"]

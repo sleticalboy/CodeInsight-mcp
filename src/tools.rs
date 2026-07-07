@@ -12,8 +12,8 @@ use crate::{
     embedding, index,
     model::{
         CallEdge, ContextFile, ContextPack, ContextRange, ContextSemanticStatus, Dependency,
-        DependencyGraph, EmbeddingProviderStatus, ImpactAnalysisReport, ImpactFile, ImpactPath,
-        IndexError, OllamaEmbeddingStatus, OpenAiEmbeddingStatus, ProjectIndexReport,
+        DependencyGraph, EmbeddingProviderStatus, ImpactAnalysisReport, ImpactCounts, ImpactFile,
+        ImpactPath, IndexError, OllamaEmbeddingStatus, OpenAiEmbeddingStatus, ProjectIndexReport,
         ProjectOverview, ReferenceMatch, SemanticChunk, SemanticChunkInput, SemanticEmbeddingInput,
         SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus, SemanticSearchResult,
         Symbol, SymbolKind, VersionInfo,
@@ -357,6 +357,18 @@ pub fn impact_analysis_value(
         seed_symbols.len(),
         normalized_seed_files.len()
     );
+    let risk_level = impact_risk_level(&impacted_files, &paths);
+    let impact_counts = ImpactCounts {
+        impacted_files: impacted_files.len(),
+        paths: paths.len(),
+        symbols: symbols.len(),
+        references: references.len(),
+        callers: callers.len(),
+        callees: callees.len(),
+        dependencies: dependencies.len(),
+        errors: errors.len(),
+    };
+    let top_reasons = impact_top_reasons(&impacted_files, 8);
 
     if format == "summary" {
         symbols.truncate(evidence_limit);
@@ -369,6 +381,9 @@ pub fn impact_analysis_value(
     Ok(ImpactAnalysisReport {
         root: root.display().to_string(),
         summary,
+        risk_level,
+        impact_counts,
+        top_reasons,
         depth,
         format,
         evidence_limit,
@@ -1210,6 +1225,44 @@ fn normalize_impact_format(format: &str) -> Result<String> {
             bail!("unsupported impact analysis format '{other}'; expected 'summary' or 'full'")
         }
     }
+}
+
+fn impact_risk_level(impacted_files: &[ImpactFile], paths: &[ImpactPath]) -> String {
+    let max_score = impacted_files
+        .iter()
+        .map(|file| file.score)
+        .max()
+        .unwrap_or_default();
+    let max_depth = paths
+        .iter()
+        .map(|path| path.depth)
+        .max()
+        .unwrap_or_default();
+
+    if impacted_files.len() >= 10 || max_score >= 300 || max_depth >= 3 {
+        "high".to_string()
+    } else if impacted_files.len() >= 4 || max_score >= 160 || max_depth >= 2 {
+        "medium".to_string()
+    } else {
+        "low".to_string()
+    }
+}
+
+fn impact_top_reasons(impacted_files: &[ImpactFile], limit: usize) -> Vec<String> {
+    let mut reason_scores = BTreeMap::<String, i32>::new();
+    for file in impacted_files {
+        for reason in &file.reasons {
+            *reason_scores.entry(reason.clone()).or_default() += file.score;
+        }
+    }
+
+    let mut reasons = reason_scores.into_iter().collect::<Vec<_>>();
+    reasons.sort_by(|left, right| right.1.cmp(&left.1).then_with(|| left.0.cmp(&right.0)));
+    reasons
+        .into_iter()
+        .take(limit)
+        .map(|(reason, _score)| reason)
+        .collect()
 }
 
 fn impact_call_paths(

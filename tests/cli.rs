@@ -660,6 +660,9 @@ fn cli_indexes_and_queries_fixture_project() {
     ]);
     assert_eq!(impact["format"], "full");
     assert_eq!(impact["evidence_limit"].as_u64(), Some(20));
+    assert!(["low", "medium", "high"].contains(&impact["risk_level"].as_str().unwrap()));
+    assert!(impact["impact_counts"]["impacted_files"].as_u64().unwrap() >= 1);
+    assert!(!impact["top_reasons"].as_array().unwrap().is_empty());
     assert_eq!(impact["seed_symbols"][0], "helper");
     assert_eq!(impact["seed_files"][0], "src/auth.py");
     assert!(
@@ -1195,6 +1198,12 @@ export function route() {
     assert_eq!(impact["depth"].as_u64(), Some(2));
     assert_eq!(impact["format"], "summary");
     assert_eq!(impact["evidence_limit"].as_u64(), Some(1));
+    assert!(["low", "medium", "high"].contains(&impact["risk_level"].as_str().unwrap()));
+    assert!(
+        impact["impact_counts"]["paths"].as_u64().unwrap()
+            >= impact["paths"].as_array().unwrap().len() as u64
+    );
+    assert!(!impact["top_reasons"].as_array().unwrap().is_empty());
     assert!(impact["symbols"].as_array().unwrap().len() <= 1);
     assert!(impact["references"].as_array().unwrap().len() <= 1);
     assert!(impact["callers"].as_array().unwrap().len() <= 1);

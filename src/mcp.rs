@@ -583,6 +583,23 @@ def helper():
             impact_result["structuredContent"]["evidence_limit"].as_u64(),
             Some(1)
         );
+        assert!(
+            impact_result["structuredContent"]["risk_level"]
+                .as_str()
+                .is_some_and(|risk| ["low", "medium", "high"].contains(&risk))
+        );
+        assert!(
+            impact_result["structuredContent"]["impact_counts"]["impacted_files"]
+                .as_u64()
+                .unwrap()
+                >= 1
+        );
+        assert!(
+            !impact_result["structuredContent"]["top_reasons"]
+                .as_array()
+                .unwrap()
+                .is_empty()
+        );
         assert_eq!(
             impact_result["structuredContent"]["seed_symbols"][0].as_str(),
             Some("helper")

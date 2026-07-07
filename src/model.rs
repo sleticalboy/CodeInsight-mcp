@@ -312,10 +312,25 @@ pub struct ImpactPath {
     pub line: usize,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct ImpactCounts {
+    pub impacted_files: usize,
+    pub paths: usize,
+    pub symbols: usize,
+    pub references: usize,
+    pub callers: usize,
+    pub callees: usize,
+    pub dependencies: usize,
+    pub errors: usize,
+}
+
 #[derive(Debug, Serialize)]
 pub struct ImpactAnalysisReport {
     pub root: String,
     pub summary: String,
+    pub risk_level: String,
+    pub impact_counts: ImpactCounts,
+    pub top_reasons: Vec<String>,
     pub depth: usize,
     pub format: String,
     pub evidence_limit: usize,
