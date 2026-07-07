@@ -107,7 +107,7 @@ try:
 
     tools = request({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
     tool_names = {tool["name"] for tool in tools["result"]["tools"]}
-    for expected in ("index_project", "symbol_search", "embedding_status", "context_pack", "version"):
+    for expected in ("index_project", "symbol_search", "impact_analysis", "embedding_status", "context_pack", "version"):
         assert expected in tool_names, expected
 
     indexed = request(
@@ -140,6 +140,27 @@ try:
         symbol["name"] == smoke_symbol
         for symbol in symbols["result"]["structuredContent"]
     ), f"symbol not found: {smoke_symbol}"
+
+    impact = request(
+        {
+            "jsonrpc": "2.0",
+            "id": 8,
+            "method": "tools/call",
+            "params": {
+                "name": "impact_analysis",
+                "arguments": {
+                    "root": smoke_root,
+                    "symbols": [smoke_symbol],
+                    "files": ["src/auth.py"],
+                    "limit": 10,
+                },
+            },
+        }
+    )
+    assert any(
+        item["file"] == "src/auth.py"
+        for item in impact["result"]["structuredContent"]["impacted_files"]
+    ), "impact file not found"
 
     embedding_status = request(
         {

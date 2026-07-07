@@ -102,6 +102,13 @@ fn handle_tool_call(params: Value) -> Result<Value> {
             let limit = optional_positive_usize(&arguments, "limit", 500)?;
             serde_json::to_value(tools::dependency_graph_value(root, limit)?)?
         }
+        "impact_analysis" => {
+            let root = required_path(&arguments, "root")?;
+            let symbols = optional_string_array(&arguments, "symbols")?;
+            let files = optional_string_array(&arguments, "files")?;
+            let limit = optional_positive_usize(&arguments, "limit", 50)?;
+            serde_json::to_value(tools::impact_analysis_value(root, symbols, files, limit)?)?
+        }
         "find_references" => {
             let root = required_path(&arguments, "root")?;
             let symbol = required_str(&arguments, "symbol")?;
@@ -227,6 +234,26 @@ fn tool_definitions() -> Value {
                 "type": "object",
                 "properties": {
                     "root": {"type": "string"},
+                    "limit": {"type": "integer", "minimum": 1}
+                },
+                "required": ["root"]
+            }
+        },
+        {
+            "name": "impact_analysis",
+            "description": "Estimate local impact radius from seed symbols or files using references, call graph, and resolved dependencies.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "root": {"type": "string"},
+                    "symbols": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    },
+                    "files": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    },
                     "limit": {"type": "integer", "minimum": 1}
                 },
                 "required": ["root"]
@@ -506,6 +533,35 @@ def helper():
         }))
         .unwrap();
         assert_eq!(graph_result["structuredContent"]["edges"].as_u64(), Some(1));
+
+        let impact_result = handle_tool_call(json!({
+            "name": "impact_analysis",
+            "arguments": {
+                "root": dir.path(),
+                "symbols": ["helper"],
+                "files": ["auth.py"],
+                "limit": 10
+            }
+        }))
+        .unwrap();
+        assert_eq!(
+            impact_result["structuredContent"]["seed_symbols"][0].as_str(),
+            Some("helper")
+        );
+        assert!(
+            impact_result["structuredContent"]["impacted_files"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|file| file["file"] == "auth.py")
+        );
+        assert!(
+            impact_result["structuredContent"]["callers"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|call| call["caller"] == "AuthService.login")
+        );
 
         let refs_result = handle_tool_call(json!({
             "name": "find_references",

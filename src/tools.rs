@@ -12,10 +12,11 @@ use crate::{
     embedding, index,
     model::{
         CallEdge, ContextFile, ContextPack, ContextRange, ContextSemanticStatus, DependencyGraph,
-        EmbeddingProviderStatus, IndexError, OllamaEmbeddingStatus, OpenAiEmbeddingStatus,
-        ProjectIndexReport, ProjectOverview, ReferenceMatch, SemanticChunk, SemanticChunkInput,
-        SemanticEmbeddingInput, SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus,
-        SemanticSearchResult, Symbol, SymbolKind, VersionInfo,
+        EmbeddingProviderStatus, ImpactAnalysisReport, ImpactFile, IndexError,
+        OllamaEmbeddingStatus, OpenAiEmbeddingStatus, ProjectIndexReport, ProjectOverview,
+        ReferenceMatch, SemanticChunk, SemanticChunkInput, SemanticEmbeddingInput,
+        SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus, SemanticSearchResult,
+        Symbol, SymbolKind, VersionInfo,
     },
     storage::Store,
 };
@@ -56,6 +57,16 @@ pub fn file_outline(path: PathBuf) -> Result<()> {
 pub fn dependency_graph(root: PathBuf, limit: usize) -> Result<()> {
     let graph = dependency_graph_value(root, limit)?;
     print_json(&graph)
+}
+
+pub fn impact_analysis(
+    root: PathBuf,
+    symbols: Vec<String>,
+    files: Vec<String>,
+    limit: usize,
+) -> Result<()> {
+    let report = impact_analysis_value(root, symbols, files, limit)?;
+    print_json(&report)
 }
 
 pub fn find_references(
@@ -141,6 +152,197 @@ pub fn dependency_graph_value(root: PathBuf, limit: usize) -> Result<DependencyG
     let root = root.canonicalize()?;
     let store = Store::open(&root)?;
     store.dependency_graph(&root, limit)
+}
+
+pub fn impact_analysis_value(
+    root: PathBuf,
+    seed_symbols: Vec<String>,
+    seed_files: Vec<String>,
+    limit: usize,
+) -> Result<ImpactAnalysisReport> {
+    let root = root.canonicalize()?;
+    let limit = limit.max(1);
+    let store = Store::open(&root)?;
+    let indexed_files = store.indexed_files()?;
+    if seed_symbols.is_empty() && seed_files.is_empty() {
+        bail!("impact_analysis requires at least one --symbol or --file seed")
+    }
+
+    let indexed_file_set = indexed_files.iter().cloned().collect::<BTreeSet<_>>();
+    let mut errors = Vec::new();
+    let mut normalized_seed_files = Vec::new();
+    for file in seed_files {
+        match normalize_seed_file(&root, &file) {
+            Ok(normalized) if indexed_file_set.contains(&normalized) => {
+                normalized_seed_files.push(normalized);
+            }
+            Ok(normalized) => {
+                errors.push(IndexError {
+                    file: normalized,
+                    stage: "impact_seed_file".to_string(),
+                    message: "file is not present in the current index".to_string(),
+                });
+            }
+            Err(error) => {
+                errors.push(IndexError {
+                    file,
+                    stage: "impact_seed_file".to_string(),
+                    message: error.to_string(),
+                });
+            }
+        }
+    }
+    normalized_seed_files.sort();
+    normalized_seed_files.dedup();
+
+    let mut impact = BTreeMap::<String, (i32, BTreeSet<String>)>::new();
+    for file in &normalized_seed_files {
+        add_impact(&mut impact, file, 100, "seed_file");
+    }
+
+    let mut symbols = Vec::new();
+    let mut symbol_terms = seed_symbols.iter().cloned().collect::<BTreeSet<_>>();
+    for seed in &seed_symbols {
+        let matches = store.search_symbols(seed, limit)?;
+        for symbol in matches {
+            add_impact(
+                &mut impact,
+                &symbol.file,
+                90,
+                format!("symbol_definition:{}", symbol.qualified_name),
+            );
+            symbol_terms.insert(symbol.name.clone());
+            symbol_terms.insert(symbol.qualified_name.clone());
+            symbols.push(symbol);
+        }
+    }
+
+    let file_symbols = store.symbols_for_files(&normalized_seed_files, limit)?;
+    for symbol in file_symbols {
+        add_impact(
+            &mut impact,
+            &symbol.file,
+            80,
+            format!("seed_file_symbol:{}", symbol.qualified_name),
+        );
+        symbol_terms.insert(symbol.name.clone());
+        symbol_terms.insert(symbol.qualified_name.clone());
+        symbols.push(symbol);
+    }
+    dedup_symbols(&mut symbols);
+
+    let mut references = Vec::new();
+    let mut callers = Vec::new();
+    let mut callees = Vec::new();
+    for term in symbol_terms.iter().filter(|term| !term.trim().is_empty()) {
+        if references.len() < limit {
+            let remaining = limit.saturating_sub(references.len());
+            references.extend(find_references_value(root.clone(), term, remaining, false)?);
+        }
+        if callers.len() < limit {
+            let remaining = limit.saturating_sub(callers.len());
+            callers.extend(store.callers(term, remaining)?);
+        }
+        if callees.len() < limit {
+            let remaining = limit.saturating_sub(callees.len());
+            callees.extend(store.callees(term, remaining)?);
+        }
+    }
+    dedup_references(&mut references);
+    dedup_calls(&mut callers);
+    dedup_calls(&mut callees);
+
+    for reference in &references {
+        add_impact(
+            &mut impact,
+            &reference.file,
+            40,
+            format!("reference:{}", reference.context),
+        );
+    }
+    for call in &callers {
+        add_impact(
+            &mut impact,
+            &call.file,
+            70,
+            format!("caller:{}->{}", call.caller, call.callee),
+        );
+    }
+    for call in &callees {
+        add_impact(
+            &mut impact,
+            &call.file,
+            45,
+            format!("callee_source:{}->{}", call.caller, call.callee),
+        );
+        if let Some(callee_file) = &call.callee_file {
+            add_impact(
+                &mut impact,
+                callee_file,
+                65,
+                format!("callee_target:{}->{}", call.caller, call.callee),
+            );
+        }
+    }
+
+    let mut dependency_seed_files = normalized_seed_files.clone();
+    dependency_seed_files.extend(symbols.iter().map(|symbol| symbol.file.clone()));
+    dependency_seed_files.sort();
+    dependency_seed_files.dedup();
+    let dependencies = store.dependencies_touching_files(&dependency_seed_files, limit)?;
+    for dependency in &dependencies {
+        add_impact(
+            &mut impact,
+            &dependency.source_file,
+            55,
+            format!("dependency_source:{}", dependency.target),
+        );
+        if let Some(resolved_file) = &dependency.resolved_file {
+            add_impact(
+                &mut impact,
+                resolved_file,
+                60,
+                format!("dependency_target:{}", dependency.source_file),
+            );
+        }
+    }
+
+    let mut impacted_files = impact
+        .into_iter()
+        .map(|(file, (score, reasons))| ImpactFile {
+            file,
+            score,
+            reasons: reasons.into_iter().take(8).collect(),
+        })
+        .collect::<Vec<_>>();
+    impacted_files.sort_by(|left, right| {
+        right
+            .score
+            .cmp(&left.score)
+            .then_with(|| left.file.cmp(&right.file))
+    });
+    impacted_files.truncate(limit);
+
+    let summary = format!(
+        "Impact analysis found {} impacted files from {} symbol seeds and {} file seeds.",
+        impacted_files.len(),
+        seed_symbols.len(),
+        normalized_seed_files.len()
+    );
+
+    Ok(ImpactAnalysisReport {
+        root: root.display().to_string(),
+        summary,
+        seed_symbols,
+        seed_files: normalized_seed_files,
+        impacted_files,
+        symbols,
+        references,
+        callers,
+        callees,
+        dependencies,
+        errors,
+    })
 }
 
 pub fn find_references_value(
@@ -958,6 +1160,57 @@ pub fn callees_value(root: PathBuf, symbol: &str, limit: usize) -> Result<Vec<Ca
     let root = root.canonicalize()?;
     let store = Store::open(&root)?;
     store.callees(symbol, limit)
+}
+
+fn add_impact(
+    impact: &mut BTreeMap<String, (i32, BTreeSet<String>)>,
+    file: &str,
+    score: i32,
+    reason: impl Into<String>,
+) {
+    let entry = impact
+        .entry(file.to_string())
+        .or_insert_with(|| (0, BTreeSet::new()));
+    entry.0 += score;
+    entry.1.insert(reason.into());
+}
+
+fn dedup_symbols(symbols: &mut Vec<Symbol>) {
+    let mut seen = BTreeSet::new();
+    symbols.retain(|symbol| {
+        seen.insert((
+            symbol.file.clone(),
+            symbol.qualified_name.clone(),
+            symbol.start_line,
+            symbol.end_line,
+        ))
+    });
+}
+
+fn dedup_references(references: &mut Vec<ReferenceMatch>) {
+    let mut seen = BTreeSet::new();
+    references.retain(|reference| {
+        seen.insert((
+            reference.file.clone(),
+            reference.line,
+            reference.column,
+            reference.context.clone(),
+        ))
+    });
+}
+
+fn dedup_calls(calls: &mut Vec<CallEdge>) {
+    let mut seen = BTreeSet::new();
+    calls.retain(|call| {
+        seen.insert((
+            call.file.clone(),
+            call.caller.clone(),
+            call.callee.clone(),
+            call.callee_file.clone(),
+            call.line,
+            call.column,
+        ))
+    });
 }
 
 #[derive(Debug, Clone)]

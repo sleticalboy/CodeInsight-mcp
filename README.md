@@ -38,11 +38,11 @@ Implemented:
 - per-file indexing errors in reports without aborting the whole project scan
 - Tree-sitter parsing for TypeScript/JavaScript, Python, Go, Rust, Java, C, C++, C#, PHP, and Ruby
 - symbol extraction for common declarations
-- dependency graph, text reference search, context packs, and call graph tools with imported target hints
+- dependency graph, text reference search, impact analysis, context packs, and call graph tools with imported target hints
 - relative file resolution for local dependency graph edges
 - embedding provider interface, provider status reporting, and local semantic search paths over local vectors
 - local semantic chunk index storage with optional deterministic local-hash embedding generation
-- `index`, `overview`, `symbols`, `outline`, `dependency-graph`, `find-references`, `semantic-search`, `semantic-index`, `embedding-status`, `context-pack`, `callers`, and `callees` CLI commands
+- `index`, `overview`, `symbols`, `outline`, `dependency-graph`, `impact-analysis`, `find-references`, `semantic-search`, `semantic-index`, `embedding-status`, `context-pack`, `callers`, and `callees` CLI commands
 - MCP stdio `initialize`, `tools/list`, and `tools/call` for P0 tools
 - MCP tool argument validation with stable JSON-RPC errors
 - fixture-based CLI and MCP stdio integration tests
@@ -207,6 +207,7 @@ The stdio server currently exposes:
 - `symbol_search`
 - `file_outline`
 - `dependency_graph`
+- `impact_analysis`
 - `find_references`
 - `semantic_search`
 - `semantic_index`
@@ -224,6 +225,8 @@ Example `tools/call` request:
 For client setup snippets, see [MCP client configuration](docs/mcp-client-config.md).
 
 `find_references` is currently a fast text-reference pass over indexed files. It returns file, line, column, context, an approximate reference kind, and a confidence score. It is not yet a full language-server-grade semantic reference resolver.
+
+`impact_analysis` estimates a local change radius from seed symbols and/or files. It combines indexed symbol definitions, text references, static callers/callees, and resolved dependency edges into a ranked `impacted_files` list with evidence arrays. Use CLI `impact-analysis /path/to/repo --symbol AuthService --file src/auth.py` or MCP `impact_analysis` with `symbols` and `files` arrays after running `index`.
 
 `semantic_search` queries local semantic vectors for a configured embedding provider. With `CODEINSIGHT_EMBEDDING_PROVIDER=local-hash`, run `semantic-index` first to build deterministic local vectors, then `semantic-search` ranks chunks by cosine similarity. With `CODEINSIGHT_EMBEDDING_PROVIDER=ollama`, CodeInsight calls a local Ollama `/api/embed` endpoint. With `CODEINSIGHT_EMBEDDING_PROVIDER=openai`, CodeInsight calls an OpenAI-compatible `/embeddings` endpoint and never prints the API key. Without a configured provider, the command returns a clear configuration error instead of silently falling back to lexical search. See [Embedding providers](docs/embedding-providers.md) for the current provider contract and planned external-provider boundary.
 

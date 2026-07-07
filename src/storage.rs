@@ -700,6 +700,41 @@ impl Store {
         Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
     }
 
+    pub fn symbols_for_files(&self, files: &[String], limit: usize) -> Result<Vec<Symbol>> {
+        let mut symbols = Vec::new();
+        let mut stmt = self.conn.prepare(
+            "select s.name, s.qualified_name, s.kind, s.language, f.path, s.start_line, s.end_line
+             from symbols s
+             join files f on f.id = s.file_id
+             where f.path = ?1
+             order by s.start_line, s.end_line
+             limit ?2",
+        )?;
+
+        for file in files {
+            if symbols.len() >= limit {
+                break;
+            }
+            let remaining = limit.saturating_sub(symbols.len());
+            let rows = stmt.query_map(params![file, remaining as i64], |row| {
+                let language: String = row.get(3)?;
+                let kind: String = row.get(2)?;
+                Ok(Symbol {
+                    name: row.get(0)?,
+                    qualified_name: row.get(1)?,
+                    kind: parse_symbol_kind(&kind),
+                    language: parse_language(&language),
+                    file: row.get(4)?,
+                    start_line: row.get::<_, i64>(5)? as usize,
+                    end_line: row.get::<_, i64>(6)? as usize,
+                })
+            })?;
+            symbols.extend(rows.collect::<rusqlite::Result<Vec<_>>>()?);
+        }
+
+        Ok(symbols)
+    }
+
     pub fn dependency_graph(&self, root: &Path, limit: usize) -> Result<DependencyGraph> {
         let mut stmt = self.conn.prepare(
             "select f.path, d.target, d.resolved_file, d.local_alias, d.imported_symbol, d.kind, d.language, d.line
@@ -745,6 +780,45 @@ impl Store {
             nodes,
             edges,
         })
+    }
+
+    pub fn dependencies_touching_files(
+        &self,
+        files: &[String],
+        limit: usize,
+    ) -> Result<Vec<Dependency>> {
+        let mut dependencies = Vec::new();
+        let mut stmt = self.conn.prepare(
+            "select f.path, d.target, d.resolved_file, d.local_alias, d.imported_symbol, d.kind, d.language, d.line
+             from dependencies d
+             join files f on f.id = d.source_file_id
+             where f.path = ?1 or d.resolved_file = ?1
+             order by f.path, d.line
+             limit ?2",
+        )?;
+
+        for file in files {
+            if dependencies.len() >= limit {
+                break;
+            }
+            let remaining = limit.saturating_sub(dependencies.len());
+            let rows = stmt.query_map(params![file, remaining as i64], |row| {
+                let language: String = row.get(6)?;
+                Ok(Dependency {
+                    source_file: row.get(0)?,
+                    target: row.get(1)?,
+                    resolved_file: row.get(2)?,
+                    local_alias: row.get(3)?,
+                    imported_symbol: row.get(4)?,
+                    kind: row.get(5)?,
+                    language: parse_language(&language),
+                    line: row.get::<_, i64>(7)? as usize,
+                })
+            })?;
+            dependencies.extend(rows.collect::<rusqlite::Result<Vec<_>>>()?);
+        }
+
+        Ok(dependencies)
     }
 
     pub fn resolved_dependencies_for_files(&self, files: &[String]) -> Result<Vec<Dependency>> {

@@ -648,6 +648,40 @@ fn cli_indexes_and_queries_fixture_project() {
     assert_eq!(callers[0]["caller"], "AuthService.login");
     assert_eq!(callers[0]["callee"], "helper");
 
+    let impact = run_json([
+        "impact-analysis",
+        fixture.path().to_str().unwrap(),
+        "--symbol",
+        "helper",
+        "--file",
+        "src/auth.py",
+        "--limit",
+        "10",
+    ]);
+    assert_eq!(impact["seed_symbols"][0], "helper");
+    assert_eq!(impact["seed_files"][0], "src/auth.py");
+    assert!(
+        impact["impacted_files"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|file| file["file"] == "src/auth.py")
+    );
+    assert!(
+        impact["callers"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| call["caller"] == "AuthService.login" && call["callee"] == "helper")
+    );
+    assert!(
+        impact["references"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|reference| reference["file"] == "src/auth.py")
+    );
+
     let callees = run_json([
         "callees",
         fixture.path().to_str().unwrap(),

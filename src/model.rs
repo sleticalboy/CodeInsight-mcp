@@ -294,6 +294,28 @@ pub struct ContextRange {
     pub excerpt: String,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct ImpactFile {
+    pub file: String,
+    pub score: i32,
+    pub reasons: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ImpactAnalysisReport {
+    pub root: String,
+    pub summary: String,
+    pub seed_symbols: Vec<String>,
+    pub seed_files: Vec<String>,
+    pub impacted_files: Vec<ImpactFile>,
+    pub symbols: Vec<Symbol>,
+    pub references: Vec<ReferenceMatch>,
+    pub callers: Vec<CallEdge>,
+    pub callees: Vec<CallEdge>,
+    pub dependencies: Vec<Dependency>,
+    pub errors: Vec<IndexError>,
+}
+
 #[derive(Debug, Serialize)]
 pub struct ProjectIndexReport {
     pub root: String,

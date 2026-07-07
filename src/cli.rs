@@ -23,6 +23,8 @@ pub enum Command {
     Outline(OutlineArgs),
     /// Print the indexed dependency graph.
     DependencyGraph(DependencyGraphArgs),
+    /// Estimate local impact radius from seed symbols or files.
+    ImpactAnalysis(ImpactAnalysisArgs),
     /// Find text references for a symbol in indexed files.
     FindReferences(FindReferencesArgs),
     /// Search indexed code with an embedding provider.
@@ -72,6 +74,17 @@ pub struct OutlineArgs {
 pub struct DependencyGraphArgs {
     pub root: PathBuf,
     #[arg(long, default_value_t = 500)]
+    pub limit: usize,
+}
+
+#[derive(Debug, Args)]
+pub struct ImpactAnalysisArgs {
+    pub root: PathBuf,
+    #[arg(long = "symbol")]
+    pub symbols: Vec<String>,
+    #[arg(long = "file")]
+    pub files: Vec<String>,
+    #[arg(long, default_value_t = 50)]
     pub limit: usize,
 }
 
