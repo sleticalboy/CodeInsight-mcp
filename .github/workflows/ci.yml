@@ -47,11 +47,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: scripts/extract-release-notes.sh CHANGELOG.md v0.1.2 /tmp/codeinsight-release-notes.md
+      - run: scripts/extract-release-notes.sh CHANGELOG.md v0.1.3 /tmp/codeinsight-release-notes.md
       - run: |
           set -euo pipefail
-          grep -q "Semantic smoke script" /tmp/codeinsight-release-notes.md
-          ! grep -q "0.1.1" /tmp/codeinsight-release-notes.md
+          grep -q "Ollama semantic smoke script" /tmp/codeinsight-release-notes.md
+          ! grep -q "0.1.2" /tmp/codeinsight-release-notes.md
       - run: |
           set -euo pipefail
           tmp="$(mktemp -d)"

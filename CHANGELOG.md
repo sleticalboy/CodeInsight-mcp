@@ -6,6 +6,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-07-07
+
 ### Added
 
 - Preview `ollama` embedding provider using the local Ollama `/api/embed` HTTP endpoint.
