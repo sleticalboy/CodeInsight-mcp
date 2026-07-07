@@ -496,7 +496,7 @@ def helper():
         assert!(
             semantic_error
                 .to_string()
-                .contains("embedding provider is not configured")
+                .contains("CODEINSIGHT_EMBEDDING_PROVIDER=local-hash")
         );
 
         let semantic_index_result = handle_tool_call(json!({

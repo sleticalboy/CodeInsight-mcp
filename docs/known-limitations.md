@@ -83,8 +83,8 @@ Limitations:
 - The embedding provider interface exists, but no provider is enabled by default.
 - Local semantic chunks can be stored and used as deterministic lexical ranking hints in `context_pack`.
 - `CODEINSIGHT_EMBEDDING_PROVIDER=local-hash` can build and query deterministic local vectors.
-- Calls fail with a clear provider-configuration error until a supported backend is enabled, and fail with an empty-index error until `semantic-index` has generated vectors for that provider/model.
-- External embedding providers are not implemented yet.
+- Calls fail with a clear provider-configuration error until `CODEINSIGHT_EMBEDDING_PROVIDER=local-hash` or another supported backend is enabled, and fail with an empty-index error until `semantic-index` has generated vectors for that provider/model.
+- External embedding providers such as OpenAI-compatible HTTP embeddings, Ollama, and Qdrant-backed retrieval are planned but not implemented yet. See [Embedding providers](embedding-providers.md).
 - `context_pack` still uses deterministic lexical, symbol, reference, dependency, call graph, and semantic chunk metadata signals.
 
 ### `dependency_graph`

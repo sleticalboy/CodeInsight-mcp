@@ -1,0 +1,101 @@
+# Embedding Providers
+
+CodeInsight keeps semantic search optional. The default path is still local
+indexing plus deterministic syntax, symbol, reference, dependency, and call
+graph signals.
+
+## Current Support
+
+`semantic-index` always creates local source-text chunks from the existing
+SQLite project index.
+
+Embeddings are generated only when an embedding provider is configured:
+
+```bash
+CODEINSIGHT_EMBEDDING_PROVIDER=local-hash codeinsight semantic-index /path/to/repo
+CODEINSIGHT_EMBEDDING_PROVIDER=local-hash codeinsight semantic-search /path/to/repo "auth flow"
+```
+
+Supported provider values:
+
+| Value | Status | Model | Network | Purpose |
+| --- | --- | --- | --- | --- |
+| `local-hash` | Implemented | `local-hash-v1` | No | Deterministic preview vectors for smoke tests and local-only demos |
+| `local` | Alias | `local-hash-v1` | No | Short alias for `local-hash` |
+| `disabled` | Implemented | `disabled` | No | Explicitly disable embedding generation |
+| `none` | Alias | `disabled` | No | Short alias for `disabled` |
+
+If `CODEINSIGHT_EMBEDDING_PROVIDER` is unset, `semantic-index` stores chunks
+without vectors and `semantic-search` fails with a configuration error.
+
+## Local-Hash Boundary
+
+`local-hash` is intentionally simple:
+
+- It uses deterministic token hashing.
+- It does not call external services.
+- It is stable enough for tests and smoke checks.
+- It is not a production semantic-quality embedding model.
+
+Use it to validate indexing, storage, query flow, MCP wiring, and release
+smoke tests. Do not use it to evaluate semantic relevance quality.
+
+## Planned External Provider Contract
+
+External providers are not implemented yet. When added, they should follow this
+contract:
+
+- No provider is enabled by default.
+- Provider selection remains explicit through `CODEINSIGHT_EMBEDDING_PROVIDER`.
+- Provider-specific secrets must come from environment variables, never CLI
+  arguments or MCP payloads.
+- `semantic-index` must write vectors under `(provider, model)` so multiple
+  providers can coexist in SQLite.
+- `semantic-search` must query only vectors matching the configured provider
+  and model.
+- Provider errors must be explicit: missing credentials, failed network calls,
+  invalid response shape, dimension mismatch, and rate limits should be
+  distinguishable.
+- A provider must return exactly one vector per input text chunk.
+- Vector dimensions must be stored with each embedding row.
+- Network providers must preserve the local-first default: no outbound request
+  unless explicitly configured.
+
+Planned provider names and environment boundaries:
+
+| Provider | Planned value | Required env | Optional env |
+| --- | --- | --- | --- |
+| OpenAI-compatible HTTP embeddings | `openai` | `CODEINSIGHT_OPENAI_API_KEY` | `CODEINSIGHT_OPENAI_BASE_URL`, `CODEINSIGHT_OPENAI_EMBEDDING_MODEL` |
+| Ollama local HTTP embeddings | `ollama` | None if default local endpoint works | `CODEINSIGHT_OLLAMA_BASE_URL`, `CODEINSIGHT_OLLAMA_EMBEDDING_MODEL` |
+| Qdrant-backed retrieval | `qdrant` | `CODEINSIGHT_QDRANT_URL` | `CODEINSIGHT_QDRANT_API_KEY`, `CODEINSIGHT_QDRANT_COLLECTION` |
+
+Qdrant is a retrieval backend, not an embedding model by itself. A Qdrant path
+still needs a vector-generation provider or a documented convention for
+precomputed vectors.
+
+## Error Semantics
+
+Expected errors:
+
+- Unset provider:
+  `embedding provider is not configured; set CODEINSIGHT_EMBEDDING_PROVIDER=local-hash ...`
+- Unknown provider:
+  `unsupported embedding provider '...'; supported providers: ...`
+- Missing vector index:
+  `semantic search index is empty for provider ... model ...; run semantic-index ...`
+- Bad provider response:
+  `embedding provider returned N vectors for M chunks`
+
+These messages are part of the CLI/MCP contract and should stay stable enough
+for AI agents to recover by running the next command.
+
+## Minimal Implementation Path
+
+The next production-grade provider should be added in this order:
+
+1. Add a provider config parser with clear env validation.
+2. Add a provider implementation behind the existing `EmbeddingProvider` trait.
+3. Add unit tests for config errors and response-shape errors.
+4. Add a smoke script that can run only when credentials or a local endpoint are
+   present, and skips clearly otherwise.
+5. Document the provider in this file and in the known limitations.

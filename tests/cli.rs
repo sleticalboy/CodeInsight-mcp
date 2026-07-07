@@ -884,7 +884,7 @@ fn cli_semantic_search_requires_embedding_provider() {
         ])
         .assert()
         .failure()
-        .stderr(contains("embedding provider is not configured"));
+        .stderr(contains("CODEINSIGHT_EMBEDDING_PROVIDER=local-hash"));
 }
 
 #[test]

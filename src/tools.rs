@@ -187,10 +187,11 @@ pub fn semantic_search_value(
         .collect::<Vec<_>>();
     if matches.is_empty() {
         bail!(
-            "semantic search index is empty for provider '{}' model '{}'; run semantic-index with {PROVIDER_ENV}={}",
+            "semantic search index is empty for provider '{}' model '{}'; run semantic-index with {PROVIDER_ENV}={}. {}",
             provider.provider_name(),
             provider.model_name(),
             provider.provider_name(),
+            embedding::provider_help(),
             PROVIDER_ENV = embedding::PROVIDER_ENV
         )
     }

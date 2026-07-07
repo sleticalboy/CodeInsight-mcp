@@ -4,6 +4,7 @@ use sha2::{Digest, Sha256};
 pub const PROVIDER_ENV: &str = "CODEINSIGHT_EMBEDDING_PROVIDER";
 pub const LOCAL_HASH_PROVIDER: &str = "local-hash";
 pub const LOCAL_HASH_MODEL: &str = "local-hash-v1";
+pub const SUPPORTED_PROVIDER_NAMES: &[&str] = &[LOCAL_HASH_PROVIDER, "local", "disabled", "none"];
 const LOCAL_HASH_DIMENSIONS: usize = 64;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -38,7 +39,7 @@ impl EmbeddingProvider for DisabledEmbeddingProvider {
 
     fn embed(&self, _inputs: &[String]) -> Result<Vec<Embedding>> {
         bail!(
-            "embedding provider is not configured; set {PROVIDER_ENV} after enabling a supported embedding backend"
+            "embedding provider is not configured; set {PROVIDER_ENV}=local-hash to use the preview local provider"
         )
     }
 }
@@ -73,8 +74,17 @@ pub fn provider_from_name(name: Option<&str>) -> Result<Box<dyn EmbeddingProvide
     match name.map(str::trim).filter(|name| !name.is_empty()) {
         None | Some("none" | "disabled") => Ok(Box::new(DisabledEmbeddingProvider)),
         Some("local" | LOCAL_HASH_PROVIDER) => Ok(Box::new(LocalHashEmbeddingProvider)),
-        Some(name) => bail!("unsupported embedding provider '{name}'"),
+        Some(name) => bail!(
+            "unsupported embedding provider '{name}'; supported providers: {}",
+            SUPPORTED_PROVIDER_NAMES.join(", ")
+        ),
     }
+}
+
+pub fn provider_help() -> String {
+    format!(
+        "set {PROVIDER_ENV}=local-hash for deterministic local preview embeddings; external providers are not implemented yet"
+    )
 }
 
 pub fn embed_query(provider: &dyn EmbeddingProvider, query: &str) -> Result<Embedding> {
@@ -131,7 +141,7 @@ mod tests {
         assert!(
             error
                 .to_string()
-                .contains("embedding provider is not configured")
+                .contains("set CODEINSIGHT_EMBEDDING_PROVIDER=local-hash")
         );
     }
 
@@ -142,6 +152,7 @@ mod tests {
             Err(error) => error,
         };
         assert!(error.to_string().contains("unsupported embedding provider"));
+        assert!(error.to_string().contains("local-hash"));
     }
 
     #[test]

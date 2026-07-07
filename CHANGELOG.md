@@ -8,10 +8,12 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ### Added
 
+- Embedding provider contract documentation for current `local-hash` support and planned external-provider boundaries.
 - Release runbook covering tagged releases, Homebrew tap sync, Docker publishing, and verification commands.
 
 ### Changed
 
+- Semantic provider errors now point directly to `CODEINSIGHT_EMBEDDING_PROVIDER=local-hash` and list supported provider names for unknown providers.
 - Release automation now publishes only the changelog section for the current tag.
 - Release automation can update the shared Homebrew tap formula from packaged release assets when `HOMEBREW_TAP_TOKEN` is configured.
 - Release automation now supports manual Homebrew tap sync for an existing tag through `workflow_dispatch` input `tag`.
