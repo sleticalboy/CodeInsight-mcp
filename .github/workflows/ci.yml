@@ -47,11 +47,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: scripts/extract-release-notes.sh CHANGELOG.md v0.1.4 /tmp/codeinsight-release-notes.md
+      - run: scripts/extract-release-notes.sh CHANGELOG.md v0.1.5 /tmp/codeinsight-release-notes.md
       - run: |
           set -euo pipefail
-          grep -q "semantic_status" /tmp/codeinsight-release-notes.md
-          ! grep -q "0.1.3" /tmp/codeinsight-release-notes.md
+          grep -q "OpenAI-compatible embedding HTTP transport" /tmp/codeinsight-release-notes.md
+          grep -q "CODEINSIGHT_EMBEDDING_BATCH_SIZE" /tmp/codeinsight-release-notes.md
+          ! grep -q "0.1.4" /tmp/codeinsight-release-notes.md
       - run: |
           set -euo pipefail
           tmp="$(mktemp -d)"
