@@ -45,6 +45,29 @@ fn cli_indexes_and_queries_fixture_project() {
         embedding_status["index"]["chunks"].as_u64(),
         Some(semantic_chunks)
     );
+    let context_without_ollama_vectors = run_json_with_env(
+        [
+            "context-pack",
+            fixture.path().to_str().unwrap(),
+            "--task",
+            "session cookie behavior",
+            "--symbol",
+            "AuthService",
+            "--token-budget",
+            "1600",
+        ],
+        [
+            ("CODEINSIGHT_EMBEDDING_PROVIDER", "ollama"),
+            ("CODEINSIGHT_OLLAMA_BASE_URL", "http://127.0.0.1:9"),
+        ],
+    );
+    assert!(
+        context_without_ollama_vectors["files"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|file| file["file"] == "src/auth_notes.py")
+    );
 
     let semantic_index_with_embeddings = run_json_with_env(
         [
@@ -94,6 +117,35 @@ fn cli_indexes_and_queries_fixture_project() {
             && result["excerpt"].as_str().unwrap().contains("cookie")
             && result["score"].as_f64().unwrap() > 0.0
     }));
+    let vector_context = run_json_with_env(
+        [
+            "context-pack",
+            fixture.path().to_str().unwrap(),
+            "--task",
+            "session cookie behavior",
+            "--symbol",
+            "AuthService",
+            "--token-budget",
+            "1600",
+        ],
+        [("CODEINSIGHT_EMBEDDING_PROVIDER", "local-hash")],
+    );
+    let vector_context_file = vector_context["files"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|file| file["file"] == "src/auth_notes.py")
+        .unwrap();
+    assert!(
+        vector_context_file["ranges"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|range| range["reason"]
+                .as_str()
+                .unwrap()
+                .contains("Semantic vector match"))
+    );
 
     let symbols = run_json([
         "symbols",

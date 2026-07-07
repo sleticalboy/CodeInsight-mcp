@@ -44,6 +44,12 @@ number of vectors stored for the currently selected provider/model. MCP
 clients can use the equivalent `embedding_status` tool before deciding whether
 to run `semantic_index` or `semantic_search`.
 
+`context_pack` also checks the selected provider/model. When vectors exist for
+that pair, it embeds the task text and adds top vector matches as context
+candidates. If no provider is configured, no matching vectors exist, or the
+optional provider call fails, `context_pack` keeps using deterministic lexical,
+symbol, reference, dependency, call graph, and semantic chunk fallback signals.
+
 ## Local-Hash Boundary
 
 `local-hash` is intentionally simple:

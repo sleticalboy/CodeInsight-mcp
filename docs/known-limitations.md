@@ -81,12 +81,12 @@ Limitations:
 Limitations:
 
 - The embedding provider interface exists, but no provider is enabled by default.
-- Local semantic chunks can be stored and used as deterministic lexical ranking hints in `context_pack`.
+- Local semantic chunks can be stored and used as deterministic lexical fallback hints in `context_pack`.
 - `CODEINSIGHT_EMBEDDING_PROVIDER=local-hash` can build and query deterministic local vectors.
 - `CODEINSIGHT_EMBEDDING_PROVIDER=ollama` can build and query vectors from a local Ollama `/api/embed` endpoint.
 - Calls fail with a clear provider-configuration error until `CODEINSIGHT_EMBEDDING_PROVIDER=local-hash`, `CODEINSIGHT_EMBEDDING_PROVIDER=ollama`, or another supported backend is enabled, and fail with an empty-index error until `semantic-index` has generated vectors for that provider/model.
 - OpenAI-compatible HTTP embeddings and Qdrant-backed retrieval are planned but not implemented yet. See [Embedding providers](embedding-providers.md).
-- `context_pack` still uses deterministic lexical, symbol, reference, dependency, call graph, and semantic chunk metadata signals.
+- `context_pack` can use semantic vector matches when the configured provider/model has indexed vectors, then falls back to deterministic lexical, symbol, reference, dependency, call graph, and semantic chunk metadata signals.
 
 ### `dependency_graph`
 
@@ -106,24 +106,24 @@ Limitations:
 
 ### `context_pack`
 
-`context_pack` combines symbol search, file seeds, reference search, static call graph hints, resolved local dependencies, and local semantic chunk hints into a token-budgeted bundle.
+`context_pack` combines symbol search, file seeds, reference search, static call graph hints, resolved local dependencies, optional semantic vector matches, and local semantic chunk fallback hints into a token-budgeted bundle.
 
-Current deterministic ranking order:
+Current ranking order:
 
 - File seeds have the highest priority.
 - File seed ranges include header/import context plus primary top-level symbols. Task-matching seed symbols get a small same-file ordering boost, large same-score merged ranges are capped, oversized seed ranges can be shortened to fit small budgets, and selected output ranges are trimmed to avoid duplicate lines before being returned in source order. If no primary symbols are found, `context_pack` falls back to the first 80 lines.
 - Symbol definition ranges are next.
 - Static call graph target files from seed symbols and seed file primary symbols are ranked after definitions. Bounded caller files are also included for seed symbols and small seed files.
 - Text references are ranked after call graph targets, with reference confidence as a small boost.
-- Local semantic chunks are ranked after references when their text matches task or seed symbol terms.
+- Semantic vector matches are ranked after references when a configured provider/model has indexed vectors. Local semantic chunks remain available as deterministic fallback matches when their text matches task or seed symbol terms.
 - Resolved local dependencies are included as supporting context after direct matches.
 - Task keywords provide a lightweight boost when they match symbol names, file paths, reference context, or dependency targets.
 - Ties are broken by total file score and then stable file path order.
 
 Limitations:
 
-- It is deterministic and local-only.
-- It does not use vector embeddings yet.
+- Without a configured embedding provider, it remains deterministic and local-only.
+- It uses vector embeddings only when the selected provider/model already has local indexed vectors; otherwise it keeps the deterministic fallback path.
 - It does not yet rank by type graph, test relevance, semantic similarity, or edit history.
 - Task relevance is lexical only and uses simple ASCII keyword matching.
 - Token estimation is approximate and based on character count.

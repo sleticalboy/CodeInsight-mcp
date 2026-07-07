@@ -25,6 +25,7 @@ const CONTEXT_SCORE_SYMBOL_DEFINITION: i32 = 90;
 const CONTEXT_SCORE_CALL_GRAPH: i32 = 75;
 const CONTEXT_SCORE_REFERENCE_BASE: i32 = 60;
 const CONTEXT_SCORE_SEMANTIC_CHUNK: i32 = 50;
+const CONTEXT_SCORE_SEMANTIC_VECTOR: i32 = 70;
 const CONTEXT_SCORE_LOCAL_DEPENDENCY: i32 = 40;
 const CONTEXT_SCORE_TASK_MATCH_BOOST: i32 = 30;
 const CONTEXT_SCORE_SEED_SYMBOL_TASK_MATCH_BOOST: i32 = 5;
@@ -537,6 +538,19 @@ pub fn context_pack_value(
             );
         }
     }
+    for result in semantic_vector_context_matches(&store, &task, 20) {
+        push_context_range(
+            &mut ranges_by_file,
+            result.file,
+            result.start_line,
+            result.end_line,
+            format!(
+                "Semantic vector match for task with score {:.3} near lines {}-{}",
+                result.score, result.start_line, result.end_line
+            ),
+            CONTEXT_SCORE_SEMANTIC_VECTOR + semantic_vector_score_boost(result.score),
+        );
+    }
     for chunk in store
         .semantic_chunks_matching(&semantic_ranking_terms(&task_keywords, &seed_symbols), 20)?
     {
@@ -673,6 +687,41 @@ pub fn context_pack_value(
         estimated_tokens,
         truncated,
     })
+}
+
+fn semantic_vector_context_matches(
+    store: &Store,
+    task: &str,
+    limit: usize,
+) -> Vec<SemanticSearchResult> {
+    if limit == 0 {
+        return Vec::new();
+    }
+    let Ok(provider) = embedding::provider_from_env() else {
+        return Vec::new();
+    };
+    if !provider.is_configured() {
+        return Vec::new();
+    }
+    let Ok(candidates) =
+        store.semantic_embedding_matches(provider.provider_name(), provider.model_name())
+    else {
+        return Vec::new();
+    };
+    if candidates.is_empty() {
+        return Vec::new();
+    }
+    let Ok(query_embedding) = embedding::embed_query(provider.as_ref(), task) else {
+        return Vec::new();
+    };
+
+    let mut matches = candidates
+        .into_iter()
+        .filter_map(|candidate| semantic_search_result(candidate, &query_embedding.values))
+        .collect::<Vec<_>>();
+    matches.sort_by(compare_semantic_search_results);
+    matches.truncate(limit);
+    matches
 }
 
 fn semantic_chunks_for_file(
@@ -859,15 +908,24 @@ fn push_context_range(
     reason: String,
     score: i32,
 ) {
-    ranges_by_file
-        .entry(file)
-        .or_default()
-        .push(ContextCandidateRange {
-            start_line,
-            end_line,
-            reason,
-            score,
-        });
+    let ranges = ranges_by_file.entry(file).or_default();
+    if let Some(existing) = ranges
+        .iter_mut()
+        .find(|range| range.start_line == start_line && range.end_line == end_line)
+    {
+        existing.score = existing.score.max(score);
+        if !existing.reason.contains(&reason) {
+            existing.reason.push_str("; ");
+            existing.reason.push_str(&reason);
+        }
+        return;
+    }
+    ranges.push(ContextCandidateRange {
+        start_line,
+        end_line,
+        reason,
+        score,
+    });
 }
 
 fn compare_context_file_candidates(
@@ -1092,6 +1150,13 @@ fn semantic_chunk_task_boost(chunk: &SemanticChunk, keywords: &[String]) -> i32 
 
 fn semantic_chunk_density_boost(chunk: &SemanticChunk) -> i32 {
     if chunk.token_estimate <= 120 { 5 } else { 0 }
+}
+
+fn semantic_vector_score_boost(score: f64) -> i32 {
+    if !score.is_finite() {
+        return 0;
+    }
+    (score.clamp(0.0, 1.0) * 25.0).round() as i32
 }
 
 fn semantic_ranking_terms(task_keywords: &[String], seed_symbols: &[String]) -> Vec<String> {
