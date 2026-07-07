@@ -14,6 +14,9 @@ Embeddings are generated only when an embedding provider is configured:
 ```bash
 CODEINSIGHT_EMBEDDING_PROVIDER=local-hash codeinsight semantic-index /path/to/repo
 CODEINSIGHT_EMBEDDING_PROVIDER=local-hash codeinsight semantic-search /path/to/repo "auth flow"
+
+CODEINSIGHT_EMBEDDING_PROVIDER=ollama codeinsight semantic-index /path/to/repo
+CODEINSIGHT_EMBEDDING_PROVIDER=ollama codeinsight semantic-search /path/to/repo "auth flow"
 ```
 
 Supported provider values:
@@ -22,6 +25,7 @@ Supported provider values:
 | --- | --- | --- | --- | --- |
 | `local-hash` | Implemented | `local-hash-v1` | No | Deterministic preview vectors for smoke tests and local-only demos |
 | `local` | Alias | `local-hash-v1` | No | Short alias for `local-hash` |
+| `ollama` | Implemented preview | `embeddinggemma` by default | Local HTTP | Local Ollama embeddings through `/api/embed` |
 | `disabled` | Implemented | `disabled` | No | Explicitly disable embedding generation |
 | `none` | Alias | `disabled` | No | Short alias for `disabled` |
 
@@ -40,10 +44,54 @@ without vectors and `semantic-search` fails with a configuration error.
 Use it to validate indexing, storage, query flow, MCP wiring, and release
 smoke tests. Do not use it to evaluate semantic relevance quality.
 
-## Planned External Provider Contract
+## Ollama Boundary
 
-External providers are not implemented yet. When added, they should follow this
-contract:
+`ollama` is the first local HTTP embedding provider. It calls the Ollama
+`/api/embed` endpoint documented in the
+[Ollama API reference](https://docs.ollama.com/api) and remains opt-in.
+
+Defaults:
+
+- `CODEINSIGHT_OLLAMA_BASE_URL=http://127.0.0.1:11434`
+- `CODEINSIGHT_OLLAMA_EMBEDDING_MODEL=embeddinggemma`
+- `CODEINSIGHT_OLLAMA_TIMEOUT_SECS=30`
+
+Example:
+
+```bash
+ollama pull embeddinggemma
+CODEINSIGHT_EMBEDDING_PROVIDER=ollama codeinsight semantic-index /path/to/repo
+CODEINSIGHT_EMBEDDING_PROVIDER=ollama codeinsight semantic-search /path/to/repo "request validation"
+```
+
+Use another local embedding model:
+
+```bash
+CODEINSIGHT_EMBEDDING_PROVIDER=ollama \
+CODEINSIGHT_OLLAMA_EMBEDDING_MODEL=nomic-embed-text \
+codeinsight semantic-index /path/to/repo
+```
+
+Optional smoke test:
+
+```bash
+scripts/ollama-semantic-smoke.sh
+```
+
+The smoke test skips clearly when Ollama is unreachable or the selected model
+is missing.
+
+Current limitations:
+
+- Only `http://` Ollama base URLs are supported.
+- The provider uses a small built-in HTTP client to avoid adding an external
+  dependency.
+- It expects Ollama to return one embedding per input text.
+- It does not pull models automatically.
+
+## External Provider Contract
+
+Additional external providers should follow this contract:
 
 - No provider is enabled by default.
 - Provider selection remains explicit through `CODEINSIGHT_EMBEDDING_PROVIDER`.
@@ -66,7 +114,6 @@ Planned provider names and environment boundaries:
 | Provider | Planned value | Required env | Optional env |
 | --- | --- | --- | --- |
 | OpenAI-compatible HTTP embeddings | `openai` | `CODEINSIGHT_OPENAI_API_KEY` | `CODEINSIGHT_OPENAI_BASE_URL`, `CODEINSIGHT_OPENAI_EMBEDDING_MODEL` |
-| Ollama local HTTP embeddings | `ollama` | None if default local endpoint works | `CODEINSIGHT_OLLAMA_BASE_URL`, `CODEINSIGHT_OLLAMA_EMBEDDING_MODEL` |
 | Qdrant-backed retrieval | `qdrant` | `CODEINSIGHT_QDRANT_URL` | `CODEINSIGHT_QDRANT_API_KEY`, `CODEINSIGHT_QDRANT_COLLECTION` |
 
 Qdrant is a retrieval backend, not an embedding model by itself. A Qdrant path
@@ -85,6 +132,8 @@ Expected errors:
   `semantic search index is empty for provider ... model ...; run semantic-index ...`
 - Bad provider response:
   `embedding provider returned N vectors for M chunks`
+- Ollama unavailable:
+  `ollama embedding provider is unreachable at ...`
 
 These messages are part of the CLI/MCP contract and should stay stable enough
 for AI agents to recover by running the next command.

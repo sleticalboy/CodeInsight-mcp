@@ -8,6 +8,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ### Added
 
+- Preview `ollama` embedding provider using the local Ollama `/api/embed` HTTP endpoint.
+- Optional Ollama semantic smoke script.
 - Embedding provider contract documentation for current `local-hash` support and planned external-provider boundaries.
 - Release runbook covering tagged releases, Homebrew tap sync, Docker publishing, and verification commands.
 

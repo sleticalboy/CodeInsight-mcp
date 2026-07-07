@@ -26,3 +26,12 @@ CODEINSIGHT_BIN=target/release/codeinsight scripts/semantic-smoke.sh
 The smoke test is deterministic and local-only. It is meant as a release gate
 for the preview `semantic-index` and `semantic-search` path, not as a quality
 benchmark for production embeddings.
+
+For an optional local Ollama embedding smoke test, run:
+
+```bash
+scripts/ollama-semantic-smoke.sh
+```
+
+That script uses `CODEINSIGHT_EMBEDDING_PROVIDER=ollama` and skips when Ollama
+is unreachable or the selected model is missing.
