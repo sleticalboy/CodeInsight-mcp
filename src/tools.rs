@@ -264,6 +264,7 @@ pub fn semantic_index_value(root: PathBuf, chunk_lines: usize) -> Result<Semanti
 
 pub fn embedding_status_value(root: Option<PathBuf>) -> Result<EmbeddingProviderStatus> {
     let config = embedding::provider_config_from_env()?;
+    let batch_size = embedding::batch_size_from_env()?;
     let index = match root {
         Some(root) => {
             let root = root.canonicalize()?;
@@ -292,6 +293,8 @@ pub fn embedding_status_value(root: Option<PathBuf>) -> Result<EmbeddingProvider
             .iter()
             .map(|provider| (*provider).to_string())
             .collect(),
+        batch_size,
+        batch_size_env: embedding::BATCH_SIZE_ENV.to_string(),
         help: embedding::provider_help(),
         ollama: config.ollama.map(|ollama| OllamaEmbeddingStatus {
             base_url: ollama.base_url,

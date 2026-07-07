@@ -44,9 +44,10 @@ codeinsight embedding-status /path/to/repo
 ```
 
 The optional repository argument adds local semantic chunk counts and the
-number of vectors stored for the currently selected provider/model. MCP
-clients can use the equivalent `embedding_status` tool before deciding whether
-to run `semantic_index` or `semantic_search`.
+number of vectors stored for the currently selected provider/model. The status
+also includes `batch_size` and `batch_size_env` so MCP clients can inspect the
+current indexing request size before deciding whether to run `semantic_index`
+or `semantic_search`.
 
 `context_pack` also checks the selected provider/model. When vectors exist for
 that pair, it embeds the task text and adds top vector matches as context
@@ -142,8 +143,8 @@ CODEINSIGHT_OPENAI_API_KEY=... \
 codeinsight embedding-status
 ```
 
-`embedding-status` reports whether the API key is configured, but never prints
-the key value.
+`embedding-status` reports whether the API key is configured and the current
+embedding batch size, but never prints the key value.
 
 Example indexing and search:
 

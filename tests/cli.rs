@@ -37,6 +37,11 @@ fn cli_indexes_and_queries_fixture_project() {
     assert_eq!(embedding_status["provider"], "disabled");
     assert_eq!(embedding_status["configured"], false);
     assert_eq!(embedding_status["source"], "default");
+    assert_eq!(embedding_status["batch_size"].as_u64(), Some(64));
+    assert_eq!(
+        embedding_status["batch_size_env"],
+        "CODEINSIGHT_EMBEDDING_BATCH_SIZE"
+    );
     assert_eq!(
         embedding_status["index"]["vector_status"],
         "provider_not_configured"
@@ -1007,6 +1012,7 @@ fn cli_embedding_status_reports_ollama_config_without_network_call() {
             ("CODEINSIGHT_OLLAMA_BASE_URL", "http://127.0.0.1:9999"),
             ("CODEINSIGHT_OLLAMA_EMBEDDING_MODEL", "nomic-embed-text"),
             ("CODEINSIGHT_OLLAMA_TIMEOUT_SECS", "7"),
+            ("CODEINSIGHT_EMBEDDING_BATCH_SIZE", "3"),
         ],
     );
 
@@ -1015,6 +1021,8 @@ fn cli_embedding_status_reports_ollama_config_without_network_call() {
     assert_eq!(status["configured"], true);
     assert_eq!(status["ollama"]["base_url"], "http://127.0.0.1:9999");
     assert_eq!(status["ollama"]["timeout_secs"].as_u64(), Some(7));
+    assert_eq!(status["batch_size"].as_u64(), Some(3));
+    assert_eq!(status["batch_size_env"], "CODEINSIGHT_EMBEDDING_BATCH_SIZE");
 }
 
 #[test]

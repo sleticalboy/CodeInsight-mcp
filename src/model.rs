@@ -134,6 +134,8 @@ pub struct EmbeddingProviderStatus {
     pub source: String,
     pub provider_env: String,
     pub supported_providers: Vec<String>,
+    pub batch_size: usize,
+    pub batch_size_env: String,
     pub help: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ollama: Option<OllamaEmbeddingStatus>,
