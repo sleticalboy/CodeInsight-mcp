@@ -21,6 +21,7 @@ The product direction and execution plan live in:
 - [Semantic smoke test](docs/semantic-smoke.md)
 - [Smoke benchmark](docs/benchmark-v0.1.md)
 - [Large repository benchmark](docs/benchmark-large.md)
+- [Release runbook](docs/release-runbook.md)
 - [Changelog](CHANGELOG.md)
 
 ## Current Status

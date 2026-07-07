@@ -6,6 +6,10 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ## [Unreleased]
 
+### Added
+
+- Release runbook covering tagged releases, Homebrew tap sync, Docker publishing, and verification commands.
+
 ### Changed
 
 - Release automation now publishes only the changelog section for the current tag.
