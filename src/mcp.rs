@@ -271,7 +271,7 @@ fn tool_definitions() -> Value {
         },
         {
             "name": "embedding_status",
-            "description": "Return the configured embedding provider and optional local semantic index status without making network requests.",
+            "description": "Return the configured embedding provider, embedding batch size, and optional local semantic index status without making network requests.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -552,6 +552,14 @@ def helper():
         assert_eq!(
             embedding_status_result["structuredContent"]["provider"].as_str(),
             Some("disabled")
+        );
+        assert_eq!(
+            embedding_status_result["structuredContent"]["batch_size"].as_u64(),
+            Some(64)
+        );
+        assert_eq!(
+            embedding_status_result["structuredContent"]["batch_size_env"].as_str(),
+            Some("CODEINSIGHT_EMBEDDING_BATCH_SIZE")
         );
         assert_eq!(
             embedding_status_result["structuredContent"]["index"]["chunks"].as_u64(),
