@@ -231,41 +231,121 @@ impl Store {
 
     pub fn replace_semantic_chunks(&mut self, chunks: &[SemanticChunkInput]) -> Result<usize> {
         let tx = self.conn.transaction()?;
-        tx.execute("delete from semantic_embeddings", [])?;
-        tx.execute("delete from semantic_chunks", [])?;
-
-        let mut inserted = 0;
         let updated_at = unix_timestamp();
+
+        tx.execute("drop table if exists temp.desired_semantic_chunks", [])?;
+        tx.execute(
+            "create temp table desired_semantic_chunks (
+                file_id integer not null,
+                start_line integer not null,
+                end_line integer not null,
+                content_hash text not null,
+                token_estimate integer not null,
+                text text not null,
+                primary key (file_id, start_line, end_line)
+            )",
+            [],
+        )?;
         {
             let mut stmt = tx.prepare(
-                "insert into semantic_chunks
-                 (file_id, start_line, end_line, content_hash, token_estimate, text, updated_at)
-                 select id, ?2, ?3, ?4, ?5, ?6, ?7
+                "insert or replace into temp.desired_semantic_chunks
+                 (file_id, start_line, end_line, content_hash, token_estimate, text)
+                 select id, ?2, ?3, ?4, ?5, ?6
                  from files
                  where path = ?1",
             )?;
             for chunk in chunks {
-                inserted += stmt.execute(params![
+                stmt.execute(params![
                     chunk.file,
                     chunk.start_line as i64,
                     chunk.end_line as i64,
                     chunk.content_hash,
                     chunk.token_estimate as i64,
                     chunk.text,
-                    updated_at,
                 ])?;
             }
         }
-        tx.commit()?;
-        Ok(inserted)
-    }
 
-    pub fn count_semantic_embeddings(&self) -> Result<usize> {
-        Ok(self
-            .conn
-            .query_row("select count(*) from semantic_embeddings", [], |row| {
-                row.get::<_, i64>(0)
-            })? as usize)
+        tx.execute(
+            "delete from semantic_embeddings
+             where chunk_id in (
+                select sc.id
+                from semantic_chunks sc
+                left join temp.desired_semantic_chunks d
+                    on d.file_id = sc.file_id
+                    and d.start_line = sc.start_line
+                    and d.end_line = sc.end_line
+                where d.file_id is null
+                    or d.content_hash != sc.content_hash
+             )",
+            [],
+        )?;
+        tx.execute(
+            "delete from semantic_chunks
+             where id in (
+                select sc.id
+                from semantic_chunks sc
+                left join temp.desired_semantic_chunks d
+                    on d.file_id = sc.file_id
+                    and d.start_line = sc.start_line
+                    and d.end_line = sc.end_line
+                where d.file_id is null
+             )",
+            [],
+        )?;
+        tx.execute(
+            "update semantic_chunks
+             set
+                content_hash = (
+                    select d.content_hash
+                    from temp.desired_semantic_chunks d
+                    where d.file_id = semantic_chunks.file_id
+                        and d.start_line = semantic_chunks.start_line
+                        and d.end_line = semantic_chunks.end_line
+                ),
+                token_estimate = (
+                    select d.token_estimate
+                    from temp.desired_semantic_chunks d
+                    where d.file_id = semantic_chunks.file_id
+                        and d.start_line = semantic_chunks.start_line
+                        and d.end_line = semantic_chunks.end_line
+                ),
+                text = (
+                    select d.text
+                    from temp.desired_semantic_chunks d
+                    where d.file_id = semantic_chunks.file_id
+                        and d.start_line = semantic_chunks.start_line
+                        and d.end_line = semantic_chunks.end_line
+                ),
+                updated_at = ?1
+             where exists (
+                select 1
+                from temp.desired_semantic_chunks d
+                where d.file_id = semantic_chunks.file_id
+                    and d.start_line = semantic_chunks.start_line
+                    and d.end_line = semantic_chunks.end_line
+                    and d.content_hash != semantic_chunks.content_hash
+             )",
+            params![updated_at],
+        )?;
+        tx.execute(
+            "insert into semantic_chunks
+             (file_id, start_line, end_line, content_hash, token_estimate, text, updated_at)
+             select d.file_id, d.start_line, d.end_line, d.content_hash, d.token_estimate, d.text, ?1
+             from temp.desired_semantic_chunks d
+             left join semantic_chunks sc
+                on sc.file_id = d.file_id
+                and sc.start_line = d.start_line
+                and sc.end_line = d.end_line
+             where sc.id is null",
+            params![updated_at],
+        )?;
+        tx.execute("drop table if exists temp.desired_semantic_chunks", [])?;
+        let total = tx.query_row("select count(*) from semantic_chunks", [], |row| {
+            row.get::<_, i64>(0)
+        })? as usize;
+        tx.commit()?;
+        Ok(total)
     }
 
     pub fn count_semantic_chunks(&self) -> Result<usize> {
@@ -284,6 +364,7 @@ impl Store {
         )? as usize)
     }
 
+    #[cfg(test)]
     pub fn semantic_chunks(&self) -> Result<Vec<SemanticChunk>> {
         let mut stmt = self.conn.prepare(
             "select sc.id, f.path, sc.start_line, sc.end_line, sc.token_estimate, sc.text
@@ -295,28 +376,47 @@ impl Store {
         Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
     }
 
-    pub fn replace_semantic_embeddings(
+    pub fn semantic_chunks_missing_embeddings(
+        &self,
+        provider: &str,
+        model: &str,
+    ) -> Result<Vec<SemanticChunk>> {
+        let mut stmt = self.conn.prepare(
+            "select sc.id, f.path, sc.start_line, sc.end_line, sc.token_estimate, sc.text
+             from semantic_chunks sc
+             join files f on f.id = sc.file_id
+             left join semantic_embeddings se
+                on se.chunk_id = sc.id
+                and se.provider = ?1
+                and se.model = ?2
+             where se.id is null
+             order by f.path, sc.start_line",
+        )?;
+        let rows = stmt.query_map(params![provider, model], semantic_chunk_from_row)?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
+    pub fn upsert_semantic_embeddings(
         &mut self,
         provider: &str,
         model: &str,
         embeddings: &[SemanticEmbeddingInput],
     ) -> Result<usize> {
         let tx = self.conn.transaction()?;
-        tx.execute(
-            "delete from semantic_embeddings where provider = ?1 and model = ?2",
-            params![provider, model],
-        )?;
-
         let updated_at = unix_timestamp();
-        let mut inserted = 0;
+        let mut written = 0;
         {
             let mut stmt = tx.prepare(
                 "insert into semantic_embeddings
                  (chunk_id, provider, model, dimensions, vector, updated_at)
-                 values (?1, ?2, ?3, ?4, ?5, ?6)",
+                 values (?1, ?2, ?3, ?4, ?5, ?6)
+                 on conflict(chunk_id, provider, model) do update set
+                    dimensions = excluded.dimensions,
+                    vector = excluded.vector,
+                    updated_at = excluded.updated_at",
             )?;
             for embedding in embeddings {
-                inserted += stmt.execute(params![
+                written += stmt.execute(params![
                     embedding.chunk_id,
                     provider,
                     model,
@@ -327,7 +427,7 @@ impl Store {
             }
         }
         tx.commit()?;
-        Ok(inserted)
+        Ok(written)
     }
 
     pub fn semantic_embedding_matches(
@@ -1201,6 +1301,80 @@ fn unix_timestamp() -> i64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn replace_semantic_chunks_preserves_unchanged_embeddings() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let mut store = Store::open(temp.path())?;
+        store.upsert_file(&SourceFile {
+            path: temp.path().join("src/main.rs"),
+            relative_path: "src/main.rs".to_string(),
+            language: Language::Rust,
+            hash: "file-hash".to_string(),
+            line_count: 2,
+        })?;
+        let chunk = SemanticChunkInput {
+            file: "src/main.rs".to_string(),
+            start_line: 1,
+            end_line: 2,
+            content_hash: "chunk-a".to_string(),
+            token_estimate: 2,
+            text: "fn main() {}".to_string(),
+        };
+
+        assert_eq!(
+            store.replace_semantic_chunks(std::slice::from_ref(&chunk))?,
+            1
+        );
+        let chunks = store.semantic_chunks()?;
+        store.upsert_semantic_embeddings(
+            "local-hash",
+            "local-hash-v1",
+            &[SemanticEmbeddingInput {
+                chunk_id: chunks[0].id,
+                vector: vec![0.1, 0.2],
+            }],
+        )?;
+
+        assert_eq!(
+            store.replace_semantic_chunks(std::slice::from_ref(&chunk))?,
+            1
+        );
+
+        assert_eq!(
+            store.count_semantic_embeddings_for("local-hash", "local-hash-v1")?,
+            1
+        );
+        assert!(
+            store
+                .semantic_chunks_missing_embeddings("local-hash", "local-hash-v1")?
+                .is_empty()
+        );
+
+        let changed_chunk = SemanticChunkInput {
+            content_hash: "chunk-b".to_string(),
+            text: "fn main() { println!(\"changed\"); }".to_string(),
+            ..chunk
+        };
+
+        assert_eq!(
+            store.replace_semantic_chunks(std::slice::from_ref(&changed_chunk))?,
+            1
+        );
+
+        assert_eq!(
+            store.count_semantic_embeddings_for("local-hash", "local-hash-v1")?,
+            0
+        );
+        assert_eq!(
+            store
+                .semantic_chunks_missing_embeddings("local-hash", "local-hash-v1")?
+                .len(),
+            1
+        );
+
+        Ok(())
+    }
 
     #[test]
     fn migrates_missing_resolved_file_column_even_when_meta_is_current() -> Result<()> {

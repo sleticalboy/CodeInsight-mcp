@@ -244,25 +244,30 @@ pub fn semantic_index_value(root: PathBuf, chunk_lines: usize) -> Result<Semanti
         }
     }
 
-    let chunks_written = store.replace_semantic_chunks(&chunks)?;
+    let chunks_indexed = store.replace_semantic_chunks(&chunks)?;
     let provider = embedding::provider_from_env()?;
-    if provider.is_configured() && chunks_written > 0 {
-        let stored_chunks = store.semantic_chunks()?;
+    if provider.is_configured() && chunks_indexed > 0 {
+        let stored_chunks = store
+            .semantic_chunks_missing_embeddings(provider.provider_name(), provider.model_name())?;
         let batch_size = embedding::batch_size_from_env()?;
         let semantic_embeddings =
             semantic_embeddings_for_chunks(provider.as_ref(), &stored_chunks, batch_size)?;
-        store.replace_semantic_embeddings(
+        store.upsert_semantic_embeddings(
             provider.provider_name(),
             provider.model_name(),
             &semantic_embeddings,
         )?;
     }
-    let embeddings = store.count_semantic_embeddings()?;
+    let embeddings = if provider.is_configured() {
+        store.count_semantic_embeddings_for(provider.provider_name(), provider.model_name())?
+    } else {
+        0
+    };
 
     Ok(SemanticIndexReport {
         root: root.display().to_string(),
         indexed_files: files.len(),
-        chunks: chunks_written,
+        chunks: chunks_indexed,
         embeddings,
         chunk_lines,
         provider: provider.provider_name().to_string(),

@@ -173,6 +173,8 @@ Current limitations:
 
 - `semantic-index` batches embedding requests with
   `CODEINSIGHT_EMBEDDING_BATCH_SIZE`, defaulting to 64 chunks per request.
+- `semantic-index` preserves existing vectors for unchanged chunks and only
+  calls the selected provider for chunks missing vectors.
 - It does not retry rate limits or transient HTTP failures yet.
 - It stores vectors under `(provider, model)` like all other providers.
 
@@ -189,6 +191,8 @@ Additional external providers should follow this contract:
 - `semantic-index` must batch external provider requests with
   `CODEINSIGHT_EMBEDDING_BATCH_SIZE` so large repositories do not require one
   huge provider request.
+- `semantic-index` should preserve existing vectors for unchanged chunks and
+  generate only missing vectors for the selected provider/model.
 - `semantic-search` must query only vectors matching the configured provider
   and model.
 - Provider errors must be explicit: missing credentials, failed network calls,
