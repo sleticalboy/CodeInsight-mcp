@@ -17,6 +17,8 @@ CODEINSIGHT_EMBEDDING_PROVIDER=local-hash codeinsight semantic-search /path/to/r
 
 CODEINSIGHT_EMBEDDING_PROVIDER=ollama codeinsight semantic-index /path/to/repo
 CODEINSIGHT_EMBEDDING_PROVIDER=ollama codeinsight semantic-search /path/to/repo "auth flow"
+
+CODEINSIGHT_EMBEDDING_PROVIDER=openai CODEINSIGHT_OPENAI_API_KEY=... codeinsight embedding-status
 ```
 
 Supported provider values:
@@ -26,6 +28,7 @@ Supported provider values:
 | `local-hash` | Implemented | `local-hash-v1` | No | Deterministic preview vectors for smoke tests and local-only demos |
 | `local` | Alias | `local-hash-v1` | No | Short alias for `local-hash` |
 | `ollama` | Implemented preview | `embeddinggemma` by default | Local HTTP | Local Ollama embeddings through `/api/embed` |
+| `openai` | Config preview | `text-embedding-3-small` by default | Not yet | OpenAI-compatible env validation and status reporting |
 | `disabled` | Implemented | `disabled` | No | Explicitly disable embedding generation |
 | `none` | Alias | `disabled` | No | Short alias for `disabled` |
 
@@ -111,6 +114,34 @@ Current limitations:
 - It expects Ollama to return one embedding per input text.
 - It does not pull models automatically.
 
+## OpenAI-Compatible Boundary
+
+`openai` is currently a configuration skeleton for future OpenAI-compatible
+HTTP embeddings. It validates and reports provider settings, but embedding
+transport is intentionally not implemented yet.
+
+Required:
+
+- `CODEINSIGHT_OPENAI_API_KEY`
+
+Defaults:
+
+- `CODEINSIGHT_OPENAI_BASE_URL=https://api.openai.com/v1`
+- `CODEINSIGHT_OPENAI_EMBEDDING_MODEL=text-embedding-3-small`
+- `CODEINSIGHT_OPENAI_TIMEOUT_SECS=30`
+
+Example status check:
+
+```bash
+CODEINSIGHT_EMBEDDING_PROVIDER=openai \
+CODEINSIGHT_OPENAI_API_KEY=... \
+codeinsight embedding-status
+```
+
+`embedding-status` reports whether the API key is configured, but never prints
+the key value. `semantic-index` and `semantic-search` return a clear
+not-implemented error for `openai` until the HTTP transport is added.
+
 ## External Provider Contract
 
 Additional external providers should follow this contract:
@@ -136,7 +167,6 @@ Planned provider names and environment boundaries:
 
 | Provider | Planned value | Required env | Optional env |
 | --- | --- | --- | --- |
-| OpenAI-compatible HTTP embeddings | `openai` | `CODEINSIGHT_OPENAI_API_KEY` | `CODEINSIGHT_OPENAI_BASE_URL`, `CODEINSIGHT_OPENAI_EMBEDDING_MODEL` |
 | Qdrant-backed retrieval | `qdrant` | `CODEINSIGHT_QDRANT_URL` | `CODEINSIGHT_QDRANT_API_KEY`, `CODEINSIGHT_QDRANT_COLLECTION` |
 
 Qdrant is a retrieval backend, not an embedding model by itself. A Qdrant path
@@ -157,6 +187,8 @@ Expected errors:
   `embedding provider returned N vectors for M chunks`
 - Ollama unavailable:
   `ollama embedding provider is unreachable at ...`
+- OpenAI transport not implemented:
+  `openai embedding provider transport is not implemented yet ...`
 
 These messages are part of the CLI/MCP contract and should stay stable enough
 for AI agents to recover by running the next command.

@@ -17,15 +17,24 @@ pub const OLLAMA_MODEL_ENV: &str = "CODEINSIGHT_OLLAMA_EMBEDDING_MODEL";
 pub const OLLAMA_TIMEOUT_SECS_ENV: &str = "CODEINSIGHT_OLLAMA_TIMEOUT_SECS";
 pub const DEFAULT_OLLAMA_BASE_URL: &str = "http://127.0.0.1:11434";
 pub const DEFAULT_OLLAMA_MODEL: &str = "embeddinggemma";
+pub const OPENAI_PROVIDER: &str = "openai";
+pub const OPENAI_API_KEY_ENV: &str = "CODEINSIGHT_OPENAI_API_KEY";
+pub const OPENAI_BASE_URL_ENV: &str = "CODEINSIGHT_OPENAI_BASE_URL";
+pub const OPENAI_MODEL_ENV: &str = "CODEINSIGHT_OPENAI_EMBEDDING_MODEL";
+pub const OPENAI_TIMEOUT_SECS_ENV: &str = "CODEINSIGHT_OPENAI_TIMEOUT_SECS";
+pub const DEFAULT_OPENAI_BASE_URL: &str = "https://api.openai.com/v1";
+pub const DEFAULT_OPENAI_MODEL: &str = "text-embedding-3-small";
 pub const SUPPORTED_PROVIDER_NAMES: &[&str] = &[
     LOCAL_HASH_PROVIDER,
     "local",
     OLLAMA_PROVIDER,
+    OPENAI_PROVIDER,
     "disabled",
     "none",
 ];
 const LOCAL_HASH_DIMENSIONS: usize = 64;
 pub const DEFAULT_OLLAMA_TIMEOUT_SECS: u64 = 30;
+pub const DEFAULT_OPENAI_TIMEOUT_SECS: u64 = 30;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EmbeddingProviderConfig {
@@ -34,12 +43,20 @@ pub struct EmbeddingProviderConfig {
     pub configured: bool,
     pub source: String,
     pub ollama: Option<OllamaProviderConfig>,
+    pub openai: Option<OpenAiProviderConfig>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OllamaProviderConfig {
     pub base_url: String,
     pub timeout_secs: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OpenAiProviderConfig {
+    pub base_url: String,
+    pub timeout_secs: u64,
+    pub api_key_configured: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -142,6 +159,44 @@ impl EmbeddingProvider for OllamaEmbeddingProvider {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct OpenAiEmbeddingProvider {
+    base_url: String,
+    model: String,
+    timeout: Duration,
+}
+
+impl OpenAiEmbeddingProvider {
+    fn from_env() -> Result<Self> {
+        let config = openai_config_from_env()?;
+        if !config.api_key_configured {
+            bail!("{OPENAI_API_KEY_ENV} is required for the openai embedding provider");
+        }
+        Ok(Self {
+            base_url: config.base_url,
+            model: env_or_default(OPENAI_MODEL_ENV, DEFAULT_OPENAI_MODEL),
+            timeout: Duration::from_secs(config.timeout_secs),
+        })
+    }
+}
+
+impl EmbeddingProvider for OpenAiEmbeddingProvider {
+    fn provider_name(&self) -> &str {
+        OPENAI_PROVIDER
+    }
+
+    fn model_name(&self) -> &str {
+        &self.model
+    }
+
+    fn embed(&self, _inputs: &[String]) -> Result<Vec<Embedding>> {
+        let _ = (&self.base_url, self.timeout);
+        bail!(
+            "openai embedding provider transport is not implemented yet; config is validated through embedding-status"
+        )
+    }
+}
+
 pub fn provider_from_env() -> Result<Box<dyn EmbeddingProvider>> {
     provider_from_name(std::env::var(PROVIDER_ENV).ok().as_deref())
 }
@@ -164,6 +219,7 @@ pub fn provider_config_from_env() -> Result<EmbeddingProviderConfig> {
             configured: false,
             source: source.to_string(),
             ollama: None,
+            openai: None,
         }),
         Some("local" | LOCAL_HASH_PROVIDER) => Ok(EmbeddingProviderConfig {
             provider_name: LOCAL_HASH_PROVIDER.to_string(),
@@ -171,6 +227,7 @@ pub fn provider_config_from_env() -> Result<EmbeddingProviderConfig> {
             configured: true,
             source: source.to_string(),
             ollama: None,
+            openai: None,
         }),
         Some(OLLAMA_PROVIDER) => {
             let provider = OllamaEmbeddingProvider::from_env()?;
@@ -183,6 +240,18 @@ pub fn provider_config_from_env() -> Result<EmbeddingProviderConfig> {
                     base_url: provider.base_url,
                     timeout_secs: provider.timeout.as_secs(),
                 }),
+                openai: None,
+            })
+        }
+        Some(OPENAI_PROVIDER) => {
+            let config = openai_config_from_env()?;
+            Ok(EmbeddingProviderConfig {
+                provider_name: OPENAI_PROVIDER.to_string(),
+                model_name: env_or_default(OPENAI_MODEL_ENV, DEFAULT_OPENAI_MODEL),
+                configured: config.api_key_configured,
+                source: source.to_string(),
+                ollama: None,
+                openai: Some(config),
             })
         }
         Some(name) => bail!(
@@ -197,6 +266,7 @@ pub fn provider_from_name(name: Option<&str>) -> Result<Box<dyn EmbeddingProvide
         None | Some("none" | "disabled") => Ok(Box::new(DisabledEmbeddingProvider)),
         Some("local" | LOCAL_HASH_PROVIDER) => Ok(Box::new(LocalHashEmbeddingProvider)),
         Some(OLLAMA_PROVIDER) => Ok(Box::new(OllamaEmbeddingProvider::from_env()?)),
+        Some(OPENAI_PROVIDER) => Ok(Box::new(OpenAiEmbeddingProvider::from_env()?)),
         Some(name) => bail!(
             "unsupported embedding provider '{name}'; supported providers: {}",
             SUPPORTED_PROVIDER_NAMES.join(", ")
@@ -206,7 +276,7 @@ pub fn provider_from_name(name: Option<&str>) -> Result<Box<dyn EmbeddingProvide
 
 pub fn provider_help() -> String {
     format!(
-        "set {PROVIDER_ENV}=local-hash for deterministic local preview embeddings or {PROVIDER_ENV}=ollama for local Ollama embeddings"
+        "set {PROVIDER_ENV}=local-hash for deterministic local preview embeddings or {PROVIDER_ENV}=ollama for local Ollama embeddings; {PROVIDER_ENV}=openai currently validates config only"
     )
 }
 
@@ -286,6 +356,46 @@ fn env_u64_or_default(key: &str, default: u64) -> Result<u64> {
         }
         _ => Ok(default),
     }
+}
+
+fn openai_config_from_env() -> Result<OpenAiProviderConfig> {
+    let base_url = normalize_http_or_https_base_url(&env_or_default(
+        OPENAI_BASE_URL_ENV,
+        DEFAULT_OPENAI_BASE_URL,
+    ))?;
+    let model = env_or_default(OPENAI_MODEL_ENV, DEFAULT_OPENAI_MODEL);
+    if model.trim().is_empty() {
+        bail!("{OPENAI_MODEL_ENV} must not be empty for the openai embedding provider");
+    }
+    let timeout_secs = env_u64_or_default(OPENAI_TIMEOUT_SECS_ENV, DEFAULT_OPENAI_TIMEOUT_SECS)?;
+    let api_key_configured = std::env::var(OPENAI_API_KEY_ENV)
+        .ok()
+        .map(|value| !value.trim().is_empty())
+        .unwrap_or(false);
+
+    Ok(OpenAiProviderConfig {
+        base_url,
+        timeout_secs,
+        api_key_configured,
+    })
+}
+
+fn normalize_http_or_https_base_url(base_url: &str) -> Result<String> {
+    let trimmed = base_url.trim().trim_end_matches('/');
+    let rest = if let Some(rest) = trimmed.strip_prefix("https://") {
+        rest
+    } else if let Some(rest) = trimmed.strip_prefix("http://") {
+        rest
+    } else {
+        bail!(
+            "{OPENAI_BASE_URL_ENV} must start with http:// or https:// for the openai embedding provider"
+        )
+    };
+    let authority = rest.split('/').next().unwrap_or_default();
+    if authority.is_empty() {
+        bail!("{OPENAI_BASE_URL_ENV} must include a host");
+    }
+    Ok(trimmed.to_string())
 }
 
 fn parse_http_base_url(base_url: &str) -> Result<HttpBaseUrl> {
@@ -497,6 +607,7 @@ mod tests {
         assert!(!config.configured);
         assert_eq!(config.source, "default");
         assert_eq!(config.ollama, None);
+        assert_eq!(config.openai, None);
         restore_env(PROVIDER_ENV, previous);
     }
 
@@ -527,10 +638,117 @@ mod tests {
                 timeout_secs: 5,
             })
         );
+        assert_eq!(config.openai, None);
         restore_env(PROVIDER_ENV, previous_provider);
         restore_env(OLLAMA_BASE_URL_ENV, previous_base_url);
         restore_env(OLLAMA_MODEL_ENV, previous_model);
         restore_env(OLLAMA_TIMEOUT_SECS_ENV, previous_timeout);
+    }
+
+    #[test]
+    fn provider_config_reports_openai_settings_without_exposing_key() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        let previous_provider = std::env::var(PROVIDER_ENV).ok();
+        let previous_api_key = std::env::var(OPENAI_API_KEY_ENV).ok();
+        let previous_base_url = std::env::var(OPENAI_BASE_URL_ENV).ok();
+        let previous_model = std::env::var(OPENAI_MODEL_ENV).ok();
+        let previous_timeout = std::env::var(OPENAI_TIMEOUT_SECS_ENV).ok();
+        unsafe {
+            std::env::set_var(PROVIDER_ENV, OPENAI_PROVIDER);
+            std::env::set_var(OPENAI_API_KEY_ENV, "sk-test-secret");
+            std::env::set_var(OPENAI_BASE_URL_ENV, "https://example.test/v1/");
+            std::env::set_var(OPENAI_MODEL_ENV, "text-embedding-3-large");
+            std::env::set_var(OPENAI_TIMEOUT_SECS_ENV, "9");
+        }
+
+        let config = provider_config_from_env().unwrap();
+
+        assert_eq!(config.provider_name, OPENAI_PROVIDER);
+        assert_eq!(config.model_name, "text-embedding-3-large");
+        assert!(config.configured);
+        assert_eq!(config.ollama, None);
+        assert_eq!(
+            config.openai,
+            Some(OpenAiProviderConfig {
+                base_url: "https://example.test/v1".to_string(),
+                timeout_secs: 9,
+                api_key_configured: true,
+            })
+        );
+        restore_env(PROVIDER_ENV, previous_provider);
+        restore_env(OPENAI_API_KEY_ENV, previous_api_key);
+        restore_env(OPENAI_BASE_URL_ENV, previous_base_url);
+        restore_env(OPENAI_MODEL_ENV, previous_model);
+        restore_env(OPENAI_TIMEOUT_SECS_ENV, previous_timeout);
+    }
+
+    #[test]
+    fn provider_config_reports_missing_openai_api_key() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        let previous_provider = std::env::var(PROVIDER_ENV).ok();
+        let previous_api_key = std::env::var(OPENAI_API_KEY_ENV).ok();
+        unsafe {
+            std::env::set_var(PROVIDER_ENV, OPENAI_PROVIDER);
+            std::env::remove_var(OPENAI_API_KEY_ENV);
+        }
+
+        let config = provider_config_from_env().unwrap();
+
+        assert_eq!(config.provider_name, OPENAI_PROVIDER);
+        assert_eq!(config.model_name, DEFAULT_OPENAI_MODEL);
+        assert!(!config.configured);
+        assert_eq!(
+            config.openai,
+            Some(OpenAiProviderConfig {
+                base_url: DEFAULT_OPENAI_BASE_URL.to_string(),
+                timeout_secs: DEFAULT_OPENAI_TIMEOUT_SECS,
+                api_key_configured: false,
+            })
+        );
+        restore_env(PROVIDER_ENV, previous_provider);
+        restore_env(OPENAI_API_KEY_ENV, previous_api_key);
+    }
+
+    #[test]
+    fn openai_provider_requires_api_key_for_embedding_calls() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        let previous_api_key = std::env::var(OPENAI_API_KEY_ENV).ok();
+        unsafe {
+            std::env::remove_var(OPENAI_API_KEY_ENV);
+        }
+
+        let error = match provider_from_name(Some(OPENAI_PROVIDER)) {
+            Ok(_) => panic!("openai provider should require an API key for embedding calls"),
+            Err(error) => error,
+        };
+
+        assert!(error.to_string().contains(OPENAI_API_KEY_ENV));
+        restore_env(OPENAI_API_KEY_ENV, previous_api_key);
+    }
+
+    #[test]
+    fn openai_provider_reports_transport_not_implemented() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        let previous_api_key = std::env::var(OPENAI_API_KEY_ENV).ok();
+        unsafe {
+            std::env::set_var(OPENAI_API_KEY_ENV, "sk-test-secret");
+        }
+
+        let provider = provider_from_name(Some(OPENAI_PROVIDER)).unwrap();
+        let error = embed_query(provider.as_ref(), "auth service").unwrap_err();
+
+        assert!(error.to_string().contains("not implemented yet"));
+        restore_env(OPENAI_API_KEY_ENV, previous_api_key);
+    }
+
+    #[test]
+    fn rejects_invalid_openai_base_url_scheme() {
+        let error = normalize_http_or_https_base_url("ftp://example.test/v1").unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("must start with http:// or https://")
+        );
     }
 
     #[test]

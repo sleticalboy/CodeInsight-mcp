@@ -84,8 +84,9 @@ Limitations:
 - Local semantic chunks can be stored and used as deterministic lexical fallback hints in `context_pack`.
 - `CODEINSIGHT_EMBEDDING_PROVIDER=local-hash` can build and query deterministic local vectors.
 - `CODEINSIGHT_EMBEDDING_PROVIDER=ollama` can build and query vectors from a local Ollama `/api/embed` endpoint.
+- `CODEINSIGHT_EMBEDDING_PROVIDER=openai` validates OpenAI-compatible configuration and reports API-key presence through `embedding-status`, but embedding HTTP calls are not implemented yet.
 - Calls fail with a clear provider-configuration error until `CODEINSIGHT_EMBEDDING_PROVIDER=local-hash`, `CODEINSIGHT_EMBEDDING_PROVIDER=ollama`, or another supported backend is enabled, and fail with an empty-index error until `semantic-index` has generated vectors for that provider/model.
-- OpenAI-compatible HTTP embeddings and Qdrant-backed retrieval are planned but not implemented yet. See [Embedding providers](embedding-providers.md).
+- Qdrant-backed retrieval is planned but not implemented yet. See [Embedding providers](embedding-providers.md).
 - `context_pack` can use semantic vector matches when the configured provider/model has indexed vectors, then falls back to deterministic lexical, symbol, reference, dependency, call graph, and semantic chunk metadata signals.
 
 ### `dependency_graph`

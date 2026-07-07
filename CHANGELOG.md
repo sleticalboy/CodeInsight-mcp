@@ -6,6 +6,10 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ## [Unreleased]
 
+### Added
+
+- `openai` embedding provider config skeleton with environment validation, redacted `embedding-status` reporting, and explicit not-implemented transport errors.
+
 ## [0.1.4] - 2026-07-07
 
 ### Added

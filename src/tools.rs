@@ -12,10 +12,10 @@ use crate::{
     embedding, index,
     model::{
         CallEdge, ContextFile, ContextPack, ContextRange, ContextSemanticStatus, DependencyGraph,
-        EmbeddingProviderStatus, IndexError, OllamaEmbeddingStatus, ProjectIndexReport,
-        ProjectOverview, ReferenceMatch, SemanticChunk, SemanticChunkInput, SemanticEmbeddingInput,
-        SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus, SemanticSearchResult,
-        Symbol, SymbolKind,
+        EmbeddingProviderStatus, IndexError, OllamaEmbeddingStatus, OpenAiEmbeddingStatus,
+        ProjectIndexReport, ProjectOverview, ReferenceMatch, SemanticChunk, SemanticChunkInput,
+        SemanticEmbeddingInput, SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus,
+        SemanticSearchResult, Symbol, SymbolKind,
     },
     storage::Store,
 };
@@ -298,6 +298,15 @@ pub fn embedding_status_value(root: Option<PathBuf>) -> Result<EmbeddingProvider
             model_env: embedding::OLLAMA_MODEL_ENV.to_string(),
             timeout_secs: ollama.timeout_secs,
             timeout_secs_env: embedding::OLLAMA_TIMEOUT_SECS_ENV.to_string(),
+        }),
+        openai: config.openai.map(|openai| OpenAiEmbeddingStatus {
+            base_url: openai.base_url,
+            base_url_env: embedding::OPENAI_BASE_URL_ENV.to_string(),
+            api_key_env: embedding::OPENAI_API_KEY_ENV.to_string(),
+            api_key_configured: openai.api_key_configured,
+            model_env: embedding::OPENAI_MODEL_ENV.to_string(),
+            timeout_secs: openai.timeout_secs,
+            timeout_secs_env: embedding::OPENAI_TIMEOUT_SECS_ENV.to_string(),
         }),
         index,
     })

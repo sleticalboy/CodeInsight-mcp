@@ -138,6 +138,8 @@ pub struct EmbeddingProviderStatus {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ollama: Option<OllamaEmbeddingStatus>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub openai: Option<OpenAiEmbeddingStatus>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub index: Option<SemanticIndexStatus>,
 }
 
@@ -145,6 +147,17 @@ pub struct EmbeddingProviderStatus {
 pub struct OllamaEmbeddingStatus {
     pub base_url: String,
     pub base_url_env: String,
+    pub model_env: String,
+    pub timeout_secs: u64,
+    pub timeout_secs_env: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct OpenAiEmbeddingStatus {
+    pub base_url: String,
+    pub base_url_env: String,
+    pub api_key_env: String,
+    pub api_key_configured: bool,
     pub model_env: String,
     pub timeout_secs: u64,
     pub timeout_secs_env: String,

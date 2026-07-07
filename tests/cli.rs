@@ -1018,6 +1018,39 @@ fn cli_embedding_status_reports_ollama_config_without_network_call() {
 }
 
 #[test]
+fn cli_embedding_status_reports_openai_config_without_exposing_key() {
+    let status = run_json_with_env(
+        ["embedding-status"],
+        [
+            ("CODEINSIGHT_EMBEDDING_PROVIDER", "openai"),
+            ("CODEINSIGHT_OPENAI_API_KEY", "sk-test-secret"),
+            ("CODEINSIGHT_OPENAI_BASE_URL", "https://example.test/v1/"),
+            (
+                "CODEINSIGHT_OPENAI_EMBEDDING_MODEL",
+                "text-embedding-3-large",
+            ),
+            ("CODEINSIGHT_OPENAI_TIMEOUT_SECS", "11"),
+        ],
+    );
+
+    assert_eq!(status["provider"], "openai");
+    assert_eq!(status["model"], "text-embedding-3-large");
+    assert_eq!(status["configured"], true);
+    assert_eq!(status["openai"]["base_url"], "https://example.test/v1");
+    assert_eq!(
+        status["openai"]["api_key_env"],
+        "CODEINSIGHT_OPENAI_API_KEY"
+    );
+    assert_eq!(status["openai"]["api_key_configured"], true);
+    assert_eq!(status["openai"]["timeout_secs"].as_u64(), Some(11));
+    assert!(
+        !serde_json::to_string(&status)
+            .unwrap()
+            .contains("sk-test-secret")
+    );
+}
+
+#[test]
 fn mcp_stdio_executes_symbol_search() {
     let fixture = fixture_project();
     run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
