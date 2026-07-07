@@ -119,6 +119,7 @@ Current ranking order:
 - Resolved local dependencies are included as supporting context after direct matches.
 - Task keywords provide a lightweight boost when they match symbol names, file paths, reference context, or dependency targets.
 - Ties are broken by total file score and then stable file path order.
+- `semantic_status` reports semantic candidate counts, selected semantic range counts, provider/model status, and a client-facing recommendation.
 
 Limitations:
 

@@ -206,11 +206,25 @@ pub struct CallEdge {
 pub struct ContextPack {
     pub task: String,
     pub summary: String,
+    pub semantic_status: ContextSemanticStatus,
     pub files: Vec<ContextFile>,
     pub symbols: Vec<Symbol>,
     pub references: Vec<ReferenceMatch>,
     pub estimated_tokens: usize,
     pub truncated: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ContextSemanticStatus {
+    pub provider: String,
+    pub model: String,
+    pub provider_configured: bool,
+    pub vector_status: String,
+    pub vector_candidates: usize,
+    pub fallback_candidates: usize,
+    pub selected_vector_ranges: usize,
+    pub selected_fallback_ranges: usize,
+    pub recommendation: String,
 }
 
 #[derive(Debug, Clone, Serialize)]

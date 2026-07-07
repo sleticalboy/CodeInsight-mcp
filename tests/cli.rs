@@ -68,6 +68,16 @@ fn cli_indexes_and_queries_fixture_project() {
             .iter()
             .any(|file| file["file"] == "src/auth_notes.py")
     );
+    assert_eq!(
+        context_without_ollama_vectors["semantic_status"]["vector_status"],
+        "embeddings_missing_for_provider"
+    );
+    assert!(
+        context_without_ollama_vectors["semantic_status"]["fallback_candidates"]
+            .as_u64()
+            .unwrap()
+            > 0
+    );
 
     let semantic_index_with_embeddings = run_json_with_env(
         [
@@ -146,6 +156,17 @@ fn cli_indexes_and_queries_fixture_project() {
                 .unwrap()
                 .contains("Semantic vector match"))
     );
+    assert_eq!(
+        vector_context["semantic_status"]["vector_status"],
+        "vector_matches_available"
+    );
+    assert!(
+        vector_context["semantic_status"]["selected_vector_ranges"]
+            .as_u64()
+            .unwrap()
+            > 0
+    );
+    assert_eq!(vector_context["semantic_status"]["provider"], "local-hash");
 
     let symbols = run_json([
         "symbols",
@@ -330,6 +351,16 @@ fn cli_indexes_and_queries_fixture_project() {
                 .as_str()
                 .unwrap()
                 .contains("Semantic chunk match"))
+    );
+    assert_eq!(
+        semantic_context["semantic_status"]["vector_status"],
+        "provider_not_configured"
+    );
+    assert!(
+        semantic_context["semantic_status"]["selected_fallback_ranges"]
+            .as_u64()
+            .unwrap()
+            > 0
     );
 
     let billing_context = run_json([

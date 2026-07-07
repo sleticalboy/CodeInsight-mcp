@@ -8,6 +8,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ### Added
 
+- `context_pack` now returns `semantic_status` so clients can tell whether semantic vector or fallback ranges were available and selected.
 - `context_pack` now adds semantic vector matches when the selected embedding provider/model has indexed vectors, while keeping the deterministic fallback path.
 - `embedding-status` CLI command and `embedding_status` MCP tool for reporting provider config and local semantic vector status without network calls.
 - Protocol-level mock HTTP tests for Ollama embedding requests, chunked responses, non-200 responses, and vector-count mismatches.

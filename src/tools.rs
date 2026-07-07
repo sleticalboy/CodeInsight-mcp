@@ -11,10 +11,11 @@ use sha2::{Digest, Sha256};
 use crate::{
     embedding, index,
     model::{
-        CallEdge, ContextFile, ContextPack, ContextRange, DependencyGraph, EmbeddingProviderStatus,
-        IndexError, OllamaEmbeddingStatus, ProjectIndexReport, ProjectOverview, ReferenceMatch,
-        SemanticChunk, SemanticChunkInput, SemanticEmbeddingInput, SemanticEmbeddingMatch,
-        SemanticIndexReport, SemanticIndexStatus, SemanticSearchResult, Symbol, SymbolKind,
+        CallEdge, ContextFile, ContextPack, ContextRange, ContextSemanticStatus, DependencyGraph,
+        EmbeddingProviderStatus, IndexError, OllamaEmbeddingStatus, ProjectIndexReport,
+        ProjectOverview, ReferenceMatch, SemanticChunk, SemanticChunkInput, SemanticEmbeddingInput,
+        SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus, SemanticSearchResult,
+        Symbol, SymbolKind,
     },
     storage::Store,
 };
@@ -538,7 +539,9 @@ pub fn context_pack_value(
             );
         }
     }
-    for result in semantic_vector_context_matches(&store, &task, 20) {
+    let mut semantic_status = semantic_vector_context_matches(&store, &task, 20);
+    let vector_matches = std::mem::take(&mut semantic_status.matches);
+    for result in vector_matches {
         push_context_range(
             &mut ranges_by_file,
             result.file,
@@ -551,9 +554,10 @@ pub fn context_pack_value(
             CONTEXT_SCORE_SEMANTIC_VECTOR + semantic_vector_score_boost(result.score),
         );
     }
-    for chunk in store
-        .semantic_chunks_matching(&semantic_ranking_terms(&task_keywords, &seed_symbols), 20)?
-    {
+    let fallback_chunks = store
+        .semantic_chunks_matching(&semantic_ranking_terms(&task_keywords, &seed_symbols), 20)?;
+    semantic_status.status.fallback_candidates = fallback_chunks.len();
+    for chunk in fallback_chunks {
         push_context_range(
             &mut ranges_by_file,
             chunk.file.clone(),
@@ -568,6 +572,8 @@ pub fn context_pack_value(
                 + semantic_chunk_density_boost(&chunk),
         );
     }
+    semantic_status.status.recommendation =
+        context_semantic_recommendation(&semantic_status.status);
 
     let mut candidates = ranges_by_file
         .into_iter()
@@ -678,9 +684,17 @@ pub fn context_pack_value(
         )
     };
 
+    semantic_status.status.selected_vector_ranges =
+        count_selected_ranges_with_reason(&files, "Semantic vector match");
+    semantic_status.status.selected_fallback_ranges =
+        count_selected_ranges_with_reason(&files, "Semantic chunk match");
+    semantic_status.status.recommendation =
+        context_semantic_recommendation(&semantic_status.status);
+
     Ok(ContextPack {
         task,
         summary,
+        semantic_status: semantic_status.status,
         files,
         symbols,
         references,
@@ -689,30 +703,91 @@ pub fn context_pack_value(
     })
 }
 
+#[derive(Debug)]
+struct SemanticVectorContextResult {
+    status: ContextSemanticStatus,
+    matches: Vec<SemanticSearchResult>,
+}
+
 fn semantic_vector_context_matches(
     store: &Store,
     task: &str,
     limit: usize,
-) -> Vec<SemanticSearchResult> {
+) -> SemanticVectorContextResult {
+    let mut status = ContextSemanticStatus {
+        provider: "disabled".to_string(),
+        model: "disabled".to_string(),
+        provider_configured: false,
+        vector_status: "provider_not_configured".to_string(),
+        vector_candidates: 0,
+        fallback_candidates: 0,
+        selected_vector_ranges: 0,
+        selected_fallback_ranges: 0,
+        recommendation: String::new(),
+    };
     if limit == 0 {
-        return Vec::new();
+        status.vector_status = "vector_limit_zero".to_string();
+        status.recommendation = context_semantic_recommendation(&status);
+        return SemanticVectorContextResult {
+            status,
+            matches: Vec::new(),
+        };
     }
-    let Ok(provider) = embedding::provider_from_env() else {
-        return Vec::new();
+    let provider = match embedding::provider_from_env() {
+        Ok(provider) => provider,
+        Err(error) => {
+            status.provider = "unknown".to_string();
+            status.model = "unknown".to_string();
+            status.vector_status = format!("provider_error: {error}");
+            status.recommendation = context_semantic_recommendation(&status);
+            return SemanticVectorContextResult {
+                status,
+                matches: Vec::new(),
+            };
+        }
     };
+    status.provider = provider.provider_name().to_string();
+    status.model = provider.model_name().to_string();
+    status.provider_configured = provider.is_configured();
     if !provider.is_configured() {
-        return Vec::new();
+        status.vector_status = "provider_not_configured".to_string();
+        status.recommendation = context_semantic_recommendation(&status);
+        return SemanticVectorContextResult {
+            status,
+            matches: Vec::new(),
+        };
     }
-    let Ok(candidates) =
-        store.semantic_embedding_matches(provider.provider_name(), provider.model_name())
-    else {
-        return Vec::new();
-    };
+    let candidates =
+        match store.semantic_embedding_matches(provider.provider_name(), provider.model_name()) {
+            Ok(candidates) => candidates,
+            Err(error) => {
+                status.vector_status = format!("index_error: {error}");
+                status.recommendation = context_semantic_recommendation(&status);
+                return SemanticVectorContextResult {
+                    status,
+                    matches: Vec::new(),
+                };
+            }
+        };
+    status.vector_candidates = candidates.len();
     if candidates.is_empty() {
-        return Vec::new();
-    }
-    let Ok(query_embedding) = embedding::embed_query(provider.as_ref(), task) else {
-        return Vec::new();
+        status.vector_status = "embeddings_missing_for_provider".to_string();
+        status.recommendation = context_semantic_recommendation(&status);
+        return SemanticVectorContextResult {
+            status,
+            matches: Vec::new(),
+        };
+    };
+    let query_embedding = match embedding::embed_query(provider.as_ref(), task) {
+        Ok(query_embedding) => query_embedding,
+        Err(error) => {
+            status.vector_status = format!("provider_error: {error}");
+            status.recommendation = context_semantic_recommendation(&status);
+            return SemanticVectorContextResult {
+                status,
+                matches: Vec::new(),
+            };
+        }
     };
 
     let mut matches = candidates
@@ -721,7 +796,62 @@ fn semantic_vector_context_matches(
         .collect::<Vec<_>>();
     matches.sort_by(compare_semantic_search_results);
     matches.truncate(limit);
-    matches
+    status.vector_status = if matches.is_empty() {
+        "vector_matches_empty".to_string()
+    } else {
+        "vector_matches_available".to_string()
+    };
+    status.recommendation = context_semantic_recommendation(&status);
+    SemanticVectorContextResult { status, matches }
+}
+
+fn count_selected_ranges_with_reason(files: &[ContextFile], needle: &str) -> usize {
+    files
+        .iter()
+        .flat_map(|file| &file.ranges)
+        .filter(|range| range.reason.contains(needle))
+        .count()
+}
+
+fn context_semantic_recommendation(status: &ContextSemanticStatus) -> String {
+    if status.selected_vector_ranges > 0 {
+        return "semantic vector matches were selected".to_string();
+    }
+    if status.vector_status == "provider_not_configured" {
+        if status.fallback_candidates > 0 {
+            return format!(
+                "set {}=local-hash or {}=ollama and run semantic-index to enable vector matches; deterministic semantic chunk fallback was available",
+                embedding::PROVIDER_ENV,
+                embedding::PROVIDER_ENV
+            );
+        }
+        return format!(
+            "set {}=local-hash or {}=ollama and run semantic-index to enable semantic context",
+            embedding::PROVIDER_ENV,
+            embedding::PROVIDER_ENV
+        );
+    }
+    if status.vector_status == "embeddings_missing_for_provider" {
+        return format!(
+            "run semantic-index with {}={} to build vectors for this provider/model",
+            embedding::PROVIDER_ENV,
+            status.provider
+        );
+    }
+    if status.selected_fallback_ranges > 0 {
+        return "semantic chunk fallback ranges were selected".to_string();
+    }
+    if status.fallback_candidates > 0 {
+        return "semantic fallback candidates existed but were not selected within the token budget"
+            .to_string();
+    }
+    if status.vector_status.starts_with("provider_error:")
+        || status.vector_status.starts_with("index_error:")
+    {
+        return "fix the reported semantic provider/index error or rely on deterministic context signals"
+            .to_string();
+    }
+    "no semantic context candidates matched; broaden task terms or run semantic-index".to_string()
 }
 
 fn semantic_chunks_for_file(

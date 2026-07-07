@@ -49,6 +49,10 @@ that pair, it embeds the task text and adds top vector matches as context
 candidates. If no provider is configured, no matching vectors exist, or the
 optional provider call fails, `context_pack` keeps using deterministic lexical,
 symbol, reference, dependency, call graph, and semantic chunk fallback signals.
+The returned `semantic_status` object tells clients whether vector candidates,
+fallback candidates, selected vector ranges, or selected fallback ranges were
+present, and includes a recommendation such as running `semantic-index` for the
+selected provider/model.
 
 ## Local-Hash Boundary
 

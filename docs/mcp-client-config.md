@@ -94,6 +94,17 @@ Example `context_pack` call arguments:
 `importance`, `reason`, and `excerpt`, so clients can explain why each snippet
 was selected without inferring it from the file-level summary.
 
+It also returns `semantic_status`, including:
+
+- `vector_status`: whether vector matches were available, missing for the
+  selected provider/model, or skipped because no provider is configured.
+- `vector_candidates` and `fallback_candidates`: semantic candidates generated
+  before token-budget selection.
+- `selected_vector_ranges` and `selected_fallback_ranges`: semantic ranges that
+  actually made it into `files[].ranges[]`.
+- `recommendation`: the next action a client can surface, such as running
+  `semantic_index` for the selected provider/model.
+
 Run `index_project` first for a repository when you want repeatable results from
 the local SQLite index.
 
