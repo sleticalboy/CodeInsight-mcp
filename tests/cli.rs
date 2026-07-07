@@ -1137,6 +1137,76 @@ class AuthService:
 }
 
 #[test]
+fn cli_impact_analysis_reports_depth_paths() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        "src/core.ts",
+        r#"
+export function leaf() {
+  return "ok";
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/service.ts",
+        r#"
+import { leaf } from "./core";
+
+export function service() {
+  return leaf();
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/route.ts",
+        r#"
+import { service } from "./service";
+
+export function route() {
+  return service();
+}
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 3);
+
+    let impact = run_json([
+        "impact-analysis",
+        fixture.path().to_str().unwrap(),
+        "--symbol",
+        "leaf",
+        "--file",
+        "src/core.ts",
+        "--depth",
+        "2",
+        "--limit",
+        "20",
+    ]);
+    assert_eq!(impact["depth"].as_u64(), Some(2));
+    assert!(
+        impact["impacted_files"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|file| file["file"] == "src/route.ts")
+    );
+    assert!(
+        impact["paths"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|path| { path["kind"] == "call" && path["depth"] == 2 && path["to"] == "route" })
+    );
+    assert!(impact["paths"].as_array().unwrap().iter().any(|path| {
+        path["kind"] == "dependency" && path["depth"] == 2 && path["to"] == "src/route.ts"
+    }));
+}
+
+#[test]
 fn cli_semantic_search_requires_embedding_provider() {
     let fixture = fixture_project();
 

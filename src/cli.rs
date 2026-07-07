@@ -86,6 +86,8 @@ pub struct ImpactAnalysisArgs {
     pub files: Vec<String>,
     #[arg(long, default_value_t = 50)]
     pub limit: usize,
+    #[arg(long, default_value_t = 1)]
+    pub depth: usize,
 }
 
 #[derive(Debug, Args)]

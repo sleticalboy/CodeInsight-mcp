@@ -107,7 +107,10 @@ fn handle_tool_call(params: Value) -> Result<Value> {
             let symbols = optional_string_array(&arguments, "symbols")?;
             let files = optional_string_array(&arguments, "files")?;
             let limit = optional_positive_usize(&arguments, "limit", 50)?;
-            serde_json::to_value(tools::impact_analysis_value(root, symbols, files, limit)?)?
+            let depth = optional_positive_usize(&arguments, "depth", 1)?;
+            serde_json::to_value(tools::impact_analysis_value(
+                root, symbols, files, limit, depth,
+            )?)?
         }
         "find_references" => {
             let root = required_path(&arguments, "root")?;
@@ -254,7 +257,8 @@ fn tool_definitions() -> Value {
                         "type": "array",
                         "items": {"type": "string"}
                     },
-                    "limit": {"type": "integer", "minimum": 1}
+                    "limit": {"type": "integer", "minimum": 1},
+                    "depth": {"type": "integer", "minimum": 1}
                 },
                 "required": ["root"]
             }
@@ -540,10 +544,15 @@ def helper():
                 "root": dir.path(),
                 "symbols": ["helper"],
                 "files": ["auth.py"],
-                "limit": 10
+                "limit": 10,
+                "depth": 2
             }
         }))
         .unwrap();
+        assert_eq!(
+            impact_result["structuredContent"]["depth"].as_u64(),
+            Some(2)
+        );
         assert_eq!(
             impact_result["structuredContent"]["seed_symbols"][0].as_str(),
             Some("helper")
@@ -561,6 +570,13 @@ def helper():
                 .unwrap()
                 .iter()
                 .any(|call| call["caller"] == "AuthService.login")
+        );
+        assert!(
+            impact_result["structuredContent"]["paths"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|path| path["kind"] == "call")
         );
 
         let refs_result = handle_tool_call(json!({

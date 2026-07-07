@@ -13,6 +13,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - `semantic-index` now reports incremental chunk and embedding stats: `chunks_added`, `chunks_updated`, `chunks_removed`, `embeddings_generated`, and `embeddings_reused`.
 - `semantic-index --explain` and MCP `semantic_index` `explain: true` now return per-chunk add/update/remove details for impact analysis workflows.
 - `impact-analysis` CLI command and MCP `impact_analysis` tool for local single-hop impact reports from seed symbols or files.
+- `impact-analysis` now accepts `--depth` / MCP `depth` and returns call/dependency `paths` for multi-hop impact explanations.
 
 ## [0.1.5] - 2026-07-07
 

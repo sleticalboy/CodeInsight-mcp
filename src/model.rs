@@ -301,13 +301,26 @@ pub struct ImpactFile {
     pub reasons: Vec<String>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct ImpactPath {
+    pub kind: String,
+    pub depth: usize,
+    pub from: String,
+    pub to: String,
+    pub file: String,
+    pub via: String,
+    pub line: usize,
+}
+
 #[derive(Debug, Serialize)]
 pub struct ImpactAnalysisReport {
     pub root: String,
     pub summary: String,
+    pub depth: usize,
     pub seed_symbols: Vec<String>,
     pub seed_files: Vec<String>,
     pub impacted_files: Vec<ImpactFile>,
+    pub paths: Vec<ImpactPath>,
     pub symbols: Vec<Symbol>,
     pub references: Vec<ReferenceMatch>,
     pub callers: Vec<CallEdge>,

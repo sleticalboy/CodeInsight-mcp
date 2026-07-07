@@ -1,6 +1,6 @@
 use std::{
     cmp::Ordering,
-    collections::{BTreeMap, BTreeSet},
+    collections::{BTreeMap, BTreeSet, VecDeque},
     fs,
     path::{Path, PathBuf},
 };
@@ -11,10 +11,10 @@ use sha2::{Digest, Sha256};
 use crate::{
     embedding, index,
     model::{
-        CallEdge, ContextFile, ContextPack, ContextRange, ContextSemanticStatus, DependencyGraph,
-        EmbeddingProviderStatus, ImpactAnalysisReport, ImpactFile, IndexError,
-        OllamaEmbeddingStatus, OpenAiEmbeddingStatus, ProjectIndexReport, ProjectOverview,
-        ReferenceMatch, SemanticChunk, SemanticChunkInput, SemanticEmbeddingInput,
+        CallEdge, ContextFile, ContextPack, ContextRange, ContextSemanticStatus, Dependency,
+        DependencyGraph, EmbeddingProviderStatus, ImpactAnalysisReport, ImpactFile, ImpactPath,
+        IndexError, OllamaEmbeddingStatus, OpenAiEmbeddingStatus, ProjectIndexReport,
+        ProjectOverview, ReferenceMatch, SemanticChunk, SemanticChunkInput, SemanticEmbeddingInput,
         SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus, SemanticSearchResult,
         Symbol, SymbolKind, VersionInfo,
     },
@@ -64,8 +64,9 @@ pub fn impact_analysis(
     symbols: Vec<String>,
     files: Vec<String>,
     limit: usize,
+    depth: usize,
 ) -> Result<()> {
-    let report = impact_analysis_value(root, symbols, files, limit)?;
+    let report = impact_analysis_value(root, symbols, files, limit, depth)?;
     print_json(&report)
 }
 
@@ -159,9 +160,11 @@ pub fn impact_analysis_value(
     seed_symbols: Vec<String>,
     seed_files: Vec<String>,
     limit: usize,
+    depth: usize,
 ) -> Result<ImpactAnalysisReport> {
     let root = root.canonicalize()?;
     let limit = limit.max(1);
+    let depth = depth.max(1);
     let store = Store::open(&root)?;
     let indexed_files = store.indexed_files()?;
     if seed_symbols.is_empty() && seed_files.is_empty() {
@@ -268,6 +271,14 @@ pub fn impact_analysis_value(
             format!("caller:{}->{}", call.caller, call.callee),
         );
     }
+    let mut paths = impact_call_paths(
+        &store,
+        &symbol_terms,
+        &mut callers,
+        &mut impact,
+        depth,
+        limit,
+    )?;
     for call in &callees {
         add_impact(
             &mut impact,
@@ -284,12 +295,13 @@ pub fn impact_analysis_value(
             );
         }
     }
+    dedup_calls(&mut callers);
 
     let mut dependency_seed_files = normalized_seed_files.clone();
     dependency_seed_files.extend(symbols.iter().map(|symbol| symbol.file.clone()));
     dependency_seed_files.sort();
     dependency_seed_files.dedup();
-    let dependencies = store.dependencies_touching_files(&dependency_seed_files, limit)?;
+    let mut dependencies = store.dependencies_touching_files(&dependency_seed_files, limit)?;
     for dependency in &dependencies {
         add_impact(
             &mut impact,
@@ -306,6 +318,16 @@ pub fn impact_analysis_value(
             );
         }
     }
+    let mut dependency_paths = impact_dependency_paths(
+        &store,
+        &dependency_seed_files,
+        &mut dependencies,
+        &mut impact,
+        depth,
+        limit,
+    )?;
+    paths.append(&mut dependency_paths);
+    paths.truncate(limit);
 
     let mut impacted_files = impact
         .into_iter()
@@ -333,9 +355,11 @@ pub fn impact_analysis_value(
     Ok(ImpactAnalysisReport {
         root: root.display().to_string(),
         summary,
+        depth,
         seed_symbols,
         seed_files: normalized_seed_files,
         impacted_files,
+        paths,
         symbols,
         references,
         callers,
@@ -1160,6 +1184,173 @@ pub fn callees_value(root: PathBuf, symbol: &str, limit: usize) -> Result<Vec<Ca
     let root = root.canonicalize()?;
     let store = Store::open(&root)?;
     store.callees(symbol, limit)
+}
+
+fn impact_call_paths(
+    store: &Store,
+    seed_terms: &BTreeSet<String>,
+    callers: &mut Vec<CallEdge>,
+    impact: &mut BTreeMap<String, (i32, BTreeSet<String>)>,
+    depth: usize,
+    limit: usize,
+) -> Result<Vec<ImpactPath>> {
+    let mut paths = Vec::new();
+    let mut seen_paths = BTreeSet::new();
+    let mut visited_symbols = seed_terms.clone();
+    let mut frontier = VecDeque::new();
+
+    for call in callers.iter() {
+        push_call_path(&mut paths, &mut seen_paths, call, 1, limit);
+        if visited_symbols.insert(call.caller.clone()) {
+            frontier.push_back((call.caller.clone(), 1));
+        }
+    }
+
+    while let Some((symbol, current_depth)) = frontier.pop_front() {
+        if current_depth >= depth || paths.len() >= limit {
+            continue;
+        }
+        let next_depth = current_depth + 1;
+        let remaining = limit.saturating_sub(paths.len());
+        let next_callers = store.callers(&symbol, remaining)?;
+        for call in next_callers {
+            if paths.len() >= limit {
+                break;
+            }
+            let score = (70 - ((next_depth as i32 - 1) * 15)).max(20);
+            add_impact(
+                impact,
+                &call.file,
+                score,
+                format!("caller_depth_{next_depth}:{}->{}", call.caller, call.callee),
+            );
+            push_call_path(&mut paths, &mut seen_paths, &call, next_depth, limit);
+            if callers.len() < limit {
+                callers.push(call.clone());
+            }
+            if visited_symbols.insert(call.caller.clone()) {
+                frontier.push_back((call.caller.clone(), next_depth));
+            }
+        }
+    }
+
+    Ok(paths)
+}
+
+fn push_call_path(
+    paths: &mut Vec<ImpactPath>,
+    seen_paths: &mut BTreeSet<(String, String, usize, usize)>,
+    call: &CallEdge,
+    depth: usize,
+    limit: usize,
+) {
+    if paths.len() >= limit
+        || !seen_paths.insert((call.callee.clone(), call.caller.clone(), depth, call.line))
+    {
+        return;
+    }
+    paths.push(ImpactPath {
+        kind: "call".to_string(),
+        depth,
+        from: call.callee.clone(),
+        to: call.caller.clone(),
+        file: call.file.clone(),
+        via: format!("{}->{}", call.caller, call.callee),
+        line: call.line,
+    });
+}
+
+fn impact_dependency_paths(
+    store: &Store,
+    seed_files: &[String],
+    dependencies: &mut Vec<Dependency>,
+    impact: &mut BTreeMap<String, (i32, BTreeSet<String>)>,
+    depth: usize,
+    limit: usize,
+) -> Result<Vec<ImpactPath>> {
+    let seed_file_set = seed_files.iter().cloned().collect::<BTreeSet<_>>();
+    let mut paths = Vec::new();
+    let mut seen_paths = BTreeSet::new();
+    let mut visited_files = seed_file_set.clone();
+    let mut frontier = VecDeque::new();
+
+    for dependency in dependencies.iter() {
+        let Some(resolved_file) = &dependency.resolved_file else {
+            continue;
+        };
+        if !seed_file_set.contains(resolved_file) {
+            continue;
+        }
+        push_dependency_path(&mut paths, &mut seen_paths, dependency, 1, limit);
+        if visited_files.insert(dependency.source_file.clone()) {
+            frontier.push_back((dependency.source_file.clone(), 1));
+        }
+    }
+
+    while let Some((file, current_depth)) = frontier.pop_front() {
+        if current_depth >= depth || paths.len() >= limit {
+            continue;
+        }
+        let next_depth = current_depth + 1;
+        let remaining = limit.saturating_sub(paths.len());
+        let next_dependencies =
+            store.dependency_importers_for_files(std::slice::from_ref(&file), remaining)?;
+        for dependency in next_dependencies {
+            if paths.len() >= limit {
+                break;
+            }
+            let score = (60 - ((next_depth as i32 - 1) * 10)).max(20);
+            add_impact(
+                impact,
+                &dependency.source_file,
+                score,
+                format!(
+                    "dependency_importer_depth_{next_depth}:{}",
+                    dependency.target
+                ),
+            );
+            push_dependency_path(&mut paths, &mut seen_paths, &dependency, next_depth, limit);
+            if dependencies.len() < limit {
+                dependencies.push(dependency.clone());
+            }
+            if visited_files.insert(dependency.source_file.clone()) {
+                frontier.push_back((dependency.source_file.clone(), next_depth));
+            }
+        }
+    }
+
+    Ok(paths)
+}
+
+fn push_dependency_path(
+    paths: &mut Vec<ImpactPath>,
+    seen_paths: &mut BTreeSet<(String, String, usize, usize)>,
+    dependency: &Dependency,
+    depth: usize,
+    limit: usize,
+) {
+    let Some(resolved_file) = &dependency.resolved_file else {
+        return;
+    };
+    if paths.len() >= limit
+        || !seen_paths.insert((
+            resolved_file.clone(),
+            dependency.source_file.clone(),
+            depth,
+            dependency.line,
+        ))
+    {
+        return;
+    }
+    paths.push(ImpactPath {
+        kind: "dependency".to_string(),
+        depth,
+        from: resolved_file.clone(),
+        to: dependency.source_file.clone(),
+        file: dependency.source_file.clone(),
+        via: dependency.target.clone(),
+        line: dependency.line,
+    });
 }
 
 fn add_impact(

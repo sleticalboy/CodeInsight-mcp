@@ -26,7 +26,7 @@ async fn main() -> Result<()> {
         Command::Outline(args) => tools::file_outline(args.path)?,
         Command::DependencyGraph(args) => tools::dependency_graph(args.root, args.limit)?,
         Command::ImpactAnalysis(args) => {
-            tools::impact_analysis(args.root, args.symbols, args.files, args.limit)?
+            tools::impact_analysis(args.root, args.symbols, args.files, args.limit, args.depth)?
         }
         Command::FindReferences(args) => {
             tools::find_references(args.root, args.symbol, args.limit, args.include_definitions)?
