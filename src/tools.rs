@@ -17,12 +17,12 @@ use crate::{
     language::detect_language,
     model::{
         CallEdge, ConfigInitReport, ConfigStatusReport, ContextFile, ContextPack, ContextRange,
-        ContextSeed, ContextSemanticStatus, Dependency, DependencyGraph, EmbeddingProviderStatus,
-        ImpactAnalysisReport, ImpactCounts, ImpactFile, ImpactPath, IndexError, Language,
-        OllamaEmbeddingStatus, OpenAiEmbeddingStatus, ProjectIndexReport, ProjectOverview,
-        ReferenceMatch, SemanticChunk, SemanticChunkInput, SemanticEmbeddingInput,
-        SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus, SemanticSearchResult,
-        SuggestedCheck, Symbol, SymbolKind, VersionInfo,
+        ContextReadingRange, ContextReadingStep, ContextSeed, ContextSemanticStatus, Dependency,
+        DependencyGraph, EmbeddingProviderStatus, ImpactAnalysisReport, ImpactCounts, ImpactFile,
+        ImpactPath, IndexError, Language, OllamaEmbeddingStatus, OpenAiEmbeddingStatus,
+        ProjectIndexReport, ProjectOverview, ReferenceMatch, SemanticChunk, SemanticChunkInput,
+        SemanticEmbeddingInput, SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus,
+        SemanticSearchResult, SuggestedCheck, Symbol, SymbolKind, VersionInfo,
     },
     storage::Store,
 };
@@ -1157,12 +1157,14 @@ pub fn context_pack_value(
         count_selected_ranges_with_reason(&files, "Semantic chunk match");
     semantic_status.status.recommendation =
         context_semantic_recommendation(&semantic_status.status);
+    let reading_plan = context_reading_plan(&files);
 
     Ok(ContextPack {
         task,
         summary,
         seed_strategy,
         selected_seeds,
+        reading_plan,
         semantic_status: semantic_status.status,
         files,
         symbols,
@@ -1170,6 +1172,59 @@ pub fn context_pack_value(
         estimated_tokens,
         truncated,
     })
+}
+
+fn context_reading_plan(files: &[ContextFile]) -> Vec<ContextReadingStep> {
+    files
+        .iter()
+        .take(8)
+        .enumerate()
+        .map(|(index, file)| {
+            let ranges = file
+                .ranges
+                .iter()
+                .take(4)
+                .map(|range| ContextReadingRange {
+                    start_line: range.start_line,
+                    end_line: range.end_line,
+                    source: range.source.clone(),
+                    importance: range.importance.clone(),
+                })
+                .collect::<Vec<_>>();
+            ContextReadingStep {
+                order: index + 1,
+                file: file.file.clone(),
+                focus: context_reading_focus(file),
+                reason: file.reason.clone(),
+                source: file.source.clone(),
+                score: file.score,
+                ranges,
+            }
+        })
+        .collect()
+}
+
+fn context_reading_focus(file: &ContextFile) -> String {
+    let sources = file
+        .ranges
+        .iter()
+        .map(|range| range.source.as_str())
+        .collect::<BTreeSet<_>>();
+    if sources.contains("seed_file") {
+        "Start with seed file context and primary symbols.".to_string()
+    } else if sources.contains("symbol_definition") {
+        "Read symbol definitions that anchor the requested task.".to_string()
+    } else if sources.contains("call_graph") {
+        "Follow static call graph evidence around the seed flow.".to_string()
+    } else if sources.contains("reference") {
+        "Inspect references that show how the seed is used.".to_string()
+    } else if sources.contains("semantic") {
+        "Review semantic matches related to the task wording.".to_string()
+    } else if sources.contains("dependency") {
+        "Check local dependency context that supports selected files.".to_string()
+    } else {
+        "Review selected ranges for task-relevant context.".to_string()
+    }
 }
 
 #[derive(Debug)]

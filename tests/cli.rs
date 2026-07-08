@@ -490,6 +490,20 @@ fn cli_indexes_and_queries_fixture_project() {
         .collect::<Vec<_>>();
     assert_eq!(auth_context_files.first(), Some(&"src/auth.py"));
     assert!(auth_context_files.contains(&"src/consumer.py"));
+    assert_eq!(context["reading_plan"][0]["order"].as_u64(), Some(1));
+    assert_eq!(context["reading_plan"][0]["file"], "src/auth.py");
+    assert!(
+        context["reading_plan"][0]["focus"]
+            .as_str()
+            .unwrap()
+            .contains("symbol")
+    );
+    assert!(
+        context["reading_plan"][0]["ranges"][0]["start_line"]
+            .as_u64()
+            .unwrap()
+            > 0
+    );
 
     let auto_context = run_json([
         "context-pack",

@@ -282,6 +282,7 @@ pub struct ContextPack {
     pub summary: String,
     pub seed_strategy: String,
     pub selected_seeds: Vec<ContextSeed>,
+    pub reading_plan: Vec<ContextReadingStep>,
     pub semantic_status: ContextSemanticStatus,
     pub files: Vec<ContextFile>,
     pub symbols: Vec<Symbol>,
@@ -310,6 +311,25 @@ pub struct ContextSemanticStatus {
     pub selected_vector_ranges: usize,
     pub selected_fallback_ranges: usize,
     pub recommendation: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ContextReadingStep {
+    pub order: usize,
+    pub file: String,
+    pub focus: String,
+    pub reason: String,
+    pub source: String,
+    pub score: i32,
+    pub ranges: Vec<ContextReadingRange>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ContextReadingRange {
+    pub start_line: usize,
+    pub end_line: usize,
+    pub source: String,
+    pub importance: String,
 }
 
 #[derive(Debug, Clone, Serialize)]

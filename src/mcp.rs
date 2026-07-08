@@ -813,6 +813,19 @@ def helper():
             context_result["structuredContent"]["files"][0]["file"].as_str(),
             Some("auth.py")
         );
+        assert_eq!(
+            context_result["structuredContent"]["reading_plan"][0]["order"].as_u64(),
+            Some(1)
+        );
+        assert_eq!(
+            context_result["structuredContent"]["reading_plan"][0]["file"].as_str(),
+            Some("auth.py")
+        );
+        assert!(
+            context_result["structuredContent"]["reading_plan"][0]["ranges"][0]["start_line"]
+                .as_u64()
+                .is_some_and(|line| line > 0)
+        );
         assert!(
             context_result["structuredContent"]["files"][0]["source"]
                 .as_str()

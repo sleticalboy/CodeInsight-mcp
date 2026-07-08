@@ -142,6 +142,24 @@ Example `context_pack` response shape:
       "role": "source"
     }
   ],
+  "reading_plan": [
+    {
+      "order": 1,
+      "file": "src/auth.ts",
+      "focus": "Follow static call graph evidence around the seed flow.",
+      "reason": "Selected for medium relevance via call_graph",
+      "source": "call_graph",
+      "score": 83,
+      "ranges": [
+        {
+          "start_line": 12,
+          "end_line": 16,
+          "source": "call_graph",
+          "importance": "medium"
+        }
+      ]
+    }
+  ],
   "files": [
     {
       "file": "src/auth.ts",
@@ -163,6 +181,10 @@ Example `context_pack` response shape:
   ]
 }
 ```
+
+`reading_plan` is derived from the final selected `files[]` after token-budget
+selection. Use it when a client needs an ordered read path without carrying the
+full code excerpts.
 
 Known `source` values are `seed_file`, `symbol_definition`, `reference`,
 `call_graph`, `semantic`, and `dependency`.
