@@ -784,9 +784,19 @@ def helper():
                 .is_some_and(is_known_context_source)
         );
         assert!(
+            context_result["structuredContent"]["files"][0]["score"]
+                .as_i64()
+                .is_some_and(|score| score > 0)
+        );
+        assert!(
             context_result["structuredContent"]["files"][0]["ranges"][0]["source"]
                 .as_str()
                 .is_some_and(is_known_context_source)
+        );
+        assert!(
+            context_result["structuredContent"]["files"][0]["ranges"][0]["score"]
+                .as_i64()
+                .is_some_and(|score| score > 0)
         );
         assert!(
             context_result["structuredContent"]["files"][0]["ranges"][0]["reason"]

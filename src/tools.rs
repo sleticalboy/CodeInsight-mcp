@@ -1089,6 +1089,7 @@ pub fn context_pack_value(
                     start_line,
                     end_line,
                     source: range.source.clone(),
+                    score: range.score,
                     importance: importance_for_score(range.score).to_string(),
                     reason: range.reason.clone(),
                     excerpt,
@@ -1102,6 +1103,7 @@ pub fn context_pack_value(
             files.push(ContextFile {
                 file: candidate.file,
                 source: source.clone(),
+                score: selected_max_score,
                 reason: format!(
                     "Selected for {} relevance via {}",
                     importance_for_score(selected_max_score),

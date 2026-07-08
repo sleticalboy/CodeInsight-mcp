@@ -1651,12 +1651,13 @@ export function spec() {
         .find(|file| file["file"] == "src/route.ts")
         .unwrap();
     assert_eq!(route_file["source"], "call_graph");
+    assert!(route_file["score"].as_i64().unwrap() > 0);
     assert!(
         route_file["ranges"]
             .as_array()
             .unwrap()
             .iter()
-            .any(|range| range["source"] == "call_graph")
+            .any(|range| range["source"] == "call_graph" && range["score"].as_i64().unwrap() > 0)
     );
     assert!(
         route_file["reason"]
@@ -1700,6 +1701,13 @@ export function spec() {
         .find(|file| file["file"] == "src/core.test.ts")
         .unwrap();
     assert_eq!(test_file["source"], "call_graph");
+    let test_route_file = test_context["files"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|file| file["file"] == "src/route.ts")
+        .unwrap();
+    assert!(test_file["score"].as_i64().unwrap() > test_route_file["score"].as_i64().unwrap());
     assert!(
         test_file["reason"]
             .as_str()
@@ -1721,9 +1729,16 @@ export function spec() {
     ]);
     assert_eq!(seed_test_context["files"][0]["file"], "src/core.test.ts");
     assert_eq!(seed_test_context["files"][0]["source"], "seed_file");
+    assert!(seed_test_context["files"][0]["score"].as_i64().unwrap() > 0);
     assert_eq!(
         seed_test_context["files"][0]["ranges"][0]["source"],
         "seed_file"
+    );
+    assert!(
+        seed_test_context["files"][0]["ranges"][0]["score"]
+            .as_i64()
+            .unwrap()
+            > 0
     );
     assert!(
         seed_test_context["files"][0]["reason"]

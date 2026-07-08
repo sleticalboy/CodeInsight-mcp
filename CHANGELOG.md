@@ -14,6 +14,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - `context_pack` now promotes test and fixture ranges when the task asks for tests, specs, coverage, regression, or when an explicit seed file is test-like.
 - `context_pack` file-level reasons now identify the dominant selected source, such as `seed_file`, `symbol_definition`, `reference`, `call_graph`, `semantic`, or `dependency`.
 - `context_pack` now returns structured `source` fields on files and ranges so clients can filter context without parsing reason text.
+- `context_pack` now returns `score` fields on files and ranges so clients can sort, filter, or explain selected context.
 
 ## [0.1.7] - 2026-07-08
 

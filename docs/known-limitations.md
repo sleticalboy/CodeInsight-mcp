@@ -124,7 +124,7 @@ Current ranking order:
 - Task keywords provide a lightweight boost when they match symbol names, file paths, reference context, or dependency targets.
 - Inferred ranges from test and fixture files receive a low-value penalty across symbol, reference, dependency, and call-graph candidates by default. They are promoted instead when the task asks for tests, specs, coverage, regression, or when an explicit seed file is test-like.
 - Ties are broken by total file score and then stable file path order.
-- File-level `source` and `reason` report the dominant selected source among `seed_file`, `symbol_definition`, `reference`, `call_graph`, `semantic`, and `dependency`. Range-level `source` reports each selected range's source.
+- File-level `source` and `reason` report the dominant selected source among `seed_file`, `symbol_definition`, `reference`, `call_graph`, `semantic`, and `dependency`. File-level `score` is the highest selected range score, and range-level `source` and `score` report each selected range's source and score.
 - `semantic_status` reports semantic candidate counts, selected semantic range counts, provider/model status, and a client-facing recommendation.
 
 Limitations:
