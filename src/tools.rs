@@ -1088,6 +1088,7 @@ pub fn context_pack_value(
                 context_ranges.push(ContextRange {
                     start_line,
                     end_line,
+                    source: range.source.clone(),
                     importance: importance_for_score(range.score).to_string(),
                     reason: range.reason.clone(),
                     excerpt,
@@ -1096,13 +1097,15 @@ pub fn context_pack_value(
         }
 
         if !context_ranges.is_empty() {
+            let source = selected_source.unwrap_or_else(|| "unknown".to_string());
             context_ranges.sort_by_key(|range| (range.start_line, range.end_line));
             files.push(ContextFile {
                 file: candidate.file,
+                source: source.clone(),
                 reason: format!(
                     "Selected for {} relevance via {}",
                     importance_for_score(selected_max_score),
-                    selected_source.as_deref().unwrap_or("unknown")
+                    source
                 ),
                 ranges: context_ranges,
             });

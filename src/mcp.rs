@@ -779,6 +779,16 @@ def helper():
             Some("auth.py")
         );
         assert!(
+            context_result["structuredContent"]["files"][0]["source"]
+                .as_str()
+                .is_some_and(is_known_context_source)
+        );
+        assert!(
+            context_result["structuredContent"]["files"][0]["ranges"][0]["source"]
+                .as_str()
+                .is_some_and(is_known_context_source)
+        );
+        assert!(
             context_result["structuredContent"]["files"][0]["ranges"][0]["reason"]
                 .as_str()
                 .is_some_and(|reason| !reason.is_empty())
@@ -906,5 +916,17 @@ def helper():
         }))
         .unwrap_err();
         assert!(error.to_string().contains("symbol or file"));
+    }
+
+    fn is_known_context_source(source: &str) -> bool {
+        matches!(
+            source,
+            "seed_file"
+                | "symbol_definition"
+                | "reference"
+                | "call_graph"
+                | "semantic"
+                | "dependency"
+        )
     }
 }

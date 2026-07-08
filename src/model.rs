@@ -303,6 +303,7 @@ pub struct ContextSemanticStatus {
 #[derive(Debug, Clone, Serialize)]
 pub struct ContextFile {
     pub file: String,
+    pub source: String,
     pub reason: String,
     pub ranges: Vec<ContextRange>,
 }
@@ -311,6 +312,7 @@ pub struct ContextFile {
 pub struct ContextRange {
     pub start_line: usize,
     pub end_line: usize,
+    pub source: String,
     pub importance: String,
     pub reason: String,
     pub excerpt: String,

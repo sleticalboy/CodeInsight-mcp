@@ -1650,6 +1650,14 @@ export function spec() {
         .iter()
         .find(|file| file["file"] == "src/route.ts")
         .unwrap();
+    assert_eq!(route_file["source"], "call_graph");
+    assert!(
+        route_file["ranges"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|range| range["source"] == "call_graph")
+    );
     assert!(
         route_file["reason"]
             .as_str()
@@ -1691,6 +1699,7 @@ export function spec() {
         .iter()
         .find(|file| file["file"] == "src/core.test.ts")
         .unwrap();
+    assert_eq!(test_file["source"], "call_graph");
     assert!(
         test_file["reason"]
             .as_str()
@@ -1711,6 +1720,11 @@ export function spec() {
         "1600",
     ]);
     assert_eq!(seed_test_context["files"][0]["file"], "src/core.test.ts");
+    assert_eq!(seed_test_context["files"][0]["source"], "seed_file");
+    assert_eq!(
+        seed_test_context["files"][0]["ranges"][0]["source"],
+        "seed_file"
+    );
     assert!(
         seed_test_context["files"][0]["reason"]
             .as_str()
