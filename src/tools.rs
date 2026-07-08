@@ -1195,6 +1195,8 @@ fn context_reading_plan(files: &[ContextFile]) -> Vec<ContextReadingStep> {
                 order: index + 1,
                 file: file.file.clone(),
                 focus: context_reading_focus(file),
+                next_action: context_reading_next_action(file).to_string(),
+                question: context_reading_question(file),
                 reason: file.reason.clone(),
                 source: file.source.clone(),
                 score: file.score,
@@ -1205,11 +1207,7 @@ fn context_reading_plan(files: &[ContextFile]) -> Vec<ContextReadingStep> {
 }
 
 fn context_reading_focus(file: &ContextFile) -> String {
-    let sources = file
-        .ranges
-        .iter()
-        .map(|range| range.source.as_str())
-        .collect::<BTreeSet<_>>();
+    let sources = context_reading_sources(file);
     if sources.contains("seed_file") {
         "Start with seed file context and primary symbols.".to_string()
     } else if sources.contains("symbol_definition") {
@@ -1225,6 +1223,60 @@ fn context_reading_focus(file: &ContextFile) -> String {
     } else {
         "Review selected ranges for task-relevant context.".to_string()
     }
+}
+
+fn context_reading_next_action(file: &ContextFile) -> &'static str {
+    let sources = context_reading_sources(file);
+    if sources.contains("seed_file") {
+        "inspect_seed_file"
+    } else if sources.contains("symbol_definition") {
+        "inspect_symbol_definition"
+    } else if sources.contains("call_graph") {
+        "follow_call_graph"
+    } else if sources.contains("reference") {
+        "inspect_references"
+    } else if sources.contains("semantic") {
+        "review_semantic_matches"
+    } else if sources.contains("dependency") {
+        "inspect_dependency"
+    } else {
+        "review_selected_ranges"
+    }
+}
+
+fn context_reading_question(file: &ContextFile) -> String {
+    match context_reading_next_action(file) {
+        "inspect_seed_file" => {
+            "What entrypoints, exported symbols, or setup code define the main flow here?"
+                .to_string()
+        }
+        "inspect_symbol_definition" => {
+            "What behavior or contract does this definition establish for the task?".to_string()
+        }
+        "follow_call_graph" => {
+            "Which callers or callees explain how control moves through this flow?".to_string()
+        }
+        "inspect_references" => {
+            "How is the seed symbol used by nearby production code?".to_string()
+        }
+        "review_semantic_matches" => {
+            "Which task terms are reflected in this semantically related code?".to_string()
+        }
+        "inspect_dependency" => {
+            "What imported local dependency behavior is required to understand this file?"
+                .to_string()
+        }
+        _ => "What task-relevant context is present in these selected ranges?".to_string(),
+    }
+}
+
+fn context_reading_sources(file: &ContextFile) -> BTreeSet<&str> {
+    let sources = file
+        .ranges
+        .iter()
+        .map(|range| range.source.as_str())
+        .collect::<BTreeSet<_>>();
+    sources
 }
 
 #[derive(Debug)]

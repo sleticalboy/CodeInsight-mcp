@@ -318,6 +318,8 @@ pub struct ContextReadingStep {
     pub order: usize,
     pub file: String,
     pub focus: String,
+    pub next_action: String,
+    pub question: String,
     pub reason: String,
     pub source: String,
     pub score: i32,

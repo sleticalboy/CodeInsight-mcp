@@ -147,6 +147,8 @@ Example `context_pack` response shape:
       "order": 1,
       "file": "src/auth.ts",
       "focus": "Follow static call graph evidence around the seed flow.",
+      "next_action": "follow_call_graph",
+      "question": "Which callers or callees explain how control moves through this flow?",
       "reason": "Selected for medium relevance via call_graph",
       "source": "call_graph",
       "score": 83,
@@ -184,7 +186,9 @@ Example `context_pack` response shape:
 
 `reading_plan` is derived from the final selected `files[]` after token-budget
 selection. Use it when a client needs an ordered read path without carrying the
-full code excerpts.
+full code excerpts. `next_action` is a stable snake_case hint for client
+controls or follow-up tool routing, and `question` is a short prompt that can be
+shown directly to an agent or user.
 
 Known `source` values are `seed_file`, `symbol_definition`, `reference`,
 `call_graph`, `semantic`, and `dependency`.

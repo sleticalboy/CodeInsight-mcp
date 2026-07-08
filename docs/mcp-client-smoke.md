@@ -55,6 +55,7 @@ It also asserts the MCP-facing structured fields that clients commonly render:
 
 - `project_overview.recommended_next_tools`
 - explicit and auto `context_pack.reading_plan`
+- `context_pack.reading_plan[].next_action` and `question`
 
 Use a real repository instead of the generated fixture:
 

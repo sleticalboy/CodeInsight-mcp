@@ -821,6 +821,15 @@ def helper():
             context_result["structuredContent"]["reading_plan"][0]["file"].as_str(),
             Some("auth.py")
         );
+        assert_eq!(
+            context_result["structuredContent"]["reading_plan"][0]["next_action"].as_str(),
+            Some("inspect_symbol_definition")
+        );
+        assert!(
+            context_result["structuredContent"]["reading_plan"][0]["question"]
+                .as_str()
+                .is_some_and(|question| question.contains("definition"))
+        );
         assert!(
             context_result["structuredContent"]["reading_plan"][0]["ranges"][0]["start_line"]
                 .as_u64()
