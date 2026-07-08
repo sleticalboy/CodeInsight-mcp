@@ -1644,6 +1644,49 @@ export function spec() {
         route_index < test_index,
         "production references should rank before test references in context_pack"
     );
+
+    let test_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand leaf test coverage",
+        "--symbol",
+        "leaf",
+        "--token-budget",
+        "1600",
+    ]);
+    let test_context_files = test_context["files"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|file| file["file"].as_str())
+        .collect::<Vec<_>>();
+    let route_index = test_context_files
+        .iter()
+        .position(|file| *file == "src/route.ts")
+        .unwrap();
+    let test_index = test_context_files
+        .iter()
+        .position(|file| *file == "src/core.test.ts")
+        .unwrap();
+    assert!(
+        test_index < route_index,
+        "test-related tasks should rank test references before production callers"
+    );
+
+    let seed_test_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand leaf behavior",
+        "--file",
+        "src/core.test.ts",
+        "--symbol",
+        "leaf",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(seed_test_context["files"][0]["file"], "src/core.test.ts");
 }
 
 #[test]

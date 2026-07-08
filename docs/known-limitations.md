@@ -122,7 +122,7 @@ Current ranking order:
 - Semantic vector matches are ranked after references when a configured provider/model has indexed vectors. Local semantic chunks remain available as deterministic fallback matches when their text matches task or seed symbol terms.
 - Resolved local dependencies are included as supporting context after direct matches.
 - Task keywords provide a lightweight boost when they match symbol names, file paths, reference context, or dependency targets.
-- Inferred ranges from test and fixture files receive a low-value penalty across symbol, reference, dependency, and call-graph candidates. Explicit file seeds are not penalized.
+- Inferred ranges from test and fixture files receive a low-value penalty across symbol, reference, dependency, and call-graph candidates by default. They are promoted instead when the task asks for tests, specs, coverage, regression, or when an explicit seed file is test-like.
 - Ties are broken by total file score and then stable file path order.
 - `semantic_status` reports semantic candidate counts, selected semantic range counts, provider/model status, and a client-facing recommendation.
 

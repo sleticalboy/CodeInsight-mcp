@@ -11,6 +11,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - `find_references` now filters obvious comment-only and string-only matches before ranking results.
 - `find_references` now downranks test and fixture files so production references are less likely to be hidden by low-value matches.
 - `context_pack` now applies the same low-value file penalty to inferred symbol, reference, dependency, and call-graph ranges from test and fixture files.
+- `context_pack` now promotes test and fixture ranges when the task asks for tests, specs, coverage, regression, or when an explicit seed file is test-like.
 
 ## [0.1.7] - 2026-07-08
 

@@ -38,6 +38,7 @@ const CONTEXT_SCORE_LOCAL_DEPENDENCY: i32 = 40;
 const CONTEXT_SCORE_TASK_MATCH_BOOST: i32 = 30;
 const CONTEXT_SCORE_SEED_SYMBOL_TASK_MATCH_BOOST: i32 = 5;
 const CONTEXT_SCORE_LOW_VALUE_FILE_PENALTY: i32 = 35;
+const CONTEXT_SCORE_LOW_VALUE_FILE_TEST_BOOST: i32 = 35;
 const CONTEXT_MAX_SYMBOL_LINES: usize = 80;
 const CONTEXT_MAX_MERGED_RANGE_LINES: usize = 80;
 
@@ -834,6 +835,9 @@ pub fn context_pack_value(
         .map(|file| normalize_seed_file(&root, file))
         .collect::<Result<Vec<_>>>()?;
     let seed_file_set = seed_files.iter().cloned().collect::<BTreeSet<_>>();
+    let scoring_policy = ContextScoringPolicy {
+        prefer_low_value_files: context_prefers_low_value_files(&task_keywords, &seed_files),
+    };
 
     for seed in &seed_symbols {
         symbols.extend(symbol_search_value(root.clone(), seed, 8)?);
@@ -873,6 +877,7 @@ pub fn context_pack_value(
             context_score_for_file(
                 &symbol.file,
                 CONTEXT_SCORE_SYMBOL_DEFINITION + symbol_task_boost(symbol, &task_keywords),
+                &scoring_policy,
             ),
         );
     }
@@ -888,6 +893,7 @@ pub fn context_pack_value(
             context_score_for_file(
                 &reference.file,
                 reference_score(reference) + reference_task_boost(reference, &task_keywords),
+                &scoring_policy,
             ),
         );
     }
@@ -922,6 +928,7 @@ pub fn context_pack_value(
                 context_score_for_file(
                     &call.file,
                     CONTEXT_SCORE_CALL_GRAPH + call_task_boost(&call, &task_keywords),
+                    &scoring_policy,
                 ),
             );
         }
@@ -940,6 +947,7 @@ pub fn context_pack_value(
                 context_score_for_file(
                     &callee_file,
                     CONTEXT_SCORE_CALL_GRAPH + call_task_boost(&call, &task_keywords),
+                    &scoring_policy,
                 ),
             );
         }
@@ -959,7 +967,7 @@ pub fn context_pack_value(
                     "Local dependency of {} via {}",
                     dependency.source_file, dependency.target
                 ),
-                context_score_for_file(&resolved_file, score),
+                context_score_for_file(&resolved_file, score, &scoring_policy),
             );
         }
     }
@@ -1853,6 +1861,11 @@ struct ContextFileCandidate {
     total_score: i32,
 }
 
+#[derive(Debug, Clone, Copy)]
+struct ContextScoringPolicy {
+    prefer_low_value_files: bool,
+}
+
 fn seed_file_ranges(
     root: &Path,
     file: &str,
@@ -2145,8 +2158,10 @@ fn importance_for_score(score: i32) -> &'static str {
     }
 }
 
-fn context_score_for_file(file: &str, score: i32) -> i32 {
-    if is_low_value_reference_file(file) {
+fn context_score_for_file(file: &str, score: i32, policy: &ContextScoringPolicy) -> i32 {
+    if is_low_value_reference_file(file) && policy.prefer_low_value_files {
+        score.saturating_add(CONTEXT_SCORE_LOW_VALUE_FILE_TEST_BOOST)
+    } else if is_low_value_reference_file(file) {
         score.saturating_sub(CONTEXT_SCORE_LOW_VALUE_FILE_PENALTY)
     } else {
         score
@@ -2262,6 +2277,28 @@ fn task_match_boost<'a>(keywords: &[String], fields: impl Iterator<Item = &'a st
     } else {
         0
     }
+}
+
+fn context_prefers_low_value_files(task_keywords: &[String], seed_files: &[String]) -> bool {
+    task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "test"
+                | "tests"
+                | "testing"
+                | "spec"
+                | "specs"
+                | "fixture"
+                | "fixtures"
+                | "coverage"
+                | "regression"
+                | "unit"
+                | "integration"
+                | "e2e"
+        )
+    }) || seed_files
+        .iter()
+        .any(|file| is_low_value_reference_file(file))
 }
 
 fn task_keywords(task: &str) -> Vec<String> {
