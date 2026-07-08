@@ -229,6 +229,14 @@ Example `tools/call` request:
 {"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"symbol_search","arguments":{"root":"/path/to/repo","query":"AuthService","limit":5}}}
 ```
 
+Recommended MCP first-read flow:
+
+1. `index_project` for the repository.
+2. `project_overview` to inspect summary, roles, and entrypoint candidates.
+3. `context_pack` with `root`, `task`, and `token_budget`; omit `symbols` and
+   `files` to let CodeInsight auto-select the highest-confidence source
+   entrypoint.
+
 For client setup snippets, see [MCP client configuration](docs/mcp-client-config.md).
 
 `project_overview` / `overview` returns the indexed repository briefing an agent should fetch before deeper tools. It preserves the basic file, symbol, language, and top-directory stats, and adds `summary`, `total_lines`, `main_directories`, `symbol_kinds`, `dependency_summary`, `call_summary`, `entrypoints`, and `index_status`. `main_directories` and `entrypoints` include role hints such as `source`, `test`, `fixture`, `vendor`, `docs`, or `example`. Entrypoints are heuristic candidates based on conventional file names and entry-like symbols such as `main`, with a normalized `confidence` score; use `context_pack`, `callers`, `callees`, and `dependency_graph` to inspect the actual flow.

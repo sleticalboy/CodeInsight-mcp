@@ -2,7 +2,12 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CODEINSIGHT_BIN="${CODEINSIGHT_BIN:-$ROOT_DIR/target/release/codeinsight}"
+if [ -z "${CODEINSIGHT_BIN:-}" ]; then
+  CODEINSIGHT_BIN="$ROOT_DIR/target/release/codeinsight"
+  BUILD_LOCAL_BINARY=true
+else
+  BUILD_LOCAL_BINARY=false
+fi
 SMOKE_ROOT="${CODEINSIGHT_SMOKE_ROOT:-}"
 SMOKE_SYMBOL="${CODEINSIGHT_SMOKE_SYMBOL:-AuthService}"
 TEMP_DIR=""
@@ -15,7 +20,7 @@ require_command() {
 }
 
 build_binary_if_needed() {
-  if [ ! -x "$CODEINSIGHT_BIN" ]; then
+  if [ "$BUILD_LOCAL_BINARY" = true ] || [ ! -x "$CODEINSIGHT_BIN" ]; then
     cargo build --locked --release --manifest-path "$ROOT_DIR/Cargo.toml"
   fi
 }
@@ -107,7 +112,7 @@ try:
 
     tools = request({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
     tool_names = {tool["name"] for tool in tools["result"]["tools"]}
-    for expected in ("index_project", "config_status", "symbol_search", "impact_analysis", "embedding_status", "context_pack", "version"):
+    for expected in ("index_project", "project_overview", "config_status", "symbol_search", "impact_analysis", "embedding_status", "context_pack", "version"):
         assert expected in tool_names, expected
 
     config_status = request(
@@ -138,6 +143,26 @@ try:
     index_result = indexed["result"]["structuredContent"]
     assert index_result["indexed_files"] >= 1
     assert len(index_result["errors"]) == 0
+
+    overview = request(
+        {
+            "jsonrpc": "2.0",
+            "id": 10,
+            "method": "tools/call",
+            "params": {
+                "name": "project_overview",
+                "arguments": {"root": smoke_root},
+            },
+        }
+    )
+    overview_result = overview["result"]["structuredContent"]
+    assert overview_result["indexed_files"] == index_result["indexed_files"]
+    assert overview_result["entrypoints"], "expected entrypoint candidates"
+    assert any(
+        entrypoint["file"] == "src/main.ts"
+        and entrypoint["role"] == "source"
+        for entrypoint in overview_result["entrypoints"]
+    ), "source entrypoint not found"
 
     symbols = request(
         {
@@ -234,12 +259,50 @@ try:
         symbol["name"] == smoke_symbol
         for symbol in context["result"]["structuredContent"]["symbols"]
     ), f"context symbol not found: {smoke_symbol}"
+    assert context["result"]["structuredContent"]["seed_strategy"] == "explicit"
+    assert any(
+        seed["kind"] == "symbol"
+        and seed["value"] == smoke_symbol
+        and seed["source"] == "explicit"
+        for seed in context["result"]["structuredContent"]["selected_seeds"]
+    ), "explicit context seed not found"
+
+    auto_context = request(
+        {
+            "jsonrpc": "2.0",
+            "id": 11,
+            "method": "tools/call",
+            "params": {
+                "name": "context_pack",
+                "arguments": {
+                    "root": smoke_root,
+                    "task": "understand application entrypoint",
+                    "token_budget": 1200,
+                },
+            },
+        }
+    )
+    auto_context_result = auto_context["result"]["structuredContent"]
+    assert auto_context_result["seed_strategy"] == "auto_entrypoint"
+    assert any(
+        seed["kind"] == "file"
+        and seed["value"] == "src/main.ts"
+        and seed["source"] == "overview_entrypoint"
+        and seed["role"] == "source"
+        for seed in auto_context_result["selected_seeds"]
+    ), "auto entrypoint seed not found"
+    assert any(
+        item["file"] == "src/main.ts"
+        for item in auto_context_result["files"]
+    ), "auto context entrypoint file not selected"
 
     print("MCP stdio smoke passed")
     print(f"root: {smoke_root}")
     print(f"symbol: {smoke_symbol}")
     print(f"tools: {len(tool_names)}")
     print(f"indexed_files: {index_result['indexed_files']}")
+    print(f"overview_entrypoints: {len(overview_result['entrypoints'])}")
+    print(f"auto_seed_strategy: {auto_context_result['seed_strategy']}")
 finally:
     proc.terminate()
     try:

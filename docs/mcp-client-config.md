@@ -90,6 +90,15 @@ Example `context_pack` call arguments:
 }
 ```
 
+Recommended first-read flow for agents:
+
+1. Call `index_project` with `force: false` for the repository.
+2. Call `project_overview` and inspect `summary`, `entrypoints`, and
+   `main_directories`.
+3. Call `context_pack` with only `root`, `task`, and `token_budget` to let
+   CodeInsight auto-select the highest-confidence source entrypoint. Provide
+   explicit `symbols` or `files` when the user already named a target.
+
 Example `config_status` call arguments:
 
 ```json
@@ -108,11 +117,23 @@ inference.
 `reason`, and `ranges[]` fields. Each range also includes `source`, `score`,
 `start_line`, `end_line`, `importance`, `reason`, and `excerpt`, so clients can
 sort or filter snippets without parsing explanation text.
+It also returns `seed_strategy` and `selected_seeds`; use these fields to show
+whether context came from explicit seeds, an overview entrypoint, or indexed
+source-file fallback.
 
 Example `context_pack` response shape:
 
 ```json
 {
+  "seed_strategy": "auto_entrypoint",
+  "selected_seeds": [
+    {
+      "kind": "file",
+      "value": "src/main.ts",
+      "source": "overview_entrypoint",
+      "role": "source"
+    }
+  ],
   "files": [
     {
       "file": "src/auth.ts",
