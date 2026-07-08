@@ -25,6 +25,7 @@ Environment:
   CODEINSIGHT_ROOT_DIR=/path/to/repo
   CODEINSIGHT_RELEASE_DATE=YYYY-MM-DD
   CODEINSIGHT_SKIP_CARGO_CHECK=1
+  CODEINSIGHT_ALLOW_EMPTY_CHANGELOG=1
 EOF
   exit "$status"
 }
@@ -105,11 +106,21 @@ def path(work_dir, name)
   File.join(work_dir, name)
 end
 
+def parse_version(value)
+  parts = value.split(".").map do |part|
+    Integer(part, exception: false) || abort("invalid semantic version: #{value}")
+  end
+  abort("invalid semantic version: #{value}") unless parts.length == 3
+  parts
+end
+
+target_version = parse_version(version)
+
 cargo_path = path(work_dir, "Cargo.toml")
 cargo = File.read(cargo_path)
 package_seen = false
 changed = false
-cargo = cargo.lines.map do |line|
+next_cargo = cargo.lines.map do |line|
   if line =~ /^\[package\]/
     package_seen = true
     line
@@ -121,6 +132,10 @@ cargo = cargo.lines.map do |line|
     if current == version
       abort("Cargo.toml is already at version #{version}")
     end
+    current_version = parse_version(current)
+    if (target_version <=> current_version) <= 0
+      abort("release version #{version} must be greater than current Cargo.toml version #{current}")
+    end
     changed = true
     %(version = "#{version}"\n)
   else
@@ -128,13 +143,11 @@ cargo = cargo.lines.map do |line|
   end
 end.join
 abort("Cargo.toml package version not found") unless changed
-File.write(cargo_path, cargo)
 
 readme_path = path(work_dir, "README.md")
 readme = File.read(readme_path)
 readme_changed = readme.gsub!(/CODEINSIGHT_VERSION=v\d+\.\d+\.\d+/, "CODEINSIGHT_VERSION=#{tag}")
 abort("README install version example not found") unless readme_changed
-File.write(readme_path, readme)
 
 changelog_path = path(work_dir, "CHANGELOG.md")
 changelog = File.read(changelog_path)
@@ -145,11 +158,17 @@ abort("CHANGELOG Unreleased section not found") unless unreleased_match
 
 prefix = unreleased_match[:prefix]
 body = unreleased_match[:body].strip
-abort("CHANGELOG Unreleased section is empty") if body.empty?
+if body.empty? && ENV["CODEINSIGHT_ALLOW_EMPTY_CHANGELOG"] != "1"
+  abort("CHANGELOG Unreleased section is empty; add release notes or set CODEINSIGHT_ALLOW_EMPTY_CHANGELOG=1")
+end
 
 suffix = changelog[unreleased_match.end(0)..]
 new_section = "## [#{version}] - #{date}\n\n#{body}\n\n"
-File.write(changelog_path, "#{prefix}\n#{new_section}#{suffix}")
+next_changelog = "#{prefix}\n#{new_section}#{suffix}"
+
+File.write(cargo_path, next_cargo)
+File.write(readme_path, readme)
+File.write(changelog_path, next_changelog)
 RUBY
 
 if [ "$DRY_RUN" -eq 1 ]; then

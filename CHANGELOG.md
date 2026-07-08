@@ -9,6 +9,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 ### Added
 
 - `scripts/prepare-release.sh` now automates release prep for Cargo version metadata, README install examples, changelog sections, and Cargo.lock refresh.
+- `scripts/prepare-release.sh` now rejects duplicate or lower release versions and gives clearer guidance for empty Unreleased changelog sections.
 - `scripts/latest-changelog-version.sh` and `extract-release-notes.sh latest` now let CI validate the latest release notes without hard-coding a version.
 - `scripts/verify-release.sh` now consolidates GitHub Release, install script, Docker manifest, and Homebrew tap verification for published tags.
 

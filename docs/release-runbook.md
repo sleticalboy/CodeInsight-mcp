@@ -44,6 +44,10 @@ The script updates:
 - `CHANGELOG.md`
 - version examples in `README.md`, if they mention a specific release
 
+The target version must be greater than the current `Cargo.toml` package
+version. If you intentionally need to cut a metadata-only release while
+`Unreleased` is empty, set `CODEINSIGHT_ALLOW_EMPTY_CHANGELOG=1`.
+
 Local release gate:
 
 ```bash
