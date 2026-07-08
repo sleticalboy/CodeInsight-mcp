@@ -9,6 +9,7 @@ use anyhow::{Context, Result, bail};
 use sha2::{Digest, Sha256};
 
 use crate::{
+    config::{ConfiguredSuggestedCheck, load_project_config, project_config_path},
     embedding, index,
     language::detect_language,
     model::{
@@ -392,7 +393,7 @@ pub fn impact_analysis_value(
     };
     let top_reasons = impact_top_reasons(&impacted_files, 8);
     let suggested_checks =
-        impact_suggested_checks(&root, &risk_level, &impacted_files, &paths, &errors);
+        impact_suggested_checks(&root, &risk_level, &impacted_files, &paths, &errors)?;
 
     if format == "summary" {
         symbols.truncate(evidence_limit);
@@ -1302,7 +1303,7 @@ fn impact_suggested_checks(
     impacted_files: &[ImpactFile],
     paths: &[ImpactPath],
     errors: &[IndexError],
-) -> Vec<SuggestedCheck> {
+) -> Result<Vec<SuggestedCheck>> {
     let languages = impacted_files
         .iter()
         .filter_map(|file| detect_language(Path::new(&file.file)))
@@ -1310,11 +1311,113 @@ fn impact_suggested_checks(
         .collect::<BTreeSet<_>>();
     let mut checks = Vec::new();
     let mut seen_commands = BTreeSet::new();
+    let project_config = load_project_config(root)?;
+    let configured_commands = project_config
+        .as_ref()
+        .map(|config| {
+            push_configured_impact_checks(
+                &config.impact_analysis.test_commands,
+                &config.impact_analysis.suggested_checks,
+                impacted_files,
+                &languages,
+                &mut checks,
+                &mut seen_commands,
+            )
+        })
+        .unwrap_or_default();
 
+    if configured_commands == 0 {
+        push_builtin_impact_command_checks(root, &languages, &mut checks, &mut seen_commands);
+    }
+
+    push_impact_review_checks(&mut checks, risk_level, impacted_files, paths, errors);
+
+    checks.truncate(8);
+    Ok(checks)
+}
+
+fn push_configured_impact_checks(
+    test_commands: &[String],
+    configured_checks: &[ConfiguredSuggestedCheck],
+    impacted_files: &[ImpactFile],
+    languages: &BTreeSet<&'static str>,
+    checks: &mut Vec<SuggestedCheck>,
+    seen_commands: &mut BTreeSet<String>,
+) -> usize {
+    let mut pushed = 0;
+    for command in test_commands {
+        let command = command.trim();
+        if command.is_empty() {
+            continue;
+        }
+        if push_command_check(
+            checks,
+            seen_commands,
+            command,
+            &format!(
+                "Configured by {} impact_analysis.test_commands.",
+                project_config_path()
+            ),
+        ) {
+            pushed += 1;
+        }
+    }
+
+    for check in configured_checks {
+        if !configured_check_matches(check, impacted_files, languages) {
+            continue;
+        }
+        let command = check.command.trim();
+        if command.is_empty() {
+            continue;
+        }
+        let reason = check
+            .reason
+            .as_deref()
+            .filter(|reason| !reason.trim().is_empty())
+            .unwrap_or("Configured project impact analysis check.");
+        if push_command_check(checks, seen_commands, command, reason) {
+            pushed += 1;
+        }
+    }
+    pushed
+}
+
+fn configured_check_matches(
+    check: &ConfiguredSuggestedCheck,
+    impacted_files: &[ImpactFile],
+    languages: &BTreeSet<&'static str>,
+) -> bool {
+    let matches_language = check.languages.is_empty()
+        || check
+            .languages
+            .iter()
+            .map(|language| language.trim().to_ascii_lowercase())
+            .any(|language| languages.contains(language.as_str()));
+    let matches_file = check.files.is_empty()
+        || check
+            .files
+            .iter()
+            .map(|file| file.trim())
+            .filter(|file| !file.is_empty())
+            .any(|prefix| {
+                impacted_files
+                    .iter()
+                    .any(|file| file.file == prefix || file.file.starts_with(prefix))
+            });
+    matches_language && matches_file
+}
+
+fn push_builtin_impact_command_checks(
+    root: &Path,
+    languages: &BTreeSet<&'static str>,
+    checks: &mut Vec<SuggestedCheck>,
+    seen_commands: &mut BTreeSet<String>,
+) {
     if languages.contains("rust") && root.join("Cargo.toml").exists() {
         push_command_check(
-            &mut checks,
-            &mut seen_commands,
+            checks,
+            seen_commands,
             "cargo test --locked",
             "Rust files are impacted and Cargo.toml is present.",
         );
@@ -1326,22 +1429,22 @@ fn impact_suggested_checks(
     {
         if root.join("pnpm-lock.yaml").exists() {
             push_command_check(
-                &mut checks,
-                &mut seen_commands,
+                checks,
+                seen_commands,
                 "pnpm test",
                 "JavaScript or TypeScript files are impacted and pnpm-lock.yaml is present.",
             );
         } else if root.join("yarn.lock").exists() {
             push_command_check(
-                &mut checks,
-                &mut seen_commands,
+                checks,
+                seen_commands,
                 "yarn test",
                 "JavaScript or TypeScript files are impacted and yarn.lock is present.",
             );
         } else if root.join("package-lock.json").exists() || root.join("package.json").exists() {
             push_command_check(
-                &mut checks,
-                &mut seen_commands,
+                checks,
+                seen_commands,
                 "npm test",
                 "JavaScript or TypeScript files are impacted and package metadata is present.",
             );
@@ -1362,8 +1465,8 @@ fn impact_suggested_checks(
         )
     {
         push_command_check(
-            &mut checks,
-            &mut seen_commands,
+            checks,
+            seen_commands,
             "pytest",
             "Python files are impacted and Python test metadata is present.",
         );
@@ -1371,8 +1474,8 @@ fn impact_suggested_checks(
 
     if languages.contains("go") && root.join("go.mod").exists() {
         push_command_check(
-            &mut checks,
-            &mut seen_commands,
+            checks,
+            seen_commands,
             "go test ./...",
             "Go files are impacted and go.mod is present.",
         );
@@ -1381,22 +1484,22 @@ fn impact_suggested_checks(
     if languages.contains("java") {
         if root.join("pom.xml").exists() {
             push_command_check(
-                &mut checks,
-                &mut seen_commands,
+                checks,
+                seen_commands,
                 "mvn test",
                 "Java files are impacted and pom.xml is present.",
             );
         } else if root.join("gradlew").exists() {
             push_command_check(
-                &mut checks,
-                &mut seen_commands,
+                checks,
+                seen_commands,
                 "./gradlew --no-daemon test",
                 "Java files are impacted and a Gradle wrapper is present.",
             );
         } else if root.join("build.gradle").exists() || root.join("build.gradle.kts").exists() {
             push_command_check(
-                &mut checks,
-                &mut seen_commands,
+                checks,
+                seen_commands,
                 "gradle test",
                 "Java files are impacted and Gradle metadata is present.",
             );
@@ -1405,8 +1508,8 @@ fn impact_suggested_checks(
 
     if languages.contains("csharp") && has_root_child_extension(root, "csproj") {
         push_command_check(
-            &mut checks,
-            &mut seen_commands,
+            checks,
+            seen_commands,
             "dotnet test",
             "C# files are impacted and a .csproj file is present.",
         );
@@ -1414,8 +1517,8 @@ fn impact_suggested_checks(
 
     if languages.contains("ruby") && root.join("Gemfile").exists() {
         push_command_check(
-            &mut checks,
-            &mut seen_commands,
+            checks,
+            seen_commands,
             "bundle exec rspec",
             "Ruby files are impacted and Gemfile is present.",
         );
@@ -1423,13 +1526,21 @@ fn impact_suggested_checks(
 
     if languages.contains("php") && root.join("composer.json").exists() {
         push_command_check(
-            &mut checks,
-            &mut seen_commands,
+            checks,
+            seen_commands,
             "composer test",
             "PHP files are impacted and composer.json is present.",
         );
     }
+}
 
+fn push_impact_review_checks(
+    checks: &mut Vec<SuggestedCheck>,
+    risk_level: &str,
+    impacted_files: &[ImpactFile],
+    paths: &[ImpactPath],
+    errors: &[IndexError],
+) {
     if matches!(risk_level, "medium" | "high") {
         checks.push(SuggestedCheck {
             kind: "review".to_string(),
@@ -1471,9 +1582,6 @@ fn impact_suggested_checks(
             ),
         });
     }
-
-    checks.truncate(8);
-    checks
 }
 
 fn push_command_check(
@@ -1481,7 +1589,7 @@ fn push_command_check(
     seen_commands: &mut BTreeSet<String>,
     command: &str,
     reason: &str,
-) {
+) -> bool {
     if seen_commands.insert(command.to_string()) {
         checks.push(SuggestedCheck {
             kind: "command".to_string(),
@@ -1489,6 +1597,9 @@ fn push_command_check(
             file: None,
             reason: reason.to_string(),
         });
+        true
+    } else {
+        false
     }
 }
 

@@ -71,7 +71,24 @@ Higher levels win. For example, a report with 3 files can still be `high` if one
 - `file`: present for file-specific review checks.
 - `reason`: why the check was suggested.
 
-Command checks are emitted only when impacted file languages match repository metadata:
+Project configuration can override command checks. If `.codeinsight/config.toml` contains matching impact-analysis commands, those commands are emitted before review checks and built-in command inference is skipped. If no configured command matches, CodeInsight falls back to built-in command inference.
+
+Example:
+
+```toml
+[impact_analysis]
+test_commands = ["pnpm test"]
+
+[[impact_analysis.suggested_checks]]
+command = "pnpm exec vitest run src/core.test.ts"
+reason = "Run the focused core test."
+languages = ["typescript", "tsx"]
+files = ["src/core"]
+```
+
+`test_commands` are global project commands. `suggested_checks` entries can filter by impacted `languages` and impacted file path prefixes in `files`. Empty filters match any impact report.
+
+Built-in command checks are emitted only when impacted file languages match repository metadata:
 
 | Impacted language | Repository signal | Suggested command |
 | --- | --- | --- |
@@ -97,3 +114,4 @@ Review checks are emitted for medium/high risk, multi-hop propagation paths, ana
 - Dependency paths depend on locally resolved imports only.
 - `limit` can cap `impacted_files`, `paths`, and full evidence arrays, so very large repositories should use a generous limit for review planning.
 - Suggested commands are candidates, not guaranteed project scripts. Clients should let users edit or confirm them before execution.
+- Configured commands take priority over built-in command inference, but review checks are still appended.

@@ -1255,6 +1255,80 @@ export function route() {
 }
 
 #[test]
+fn cli_impact_analysis_prefers_configured_suggested_checks() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        "src/core.ts",
+        r#"
+export function leaf() {
+  return "ok";
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/route.ts",
+        r#"
+import { leaf } from "./core";
+
+export function route() {
+  return leaf();
+}
+"#,
+    );
+    write_file(&fixture, "pnpm-lock.yaml", "lockfileVersion: '9.0'\n");
+    write_file(
+        &fixture,
+        ".codeinsight/config.toml",
+        r#"
+[impact_analysis]
+test_commands = ["pnpm exec vitest run --changed"]
+
+[[impact_analysis.suggested_checks]]
+command = "pnpm exec vitest run src/core.test.ts"
+reason = "Configured focused TypeScript test."
+languages = ["typescript"]
+files = ["src/core"]
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 2);
+
+    let impact = run_json([
+        "impact-analysis",
+        fixture.path().to_str().unwrap(),
+        "--symbol",
+        "leaf",
+        "--file",
+        "src/core.ts",
+        "--depth",
+        "2",
+        "--limit",
+        "20",
+        "--format",
+        "summary",
+        "--evidence-limit",
+        "1",
+    ]);
+    let suggested_checks = impact["suggested_checks"].as_array().unwrap();
+    assert!(suggested_checks.iter().any(|check| {
+        check["kind"] == "command" && check["command"] == "pnpm exec vitest run --changed"
+    }));
+    assert!(suggested_checks.iter().any(|check| {
+        check["kind"] == "command"
+            && check["command"] == "pnpm exec vitest run src/core.test.ts"
+            && check["reason"] == "Configured focused TypeScript test."
+    }));
+    assert!(
+        !suggested_checks
+            .iter()
+            .any(|check| check["command"] == "pnpm test")
+    );
+}
+
+#[test]
 fn cli_semantic_search_requires_embedding_provider() {
     let fixture = fixture_project();
 
