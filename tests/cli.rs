@@ -92,6 +92,33 @@ fn cli_indexes_and_queries_fixture_project() {
             .unwrap()
             > 0
     );
+    assert!(
+        overview["recommended_next_tools"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|tool| tool["tool"] == "context_pack"
+                && tool["suggested_arguments"]["task"]
+                    == "understand project entrypoint and main flow"
+                && tool["suggested_arguments"]["token_budget"].as_u64() == Some(6000))
+    );
+    assert!(
+        overview["recommended_next_tools"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|tool| tool["tool"] == "dependency_graph"
+                && tool["suggested_arguments"]["limit"].as_u64() == Some(100))
+    );
+    assert!(
+        overview["recommended_next_tools"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|tool| tool["tool"] == "impact_analysis"
+                && tool["suggested_arguments"]["files"][0] == "src/main.ts"
+                && tool["suggested_arguments"]["symbols"][0] == "main")
+    );
 
     let second_index = run_json(["index", fixture.path().to_str().unwrap()]);
     assert_eq!(second_index["changed_files"], 0);

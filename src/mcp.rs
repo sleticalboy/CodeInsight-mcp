@@ -549,6 +549,29 @@ def helper():
             Some(1)
         );
 
+        let overview_result = handle_tool_call(json!({
+            "name": "project_overview",
+            "arguments": {
+                "root": dir.path()
+            }
+        }))
+        .unwrap();
+        assert!(
+            overview_result["structuredContent"]["recommended_next_tools"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|tool| tool["tool"] == "context_pack"
+                    && tool["suggested_arguments"]["root"].as_str().is_some())
+        );
+        assert!(
+            overview_result["structuredContent"]["recommended_next_tools"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|tool| tool["tool"] == "config_status")
+        );
+
         let config_status_result = handle_tool_call(json!({
             "name": "config_status",
             "arguments": {

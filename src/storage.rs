@@ -5,11 +5,12 @@ use std::{
 
 use anyhow::{Context, Result, bail};
 use rusqlite::{Connection, Row, params, params_from_iter};
+use serde_json::json;
 
 use crate::model::{
     CallEdge, CallSummary, Dependency, DependencyGraph, DependencySummary, DependencyTargetStat,
     DirectoryStat, DirectorySummary, EntryPointCandidate, IndexStatus, Language, LanguageStat,
-    ProjectOverview, SemanticChunk, SemanticChunkChange, SemanticChunkInput,
+    ProjectOverview, RecommendedToolCall, SemanticChunk, SemanticChunkChange, SemanticChunkInput,
     SemanticChunkWriteStats, SemanticEmbeddingInput, SemanticEmbeddingMatch, SourceFile, Symbol,
     SymbolKind, SymbolKindStat,
 };
@@ -807,6 +808,8 @@ impl Store {
             &languages,
             &top_directories,
         );
+        let recommended_next_tools =
+            recommended_next_tools(root, &entrypoints, &dependency_summary, &call_summary);
 
         Ok(ProjectOverview {
             root: root.display().to_string(),
@@ -823,6 +826,7 @@ impl Store {
             dependency_summary,
             call_summary,
             entrypoints,
+            recommended_next_tools,
             index_status,
         })
     }
@@ -1740,6 +1744,86 @@ fn overview_summary(
     format!(
         "{indexed_files} indexed files, {total_lines} lines, {symbols} symbols, {dependencies} dependency edges, {call_edges} call edges. Primary language: {primary_language}. Largest directory: {top_directory}."
     )
+}
+
+fn recommended_next_tools(
+    root: &Path,
+    entrypoints: &[EntryPointCandidate],
+    dependency_summary: &DependencySummary,
+    call_summary: &CallSummary,
+) -> Vec<RecommendedToolCall> {
+    let root = root.display().to_string();
+    let mut tools = Vec::new();
+
+    tools.push(RecommendedToolCall {
+        tool: "context_pack".to_string(),
+        reason: if entrypoints.iter().any(|entrypoint| entrypoint.role == "source") {
+            "Build first-read context from the highest-confidence source entrypoint.".to_string()
+        } else {
+            "Build first-read context from indexed source files because no source entrypoint was detected.".to_string()
+        },
+        suggested_arguments: json!({
+            "root": root,
+            "task": "understand project entrypoint and main flow",
+            "token_budget": 6000
+        }),
+    });
+
+    if dependency_summary.edges > 0 {
+        tools.push(RecommendedToolCall {
+            tool: "dependency_graph".to_string(),
+            reason: "Inspect module and package relationships before deeper navigation."
+                .to_string(),
+            suggested_arguments: json!({
+                "root": root,
+                "limit": 100
+            }),
+        });
+    }
+
+    if let Some(entrypoint) = entrypoints
+        .iter()
+        .find(|entrypoint| entrypoint.role == "source")
+    {
+        let mut suggested_arguments = json!({
+            "root": root,
+            "files": [entrypoint.file.clone()],
+            "limit": 20,
+            "depth": 2,
+            "format": "summary",
+            "evidence_limit": 5
+        });
+        if let Some(symbol) = &entrypoint.symbol {
+            suggested_arguments["symbols"] = json!([symbol]);
+        }
+        tools.push(RecommendedToolCall {
+            tool: "impact_analysis".to_string(),
+            reason: "Estimate the entrypoint change radius using call and dependency signals."
+                .to_string(),
+            suggested_arguments,
+        });
+    } else if call_summary.edges > 0 {
+        tools.push(RecommendedToolCall {
+            tool: "callers".to_string(),
+            reason: "Inspect static call graph edges because no source entrypoint was detected."
+                .to_string(),
+            suggested_arguments: json!({
+                "root": root,
+                "symbol": "<replace-with-symbol>",
+                "limit": 50
+            }),
+        });
+    }
+
+    tools.push(RecommendedToolCall {
+        tool: "config_status".to_string(),
+        reason: "Check project-specific validation commands before planning changes.".to_string(),
+        suggested_arguments: json!({
+            "root": root
+        }),
+    });
+
+    tools
 }
 
 fn file_entrypoint_signal(file: &str) -> Option<(usize, String)> {

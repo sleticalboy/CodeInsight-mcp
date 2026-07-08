@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use serde::Serialize;
+use serde_json::Value;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -433,6 +434,7 @@ pub struct ProjectOverview {
     pub dependency_summary: DependencySummary,
     pub call_summary: CallSummary,
     pub entrypoints: Vec<EntryPointCandidate>,
+    pub recommended_next_tools: Vec<RecommendedToolCall>,
     pub index_status: IndexStatus,
 }
 
@@ -498,6 +500,13 @@ pub struct EntryPointCandidate {
     pub reason: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub symbol: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct RecommendedToolCall {
+    pub tool: String,
+    pub reason: String,
+    pub suggested_arguments: Value,
 }
 
 #[derive(Debug, Serialize)]

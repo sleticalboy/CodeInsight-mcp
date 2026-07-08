@@ -8,6 +8,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ### Changed
 
+- `overview` / `project_overview` now returns `recommended_next_tools` with MCP-ready next-call suggestions and argument shapes.
 - `scripts/mcp-stdio-smoke.sh` now verifies the recommended MCP first-read chain: `index_project`, `project_overview`, and auto-entrypoint `context_pack`.
 - `context_pack` now returns structured `seed_strategy` and `selected_seeds` fields so clients can inspect explicit, auto-entrypoint, and source-fallback seed decisions without parsing summary text.
 - `context_pack` now auto-selects a source entrypoint from `project_overview` when no seed symbols or files are provided, with source-file fallback for repositories without obvious entrypoints.

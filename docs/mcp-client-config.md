@@ -94,10 +94,18 @@ Recommended first-read flow for agents:
 
 1. Call `index_project` with `force: false` for the repository.
 2. Call `project_overview` and inspect `summary`, `entrypoints`, and
-   `main_directories`.
+   `main_directories`. Use `recommended_next_tools` when you want CodeInsight
+   to propose the next MCP call and argument shape.
 3. Call `context_pack` with only `root`, `task`, and `token_budget` to let
    CodeInsight auto-select the highest-confidence source entrypoint. Provide
    explicit `symbols` or `files` when the user already named a target.
+
+`project_overview.recommended_next_tools[]` entries include:
+
+- `tool`: MCP tool name.
+- `reason`: short explanation for surfacing in clients.
+- `suggested_arguments`: JSON arguments that can be passed to `tools/call`
+  after user/task-specific edits.
 
 Example `config_status` call arguments:
 
