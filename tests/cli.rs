@@ -15,6 +15,81 @@ fn cli_indexes_and_queries_fixture_project() {
     assert_eq!(index["changed_files"], 17);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
+    let overview = run_json(["overview", fixture.path().to_str().unwrap()]);
+    assert_eq!(overview["indexed_files"], 17);
+    assert!(overview["total_lines"].as_u64().unwrap() > 0);
+    assert!(
+        overview["summary"]
+            .as_str()
+            .unwrap()
+            .contains("indexed files")
+    );
+    assert!(
+        overview["languages"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|language| language["language"] == "typescript")
+    );
+    assert!(overview["main_directories"].as_array().unwrap().iter().any(
+        |directory| directory["directory"] == "src"
+            && directory["files"].as_u64().unwrap() > 0
+            && directory["symbols"].as_u64().unwrap() > 0
+    ));
+    assert!(
+        overview["symbol_kinds"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|kind| kind["kind"] == "function" && kind["symbols"].as_u64().unwrap() > 0)
+    );
+    assert!(
+        overview["dependency_summary"]["edges"].as_u64().unwrap()
+            >= overview["dependency_summary"]["resolved_edges"]
+                .as_u64()
+                .unwrap()
+    );
+    assert!(
+        overview["dependency_summary"]["external_targets"]
+            .as_u64()
+            .unwrap()
+            > 0
+    );
+    assert!(
+        !overview["dependency_summary"]["top_external_targets"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+    assert!(
+        overview["call_summary"]["resolved_callee_edges"]
+            .as_u64()
+            .unwrap()
+            > 0
+    );
+    assert!(
+        overview["entrypoints"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|entrypoint| entrypoint["file"] == "src/main.ts"
+                && entrypoint["symbol"] == "main"
+                && entrypoint["reason"]
+                    .as_str()
+                    .unwrap()
+                    .contains("entry symbol"))
+    );
+    assert_eq!(
+        overview["index_status"]["index_version"],
+        env!("CARGO_PKG_VERSION")
+    );
+    assert!(
+        overview["index_status"]["last_indexed_at"]
+            .as_u64()
+            .unwrap()
+            > 0
+    );
+
     let second_index = run_json(["index", fixture.path().to_str().unwrap()]);
     assert_eq!(second_index["changed_files"], 0);
     assert_eq!(second_index["unchanged_files"], 17);

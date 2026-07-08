@@ -39,7 +39,7 @@ Implemented:
 - per-file indexing errors in reports without aborting the whole project scan
 - Tree-sitter parsing for TypeScript/JavaScript, Python, Go, Rust, Java, C, C++, C#, PHP, and Ruby
 - symbol extraction for common declarations
-- dependency graph, text reference search, impact analysis, context packs, and call graph tools with imported target hints
+- repository overview, dependency graph, text reference search, impact analysis, context packs, and call graph tools with imported target hints
 - relative file resolution for local dependency graph edges
 - embedding provider interface, provider status reporting, and local semantic search paths over local vectors
 - local semantic chunk index storage with optional deterministic local-hash embedding generation
@@ -158,6 +158,8 @@ Print an overview:
 cargo run -- overview /path/to/repo
 ```
 
+The overview is the first-stop repository briefing for agents. After `index`, it returns a compact `summary`, language and directory distribution, symbol-kind counts, dependency and call-graph summaries, entrypoint candidates with heuristic reasons, and index metadata.
+
 Search symbols:
 
 ```bash
@@ -227,6 +229,8 @@ Example `tools/call` request:
 ```
 
 For client setup snippets, see [MCP client configuration](docs/mcp-client-config.md).
+
+`project_overview` / `overview` returns the indexed repository briefing an agent should fetch before deeper tools. It preserves the basic file, symbol, language, and top-directory stats, and adds `summary`, `total_lines`, `main_directories`, `symbol_kinds`, `dependency_summary`, `call_summary`, `entrypoints`, and `index_status`. Entrypoints are heuristic candidates based on conventional file names and entry-like symbols such as `main`; use `context_pack`, `callers`, `callees`, and `dependency_graph` to inspect the actual flow.
 
 `find_references` is currently a fast text-reference pass over indexed files. It returns file, line, column, context, an approximate reference kind, and a confidence score. Obvious comment-only and string-only matches are filtered before ranking, and test or fixture files are downranked so production references are less likely to be hidden by low-value matches. It is not yet a full language-server-grade semantic reference resolver.
 

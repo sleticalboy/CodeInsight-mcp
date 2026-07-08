@@ -410,9 +410,19 @@ pub struct IndexError {
 pub struct ProjectOverview {
     pub root: String,
     pub indexed_files: usize,
+    pub total_lines: usize,
     pub symbols: usize,
+    pub dependencies: usize,
+    pub call_edges: usize,
+    pub summary: String,
     pub languages: Vec<LanguageStat>,
     pub top_directories: Vec<DirectoryStat>,
+    pub main_directories: Vec<DirectorySummary>,
+    pub symbol_kinds: Vec<SymbolKindStat>,
+    pub dependency_summary: DependencySummary,
+    pub call_summary: CallSummary,
+    pub entrypoints: Vec<EntryPointCandidate>,
+    pub index_status: IndexStatus,
 }
 
 #[derive(Debug, Serialize)]
@@ -426,4 +436,59 @@ pub struct LanguageStat {
 pub struct DirectoryStat {
     pub directory: String,
     pub files: usize,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DirectorySummary {
+    pub directory: String,
+    pub files: usize,
+    pub lines: usize,
+    pub symbols: usize,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SymbolKindStat {
+    pub kind: String,
+    pub symbols: usize,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DependencySummary {
+    pub edges: usize,
+    pub local_edges: usize,
+    pub external_edges: usize,
+    pub resolved_edges: usize,
+    pub unresolved_edges: usize,
+    pub external_targets: usize,
+    pub top_external_targets: Vec<DependencyTargetStat>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DependencyTargetStat {
+    pub target: String,
+    pub edges: usize,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CallSummary {
+    pub edges: usize,
+    pub resolved_callee_edges: usize,
+    pub unresolved_callee_edges: usize,
+}
+
+#[derive(Debug, Serialize)]
+pub struct EntryPointCandidate {
+    pub file: String,
+    pub language: String,
+    pub score: usize,
+    pub reason: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub symbol: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct IndexStatus {
+    pub schema_version: i64,
+    pub index_version: String,
+    pub last_indexed_at: Option<i64>,
 }

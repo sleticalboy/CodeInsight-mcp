@@ -1,12 +1,17 @@
-use std::path::{Path, PathBuf};
+use std::{
+    collections::BTreeMap,
+    path::{Path, PathBuf},
+};
 
 use anyhow::{Context, Result, bail};
 use rusqlite::{Connection, Row, params, params_from_iter};
 
 use crate::model::{
-    CallEdge, Dependency, DependencyGraph, DirectoryStat, Language, LanguageStat, ProjectOverview,
-    SemanticChunk, SemanticChunkChange, SemanticChunkInput, SemanticChunkWriteStats,
-    SemanticEmbeddingInput, SemanticEmbeddingMatch, SourceFile, Symbol, SymbolKind,
+    CallEdge, CallSummary, Dependency, DependencyGraph, DependencySummary, DependencyTargetStat,
+    DirectoryStat, DirectorySummary, EntryPointCandidate, IndexStatus, Language, LanguageStat,
+    ProjectOverview, SemanticChunk, SemanticChunkChange, SemanticChunkInput,
+    SemanticChunkWriteStats, SemanticEmbeddingInput, SemanticEmbeddingMatch, SourceFile, Symbol,
+    SymbolKind, SymbolKindStat,
 };
 
 pub const SCHEMA_VERSION: i64 = 22;
@@ -621,11 +626,25 @@ impl Store {
             .conn
             .query_row("select count(*) from files", [], |row| row.get::<_, i64>(0))?
             as usize;
+        let total_lines = self.conn.query_row(
+            "select coalesce(sum(line_count), 0) from files",
+            [],
+            |row| row.get::<_, i64>(0),
+        )? as usize;
         let symbols = self
             .conn
             .query_row("select count(*) from symbols", [], |row| {
                 row.get::<_, i64>(0)
             })? as usize;
+        let dependencies = self
+            .conn
+            .query_row("select count(*) from dependencies", [], |row| {
+                row.get::<_, i64>(0)
+            })? as usize;
+        let call_edges = self
+            .conn
+            .query_row("select count(*) from calls", [], |row| row.get::<_, i64>(0))?
+            as usize;
 
         let mut lang_stmt = self.conn.prepare(
             "select language, count(*), coalesce(sum(line_count), 0)
@@ -662,13 +681,196 @@ impl Store {
             })?
             .collect::<rusqlite::Result<Vec<_>>>()?;
 
+        let mut main_dir_stmt = self.conn.prepare(
+            "select
+                case
+                  when instr(f.path, '/') = 0 then '.'
+                  else substr(f.path, 1, instr(f.path, '/') - 1)
+                end as directory,
+                count(*),
+                coalesce(sum(f.line_count), 0),
+                coalesce(sum(fs.symbols), 0)
+             from files f
+             left join (
+                select file_id, count(*) as symbols
+                from symbols
+                group by file_id
+             ) fs on fs.file_id = f.id
+             group by directory
+             order by count(*) desc, coalesce(sum(f.line_count), 0) desc, directory
+             limit 12",
+        )?;
+        let main_directories = main_dir_stmt
+            .query_map([], |row| {
+                Ok(DirectorySummary {
+                    directory: row.get(0)?,
+                    files: row.get::<_, i64>(1)? as usize,
+                    lines: row.get::<_, i64>(2)? as usize,
+                    symbols: row.get::<_, i64>(3)? as usize,
+                })
+            })?
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+
+        let mut symbol_kind_stmt = self.conn.prepare(
+            "select kind, count(*)
+             from symbols
+             group by kind
+             order by count(*) desc, kind",
+        )?;
+        let symbol_kinds = symbol_kind_stmt
+            .query_map([], |row| {
+                Ok(SymbolKindStat {
+                    kind: row.get(0)?,
+                    symbols: row.get::<_, i64>(1)? as usize,
+                })
+            })?
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+
+        let resolved_dependencies = self.conn.query_row(
+            "select count(*) from dependencies where resolved_file is not null",
+            [],
+            |row| row.get::<_, i64>(0),
+        )? as usize;
+        let local_dependencies = self.conn.query_row(
+            "select count(*)
+             from dependencies
+             where resolved_file is not null and resolved_file not like 'node_modules/%'",
+            [],
+            |row| row.get::<_, i64>(0),
+        )? as usize;
+        let unresolved_dependencies = dependencies.saturating_sub(resolved_dependencies);
+        let external_targets = self.conn.query_row(
+            "select count(distinct target)
+             from dependencies
+             where resolved_file is null or resolved_file like 'node_modules/%'",
+            [],
+            |row| row.get::<_, i64>(0),
+        )? as usize;
+        let mut external_target_stmt = self.conn.prepare(
+            "select target, count(*)
+             from dependencies
+             where resolved_file is null or resolved_file like 'node_modules/%'
+             group by target
+             order by count(*) desc, target
+             limit 12",
+        )?;
+        let top_external_targets = external_target_stmt
+            .query_map([], |row| {
+                Ok(DependencyTargetStat {
+                    target: row.get(0)?,
+                    edges: row.get::<_, i64>(1)? as usize,
+                })
+            })?
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+        let dependency_summary = DependencySummary {
+            edges: dependencies,
+            local_edges: local_dependencies,
+            external_edges: dependencies.saturating_sub(local_dependencies),
+            resolved_edges: resolved_dependencies,
+            unresolved_edges: unresolved_dependencies,
+            external_targets,
+            top_external_targets,
+        };
+
+        let resolved_callee_edges = self.conn.query_row(
+            "select count(*) from calls where callee_file is not null",
+            [],
+            |row| row.get::<_, i64>(0),
+        )? as usize;
+        let call_summary = CallSummary {
+            edges: call_edges,
+            resolved_callee_edges,
+            unresolved_callee_edges: call_edges.saturating_sub(resolved_callee_edges),
+        };
+
+        let entrypoints = self.entrypoint_candidates()?;
+        let index_status = IndexStatus {
+            schema_version: self
+                .get_meta("schema_version")?
+                .and_then(|value| value.parse::<i64>().ok())
+                .unwrap_or(SCHEMA_VERSION),
+            index_version: self
+                .get_meta("index_version")?
+                .unwrap_or_else(|| INDEX_VERSION.to_string()),
+            last_indexed_at: self
+                .get_meta("last_indexed_at")?
+                .and_then(|value| value.parse::<i64>().ok()),
+        };
+        let summary = overview_summary(
+            indexed_files,
+            total_lines,
+            symbols,
+            dependencies,
+            call_edges,
+            &languages,
+            &top_directories,
+        );
+
         Ok(ProjectOverview {
             root: root.display().to_string(),
             indexed_files,
+            total_lines,
             symbols,
+            dependencies,
+            call_edges,
+            summary,
             languages,
             top_directories,
+            main_directories,
+            symbol_kinds,
+            dependency_summary,
+            call_summary,
+            entrypoints,
+            index_status,
         })
+    }
+
+    fn entrypoint_candidates(&self) -> Result<Vec<EntryPointCandidate>> {
+        let mut stmt = self.conn.prepare(
+            "select f.path, f.language, s.name
+             from files f
+             left join symbols s on s.file_id = f.id
+                and s.kind in ('function', 'method')
+                and lower(s.name) in ('main', 'run', 'start', 'server', 'handler')
+             order by f.path, s.start_line",
+        )?;
+        let mut candidates = BTreeMap::<String, EntryPointCandidate>::new();
+        let rows = stmt.query_map([], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, Option<String>>(2)?,
+            ))
+        })?;
+
+        for row in rows {
+            let (file, language, symbol) = row?;
+            if let Some((score, reason)) = file_entrypoint_signal(&file) {
+                upsert_entrypoint_candidate(&mut candidates, &file, &language, score, reason, None);
+            }
+            if let Some(symbol) = symbol {
+                if let Some((score, reason)) = symbol_entrypoint_signal(&symbol) {
+                    upsert_entrypoint_candidate(
+                        &mut candidates,
+                        &file,
+                        &language,
+                        score,
+                        reason,
+                        Some(symbol),
+                    );
+                }
+            }
+        }
+
+        let mut candidates = candidates.into_values().collect::<Vec<_>>();
+        candidates.sort_by(|left, right| {
+            right
+                .score
+                .cmp(&left.score)
+                .then_with(|| left.file.cmp(&right.file))
+        });
+        candidates.truncate(12);
+        Ok(candidates)
     }
 
     pub fn search_symbols(&self, query: &str, limit: usize) -> Result<Vec<Symbol>> {
@@ -1510,6 +1712,85 @@ fn parse_language(language: &str) -> Language {
         "typescript" => Language::TypeScript,
         "tsx" => Language::Tsx,
         _ => Language::JavaScript,
+    }
+}
+
+fn overview_summary(
+    indexed_files: usize,
+    total_lines: usize,
+    symbols: usize,
+    dependencies: usize,
+    call_edges: usize,
+    languages: &[LanguageStat],
+    top_directories: &[DirectoryStat],
+) -> String {
+    let primary_language = languages
+        .first()
+        .map(|language| language.language.as_str())
+        .unwrap_or("none");
+    let top_directory = top_directories
+        .first()
+        .map(|directory| directory.directory.as_str())
+        .unwrap_or(".");
+    format!(
+        "{indexed_files} indexed files, {total_lines} lines, {symbols} symbols, {dependencies} dependency edges, {call_edges} call edges. Primary language: {primary_language}. Largest directory: {top_directory}."
+    )
+}
+
+fn file_entrypoint_signal(file: &str) -> Option<(usize, String)> {
+    let basename = file.rsplit('/').next().unwrap_or(file).to_ascii_lowercase();
+    let path = file.to_ascii_lowercase();
+    if basename.starts_with("main.") {
+        Some((100, "conventional main file".to_string()))
+    } else if basename == "lib.rs" {
+        Some((90, "Rust library root".to_string()))
+    } else if basename == "mod.rs" {
+        Some((85, "Rust module root".to_string()))
+    } else if basename.starts_with("index.") {
+        Some((80, "conventional index file".to_string()))
+    } else if basename.starts_with("app.") {
+        Some((75, "conventional app file".to_string()))
+    } else if path.contains("/server.") || basename.starts_with("server.") {
+        Some((70, "server entrypoint naming".to_string()))
+    } else if path.contains("/cli.") || basename.starts_with("cli.") {
+        Some((65, "CLI entrypoint naming".to_string()))
+    } else {
+        None
+    }
+}
+
+fn symbol_entrypoint_signal(symbol: &str) -> Option<(usize, String)> {
+    match symbol.to_ascii_lowercase().as_str() {
+        "main" => Some((110, "entry symbol named main".to_string())),
+        "run" | "start" => Some((88, format!("entry-like symbol named {symbol}"))),
+        "server" | "handler" => Some((78, format!("service entry-like symbol named {symbol}"))),
+        _ => None,
+    }
+}
+
+fn upsert_entrypoint_candidate(
+    candidates: &mut BTreeMap<String, EntryPointCandidate>,
+    file: &str,
+    language: &str,
+    score: usize,
+    reason: String,
+    symbol: Option<String>,
+) {
+    let candidate = candidates
+        .entry(file.to_string())
+        .or_insert_with(|| EntryPointCandidate {
+            file: file.to_string(),
+            language: language.to_string(),
+            score,
+            reason: reason.clone(),
+            symbol: symbol.clone(),
+        });
+    if score > candidate.score {
+        candidate.score = score;
+        candidate.reason = reason;
+        candidate.symbol = symbol;
+    } else if candidate.symbol.is_none() && symbol.is_some() {
+        candidate.symbol = symbol;
     }
 }
 

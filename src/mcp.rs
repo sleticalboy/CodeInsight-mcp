@@ -220,7 +220,7 @@ fn tool_definitions() -> Value {
         },
         {
             "name": "project_overview",
-            "description": "Return indexed project language, file, symbol, and directory stats.",
+            "description": "Return an indexed repository overview with language stats, key directories, symbol kinds, dependency/call summaries, entrypoint candidates, and index metadata.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
