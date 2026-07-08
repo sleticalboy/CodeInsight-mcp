@@ -104,9 +104,39 @@ detected fallback test commands, and `commands_override_builtin` so clients can
 explain whether configured commands will take precedence over built-in
 inference.
 
-`context_pack` returns `files[].ranges[]` entries with `start_line`, `end_line`,
-`importance`, `reason`, and `excerpt`, so clients can explain why each snippet
-was selected without inferring it from the file-level summary.
+`context_pack` returns `files[]` entries with structured `source`, `score`,
+`reason`, and `ranges[]` fields. Each range also includes `source`, `score`,
+`start_line`, `end_line`, `importance`, `reason`, and `excerpt`, so clients can
+sort or filter snippets without parsing explanation text.
+
+Example `context_pack` response shape:
+
+```json
+{
+  "files": [
+    {
+      "file": "src/auth.ts",
+      "source": "call_graph",
+      "score": 83,
+      "reason": "Selected for medium relevance via call_graph",
+      "ranges": [
+        {
+          "start_line": 12,
+          "end_line": 16,
+          "source": "call_graph",
+          "score": 83,
+          "importance": "medium",
+          "reason": "Call graph caller of login via AuthController.handle",
+          "excerpt": "  12: export function handle(req) {\\n  13:   return login(req);\\n  14: }"
+        }
+      ]
+    }
+  ]
+}
+```
+
+Known `source` values are `seed_file`, `symbol_definition`, `reference`,
+`call_graph`, `semantic`, and `dependency`.
 
 It also returns `semantic_status`, including:
 

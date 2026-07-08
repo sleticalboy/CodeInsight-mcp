@@ -15,6 +15,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - `context_pack` file-level reasons now identify the dominant selected source, such as `seed_file`, `symbol_definition`, `reference`, `call_graph`, `semantic`, or `dependency`.
 - `context_pack` now returns structured `source` fields on files and ranges so clients can filter context without parsing reason text.
 - `context_pack` now returns `score` fields on files and ranges so clients can sort, filter, or explain selected context.
+- MCP client configuration docs now include a `context_pack` response example with structured `source` and `score` fields.
 
 ## [0.1.7] - 2026-07-08
 
