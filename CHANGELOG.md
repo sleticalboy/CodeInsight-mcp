@@ -6,6 +6,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-07-08
+
 ### Added
 
 - `version` CLI/MCP command and top-level `--version` flag for release verification and client diagnostics.
