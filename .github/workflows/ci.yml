@@ -55,7 +55,7 @@ jobs:
           scripts/extract-release-notes.sh CHANGELOG.md "$latest_version" /tmp/codeinsight-release-notes-explicit.md
           cmp /tmp/codeinsight-release-notes.md /tmp/codeinsight-release-notes-explicit.md
           ! grep -Eq '^## \[[0-9]+\.[0-9]+\.[0-9]+\]' /tmp/codeinsight-release-notes.md
-          ! grep -q "Unreleased" /tmp/codeinsight-release-notes.md
+          ! grep -Eq '^## \[Unreleased\]' /tmp/codeinsight-release-notes.md
       - run: |
           set -euo pipefail
           tmp="$(mktemp -d)"
