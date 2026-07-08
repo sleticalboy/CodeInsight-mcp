@@ -90,6 +90,20 @@ Example `context_pack` call arguments:
 }
 ```
 
+Example `config_status` call arguments:
+
+```json
+{
+  "root": "/absolute/path/to/repo"
+}
+```
+
+`config_status` returns whether `.codeinsight/config.toml` exists, whether it
+loaded successfully, any `parse_error`, configured impact-analysis commands,
+detected fallback test commands, and `commands_override_builtin` so clients can
+explain whether configured commands will take precedence over built-in
+inference.
+
 `context_pack` returns `files[].ranges[]` entries with `start_line`, `end_line`,
 `importance`, `reason`, and `excerpt`, so clients can explain why each snippet
 was selected without inferring it from the file-level summary.

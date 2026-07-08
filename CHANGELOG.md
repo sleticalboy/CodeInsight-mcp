@@ -23,6 +23,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - `init-config` now pre-fills test commands from common repository metadata when possible.
 - `config-status` CLI command and MCP `config_status` tool for reporting project configuration visibility.
 - `config-status` now reports malformed project config files through `parse_error` while `impact-analysis` fails with clear parse context.
+- Config status documentation now includes missing, loaded, and malformed output examples for MCP clients.
 
 ## [0.1.5] - 2026-07-07
 

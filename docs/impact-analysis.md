@@ -98,6 +98,46 @@ files = ["src/core"]
 
 `test_commands` are global project commands. `suggested_checks` entries can filter by impacted `languages` and impacted file path prefixes in `files`. Empty filters match any impact report.
 
+Missing config status:
+
+```json
+{
+  "exists": false,
+  "loaded": false,
+  "configured_test_commands": [],
+  "configured_suggested_checks": 0,
+  "detected_test_commands": ["cargo test --locked"],
+  "commands_override_builtin": false
+}
+```
+
+Loaded config status:
+
+```json
+{
+  "exists": true,
+  "loaded": true,
+  "configured_test_commands": ["pnpm test"],
+  "configured_suggested_checks": 1,
+  "detected_test_commands": ["pnpm test"],
+  "commands_override_builtin": true
+}
+```
+
+Malformed config status:
+
+```json
+{
+  "exists": true,
+  "loaded": false,
+  "parse_error": "failed to parse /path/to/repo/.codeinsight/config.toml",
+  "configured_test_commands": [],
+  "configured_suggested_checks": 0,
+  "detected_test_commands": ["pnpm test"],
+  "commands_override_builtin": false
+}
+```
+
 Built-in command checks are emitted only when impacted file languages match repository metadata:
 
 | Impacted language | Repository signal | Suggested command |
