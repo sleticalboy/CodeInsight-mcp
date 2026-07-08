@@ -348,7 +348,7 @@ fn tool_definitions() -> Value {
         },
         {
             "name": "context_pack",
-            "description": "Build an agent-ready context pack from seed symbols, seed files, and a token budget.",
+            "description": "Build an agent-ready context pack from seed symbols, seed files, or inferred source entrypoints and a token budget.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -803,6 +803,24 @@ def helper():
                 .as_str()
                 .is_some_and(|reason| !reason.is_empty())
         );
+        let auto_context_result = handle_tool_call(json!({
+            "name": "context_pack",
+            "arguments": {
+                "root": dir.path(),
+                "task": "understand auth repository",
+                "token_budget": 1200
+            }
+        }))
+        .unwrap();
+        assert_eq!(
+            auto_context_result["structuredContent"]["files"][0]["file"].as_str(),
+            Some("auth.py")
+        );
+        assert!(
+            auto_context_result["structuredContent"]["summary"]
+                .as_str()
+                .is_some_and(|summary| summary.contains("auto-selected seed files"))
+        );
         let file_context_result = handle_tool_call(json!({
             "name": "context_pack",
             "arguments": {
@@ -921,11 +939,11 @@ def helper():
             "arguments": {
                 "root": ".",
                 "task": "x",
-                "symbols": []
+                "token_budget": 0
             }
         }))
         .unwrap_err();
-        assert!(error.to_string().contains("symbol or file"));
+        assert!(error.to_string().contains("token_budget"));
     }
 
     fn is_known_context_source(source: &str) -> bool {

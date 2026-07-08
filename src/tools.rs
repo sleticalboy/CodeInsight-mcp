@@ -818,16 +818,23 @@ pub fn context_pack_value(
     root: PathBuf,
     task: String,
     seed_symbols: Vec<String>,
-    seed_files: Vec<String>,
+    mut seed_files: Vec<String>,
     token_budget: usize,
 ) -> Result<ContextPack> {
     let root = root.canonicalize()?;
-    if seed_symbols.is_empty() && seed_files.is_empty() {
-        bail!("context_pack requires at least one seed symbol or file");
-    }
-
     let budget = token_budget.max(500);
     let task_keywords = task_keywords(&task);
+    let auto_seeded = seed_symbols.is_empty() && seed_files.is_empty();
+    let store = Store::open(&root)?;
+    if auto_seeded {
+        seed_files = auto_context_seed_files(&store, &root, &task_keywords)?;
+        if seed_files.is_empty() {
+            bail!(
+                "context_pack could not infer source seed files from the current index; run index or provide --symbol/--file"
+            );
+        }
+    }
+
     let mut symbols = Vec::new();
     let mut references = Vec::new();
     let seed_files = seed_files
@@ -919,7 +926,6 @@ pub fn context_pack_value(
         }
     }
 
-    let store = Store::open(&root)?;
     for seed in &caller_graph_seeds {
         for call in store.callers(seed, 20)? {
             push_context_range(
@@ -1114,8 +1120,11 @@ pub fn context_pack_value(
         }
     }
 
-    let summary = if seed_symbols.is_empty() && seed_files.is_empty() {
-        "No seed symbols or files were provided; context pack is empty.".to_string()
+    let summary = if auto_seeded {
+        format!(
+            "Context pack for task using auto-selected seed files: {}.",
+            seed_files.join(", ")
+        )
     } else if seed_files.is_empty() {
         format!(
             "Context pack for task using seed symbols: {}.",
@@ -2326,6 +2335,81 @@ fn context_prefers_low_value_files(task_keywords: &[String], seed_files: &[Strin
     }) || seed_files
         .iter()
         .any(|file| is_low_value_reference_file(file))
+}
+
+fn auto_context_seed_files(
+    store: &Store,
+    root: &Path,
+    task_keywords: &[String],
+) -> Result<Vec<String>> {
+    let overview = store.overview(root)?;
+    let mut files = overview
+        .entrypoints
+        .iter()
+        .filter(|entrypoint| auto_seed_role_allowed(&entrypoint.role, task_keywords))
+        .map(|entrypoint| entrypoint.file.clone())
+        .collect::<Vec<_>>();
+    files.sort();
+    files.dedup();
+    files.sort_by(|left, right| {
+        let left_score = overview
+            .entrypoints
+            .iter()
+            .find(|entrypoint| entrypoint.file == *left)
+            .map(|entrypoint| entrypoint.score)
+            .unwrap_or_default();
+        let right_score = overview
+            .entrypoints
+            .iter()
+            .find(|entrypoint| entrypoint.file == *right)
+            .map(|entrypoint| entrypoint.score)
+            .unwrap_or_default();
+        right_score.cmp(&left_score).then_with(|| left.cmp(right))
+    });
+
+    if files.is_empty() {
+        files = store
+            .indexed_files()?
+            .into_iter()
+            .filter(|file| auto_seed_role_allowed(auto_seed_file_role(file), task_keywords))
+            .take(3)
+            .collect();
+    } else {
+        files.truncate(1);
+    }
+
+    Ok(files)
+}
+
+fn auto_seed_role_allowed(role: &str, task_keywords: &[String]) -> bool {
+    role == "source"
+        || task_keywords.iter().any(|keyword| match keyword.as_str() {
+            "test" | "tests" | "testing" | "spec" | "specs" | "coverage" | "regression"
+            | "unit" | "integration" | "e2e" => role == "test",
+            "fixture" | "fixtures" => role == "fixture",
+            "vendor" | "dependency" | "dependencies" | "package" | "packages" | "third"
+            | "external" => role == "vendor",
+            "doc" | "docs" | "documentation" | "readme" => role == "docs",
+            "example" | "examples" | "demo" | "sample" | "samples" => role == "example",
+            _ => false,
+        })
+}
+
+fn auto_seed_file_role(file: &str) -> &'static str {
+    let normalized = file.to_ascii_lowercase();
+    if normalized == "node_modules" || normalized.starts_with("node_modules/") {
+        "vendor"
+    } else if normalized.contains("fixture") || normalized.contains("fixtures/") {
+        "fixture"
+    } else if is_low_value_reference_file(file) {
+        "test"
+    } else if normalized == "docs" || normalized.starts_with("docs/") {
+        "docs"
+    } else if normalized == "examples" || normalized.starts_with("examples/") {
+        "example"
+    } else {
+        "source"
+    }
 }
 
 fn task_keywords(task: &str) -> Vec<String> {

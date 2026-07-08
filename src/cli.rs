@@ -37,7 +37,7 @@ pub enum Command {
     SemanticIndex(SemanticIndexArgs),
     /// Print configured embedding provider and optional local semantic index status.
     EmbeddingStatus(EmbeddingStatusArgs),
-    /// Build an agent-ready context pack from seed symbols or files.
+    /// Build an agent-ready context pack from seed symbols, seed files, or inferred entrypoints.
     ContextPack(ContextPackArgs),
     /// Find callers for a function or method.
     Callers(CallQueryArgs),

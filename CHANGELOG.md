@@ -8,6 +8,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ### Changed
 
+- `context_pack` now auto-selects a source entrypoint from `project_overview` when no seed symbols or files are provided, with source-file fallback for repositories without obvious entrypoints.
 - `overview` / `project_overview` now returns an agent-ready repository briefing with total lines, symbol-kind counts, richer directory stats, dependency/call summaries, entrypoint candidates, and index metadata.
 - `overview` / `project_overview` now annotates main directories and entrypoint candidates with role hints, and entrypoints with normalized confidence scores.
 - Release builds now use Node 24-compatible artifact upload/download actions and cap Linux cross-toolchain installation at 10 minutes.

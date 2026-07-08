@@ -454,6 +454,28 @@ fn cli_indexes_and_queries_fixture_project() {
     assert_eq!(auth_context_files.first(), Some(&"src/auth.py"));
     assert!(auth_context_files.contains(&"src/consumer.py"));
 
+    let auto_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand app entrypoint flow",
+        "--token-budget",
+        "1600",
+    ]);
+    assert!(
+        auto_context["summary"]
+            .as_str()
+            .unwrap()
+            .contains("auto-selected seed files")
+    );
+    assert!(
+        auto_context["files"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|file| file["file"] == "src/main.ts" && file["source"] == "seed_file")
+    );
+
     let semantic_context = run_json([
         "context-pack",
         fixture.path().to_str().unwrap(),
