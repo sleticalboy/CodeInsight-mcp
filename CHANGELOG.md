@@ -6,6 +6,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-07-08
+
 ### Changed
 
 - Docker release images now publish multi-architecture manifests for `linux/amd64` and `linux/arm64`.

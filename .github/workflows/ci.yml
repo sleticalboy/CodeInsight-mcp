@@ -47,13 +47,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: scripts/extract-release-notes.sh CHANGELOG.md v0.1.6 /tmp/codeinsight-release-notes.md
+      - run: scripts/extract-release-notes.sh CHANGELOG.md v0.1.7 /tmp/codeinsight-release-notes.md
       - run: |
           set -euo pipefail
-          grep -q "impact-analysis" /tmp/codeinsight-release-notes.md
-          grep -q "config-status" /tmp/codeinsight-release-notes.md
-          grep -q "init-config" /tmp/codeinsight-release-notes.md
-          ! grep -q "0.1.5" /tmp/codeinsight-release-notes.md
+          grep -q "multi-architecture manifests" /tmp/codeinsight-release-notes.md
+          grep -q "native amd64/arm64 runner jobs" /tmp/codeinsight-release-notes.md
+          grep -q "CODEINSIGHT_DOCKER_PLATFORM" /tmp/codeinsight-release-notes.md
+          ! grep -q "0.1.6" /tmp/codeinsight-release-notes.md
       - run: |
           set -euo pipefail
           tmp="$(mktemp -d)"
