@@ -80,7 +80,7 @@ codeinsight init-config /path/to/repo
 codeinsight init-config /path/to/repo --force
 ```
 
-Without `--force`, `init-config` refuses to overwrite an existing config.
+`init-config` pre-fills `test_commands` from common repository metadata such as `Cargo.toml`, `pnpm-lock.yaml`, `pyproject.toml`, and `go.mod`. If no known metadata is found, it writes an empty command list plus commented examples. Without `--force`, `init-config` refuses to overwrite an existing config.
 
 Example:
 

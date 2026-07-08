@@ -11,6 +11,7 @@ use sha2::{Digest, Sha256};
 use crate::{
     config::{
         ConfiguredSuggestedCheck, init_project_config, load_project_config, project_config_path,
+        suggested_test_commands_for_root,
     },
     embedding, index,
     language::detect_language,
@@ -1432,123 +1433,48 @@ fn push_builtin_impact_command_checks(
     checks: &mut Vec<SuggestedCheck>,
     seen_commands: &mut BTreeSet<String>,
 ) {
-    if languages.contains("rust") && root.join("Cargo.toml").exists() {
-        push_command_check(
-            checks,
-            seen_commands,
-            "cargo test --locked",
-            "Rust files are impacted and Cargo.toml is present.",
-        );
+    for command in suggested_test_commands_for_root(root) {
+        let Some(reason) = builtin_impact_command_reason(&command, languages) else {
+            continue;
+        };
+        push_command_check(checks, seen_commands, &command, reason);
     }
+}
 
-    if languages
-        .iter()
-        .any(|language| matches!(*language, "javascript" | "typescript" | "tsx"))
-    {
-        if root.join("pnpm-lock.yaml").exists() {
-            push_command_check(
-                checks,
-                seen_commands,
-                "pnpm test",
-                "JavaScript or TypeScript files are impacted and pnpm-lock.yaml is present.",
-            );
-        } else if root.join("yarn.lock").exists() {
-            push_command_check(
-                checks,
-                seen_commands,
-                "yarn test",
-                "JavaScript or TypeScript files are impacted and yarn.lock is present.",
-            );
-        } else if root.join("package-lock.json").exists() || root.join("package.json").exists() {
-            push_command_check(
-                checks,
-                seen_commands,
-                "npm test",
-                "JavaScript or TypeScript files are impacted and package metadata is present.",
-            );
+fn builtin_impact_command_reason(
+    command: &str,
+    languages: &BTreeSet<&'static str>,
+) -> Option<&'static str> {
+    match command {
+        "cargo test --locked" if languages.contains("rust") => {
+            Some("Rust files are impacted and Cargo.toml is present.")
         }
-    }
-
-    if languages.contains("python")
-        && any_root_file_exists(
-            root,
-            &[
-                "pyproject.toml",
-                "pytest.ini",
-                "setup.cfg",
-                "setup.py",
-                "tox.ini",
-                "requirements.txt",
-            ],
-        )
-    {
-        push_command_check(
-            checks,
-            seen_commands,
-            "pytest",
-            "Python files are impacted and Python test metadata is present.",
-        );
-    }
-
-    if languages.contains("go") && root.join("go.mod").exists() {
-        push_command_check(
-            checks,
-            seen_commands,
-            "go test ./...",
-            "Go files are impacted and go.mod is present.",
-        );
-    }
-
-    if languages.contains("java") {
-        if root.join("pom.xml").exists() {
-            push_command_check(
-                checks,
-                seen_commands,
-                "mvn test",
-                "Java files are impacted and pom.xml is present.",
-            );
-        } else if root.join("gradlew").exists() {
-            push_command_check(
-                checks,
-                seen_commands,
-                "./gradlew --no-daemon test",
-                "Java files are impacted and a Gradle wrapper is present.",
-            );
-        } else if root.join("build.gradle").exists() || root.join("build.gradle.kts").exists() {
-            push_command_check(
-                checks,
-                seen_commands,
-                "gradle test",
-                "Java files are impacted and Gradle metadata is present.",
-            );
+        "pnpm test" | "yarn test" | "npm test"
+            if languages
+                .iter()
+                .any(|language| matches!(*language, "javascript" | "typescript" | "tsx")) =>
+        {
+            Some("JavaScript or TypeScript files are impacted and package metadata is present.")
         }
-    }
-
-    if languages.contains("csharp") && has_root_child_extension(root, "csproj") {
-        push_command_check(
-            checks,
-            seen_commands,
-            "dotnet test",
-            "C# files are impacted and a .csproj file is present.",
-        );
-    }
-
-    if languages.contains("ruby") && root.join("Gemfile").exists() {
-        push_command_check(
-            checks,
-            seen_commands,
-            "bundle exec rspec",
-            "Ruby files are impacted and Gemfile is present.",
-        );
-    }
-
-    if languages.contains("php") && root.join("composer.json").exists() {
-        push_command_check(
-            checks,
-            seen_commands,
-            "composer test",
-            "PHP files are impacted and composer.json is present.",
-        );
+        "pytest" if languages.contains("python") => {
+            Some("Python files are impacted and Python test metadata is present.")
+        }
+        "go test ./..." if languages.contains("go") => {
+            Some("Go files are impacted and go.mod is present.")
+        }
+        "mvn test" | "./gradlew --no-daemon test" | "gradle test" if languages.contains("java") => {
+            Some("Java files are impacted and build metadata is present.")
+        }
+        "dotnet test" if languages.contains("csharp") => {
+            Some("C# files are impacted and a .csproj file is present.")
+        }
+        "bundle exec rspec" if languages.contains("ruby") => {
+            Some("Ruby files are impacted and Gemfile is present.")
+        }
+        "composer test" if languages.contains("php") => {
+            Some("PHP files are impacted and composer.json is present.")
+        }
+        _ => None,
     }
 }
 
@@ -1619,23 +1545,6 @@ fn push_command_check(
     } else {
         false
     }
-}
-
-fn any_root_file_exists(root: &Path, files: &[&str]) -> bool {
-    files.iter().any(|file| root.join(file).exists())
-}
-
-fn has_root_child_extension(root: &Path, extension: &str) -> bool {
-    let Ok(entries) = fs::read_dir(root) else {
-        return false;
-    };
-    entries.filter_map(Result::ok).any(|entry| {
-        entry
-            .path()
-            .extension()
-            .and_then(|value| value.to_str())
-            .is_some_and(|value| value == extension)
-    })
 }
 
 fn impact_call_paths(

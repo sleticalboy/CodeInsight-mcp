@@ -1088,6 +1088,19 @@ fn cli_init_config_creates_sample_project_config() {
 }
 
 #[test]
+fn cli_init_config_prefills_detected_test_commands() {
+    let fixture = TempDir::new().unwrap();
+    write_file(&fixture, "Cargo.toml", "[package]\nname = \"demo\"\n");
+    write_file(&fixture, "pnpm-lock.yaml", "lockfileVersion: '9.0'\n");
+
+    run_json(["init-config", fixture.path().to_str().unwrap()]);
+    let contents =
+        std::fs::read_to_string(fixture.path().join(".codeinsight/config.toml")).unwrap();
+
+    assert!(contents.contains("test_commands = [\"cargo test --locked\", \"pnpm test\"]"));
+}
+
+#[test]
 fn cli_indexes_checked_in_polyglot_fixture() {
     let fixture = copy_fixture("tests/fixtures/polyglot");
 
