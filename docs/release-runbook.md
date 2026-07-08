@@ -25,7 +25,19 @@ gh auth token | gh secret set HOMEBREW_TAP_TOKEN --repo sleticalboy/CodeInsight-
 
 ## Prepare A Release
 
-Update these files before tagging:
+Prepare release metadata:
+
+```bash
+scripts/prepare-release.sh vX.Y.Z
+```
+
+Preview the generated changes without editing the workspace:
+
+```bash
+scripts/prepare-release.sh --dry-run vX.Y.Z
+```
+
+The script updates:
 
 - `Cargo.toml`
 - `Cargo.lock`

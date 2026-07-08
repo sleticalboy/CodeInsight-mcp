@@ -68,8 +68,42 @@ jobs:
           grep -q 'releases/download/v9.8.7' /tmp/codeinsight.rb
           grep -q 'codeinsight-x86_64-unknown-linux-gnu.tar.gz' /tmp/codeinsight.rb
       - run: bash -n scripts/sync-homebrew-tap.sh
+      - run: bash -n scripts/prepare-release.sh
       - run: bash -n scripts/verify-release.sh
       - run: scripts/verify-release.sh --help >/tmp/codeinsight-verify-release-help.txt
       - run: |
           set -euo pipefail
           grep -q 'usage: scripts/verify-release.sh <tag-or-version>' /tmp/codeinsight-verify-release-help.txt
+      - run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          cat >"$tmp/Cargo.toml" <<'EOF'
+          [package]
+          name = "codeinsight"
+          version = "1.2.3"
+          EOF
+          touch "$tmp/Cargo.lock"
+          cat >"$tmp/README.md" <<'EOF'
+          CODEINSIGHT_VERSION=v1.2.3 sh scripts/install.sh
+          EOF
+          cat >"$tmp/CHANGELOG.md" <<'EOF'
+          # Changelog
+
+          ## [Unreleased]
+
+          ### Added
+
+          - Test release automation.
+
+          ## [1.2.3] - 2026-01-01
+
+          ### Added
+
+          - Previous release.
+          EOF
+          CODEINSIGHT_ROOT_DIR="$tmp" CODEINSIGHT_RELEASE_DATE=2026-07-08 CODEINSIGHT_SKIP_CARGO_CHECK=1 scripts/prepare-release.sh v9.8.7
+          grep -q 'version = "9.8.7"' "$tmp/Cargo.toml"
+          grep -q 'CODEINSIGHT_VERSION=v9.8.7' "$tmp/README.md"
+          grep -q '## \[9.8.7\] - 2026-07-08' "$tmp/CHANGELOG.md"
+          scripts/extract-release-notes.sh "$tmp/CHANGELOG.md" latest "$tmp/notes.md"
+          grep -q 'Test release automation' "$tmp/notes.md"
