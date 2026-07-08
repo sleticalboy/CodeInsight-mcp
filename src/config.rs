@@ -1,9 +1,27 @@
 use std::{fs, path::Path};
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, bail};
 use serde::Deserialize;
 
 const PROJECT_CONFIG_PATH: &str = ".codeinsight/config.toml";
+const SAMPLE_PROJECT_CONFIG: &str = r#"# CodeInsight project configuration.
+#
+# This file is optional. impact_analysis uses built-in suggested check
+# inference until you add project-specific commands here.
+
+[impact_analysis]
+test_commands = []
+
+# Global commands run for every impact report:
+# test_commands = ["pnpm test", "cargo test --locked"]
+
+# Focused commands can match impacted languages and file path prefixes.
+# [[impact_analysis.suggested_checks]]
+# command = "pnpm exec vitest run src/core.test.ts"
+# reason = "Run the focused core test."
+# languages = ["typescript", "tsx"]
+# files = ["src/core"]
+"#;
 
 #[derive(Debug, Default, Deserialize)]
 #[serde(default)]
@@ -42,4 +60,23 @@ pub fn load_project_config(root: &Path) -> Result<Option<ProjectConfig>> {
 
 pub fn project_config_path() -> &'static str {
     PROJECT_CONFIG_PATH
+}
+
+pub fn init_project_config(root: &Path, force: bool) -> Result<(std::path::PathBuf, bool)> {
+    let path = root.join(PROJECT_CONFIG_PATH);
+    if path.exists() && !force {
+        bail!(
+            "{} already exists; pass --force to overwrite it",
+            path.display()
+        );
+    }
+
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)
+            .with_context(|| format!("failed to create {}", parent.display()))?;
+    }
+    let overwritten = path.exists();
+    fs::write(&path, SAMPLE_PROJECT_CONFIG)
+        .with_context(|| format!("failed to write {}", path.display()))?;
+    Ok((path, overwritten))
 }

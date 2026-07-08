@@ -19,6 +19,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - Impact analysis scoring and risk-level rules are now documented and covered by stable fixture assertions.
 - `impact-analysis` now returns `suggested_checks` with inferred validation commands and review checkpoints.
 - `impact-analysis` now prefers configured suggested check commands from `.codeinsight/config.toml` before falling back to built-in command inference.
+- `init-config` CLI command for creating a sample `.codeinsight/config.toml` project configuration.
 
 ## [0.1.5] - 2026-07-07
 

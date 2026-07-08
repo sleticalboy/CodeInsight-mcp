@@ -9,13 +9,15 @@ use anyhow::{Context, Result, bail};
 use sha2::{Digest, Sha256};
 
 use crate::{
-    config::{ConfiguredSuggestedCheck, load_project_config, project_config_path},
+    config::{
+        ConfiguredSuggestedCheck, init_project_config, load_project_config, project_config_path,
+    },
     embedding, index,
     language::detect_language,
     model::{
-        CallEdge, ContextFile, ContextPack, ContextRange, ContextSemanticStatus, Dependency,
-        DependencyGraph, EmbeddingProviderStatus, ImpactAnalysisReport, ImpactCounts, ImpactFile,
-        ImpactPath, IndexError, Language, OllamaEmbeddingStatus, OpenAiEmbeddingStatus,
+        CallEdge, ConfigInitReport, ContextFile, ContextPack, ContextRange, ContextSemanticStatus,
+        Dependency, DependencyGraph, EmbeddingProviderStatus, ImpactAnalysisReport, ImpactCounts,
+        ImpactFile, ImpactPath, IndexError, Language, OllamaEmbeddingStatus, OpenAiEmbeddingStatus,
         ProjectIndexReport, ProjectOverview, ReferenceMatch, SemanticChunk, SemanticChunkInput,
         SemanticEmbeddingInput, SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus,
         SemanticSearchResult, SuggestedCheck, Symbol, SymbolKind, VersionInfo,
@@ -59,6 +61,11 @@ const IMPACT_RISK_MEDIUM_DEPTH: usize = 2;
 
 pub fn index_project(root: PathBuf, force: bool) -> Result<()> {
     let report = index_project_value(root, force)?;
+    print_json(&report)
+}
+
+pub fn init_config(root: PathBuf, force: bool) -> Result<()> {
+    let report = init_config_value(root, force)?;
     print_json(&report)
 }
 
@@ -156,6 +163,17 @@ pub fn version_value() -> VersionInfo {
 
 pub fn index_project_value(root: PathBuf, force: bool) -> Result<ProjectIndexReport> {
     index::index_project(&root, force)
+}
+
+pub fn init_config_value(root: PathBuf, force: bool) -> Result<ConfigInitReport> {
+    let root = root.canonicalize()?;
+    let (path, overwritten) = init_project_config(&root, force)?;
+    Ok(ConfigInitReport {
+        root: root.display().to_string(),
+        path: path.display().to_string(),
+        created: !overwritten,
+        overwritten,
+    })
 }
 
 pub fn project_overview_value(root: PathBuf) -> Result<ProjectOverview> {

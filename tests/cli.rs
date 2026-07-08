@@ -1058,6 +1058,36 @@ fn cli_reports_version_information() {
 }
 
 #[test]
+fn cli_init_config_creates_sample_project_config() {
+    let fixture = TempDir::new().unwrap();
+
+    let created = run_json(["init-config", fixture.path().to_str().unwrap()]);
+    let config_path = fixture.path().join(".codeinsight/config.toml");
+
+    assert_eq!(created["created"], true);
+    assert_eq!(created["overwritten"], false);
+    assert_eq!(
+        created["path"].as_str().unwrap(),
+        config_path.canonicalize().unwrap().to_str().unwrap()
+    );
+    let contents = std::fs::read_to_string(&config_path).unwrap();
+    assert!(contents.contains("[impact_analysis]"));
+    assert!(contents.contains("test_commands = []"));
+    assert!(contents.contains("[[impact_analysis.suggested_checks]]"));
+
+    Command::cargo_bin("codeinsight")
+        .unwrap()
+        .args(["init-config", fixture.path().to_str().unwrap()])
+        .assert()
+        .failure()
+        .stderr(contains("already exists"));
+
+    let overwritten = run_json(["init-config", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(overwritten["created"], false);
+    assert_eq!(overwritten["overwritten"], true);
+}
+
+#[test]
 fn cli_indexes_checked_in_polyglot_fixture() {
     let fixture = copy_fixture("tests/fixtures/polyglot");
 

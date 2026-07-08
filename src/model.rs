@@ -209,6 +209,14 @@ pub struct VersionInfo {
     pub target_os: String,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct ConfigInitReport {
+    pub root: String,
+    pub path: String,
+    pub created: bool,
+    pub overwritten: bool,
+}
+
 #[derive(Debug, Clone)]
 pub struct SemanticChunkInput {
     pub file: String,

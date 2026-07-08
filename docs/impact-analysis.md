@@ -73,6 +73,15 @@ Higher levels win. For example, a report with 3 files can still be `high` if one
 
 Project configuration can override command checks. If `.codeinsight/config.toml` contains matching impact-analysis commands, those commands are emitted before review checks and built-in command inference is skipped. If no configured command matches, CodeInsight falls back to built-in command inference.
 
+Create a starter config:
+
+```bash
+codeinsight init-config /path/to/repo
+codeinsight init-config /path/to/repo --force
+```
+
+Without `--force`, `init-config` refuses to overwrite an existing config.
+
 Example:
 
 ```toml

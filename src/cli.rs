@@ -15,6 +15,8 @@ pub struct Cli {
 pub enum Command {
     /// Index a local repository.
     Index(IndexArgs),
+    /// Create a sample project configuration file.
+    InitConfig(InitConfigArgs),
     /// Print a project overview from the local index.
     Overview(ProjectArgs),
     /// Search symbols by name.
@@ -47,6 +49,13 @@ pub enum Command {
 
 #[derive(Debug, Args)]
 pub struct IndexArgs {
+    pub root: PathBuf,
+    #[arg(long)]
+    pub force: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct InitConfigArgs {
     pub root: PathBuf,
     #[arg(long)]
     pub force: bool,

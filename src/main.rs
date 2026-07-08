@@ -22,6 +22,7 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
     match cli.command {
         Command::Index(args) => tools::index_project(args.root, args.force)?,
+        Command::InitConfig(args) => tools::init_config(args.root, args.force)?,
         Command::Overview(args) => tools::project_overview(args.root)?,
         Command::Symbols(args) => tools::symbol_search(args.root, args.query, args.limit)?,
         Command::Outline(args) => tools::file_outline(args.path)?,
