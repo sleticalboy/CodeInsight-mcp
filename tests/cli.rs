@@ -1134,6 +1134,53 @@ languages = ["rust"]
 }
 
 #[test]
+fn cli_config_status_reports_parse_errors_without_hiding_impact_failure() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        "src/core.ts",
+        r#"
+export function leaf() {
+  return "ok";
+}
+"#,
+    );
+    write_file(&fixture, "Cargo.toml", "[package]\nname = \"demo\"\n");
+    write_file(&fixture, ".codeinsight/config.toml", "[impact_analysis\n");
+
+    let status = run_json(["config-status", fixture.path().to_str().unwrap()]);
+    assert_eq!(status["exists"], true);
+    assert_eq!(status["loaded"], false);
+    assert_eq!(status["commands_override_builtin"], false);
+    assert_eq!(
+        status["configured_test_commands"].as_array().unwrap().len(),
+        0
+    );
+    assert_eq!(status["configured_suggested_checks"].as_u64(), Some(0));
+    assert_eq!(status["detected_test_commands"][0], "cargo test --locked");
+    assert!(
+        status["parse_error"]
+            .as_str()
+            .is_some_and(|error| error.contains(".codeinsight/config.toml"))
+    );
+
+    run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    Command::cargo_bin("codeinsight")
+        .unwrap()
+        .env_remove("CODEINSIGHT_EMBEDDING_PROVIDER")
+        .args([
+            "impact-analysis",
+            fixture.path().to_str().unwrap(),
+            "--symbol",
+            "leaf",
+        ])
+        .assert()
+        .failure()
+        .stderr(contains("failed to parse"))
+        .stderr(contains(".codeinsight/config.toml"));
+}
+
+#[test]
 fn cli_indexes_checked_in_polyglot_fixture() {
     let fixture = copy_fixture("tests/fixtures/polyglot");
 

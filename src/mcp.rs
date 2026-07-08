@@ -832,6 +832,39 @@ def helper():
     }
 
     #[test]
+    fn config_status_reports_parse_errors_as_structured_content() {
+        let dir = TempDir::new().unwrap();
+        std::fs::create_dir_all(dir.path().join(".codeinsight")).unwrap();
+        std::fs::write(
+            dir.path().join(".codeinsight/config.toml"),
+            "[impact_analysis\n",
+        )
+        .unwrap();
+
+        let config_status_result = handle_tool_call(json!({
+            "name": "config_status",
+            "arguments": {
+                "root": dir.path()
+            }
+        }))
+        .unwrap();
+
+        assert_eq!(
+            config_status_result["structuredContent"]["exists"].as_bool(),
+            Some(true)
+        );
+        assert_eq!(
+            config_status_result["structuredContent"]["loaded"].as_bool(),
+            Some(false)
+        );
+        assert!(
+            config_status_result["structuredContent"]["parse_error"]
+                .as_str()
+                .is_some_and(|error| error.contains(".codeinsight/config.toml"))
+        );
+    }
+
+    #[test]
     fn rejects_missing_required_arguments() {
         let error = handle_tool_call(json!({
             "name": "symbol_search",

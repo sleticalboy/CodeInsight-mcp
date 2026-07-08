@@ -22,6 +22,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - `init-config` CLI command for creating a sample `.codeinsight/config.toml` project configuration.
 - `init-config` now pre-fills test commands from common repository metadata when possible.
 - `config-status` CLI command and MCP `config_status` tool for reporting project configuration visibility.
+- `config-status` now reports malformed project config files through `parse_error` while `impact-analysis` fails with clear parse context.
 
 ## [0.1.5] - 2026-07-07
 
