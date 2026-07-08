@@ -600,6 +600,12 @@ def helper():
                 .unwrap()
                 .is_empty()
         );
+        assert!(
+            !impact_result["structuredContent"]["suggested_checks"]
+                .as_array()
+                .unwrap()
+                .is_empty()
+        );
         assert_eq!(
             impact_result["structuredContent"]["seed_symbols"][0].as_str(),
             Some("helper")

@@ -20,9 +20,10 @@ The report includes:
 - `risk_level`: one of `low`, `medium`, or `high`.
 - `impact_counts`: counts from the full analysis before summary evidence truncation.
 - `top_reasons`: up to 8 globally high-signal reasons, ranked by impacted file score.
+- `suggested_checks`: command or review checks inferred from impacted languages, repository metadata, risk, paths, and errors.
 - evidence arrays: `symbols`, `references`, `callers`, `callees`, `dependencies`, and `errors`.
 
-`format=summary` keeps `impacted_files`, `paths`, `risk_level`, `impact_counts`, and `top_reasons` intact, while truncating evidence arrays to `evidence_limit`. `format=full` returns full evidence arrays up to `limit`.
+`format=summary` keeps `impacted_files`, `paths`, `risk_level`, `impact_counts`, `top_reasons`, and `suggested_checks` intact, while truncating evidence arrays to `evidence_limit`. `format=full` returns full evidence arrays up to `limit`.
 
 ## Score Weights
 
@@ -61,9 +62,38 @@ Scores are stable enough for client ranking and compact summaries, but the exact
 
 Higher levels win. For example, a report with 3 files can still be `high` if one file accumulates a score of 300 or a path reaches depth 3.
 
+## Suggested Checks
+
+`suggested_checks` is a compact list for review UIs and AI agents. Entries use:
+
+- `kind`: `command` or `review`.
+- `command`: present for runnable command candidates.
+- `file`: present for file-specific review checks.
+- `reason`: why the check was suggested.
+
+Command checks are emitted only when impacted file languages match repository metadata:
+
+| Impacted language | Repository signal | Suggested command |
+| --- | --- | --- |
+| Rust | `Cargo.toml` | `cargo test --locked` |
+| JavaScript / TypeScript / TSX | `pnpm-lock.yaml` | `pnpm test` |
+| JavaScript / TypeScript / TSX | `yarn.lock` | `yarn test` |
+| JavaScript / TypeScript / TSX | `package-lock.json` or `package.json` | `npm test` |
+| Python | `pyproject.toml`, `pytest.ini`, `setup.cfg`, `setup.py`, `tox.ini`, or `requirements.txt` | `pytest` |
+| Go | `go.mod` | `go test ./...` |
+| Java | `pom.xml` | `mvn test` |
+| Java | `gradlew` | `./gradlew --no-daemon test` |
+| Java | `build.gradle` or `build.gradle.kts` | `gradle test` |
+| C# | root-level `.csproj` | `dotnet test` |
+| Ruby | `Gemfile` | `bundle exec rspec` |
+| PHP | `composer.json` | `composer test` |
+
+Review checks are emitted for medium/high risk, multi-hop propagation paths, analysis errors, and the highest-ranked impacted file.
+
 ## Current Limits
 
 - Calls are derived from static syntax extraction and name matching.
 - Text references can include non-semantic matches.
 - Dependency paths depend on locally resolved imports only.
 - `limit` can cap `impacted_files`, `paths`, and full evidence arrays, so very large repositories should use a generous limit for review planning.
+- Suggested commands are candidates, not guaranteed project scripts. Clients should let users edit or confirm them before execution.

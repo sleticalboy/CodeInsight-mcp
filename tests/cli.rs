@@ -1175,6 +1175,7 @@ export function route() {
 }
 "#,
     );
+    write_file(&fixture, "pnpm-lock.yaml", "lockfileVersion: '9.0'\n");
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
     assert_eq!(index["indexed_files"], 3);
@@ -1223,6 +1224,17 @@ export function route() {
             .as_str()
             .is_some_and(|value| value == "symbol_definition:leaf")
     }));
+    let suggested_checks = impact["suggested_checks"].as_array().unwrap();
+    assert!(
+        suggested_checks
+            .iter()
+            .any(|check| { check["kind"] == "command" && check["command"] == "pnpm test" })
+    );
+    assert!(
+        suggested_checks
+            .iter()
+            .any(|check| { check["kind"] == "review" && check["file"] == "src/core.ts" })
+    );
     assert!(
         impact["impacted_files"]
             .as_array()

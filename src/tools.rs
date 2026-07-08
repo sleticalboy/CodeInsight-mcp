@@ -10,13 +10,14 @@ use sha2::{Digest, Sha256};
 
 use crate::{
     embedding, index,
+    language::detect_language,
     model::{
         CallEdge, ContextFile, ContextPack, ContextRange, ContextSemanticStatus, Dependency,
         DependencyGraph, EmbeddingProviderStatus, ImpactAnalysisReport, ImpactCounts, ImpactFile,
-        ImpactPath, IndexError, OllamaEmbeddingStatus, OpenAiEmbeddingStatus, ProjectIndexReport,
-        ProjectOverview, ReferenceMatch, SemanticChunk, SemanticChunkInput, SemanticEmbeddingInput,
-        SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus, SemanticSearchResult,
-        Symbol, SymbolKind, VersionInfo,
+        ImpactPath, IndexError, Language, OllamaEmbeddingStatus, OpenAiEmbeddingStatus,
+        ProjectIndexReport, ProjectOverview, ReferenceMatch, SemanticChunk, SemanticChunkInput,
+        SemanticEmbeddingInput, SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus,
+        SemanticSearchResult, SuggestedCheck, Symbol, SymbolKind, VersionInfo,
     },
     storage::Store,
 };
@@ -390,6 +391,8 @@ pub fn impact_analysis_value(
         errors: errors.len(),
     };
     let top_reasons = impact_top_reasons(&impacted_files, 8);
+    let suggested_checks =
+        impact_suggested_checks(&root, &risk_level, &impacted_files, &paths, &errors);
 
     if format == "summary" {
         symbols.truncate(evidence_limit);
@@ -405,6 +408,7 @@ pub fn impact_analysis_value(
         risk_level,
         impact_counts,
         top_reasons,
+        suggested_checks,
         depth,
         format,
         evidence_limit,
@@ -1290,6 +1294,219 @@ fn impact_top_reasons(impacted_files: &[ImpactFile], limit: usize) -> Vec<String
         .take(limit)
         .map(|(reason, _score)| reason)
         .collect()
+}
+
+fn impact_suggested_checks(
+    root: &Path,
+    risk_level: &str,
+    impacted_files: &[ImpactFile],
+    paths: &[ImpactPath],
+    errors: &[IndexError],
+) -> Vec<SuggestedCheck> {
+    let languages = impacted_files
+        .iter()
+        .filter_map(|file| detect_language(Path::new(&file.file)))
+        .map(Language::as_str)
+        .collect::<BTreeSet<_>>();
+    let mut checks = Vec::new();
+    let mut seen_commands = BTreeSet::new();
+
+    if languages.contains("rust") && root.join("Cargo.toml").exists() {
+        push_command_check(
+            &mut checks,
+            &mut seen_commands,
+            "cargo test --locked",
+            "Rust files are impacted and Cargo.toml is present.",
+        );
+    }
+
+    if languages
+        .iter()
+        .any(|language| matches!(*language, "javascript" | "typescript" | "tsx"))
+    {
+        if root.join("pnpm-lock.yaml").exists() {
+            push_command_check(
+                &mut checks,
+                &mut seen_commands,
+                "pnpm test",
+                "JavaScript or TypeScript files are impacted and pnpm-lock.yaml is present.",
+            );
+        } else if root.join("yarn.lock").exists() {
+            push_command_check(
+                &mut checks,
+                &mut seen_commands,
+                "yarn test",
+                "JavaScript or TypeScript files are impacted and yarn.lock is present.",
+            );
+        } else if root.join("package-lock.json").exists() || root.join("package.json").exists() {
+            push_command_check(
+                &mut checks,
+                &mut seen_commands,
+                "npm test",
+                "JavaScript or TypeScript files are impacted and package metadata is present.",
+            );
+        }
+    }
+
+    if languages.contains("python")
+        && any_root_file_exists(
+            root,
+            &[
+                "pyproject.toml",
+                "pytest.ini",
+                "setup.cfg",
+                "setup.py",
+                "tox.ini",
+                "requirements.txt",
+            ],
+        )
+    {
+        push_command_check(
+            &mut checks,
+            &mut seen_commands,
+            "pytest",
+            "Python files are impacted and Python test metadata is present.",
+        );
+    }
+
+    if languages.contains("go") && root.join("go.mod").exists() {
+        push_command_check(
+            &mut checks,
+            &mut seen_commands,
+            "go test ./...",
+            "Go files are impacted and go.mod is present.",
+        );
+    }
+
+    if languages.contains("java") {
+        if root.join("pom.xml").exists() {
+            push_command_check(
+                &mut checks,
+                &mut seen_commands,
+                "mvn test",
+                "Java files are impacted and pom.xml is present.",
+            );
+        } else if root.join("gradlew").exists() {
+            push_command_check(
+                &mut checks,
+                &mut seen_commands,
+                "./gradlew --no-daemon test",
+                "Java files are impacted and a Gradle wrapper is present.",
+            );
+        } else if root.join("build.gradle").exists() || root.join("build.gradle.kts").exists() {
+            push_command_check(
+                &mut checks,
+                &mut seen_commands,
+                "gradle test",
+                "Java files are impacted and Gradle metadata is present.",
+            );
+        }
+    }
+
+    if languages.contains("csharp") && has_root_child_extension(root, "csproj") {
+        push_command_check(
+            &mut checks,
+            &mut seen_commands,
+            "dotnet test",
+            "C# files are impacted and a .csproj file is present.",
+        );
+    }
+
+    if languages.contains("ruby") && root.join("Gemfile").exists() {
+        push_command_check(
+            &mut checks,
+            &mut seen_commands,
+            "bundle exec rspec",
+            "Ruby files are impacted and Gemfile is present.",
+        );
+    }
+
+    if languages.contains("php") && root.join("composer.json").exists() {
+        push_command_check(
+            &mut checks,
+            &mut seen_commands,
+            "composer test",
+            "PHP files are impacted and composer.json is present.",
+        );
+    }
+
+    if matches!(risk_level, "medium" | "high") {
+        checks.push(SuggestedCheck {
+            kind: "review".to_string(),
+            command: None,
+            file: None,
+            reason: format!(
+                "Risk level is {risk_level}; review the ranked impacted files before changing behavior."
+            ),
+        });
+    }
+
+    if !paths.is_empty() {
+        checks.push(SuggestedCheck {
+            kind: "review".to_string(),
+            command: None,
+            file: None,
+            reason: "Review multi-hop call and dependency paths because the change may propagate beyond direct references.".to_string(),
+        });
+    }
+
+    if !errors.is_empty() {
+        checks.push(SuggestedCheck {
+            kind: "review".to_string(),
+            command: None,
+            file: None,
+            reason: "Resolve impact analysis seed or index errors before trusting the report."
+                .to_string(),
+        });
+    }
+
+    if let Some(top_file) = impacted_files.first() {
+        checks.push(SuggestedCheck {
+            kind: "review".to_string(),
+            command: None,
+            file: Some(top_file.file.clone()),
+            reason: format!(
+                "Review the highest-ranked impacted file with score {} and its evidence reasons.",
+                top_file.score
+            ),
+        });
+    }
+
+    checks.truncate(8);
+    checks
+}
+
+fn push_command_check(
+    checks: &mut Vec<SuggestedCheck>,
+    seen_commands: &mut BTreeSet<String>,
+    command: &str,
+    reason: &str,
+) {
+    if seen_commands.insert(command.to_string()) {
+        checks.push(SuggestedCheck {
+            kind: "command".to_string(),
+            command: Some(command.to_string()),
+            file: None,
+            reason: reason.to_string(),
+        });
+    }
+}
+
+fn any_root_file_exists(root: &Path, files: &[&str]) -> bool {
+    files.iter().any(|file| root.join(file).exists())
+}
+
+fn has_root_child_extension(root: &Path, extension: &str) -> bool {
+    let Ok(entries) = fs::read_dir(root) else {
+        return false;
+    };
+    entries.filter_map(Result::ok).any(|entry| {
+        entry
+            .path()
+            .extension()
+            .and_then(|value| value.to_str())
+            .is_some_and(|value| value == extension)
+    })
 }
 
 fn impact_call_paths(

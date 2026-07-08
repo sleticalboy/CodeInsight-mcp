@@ -324,6 +324,16 @@ pub struct ImpactCounts {
     pub errors: usize,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct SuggestedCheck {
+    pub kind: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub command: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub file: Option<String>,
+    pub reason: String,
+}
+
 #[derive(Debug, Serialize)]
 pub struct ImpactAnalysisReport {
     pub root: String,
@@ -331,6 +341,7 @@ pub struct ImpactAnalysisReport {
     pub risk_level: String,
     pub impact_counts: ImpactCounts,
     pub top_reasons: Vec<String>,
+    pub suggested_checks: Vec<SuggestedCheck>,
     pub depth: usize,
     pub format: String,
     pub evidence_limit: usize,
