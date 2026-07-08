@@ -83,6 +83,10 @@ fn handle_tool_call(params: Value) -> Result<Value> {
             let force = optional_bool(&arguments, "force", false)?;
             serde_json::to_value(tools::index_project_value(root, force)?)?
         }
+        "config_status" => {
+            let root = required_path(&arguments, "root")?;
+            serde_json::to_value(tools::config_status_value(root)?)?
+        }
         "project_overview" => {
             let root = required_path(&arguments, "root")?;
             serde_json::to_value(tools::project_overview_value(root)?)?
@@ -199,6 +203,17 @@ fn tool_definitions() -> Value {
                 "properties": {
                     "root": {"type": "string"},
                     "force": {"type": "boolean"}
+                },
+                "required": ["root"]
+            }
+        },
+        {
+            "name": "config_status",
+            "description": "Return project configuration status, configured impact-analysis checks, and detected test commands.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "root": {"type": "string"}
                 },
                 "required": ["root"]
             }
@@ -532,6 +547,22 @@ def helper():
         assert_eq!(
             index_result["structuredContent"]["indexed_files"].as_u64(),
             Some(1)
+        );
+
+        let config_status_result = handle_tool_call(json!({
+            "name": "config_status",
+            "arguments": {
+                "root": dir.path()
+            }
+        }))
+        .unwrap();
+        assert_eq!(
+            config_status_result["structuredContent"]["exists"].as_bool(),
+            Some(false)
+        );
+        assert_eq!(
+            config_status_result["structuredContent"]["loaded"].as_bool(),
+            Some(false)
         );
 
         let search_result = handle_tool_call(json!({

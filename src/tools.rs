@@ -16,12 +16,13 @@ use crate::{
     embedding, index,
     language::detect_language,
     model::{
-        CallEdge, ConfigInitReport, ContextFile, ContextPack, ContextRange, ContextSemanticStatus,
-        Dependency, DependencyGraph, EmbeddingProviderStatus, ImpactAnalysisReport, ImpactCounts,
-        ImpactFile, ImpactPath, IndexError, Language, OllamaEmbeddingStatus, OpenAiEmbeddingStatus,
-        ProjectIndexReport, ProjectOverview, ReferenceMatch, SemanticChunk, SemanticChunkInput,
-        SemanticEmbeddingInput, SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus,
-        SemanticSearchResult, SuggestedCheck, Symbol, SymbolKind, VersionInfo,
+        CallEdge, ConfigInitReport, ConfigStatusReport, ContextFile, ContextPack, ContextRange,
+        ContextSemanticStatus, Dependency, DependencyGraph, EmbeddingProviderStatus,
+        ImpactAnalysisReport, ImpactCounts, ImpactFile, ImpactPath, IndexError, Language,
+        OllamaEmbeddingStatus, OpenAiEmbeddingStatus, ProjectIndexReport, ProjectOverview,
+        ReferenceMatch, SemanticChunk, SemanticChunkInput, SemanticEmbeddingInput,
+        SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus, SemanticSearchResult,
+        SuggestedCheck, Symbol, SymbolKind, VersionInfo,
     },
     storage::Store,
 };
@@ -67,6 +68,11 @@ pub fn index_project(root: PathBuf, force: bool) -> Result<()> {
 
 pub fn init_config(root: PathBuf, force: bool) -> Result<()> {
     let report = init_config_value(root, force)?;
+    print_json(&report)
+}
+
+pub fn config_status(root: PathBuf) -> Result<()> {
+    let report = config_status_value(root)?;
     print_json(&report)
 }
 
@@ -174,6 +180,42 @@ pub fn init_config_value(root: PathBuf, force: bool) -> Result<ConfigInitReport>
         path: path.display().to_string(),
         created: !overwritten,
         overwritten,
+    })
+}
+
+pub fn config_status_value(root: PathBuf) -> Result<ConfigStatusReport> {
+    let root = root.canonicalize()?;
+    let path = root.join(project_config_path());
+    let exists = path.exists();
+    let detected_test_commands = suggested_test_commands_for_root(&root);
+
+    let (loaded, parse_error, configured_test_commands, configured_suggested_checks) = if exists {
+        match load_project_config(&root) {
+            Ok(Some(config)) => (
+                true,
+                None,
+                config.impact_analysis.test_commands,
+                config.impact_analysis.suggested_checks.len(),
+            ),
+            Ok(None) => (false, None, Vec::new(), 0),
+            Err(error) => (false, Some(error.to_string()), Vec::new(), 0),
+        }
+    } else {
+        (false, None, Vec::new(), 0)
+    };
+    let commands_override_builtin =
+        loaded && (!configured_test_commands.is_empty() || configured_suggested_checks > 0);
+
+    Ok(ConfigStatusReport {
+        root: root.display().to_string(),
+        path: path.display().to_string(),
+        exists,
+        loaded,
+        parse_error,
+        configured_test_commands,
+        configured_suggested_checks,
+        detected_test_commands,
+        commands_override_builtin,
     })
 }
 

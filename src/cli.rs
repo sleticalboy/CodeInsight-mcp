@@ -17,6 +17,8 @@ pub enum Command {
     Index(IndexArgs),
     /// Create a sample project configuration file.
     InitConfig(InitConfigArgs),
+    /// Print project configuration status.
+    ConfigStatus(ProjectArgs),
     /// Print a project overview from the local index.
     Overview(ProjectArgs),
     /// Search symbols by name.

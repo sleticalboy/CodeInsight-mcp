@@ -78,9 +78,10 @@ Create a starter config:
 ```bash
 codeinsight init-config /path/to/repo
 codeinsight init-config /path/to/repo --force
+codeinsight config-status /path/to/repo
 ```
 
-`init-config` pre-fills `test_commands` from common repository metadata such as `Cargo.toml`, `pnpm-lock.yaml`, `pyproject.toml`, and `go.mod`. If no known metadata is found, it writes an empty command list plus commented examples. Without `--force`, `init-config` refuses to overwrite an existing config.
+`init-config` pre-fills `test_commands` from common repository metadata such as `Cargo.toml`, `pnpm-lock.yaml`, `pyproject.toml`, and `go.mod`. If no known metadata is found, it writes an empty command list plus commented examples. Without `--force`, `init-config` refuses to overwrite an existing config. `config-status` and MCP `config_status` report whether the config exists, loaded successfully, and will override built-in command inference.
 
 Example:
 

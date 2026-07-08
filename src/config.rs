@@ -1,7 +1,7 @@
 use std::{fs, path::Path};
 
 use anyhow::{Context, Result, bail};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 const PROJECT_CONFIG_PATH: &str = ".codeinsight/config.toml";
 const SAMPLE_PROJECT_CONFIG_TEMPLATE: &str = r#"# CodeInsight project configuration.
@@ -23,20 +23,20 @@ test_commands = {test_commands}
 # files = ["src/core"]
 "#;
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct ProjectConfig {
     pub impact_analysis: ImpactAnalysisConfig,
 }
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct ImpactAnalysisConfig {
     pub test_commands: Vec<String>,
     pub suggested_checks: Vec<ConfiguredSuggestedCheck>,
 }
 
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct ConfiguredSuggestedCheck {
     pub command: String,

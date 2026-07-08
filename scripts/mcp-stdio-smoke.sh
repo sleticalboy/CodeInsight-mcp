@@ -107,8 +107,22 @@ try:
 
     tools = request({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
     tool_names = {tool["name"] for tool in tools["result"]["tools"]}
-    for expected in ("index_project", "symbol_search", "impact_analysis", "embedding_status", "context_pack", "version"):
+    for expected in ("index_project", "config_status", "symbol_search", "impact_analysis", "embedding_status", "context_pack", "version"):
         assert expected in tool_names, expected
+
+    config_status = request(
+        {
+            "jsonrpc": "2.0",
+            "id": 9,
+            "method": "tools/call",
+            "params": {
+                "name": "config_status",
+                "arguments": {"root": smoke_root},
+            },
+        }
+    )
+    assert config_status["result"]["structuredContent"]["exists"] is False
+    assert "detected_test_commands" in config_status["result"]["structuredContent"]
 
     indexed = request(
         {

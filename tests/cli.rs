@@ -1101,6 +1101,39 @@ fn cli_init_config_prefills_detected_test_commands() {
 }
 
 #[test]
+fn cli_config_status_reports_loaded_and_detected_commands() {
+    let fixture = TempDir::new().unwrap();
+    write_file(&fixture, "Cargo.toml", "[package]\nname = \"demo\"\n");
+
+    let missing = run_json(["config-status", fixture.path().to_str().unwrap()]);
+    assert_eq!(missing["exists"], false);
+    assert_eq!(missing["loaded"], false);
+    assert_eq!(missing["commands_override_builtin"], false);
+    assert_eq!(missing["detected_test_commands"][0], "cargo test --locked");
+
+    write_file(
+        &fixture,
+        ".codeinsight/config.toml",
+        r#"
+[impact_analysis]
+test_commands = ["cargo test -p core"]
+
+[[impact_analysis.suggested_checks]]
+command = "cargo test -p core integration"
+languages = ["rust"]
+"#,
+    );
+
+    let loaded = run_json(["config-status", fixture.path().to_str().unwrap()]);
+    assert_eq!(loaded["exists"], true);
+    assert_eq!(loaded["loaded"], true);
+    assert_eq!(loaded["configured_test_commands"][0], "cargo test -p core");
+    assert_eq!(loaded["configured_suggested_checks"].as_u64(), Some(1));
+    assert_eq!(loaded["commands_override_builtin"], true);
+    assert!(loaded.get("parse_error").is_none());
+}
+
+#[test]
 fn cli_indexes_checked_in_polyglot_fixture() {
     let fixture = copy_fixture("tests/fixtures/polyglot");
 

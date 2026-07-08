@@ -217,6 +217,20 @@ pub struct ConfigInitReport {
     pub overwritten: bool,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct ConfigStatusReport {
+    pub root: String,
+    pub path: String,
+    pub exists: bool,
+    pub loaded: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parse_error: Option<String>,
+    pub configured_test_commands: Vec<String>,
+    pub configured_suggested_checks: usize,
+    pub detected_test_commands: Vec<String>,
+    pub commands_override_builtin: bool,
+}
+
 #[derive(Debug, Clone)]
 pub struct SemanticChunkInput {
     pub file: String,

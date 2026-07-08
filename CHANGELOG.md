@@ -21,6 +21,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - `impact-analysis` now prefers configured suggested check commands from `.codeinsight/config.toml` before falling back to built-in command inference.
 - `init-config` CLI command for creating a sample `.codeinsight/config.toml` project configuration.
 - `init-config` now pre-fills test commands from common repository metadata when possible.
+- `config-status` CLI command and MCP `config_status` tool for reporting project configuration visibility.
 
 ## [0.1.5] - 2026-07-07
 
