@@ -51,6 +51,11 @@ sequence:
 7. `tools/call` for explicit-seed `context_pack`
 8. `tools/call` for auto-entrypoint `context_pack`
 
+It also asserts the MCP-facing structured fields that clients commonly render:
+
+- `project_overview.recommended_next_tools`
+- explicit and auto `context_pack.reading_plan`
+
 Use a real repository instead of the generated fixture:
 
 ```bash
@@ -80,10 +85,13 @@ symbol: AuthService
 tools: 15
 indexed_files: 3
 overview_entrypoints: 1
+overview_recommendations: 4
 auto_seed_strategy: auto_entrypoint
+auto_reading_plan_steps: 2
 ```
 
-`indexed_files` and `overview_entrypoints` vary with the tested repository.
+`indexed_files`, `overview_entrypoints`, `overview_recommendations`, and
+`auto_reading_plan_steps` vary with the tested repository.
 
 ## Troubleshooting
 

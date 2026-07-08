@@ -105,6 +105,10 @@ def request(payload):
     return response
 
 
+def same_root(path):
+    return os.path.samefile(path, smoke_root)
+
+
 try:
     initialize = request({"jsonrpc": "2.0", "id": 1, "method": "initialize"})
     assert initialize["result"]["serverInfo"]["name"] == "codeinsight"
@@ -163,6 +167,24 @@ try:
         and entrypoint["role"] == "source"
         for entrypoint in overview_result["entrypoints"]
     ), "source entrypoint not found"
+    recommended_tools = overview_result["recommended_next_tools"]
+    assert any(
+        tool["tool"] == "context_pack"
+        and same_root(tool["suggested_arguments"]["root"])
+        and tool["suggested_arguments"]["token_budget"] == 6000
+        for tool in recommended_tools
+    ), "context_pack recommendation not found"
+    assert any(
+        tool["tool"] == "impact_analysis"
+        and tool["suggested_arguments"]["files"] == ["src/main.ts"]
+        and tool["suggested_arguments"]["symbols"] == ["main"]
+        for tool in recommended_tools
+    ), "impact_analysis recommendation not found"
+    assert any(
+        tool["tool"] == "config_status"
+        and same_root(tool["suggested_arguments"]["root"])
+        for tool in recommended_tools
+    ), "config_status recommendation not found"
 
     symbols = request(
         {
@@ -266,6 +288,12 @@ try:
         and seed["source"] == "explicit"
         for seed in context["result"]["structuredContent"]["selected_seeds"]
     ), "explicit context seed not found"
+    explicit_reading_plan = context["result"]["structuredContent"]["reading_plan"]
+    assert explicit_reading_plan, "explicit context reading_plan missing"
+    assert explicit_reading_plan[0]["order"] == 1
+    assert explicit_reading_plan[0]["file"] == context["result"]["structuredContent"]["files"][0]["file"]
+    assert explicit_reading_plan[0]["ranges"], "explicit context reading_plan ranges missing"
+    assert explicit_reading_plan[0]["ranges"][0]["start_line"] >= 1
 
     auto_context = request(
         {
@@ -295,6 +323,12 @@ try:
         item["file"] == "src/main.ts"
         for item in auto_context_result["files"]
     ), "auto context entrypoint file not selected"
+    assert auto_context_result["reading_plan"], "auto context reading_plan missing"
+    assert auto_context_result["reading_plan"][0]["order"] == 1
+    assert auto_context_result["reading_plan"][0]["file"] == auto_context_result["files"][0]["file"]
+    assert auto_context_result["reading_plan"][0]["focus"]
+    assert auto_context_result["reading_plan"][0]["ranges"], "auto context reading_plan ranges missing"
+    assert auto_context_result["reading_plan"][0]["ranges"][0]["start_line"] >= 1
 
     print("MCP stdio smoke passed")
     print(f"root: {smoke_root}")
@@ -302,7 +336,9 @@ try:
     print(f"tools: {len(tool_names)}")
     print(f"indexed_files: {index_result['indexed_files']}")
     print(f"overview_entrypoints: {len(overview_result['entrypoints'])}")
+    print(f"overview_recommendations: {len(recommended_tools)}")
     print(f"auto_seed_strategy: {auto_context_result['seed_strategy']}")
+    print(f"auto_reading_plan_steps: {len(auto_context_result['reading_plan'])}")
 finally:
     proc.terminate()
     try:
