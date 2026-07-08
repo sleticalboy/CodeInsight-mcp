@@ -496,43 +496,50 @@ pub fn find_references_value(
     let root = root.canonicalize()?;
     let store = Store::open(&root)?;
     let files = store.indexed_files()?;
-    let mut matches = Vec::new();
+    let mut candidates = Vec::new();
 
     for relative_path in files {
-        if matches.len() >= limit {
-            break;
-        }
-
         let path = root.join(&relative_path);
         let Ok(source) = fs::read_to_string(path) else {
             continue;
         };
 
+        let mut scanner = ReferenceLineScanner::default();
         for (line_index, line) in source.lines().enumerate() {
-            if matches.len() >= limit {
-                break;
-            }
+            let code_mask = scanner.code_mask(line);
             if !include_definitions && looks_like_definition(line, symbol) {
                 continue;
             }
 
             for column in symbol_columns(line, symbol) {
-                matches.push(ReferenceMatch {
-                    file: relative_path.clone(),
-                    line: line_index + 1,
-                    column: column + 1,
-                    context: line.trim().to_string(),
-                    reference_kind: classify_reference(line, symbol).to_string(),
-                    confidence: confidence_for_line(line, symbol),
-                });
-                if matches.len() >= limit {
-                    break;
+                if !is_code_reference_column(&code_mask, column, symbol.len()) {
+                    continue;
                 }
+
+                let reference_kind = classify_reference(line, symbol).to_string();
+                let confidence =
+                    confidence_for_reference(line, symbol, &relative_path, &reference_kind);
+                candidates.push(ReferenceCandidate {
+                    score: reference_candidate_score(&relative_path, &reference_kind, confidence),
+                    reference: ReferenceMatch {
+                        file: relative_path.clone(),
+                        line: line_index + 1,
+                        column: column + 1,
+                        context: line.trim().to_string(),
+                        reference_kind,
+                        confidence,
+                    },
+                });
             }
         }
     }
 
-    Ok(matches)
+    candidates.sort_by(compare_reference_candidates);
+    candidates.truncate(limit.max(1));
+    Ok(candidates
+        .into_iter()
+        .map(|candidate| candidate.reference)
+        .collect())
 }
 
 pub fn semantic_search_value(
@@ -1811,6 +1818,12 @@ fn dedup_calls(calls: &mut Vec<CallEdge>) {
     });
 }
 
+#[derive(Debug)]
+struct ReferenceCandidate {
+    reference: ReferenceMatch,
+    score: i32,
+}
+
 #[derive(Debug, Clone)]
 struct ContextCandidateRange {
     start_line: usize,
@@ -2415,6 +2428,89 @@ fn is_identifier_char(ch: char) -> bool {
     ch == '_' || ch.is_ascii_alphanumeric()
 }
 
+#[derive(Debug, Default)]
+struct ReferenceLineScanner {
+    in_block_comment: bool,
+}
+
+impl ReferenceLineScanner {
+    fn code_mask(&mut self, line: &str) -> Vec<bool> {
+        let bytes = line.as_bytes();
+        let mut mask = vec![false; bytes.len()];
+        let mut index = 0;
+        let mut quote: Option<u8> = None;
+        let mut escaped = false;
+
+        while index < bytes.len() {
+            let byte = bytes[index];
+            let next = bytes.get(index + 1).copied();
+
+            if self.in_block_comment {
+                if byte == b'*' && next == Some(b'/') {
+                    self.in_block_comment = false;
+                    index += 2;
+                } else {
+                    index += 1;
+                }
+                continue;
+            }
+
+            if let Some(active_quote) = quote {
+                if escaped {
+                    escaped = false;
+                } else if byte == b'\\' {
+                    escaped = true;
+                } else if byte == active_quote {
+                    quote = None;
+                }
+                index += 1;
+                continue;
+            }
+
+            if byte == b'/' && next == Some(b'*') {
+                self.in_block_comment = true;
+                index += 2;
+                continue;
+            }
+            if byte == b'/' && next == Some(b'/') {
+                break;
+            }
+            if byte == b'#' && !is_code_hash_line(line) {
+                break;
+            }
+            if matches!(byte, b'\'' | b'"' | b'`') {
+                quote = Some(byte);
+                escaped = false;
+                index += 1;
+                continue;
+            }
+
+            mask[index] = true;
+            index += 1;
+        }
+
+        mask
+    }
+}
+
+fn is_code_hash_line(line: &str) -> bool {
+    let trimmed = line.trim_start();
+    trimmed.starts_with("#define ")
+        || trimmed.starts_with("#include ")
+        || trimmed.starts_with("#[")
+        || trimmed.starts_with("#![")
+}
+
+fn is_code_reference_column(code_mask: &[bool], column: usize, symbol_len: usize) -> bool {
+    column < code_mask.len()
+        && column
+            .checked_add(symbol_len)
+            .is_some_and(|end| end <= code_mask.len())
+        && code_mask[column..column + symbol_len]
+            .iter()
+            .any(|is_code| *is_code)
+}
+
 fn looks_like_definition(line: &str, symbol: &str) -> bool {
     let trimmed = line.trim_start();
     let patterns = [
@@ -2428,6 +2524,7 @@ fn looks_like_definition(line: &str, symbol: &str) -> bool {
         format!("const {symbol}"),
         format!("let {symbol}"),
         format!("var {symbol}"),
+        format!("#define {symbol}"),
     ];
     patterns.iter().any(|pattern| trimmed.starts_with(pattern))
 }
@@ -2439,6 +2536,7 @@ fn classify_reference(line: &str, symbol: &str) -> &'static str {
     } else if trimmed.starts_with("import ")
         || trimmed.starts_with("from ")
         || trimmed.starts_with("use ")
+        || trimmed.starts_with("#include ")
         || trimmed.contains(" require(")
     {
         "import"
@@ -2456,6 +2554,68 @@ fn confidence_for_line(line: &str, symbol: &str) -> f64 {
         "definition" => 0.6,
         _ => 0.4,
     }
+}
+
+fn confidence_for_reference(line: &str, symbol: &str, file: &str, reference_kind: &str) -> f64 {
+    let base = match reference_kind {
+        "call" => 0.8,
+        "import" => 0.7,
+        "definition" => 0.6,
+        _ => confidence_for_line(line, symbol),
+    };
+    if is_low_value_reference_file(file) {
+        (base - 0.2_f64).max(0.1)
+    } else {
+        base
+    }
+}
+
+fn reference_candidate_score(file: &str, reference_kind: &str, confidence: f64) -> i32 {
+    let kind_score = match reference_kind {
+        "definition" => 90,
+        "call" => 80,
+        "import" => 70,
+        _ => 40,
+    };
+    let file_penalty = if is_low_value_reference_file(file) {
+        25
+    } else {
+        0
+    };
+    kind_score + (confidence * 100.0).round() as i32 - file_penalty
+}
+
+fn compare_reference_candidates(left: &ReferenceCandidate, right: &ReferenceCandidate) -> Ordering {
+    right
+        .score
+        .cmp(&left.score)
+        .then_with(|| left.reference.file.cmp(&right.reference.file))
+        .then_with(|| left.reference.line.cmp(&right.reference.line))
+        .then_with(|| left.reference.column.cmp(&right.reference.column))
+}
+
+fn is_low_value_reference_file(file: &str) -> bool {
+    let normalized = file.replace('\\', "/").to_ascii_lowercase();
+    normalized.contains("/test/")
+        || normalized.contains("/tests/")
+        || normalized.contains("/__tests__/")
+        || normalized.contains("/fixture/")
+        || normalized.contains("/fixtures/")
+        || normalized.ends_with("_test.go")
+        || normalized.ends_with("_test.py")
+        || normalized.ends_with("_test.rb")
+        || normalized.ends_with("_test.php")
+        || normalized.ends_with("_test.rs")
+        || normalized.ends_with("test.java")
+        || normalized.ends_with("test.cs")
+        || normalized.ends_with(".test.js")
+        || normalized.ends_with(".test.jsx")
+        || normalized.ends_with(".test.ts")
+        || normalized.ends_with(".test.tsx")
+        || normalized.ends_with(".spec.js")
+        || normalized.ends_with(".spec.jsx")
+        || normalized.ends_with(".spec.ts")
+        || normalized.ends_with(".spec.tsx")
 }
 
 fn print_json<T: serde::Serialize>(value: &T) -> Result<()> {

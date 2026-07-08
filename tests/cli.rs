@@ -1452,6 +1452,133 @@ files = ["src/core"]
 }
 
 #[test]
+fn cli_find_references_filters_comments_and_downranks_tests() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        "src/core.ts",
+        r#"
+export function leaf() {
+  return "ok";
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/route.ts",
+        r#"
+import { leaf } from "./core";
+
+// leaf should not be returned from comments.
+const note = "leaf should not be returned from strings";
+
+export function route() {
+  return leaf();
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/core.test.ts",
+        r#"
+import { leaf } from "./core";
+
+export function testLeaf() {
+  return leaf();
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/native.c",
+        r#"
+#define LEAF_MACRO 1
+
+int use_macro(void) {
+  return LEAF_MACRO;
+}
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 4);
+
+    let references = run_json([
+        "find-references",
+        fixture.path().to_str().unwrap(),
+        "leaf",
+        "--limit",
+        "10",
+    ]);
+    let references = references.as_array().unwrap();
+    assert!(
+        references
+            .iter()
+            .any(|reference| reference["file"] == "src/route.ts"
+                && reference["reference_kind"] == "call"
+                && reference["context"].as_str().unwrap().contains("leaf()"))
+    );
+    assert!(
+        references
+            .iter()
+            .any(|reference| reference["file"] == "src/core.test.ts")
+    );
+    assert!(
+        !references.iter().any(|reference| reference["context"]
+            .as_str()
+            .is_some_and(|context| context.contains("comments") || context.contains("strings"))),
+        "comment and string-only references should be filtered"
+    );
+
+    let production_call_index = references
+        .iter()
+        .position(|reference| {
+            reference["file"] == "src/route.ts"
+                && reference["reference_kind"] == "call"
+                && reference["context"].as_str().unwrap().contains("leaf()")
+        })
+        .unwrap();
+    let test_call_index = references
+        .iter()
+        .position(|reference| {
+            reference["file"] == "src/core.test.ts"
+                && reference["reference_kind"] == "call"
+                && reference["context"].as_str().unwrap().contains("leaf()")
+        })
+        .unwrap();
+    assert!(
+        production_call_index < test_call_index,
+        "production references should rank before test references"
+    );
+    assert!(
+        references[test_call_index]["confidence"].as_f64().unwrap()
+            < references[production_call_index]["confidence"]
+                .as_f64()
+                .unwrap()
+    );
+
+    let macro_references = run_json([
+        "find-references",
+        fixture.path().to_str().unwrap(),
+        "LEAF_MACRO",
+        "--include-definitions",
+        "--limit",
+        "10",
+    ]);
+    assert!(
+        macro_references
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|reference| {
+                reference["file"] == "src/native.c"
+                    && reference["reference_kind"] == "definition"
+                    && reference["context"].as_str().unwrap().contains("#define")
+            })
+    );
+}
+
+#[test]
 fn cli_semantic_search_requires_embedding_provider() {
     let fixture = fixture_project();
 

@@ -70,7 +70,9 @@ Limitations:
 Limitations:
 
 - It is not equivalent to an IDE "find references" feature.
-- It can return false positives from comments, tests, strings, and unrelated text.
+- It filters obvious comment-only and string-only matches, but multiline language edge cases can still produce false positives.
+- Test and fixture files are downranked with lower confidence, but they can still appear when they contain useful references or when few production references exist.
+- It can still return false positives from unrelated text-like code, generated code, or broad symbol names.
 - It can miss references through aliases, dynamic property access, reflection, macros, or generated code.
 - `reference_kind` is inferred from line text and should be treated as approximate.
 

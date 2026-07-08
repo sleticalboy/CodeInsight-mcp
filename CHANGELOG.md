@@ -6,6 +6,11 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ## [Unreleased]
 
+### Changed
+
+- `find_references` now filters obvious comment-only and string-only matches before ranking results.
+- `find_references` now downranks test and fixture files so production references are less likely to be hidden by low-value matches.
+
 ## [0.1.7] - 2026-07-08
 
 ### Changed
