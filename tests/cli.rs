@@ -1198,17 +1198,31 @@ export function route() {
     assert_eq!(impact["depth"].as_u64(), Some(2));
     assert_eq!(impact["format"], "summary");
     assert_eq!(impact["evidence_limit"].as_u64(), Some(1));
-    assert!(["low", "medium", "high"].contains(&impact["risk_level"].as_str().unwrap()));
+    assert_eq!(impact["risk_level"], "high");
     assert!(
         impact["impact_counts"]["paths"].as_u64().unwrap()
             >= impact["paths"].as_array().unwrap().len() as u64
     );
-    assert!(!impact["top_reasons"].as_array().unwrap().is_empty());
     assert!(impact["symbols"].as_array().unwrap().len() <= 1);
     assert!(impact["references"].as_array().unwrap().len() <= 1);
     assert!(impact["callers"].as_array().unwrap().len() <= 1);
     assert!(impact["callees"].as_array().unwrap().len() <= 1);
     assert!(impact["dependencies"].as_array().unwrap().len() <= 1);
+    assert!(
+        impact["impact_counts"]["references"].as_u64().unwrap()
+            > impact["references"].as_array().unwrap().len() as u64
+    );
+    assert!(
+        impact["impact_counts"]["callers"].as_u64().unwrap()
+            > impact["callers"].as_array().unwrap().len() as u64
+    );
+    let top_reasons = impact["top_reasons"].as_array().unwrap();
+    assert!(top_reasons.iter().any(|reason| reason == "seed_file"));
+    assert!(top_reasons.iter().any(|reason| {
+        reason
+            .as_str()
+            .is_some_and(|value| value == "symbol_definition:leaf")
+    }));
     assert!(
         impact["impacted_files"]
             .as_array()

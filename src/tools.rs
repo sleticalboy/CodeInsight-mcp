@@ -34,6 +34,27 @@ const CONTEXT_SCORE_SEED_SYMBOL_TASK_MATCH_BOOST: i32 = 5;
 const CONTEXT_MAX_SYMBOL_LINES: usize = 80;
 const CONTEXT_MAX_MERGED_RANGE_LINES: usize = 80;
 
+const IMPACT_SCORE_SEED_FILE: i32 = 100;
+const IMPACT_SCORE_SYMBOL_DEFINITION: i32 = 90;
+const IMPACT_SCORE_SEED_FILE_SYMBOL: i32 = 80;
+const IMPACT_SCORE_REFERENCE: i32 = 40;
+const IMPACT_SCORE_CALLER: i32 = 70;
+const IMPACT_SCORE_CALLEE_SOURCE: i32 = 45;
+const IMPACT_SCORE_CALLEE_TARGET: i32 = 65;
+const IMPACT_SCORE_DEPENDENCY_SOURCE: i32 = 55;
+const IMPACT_SCORE_DEPENDENCY_TARGET: i32 = 60;
+const IMPACT_SCORE_CALLER_DEPTH_BASE: i32 = 70;
+const IMPACT_SCORE_CALLER_DEPTH_DECAY: i32 = 15;
+const IMPACT_SCORE_DEPENDENCY_DEPTH_BASE: i32 = 60;
+const IMPACT_SCORE_DEPENDENCY_DEPTH_DECAY: i32 = 10;
+const IMPACT_SCORE_DEPTH_FLOOR: i32 = 20;
+const IMPACT_RISK_HIGH_FILE_COUNT: usize = 10;
+const IMPACT_RISK_HIGH_SCORE: i32 = 300;
+const IMPACT_RISK_HIGH_DEPTH: usize = 3;
+const IMPACT_RISK_MEDIUM_FILE_COUNT: usize = 4;
+const IMPACT_RISK_MEDIUM_SCORE: i32 = 160;
+const IMPACT_RISK_MEDIUM_DEPTH: usize = 2;
+
 pub fn index_project(root: PathBuf, force: bool) -> Result<()> {
     let report = index_project_value(root, force)?;
     print_json(&report)
@@ -206,7 +227,7 @@ pub fn impact_analysis_value(
 
     let mut impact = BTreeMap::<String, (i32, BTreeSet<String>)>::new();
     for file in &normalized_seed_files {
-        add_impact(&mut impact, file, 100, "seed_file");
+        add_impact(&mut impact, file, IMPACT_SCORE_SEED_FILE, "seed_file");
     }
 
     let mut symbols = Vec::new();
@@ -217,7 +238,7 @@ pub fn impact_analysis_value(
             add_impact(
                 &mut impact,
                 &symbol.file,
-                90,
+                IMPACT_SCORE_SYMBOL_DEFINITION,
                 format!("symbol_definition:{}", symbol.qualified_name),
             );
             symbol_terms.insert(symbol.name.clone());
@@ -231,7 +252,7 @@ pub fn impact_analysis_value(
         add_impact(
             &mut impact,
             &symbol.file,
-            80,
+            IMPACT_SCORE_SEED_FILE_SYMBOL,
             format!("seed_file_symbol:{}", symbol.qualified_name),
         );
         symbol_terms.insert(symbol.name.clone());
@@ -265,7 +286,7 @@ pub fn impact_analysis_value(
         add_impact(
             &mut impact,
             &reference.file,
-            40,
+            IMPACT_SCORE_REFERENCE,
             format!("reference:{}", reference.context),
         );
     }
@@ -273,7 +294,7 @@ pub fn impact_analysis_value(
         add_impact(
             &mut impact,
             &call.file,
-            70,
+            IMPACT_SCORE_CALLER,
             format!("caller:{}->{}", call.caller, call.callee),
         );
     }
@@ -289,14 +310,14 @@ pub fn impact_analysis_value(
         add_impact(
             &mut impact,
             &call.file,
-            45,
+            IMPACT_SCORE_CALLEE_SOURCE,
             format!("callee_source:{}->{}", call.caller, call.callee),
         );
         if let Some(callee_file) = &call.callee_file {
             add_impact(
                 &mut impact,
                 callee_file,
-                65,
+                IMPACT_SCORE_CALLEE_TARGET,
                 format!("callee_target:{}->{}", call.caller, call.callee),
             );
         }
@@ -312,14 +333,14 @@ pub fn impact_analysis_value(
         add_impact(
             &mut impact,
             &dependency.source_file,
-            55,
+            IMPACT_SCORE_DEPENDENCY_SOURCE,
             format!("dependency_source:{}", dependency.target),
         );
         if let Some(resolved_file) = &dependency.resolved_file {
             add_impact(
                 &mut impact,
                 resolved_file,
-                60,
+                IMPACT_SCORE_DEPENDENCY_TARGET,
                 format!("dependency_target:{}", dependency.source_file),
             );
         }
@@ -1239,9 +1260,15 @@ fn impact_risk_level(impacted_files: &[ImpactFile], paths: &[ImpactPath]) -> Str
         .max()
         .unwrap_or_default();
 
-    if impacted_files.len() >= 10 || max_score >= 300 || max_depth >= 3 {
+    if impacted_files.len() >= IMPACT_RISK_HIGH_FILE_COUNT
+        || max_score >= IMPACT_RISK_HIGH_SCORE
+        || max_depth >= IMPACT_RISK_HIGH_DEPTH
+    {
         "high".to_string()
-    } else if impacted_files.len() >= 4 || max_score >= 160 || max_depth >= 2 {
+    } else if impacted_files.len() >= IMPACT_RISK_MEDIUM_FILE_COUNT
+        || max_score >= IMPACT_RISK_MEDIUM_SCORE
+        || max_depth >= IMPACT_RISK_MEDIUM_DEPTH
+    {
         "medium".to_string()
     } else {
         "low".to_string()
@@ -1296,7 +1323,9 @@ fn impact_call_paths(
             if paths.len() >= limit {
                 break;
             }
-            let score = (70 - ((next_depth as i32 - 1) * 15)).max(20);
+            let score = (IMPACT_SCORE_CALLER_DEPTH_BASE
+                - ((next_depth as i32 - 1) * IMPACT_SCORE_CALLER_DEPTH_DECAY))
+                .max(IMPACT_SCORE_DEPTH_FLOOR);
             add_impact(
                 impact,
                 &call.file,
@@ -1378,7 +1407,9 @@ fn impact_dependency_paths(
             if paths.len() >= limit {
                 break;
             }
-            let score = (60 - ((next_depth as i32 - 1) * 10)).max(20);
+            let score = (IMPACT_SCORE_DEPENDENCY_DEPTH_BASE
+                - ((next_depth as i32 - 1) * IMPACT_SCORE_DEPENDENCY_DEPTH_DECAY))
+                .max(IMPACT_SCORE_DEPTH_FLOOR);
             add_impact(
                 impact,
                 &dependency.source_file,

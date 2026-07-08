@@ -16,6 +16,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - `impact-analysis` now accepts `--depth` / MCP `depth` and returns call/dependency `paths` for multi-hop impact explanations.
 - `impact-analysis` now supports `--format summary|full` and `--evidence-limit` to keep large reports compact.
 - `impact-analysis` now reports `risk_level`, `impact_counts`, and `top_reasons` for client-friendly summaries.
+- Impact analysis scoring and risk-level rules are now documented and covered by stable fixture assertions.
 
 ## [0.1.5] - 2026-07-07
 
