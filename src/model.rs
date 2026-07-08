@@ -279,12 +279,23 @@ pub struct CallEdge {
 pub struct ContextPack {
     pub task: String,
     pub summary: String,
+    pub seed_strategy: String,
+    pub selected_seeds: Vec<ContextSeed>,
     pub semantic_status: ContextSemanticStatus,
     pub files: Vec<ContextFile>,
     pub symbols: Vec<Symbol>,
     pub references: Vec<ReferenceMatch>,
     pub estimated_tokens: usize,
     pub truncated: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ContextSeed {
+    pub kind: String,
+    pub value: String,
+    pub source: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub role: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]

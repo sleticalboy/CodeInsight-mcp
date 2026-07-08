@@ -438,6 +438,16 @@ fn cli_indexes_and_queries_fixture_project() {
         "1600",
     ]);
     assert_eq!(context["symbols"][0]["name"], "AuthService");
+    assert_eq!(context["seed_strategy"], "explicit");
+    assert!(
+        context["selected_seeds"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|seed| seed["kind"] == "symbol"
+                && seed["value"] == "AuthService"
+                && seed["source"] == "explicit")
+    );
     assert!(
         context["files"]
             .as_array()
@@ -467,6 +477,17 @@ fn cli_indexes_and_queries_fixture_project() {
             .as_str()
             .unwrap()
             .contains("auto-selected seed files")
+    );
+    assert_eq!(auto_context["seed_strategy"], "auto_entrypoint");
+    assert!(
+        auto_context["selected_seeds"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|seed| seed["kind"] == "file"
+                && seed["value"] == "src/main.ts"
+                && seed["source"] == "overview_entrypoint"
+                && seed["role"] == "source")
     );
     assert!(
         auto_context["files"]
@@ -1726,6 +1747,7 @@ export function spec() {
         "--token-budget",
         "1600",
     ]);
+    assert_eq!(context["seed_strategy"], "explicit");
     let context_files = context["files"]
         .as_array()
         .unwrap()
@@ -1764,6 +1786,30 @@ export function spec() {
             .as_str()
             .unwrap()
             .contains("via call_graph")
+    );
+
+    let fallback_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand production behavior",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(fallback_context["seed_strategy"], "auto_source_fallback");
+    assert!(
+        fallback_context["selected_seeds"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|seed| seed["role"] == "source")
+    );
+    assert!(
+        fallback_context["selected_seeds"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|seed| seed["value"] == "src/core.ts")
     );
 
     let test_context = run_json([

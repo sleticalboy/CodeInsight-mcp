@@ -775,6 +775,18 @@ def helper():
         }))
         .unwrap();
         assert_eq!(
+            context_result["structuredContent"]["seed_strategy"].as_str(),
+            Some("explicit")
+        );
+        assert_eq!(
+            context_result["structuredContent"]["selected_seeds"][0]["kind"].as_str(),
+            Some("symbol")
+        );
+        assert_eq!(
+            context_result["structuredContent"]["selected_seeds"][0]["value"].as_str(),
+            Some("AuthService")
+        );
+        assert_eq!(
             context_result["structuredContent"]["files"][0]["file"].as_str(),
             Some("auth.py")
         );
@@ -812,6 +824,14 @@ def helper():
             }
         }))
         .unwrap();
+        assert_eq!(
+            auto_context_result["structuredContent"]["seed_strategy"].as_str(),
+            Some("auto_source_fallback")
+        );
+        assert_eq!(
+            auto_context_result["structuredContent"]["selected_seeds"][0]["source"].as_str(),
+            Some("indexed_file_fallback")
+        );
         assert_eq!(
             auto_context_result["structuredContent"]["files"][0]["file"].as_str(),
             Some("auth.py")

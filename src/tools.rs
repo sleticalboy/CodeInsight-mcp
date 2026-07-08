@@ -17,7 +17,7 @@ use crate::{
     language::detect_language,
     model::{
         CallEdge, ConfigInitReport, ConfigStatusReport, ContextFile, ContextPack, ContextRange,
-        ContextSemanticStatus, Dependency, DependencyGraph, EmbeddingProviderStatus,
+        ContextSeed, ContextSemanticStatus, Dependency, DependencyGraph, EmbeddingProviderStatus,
         ImpactAnalysisReport, ImpactCounts, ImpactFile, ImpactPath, IndexError, Language,
         OllamaEmbeddingStatus, OpenAiEmbeddingStatus, ProjectIndexReport, ProjectOverview,
         ReferenceMatch, SemanticChunk, SemanticChunkInput, SemanticEmbeddingInput,
@@ -826,8 +826,13 @@ pub fn context_pack_value(
     let task_keywords = task_keywords(&task);
     let auto_seeded = seed_symbols.is_empty() && seed_files.is_empty();
     let store = Store::open(&root)?;
+    let mut seed_strategy = "explicit".to_string();
+    let mut selected_seeds = explicit_context_seeds(&seed_symbols, &seed_files);
     if auto_seeded {
-        seed_files = auto_context_seed_files(&store, &root, &task_keywords)?;
+        let auto_selection = auto_context_seed_files(&store, &root, &task_keywords)?;
+        seed_strategy = auto_selection.strategy;
+        seed_files = auto_selection.files;
+        selected_seeds = auto_selection.seeds;
         if seed_files.is_empty() {
             bail!(
                 "context_pack could not infer source seed files from the current index; run index or provide --symbol/--file"
@@ -841,6 +846,9 @@ pub fn context_pack_value(
         .iter()
         .map(|file| normalize_seed_file(&root, file))
         .collect::<Result<Vec<_>>>()?;
+    if !auto_seeded {
+        selected_seeds = explicit_context_seeds(&seed_symbols, &seed_files);
+    }
     let seed_file_set = seed_files.iter().cloned().collect::<BTreeSet<_>>();
     let scoring_policy = ContextScoringPolicy {
         prefer_low_value_files: context_prefers_low_value_files(&task_keywords, &seed_files),
@@ -1153,6 +1161,8 @@ pub fn context_pack_value(
     Ok(ContextPack {
         task,
         summary,
+        seed_strategy,
+        selected_seeds,
         semantic_status: semantic_status.status,
         files,
         symbols,
@@ -2337,48 +2347,85 @@ fn context_prefers_low_value_files(task_keywords: &[String], seed_files: &[Strin
         .any(|file| is_low_value_reference_file(file))
 }
 
+#[derive(Debug)]
+struct AutoContextSeedSelection {
+    strategy: String,
+    files: Vec<String>,
+    seeds: Vec<ContextSeed>,
+}
+
 fn auto_context_seed_files(
     store: &Store,
     root: &Path,
     task_keywords: &[String],
-) -> Result<Vec<String>> {
+) -> Result<AutoContextSeedSelection> {
     let overview = store.overview(root)?;
-    let mut files = overview
+    let mut entrypoints = overview
         .entrypoints
         .iter()
         .filter(|entrypoint| auto_seed_role_allowed(&entrypoint.role, task_keywords))
-        .map(|entrypoint| entrypoint.file.clone())
         .collect::<Vec<_>>();
-    files.sort();
-    files.dedup();
-    files.sort_by(|left, right| {
-        let left_score = overview
-            .entrypoints
-            .iter()
-            .find(|entrypoint| entrypoint.file == *left)
-            .map(|entrypoint| entrypoint.score)
-            .unwrap_or_default();
-        let right_score = overview
-            .entrypoints
-            .iter()
-            .find(|entrypoint| entrypoint.file == *right)
-            .map(|entrypoint| entrypoint.score)
-            .unwrap_or_default();
-        right_score.cmp(&left_score).then_with(|| left.cmp(right))
+    entrypoints.sort_by(|left, right| {
+        right
+            .score
+            .cmp(&left.score)
+            .then_with(|| left.file.cmp(&right.file))
     });
 
-    if files.is_empty() {
-        files = store
-            .indexed_files()?
-            .into_iter()
-            .filter(|file| auto_seed_role_allowed(auto_seed_file_role(file), task_keywords))
-            .take(3)
-            .collect();
-    } else {
-        files.truncate(1);
+    if let Some(entrypoint) = entrypoints.first() {
+        let file = entrypoint.file.clone();
+        return Ok(AutoContextSeedSelection {
+            strategy: "auto_entrypoint".to_string(),
+            files: vec![file.clone()],
+            seeds: vec![ContextSeed {
+                kind: "file".to_string(),
+                value: file,
+                source: "overview_entrypoint".to_string(),
+                role: Some(entrypoint.role.clone()),
+            }],
+        });
     }
 
-    Ok(files)
+    let files = store
+        .indexed_files()?
+        .into_iter()
+        .filter(|file| auto_seed_role_allowed(auto_seed_file_role(file), task_keywords))
+        .take(3)
+        .collect::<Vec<_>>();
+    let seeds = files
+        .iter()
+        .map(|file| ContextSeed {
+            kind: "file".to_string(),
+            value: file.clone(),
+            source: "indexed_file_fallback".to_string(),
+            role: Some(auto_seed_file_role(file).to_string()),
+        })
+        .collect::<Vec<_>>();
+
+    Ok(AutoContextSeedSelection {
+        strategy: "auto_source_fallback".to_string(),
+        files,
+        seeds,
+    })
+}
+
+fn explicit_context_seeds(seed_symbols: &[String], seed_files: &[String]) -> Vec<ContextSeed> {
+    let mut seeds = seed_symbols
+        .iter()
+        .map(|symbol| ContextSeed {
+            kind: "symbol".to_string(),
+            value: symbol.clone(),
+            source: "explicit".to_string(),
+            role: None,
+        })
+        .collect::<Vec<_>>();
+    seeds.extend(seed_files.iter().map(|file| ContextSeed {
+        kind: "file".to_string(),
+        value: file.clone(),
+        source: "explicit".to_string(),
+        role: Some(auto_seed_file_role(file).to_string()),
+    }));
+    seeds
 }
 
 fn auto_seed_role_allowed(role: &str, task_keywords: &[String]) -> bool {
