@@ -320,10 +320,18 @@ pub struct ContextReadingStep {
     pub focus: String,
     pub next_action: String,
     pub question: String,
+    pub suggested_tool: ContextSuggestedTool,
     pub reason: String,
     pub source: String,
     pub score: i32,
     pub ranges: Vec<ContextReadingRange>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ContextSuggestedTool {
+    pub tool: String,
+    pub reason: String,
+    pub suggested_arguments: Value,
 }
 
 #[derive(Debug, Clone, Serialize)]

@@ -294,6 +294,8 @@ try:
     assert explicit_reading_plan[0]["file"] == context["result"]["structuredContent"]["files"][0]["file"]
     assert explicit_reading_plan[0]["next_action"]
     assert explicit_reading_plan[0]["question"]
+    assert explicit_reading_plan[0]["suggested_tool"]["tool"]
+    assert explicit_reading_plan[0]["suggested_tool"]["suggested_arguments"]
     assert explicit_reading_plan[0]["ranges"], "explicit context reading_plan ranges missing"
     assert explicit_reading_plan[0]["ranges"][0]["start_line"] >= 1
 
@@ -331,6 +333,8 @@ try:
     assert auto_context_result["reading_plan"][0]["focus"]
     assert auto_context_result["reading_plan"][0]["next_action"]
     assert auto_context_result["reading_plan"][0]["question"]
+    assert auto_context_result["reading_plan"][0]["suggested_tool"]["tool"]
+    assert auto_context_result["reading_plan"][0]["suggested_tool"]["suggested_arguments"]
     assert auto_context_result["reading_plan"][0]["ranges"], "auto context reading_plan ranges missing"
     assert auto_context_result["reading_plan"][0]["ranges"][0]["start_line"] >= 1
 

@@ -508,6 +508,16 @@ fn cli_indexes_and_queries_fixture_project() {
             .unwrap()
             .contains("definition")
     );
+    assert_eq!(
+        context["reading_plan"][0]["suggested_tool"]["tool"],
+        "file_outline"
+    );
+    assert!(
+        context["reading_plan"][0]["suggested_tool"]["suggested_arguments"]["path"]
+            .as_str()
+            .unwrap()
+            .ends_with("src/auth.py")
+    );
     assert!(
         context["reading_plan"][0]["ranges"][0]["start_line"]
             .as_u64()

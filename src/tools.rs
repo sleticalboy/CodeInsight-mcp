@@ -6,6 +6,7 @@ use std::{
 };
 
 use anyhow::{Context, Result, bail};
+use serde_json::json;
 use sha2::{Digest, Sha256};
 
 use crate::{
@@ -17,12 +18,13 @@ use crate::{
     language::detect_language,
     model::{
         CallEdge, ConfigInitReport, ConfigStatusReport, ContextFile, ContextPack, ContextRange,
-        ContextReadingRange, ContextReadingStep, ContextSeed, ContextSemanticStatus, Dependency,
-        DependencyGraph, EmbeddingProviderStatus, ImpactAnalysisReport, ImpactCounts, ImpactFile,
-        ImpactPath, IndexError, Language, OllamaEmbeddingStatus, OpenAiEmbeddingStatus,
-        ProjectIndexReport, ProjectOverview, ReferenceMatch, SemanticChunk, SemanticChunkInput,
-        SemanticEmbeddingInput, SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus,
-        SemanticSearchResult, SuggestedCheck, Symbol, SymbolKind, VersionInfo,
+        ContextReadingRange, ContextReadingStep, ContextSeed, ContextSemanticStatus,
+        ContextSuggestedTool, Dependency, DependencyGraph, EmbeddingProviderStatus,
+        ImpactAnalysisReport, ImpactCounts, ImpactFile, ImpactPath, IndexError, Language,
+        OllamaEmbeddingStatus, OpenAiEmbeddingStatus, ProjectIndexReport, ProjectOverview,
+        ReferenceMatch, SemanticChunk, SemanticChunkInput, SemanticEmbeddingInput,
+        SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus, SemanticSearchResult,
+        SuggestedCheck, Symbol, SymbolKind, VersionInfo,
     },
     storage::Store,
 };
@@ -1157,7 +1159,7 @@ pub fn context_pack_value(
         count_selected_ranges_with_reason(&files, "Semantic chunk match");
     semantic_status.status.recommendation =
         context_semantic_recommendation(&semantic_status.status);
-    let reading_plan = context_reading_plan(&files);
+    let reading_plan = context_reading_plan(&root, &files);
 
     Ok(ContextPack {
         task,
@@ -1174,7 +1176,7 @@ pub fn context_pack_value(
     })
 }
 
-fn context_reading_plan(files: &[ContextFile]) -> Vec<ContextReadingStep> {
+fn context_reading_plan(root: &Path, files: &[ContextFile]) -> Vec<ContextReadingStep> {
     files
         .iter()
         .take(8)
@@ -1197,6 +1199,7 @@ fn context_reading_plan(files: &[ContextFile]) -> Vec<ContextReadingStep> {
                 focus: context_reading_focus(file),
                 next_action: context_reading_next_action(file).to_string(),
                 question: context_reading_question(file),
+                suggested_tool: context_reading_suggested_tool(root, file),
                 reason: file.reason.clone(),
                 source: file.source.clone(),
                 score: file.score,
@@ -1204,6 +1207,63 @@ fn context_reading_plan(files: &[ContextFile]) -> Vec<ContextReadingStep> {
             }
         })
         .collect()
+}
+
+fn context_reading_suggested_tool(root: &Path, file: &ContextFile) -> ContextSuggestedTool {
+    let root_arg = root.display().to_string();
+    match context_reading_next_action(file) {
+        "inspect_seed_file" | "inspect_symbol_definition" => ContextSuggestedTool {
+            tool: "file_outline".to_string(),
+            reason: "Inspect the selected file's symbol outline before reading deeper ranges."
+                .to_string(),
+            suggested_arguments: json!({
+                "path": root.join(&file.file).display().to_string()
+            }),
+        },
+        "follow_call_graph" | "inspect_references" => ContextSuggestedTool {
+            tool: "impact_analysis".to_string(),
+            reason: "Expand from this file through references, calls, and dependency signals."
+                .to_string(),
+            suggested_arguments: json!({
+                "root": root_arg,
+                "files": [file.file.clone()],
+                "limit": 20,
+                "depth": 2,
+                "format": "summary",
+                "evidence_limit": 5
+            }),
+        },
+        "review_semantic_matches" => ContextSuggestedTool {
+            tool: "context_pack".to_string(),
+            reason: "Rebuild a focused context pack around this semantically related file."
+                .to_string(),
+            suggested_arguments: json!({
+                "root": root_arg,
+                "task": "inspect semantic matches in selected file",
+                "files": [file.file.clone()],
+                "token_budget": 4000
+            }),
+        },
+        "inspect_dependency" => ContextSuggestedTool {
+            tool: "dependency_graph".to_string(),
+            reason: "Inspect module and package relationships around selected dependency context."
+                .to_string(),
+            suggested_arguments: json!({
+                "root": root_arg,
+                "limit": 100
+            }),
+        },
+        _ => ContextSuggestedTool {
+            tool: "context_pack".to_string(),
+            reason: "Rebuild context focused on this selected file.".to_string(),
+            suggested_arguments: json!({
+                "root": root_arg,
+                "task": "inspect selected context file",
+                "files": [file.file.clone()],
+                "token_budget": 4000
+            }),
+        },
+    }
 }
 
 fn context_reading_focus(file: &ContextFile) -> String {

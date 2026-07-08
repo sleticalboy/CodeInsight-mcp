@@ -830,6 +830,17 @@ def helper():
                 .as_str()
                 .is_some_and(|question| question.contains("definition"))
         );
+        assert_eq!(
+            context_result["structuredContent"]["reading_plan"][0]["suggested_tool"]["tool"]
+                .as_str(),
+            Some("file_outline")
+        );
+        assert!(
+            context_result["structuredContent"]["reading_plan"][0]["suggested_tool"]
+                ["suggested_arguments"]["path"]
+                .as_str()
+                .is_some_and(|path| path.ends_with("auth.py"))
+        );
         assert!(
             context_result["structuredContent"]["reading_plan"][0]["ranges"][0]["start_line"]
                 .as_u64()
