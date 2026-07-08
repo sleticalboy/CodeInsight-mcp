@@ -84,6 +84,21 @@ gh run watch <docker-run-id> --exit-status
 
 ## Verify Release Assets
 
+Run the consolidated release verification script after the release and Docker
+workflows finish:
+
+```bash
+scripts/verify-release.sh vX.Y.Z
+```
+
+If the local machine cannot run Docker or Homebrew, skip those checks
+explicitly and rely on the successful GitHub Actions jobs plus the remaining
+remote checks:
+
+```bash
+CODEINSIGHT_SKIP_DOCKER=1 CODEINSIGHT_SKIP_HOMEBREW=1 scripts/verify-release.sh vX.Y.Z
+```
+
 Check release metadata:
 
 ```bash

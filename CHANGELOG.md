@@ -6,6 +6,10 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ## [Unreleased]
 
+### Added
+
+- `scripts/verify-release.sh` now consolidates GitHub Release, install script, Docker manifest, and Homebrew tap verification for published tags.
+
 ## [0.1.8] - 2026-07-08
 
 ### Changed
