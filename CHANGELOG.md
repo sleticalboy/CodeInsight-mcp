@@ -6,6 +6,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ## [Unreleased]
 
+## [0.1.9] - 2026-07-08
+
 ### Added
 
 - `scripts/prepare-release.sh` now automates release prep for Cargo version metadata, README install examples, changelog sections, and Cargo.lock refresh.
