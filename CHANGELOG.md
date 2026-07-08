@@ -6,6 +6,10 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ## [Unreleased]
 
+### Changed
+
+- Release builds now use Node 24-compatible artifact upload/download actions and cap Linux cross-toolchain installation at 10 minutes.
+
 ## [0.1.9] - 2026-07-08
 
 ### Added

@@ -43,6 +43,7 @@ jobs:
 
       - name: Install Linux cross toolchain
         if: matrix.target == 'aarch64-unknown-linux-gnu'
+        timeout-minutes: 10
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-aarch64-linux-gnu
@@ -77,7 +78,7 @@ jobs:
         run: scripts/release-install-smoke.sh
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: codeinsight-${{ matrix.target }}
           path: dist/codeinsight-${{ matrix.target }}.tar.gz
@@ -94,7 +95,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Download release artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: codeinsight-*
           path: release-assets
