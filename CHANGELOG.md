@@ -9,6 +9,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 ### Changed
 
 - `overview` / `project_overview` now returns an agent-ready repository briefing with total lines, symbol-kind counts, richer directory stats, dependency/call summaries, entrypoint candidates, and index metadata.
+- `overview` / `project_overview` now annotates main directories and entrypoint candidates with role hints, and entrypoints with normalized confidence scores.
 - Release builds now use Node 24-compatible artifact upload/download actions and cap Linux cross-toolchain installation at 10 minutes.
 
 ## [0.1.9] - 2026-07-08

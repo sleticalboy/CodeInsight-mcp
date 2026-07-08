@@ -702,8 +702,10 @@ impl Store {
         )?;
         let main_directories = main_dir_stmt
             .query_map([], |row| {
+                let directory = row.get::<_, String>(0)?;
                 Ok(DirectorySummary {
-                    directory: row.get(0)?,
+                    role: path_role(&directory).to_string(),
+                    directory,
                     files: row.get::<_, i64>(1)? as usize,
                     lines: row.get::<_, i64>(2)? as usize,
                     symbols: row.get::<_, i64>(3)? as usize,
@@ -870,6 +872,9 @@ impl Store {
                 .then_with(|| left.file.cmp(&right.file))
         });
         candidates.truncate(12);
+        for candidate in &mut candidates {
+            candidate.confidence = entrypoint_confidence(candidate.score);
+        }
         Ok(candidates)
     }
 
@@ -1759,6 +1764,33 @@ fn file_entrypoint_signal(file: &str) -> Option<(usize, String)> {
     }
 }
 
+fn path_role(path: &str) -> &'static str {
+    let normalized = path.to_ascii_lowercase();
+    if normalized == "node_modules" || normalized.starts_with("node_modules/") {
+        "vendor"
+    } else if normalized.contains("fixture") || normalized.contains("fixtures/") {
+        "fixture"
+    } else if normalized == "test"
+        || normalized == "tests"
+        || normalized.starts_with("test/")
+        || normalized.starts_with("tests/")
+        || normalized.ends_with("_test")
+        || normalized.ends_with("_tests")
+    {
+        "test"
+    } else if normalized == "examples" || normalized.starts_with("examples/") {
+        "example"
+    } else if normalized == "docs" || normalized.starts_with("docs/") {
+        "docs"
+    } else {
+        "source"
+    }
+}
+
+fn entrypoint_confidence(score: usize) -> f64 {
+    ((score.min(110) as f64) / 110.0 * 100.0).round() / 100.0
+}
+
 fn symbol_entrypoint_signal(symbol: &str) -> Option<(usize, String)> {
     match symbol.to_ascii_lowercase().as_str() {
         "main" => Some((110, "entry symbol named main".to_string())),
@@ -1781,12 +1813,15 @@ fn upsert_entrypoint_candidate(
         .or_insert_with(|| EntryPointCandidate {
             file: file.to_string(),
             language: language.to_string(),
+            role: path_role(file).to_string(),
             score,
+            confidence: entrypoint_confidence(score),
             reason: reason.clone(),
             symbol: symbol.clone(),
         });
     if score > candidate.score {
         candidate.score = score;
+        candidate.confidence = entrypoint_confidence(score);
         candidate.reason = reason;
         candidate.symbol = symbol;
     } else if candidate.symbol.is_none() && symbol.is_some() {

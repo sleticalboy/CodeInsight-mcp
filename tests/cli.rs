@@ -33,6 +33,7 @@ fn cli_indexes_and_queries_fixture_project() {
     );
     assert!(overview["main_directories"].as_array().unwrap().iter().any(
         |directory| directory["directory"] == "src"
+            && directory["role"] == "source"
             && directory["files"].as_u64().unwrap() > 0
             && directory["symbols"].as_u64().unwrap() > 0
     ));
@@ -74,6 +75,8 @@ fn cli_indexes_and_queries_fixture_project() {
             .iter()
             .any(|entrypoint| entrypoint["file"] == "src/main.ts"
                 && entrypoint["symbol"] == "main"
+                && entrypoint["role"] == "source"
+                && entrypoint["confidence"].as_f64().unwrap() >= 1.0
                 && entrypoint["reason"]
                     .as_str()
                     .unwrap()

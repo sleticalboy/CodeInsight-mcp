@@ -441,6 +441,7 @@ pub struct DirectoryStat {
 #[derive(Debug, Serialize)]
 pub struct DirectorySummary {
     pub directory: String,
+    pub role: String,
     pub files: usize,
     pub lines: usize,
     pub symbols: usize,
@@ -480,7 +481,9 @@ pub struct CallSummary {
 pub struct EntryPointCandidate {
     pub file: String,
     pub language: String,
+    pub role: String,
     pub score: usize,
+    pub confidence: f64,
     pub reason: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub symbol: Option<String>,
