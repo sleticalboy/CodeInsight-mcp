@@ -167,7 +167,7 @@ syntax/style checks.
 
 ## Verify Docker
 
-Tagged releases publish the image to GHCR.
+Tagged releases publish the image to GHCR for `linux/amd64` and `linux/arm64`.
 
 Check the workflow:
 
@@ -180,6 +180,7 @@ Smoke test a local Docker build when Docker is available:
 
 ```bash
 scripts/docker-smoke.sh
+CODEINSIGHT_DOCKER_PLATFORM=linux/arm64 scripts/docker-smoke.sh
 ```
 
 ## Release Notes

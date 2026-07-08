@@ -128,10 +128,13 @@ docker pull ghcr.io/sleticalboy/codeinsight-mcp:latest
 docker run --rm -v "$PWD:/workspace" ghcr.io/sleticalboy/codeinsight-mcp:latest overview /workspace
 ```
 
+Release images are published for `linux/amd64` and `linux/arm64`.
+
 Smoke test the Docker image locally:
 
 ```bash
 scripts/docker-smoke.sh
+CODEINSIGHT_DOCKER_PLATFORM=linux/arm64 scripts/docker-smoke.sh
 ```
 
 ## CLI Usage
