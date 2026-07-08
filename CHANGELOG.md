@@ -6,6 +6,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ## [Unreleased]
 
+## [0.1.8] - 2026-07-08
+
 ### Changed
 
 - `find_references` now filters obvious comment-only and string-only matches before ranking results.
