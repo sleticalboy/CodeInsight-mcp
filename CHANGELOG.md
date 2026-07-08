@@ -9,6 +9,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 ### Changed
 
 - Docker release images now publish multi-architecture manifests for `linux/amd64` and `linux/arm64`.
+- Docker release builds now use native amd64/arm64 runner jobs before publishing the combined manifest.
 - `scripts/docker-smoke.sh` now accepts `CODEINSIGHT_DOCKER_PLATFORM` for explicit platform smoke tests.
 
 ## [0.1.6] - 2026-07-08
