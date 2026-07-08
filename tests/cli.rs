@@ -1579,6 +1579,74 @@ int use_macro(void) {
 }
 
 #[test]
+fn cli_context_pack_downranks_test_references() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        "src/core.ts",
+        r#"
+export function leaf() {
+  return "ok";
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/route.ts",
+        r#"
+import { leaf } from "./core";
+
+export function route() {
+  return leaf();
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/core.test.ts",
+        r#"
+import { leaf } from "./core";
+
+export function spec() {
+  return leaf();
+}
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 3);
+
+    let context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand leaf production behavior",
+        "--symbol",
+        "leaf",
+        "--token-budget",
+        "1600",
+    ]);
+    let context_files = context["files"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|file| file["file"].as_str())
+        .collect::<Vec<_>>();
+    let route_index = context_files
+        .iter()
+        .position(|file| *file == "src/route.ts")
+        .unwrap();
+    let test_index = context_files
+        .iter()
+        .position(|file| *file == "src/core.test.ts")
+        .unwrap();
+    assert!(
+        route_index < test_index,
+        "production references should rank before test references in context_pack"
+    );
+}
+
+#[test]
 fn cli_semantic_search_requires_embedding_provider() {
     let fixture = fixture_project();
 

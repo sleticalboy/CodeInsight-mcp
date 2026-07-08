@@ -37,6 +37,7 @@ const CONTEXT_SCORE_SEMANTIC_VECTOR: i32 = 70;
 const CONTEXT_SCORE_LOCAL_DEPENDENCY: i32 = 40;
 const CONTEXT_SCORE_TASK_MATCH_BOOST: i32 = 30;
 const CONTEXT_SCORE_SEED_SYMBOL_TASK_MATCH_BOOST: i32 = 5;
+const CONTEXT_SCORE_LOW_VALUE_FILE_PENALTY: i32 = 35;
 const CONTEXT_MAX_SYMBOL_LINES: usize = 80;
 const CONTEXT_MAX_MERGED_RANGE_LINES: usize = 80;
 
@@ -869,7 +870,10 @@ pub fn context_pack_value(
             symbol.start_line,
             capped_symbol_end_line(symbol),
             format!("Defines symbol {}", symbol.qualified_name),
-            CONTEXT_SCORE_SYMBOL_DEFINITION + symbol_task_boost(symbol, &task_keywords),
+            context_score_for_file(
+                &symbol.file,
+                CONTEXT_SCORE_SYMBOL_DEFINITION + symbol_task_boost(symbol, &task_keywords),
+            ),
         );
     }
     for reference in &references {
@@ -881,7 +885,10 @@ pub fn context_pack_value(
             start_line,
             end_line,
             format!("References symbol near line {}", reference.line),
-            reference_score(reference) + reference_task_boost(reference, &task_keywords),
+            context_score_for_file(
+                &reference.file,
+                reference_score(reference) + reference_task_boost(reference, &task_keywords),
+            ),
         );
     }
 
@@ -912,7 +919,10 @@ pub fn context_pack_value(
                 call.line.saturating_sub(2).max(1),
                 call.line + 2,
                 format!("Call graph caller of {} via {}", call.callee, call.caller),
-                CONTEXT_SCORE_CALL_GRAPH + call_task_boost(&call, &task_keywords),
+                context_score_for_file(
+                    &call.file,
+                    CONTEXT_SCORE_CALL_GRAPH + call_task_boost(&call, &task_keywords),
+                ),
             );
         }
     }
@@ -923,11 +933,14 @@ pub fn context_pack_value(
             };
             push_context_range(
                 &mut ranges_by_file,
-                callee_file,
+                callee_file.clone(),
                 1,
                 40,
                 format!("Call graph target of {} via {}", call.caller, call.callee),
-                CONTEXT_SCORE_CALL_GRAPH + call_task_boost(&call, &task_keywords),
+                context_score_for_file(
+                    &callee_file,
+                    CONTEXT_SCORE_CALL_GRAPH + call_task_boost(&call, &task_keywords),
+                ),
             );
         }
     }
@@ -939,14 +952,14 @@ pub fn context_pack_value(
         if let Some(resolved_file) = dependency.resolved_file {
             push_context_range(
                 &mut ranges_by_file,
-                resolved_file,
+                resolved_file.clone(),
                 1,
                 40,
                 format!(
                     "Local dependency of {} via {}",
                     dependency.source_file, dependency.target
                 ),
-                score,
+                context_score_for_file(&resolved_file, score),
             );
         }
     }
@@ -2129,6 +2142,14 @@ fn importance_for_score(score: i32) -> &'static str {
         "high"
     } else {
         "medium"
+    }
+}
+
+fn context_score_for_file(file: &str, score: i32) -> i32 {
+    if is_low_value_reference_file(file) {
+        score.saturating_sub(CONTEXT_SCORE_LOW_VALUE_FILE_PENALTY)
+    } else {
+        score
     }
 }
 
