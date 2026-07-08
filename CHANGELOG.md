@@ -8,6 +8,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ### Added
 
+- `scripts/latest-changelog-version.sh` and `extract-release-notes.sh latest` now let CI validate the latest release notes without hard-coding a version.
 - `scripts/verify-release.sh` now consolidates GitHub Release, install script, Docker manifest, and Homebrew tap verification for published tags.
 
 ## [0.1.8] - 2026-07-08

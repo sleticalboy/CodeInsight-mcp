@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-  echo "usage: $0 <changelog> <tag-or-version> <output-file>" >&2
+  echo "usage: $0 <changelog> <tag-or-version|latest> <output-file>" >&2
   exit 2
 }
 
@@ -11,13 +11,22 @@ if [ "$#" -ne 3 ]; then
 fi
 
 changelog="$1"
-version="${2#v}"
+requested_version="$2"
 output="$3"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [ ! -f "$changelog" ]; then
   echo "changelog not found: $changelog" >&2
   exit 1
 fi
+
+if [ "$requested_version" = "latest" ]; then
+  version="$("$script_dir/latest-changelog-version.sh" "$changelog")"
+else
+  version="$requested_version"
+fi
+
+version="${version#v}"
 
 awk -v version="$version" '
   BEGIN {

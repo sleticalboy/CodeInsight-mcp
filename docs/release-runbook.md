@@ -209,6 +209,13 @@ sed -n '1,80p' /tmp/codeinsight-release-notes.md
 
 The generated notes must not include older release sections.
 
+CI validates the first versioned changelog section automatically:
+
+```bash
+scripts/latest-changelog-version.sh CHANGELOG.md
+scripts/extract-release-notes.sh CHANGELOG.md latest /tmp/codeinsight-release-notes.md
+```
+
 ## Recovery
 
 Re-run a release build for an existing tag:
