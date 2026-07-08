@@ -860,6 +860,7 @@ pub fn context_pack_value(
                 range.start_line,
                 range.end_line,
                 range.reason,
+                &range.source,
                 range.score,
             );
         }
@@ -874,6 +875,7 @@ pub fn context_pack_value(
             symbol.start_line,
             capped_symbol_end_line(symbol),
             format!("Defines symbol {}", symbol.qualified_name),
+            "symbol_definition",
             context_score_for_file(
                 &symbol.file,
                 CONTEXT_SCORE_SYMBOL_DEFINITION + symbol_task_boost(symbol, &task_keywords),
@@ -890,6 +892,7 @@ pub fn context_pack_value(
             start_line,
             end_line,
             format!("References symbol near line {}", reference.line),
+            "reference",
             context_score_for_file(
                 &reference.file,
                 reference_score(reference) + reference_task_boost(reference, &task_keywords),
@@ -925,6 +928,7 @@ pub fn context_pack_value(
                 call.line.saturating_sub(2).max(1),
                 call.line + 2,
                 format!("Call graph caller of {} via {}", call.callee, call.caller),
+                "call_graph",
                 context_score_for_file(
                     &call.file,
                     CONTEXT_SCORE_CALL_GRAPH + call_task_boost(&call, &task_keywords),
@@ -944,6 +948,7 @@ pub fn context_pack_value(
                 1,
                 40,
                 format!("Call graph target of {} via {}", call.caller, call.callee),
+                "call_graph",
                 context_score_for_file(
                     &callee_file,
                     CONTEXT_SCORE_CALL_GRAPH + call_task_boost(&call, &task_keywords),
@@ -967,6 +972,7 @@ pub fn context_pack_value(
                     "Local dependency of {} via {}",
                     dependency.source_file, dependency.target
                 ),
+                "dependency",
                 context_score_for_file(&resolved_file, score, &scoring_policy),
             );
         }
@@ -983,6 +989,7 @@ pub fn context_pack_value(
                 "Semantic vector match for task with score {:.3} near lines {}-{}",
                 result.score, result.start_line, result.end_line
             ),
+            "semantic",
             CONTEXT_SCORE_SEMANTIC_VECTOR + semantic_vector_score_boost(result.score),
         );
     }
@@ -999,6 +1006,7 @@ pub fn context_pack_value(
                 "Semantic chunk match for task near lines {}-{}",
                 chunk.start_line, chunk.end_line
             ),
+            "semantic",
             CONTEXT_SCORE_SEMANTIC_CHUNK
                 + semantic_chunk_task_boost(&chunk, &task_keywords)
                 + semantic_chunk_density_boost(&chunk),
@@ -1037,6 +1045,7 @@ pub fn context_pack_value(
         let mut context_ranges = Vec::new();
         let mut selected_line_ranges = Vec::new();
         let mut selected_max_score = 0;
+        let mut selected_source: Option<String> = None;
 
         for range in candidate.ranges {
             let uncovered_segments = uncovered_segments(
@@ -1071,6 +1080,9 @@ pub fn context_pack_value(
                     }
                 }
                 estimated_tokens += range_tokens;
+                if selected_source.is_none() || range.score > selected_max_score {
+                    selected_source = Some(range.source.clone());
+                }
                 selected_max_score = selected_max_score.max(range.score);
                 selected_line_ranges.push((start_line, end_line));
                 context_ranges.push(ContextRange {
@@ -1088,8 +1100,9 @@ pub fn context_pack_value(
             files.push(ContextFile {
                 file: candidate.file,
                 reason: format!(
-                    "Selected for {} relevance to requested task",
-                    importance_for_score(selected_max_score)
+                    "Selected for {} relevance via {}",
+                    importance_for_score(selected_max_score),
+                    selected_source.as_deref().unwrap_or("unknown")
                 ),
                 ranges: context_ranges,
             });
@@ -1850,6 +1863,7 @@ struct ContextCandidateRange {
     start_line: usize,
     end_line: usize,
     reason: String,
+    source: String,
     score: i32,
 }
 
@@ -1883,6 +1897,7 @@ fn seed_file_ranges(
             start_line: 1,
             end_line,
             reason: format!("Seed file header and imports for task: {file}"),
+            source: "seed_file".to_string(),
             score: CONTEXT_SCORE_SEED_HEADER,
         });
     }
@@ -1898,6 +1913,7 @@ fn seed_file_ranges(
             start_line: symbol.start_line.saturating_sub(2).max(1),
             end_line: (capped_symbol_end_line(symbol) + 2).min(line_count),
             reason: format!("Seed file defines symbol {}", symbol.qualified_name),
+            source: "seed_file".to_string(),
             score: CONTEXT_SCORE_SEED_FILE + seed_symbol_task_boost(symbol, task_keywords),
         });
     }
@@ -1907,6 +1923,7 @@ fn seed_file_ranges(
             start_line: 1,
             end_line: line_count.min(80),
             reason: format!("Seed file requested for task: {file}"),
+            source: "seed_file".to_string(),
             score: CONTEXT_SCORE_SEED_FILE,
         });
     }
@@ -1984,6 +2001,7 @@ fn push_context_range(
     start_line: usize,
     end_line: usize,
     reason: String,
+    source: &str,
     score: i32,
 ) {
     let ranges = ranges_by_file.entry(file).or_default();
@@ -1991,6 +2009,9 @@ fn push_context_range(
         .iter_mut()
         .find(|range| range.start_line == start_line && range.end_line == end_line)
     {
+        if score > existing.score {
+            existing.source = source.to_string();
+        }
         existing.score = existing.score.max(score);
         if !existing.reason.contains(&reason) {
             existing.reason.push_str("; ");
@@ -2002,6 +2023,7 @@ fn push_context_range(
         start_line,
         end_line,
         reason,
+        source: source.to_string(),
         score,
     });
 }
