@@ -357,6 +357,8 @@ fn cli_indexes_and_queries_fixture_project() {
     assert!(targets.contains(&"dep-lib/feature"));
     assert!(targets.contains(&"dep-lib/array-feature"));
     assert!(targets.contains(&"dep-lib/node-feature"));
+    assert!(targets.contains(&"browser-lib"));
+    assert!(targets.contains(&"browser-object-lib/server"));
     assert!(targets.contains(&"legacy-lib"));
     assert!(targets.contains(&"legacy-lib/plugin"));
     assert!(targets.contains(&"workspace-ui/button"));
@@ -452,6 +454,28 @@ fn cli_indexes_and_queries_fixture_project() {
             .any(|dependency| {
                 dependency["target"] == "dep-lib/array-feature"
                     && dependency["resolved_file"] == "node_modules/dep-lib/dist/array-feature.js"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "browser-lib"
+                    && dependency["resolved_file"]
+                        == "node_modules/browser-lib/dist/browser-entry.js"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "browser-object-lib/server"
+                    && dependency["resolved_file"]
+                        == "node_modules/browser-object-lib/dist/browser-server.js"
             })
     );
     assert!(
@@ -2627,6 +2651,8 @@ import { packageRender } from "fixture-lib/package-ui";
 import { depRender } from "dep-lib/feature";
 import { depArrayRender } from "dep-lib/array-feature";
 import { depNodeRender } from "dep-lib/node-feature";
+import { browserRootRender } from "browser-lib";
+import { browserServerRender } from "browser-object-lib/server";
 import { legacyRender } from "legacy-lib";
 import { legacyPluginRender } from "legacy-lib/plugin";
 import { workspaceButton } from "workspace-ui/button";
@@ -2730,6 +2756,8 @@ export function dependencyPackageMain() {
   depRender();
   depArrayRender();
   depNodeRender();
+  browserRootRender();
+  browserServerRender();
   legacyRender();
   legacyPluginRender();
 }
@@ -2816,6 +2844,68 @@ export function callGraphEntry() {
         r#"
 export function workspaceButton() {
   return "workspace";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/browser-lib/package.json",
+        r#"
+{
+  "name": "browser-lib",
+  "main": "./dist/node-entry.js",
+  "browser": "./dist/browser-entry.js"
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/browser-lib/dist/browser-entry.js",
+        r#"
+export function browserRootRender() {
+  return "browser-root";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/browser-lib/dist/node-entry.js",
+        r#"
+export function browserRootRender() {
+  return "node-root";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/browser-object-lib/package.json",
+        r#"
+{
+  "name": "browser-object-lib",
+  "exports": {
+    "./server": "./dist/server.js"
+  },
+  "browser": {
+    "./dist/server.js": "./dist/browser-server.js"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/browser-object-lib/dist/browser-server.js",
+        r#"
+export function browserServerRender() {
+  return "browser-server";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/browser-object-lib/dist/server.js",
+        r#"
+export function browserServerRender() {
+  return "node-server";
 }
 "#,
     );

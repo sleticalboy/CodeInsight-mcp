@@ -2655,20 +2655,76 @@ fn resolve_package_entry(
     extensions: &[&str],
     package_conditions: &[String],
 ) -> Option<String> {
+    let mappings = package_entry_mappings(package, subpath, package_conditions);
+
+    for mapped in package_browser_mappings(package, subpath, &mappings) {
+        if let Some(resolved) = resolve_base(root, package_dir.join(mapped), extensions) {
+            return Some(resolved);
+        }
+    }
+    None
+}
+
+fn package_entry_mappings(
+    package: &Value,
+    subpath: &str,
+    package_conditions: &[String],
+) -> Vec<PathBuf> {
     if let Some(exports) = package.get("exports") {
         let mappings = package_export_mappings(exports, subpath, package_conditions);
-        for mapped in &mappings {
-            if let Some(resolved) = resolve_base(root, package_dir.join(mapped), extensions) {
-                return Some(resolved);
-            }
-        }
         if !mappings.is_empty() {
-            return None;
+            return mappings;
         }
     }
 
-    let mapped = package_metadata_entry(package, subpath)?;
-    resolve_base(root, package_dir.join(mapped), extensions)
+    package_metadata_entry(package, subpath)
+        .into_iter()
+        .collect()
+}
+
+fn package_browser_mappings(package: &Value, subpath: &str, mappings: &[PathBuf]) -> Vec<PathBuf> {
+    let Some(browser) = package.get("browser") else {
+        return mappings.to_vec();
+    };
+
+    if subpath == "."
+        && let Some(browser_entry) = browser.as_str()
+    {
+        return vec![PathBuf::from(browser_entry)];
+    }
+
+    let Some(browser_entries) = browser.as_object() else {
+        return mappings.to_vec();
+    };
+
+    mappings
+        .iter()
+        .filter_map(|mapping| package_browser_mapping(browser_entries, mapping))
+        .collect()
+}
+
+fn package_browser_mapping(
+    browser_entries: &serde_json::Map<String, Value>,
+    mapping: &Path,
+) -> Option<PathBuf> {
+    let mapping = mapping.to_string_lossy().replace('\\', "/");
+    let with_dot = if mapping.starts_with("./") {
+        mapping.clone()
+    } else {
+        format!("./{mapping}")
+    };
+    let without_dot = mapping.strip_prefix("./").unwrap_or(&mapping);
+
+    for key in [mapping.as_str(), with_dot.as_str(), without_dot] {
+        if let Some(value) = browser_entries.get(key) {
+            if value.as_bool() == Some(false) {
+                return None;
+            }
+            return value.as_str().map(PathBuf::from);
+        }
+    }
+
+    Some(PathBuf::from(mapping))
 }
 
 fn package_export_mappings(
@@ -3893,6 +3949,45 @@ catalogs:
             Some(PathBuf::from("src/admin/component/button.ts"))
         );
         assert_eq!(apply_path_mapping("src/*.ts", &captures), None);
+    }
+
+    #[test]
+    fn applies_package_browser_mappings() {
+        let browser_string_package = serde_json::json!({
+            "main": "./dist/node.js",
+            "browser": "./dist/browser.js"
+        });
+        assert_eq!(
+            package_browser_mappings(
+                &browser_string_package,
+                ".",
+                &[PathBuf::from("./dist/node.js")]
+            ),
+            vec![PathBuf::from("./dist/browser.js")]
+        );
+
+        let browser_object_package = serde_json::json!({
+            "browser": {
+                "./dist/server.js": "./dist/browser-server.js",
+                "./dist/disabled.js": false
+            }
+        });
+        assert_eq!(
+            package_browser_mappings(
+                &browser_object_package,
+                "./server",
+                &[PathBuf::from("./dist/server.js")]
+            ),
+            vec![PathBuf::from("./dist/browser-server.js")]
+        );
+        assert!(
+            package_browser_mappings(
+                &browser_object_package,
+                "./disabled",
+                &[PathBuf::from("./dist/disabled.js")]
+            )
+            .is_empty()
+        );
     }
 
     #[test]

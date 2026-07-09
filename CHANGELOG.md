@@ -16,6 +16,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - JavaScript and TypeScript package `exports` and `imports` resolution now tries array fallback targets in order.
 - JavaScript and TypeScript package `exports` and `imports` condition priority can now be configured with `[javascript].package_conditions`.
 - JavaScript and TypeScript path alias, package `exports`, and package `imports` resolution now supports multiple `*` captures in one mapping.
+- JavaScript and TypeScript package resolution now applies common `package.json#browser` string and object remaps when resolving package entries.
 - JavaScript and TypeScript workspace discovery now supports recursive `**` workspace package patterns such as `packages/**`.
 - JavaScript and TypeScript workspace discovery now honors negated workspace package patterns such as `!packages/legacy/**`.
 - JavaScript and TypeScript package resolution now follows local `package.json#imports` aliases such as `#internal/*`.
