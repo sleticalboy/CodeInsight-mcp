@@ -18,6 +18,7 @@ The product direction and execution plan live in:
 - [Known limitations](docs/known-limitations.md)
 - [MCP client configuration](docs/mcp-client-config.md)
 - [MCP client smoke test](docs/mcp-client-smoke.md)
+- [Navigation tools](docs/navigation-tools.md)
 - [Impact analysis](docs/impact-analysis.md)
 - [Embedding providers](docs/embedding-providers.md)
 - [Semantic smoke test](docs/semantic-smoke.md)
@@ -241,7 +242,7 @@ For the full first-read contract, see [First-read workflow](docs/first-read-work
 
 `project_overview` / `overview` returns the indexed repository briefing an agent should fetch before deeper tools, including role-aware directories, entrypoint candidates, summaries, index metadata, and `recommended_next_tools`. See [Recommendation contract](docs/recommendation-contract.md) for the shared recommendation shape.
 
-`find_references` is currently a fast text-reference pass over indexed files. It returns file, line, column, context, an approximate reference kind, and a confidence score. Obvious comment-only and string-only matches are filtered before ranking, and test or fixture files are downranked so production references are less likely to be hidden by low-value matches. It is not yet a full language-server-grade semantic reference resolver.
+`find_references` is a fast text-reference pass over indexed files. It returns ranked file, location, context, approximate reference kind, and confidence entries, with obvious comment/string matches filtered and test or fixture paths downranked. See [Navigation tools](docs/navigation-tools.md) for CLI/MCP usage and response fields.
 
 `impact_analysis` estimates a local change radius from seed symbols and/or files using definitions, text references, static calls, and resolved local dependencies. It returns ranked impacted files, paths, risk level, top reasons, and suggested checks. See [Impact analysis](docs/impact-analysis.md) for CLI/MCP usage, scoring, risk levels, and validation-command configuration.
 
@@ -251,7 +252,7 @@ For the full first-read contract, see [First-read workflow](docs/first-read-work
 
 `context_pack` returns a token-budgeted, agent-ready context bundle from explicit seeds or inferred source entrypoints. It includes selected files and ranges, `seed_strategy`, `selected_seeds`, `reading_plan`, semantic status, and prioritized follow-up tool suggestions. See [First-read workflow](docs/first-read-workflow.md) for the full ranking and response contract.
 
-`callers` and `callees` use a static call graph. Calls include same-file caller/callee names, and obvious JavaScript/TypeScript imported calls can include `callee_file` when local imports, aliases, namespace imports, default imports, and re-exports resolve to indexed files with matching symbols. They are useful navigation signals, not full type-aware call hierarchy results.
+`callers` and `callees` use a static call graph. They return same-file call edges and best-effort imported target hints such as JavaScript/TypeScript `callee_file` values when local import/export paths resolve to indexed symbols. See [Navigation tools](docs/navigation-tools.md) for supported hints and boundaries.
 
 For accuracy boundaries and current non-goals, see [Known limitations](docs/known-limitations.md).
 

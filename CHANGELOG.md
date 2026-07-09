@@ -8,6 +8,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ### Changed
 
+- Added a navigation-tools contract document and shortened the README references/call-graph sections.
 - Shortened the README impact-analysis section to point at the detailed impact-analysis contract.
 - Moved detailed semantic search/index/status workflow notes from README into the embedding providers documentation.
 - Added a first-read workflow document and shortened the README overview/context-pack sections to point at the detailed contract.
