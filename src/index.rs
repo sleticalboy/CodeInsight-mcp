@@ -2671,8 +2671,7 @@ fn package_entry_mappings(
     package_conditions: &[String],
 ) -> Vec<PathBuf> {
     if let Some(exports) = package.get("exports") {
-        let mappings = package_export_mappings(exports, subpath, package_conditions);
-        if !mappings.is_empty() {
+        if let Some(mappings) = package_export_mappings(exports, subpath, package_conditions) {
             return mappings;
         }
     }
@@ -2731,30 +2730,37 @@ fn package_export_mappings(
     exports: &Value,
     subpath: &str,
     package_conditions: &[String],
-) -> Vec<PathBuf> {
-    if subpath == "." {
-        let targets: Vec<PathBuf> = package_export_targets(exports, package_conditions)
+) -> Option<Vec<PathBuf>> {
+    if subpath == "." && !package_exports_uses_subpath_keys(exports) {
+        let targets = package_export_targets(exports, package_conditions)
             .into_iter()
             .map(PathBuf::from)
             .collect();
-        if !targets.is_empty() {
-            return targets;
-        }
+        return Some(targets);
     }
 
     let Some(entries) = exports.as_object() else {
-        return Vec::new();
+        return None;
     };
     for (pattern, value) in entries {
         let Some(wildcards) = path_pattern_captures(pattern, subpath) else {
             continue;
         };
-        return package_export_targets(value, package_conditions)
-            .into_iter()
-            .filter_map(|target| apply_path_mapping(&target, &wildcards))
-            .collect();
+        return Some(
+            package_export_targets(value, package_conditions)
+                .into_iter()
+                .filter_map(|target| apply_path_mapping(&target, &wildcards))
+                .collect(),
+        );
     }
-    Vec::new()
+    None
+}
+
+fn package_exports_uses_subpath_keys(exports: &Value) -> bool {
+    exports
+        .as_object()
+        .map(|entries| entries.keys().any(|key| key.starts_with('.')))
+        .unwrap_or(false)
 }
 
 fn package_import_mappings(
@@ -3910,10 +3916,10 @@ catalogs:
 
         assert_eq!(
             package_export_mappings(&exports, "./feature", &default_package_conditions()),
-            vec![
+            Some(vec![
                 PathBuf::from("./dist/missing-feature.js"),
                 PathBuf::from("./dist/feature.js")
-            ]
+            ])
         );
     }
 
@@ -3934,7 +3940,24 @@ catalogs:
 
         assert_eq!(
             package_export_mappings(&exports, ".", &conditions),
-            vec![PathBuf::from("./dist/index.d.ts")]
+            Some(vec![PathBuf::from("./dist/index.d.ts")])
+        );
+    }
+
+    #[test]
+    fn parses_null_package_export_as_disabled_mapping() {
+        let exports = serde_json::json!({
+            "./disabled": null,
+            "./enabled": "./dist/enabled.js"
+        });
+
+        assert_eq!(
+            package_export_mappings(&exports, "./disabled", &default_package_conditions()),
+            Some(Vec::new())
+        );
+        assert_eq!(
+            package_export_mappings(&exports, "./missing", &default_package_conditions()),
+            None
         );
     }
 

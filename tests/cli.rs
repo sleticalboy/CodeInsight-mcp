@@ -1576,6 +1576,67 @@ fn cli_resolves_workspace_protocol_package_exports() {
 }
 
 #[test]
+fn cli_respects_null_package_exports_without_subpath_fallback() {
+    let fixture = null_package_exports_fixture_project();
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 3);
+    assert_eq!(index["changed_files"], 3);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let deps = run_json([
+        "dependency-graph",
+        fixture.path().to_str().unwrap(),
+        "--limit",
+        "20",
+    ]);
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "null-export-lib/enabled"
+                    && dependency["resolved_file"] == "src/enabled.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "null-export-lib/disabled"
+                    && dependency["resolved_file"].is_null()
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "null-export-lib/disabled"
+                    || dependency["resolved_file"] != "src/disabled.ts"
+            })
+    );
+
+    let callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "nullExportMain",
+        "--limit",
+        "6",
+    ]);
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "enabledRender" && call["callee_file"] == "src/enabled.ts"
+    }));
+    assert!(callees.as_array().unwrap().iter().all(|call| {
+        call["callee"] != "disabledRender" || call["callee_file"] != "src/disabled.ts"
+    }));
+}
+
+#[test]
 fn cli_resolves_yarn_package_json_workspaces() {
     let fixture = yarn_workspace_fixture_project();
 
@@ -3772,6 +3833,55 @@ export function workspaceProtocolMain() {
         r#"
 export function protocolButton() {
   return "protocol";
+}
+"#,
+    );
+    dir
+}
+
+fn null_package_exports_fixture_project() -> TempDir {
+    let dir = TempDir::new().unwrap();
+    write_file(
+        &dir,
+        "src/main.ts",
+        r#"
+import { enabledRender } from "null-export-lib/enabled";
+import { disabledRender } from "null-export-lib/disabled";
+
+export function nullExportMain() {
+  enabledRender();
+  disabledRender();
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "package.json",
+        r#"
+{
+  "name": "null-export-lib",
+  "exports": {
+    "./enabled": "./src/enabled.ts",
+    "./disabled": null
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/enabled.ts",
+        r#"
+export function enabledRender() {
+  return "enabled";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/disabled.ts",
+        r#"
+export function disabledRender() {
+  return "disabled";
 }
 "#,
     );
