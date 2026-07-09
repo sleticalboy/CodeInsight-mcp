@@ -1311,8 +1311,8 @@ fn cli_resolves_pnpm_workspace_package_exports() {
     let fixture = pnpm_workspace_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 5);
-    assert_eq!(index["changed_files"], 5);
+    assert_eq!(index["indexed_files"], 6);
+    assert_eq!(index["changed_files"], 6);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -1357,6 +1357,16 @@ fn cli_resolves_pnpm_workspace_package_exports() {
             .unwrap()
             .iter()
             .any(|dependency| {
+                dependency["target"] == "deep-ui/button"
+                    && dependency["resolved_file"] == "packages/nested/deep-ui/src/button.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
                 dependency["target"] == "catalog-ui/button"
                     && dependency["resolved_file"] == "node_modules/catalog-ui/dist/button.js"
             })
@@ -1387,6 +1397,10 @@ fn cli_resolves_pnpm_workspace_package_exports() {
     assert!(version_callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "versionCaretButton"
             && call["callee_file"] == "packages/version-caret-ui/src/button.ts"
+    }));
+    assert!(version_callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "deepButton"
+            && call["callee_file"] == "packages/nested/deep-ui/src/button.ts"
     }));
 }
 
@@ -2810,7 +2824,7 @@ fn pnpm_workspace_fixture_project() -> TempDir {
         "pnpm-workspace.yaml",
         r#"
 packages:
-  - "packages/*"
+  - "packages/**"
 catalogs:
   react18:
     catalog-ui: ^1.2.3
@@ -2825,6 +2839,7 @@ catalogs:
   "dependencies": {
     "version-star-ui": "workspace:*",
     "version-caret-ui": "workspace:^",
+    "deep-ui": "workspace:*",
     "catalog-ui": "catalog:react18"
   }
 }
@@ -2837,6 +2852,7 @@ catalogs:
 import { pnpmButton } from "pnpm-ui/button";
 import { versionStarButton } from "version-star-ui/button";
 import { versionCaretButton } from "version-caret-ui/button";
+import { deepButton } from "deep-ui/button";
 import { catalogButton } from "catalog-ui/button";
 
 export function pnpmWorkspaceMain() {
@@ -2846,6 +2862,7 @@ export function pnpmWorkspaceMain() {
 export function pnpmWorkspaceVersionMain() {
   versionStarButton();
   versionCaretButton();
+  deepButton();
   catalogButton();
 }
 "#,
@@ -2910,6 +2927,27 @@ export function versionStarButton() {
         r#"
 export function versionCaretButton() {
   return "caret";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/nested/deep-ui/package.json",
+        r#"
+{
+  "name": "deep-ui",
+  "exports": {
+    "./button": "./src/button.ts"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/nested/deep-ui/src/button.ts",
+        r#"
+export function deepButton() {
+  return "deep";
 }
 "#,
     );

@@ -2296,23 +2296,16 @@ fn expand_workspace_pattern_segments(
         return;
     };
 
-    if segment.contains('*') {
-        let Ok(entries) = fs::read_dir(root.join(&base)) else {
-            return;
-        };
-        let mut child_dirs = entries
-            .filter_map(|entry| entry.ok())
-            .filter_map(|entry| {
-                entry
-                    .file_type()
-                    .ok()
-                    .filter(|file_type| file_type.is_dir())
-                    .map(|_| entry.file_name())
-            })
-            .collect::<Vec<_>>();
-        child_dirs.sort();
+    if *segment == "**" {
+        expand_workspace_pattern_segments(root, base.clone(), remaining, matches);
+        for child_dir in workspace_child_dirs(root, &base) {
+            expand_workspace_pattern_segments(root, base.join(child_dir), segments, matches);
+        }
+        return;
+    }
 
-        for child_dir in child_dirs {
+    if segment.contains('*') {
+        for child_dir in workspace_child_dirs(root, &base) {
             let child_name = child_dir.to_string_lossy();
             if workspace_segment_matches(segment, &child_name) {
                 expand_workspace_pattern_segments(root, base.join(child_dir), remaining, matches);
@@ -2321,6 +2314,24 @@ fn expand_workspace_pattern_segments(
     } else {
         expand_workspace_pattern_segments(root, base.join(segment), remaining, matches);
     }
+}
+
+fn workspace_child_dirs(root: &Path, base: &Path) -> Vec<std::ffi::OsString> {
+    let Ok(entries) = fs::read_dir(root.join(base)) else {
+        return Vec::new();
+    };
+    let mut child_dirs = entries
+        .filter_map(|entry| entry.ok())
+        .filter_map(|entry| {
+            entry
+                .file_type()
+                .ok()
+                .filter(|file_type| file_type.is_dir())
+                .map(|_| entry.file_name())
+        })
+        .collect::<Vec<_>>();
+    child_dirs.sort();
+    child_dirs
 }
 
 fn workspace_segment_matches(pattern: &str, value: &str) -> bool {
