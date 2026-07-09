@@ -835,6 +835,11 @@ def helper():
                 .as_str(),
             Some("file_outline")
         );
+        assert_eq!(
+            context_result["structuredContent"]["reading_plan"][0]["suggested_tool"]["priority"]
+                .as_u64(),
+            Some(10)
+        );
         assert!(
             context_result["structuredContent"]["reading_plan"][0]["suggested_tool"]
                 ["suggested_arguments"]["path"]

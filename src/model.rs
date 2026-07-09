@@ -330,6 +330,7 @@ pub struct ContextReadingStep {
 #[derive(Debug, Clone, Serialize)]
 pub struct ContextSuggestedTool {
     pub tool: String,
+    pub priority: u8,
     pub reason: String,
     pub suggested_arguments: Value,
 }

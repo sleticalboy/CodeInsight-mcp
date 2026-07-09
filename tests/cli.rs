@@ -515,6 +515,10 @@ fn cli_indexes_and_queries_fixture_project() {
         context["reading_plan"][0]["suggested_tool"]["tool"],
         "file_outline"
     );
+    assert_eq!(
+        context["reading_plan"][0]["suggested_tool"]["priority"].as_u64(),
+        Some(10)
+    );
     assert!(
         context["reading_plan"][0]["suggested_tool"]["suggested_arguments"]["path"]
             .as_str()

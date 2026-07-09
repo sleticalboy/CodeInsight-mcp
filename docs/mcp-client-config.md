@@ -152,6 +152,7 @@ Example `context_pack` response shape:
       "question": "Which callers or callees explain how control moves through this flow?",
       "suggested_tool": {
         "tool": "impact_analysis",
+        "priority": 30,
         "reason": "Expand from this file through references, calls, and dependency signals.",
         "suggested_arguments": {
           "root": "/path/to/repo",
@@ -202,8 +203,8 @@ selection. Use it when a client needs an ordered read path without carrying the
 full code excerpts. `next_action` is a stable snake_case hint for client
 controls or follow-up tool routing, and `question` is a short prompt that can be
 shown directly to an agent or user. `suggested_tool` contains an MCP-ready
-`tool`, `reason`, and `suggested_arguments` object for the next local analysis
-call after reading that step.
+`tool`, `priority`, `reason`, and `suggested_arguments` object for the next
+local analysis call after reading that step.
 
 Known `source` values are `seed_file`, `symbol_definition`, `reference`,
 `call_graph`, `semantic`, and `dependency`.

@@ -1214,6 +1214,7 @@ fn context_reading_suggested_tool(root: &Path, file: &ContextFile) -> ContextSug
     match context_reading_next_action(file) {
         "inspect_seed_file" | "inspect_symbol_definition" => ContextSuggestedTool {
             tool: "file_outline".to_string(),
+            priority: 10,
             reason: "Inspect the selected file's symbol outline before reading deeper ranges."
                 .to_string(),
             suggested_arguments: json!({
@@ -1222,6 +1223,7 @@ fn context_reading_suggested_tool(root: &Path, file: &ContextFile) -> ContextSug
         },
         "follow_call_graph" | "inspect_references" => ContextSuggestedTool {
             tool: "impact_analysis".to_string(),
+            priority: 30,
             reason: "Expand from this file through references, calls, and dependency signals."
                 .to_string(),
             suggested_arguments: json!({
@@ -1235,6 +1237,7 @@ fn context_reading_suggested_tool(root: &Path, file: &ContextFile) -> ContextSug
         },
         "review_semantic_matches" => ContextSuggestedTool {
             tool: "context_pack".to_string(),
+            priority: 50,
             reason: "Rebuild a focused context pack around this semantically related file."
                 .to_string(),
             suggested_arguments: json!({
@@ -1246,6 +1249,7 @@ fn context_reading_suggested_tool(root: &Path, file: &ContextFile) -> ContextSug
         },
         "inspect_dependency" => ContextSuggestedTool {
             tool: "dependency_graph".to_string(),
+            priority: 40,
             reason: "Inspect module and package relationships around selected dependency context."
                 .to_string(),
             suggested_arguments: json!({
@@ -1255,6 +1259,7 @@ fn context_reading_suggested_tool(root: &Path, file: &ContextFile) -> ContextSug
         },
         _ => ContextSuggestedTool {
             tool: "context_pack".to_string(),
+            priority: 50,
             reason: "Rebuild context focused on this selected file.".to_string(),
             suggested_arguments: json!({
                 "root": root_arg,
