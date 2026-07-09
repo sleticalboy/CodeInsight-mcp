@@ -1807,6 +1807,71 @@ fn cli_resolves_package_json_workspace_array_recursive_exclusions() {
 }
 
 #[test]
+fn cli_resolves_yarn_workspace_object_recursive_exclusions() {
+    let fixture = yarn_workspace_object_recursive_exclusion_fixture_project();
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 3);
+    assert_eq!(index["changed_files"], 3);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let deps = run_json([
+        "dependency-graph",
+        fixture.path().to_str().unwrap(),
+        "--limit",
+        "20",
+    ]);
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "deep-yarn-ui/button"
+                    && dependency["resolved_file"] == "packages/nested/deep-yarn-ui/src/button.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "deep-legacy-yarn-ui/button"
+                    && dependency["resolved_file"]
+                        == "node_modules/deep-legacy-yarn-ui/dist/button.js"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "deep-legacy-yarn-ui/button"
+                    || dependency["resolved_file"]
+                        != "packages/legacy/deep-legacy-yarn-ui/src/button.ts"
+            })
+    );
+
+    let callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "recursiveYarnWorkspaceMain",
+        "--limit",
+        "6",
+    ]);
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "deepYarnButton"
+            && call["callee_file"] == "packages/nested/deep-yarn-ui/src/button.ts"
+    }));
+    assert!(callees.as_array().unwrap().iter().all(|call| {
+        call["callee"] != "deepLegacyYarnButton"
+            || call["callee_file"] != "packages/legacy/deep-legacy-yarn-ui/src/button.ts"
+    }));
+}
+
+#[test]
 fn cli_uses_configured_package_conditions() {
     let fixture = package_conditions_fixture_project();
 
@@ -4093,6 +4158,112 @@ export function deepLegacyArrayButton() {
         r#"
 export function deepLegacyArrayButton() {
   return "deep-legacy-array-node";
+}
+"#,
+    );
+    dir
+}
+
+fn yarn_workspace_object_recursive_exclusion_fixture_project() -> TempDir {
+    let dir = TempDir::new().unwrap();
+    write_file(
+        &dir,
+        "package.json",
+        r#"
+{
+  "private": true,
+  "workspaces": {
+    "packages": ["packages/**", "!packages/legacy/**"]
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "apps/web/package.json",
+        r#"
+{
+  "name": "web",
+  "dependencies": {
+    "deep-yarn-ui": "workspace:*",
+    "deep-legacy-yarn-ui": "workspace:*"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "apps/web/src/main.ts",
+        r#"
+import { deepYarnButton } from "deep-yarn-ui/button";
+import { deepLegacyYarnButton } from "deep-legacy-yarn-ui/button";
+
+export function recursiveYarnWorkspaceMain() {
+  deepYarnButton();
+  deepLegacyYarnButton();
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/nested/deep-yarn-ui/package.json",
+        r#"
+{
+  "name": "deep-yarn-ui",
+  "exports": {
+    "./button": "./src/button.ts"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/nested/deep-yarn-ui/src/button.ts",
+        r#"
+export function deepYarnButton() {
+  return "deep-yarn";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/legacy/deep-legacy-yarn-ui/package.json",
+        r#"
+{
+  "name": "deep-legacy-yarn-ui",
+  "exports": {
+    "./button": "./src/button.ts"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/legacy/deep-legacy-yarn-ui/src/button.ts",
+        r#"
+export function deepLegacyYarnButton() {
+  return "deep-legacy-yarn-workspace";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/deep-legacy-yarn-ui/package.json",
+        r#"
+{
+  "name": "deep-legacy-yarn-ui",
+  "exports": {
+    "./button": "./dist/button.js"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/deep-legacy-yarn-ui/dist/button.js",
+        r#"
+export function deepLegacyYarnButton() {
+  return "deep-legacy-yarn-node";
 }
 "#,
     );

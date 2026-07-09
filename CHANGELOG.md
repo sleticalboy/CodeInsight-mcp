@@ -21,6 +21,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - JavaScript and TypeScript workspace package resolution is now covered for negated `package.json#workspaces.packages` patterns such as `!packages/legacy-*`.
 - JavaScript and TypeScript workspace package resolution is now covered for negated array-form `package.json#workspaces` patterns such as `["packages/*", "!packages/legacy-*"]`.
 - JavaScript and TypeScript workspace package resolution is now covered for recursive array-form `package.json#workspaces` patterns such as `["packages/**", "!packages/legacy/**"]`.
+- JavaScript and TypeScript workspace package resolution is now covered for recursive Yarn-style `package.json#workspaces.packages` patterns such as `["packages/**", "!packages/legacy/**"]`.
 - JavaScript and TypeScript workspace discovery now supports recursive `**` workspace package patterns such as `packages/**`.
 - JavaScript and TypeScript workspace discovery now honors negated workspace package patterns such as `!packages/legacy/**`.
 - JavaScript and TypeScript package resolution now follows local `package.json#imports` aliases such as `#internal/*`.
