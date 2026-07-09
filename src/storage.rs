@@ -1757,6 +1757,7 @@ fn recommended_next_tools(
 
     tools.push(RecommendedToolCall {
         tool: "context_pack".to_string(),
+        priority: 10,
         reason: if entrypoints.iter().any(|entrypoint| entrypoint.role == "source") {
             "Build first-read context from the highest-confidence source entrypoint.".to_string()
         } else {
@@ -1772,6 +1773,7 @@ fn recommended_next_tools(
     if dependency_summary.edges > 0 {
         tools.push(RecommendedToolCall {
             tool: "dependency_graph".to_string(),
+            priority: 30,
             reason: "Inspect module and package relationships before deeper navigation."
                 .to_string(),
             suggested_arguments: json!({
@@ -1798,6 +1800,7 @@ fn recommended_next_tools(
         }
         tools.push(RecommendedToolCall {
             tool: "impact_analysis".to_string(),
+            priority: 40,
             reason: "Estimate the entrypoint change radius using call and dependency signals."
                 .to_string(),
             suggested_arguments,
@@ -1805,6 +1808,7 @@ fn recommended_next_tools(
     } else if call_summary.edges > 0 {
         tools.push(RecommendedToolCall {
             tool: "callers".to_string(),
+            priority: 40,
             reason: "Inspect static call graph edges because no source entrypoint was detected."
                 .to_string(),
             suggested_arguments: json!({
@@ -1817,6 +1821,7 @@ fn recommended_next_tools(
 
     tools.push(RecommendedToolCall {
         tool: "config_status".to_string(),
+        priority: 80,
         reason: "Check project-specific validation commands before planning changes.".to_string(),
         suggested_arguments: json!({
             "root": root

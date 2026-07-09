@@ -187,6 +187,7 @@ try:
             tool
             for tool in recommended_tools
             if tool["tool"] == "context_pack"
+            and tool["priority"] == 10
             and same_root(tool["suggested_arguments"]["root"])
             and tool["suggested_arguments"]["token_budget"] == 6000
         ),
@@ -197,24 +198,28 @@ try:
             tool
             for tool in recommended_tools
             if tool["tool"] == "config_status"
+            and tool["priority"] == 80
             and same_root(tool["suggested_arguments"]["root"])
         ),
         None,
     )
     assert any(
         tool["tool"] == "context_pack"
+        and tool["priority"] == 10
         and same_root(tool["suggested_arguments"]["root"])
         and tool["suggested_arguments"]["token_budget"] == 6000
         for tool in recommended_tools
     ), "context_pack recommendation not found"
     assert any(
         tool["tool"] == "impact_analysis"
+        and tool["priority"] == 40
         and tool["suggested_arguments"]["files"] == ["src/main.ts"]
         and tool["suggested_arguments"]["symbols"] == ["main"]
         for tool in recommended_tools
     ), "impact_analysis recommendation not found"
     assert any(
         tool["tool"] == "config_status"
+        and tool["priority"] == 80
         and same_root(tool["suggested_arguments"]["root"])
         for tool in recommended_tools
     ), "config_status recommendation not found"

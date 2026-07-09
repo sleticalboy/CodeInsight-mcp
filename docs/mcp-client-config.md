@@ -103,6 +103,7 @@ Recommended first-read flow for agents:
 `project_overview.recommended_next_tools[]` entries include:
 
 - `tool`: MCP tool name.
+- `priority`: display priority; lower numbers should be shown first.
 - `reason`: short explanation for surfacing in clients.
 - `suggested_arguments`: JSON arguments that can be passed to `tools/call`
   after user/task-specific edits.

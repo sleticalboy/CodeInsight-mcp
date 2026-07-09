@@ -98,6 +98,7 @@ fn cli_indexes_and_queries_fixture_project() {
             .unwrap()
             .iter()
             .any(|tool| tool["tool"] == "context_pack"
+                && tool["priority"].as_u64() == Some(10)
                 && tool["suggested_arguments"]["task"]
                     == "understand project entrypoint and main flow"
                 && tool["suggested_arguments"]["token_budget"].as_u64() == Some(6000))
@@ -108,6 +109,7 @@ fn cli_indexes_and_queries_fixture_project() {
             .unwrap()
             .iter()
             .any(|tool| tool["tool"] == "dependency_graph"
+                && tool["priority"].as_u64() == Some(30)
                 && tool["suggested_arguments"]["limit"].as_u64() == Some(100))
     );
     assert!(
@@ -116,6 +118,7 @@ fn cli_indexes_and_queries_fixture_project() {
             .unwrap()
             .iter()
             .any(|tool| tool["tool"] == "impact_analysis"
+                && tool["priority"].as_u64() == Some(40)
                 && tool["suggested_arguments"]["files"][0] == "src/main.ts"
                 && tool["suggested_arguments"]["symbols"][0] == "main")
     );

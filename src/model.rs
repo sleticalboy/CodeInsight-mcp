@@ -535,6 +535,7 @@ pub struct EntryPointCandidate {
 #[derive(Debug, Serialize)]
 pub struct RecommendedToolCall {
     pub tool: String,
+    pub priority: u8,
     pub reason: String,
     pub suggested_arguments: Value,
 }
