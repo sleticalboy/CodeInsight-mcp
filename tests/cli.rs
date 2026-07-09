@@ -11,12 +11,12 @@ fn cli_indexes_and_queries_fixture_project() {
     let fixture = fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 21);
-    assert_eq!(index["changed_files"], 21);
+    assert_eq!(index["indexed_files"], 22);
+    assert_eq!(index["changed_files"], 22);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let overview = run_json(["overview", fixture.path().to_str().unwrap()]);
-    assert_eq!(overview["indexed_files"], 21);
+    assert_eq!(overview["indexed_files"], 22);
     assert!(overview["total_lines"].as_u64().unwrap() > 0);
     assert!(
         overview["summary"]
@@ -125,7 +125,7 @@ fn cli_indexes_and_queries_fixture_project() {
 
     let second_index = run_json(["index", fixture.path().to_str().unwrap()]);
     assert_eq!(second_index["changed_files"], 0);
-    assert_eq!(second_index["unchanged_files"], 21);
+    assert_eq!(second_index["unchanged_files"], 22);
 
     let semantic_index = run_json([
         "semantic-index",
@@ -362,6 +362,9 @@ fn cli_indexes_and_queries_fixture_project() {
     assert!(targets.contains(&"workspace-ui/button"));
     assert!(targets.contains(&"#internal/logger"));
     assert!(targets.contains(&"#fallback/logger"));
+    assert!(targets.contains(&"@multi/admin/component/card"));
+    assert!(targets.contains(&"fixture-lib/multi/admin/component/card"));
+    assert!(targets.contains(&"#multi/admin/component/card"));
     assert!(
         deps["dependencies"]
             .as_array()
@@ -479,6 +482,36 @@ fn cli_indexes_and_queries_fixture_project() {
             .any(|dependency| {
                 dependency["target"] == "#internal/logger"
                     && dependency["resolved_file"] == "src/internal/logger.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "@multi/admin/component/card"
+                    && dependency["resolved_file"] == "src/multi/admin/component/card.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "fixture-lib/multi/admin/component/card"
+                    && dependency["resolved_file"] == "src/multi/admin/component/card.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "#multi/admin/component/card"
+                    && dependency["resolved_file"] == "src/multi/admin/component/card.ts"
             })
     );
     assert!(
@@ -2486,10 +2519,12 @@ fn fixture_project() -> TempDir {
   "workspaces": ["packages/*"],
   "imports": {
     "#internal/*": "./src/internal/*.ts",
-    "#fallback/*": ["./src/missing/*.ts", "./src/internal/*.ts"]
+    "#fallback/*": ["./src/missing/*.ts", "./src/internal/*.ts"],
+    "#multi/*/component/*": "./src/multi/*/component/*.ts"
   },
   "exports": {
-    "./package-*": "./src/package-*.ts"
+    "./package-*": "./src/package-*.ts",
+    "./multi/*/component/*": "./src/multi/*/component/*.ts"
   }
 }
 "##,
@@ -2518,7 +2553,8 @@ fn fixture_project() -> TempDir {
     "baseUrl": "src",
     "paths": {
       "@app/*": ["*"],
-      "@fallback/*": ["missing/*", "*"]
+      "@fallback/*": ["missing/*", "*"],
+      "@multi/*/component/*": ["multi/*/component/*.ts"]
     }
   }
 }
@@ -2596,6 +2632,9 @@ import { legacyPluginRender } from "legacy-lib/plugin";
 import { workspaceButton } from "workspace-ui/button";
 import { logInternal } from "#internal/logger";
 import { logInternal as logFallback } from "#fallback/logger";
+import { multiPathRender } from "@multi/admin/component/card";
+import { multiPackageRender } from "fixture-lib/multi/admin/component/card";
+import { multiInternalRender } from "#multi/admin/component/card";
 const { render: draw } = require("./ui");
 const uiModule = require("./ui");
 const computedUiModule = require("./" + "ui");
@@ -2702,6 +2741,12 @@ export function workspacePackageMain() {
 export function packageImportMain() {
   logInternal();
   logFallback();
+}
+
+export function multiWildcardMain() {
+  multiPathRender();
+  multiPackageRender();
+  multiInternalRender();
 }
 "##,
     );
@@ -2910,6 +2955,23 @@ export function packageRender() {
         r#"
 export function logInternal() {
   return "log";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/multi/admin/component/card.ts",
+        r#"
+export function multiPathRender() {
+  return "multi-path";
+}
+
+export function multiPackageRender() {
+  return "multi-package";
+}
+
+export function multiInternalRender() {
+  return "multi-internal";
 }
 "#,
     );

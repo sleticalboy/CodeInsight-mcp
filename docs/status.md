@@ -33,7 +33,7 @@ yet a complete language-server-grade code-analysis platform.
 
 ## Next
 
-- Model JavaScript multi-wildcard and bundler edge cases beyond package discovery.
+- Model JavaScript bundler and package-manager edge cases beyond package discovery.
 - Keep tightening JavaScript package metadata edge cases where they improve local code navigation.
 - Continue tightening README/docs routing so the README stays entry-level.
 

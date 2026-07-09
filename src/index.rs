@@ -1916,14 +1916,14 @@ fn resolve_tsconfig_paths_target(
 ) -> Option<String> {
     let paths = paths_value.as_object()?;
     for (pattern, mappings) in paths {
-        let Some(wildcard) = tsconfig_path_wildcard(pattern, target) else {
+        let Some(wildcards) = path_pattern_captures(pattern, target) else {
             continue;
         };
         let Some(mapping_values) = mappings.as_array() else {
             continue;
         };
         for mapping in mapping_values.iter().filter_map(Value::as_str) {
-            let mapped = apply_tsconfig_path_mapping(mapping, wildcard.as_deref())?;
+            let mapped = apply_path_mapping(mapping, &wildcards)?;
             if let Some(resolved) = resolve_base(root, base_dir.join(mapped), extensions) {
                 return Some(resolved);
             }
@@ -1932,43 +1932,58 @@ fn resolve_tsconfig_paths_target(
     None
 }
 
-fn tsconfig_path_wildcard(pattern: &str, target: &str) -> Option<Option<String>> {
-    let Some(star_index) = pattern.find('*') else {
-        return (pattern == target).then_some(None);
-    };
-    if pattern[star_index + 1..].contains('*') {
+fn path_pattern_captures(pattern: &str, target: &str) -> Option<Vec<String>> {
+    if !pattern.contains('*') {
+        return (pattern == target).then(Vec::new);
+    }
+
+    let parts = pattern.split('*').collect::<Vec<_>>();
+    let mut captures = Vec::new();
+    let prefix = parts[0];
+    if !target.starts_with(prefix) {
+        return None;
+    }
+    let mut position = prefix.len();
+
+    for (index, part) in parts.iter().enumerate().skip(1) {
+        if index == parts.len() - 1 {
+            if !target[position..].ends_with(part) {
+                return None;
+            }
+            let capture_end = target.len().checked_sub(part.len())?;
+            if capture_end < position {
+                return None;
+            }
+            captures.push(target[position..capture_end].to_string());
+            position = target.len();
+            continue;
+        }
+
+        let relative_match = target[position..].find(part)?;
+        let capture_end = position + relative_match;
+        captures.push(target[position..capture_end].to_string());
+        position = capture_end + part.len();
+    }
+
+    Some(captures)
+}
+
+fn apply_path_mapping(mapping: &str, wildcards: &[String]) -> Option<PathBuf> {
+    if !mapping.contains('*') {
+        return Some(PathBuf::from(mapping));
+    }
+
+    let parts = mapping.split('*').collect::<Vec<_>>();
+    if parts.len() - 1 != wildcards.len() {
         return None;
     }
 
-    let prefix = &pattern[..star_index];
-    let suffix = &pattern[star_index + 1..];
-    if target.starts_with(prefix)
-        && target.ends_with(suffix)
-        && target.len() >= prefix.len() + suffix.len()
-    {
-        Some(Some(
-            target[prefix.len()..target.len() - suffix.len()].to_string(),
-        ))
-    } else {
-        None
+    let mut mapped = String::from(parts[0]);
+    for (wildcard, suffix) in wildcards.iter().zip(parts.iter().skip(1)) {
+        mapped.push_str(wildcard);
+        mapped.push_str(suffix);
     }
-}
-
-fn apply_tsconfig_path_mapping(mapping: &str, wildcard: Option<&str>) -> Option<PathBuf> {
-    if let Some(star_index) = mapping.find('*') {
-        if mapping[star_index + 1..].contains('*') {
-            return None;
-        }
-        let wildcard = wildcard?;
-        return Some(PathBuf::from(format!(
-            "{}{}{}",
-            &mapping[..star_index],
-            wildcard,
-            &mapping[star_index + 1..]
-        )));
-    }
-
-    Some(PathBuf::from(mapping))
+    Some(PathBuf::from(mapped))
 }
 
 fn resolve_package_exports_target(
@@ -2675,12 +2690,12 @@ fn package_export_mappings(
         return Vec::new();
     };
     for (pattern, value) in entries {
-        let Some(wildcard) = tsconfig_path_wildcard(pattern, subpath) else {
+        let Some(wildcards) = path_pattern_captures(pattern, subpath) else {
             continue;
         };
         return package_export_targets(value, package_conditions)
             .into_iter()
-            .filter_map(|target| apply_tsconfig_path_mapping(&target, wildcard.as_deref()))
+            .filter_map(|target| apply_path_mapping(&target, &wildcards))
             .collect();
     }
     Vec::new()
@@ -2695,13 +2710,13 @@ fn package_import_mappings(
         return Vec::new();
     };
     for (pattern, value) in entries {
-        let Some(wildcard) = tsconfig_path_wildcard(pattern, target) else {
+        let Some(wildcards) = path_pattern_captures(pattern, target) else {
             continue;
         };
         return package_export_targets(value, package_conditions)
             .into_iter()
             .filter(|target| target.starts_with("./") || target.starts_with("../"))
-            .filter_map(|target| apply_tsconfig_path_mapping(&target, wildcard.as_deref()))
+            .filter_map(|target| apply_path_mapping(&target, &wildcards))
             .collect();
     }
     Vec::new()
@@ -3865,6 +3880,19 @@ catalogs:
             package_export_mappings(&exports, ".", &conditions),
             vec![PathBuf::from("./dist/index.d.ts")]
         );
+    }
+
+    #[test]
+    fn captures_and_applies_multiple_path_wildcards() {
+        let captures =
+            path_pattern_captures("@scope/*/component/*", "@scope/admin/component/button").unwrap();
+
+        assert_eq!(captures, vec!["admin".to_string(), "button".to_string()]);
+        assert_eq!(
+            apply_path_mapping("src/*/component/*.ts", &captures),
+            Some(PathBuf::from("src/admin/component/button.ts"))
+        );
+        assert_eq!(apply_path_mapping("src/*.ts", &captures), None);
     }
 
     #[test]
