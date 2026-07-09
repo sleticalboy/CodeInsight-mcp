@@ -108,6 +108,9 @@ Recommended first-read flow for agents:
 - `suggested_arguments`: JSON arguments that can be passed to `tools/call`
   after user/task-specific edits.
 
+See [Recommendation contract](recommendation-contract.md) for shared priority
+bands and client sorting guidance.
+
 Example `config_status` call arguments:
 
 ```json

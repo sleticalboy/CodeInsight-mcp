@@ -8,6 +8,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ### Changed
 
+- Added a recommendation contract document for `recommended_next_tools` and `reading_plan[].suggested_tool` fields, priorities, and client sorting guidance.
 - `context_pack.reading_plan[].suggested_tool` now includes `priority` so clients can sort follow-up calls consistently with overview recommendations.
 - `overview` / `project_overview` recommended tools now include `priority` so clients can display next calls without relying on array order.
 - `scripts/mcp-stdio-smoke.sh` now executes selected `project_overview.recommended_next_tools` calls so overview recommendations are verified as usable MCP arguments.
