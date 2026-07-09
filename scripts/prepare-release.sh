@@ -153,11 +153,11 @@ readme = File.read(readme_path)
 readme_changed = readme.gsub!(/CODEINSIGHT_VERSION=v\d+\.\d+\.\d+/, "CODEINSIGHT_VERSION=#{tag}")
 
 install_doc_path = path(work_dir, "docs/install.md")
+install_doc = nil
 install_doc_changed = false
 if File.exist?(install_doc_path)
   install_doc = File.read(install_doc_path)
   install_doc_changed = install_doc.gsub!(/CODEINSIGHT_VERSION=v\d+\.\d+\.\d+/, "CODEINSIGHT_VERSION=#{tag}")
-  File.write(install_doc_path, install_doc) if install_doc_changed
 end
 
 unless readme_changed || install_doc_changed
@@ -183,6 +183,7 @@ next_changelog = "#{prefix}\n#{new_section}#{suffix}"
 
 File.write(cargo_path, next_cargo)
 File.write(readme_path, readme) if readme_changed
+File.write(install_doc_path, install_doc) if install_doc_changed
 File.write(changelog_path, next_changelog)
 RUBY
 
