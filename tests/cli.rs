@@ -1311,8 +1311,8 @@ fn cli_resolves_pnpm_workspace_package_exports() {
     let fixture = pnpm_workspace_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 2);
-    assert_eq!(index["changed_files"], 2);
+    assert_eq!(index["indexed_files"], 4);
+    assert_eq!(index["changed_files"], 4);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -1331,6 +1331,26 @@ fn cli_resolves_pnpm_workspace_package_exports() {
                     && dependency["resolved_file"] == "packages/pnpm-ui/src/button.ts"
             })
     );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "version-star-ui/button"
+                    && dependency["resolved_file"] == "packages/version-star-ui/src/button.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "version-caret-ui/button"
+                    && dependency["resolved_file"] == "packages/version-caret-ui/src/button.ts"
+            })
+    );
 
     let callees = run_json([
         "callees",
@@ -1341,6 +1361,22 @@ fn cli_resolves_pnpm_workspace_package_exports() {
     ]);
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "pnpmButton" && call["callee_file"] == "packages/pnpm-ui/src/button.ts"
+    }));
+
+    let version_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "pnpmWorkspaceVersionMain",
+        "--limit",
+        "10",
+    ]);
+    assert!(version_callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "versionStarButton"
+            && call["callee_file"] == "packages/version-star-ui/src/button.ts"
+    }));
+    assert!(version_callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "versionCaretButton"
+            && call["callee_file"] == "packages/version-caret-ui/src/button.ts"
     }));
 }
 
@@ -2769,12 +2805,32 @@ packages:
     );
     write_file(
         &dir,
+        "apps/web/package.json",
+        r#"
+{
+  "name": "web",
+  "dependencies": {
+    "version-star-ui": "workspace:*",
+    "version-caret-ui": "workspace:^"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
         "apps/web/src/main.ts",
         r#"
 import { pnpmButton } from "pnpm-ui/button";
+import { versionStarButton } from "version-star-ui/button";
+import { versionCaretButton } from "version-caret-ui/button";
 
 export function pnpmWorkspaceMain() {
   pnpmButton();
+}
+
+export function pnpmWorkspaceVersionMain() {
+  versionStarButton();
+  versionCaretButton();
 }
 "#,
     );
@@ -2796,6 +2852,48 @@ export function pnpmWorkspaceMain() {
         r#"
 export function pnpmButton() {
   return "pnpm";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/version-star-ui/package.json",
+        r#"
+{
+  "name": "version-star-ui",
+  "exports": {
+    "./button": "./src/button.ts"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/version-star-ui/src/button.ts",
+        r#"
+export function versionStarButton() {
+  return "star";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/version-caret-ui/package.json",
+        r#"
+{
+  "name": "version-caret-ui",
+  "exports": {
+    "./button": "./src/button.ts"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/version-caret-ui/src/button.ts",
+        r#"
+export function versionCaretButton() {
+  return "caret";
 }
 "#,
     );
