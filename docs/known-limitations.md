@@ -101,7 +101,7 @@ Limitations:
 - Targets are always stored as module strings; `resolved_file` is only populated when a local file can be resolved cheaply.
 - Grouped imports may be compacted rather than expanded precisely.
 - Local package self-reference `exports` resolution supports JSON-compatible `package.json` files with exact, single-wildcard, or multi-wildcard string mappings, configurable common condition priority, array fallback targets, explicit `null` disabled subpaths, and matched conditional `null` branches.
-- Local `package.json#imports` resolution supports exact, single-wildcard, or multi-wildcard mappings to relative local files, configurable common condition priority, and array fallback targets.
+- Local `package.json#imports` resolution supports exact, single-wildcard, or multi-wildcard mappings to relative local files, configurable common condition priority, array fallback targets, and matched conditional `null` branches that block later alias fallback.
 - Same-repository workspace package `exports` resolution supports JSON-compatible array-form `package.json#workspaces`, Yarn-style `package.json#workspaces.packages`, and common `pnpm-workspace.yaml` package lists with exact-directory, single-segment wildcard, recursive `**`, and negated package patterns such as `!packages/legacy-*` or `!packages/legacy/**`.
 - Relative `workspace:` dependency paths such as `workspace:../pkg` can resolve package aliases to local package `exports` targets.
 - Workspace version protocols such as `workspace:*`, `workspace:^`, `workspace:~`, and `workspace:<semver>` resolve through same-repository workspace package discovery when the dependency name matches a workspace package.

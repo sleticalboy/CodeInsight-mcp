@@ -1767,26 +1767,47 @@ fn resolve_javascript_like_target(
     package_conditions: &[String],
 ) -> Option<String> {
     const EXTENSIONS: &[&str] = &["ts", "tsx", "js", "jsx", "mjs", "cjs"];
-    resolve_relative_target(
+    if let Some(resolved) = resolve_relative_target(
         root,
         &dependency.source_file,
         &dependency.target,
         EXTENSIONS,
-    )
-    .or_else(|| resolve_package_imports_target(root, dependency, EXTENSIONS, package_conditions))
-    .or_else(|| resolve_tsconfig_target(root, dependency, EXTENSIONS))
-    .or_else(|| resolve_package_exports_target(root, dependency, EXTENSIONS, package_conditions))
-    .or_else(|| {
-        resolve_workspace_package_exports_target(root, dependency, EXTENSIONS, package_conditions)
-    })
-    .or_else(|| {
-        resolve_node_modules_package_exports_target(
-            root,
-            dependency,
-            EXTENSIONS,
-            package_conditions,
-        )
-    })
+    ) {
+        return Some(resolved);
+    }
+
+    match resolve_package_imports_target(root, dependency, EXTENSIONS, package_conditions) {
+        PackageImportResolution::Resolved(resolved) => return Some(resolved),
+        PackageImportResolution::Blocked => return None,
+        PackageImportResolution::Unresolved => {}
+    }
+
+    resolve_tsconfig_target(root, dependency, EXTENSIONS)
+        .or_else(|| {
+            resolve_package_exports_target(root, dependency, EXTENSIONS, package_conditions)
+        })
+        .or_else(|| {
+            resolve_workspace_package_exports_target(
+                root,
+                dependency,
+                EXTENSIONS,
+                package_conditions,
+            )
+        })
+        .or_else(|| {
+            resolve_node_modules_package_exports_target(
+                root,
+                dependency,
+                EXTENSIONS,
+                package_conditions,
+            )
+        })
+}
+
+enum PackageImportResolution {
+    Resolved(String),
+    Blocked,
+    Unresolved,
 }
 
 fn resolve_tsconfig_target(
@@ -2017,22 +2038,37 @@ fn resolve_package_imports_target(
     dependency: &Dependency,
     extensions: &[&str],
     package_conditions: &[String],
-) -> Option<String> {
+) -> PackageImportResolution {
     if !dependency.target.starts_with('#') {
-        return None;
+        return PackageImportResolution::Unresolved;
     }
 
-    let package_path = find_package_json(root, &dependency.source_file)?;
-    let package_text = fs::read_to_string(root.join(&package_path)).ok()?;
-    let package: Value = serde_json::from_str(&package_text).ok()?;
+    let Some(package_path) = find_package_json(root, &dependency.source_file) else {
+        return PackageImportResolution::Unresolved;
+    };
+    let Ok(package_text) = fs::read_to_string(root.join(&package_path)) else {
+        return PackageImportResolution::Unresolved;
+    };
+    let Ok(package) = serde_json::from_str::<Value>(&package_text) else {
+        return PackageImportResolution::Unresolved;
+    };
     let package_dir = package_path.parent().unwrap_or(Path::new(""));
-    let imports = package.get("imports")?;
-    for mapped in package_import_mappings(imports, &dependency.target, package_conditions) {
+    let Some(imports) = package.get("imports") else {
+        return PackageImportResolution::Unresolved;
+    };
+    let Some(mappings) = package_import_mappings(imports, &dependency.target, package_conditions)
+    else {
+        return PackageImportResolution::Unresolved;
+    };
+    if mappings.is_empty() {
+        return PackageImportResolution::Blocked;
+    }
+    for mapped in mappings {
         if let Some(resolved) = resolve_base(root, package_dir.join(mapped), extensions) {
-            return Some(resolved);
+            return PackageImportResolution::Resolved(resolved);
         }
     }
-    None
+    PackageImportResolution::Unresolved
 }
 
 fn resolve_node_modules_package_exports_target(
@@ -2770,22 +2806,24 @@ fn package_import_mappings(
     imports: &Value,
     target: &str,
     package_conditions: &[String],
-) -> Vec<PathBuf> {
+) -> Option<Vec<PathBuf>> {
     let Some(entries) = imports.as_object() else {
-        return Vec::new();
+        return None;
     };
     for (pattern, value) in entries {
         let Some(wildcards) = path_pattern_captures(pattern, target) else {
             continue;
         };
-        return package_export_targets(value, package_conditions)
-            .unwrap_or_default()
-            .into_iter()
-            .filter(|target| target.starts_with("./") || target.starts_with("../"))
-            .filter_map(|target| apply_path_mapping(&target, &wildcards))
-            .collect();
+        return Some(
+            package_export_targets(value, package_conditions)
+                .unwrap_or_default()
+                .into_iter()
+                .filter(|target| target.starts_with("./") || target.starts_with("../"))
+                .filter_map(|target| apply_path_mapping(&target, &wildcards))
+                .collect(),
+        );
     }
-    Vec::new()
+    None
 }
 
 fn package_metadata_entry(package: &Value, subpath: &str) -> Option<PathBuf> {
@@ -3983,6 +4021,43 @@ catalogs:
                 &["browser".to_string(), "default".to_string()]
             ),
             Some(vec![PathBuf::from("./dist/conditional-fallback.js")])
+        );
+    }
+
+    #[test]
+    fn parses_null_package_import_as_disabled_mapping() {
+        let imports = serde_json::json!({
+            "#disabled": null,
+            "#conditional": {
+                "import": null,
+                "default": "./src/conditional-fallback.ts"
+            },
+            "#enabled/*": "./src/*.ts"
+        });
+
+        assert_eq!(
+            package_import_mappings(&imports, "#disabled", &default_package_conditions()),
+            Some(Vec::new())
+        );
+        assert_eq!(
+            package_import_mappings(&imports, "#missing", &default_package_conditions()),
+            None
+        );
+        assert_eq!(
+            package_import_mappings(&imports, "#conditional", &default_package_conditions()),
+            Some(Vec::new())
+        );
+        assert_eq!(
+            package_import_mappings(
+                &imports,
+                "#conditional",
+                &["browser".to_string(), "default".to_string()]
+            ),
+            Some(vec![PathBuf::from("./src/conditional-fallback.ts")])
+        );
+        assert_eq!(
+            package_import_mappings(&imports, "#enabled/button", &default_package_conditions()),
+            Some(vec![PathBuf::from("./src/button.ts")])
         );
     }
 

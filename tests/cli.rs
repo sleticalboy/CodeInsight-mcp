@@ -1661,6 +1661,67 @@ fn cli_respects_null_package_exports_without_subpath_fallback() {
 }
 
 #[test]
+fn cli_respects_null_package_imports_without_tsconfig_fallback() {
+    let fixture = null_package_imports_fixture_project();
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 4);
+    assert_eq!(index["changed_files"], 4);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let deps = run_json([
+        "dependency-graph",
+        fixture.path().to_str().unwrap(),
+        "--limit",
+        "20",
+    ]);
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "#enabled"
+                    && dependency["resolved_file"] == "src/enabled-import.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "#conditional" && dependency["resolved_file"].is_null()
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "#conditional"
+                    || dependency["resolved_file"] != "src/tsconfig-fallback.ts"
+            })
+    );
+
+    let callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "nullImportMain",
+        "--limit",
+        "6",
+    ]);
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "enabledImportRender" && call["callee_file"] == "src/enabled-import.ts"
+    }));
+    assert!(callees.as_array().unwrap().iter().all(|call| {
+        call["callee"] != "conditionalImportRender"
+            || call["callee_file"] != "src/tsconfig-fallback.ts"
+    }));
+}
+
+#[test]
 fn cli_resolves_yarn_package_json_workspaces() {
     let fixture = yarn_workspace_fixture_project();
 
@@ -3921,6 +3982,80 @@ export function disabledRender() {
         r#"
 export function conditionalRender() {
   return "conditional";
+}
+"#,
+    );
+    dir
+}
+
+fn null_package_imports_fixture_project() -> TempDir {
+    let dir = TempDir::new().unwrap();
+    write_file(
+        &dir,
+        "package.json",
+        r##"
+{
+  "imports": {
+    "#enabled": "./src/enabled-import.ts",
+    "#conditional": {
+      "import": null,
+      "default": "./src/default-import.ts"
+    }
+  }
+}
+"##,
+    );
+    write_file(
+        &dir,
+        "tsconfig.json",
+        r##"
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "#conditional": ["src/tsconfig-fallback.ts"]
+    }
+  }
+}
+"##,
+    );
+    write_file(
+        &dir,
+        "src/main.ts",
+        r##"
+import { enabledImportRender } from "#enabled";
+import { conditionalImportRender } from "#conditional";
+
+export function nullImportMain() {
+  enabledImportRender();
+  conditionalImportRender();
+}
+"##,
+    );
+    write_file(
+        &dir,
+        "src/enabled-import.ts",
+        r#"
+export function enabledImportRender() {
+  return "enabled-import";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/tsconfig-fallback.ts",
+        r#"
+export function conditionalImportRender() {
+  return "tsconfig-fallback";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/default-import.ts",
+        r#"
+export function conditionalImportRender() {
+  return "default-import";
 }
 "#,
     );
