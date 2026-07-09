@@ -2025,6 +2025,14 @@ fn find_workspace_package_json(
             return Some(package_path);
         }
 
+        let pnpm_candidate = current.join("pnpm-workspace.yaml");
+        if root.join(&pnpm_candidate).is_file()
+            && let Some(package_path) =
+                find_pnpm_workspace_package_from_root(root, &pnpm_candidate, package_name)
+        {
+            return Some(package_path);
+        }
+
         if current.as_os_str().is_empty() {
             return None;
         }
@@ -2039,11 +2047,38 @@ fn find_workspace_package_from_root(
 ) -> Option<PathBuf> {
     let package_text = fs::read_to_string(root.join(workspace_package_json)).ok()?;
     let package: Value = serde_json::from_str(&package_text).ok()?;
-    let workspace_patterns = package_workspace_patterns(&package)?;
     let workspace_dir = workspace_package_json.parent().unwrap_or(Path::new(""));
+    find_workspace_package_from_patterns(
+        root,
+        workspace_dir,
+        package_workspace_patterns(&package)?,
+        package_name,
+    )
+}
 
+fn find_pnpm_workspace_package_from_root(
+    root: &Path,
+    pnpm_workspace_yaml: &Path,
+    package_name: &str,
+) -> Option<PathBuf> {
+    let workspace_text = fs::read_to_string(root.join(pnpm_workspace_yaml)).ok()?;
+    let workspace_patterns = pnpm_workspace_patterns(&workspace_text);
+    if workspace_patterns.is_empty() {
+        return None;
+    }
+
+    let workspace_dir = pnpm_workspace_yaml.parent().unwrap_or(Path::new(""));
+    find_workspace_package_from_patterns(root, workspace_dir, workspace_patterns, package_name)
+}
+
+fn find_workspace_package_from_patterns(
+    root: &Path,
+    workspace_dir: &Path,
+    workspace_patterns: Vec<String>,
+    package_name: &str,
+) -> Option<PathBuf> {
     for pattern in workspace_patterns {
-        for package_dir in expand_workspace_pattern(root, workspace_dir, pattern) {
+        for package_dir in expand_workspace_pattern(root, workspace_dir, &pattern) {
             let package_path = package_dir.join("package.json");
             let Ok(package_text) = fs::read_to_string(root.join(&package_path)) else {
                 continue;
@@ -2060,16 +2095,85 @@ fn find_workspace_package_from_root(
     None
 }
 
-fn package_workspace_patterns(package: &Value) -> Option<Vec<&str>> {
+fn package_workspace_patterns(package: &Value) -> Option<Vec<String>> {
     let workspaces = package.get("workspaces")?;
     if let Some(patterns) = workspaces.as_array() {
-        return Some(patterns.iter().filter_map(Value::as_str).collect());
+        return Some(
+            patterns
+                .iter()
+                .filter_map(Value::as_str)
+                .map(str::to_string)
+                .collect(),
+        );
     }
 
     workspaces
         .get("packages")
         .and_then(Value::as_array)
-        .map(|patterns| patterns.iter().filter_map(Value::as_str).collect())
+        .map(|patterns| {
+            patterns
+                .iter()
+                .filter_map(Value::as_str)
+                .map(str::to_string)
+                .collect()
+        })
+}
+
+fn pnpm_workspace_patterns(text: &str) -> Vec<String> {
+    let mut patterns = Vec::new();
+    let mut in_packages = false;
+
+    for raw_line in text.lines() {
+        let line = strip_yaml_comment(raw_line).trim();
+        if line.is_empty() {
+            continue;
+        }
+
+        if !raw_line.starts_with([' ', '\t']) {
+            in_packages = false;
+            if let Some(rest) = line.strip_prefix("packages:") {
+                in_packages = true;
+                patterns.extend(yaml_string_values(rest.trim()));
+            }
+            continue;
+        }
+
+        if in_packages && let Some(rest) = line.strip_prefix('-') {
+            patterns.extend(yaml_string_values(rest.trim()));
+        }
+    }
+
+    patterns
+}
+
+fn yaml_string_values(value: &str) -> Vec<String> {
+    let value = value.trim();
+    if value.is_empty() {
+        return Vec::new();
+    }
+
+    if let Some(inner) = value
+        .strip_prefix('[')
+        .and_then(|rest| rest.strip_suffix(']'))
+    {
+        return inner
+            .split(',')
+            .filter_map(clean_yaml_string)
+            .collect::<Vec<_>>();
+    }
+
+    clean_yaml_string(value).into_iter().collect()
+}
+
+fn clean_yaml_string(value: &str) -> Option<String> {
+    let value = value.trim().trim_matches(['"', '\'']);
+    (!value.is_empty()).then(|| value.to_string())
+}
+
+fn strip_yaml_comment(line: &str) -> &str {
+    line.split_once('#')
+        .map(|(before, _)| before)
+        .unwrap_or(line)
 }
 
 fn expand_workspace_pattern(root: &Path, workspace_dir: &Path, pattern: &str) -> Vec<PathBuf> {

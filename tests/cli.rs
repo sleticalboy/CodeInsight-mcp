@@ -1279,6 +1279,44 @@ fn cli_indexes_and_queries_fixture_project() {
 }
 
 #[test]
+fn cli_resolves_pnpm_workspace_package_exports() {
+    let fixture = pnpm_workspace_fixture_project();
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 2);
+    assert_eq!(index["changed_files"], 2);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let deps = run_json([
+        "dependency-graph",
+        fixture.path().to_str().unwrap(),
+        "--limit",
+        "20",
+    ]);
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "pnpm-ui/button"
+                    && dependency["resolved_file"] == "packages/pnpm-ui/src/button.ts"
+            })
+    );
+
+    let callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "pnpmWorkspaceMain",
+        "--limit",
+        "5",
+    ]);
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "pnpmButton" && call["callee_file"] == "packages/pnpm-ui/src/button.ts"
+    }));
+}
+
+#[test]
 fn cli_reports_version_information() {
     Command::cargo_bin("codeinsight")
         .unwrap()
@@ -2632,6 +2670,51 @@ func Login() {
 "#,
     );
 
+    dir
+}
+
+fn pnpm_workspace_fixture_project() -> TempDir {
+    let dir = TempDir::new().unwrap();
+    write_file(
+        &dir,
+        "pnpm-workspace.yaml",
+        r#"
+packages:
+  - "packages/*"
+"#,
+    );
+    write_file(
+        &dir,
+        "apps/web/src/main.ts",
+        r#"
+import { pnpmButton } from "pnpm-ui/button";
+
+export function pnpmWorkspaceMain() {
+  pnpmButton();
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/pnpm-ui/package.json",
+        r#"
+{
+  "name": "pnpm-ui",
+  "exports": {
+    "./button": "./src/button.ts"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/pnpm-ui/src/button.ts",
+        r#"
+export function pnpmButton() {
+  return "pnpm";
+}
+"#,
+    );
     dir
 }
 
