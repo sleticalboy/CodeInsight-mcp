@@ -2031,6 +2031,10 @@ fn find_workspace_package_json(
     source_file: &str,
     package_name: &str,
 ) -> Option<PathBuf> {
+    if package_declares_catalog_dependency(root, source_file, package_name) {
+        return None;
+    }
+
     if let Some(package_path) =
         find_workspace_protocol_package_json(root, source_file, package_name)
     {
@@ -2139,6 +2143,24 @@ fn find_workspace_package_from_patterns(
 }
 
 fn workspace_protocol_dependency<'a>(package: &'a Value, package_name: &str) -> Option<&'a str> {
+    package_dependency_value(package, package_name).filter(|value| value.starts_with("workspace:"))
+}
+
+fn package_declares_catalog_dependency(root: &Path, source_file: &str, package_name: &str) -> bool {
+    let Some(source_package_path) = find_package_json(root, source_file) else {
+        return false;
+    };
+    let Ok(source_package_text) = fs::read_to_string(root.join(&source_package_path)) else {
+        return false;
+    };
+    let Ok(source_package) = serde_json::from_str::<Value>(&source_package_text) else {
+        return false;
+    };
+    package_dependency_value(&source_package, package_name)
+        .is_some_and(|value| value == "catalog:" || value.starts_with("catalog:"))
+}
+
+fn package_dependency_value<'a>(package: &'a Value, package_name: &str) -> Option<&'a str> {
     for section in [
         "dependencies",
         "devDependencies",
@@ -2150,7 +2172,6 @@ fn workspace_protocol_dependency<'a>(package: &'a Value, package_name: &str) -> 
             .and_then(Value::as_object)
             .and_then(|dependencies| dependencies.get(package_name))
             .and_then(Value::as_str)
-            .filter(|value| value.starts_with("workspace:"))
         {
             return Some(value);
         }

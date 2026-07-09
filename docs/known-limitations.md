@@ -105,10 +105,11 @@ Limitations:
 - Same-repository workspace package `exports` resolution supports JSON-compatible `package.json` workspaces and common `pnpm-workspace.yaml` package lists with exact-directory and single-segment wildcard package patterns.
 - Relative `workspace:` dependency paths such as `workspace:../pkg` can resolve package aliases to local package `exports` targets.
 - Workspace version protocols such as `workspace:*` and `workspace:^` resolve through same-repository workspace package discovery when the dependency name matches a workspace package.
+- `catalog:` dependency versions are treated as external catalog references and are not resolved to same-repository workspace packages by name.
 - Dependency package `exports` resolution supports nearest `node_modules` packages with exact or single-wildcard mappings and common condition objects.
 - Package metadata fallback supports root package specifiers through `module`, `main`, `types`, and `typings`, plus package subpaths resolved as package-relative files or index files.
 - TypeScript and JavaScript `baseUrl`/`paths` resolution supports JSON-compatible `tsconfig.json` and `jsconfig.json` files with relative `extends` chains, exact or single-wildcard path mappings, multiple fallback mappings, and directory index files.
-- External `imports` targets, catalog metadata, and advanced workspace glob syntax are not modeled yet.
+- External `imports` targets, catalog metadata expansion, and advanced workspace glob syntax are not modeled yet.
 - Go and Java import paths are not resolved to files yet.
 - C/C++ quoted local includes are resolved when the target file is obvious; system includes such as `<stdio.h>` are recorded but not resolved.
 
@@ -158,7 +159,7 @@ Currently supported JavaScript/TypeScript imported target hints:
 - TypeScript and JavaScript `baseUrl`/`paths` imports, including aliases inherited through relative config `extends`, when the target resolves to an indexed local file.
 - Local `package.json#imports` aliases when the target resolves to an indexed local file.
 - Local package self-reference `exports` imports when the target resolves to an indexed local file.
-- Same-repository `package.json`, `pnpm-workspace.yaml`, relative `workspace:` path, and workspace version protocol dependency package `exports` imports when the target resolves to an indexed local file.
+- Same-repository `package.json`, `pnpm-workspace.yaml`, relative `workspace:` path, and workspace version protocol dependency package `exports` imports when the target resolves to an indexed local file; `catalog:` dependencies are intentionally left unresolved locally.
 - Default imports when the target has an indexed `export default` symbol.
 - One-hop named/default re-exports, `export * from`, and `export * as`.
 - Two-hop named/default re-export aliases and two-hop namespace re-export aliases.
@@ -219,7 +220,7 @@ Do not treat current MVP output as a formal static-analysis proof.
 Near-term improvements:
 
 - Improve external dynamic import handlers and variable-based `require(...)` handling where obvious.
-- Add broader catalog metadata and advanced workspace edge-case handling.
+- Add broader catalog metadata expansion and advanced workspace edge-case handling.
 - Use broader graph hints in `context_pack` ranking.
 - Exclude or down-rank tests and comments in reference search.
 - Add fixture repositories for each supported language.
