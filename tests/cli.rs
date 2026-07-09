@@ -1390,8 +1390,8 @@ fn cli_resolves_pnpm_workspace_package_exports() {
     let fixture = pnpm_workspace_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 8);
-    assert_eq!(index["changed_files"], 8);
+    assert_eq!(index["indexed_files"], 10);
+    assert_eq!(index["changed_files"], 10);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -1428,6 +1428,26 @@ fn cli_resolves_pnpm_workspace_package_exports() {
             .any(|dependency| {
                 dependency["target"] == "version-caret-ui/button"
                     && dependency["resolved_file"] == "packages/version-caret-ui/src/button.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "version-tilde-ui/button"
+                    && dependency["resolved_file"] == "packages/version-tilde-ui/src/button.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "version-exact-ui/button"
+                    && dependency["resolved_file"] == "packages/version-exact-ui/src/button.ts"
             })
     );
     assert!(
@@ -1488,7 +1508,7 @@ fn cli_resolves_pnpm_workspace_package_exports() {
         fixture.path().to_str().unwrap(),
         "pnpmWorkspaceVersionMain",
         "--limit",
-        "10",
+        "12",
     ]);
     assert!(version_callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "versionStarButton"
@@ -1497,6 +1517,14 @@ fn cli_resolves_pnpm_workspace_package_exports() {
     assert!(version_callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "versionCaretButton"
             && call["callee_file"] == "packages/version-caret-ui/src/button.ts"
+    }));
+    assert!(version_callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "versionTildeButton"
+            && call["callee_file"] == "packages/version-tilde-ui/src/button.ts"
+    }));
+    assert!(version_callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "versionExactButton"
+            && call["callee_file"] == "packages/version-exact-ui/src/button.ts"
     }));
     assert!(version_callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "deepButton"
@@ -1552,8 +1580,8 @@ fn cli_resolves_yarn_package_json_workspaces() {
     let fixture = yarn_workspace_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 3);
-    assert_eq!(index["changed_files"], 3);
+    assert_eq!(index["indexed_files"], 5);
+    assert_eq!(index["changed_files"], 5);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -1582,13 +1610,33 @@ fn cli_resolves_yarn_package_json_workspaces() {
                     && dependency["resolved_file"] == "packages/yarn-caret-ui/src/button.ts"
             })
     );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "yarn-tilde-ui/button"
+                    && dependency["resolved_file"] == "packages/yarn-tilde-ui/src/button.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "yarn-version-ui/button"
+                    && dependency["resolved_file"] == "packages/yarn-version-ui/src/button.ts"
+            })
+    );
 
     let callees = run_json([
         "callees",
         fixture.path().to_str().unwrap(),
         "yarnWorkspaceMain",
         "--limit",
-        "5",
+        "8",
     ]);
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "yarnButton" && call["callee_file"] == "packages/yarn-ui/src/button.ts"
@@ -1596,6 +1644,14 @@ fn cli_resolves_yarn_package_json_workspaces() {
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "yarnCaretButton"
             && call["callee_file"] == "packages/yarn-caret-ui/src/button.ts"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "yarnTildeButton"
+            && call["callee_file"] == "packages/yarn-tilde-ui/src/button.ts"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "yarnVersionButton"
+            && call["callee_file"] == "packages/yarn-version-ui/src/button.ts"
     }));
 }
 
@@ -3162,6 +3218,8 @@ catalogs:
   "dependencies": {
     "version-star-ui": "workspace:*",
     "version-caret-ui": "workspace:^",
+    "version-tilde-ui": "workspace:~",
+    "version-exact-ui": "workspace:1.2.3",
     "deep-ui": "workspace:*",
     "catalog-ui": "catalog:react18",
     "default-catalog-ui": "catalog:",
@@ -3177,6 +3235,8 @@ catalogs:
 import { pnpmButton } from "pnpm-ui/button";
 import { versionStarButton } from "version-star-ui/button";
 import { versionCaretButton } from "version-caret-ui/button";
+import { versionTildeButton } from "version-tilde-ui/button";
+import { versionExactButton } from "version-exact-ui/button";
 import { deepButton } from "deep-ui/button";
 import { catalogButton } from "catalog-ui/button";
 import { defaultCatalogButton } from "default-catalog-ui/button";
@@ -3189,6 +3249,8 @@ export function pnpmWorkspaceMain() {
 export function pnpmWorkspaceVersionMain() {
   versionStarButton();
   versionCaretButton();
+  versionTildeButton();
+  versionExactButton();
   deepButton();
   catalogButton();
   defaultCatalogButton();
@@ -3256,6 +3318,48 @@ export function versionStarButton() {
         r#"
 export function versionCaretButton() {
   return "caret";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/version-tilde-ui/package.json",
+        r#"
+{
+  "name": "version-tilde-ui",
+  "exports": {
+    "./button": "./src/button.ts"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/version-tilde-ui/src/button.ts",
+        r#"
+export function versionTildeButton() {
+  return "tilde";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/version-exact-ui/package.json",
+        r#"
+{
+  "name": "version-exact-ui",
+  "exports": {
+    "./button": "./src/button.ts"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/version-exact-ui/src/button.ts",
+        r#"
+export function versionExactButton() {
+  return "exact";
 }
 "#,
     );
@@ -3480,7 +3584,9 @@ fn yarn_workspace_fixture_project() -> TempDir {
   "name": "web",
   "dependencies": {
     "yarn-ui": "workspace:*",
-    "yarn-caret-ui": "workspace:^"
+    "yarn-caret-ui": "workspace:^",
+    "yarn-tilde-ui": "workspace:~",
+    "yarn-version-ui": "workspace:1.2.3"
   }
 }
 "#,
@@ -3491,10 +3597,14 @@ fn yarn_workspace_fixture_project() -> TempDir {
         r#"
 import { yarnButton } from "yarn-ui/button";
 import { yarnCaretButton } from "yarn-caret-ui/button";
+import { yarnTildeButton } from "yarn-tilde-ui/button";
+import { yarnVersionButton } from "yarn-version-ui/button";
 
 export function yarnWorkspaceMain() {
   yarnButton();
   yarnCaretButton();
+  yarnTildeButton();
+  yarnVersionButton();
 }
 "#,
     );
@@ -3537,6 +3647,48 @@ export function yarnButton() {
         r#"
 export function yarnCaretButton() {
   return "yarn-caret";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/yarn-tilde-ui/package.json",
+        r#"
+{
+  "name": "yarn-tilde-ui",
+  "exports": {
+    "./button": "./src/button.ts"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/yarn-tilde-ui/src/button.ts",
+        r#"
+export function yarnTildeButton() {
+  return "yarn-tilde";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/yarn-version-ui/package.json",
+        r#"
+{
+  "name": "yarn-version-ui",
+  "exports": {
+    "./button": "./src/button.ts"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/yarn-version-ui/src/button.ts",
+        r#"
+export function yarnVersionButton() {
+  return "yarn-version";
 }
 "#,
     );

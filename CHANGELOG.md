@@ -10,14 +10,14 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 - JavaScript and TypeScript package resolution now follows same-repository `package.json` and `pnpm-workspace.yaml` workspaces for local package `exports` targets.
 - JavaScript and TypeScript package resolution now follows relative `workspace:` dependency paths such as `workspace:../pkg` for local package `exports` targets.
-- JavaScript and TypeScript package resolution now treats workspace version protocols such as `workspace:*` and `workspace:^` as local workspace package references.
+- JavaScript and TypeScript package resolution now treats workspace version protocols such as `workspace:*`, `workspace:^`, `workspace:~`, and `workspace:<semver>` as local workspace package references.
 - JavaScript and TypeScript package resolution now treats `catalog:` and `catalog:name` dependency versions as external catalog references instead of local workspace package references.
 - JavaScript and TypeScript package resolution now parses `pnpm-workspace.yaml` `catalog` and `catalogs` metadata when classifying catalog dependency sources.
 - JavaScript and TypeScript package `exports` and `imports` resolution now tries array fallback targets in order.
 - JavaScript and TypeScript package `exports` and `imports` condition priority can now be configured with `[javascript].package_conditions`.
 - JavaScript and TypeScript path alias, package `exports`, and package `imports` resolution now supports multiple `*` captures in one mapping.
 - JavaScript and TypeScript package resolution now applies common `package.json#browser` string and object remaps when resolving package entries.
-- JavaScript and TypeScript workspace package resolution is now covered for Yarn-style `package.json#workspaces.packages` with `workspace:*` and `workspace:^` dependency protocols.
+- JavaScript and TypeScript workspace package resolution is now covered for pnpm and Yarn workspace version protocol variants, including `workspace:~` and `workspace:<semver>`.
 - JavaScript and TypeScript workspace discovery now supports recursive `**` workspace package patterns such as `packages/**`.
 - JavaScript and TypeScript workspace discovery now honors negated workspace package patterns such as `!packages/legacy/**`.
 - JavaScript and TypeScript package resolution now follows local `package.json#imports` aliases such as `#internal/*`.
