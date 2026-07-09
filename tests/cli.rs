@@ -1311,8 +1311,8 @@ fn cli_resolves_pnpm_workspace_package_exports() {
     let fixture = pnpm_workspace_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 6);
-    assert_eq!(index["changed_files"], 6);
+    assert_eq!(index["indexed_files"], 7);
+    assert_eq!(index["changed_files"], 7);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -1371,6 +1371,16 @@ fn cli_resolves_pnpm_workspace_package_exports() {
                     && dependency["resolved_file"] == "node_modules/catalog-ui/dist/button.js"
             })
     );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "legacy-ui/button"
+                    && dependency["resolved_file"] == "node_modules/legacy-ui/dist/button.js"
+            })
+    );
 
     let callees = run_json([
         "callees",
@@ -1401,6 +1411,10 @@ fn cli_resolves_pnpm_workspace_package_exports() {
     assert!(version_callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "deepButton"
             && call["callee_file"] == "packages/nested/deep-ui/src/button.ts"
+    }));
+    assert!(version_callees.as_array().unwrap().iter().all(|call| {
+        call["callee"] != "legacyButton"
+            || call["callee_file"] != "packages/legacy/legacy-ui/src/button.ts"
     }));
 }
 
@@ -2825,6 +2839,7 @@ fn pnpm_workspace_fixture_project() -> TempDir {
         r#"
 packages:
   - "packages/**"
+  - "!packages/legacy/**"
 catalogs:
   react18:
     catalog-ui: ^1.2.3
@@ -2840,7 +2855,8 @@ catalogs:
     "version-star-ui": "workspace:*",
     "version-caret-ui": "workspace:^",
     "deep-ui": "workspace:*",
-    "catalog-ui": "catalog:react18"
+    "catalog-ui": "catalog:react18",
+    "legacy-ui": "workspace:*"
   }
 }
 "#,
@@ -2854,6 +2870,7 @@ import { versionStarButton } from "version-star-ui/button";
 import { versionCaretButton } from "version-caret-ui/button";
 import { deepButton } from "deep-ui/button";
 import { catalogButton } from "catalog-ui/button";
+import { legacyButton } from "legacy-ui/button";
 
 export function pnpmWorkspaceMain() {
   pnpmButton();
@@ -2864,6 +2881,7 @@ export function pnpmWorkspaceVersionMain() {
   versionCaretButton();
   deepButton();
   catalogButton();
+  legacyButton();
 }
 "#,
     );
@@ -2974,6 +2992,27 @@ export function catalogButton() {
     );
     write_file(
         &dir,
+        "packages/legacy/legacy-ui/package.json",
+        r#"
+{
+  "name": "legacy-ui",
+  "exports": {
+    "./button": "./src/button.ts"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/legacy/legacy-ui/src/button.ts",
+        r#"
+export function legacyButton() {
+  return "legacy-workspace";
+}
+"#,
+    );
+    write_file(
+        &dir,
         "node_modules/catalog-ui/package.json",
         r#"
 {
@@ -2990,6 +3029,27 @@ export function catalogButton() {
         r#"
 export function catalogButton() {
   return "catalog-node";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/legacy-ui/package.json",
+        r#"
+{
+  "name": "legacy-ui",
+  "exports": {
+    "./button": "./dist/button.js"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/legacy-ui/dist/button.js",
+        r#"
+export function legacyButton() {
+  return "legacy-node";
 }
 "#,
     );

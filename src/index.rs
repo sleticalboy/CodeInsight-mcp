@@ -1,5 +1,5 @@
 use std::{
-    collections::HashSet,
+    collections::{BTreeSet, HashSet},
     fs,
     path::{Component, Path, PathBuf},
     time::Instant,
@@ -2124,22 +2124,53 @@ fn find_workspace_package_from_patterns(
     workspace_patterns: Vec<String>,
     package_name: &str,
 ) -> Option<PathBuf> {
+    let mut included_package_dirs = BTreeSet::new();
+    let mut excluded_package_dirs = BTreeSet::new();
+
     for pattern in workspace_patterns {
-        for package_dir in expand_workspace_pattern(root, workspace_dir, &pattern) {
-            let package_path = package_dir.join("package.json");
-            let Ok(package_text) = fs::read_to_string(root.join(&package_path)) else {
-                continue;
-            };
-            let Ok(package) = serde_json::from_str::<Value>(&package_text) else {
-                continue;
-            };
-            if package.get("name").and_then(Value::as_str) == Some(package_name) {
-                return Some(package_path);
-            }
+        let (is_exclusion, pattern) = workspace_pattern_exclusion(&pattern);
+        let package_dirs = expand_workspace_pattern(root, workspace_dir, pattern);
+        if is_exclusion {
+            excluded_package_dirs.extend(package_dirs);
+        } else {
+            included_package_dirs.extend(package_dirs);
+        }
+    }
+
+    for package_dir in included_package_dirs {
+        if workspace_package_dir_is_excluded(&package_dir, &excluded_package_dirs) {
+            continue;
+        }
+
+        let package_path = package_dir.join("package.json");
+        let Ok(package_text) = fs::read_to_string(root.join(&package_path)) else {
+            continue;
+        };
+        let Ok(package) = serde_json::from_str::<Value>(&package_text) else {
+            continue;
+        };
+        if package.get("name").and_then(Value::as_str) == Some(package_name) {
+            return Some(package_path);
         }
     }
 
     None
+}
+
+fn workspace_pattern_exclusion(pattern: &str) -> (bool, &str) {
+    pattern
+        .strip_prefix('!')
+        .map(|pattern| (true, pattern))
+        .unwrap_or((false, pattern))
+}
+
+fn workspace_package_dir_is_excluded(
+    package_dir: &Path,
+    excluded_package_dirs: &BTreeSet<PathBuf>,
+) -> bool {
+    excluded_package_dirs
+        .iter()
+        .any(|excluded_dir| package_dir == excluded_dir || package_dir.starts_with(excluded_dir))
 }
 
 fn workspace_protocol_dependency<'a>(package: &'a Value, package_name: &str) -> Option<&'a str> {
@@ -2270,7 +2301,7 @@ fn strip_yaml_comment(line: &str) -> &str {
 }
 
 fn expand_workspace_pattern(root: &Path, workspace_dir: &Path, pattern: &str) -> Vec<PathBuf> {
-    if pattern.starts_with('!') || Path::new(pattern).is_absolute() {
+    if Path::new(pattern).is_absolute() {
         return Vec::new();
     }
 

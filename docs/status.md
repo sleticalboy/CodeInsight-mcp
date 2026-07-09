@@ -33,7 +33,7 @@ yet a complete language-server-grade code-analysis platform.
 
 ## Next
 
-- Model catalog metadata expansion and workspace glob-negation handling beyond package discovery.
+- Model catalog metadata expansion and advanced workspace glob edge-case handling beyond package discovery.
 - Keep tightening JavaScript package metadata edge cases where they improve local code navigation.
 - Continue tightening README/docs routing so the README stays entry-level.
 
