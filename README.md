@@ -19,6 +19,7 @@ The product direction and execution plan live in:
 - [MCP client configuration](docs/mcp-client-config.md)
 - [MCP client smoke test](docs/mcp-client-smoke.md)
 - [Install](docs/install.md)
+- [CLI usage](docs/cli-usage.md)
 - [Navigation tools](docs/navigation-tools.md)
 - [Impact analysis](docs/impact-analysis.md)
 - [Embedding providers](docs/embedding-providers.md)
@@ -91,71 +92,21 @@ For local image builds, platform details, and Docker smoke tests, see
 
 ## CLI Usage
 
-Print version information:
-
-```bash
-codeinsight version
-codeinsight --version
-```
-
-Index a repository:
+Index a repository, inspect the overview, then build an agent context pack:
 
 ```bash
 cargo run -- index /path/to/repo --force
-```
-
-Print an overview:
-
-```bash
 cargo run -- overview /path/to/repo
-```
-
-The overview is the first-stop repository briefing for agents. After `index`, it returns a compact `summary`, language and directory distribution, symbol-kind counts, dependency and call-graph summaries, entrypoint candidates with heuristic reasons, roles, confidence scores, and index metadata.
-
-Search symbols:
-
-```bash
-cargo run -- symbols /path/to/repo AuthService
-```
-
-Print a file outline:
-
-```bash
-cargo run -- outline /path/to/repo/src/auth.ts
-```
-
-Print local dependencies:
-
-```bash
-cargo run -- dependency-graph /path/to/repo --limit 50
-```
-
-Find references:
-
-```bash
-cargo run -- find-references /path/to/repo AuthService --include-definitions
-```
-
-Build an agent context pack:
-
-```bash
 cargo run -- context-pack /path/to/repo --task "understand app entrypoint" --token-budget 6000
-cargo run -- context-pack /path/to/repo --task "understand auth flow" --symbol AuthService --token-budget 6000
-cargo run -- context-pack /path/to/repo --task "understand auth module" --file src/auth.ts --token-budget 6000
 ```
 
-Inspect the static call graph:
-
-```bash
-cargo run -- callers /path/to/repo helper
-cargo run -- callees /path/to/repo AuthService.login
-```
-
-Start the MCP stdio server scaffold:
+Start the MCP stdio server:
 
 ```bash
 cargo run -- serve --transport stdio
 ```
+
+For all commands and common workflows, see [CLI usage](docs/cli-usage.md).
 
 ## MCP Tools
 
