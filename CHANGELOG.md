@@ -10,6 +10,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 - JavaScript and TypeScript package resolution now follows same-repository `package.json` and `pnpm-workspace.yaml` workspaces for local package `exports` targets.
 - JavaScript and TypeScript package resolution now follows relative `workspace:` dependency paths such as `workspace:../pkg` for local package `exports` targets.
+- JavaScript and TypeScript package resolution now follows local `package.json#imports` aliases such as `#internal/*`.
 - TypeScript and JavaScript config resolution now follows relative `extends` chains for inherited `baseUrl` and `paths` aliases.
 - Added a documentation index and shortened the README document-link list.
 - Added a current-status document and shortened the README status section.

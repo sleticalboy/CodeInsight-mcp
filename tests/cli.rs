@@ -11,12 +11,12 @@ fn cli_indexes_and_queries_fixture_project() {
     let fixture = fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 20);
-    assert_eq!(index["changed_files"], 20);
+    assert_eq!(index["indexed_files"], 21);
+    assert_eq!(index["changed_files"], 21);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let overview = run_json(["overview", fixture.path().to_str().unwrap()]);
-    assert_eq!(overview["indexed_files"], 20);
+    assert_eq!(overview["indexed_files"], 21);
     assert!(overview["total_lines"].as_u64().unwrap() > 0);
     assert!(
         overview["summary"]
@@ -125,7 +125,7 @@ fn cli_indexes_and_queries_fixture_project() {
 
     let second_index = run_json(["index", fixture.path().to_str().unwrap()]);
     assert_eq!(second_index["changed_files"], 0);
-    assert_eq!(second_index["unchanged_files"], 20);
+    assert_eq!(second_index["unchanged_files"], 21);
 
     let semantic_index = run_json([
         "semantic-index",
@@ -359,6 +359,7 @@ fn cli_indexes_and_queries_fixture_project() {
     assert!(targets.contains(&"legacy-lib"));
     assert!(targets.contains(&"legacy-lib/plugin"));
     assert!(targets.contains(&"workspace-ui/button"));
+    assert!(targets.contains(&"#internal/logger"));
     assert!(
         deps["dependencies"]
             .as_array()
@@ -456,6 +457,16 @@ fn cli_indexes_and_queries_fixture_project() {
             .any(|dependency| {
                 dependency["target"] == "workspace-ui/button"
                     && dependency["resolved_file"] == "packages/workspace-ui/src/button.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "#internal/logger"
+                    && dependency["resolved_file"] == "src/internal/logger.ts"
             })
     );
     assert!(
@@ -1274,6 +1285,23 @@ fn cli_indexes_and_queries_fixture_project() {
             .any(|call| {
                 call["callee"] == "workspaceButton"
                     && call["callee_file"] == "packages/workspace-ui/src/button.ts"
+            })
+    );
+
+    let package_import_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "packageImportMain",
+        "--limit",
+        "5",
+    ]);
+    assert!(
+        package_import_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| {
+                call["callee"] == "logInternal" && call["callee_file"] == "src/internal/logger.ts"
             })
     );
 }
@@ -2296,15 +2324,18 @@ fn fixture_project() -> TempDir {
     write_file(
         &dir,
         "package.json",
-        r#"
+        r##"
 {
   "name": "fixture-lib",
   "workspaces": ["packages/*"],
+  "imports": {
+    "#internal/*": "./src/internal/*.ts"
+  },
   "exports": {
     "./package-*": "./src/package-*.ts"
   }
 }
-"#,
+"##,
     );
     write_file(
         &dir,
@@ -2390,7 +2421,7 @@ def build_service():
     write_file(
         &dir,
         "src/main.ts",
-        r#"
+        r##"
 import { render } from "./ui";
 import drawDefault from "./ui";
 import { relayRender, relayDefault, render as starRender, uiApi } from "./barrel";
@@ -2405,6 +2436,7 @@ import { depNodeRender } from "dep-lib/node-feature";
 import { legacyRender } from "legacy-lib";
 import { legacyPluginRender } from "legacy-lib/plugin";
 import { workspaceButton } from "workspace-ui/button";
+import { logInternal } from "#internal/logger";
 const { render: draw } = require("./ui");
 const uiModule = require("./ui");
 const computedUiModule = require("./" + "ui");
@@ -2506,7 +2538,11 @@ export function dependencyPackageMain() {
 export function workspacePackageMain() {
   workspaceButton();
 }
-"#,
+
+export function packageImportMain() {
+  logInternal();
+}
+"##,
     );
     write_file(
         &dir,
@@ -2689,6 +2725,15 @@ export function baseRender() {
         r#"
 export function packageRender() {
   return "package";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/internal/logger.ts",
+        r#"
+export function logInternal() {
+  return "log";
 }
 "#,
     );

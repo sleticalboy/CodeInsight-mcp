@@ -1733,6 +1733,7 @@ fn resolve_javascript_like_target(root: &Path, dependency: &Dependency) -> Optio
         &dependency.target,
         EXTENSIONS,
     )
+    .or_else(|| resolve_package_imports_target(root, dependency, EXTENSIONS))
     .or_else(|| resolve_tsconfig_target(root, dependency, EXTENSIONS))
     .or_else(|| resolve_package_exports_target(root, dependency, EXTENSIONS))
     .or_else(|| resolve_workspace_package_exports_target(root, dependency, EXTENSIONS))
@@ -1940,6 +1941,25 @@ fn resolve_package_exports_target(
         .get("exports")
         .and_then(|exports| package_export_mapping(exports, &subpath))
         .or_else(|| package_metadata_entry(&package, &subpath))?;
+    resolve_base(root, package_dir.join(mapped), extensions)
+}
+
+fn resolve_package_imports_target(
+    root: &Path,
+    dependency: &Dependency,
+    extensions: &[&str],
+) -> Option<String> {
+    if !dependency.target.starts_with('#') {
+        return None;
+    }
+
+    let package_path = find_package_json(root, &dependency.source_file)?;
+    let package_text = fs::read_to_string(root.join(&package_path)).ok()?;
+    let package: Value = serde_json::from_str(&package_text).ok()?;
+    let package_dir = package_path.parent().unwrap_or(Path::new(""));
+    let mapped = package
+        .get("imports")
+        .and_then(|imports| package_import_mapping(imports, &dependency.target))?;
     resolve_base(root, package_dir.join(mapped), extensions)
 }
 
@@ -2370,6 +2390,22 @@ fn package_export_mapping(exports: &Value, subpath: &str) -> Option<PathBuf> {
             continue;
         };
         let target = package_export_target(value)?;
+        let mapped = apply_tsconfig_path_mapping(&target, wildcard.as_deref())?;
+        return Some(mapped);
+    }
+    None
+}
+
+fn package_import_mapping(imports: &Value, target: &str) -> Option<PathBuf> {
+    let entries = imports.as_object()?;
+    for (pattern, value) in entries {
+        let Some(wildcard) = tsconfig_path_wildcard(pattern, target) else {
+            continue;
+        };
+        let target = package_export_target(value)?;
+        if !(target.starts_with("./") || target.starts_with("../")) {
+            continue;
+        }
         let mapped = apply_tsconfig_path_mapping(&target, wildcard.as_deref())?;
         return Some(mapped);
     }

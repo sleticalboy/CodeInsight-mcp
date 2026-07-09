@@ -33,8 +33,8 @@ yet a complete language-server-grade code-analysis platform.
 
 ## Next
 
-- Broaden package manager metadata handling.
 - Model workspace version protocols and catalog metadata beyond package discovery.
+- Keep tightening JavaScript package metadata edge cases where they improve local code navigation.
 - Continue tightening README/docs routing so the README stays entry-level.
 
 For accuracy boundaries and current non-goals, see

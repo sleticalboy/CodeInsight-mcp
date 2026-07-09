@@ -101,12 +101,13 @@ Limitations:
 - Targets are always stored as module strings; `resolved_file` is only populated when a local file can be resolved cheaply.
 - Grouped imports may be compacted rather than expanded precisely.
 - Local package self-reference `exports` resolution supports JSON-compatible `package.json` files with exact or single-wildcard string mappings.
+- Local `package.json#imports` resolution supports exact or single-wildcard mappings to relative local files.
 - Same-repository workspace package `exports` resolution supports JSON-compatible `package.json` workspaces and common `pnpm-workspace.yaml` package lists with exact-directory and single-segment wildcard package patterns.
 - Relative `workspace:` dependency paths such as `workspace:../pkg` can resolve package aliases to local package `exports` targets.
 - Dependency package `exports` resolution supports nearest `node_modules` packages with exact or single-wildcard mappings and common condition objects.
 - Package metadata fallback supports root package specifiers through `module`, `main`, `types`, and `typings`, plus package subpaths resolved as package-relative files or index files.
 - TypeScript and JavaScript `baseUrl`/`paths` resolution supports JSON-compatible `tsconfig.json` and `jsconfig.json` files with relative `extends` chains, exact or single-wildcard path mappings, multiple fallback mappings, and directory index files.
-- pnpm/yarn workspace version protocols such as `workspace:*`, catalog metadata, and advanced workspace glob syntax are not modeled yet.
+- External `imports` targets, pnpm/yarn workspace version protocols such as `workspace:*`, catalog metadata, and advanced workspace glob syntax are not modeled yet.
 - Go and Java import paths are not resolved to files yet.
 - C/C++ quoted local includes are resolved when the target file is obvious; system includes such as `<stdio.h>` are recorded but not resolved.
 
@@ -154,6 +155,7 @@ Currently supported JavaScript/TypeScript imported target hints:
 - Static-string dynamic import aliases: `const ui = await import("./ui"); ui.render()`.
 - Static-string dynamic import callback aliases: `import("./ui").then((ui) => ui.render())`.
 - TypeScript and JavaScript `baseUrl`/`paths` imports, including aliases inherited through relative config `extends`, when the target resolves to an indexed local file.
+- Local `package.json#imports` aliases when the target resolves to an indexed local file.
 - Local package self-reference `exports` imports when the target resolves to an indexed local file.
 - Same-repository `package.json`, `pnpm-workspace.yaml`, and relative `workspace:` dependency package `exports` imports when the target resolves to an indexed local file.
 - Default imports when the target has an indexed `export default` symbol.
@@ -216,7 +218,7 @@ Do not treat current MVP output as a formal static-analysis proof.
 Near-term improvements:
 
 - Improve external dynamic import handlers and variable-based `require(...)` handling where obvious.
-- Add broader package manager metadata, workspace version protocol, and catalog handling.
+- Add broader workspace version protocol and catalog handling.
 - Use broader graph hints in `context_pack` ranking.
 - Exclude or down-rank tests and comments in reference search.
 - Add fixture repositories for each supported language.
