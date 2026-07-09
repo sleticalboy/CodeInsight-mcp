@@ -57,6 +57,7 @@ It also asserts the MCP-facing structured fields that clients commonly render:
 - explicit and auto `context_pack.reading_plan`
 - `context_pack.reading_plan[].next_action` and `question`
 - `context_pack.reading_plan[].suggested_tool`
+- first explicit and auto `reading_plan[].suggested_tool` calls execute
 
 Use a real repository instead of the generated fixture:
 
@@ -90,10 +91,13 @@ overview_entrypoints: 1
 overview_recommendations: 4
 auto_seed_strategy: auto_entrypoint
 auto_reading_plan_steps: 2
+explicit_suggested_tool: file_outline
+auto_suggested_tool: file_outline
 ```
 
 `indexed_files`, `overview_entrypoints`, `overview_recommendations`, and
-`auto_reading_plan_steps` vary with the tested repository.
+`auto_reading_plan_steps` vary with the tested repository. Suggested tool names
+also vary with the selected first reading step.
 
 ## Troubleshooting
 

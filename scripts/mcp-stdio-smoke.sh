@@ -109,6 +109,20 @@ def same_root(path):
     return os.path.samefile(path, smoke_root)
 
 
+def call_suggested_tool(suggested_tool, request_id):
+    return request(
+        {
+            "jsonrpc": "2.0",
+            "id": request_id,
+            "method": "tools/call",
+            "params": {
+                "name": suggested_tool["tool"],
+                "arguments": suggested_tool["suggested_arguments"],
+            },
+        }
+    )["result"]["structuredContent"]
+
+
 try:
     initialize = request({"jsonrpc": "2.0", "id": 1, "method": "initialize"})
     assert initialize["result"]["serverInfo"]["name"] == "codeinsight"
@@ -298,6 +312,15 @@ try:
     assert explicit_reading_plan[0]["suggested_tool"]["suggested_arguments"]
     assert explicit_reading_plan[0]["ranges"], "explicit context reading_plan ranges missing"
     assert explicit_reading_plan[0]["ranges"][0]["start_line"] >= 1
+    explicit_suggested_result = call_suggested_tool(
+        explicit_reading_plan[0]["suggested_tool"],
+        12,
+    )
+    if explicit_reading_plan[0]["suggested_tool"]["tool"] == "file_outline":
+        assert any(
+            symbol["name"] == smoke_symbol
+            for symbol in explicit_suggested_result
+        ), "explicit suggested file_outline did not return seed symbol"
 
     auto_context = request(
         {
@@ -337,6 +360,15 @@ try:
     assert auto_context_result["reading_plan"][0]["suggested_tool"]["suggested_arguments"]
     assert auto_context_result["reading_plan"][0]["ranges"], "auto context reading_plan ranges missing"
     assert auto_context_result["reading_plan"][0]["ranges"][0]["start_line"] >= 1
+    auto_suggested_result = call_suggested_tool(
+        auto_context_result["reading_plan"][0]["suggested_tool"],
+        13,
+    )
+    if auto_context_result["reading_plan"][0]["suggested_tool"]["tool"] == "file_outline":
+        assert any(
+            symbol["name"] == "main"
+            for symbol in auto_suggested_result
+        ), "auto suggested file_outline did not return entrypoint symbol"
 
     print("MCP stdio smoke passed")
     print(f"root: {smoke_root}")
@@ -347,6 +379,8 @@ try:
     print(f"overview_recommendations: {len(recommended_tools)}")
     print(f"auto_seed_strategy: {auto_context_result['seed_strategy']}")
     print(f"auto_reading_plan_steps: {len(auto_context_result['reading_plan'])}")
+    print(f"explicit_suggested_tool: {explicit_reading_plan[0]['suggested_tool']['tool']}")
+    print(f"auto_suggested_tool: {auto_context_result['reading_plan'][0]['suggested_tool']['tool']}")
 finally:
     proc.terminate()
     try:
