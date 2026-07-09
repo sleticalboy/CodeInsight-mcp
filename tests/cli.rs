@@ -1548,6 +1548,58 @@ fn cli_resolves_workspace_protocol_package_exports() {
 }
 
 #[test]
+fn cli_resolves_yarn_package_json_workspaces() {
+    let fixture = yarn_workspace_fixture_project();
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 3);
+    assert_eq!(index["changed_files"], 3);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let deps = run_json([
+        "dependency-graph",
+        fixture.path().to_str().unwrap(),
+        "--limit",
+        "20",
+    ]);
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "yarn-ui/button"
+                    && dependency["resolved_file"] == "packages/yarn-ui/src/button.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "yarn-caret-ui/button"
+                    && dependency["resolved_file"] == "packages/yarn-caret-ui/src/button.ts"
+            })
+    );
+
+    let callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "yarnWorkspaceMain",
+        "--limit",
+        "5",
+    ]);
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "yarnButton" && call["callee_file"] == "packages/yarn-ui/src/button.ts"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "yarnCaretButton"
+            && call["callee_file"] == "packages/yarn-caret-ui/src/button.ts"
+    }));
+}
+
+#[test]
 fn cli_uses_configured_package_conditions() {
     let fixture = package_conditions_fixture_project();
 
@@ -3400,6 +3452,91 @@ export function workspaceProtocolMain() {
         r#"
 export function protocolButton() {
   return "protocol";
+}
+"#,
+    );
+    dir
+}
+
+fn yarn_workspace_fixture_project() -> TempDir {
+    let dir = TempDir::new().unwrap();
+    write_file(
+        &dir,
+        "package.json",
+        r#"
+{
+  "private": true,
+  "workspaces": {
+    "packages": ["packages/*"]
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "apps/web/package.json",
+        r#"
+{
+  "name": "web",
+  "dependencies": {
+    "yarn-ui": "workspace:*",
+    "yarn-caret-ui": "workspace:^"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "apps/web/src/main.ts",
+        r#"
+import { yarnButton } from "yarn-ui/button";
+import { yarnCaretButton } from "yarn-caret-ui/button";
+
+export function yarnWorkspaceMain() {
+  yarnButton();
+  yarnCaretButton();
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/yarn-ui/package.json",
+        r#"
+{
+  "name": "yarn-ui",
+  "exports": {
+    "./button": "./src/button.ts"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/yarn-ui/src/button.ts",
+        r#"
+export function yarnButton() {
+  return "yarn";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/yarn-caret-ui/package.json",
+        r#"
+{
+  "name": "yarn-caret-ui",
+  "exports": {
+    "./button": "./src/button.ts"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/yarn-caret-ui/src/button.ts",
+        r#"
+export function yarnCaretButton() {
+  return "yarn-caret";
 }
 "#,
     );

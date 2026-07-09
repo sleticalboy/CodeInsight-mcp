@@ -525,8 +525,10 @@ fn openai_embed(
         bail!("{OPENAI_API_KEY_ENV} is required for the openai embedding provider");
     }
     let endpoint = openai_embeddings_endpoint(base_url)?;
-    let client = reqwest::blocking::Client::builder()
-        .timeout(timeout)
+    let client_builder = reqwest::blocking::Client::builder().timeout(timeout);
+    #[cfg(test)]
+    let client_builder = client_builder.no_proxy();
+    let client = client_builder
         .build()
         .context("failed to build openai embedding HTTP client")?;
     let response = client
