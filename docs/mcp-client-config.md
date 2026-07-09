@@ -100,6 +100,9 @@ Recommended first-read flow for agents:
    CodeInsight auto-select the highest-confidence source entrypoint. Provide
    explicit `symbols` or `files` when the user already named a target.
 
+See [First-read workflow](first-read-workflow.md) for the full overview and
+context-pack response contract.
+
 `project_overview.recommended_next_tools[]` entries include:
 
 - `tool`: MCP tool name.
