@@ -8,6 +8,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ### Changed
 
+- Added an MCP tools guide and shortened the README MCP section to the recommended first-read flow.
 - Added a CLI usage guide and shortened the README command examples to the core index/overview/context/MCP loop.
 - Moved detailed install, Homebrew, and Docker usage notes from README into a dedicated install document.
 - Updated release-prep automation and CI smoke coverage to maintain the install-document version example.

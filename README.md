@@ -18,6 +18,7 @@ The product direction and execution plan live in:
 - [Known limitations](docs/known-limitations.md)
 - [MCP client configuration](docs/mcp-client-config.md)
 - [MCP client smoke test](docs/mcp-client-smoke.md)
+- [MCP tools](docs/mcp-tools.md)
 - [Install](docs/install.md)
 - [CLI usage](docs/cli-usage.md)
 - [Navigation tools](docs/navigation-tools.md)
@@ -110,28 +111,6 @@ For all commands and common workflows, see [CLI usage](docs/cli-usage.md).
 
 ## MCP Tools
 
-The stdio server currently exposes:
-
-- `index_project`
-- `project_overview`
-- `symbol_search`
-- `file_outline`
-- `dependency_graph`
-- `impact_analysis`
-- `find_references`
-- `semantic_search`
-- `semantic_index`
-- `embedding_status`
-- `context_pack`
-- `callers`
-- `callees`
-
-Example `tools/call` request:
-
-```json
-{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"symbol_search","arguments":{"root":"/path/to/repo","query":"AuthService","limit":5}}}
-```
-
 Recommended MCP first-read flow:
 
 1. `index_project` for the repository.
@@ -140,7 +119,7 @@ Recommended MCP first-read flow:
    `files` to let CodeInsight auto-select the highest-confidence source
    entrypoint.
 
-For the full first-read contract, see [First-read workflow](docs/first-read-workflow.md). For client setup snippets, see [MCP client configuration](docs/mcp-client-config.md).
+For the full tool list and `tools/call` examples, see [MCP tools](docs/mcp-tools.md). For client setup snippets, see [MCP client configuration](docs/mcp-client-config.md).
 
 `project_overview` / `overview` returns the indexed repository briefing an agent should fetch before deeper tools, including role-aware directories, entrypoint candidates, summaries, index metadata, and `recommended_next_tools`. See [Recommendation contract](docs/recommendation-contract.md) for the shared recommendation shape.
 

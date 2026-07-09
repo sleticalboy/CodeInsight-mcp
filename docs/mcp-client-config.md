@@ -229,5 +229,8 @@ It also returns `semantic_status`, including:
 Run `index_project` first for a repository when you want repeatable results from
 the local SQLite index.
 
+For the complete MCP tool list and topic-specific contract links, see
+[MCP tools](mcp-tools.md).
+
 For an end-to-end protocol check before configuring a GUI client, see
 [MCP client smoke test](mcp-client-smoke.md).
