@@ -8,6 +8,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ### Changed
 
+- Added a documentation index and shortened the README document-link list.
 - Added a current-status document and shortened the README status section.
 - Moved detailed MCP tool summaries from README into the MCP tools guide.
 - Added an MCP tools guide and shortened the README MCP section to the recommended first-read flow.

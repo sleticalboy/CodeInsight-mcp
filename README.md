@@ -10,26 +10,14 @@ The MVP focuses on a narrow, verifiable loop:
 - expose an MCP stdio server scaffold
 - build toward agent-ready context packs
 
-The product direction and execution plan live in:
+Key docs:
 
-- [Product prototype](docs/product-prototype.md)
-- [Implementation plan](docs/implementation-plan.md)
-- [MVP backlog](docs/mvp-backlog.md)
 - [Current status](docs/status.md)
-- [Known limitations](docs/known-limitations.md)
-- [MCP client configuration](docs/mcp-client-config.md)
-- [MCP client smoke test](docs/mcp-client-smoke.md)
-- [MCP tools](docs/mcp-tools.md)
 - [Install](docs/install.md)
 - [CLI usage](docs/cli-usage.md)
-- [Navigation tools](docs/navigation-tools.md)
-- [Impact analysis](docs/impact-analysis.md)
-- [Embedding providers](docs/embedding-providers.md)
-- [Semantic smoke test](docs/semantic-smoke.md)
-- [Smoke benchmark](docs/benchmark-v0.1.md)
-- [Large repository benchmark](docs/benchmark-large.md)
-- [Release runbook](docs/release-runbook.md)
-- [Changelog](CHANGELOG.md)
+- [MCP tools](docs/mcp-tools.md)
+- [Known limitations](docs/known-limitations.md)
+- [Documentation index](docs/README.md)
 
 ## Current Status
 
