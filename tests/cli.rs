@@ -1680,6 +1680,68 @@ fn cli_resolves_yarn_package_json_workspaces() {
 }
 
 #[test]
+fn cli_resolves_package_json_workspace_array_exclusions() {
+    let fixture = package_workspace_array_exclusion_fixture_project();
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 3);
+    assert_eq!(index["changed_files"], 3);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let deps = run_json([
+        "dependency-graph",
+        fixture.path().to_str().unwrap(),
+        "--limit",
+        "20",
+    ]);
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "array-ui/button"
+                    && dependency["resolved_file"] == "packages/array-ui/src/button.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "array-legacy-ui/button"
+                    && dependency["resolved_file"] == "node_modules/array-legacy-ui/dist/button.js"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "array-legacy-ui/button"
+                    || dependency["resolved_file"] != "packages/legacy-array-ui/src/button.ts"
+            })
+    );
+
+    let callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "arrayWorkspaceMain",
+        "--limit",
+        "6",
+    ]);
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "arrayButton" && call["callee_file"] == "packages/array-ui/src/button.ts"
+    }));
+    assert!(callees.as_array().unwrap().iter().all(|call| {
+        call["callee"] != "arrayLegacyButton"
+            || call["callee_file"] != "packages/legacy-array-ui/src/button.ts"
+    }));
+}
+
+#[test]
 fn cli_uses_configured_package_conditions() {
     let fixture = package_conditions_fixture_project();
 
@@ -3758,6 +3820,110 @@ export function yarnLegacyButton() {
         r#"
 export function yarnLegacyButton() {
   return "yarn-legacy-node";
+}
+"#,
+    );
+    dir
+}
+
+fn package_workspace_array_exclusion_fixture_project() -> TempDir {
+    let dir = TempDir::new().unwrap();
+    write_file(
+        &dir,
+        "package.json",
+        r#"
+{
+  "private": true,
+  "workspaces": ["packages/*", "!packages/legacy-*"]
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "apps/web/package.json",
+        r#"
+{
+  "name": "web",
+  "dependencies": {
+    "array-ui": "workspace:*",
+    "array-legacy-ui": "workspace:*"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "apps/web/src/main.ts",
+        r#"
+import { arrayButton } from "array-ui/button";
+import { arrayLegacyButton } from "array-legacy-ui/button";
+
+export function arrayWorkspaceMain() {
+  arrayButton();
+  arrayLegacyButton();
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/array-ui/package.json",
+        r#"
+{
+  "name": "array-ui",
+  "exports": {
+    "./button": "./src/button.ts"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/array-ui/src/button.ts",
+        r#"
+export function arrayButton() {
+  return "array";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/legacy-array-ui/package.json",
+        r#"
+{
+  "name": "array-legacy-ui",
+  "exports": {
+    "./button": "./src/button.ts"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/legacy-array-ui/src/button.ts",
+        r#"
+export function arrayLegacyButton() {
+  return "array-legacy-workspace";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/array-legacy-ui/package.json",
+        r#"
+{
+  "name": "array-legacy-ui",
+  "exports": {
+    "./button": "./dist/button.js"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/array-legacy-ui/dist/button.js",
+        r#"
+export function arrayLegacyButton() {
+  return "array-legacy-node";
 }
 "#,
     );
