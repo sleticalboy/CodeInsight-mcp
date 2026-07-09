@@ -3954,6 +3954,7 @@ catalogs:
         let exports = serde_json::json!({
             "./feature": {
                 "import": [
+                    null,
                     "./dist/missing-feature.js",
                     "./dist/feature.js"
                 ],
@@ -4032,6 +4033,10 @@ catalogs:
                 "import": null,
                 "default": "./src/conditional-fallback.ts"
             },
+            "#array": [
+                null,
+                "./src/array-fallback.ts"
+            ],
             "#enabled/*": "./src/*.ts"
         });
 
@@ -4054,6 +4059,10 @@ catalogs:
                 &["browser".to_string(), "default".to_string()]
             ),
             Some(vec![PathBuf::from("./src/conditional-fallback.ts")])
+        );
+        assert_eq!(
+            package_import_mappings(&imports, "#array", &default_package_conditions()),
+            Some(vec![PathBuf::from("./src/array-fallback.ts")])
         );
         assert_eq!(
             package_import_mappings(&imports, "#enabled/button", &default_package_conditions()),

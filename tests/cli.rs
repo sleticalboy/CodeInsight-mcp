@@ -1580,8 +1580,8 @@ fn cli_respects_null_package_exports_without_subpath_fallback() {
     let fixture = null_package_exports_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 4);
-    assert_eq!(index["changed_files"], 4);
+    assert_eq!(index["indexed_files"], 5);
+    assert_eq!(index["changed_files"], 5);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -1608,6 +1608,16 @@ fn cli_respects_null_package_exports_without_subpath_fallback() {
             .any(|dependency| {
                 dependency["target"] == "null-export-lib/disabled"
                     && dependency["resolved_file"].is_null()
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "null-export-lib/array"
+                    && dependency["resolved_file"] == "src/array-fallback.ts"
             })
     );
     assert!(
@@ -1651,6 +1661,9 @@ fn cli_respects_null_package_exports_without_subpath_fallback() {
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "enabledRender" && call["callee_file"] == "src/enabled.ts"
     }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "arrayRender" && call["callee_file"] == "src/array-fallback.ts"
+    }));
     assert!(callees.as_array().unwrap().iter().all(|call| {
         call["callee"] != "disabledRender" || call["callee_file"] != "src/disabled.ts"
     }));
@@ -1665,8 +1678,8 @@ fn cli_respects_null_package_imports_without_tsconfig_fallback() {
     let fixture = null_package_imports_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 4);
-    assert_eq!(index["changed_files"], 4);
+    assert_eq!(index["indexed_files"], 5);
+    assert_eq!(index["changed_files"], 5);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -1683,6 +1696,16 @@ fn cli_respects_null_package_imports_without_tsconfig_fallback() {
             .any(|dependency| {
                 dependency["target"] == "#enabled"
                     && dependency["resolved_file"] == "src/enabled-import.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "#array"
+                    && dependency["resolved_file"] == "src/array-import.ts"
             })
     );
     assert!(
@@ -1714,6 +1737,9 @@ fn cli_respects_null_package_imports_without_tsconfig_fallback() {
     ]);
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "enabledImportRender" && call["callee_file"] == "src/enabled-import.ts"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "arrayImportRender" && call["callee_file"] == "src/array-import.ts"
     }));
     assert!(callees.as_array().unwrap().iter().all(|call| {
         call["callee"] != "conditionalImportRender"
@@ -3931,11 +3957,13 @@ fn null_package_exports_fixture_project() -> TempDir {
         "src/main.ts",
         r#"
 import { enabledRender } from "null-export-lib/enabled";
+import { arrayRender } from "null-export-lib/array";
 import { disabledRender } from "null-export-lib/disabled";
 import { conditionalRender } from "null-export-lib/conditional";
 
 export function nullExportMain() {
   enabledRender();
+  arrayRender();
   disabledRender();
   conditionalRender();
 }
@@ -3949,6 +3977,10 @@ export function nullExportMain() {
   "name": "null-export-lib",
   "exports": {
     "./enabled": "./src/enabled.ts",
+    "./array": [
+      null,
+      "./src/array-fallback.ts"
+    ],
     "./disabled": null,
     "./conditional": {
       "import": null,
@@ -3964,6 +3996,15 @@ export function nullExportMain() {
         r#"
 export function enabledRender() {
   return "enabled";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/array-fallback.ts",
+        r#"
+export function arrayRender() {
+  return "array-fallback";
 }
 "#,
     );
@@ -3997,6 +4038,10 @@ fn null_package_imports_fixture_project() -> TempDir {
 {
   "imports": {
     "#enabled": "./src/enabled-import.ts",
+    "#array": [
+      null,
+      "./src/array-import.ts"
+    ],
     "#conditional": {
       "import": null,
       "default": "./src/default-import.ts"
@@ -4024,10 +4069,12 @@ fn null_package_imports_fixture_project() -> TempDir {
         "src/main.ts",
         r##"
 import { enabledImportRender } from "#enabled";
+import { arrayImportRender } from "#array";
 import { conditionalImportRender } from "#conditional";
 
 export function nullImportMain() {
   enabledImportRender();
+  arrayImportRender();
   conditionalImportRender();
 }
 "##,
@@ -4038,6 +4085,15 @@ export function nullImportMain() {
         r#"
 export function enabledImportRender() {
   return "enabled-import";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/array-import.ts",
+        r#"
+export function arrayImportRender() {
+  return "array-import";
 }
 "#,
     );
