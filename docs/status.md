@@ -34,7 +34,7 @@ yet a complete language-server-grade code-analysis platform.
 ## Next
 
 - Broaden package manager metadata handling.
-- Model workspace protocols and catalog metadata beyond package discovery.
+- Model workspace version protocols and catalog metadata beyond package discovery.
 - Continue tightening README/docs routing so the README stays entry-level.
 
 For accuracy boundaries and current non-goals, see

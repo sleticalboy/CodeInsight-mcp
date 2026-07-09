@@ -2011,6 +2011,12 @@ fn find_workspace_package_json(
     source_file: &str,
     package_name: &str,
 ) -> Option<PathBuf> {
+    if let Some(package_path) =
+        find_workspace_protocol_package_json(root, source_file, package_name)
+    {
+        return Some(package_path);
+    }
+
     let mut current = Path::new(source_file)
         .parent()
         .unwrap_or(Path::new(""))
@@ -2038,6 +2044,23 @@ fn find_workspace_package_json(
         }
         current.pop();
     }
+}
+
+fn find_workspace_protocol_package_json(
+    root: &Path,
+    source_file: &str,
+    package_name: &str,
+) -> Option<PathBuf> {
+    let source_package_path = find_package_json(root, source_file)?;
+    let source_package_text = fs::read_to_string(root.join(&source_package_path)).ok()?;
+    let source_package: Value = serde_json::from_str(&source_package_text).ok()?;
+    let dependency_value = workspace_protocol_dependency(&source_package, package_name)?;
+    let package_relative_path = workspace_protocol_relative_path(dependency_value)?;
+    let source_package_dir = source_package_path.parent().unwrap_or(Path::new(""));
+    let package_path =
+        normalize_path(&source_package_dir.join(package_relative_path)).join("package.json");
+
+    root.join(&package_path).is_file().then_some(package_path)
 }
 
 fn find_workspace_package_from_root(
@@ -2093,6 +2116,31 @@ fn find_workspace_package_from_patterns(
     }
 
     None
+}
+
+fn workspace_protocol_dependency<'a>(package: &'a Value, package_name: &str) -> Option<&'a str> {
+    for section in [
+        "dependencies",
+        "devDependencies",
+        "peerDependencies",
+        "optionalDependencies",
+    ] {
+        if let Some(value) = package
+            .get(section)
+            .and_then(Value::as_object)
+            .and_then(|dependencies| dependencies.get(package_name))
+            .and_then(Value::as_str)
+            .filter(|value| value.starts_with("workspace:"))
+        {
+            return Some(value);
+        }
+    }
+    None
+}
+
+fn workspace_protocol_relative_path(value: &str) -> Option<PathBuf> {
+    let target = value.strip_prefix("workspace:")?;
+    (target.starts_with("./") || target.starts_with("../")).then(|| PathBuf::from(target))
 }
 
 fn package_workspace_patterns(package: &Value) -> Option<Vec<String>> {

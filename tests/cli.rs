@@ -1317,6 +1317,45 @@ fn cli_resolves_pnpm_workspace_package_exports() {
 }
 
 #[test]
+fn cli_resolves_workspace_protocol_package_exports() {
+    let fixture = workspace_protocol_fixture_project();
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 2);
+    assert_eq!(index["changed_files"], 2);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let deps = run_json([
+        "dependency-graph",
+        fixture.path().to_str().unwrap(),
+        "--limit",
+        "20",
+    ]);
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "protocol-ui/button"
+                    && dependency["resolved_file"] == "packages/protocol-ui/src/button.ts"
+            })
+    );
+
+    let callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "workspaceProtocolMain",
+        "--limit",
+        "5",
+    ]);
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "protocolButton"
+            && call["callee_file"] == "packages/protocol-ui/src/button.ts"
+    }));
+}
+
+#[test]
 fn cli_reports_version_information() {
     Command::cargo_bin("codeinsight")
         .unwrap()
@@ -2712,6 +2751,55 @@ export function pnpmWorkspaceMain() {
         r#"
 export function pnpmButton() {
   return "pnpm";
+}
+"#,
+    );
+    dir
+}
+
+fn workspace_protocol_fixture_project() -> TempDir {
+    let dir = TempDir::new().unwrap();
+    write_file(
+        &dir,
+        "apps/web/package.json",
+        r#"
+{
+  "name": "web",
+  "dependencies": {
+    "protocol-ui": "workspace:../../packages/protocol-ui"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "apps/web/src/main.ts",
+        r#"
+import { protocolButton } from "protocol-ui/button";
+
+export function workspaceProtocolMain() {
+  protocolButton();
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/protocol-ui/package.json",
+        r#"
+{
+  "name": "internal-ui",
+  "exports": {
+    "./button": "./src/button.ts"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/protocol-ui/src/button.ts",
+        r#"
+export function protocolButton() {
+  return "protocol";
 }
 "#,
     );
