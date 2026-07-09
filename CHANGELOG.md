@@ -13,6 +13,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - JavaScript and TypeScript package resolution now treats workspace version protocols such as `workspace:*` and `workspace:^` as local workspace package references.
 - JavaScript and TypeScript package resolution now treats `catalog:` and `catalog:name` dependency versions as external catalog references instead of local workspace package references.
 - JavaScript and TypeScript package resolution now parses `pnpm-workspace.yaml` `catalog` and `catalogs` metadata when classifying catalog dependency sources.
+- JavaScript and TypeScript package `exports` and `imports` resolution now tries array fallback targets in order.
 - JavaScript and TypeScript workspace discovery now supports recursive `**` workspace package patterns such as `packages/**`.
 - JavaScript and TypeScript workspace discovery now honors negated workspace package patterns such as `!packages/legacy/**`.
 - JavaScript and TypeScript package resolution now follows local `package.json#imports` aliases such as `#internal/*`.

@@ -1937,11 +1937,7 @@ fn resolve_package_exports_target(
     let name = package.get("name")?.as_str()?;
     let subpath = package_export_subpath(name, &dependency.target)?;
     let package_dir = package_path.parent().unwrap_or(Path::new(""));
-    let mapped = package
-        .get("exports")
-        .and_then(|exports| package_export_mapping(exports, &subpath))
-        .or_else(|| package_metadata_entry(&package, &subpath))?;
-    resolve_base(root, package_dir.join(mapped), extensions)
+    resolve_package_entry(root, package_dir, &package, &subpath, extensions)
 }
 
 fn resolve_package_imports_target(
@@ -1957,10 +1953,13 @@ fn resolve_package_imports_target(
     let package_text = fs::read_to_string(root.join(&package_path)).ok()?;
     let package: Value = serde_json::from_str(&package_text).ok()?;
     let package_dir = package_path.parent().unwrap_or(Path::new(""));
-    let mapped = package
-        .get("imports")
-        .and_then(|imports| package_import_mapping(imports, &dependency.target))?;
-    resolve_base(root, package_dir.join(mapped), extensions)
+    let imports = package.get("imports")?;
+    for mapped in package_import_mappings(imports, &dependency.target) {
+        if let Some(resolved) = resolve_base(root, package_dir.join(mapped), extensions) {
+            return Some(resolved);
+        }
+    }
+    None
 }
 
 fn resolve_node_modules_package_exports_target(
@@ -1978,11 +1977,7 @@ fn resolve_node_modules_package_exports_target(
     let package_text = fs::read_to_string(root.join(&package_path)).ok()?;
     let package: Value = serde_json::from_str(&package_text).ok()?;
     let package_dir = package_path.parent().unwrap_or(Path::new(""));
-    let mapped = package
-        .get("exports")
-        .and_then(|exports| package_export_mapping(exports, &subpath))
-        .or_else(|| package_metadata_entry(&package, &subpath))?;
-    resolve_base(root, package_dir.join(mapped), extensions)
+    resolve_package_entry(root, package_dir, &package, &subpath, extensions)
 }
 
 fn resolve_workspace_package_exports_target(
@@ -2000,11 +1995,7 @@ fn resolve_workspace_package_exports_target(
     let package_text = fs::read_to_string(root.join(&workspace_package_path)).ok()?;
     let package: Value = serde_json::from_str(&package_text).ok()?;
     let package_dir = workspace_package_path.parent().unwrap_or(Path::new(""));
-    let mapped = package
-        .get("exports")
-        .and_then(|exports| package_export_mapping(exports, &subpath))
-        .or_else(|| package_metadata_entry(&package, &subpath))?;
-    resolve_base(root, package_dir.join(mapped), extensions)
+    resolve_package_entry(root, package_dir, &package, &subpath, extensions)
 }
 
 fn find_package_json(root: &Path, source_file: &str) -> Option<PathBuf> {
@@ -2567,39 +2558,67 @@ fn package_export_subpath(package_name: &str, target: &str) -> Option<String> {
         .map(|rest| format!("./{rest}"))
 }
 
-fn package_export_mapping(exports: &Value, subpath: &str) -> Option<PathBuf> {
-    if subpath == "."
-        && let Some(target) = package_export_target(exports)
-    {
-        return Some(PathBuf::from(target));
+fn resolve_package_entry(
+    root: &Path,
+    package_dir: &Path,
+    package: &Value,
+    subpath: &str,
+    extensions: &[&str],
+) -> Option<String> {
+    if let Some(exports) = package.get("exports") {
+        let mappings = package_export_mappings(exports, subpath);
+        for mapped in &mappings {
+            if let Some(resolved) = resolve_base(root, package_dir.join(mapped), extensions) {
+                return Some(resolved);
+            }
+        }
+        if !mappings.is_empty() {
+            return None;
+        }
     }
 
-    let entries = exports.as_object()?;
+    let mapped = package_metadata_entry(package, subpath)?;
+    resolve_base(root, package_dir.join(mapped), extensions)
+}
+
+fn package_export_mappings(exports: &Value, subpath: &str) -> Vec<PathBuf> {
+    if subpath == "." {
+        return package_export_targets(exports)
+            .into_iter()
+            .map(PathBuf::from)
+            .collect();
+    }
+
+    let Some(entries) = exports.as_object() else {
+        return Vec::new();
+    };
     for (pattern, value) in entries {
         let Some(wildcard) = tsconfig_path_wildcard(pattern, subpath) else {
             continue;
         };
-        let target = package_export_target(value)?;
-        let mapped = apply_tsconfig_path_mapping(&target, wildcard.as_deref())?;
-        return Some(mapped);
+        return package_export_targets(value)
+            .into_iter()
+            .filter_map(|target| apply_tsconfig_path_mapping(&target, wildcard.as_deref()))
+            .collect();
     }
-    None
+    Vec::new()
 }
 
-fn package_import_mapping(imports: &Value, target: &str) -> Option<PathBuf> {
-    let entries = imports.as_object()?;
+fn package_import_mappings(imports: &Value, target: &str) -> Vec<PathBuf> {
+    let Some(entries) = imports.as_object() else {
+        return Vec::new();
+    };
     for (pattern, value) in entries {
         let Some(wildcard) = tsconfig_path_wildcard(pattern, target) else {
             continue;
         };
-        let target = package_export_target(value)?;
-        if !(target.starts_with("./") || target.starts_with("../")) {
-            continue;
-        }
-        let mapped = apply_tsconfig_path_mapping(&target, wildcard.as_deref())?;
-        return Some(mapped);
+        return package_export_targets(value)
+            .into_iter()
+            .filter(|target| target.starts_with("./") || target.starts_with("../"))
+            .filter_map(|target| apply_tsconfig_path_mapping(&target, wildcard.as_deref()))
+            .collect();
     }
-    None
+    Vec::new()
 }
 
 fn package_metadata_entry(package: &Value, subpath: &str) -> Option<PathBuf> {
@@ -2615,16 +2634,18 @@ fn package_metadata_entry(package: &Value, subpath: &str) -> Option<PathBuf> {
     subpath.strip_prefix("./").map(PathBuf::from)
 }
 
-fn package_export_target(value: &Value) -> Option<String> {
+fn package_export_targets(value: &Value) -> Vec<String> {
     if let Some(target) = value.as_str() {
-        return Some(target.to_string());
+        return vec![target.to_string()];
     }
 
     if let Some(targets) = value.as_array() {
-        return targets.iter().find_map(package_export_target);
+        return targets.iter().flat_map(package_export_targets).collect();
     }
 
-    let object = value.as_object()?;
+    let Some(object) = value.as_object() else {
+        return Vec::new();
+    };
     for condition in [
         "import",
         "node",
@@ -2634,11 +2655,14 @@ fn package_export_target(value: &Value) -> Option<String> {
         "development",
         "production",
     ] {
-        if let Some(target) = object.get(condition).and_then(package_export_target) {
-            return Some(target);
+        if let Some(target) = object.get(condition) {
+            let targets = package_export_targets(target);
+            if !targets.is_empty() {
+                return targets;
+            }
         }
     }
-    None
+    Vec::new()
 }
 
 fn resolve_relative_target(
@@ -3718,6 +3742,27 @@ catalogs:
         assert_eq!(catalog_protocol_name("catalog:"), Some("default"));
         assert_eq!(catalog_protocol_name("catalog:react18"), Some("react18"));
         assert_eq!(catalog_protocol_name("^1.0.0"), None);
+    }
+
+    #[test]
+    fn parses_package_export_array_targets_in_order() {
+        let exports = serde_json::json!({
+            "./feature": {
+                "import": [
+                    "./dist/missing-feature.js",
+                    "./dist/feature.js"
+                ],
+                "default": "./dist/default-feature.js"
+            }
+        });
+
+        assert_eq!(
+            package_export_mappings(&exports, "./feature"),
+            vec![
+                PathBuf::from("./dist/missing-feature.js"),
+                PathBuf::from("./dist/feature.js")
+            ]
+        );
     }
 
     #[test]

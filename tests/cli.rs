@@ -355,11 +355,13 @@ fn cli_indexes_and_queries_fixture_project() {
     assert!(targets.contains(&"shared"));
     assert!(targets.contains(&"fixture-lib/package-ui"));
     assert!(targets.contains(&"dep-lib/feature"));
+    assert!(targets.contains(&"dep-lib/array-feature"));
     assert!(targets.contains(&"dep-lib/node-feature"));
     assert!(targets.contains(&"legacy-lib"));
     assert!(targets.contains(&"legacy-lib/plugin"));
     assert!(targets.contains(&"workspace-ui/button"));
     assert!(targets.contains(&"#internal/logger"));
+    assert!(targets.contains(&"#fallback/logger"));
     assert!(
         deps["dependencies"]
             .as_array()
@@ -445,6 +447,16 @@ fn cli_indexes_and_queries_fixture_project() {
             .unwrap()
             .iter()
             .any(|dependency| {
+                dependency["target"] == "dep-lib/array-feature"
+                    && dependency["resolved_file"] == "node_modules/dep-lib/dist/array-feature.js"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
                 dependency["target"] == "fixture-lib/package-ui"
                     && dependency["resolved_file"] == "src/package-ui.ts"
             })
@@ -466,6 +478,16 @@ fn cli_indexes_and_queries_fixture_project() {
             .iter()
             .any(|dependency| {
                 dependency["target"] == "#internal/logger"
+                    && dependency["resolved_file"] == "src/internal/logger.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "#fallback/logger"
                     && dependency["resolved_file"] == "src/internal/logger.ts"
             })
     );
@@ -2414,7 +2436,8 @@ fn fixture_project() -> TempDir {
   "name": "fixture-lib",
   "workspaces": ["packages/*"],
   "imports": {
-    "#internal/*": "./src/internal/*.ts"
+    "#internal/*": "./src/internal/*.ts",
+    "#fallback/*": ["./src/missing/*.ts", "./src/internal/*.ts"]
   },
   "exports": {
     "./package-*": "./src/package-*.ts"
@@ -2517,11 +2540,13 @@ import { fallbackRender } from "@fallback/fallback-ui";
 import { sharedRender } from "shared";
 import { packageRender } from "fixture-lib/package-ui";
 import { depRender } from "dep-lib/feature";
+import { depArrayRender } from "dep-lib/array-feature";
 import { depNodeRender } from "dep-lib/node-feature";
 import { legacyRender } from "legacy-lib";
 import { legacyPluginRender } from "legacy-lib/plugin";
 import { workspaceButton } from "workspace-ui/button";
 import { logInternal } from "#internal/logger";
+import { logInternal as logFallback } from "#fallback/logger";
 const { render: draw } = require("./ui");
 const uiModule = require("./ui");
 const computedUiModule = require("./" + "ui");
@@ -2615,6 +2640,7 @@ export function packageExportMain() {
 
 export function dependencyPackageMain() {
   depRender();
+  depArrayRender();
   depNodeRender();
   legacyRender();
   legacyPluginRender();
@@ -2626,6 +2652,7 @@ export function workspacePackageMain() {
 
 export function packageImportMain() {
   logInternal();
+  logFallback();
 }
 "##,
     );
@@ -2660,6 +2687,12 @@ export function callGraphEntry() {
   "exports": {
     "./feature": {
       "import": "./dist/feature.js"
+    },
+    "./array-feature": {
+      "import": [
+        "./dist/missing-array-feature.js",
+        "./dist/array-feature.js"
+      ]
     },
     "./node-feature": {
       "node": {
@@ -2727,6 +2760,15 @@ export function legacyPluginRender() {
         r#"
 export function depRender() {
   return "dep";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/dep-lib/dist/array-feature.js",
+        r#"
+export function depArrayRender() {
+  return "dep-array";
 }
 "#,
     );
