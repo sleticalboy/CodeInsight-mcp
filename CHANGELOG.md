@@ -8,6 +8,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ### Changed
 
+- `scripts/mcp-stdio-smoke.sh` now executes selected `project_overview.recommended_next_tools` calls so overview recommendations are verified as usable MCP arguments.
 - `scripts/mcp-stdio-smoke.sh` now executes the first explicit and auto `context_pack.reading_plan[].suggested_tool` calls to verify suggested MCP arguments are usable.
 - `context_pack.reading_plan` entries now include `suggested_tool` objects that map reading steps to MCP-ready follow-up calls.
 - `context_pack.reading_plan` entries now include stable `next_action` hints and guiding `question` text for client follow-up routing.

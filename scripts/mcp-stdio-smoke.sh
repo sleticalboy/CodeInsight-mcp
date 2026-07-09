@@ -182,6 +182,25 @@ try:
         for entrypoint in overview_result["entrypoints"]
     ), "source entrypoint not found"
     recommended_tools = overview_result["recommended_next_tools"]
+    overview_context_tool = next(
+        (
+            tool
+            for tool in recommended_tools
+            if tool["tool"] == "context_pack"
+            and same_root(tool["suggested_arguments"]["root"])
+            and tool["suggested_arguments"]["token_budget"] == 6000
+        ),
+        None,
+    )
+    overview_config_tool = next(
+        (
+            tool
+            for tool in recommended_tools
+            if tool["tool"] == "config_status"
+            and same_root(tool["suggested_arguments"]["root"])
+        ),
+        None,
+    )
     assert any(
         tool["tool"] == "context_pack"
         and same_root(tool["suggested_arguments"]["root"])
@@ -199,6 +218,12 @@ try:
         and same_root(tool["suggested_arguments"]["root"])
         for tool in recommended_tools
     ), "config_status recommendation not found"
+    overview_context_result = call_suggested_tool(overview_context_tool, 14)
+    assert overview_context_result["seed_strategy"] == "auto_entrypoint"
+    assert overview_context_result["reading_plan"], "overview context_pack recommendation produced no reading_plan"
+    overview_config_result = call_suggested_tool(overview_config_tool, 15)
+    assert overview_config_result["exists"] is False
+    assert "detected_test_commands" in overview_config_result
 
     symbols = request(
         {
@@ -377,6 +402,7 @@ try:
     print(f"indexed_files: {index_result['indexed_files']}")
     print(f"overview_entrypoints: {len(overview_result['entrypoints'])}")
     print(f"overview_recommendations: {len(recommended_tools)}")
+    print(f"overview_context_seed_strategy: {overview_context_result['seed_strategy']}")
     print(f"auto_seed_strategy: {auto_context_result['seed_strategy']}")
     print(f"auto_reading_plan_steps: {len(auto_context_result['reading_plan'])}")
     print(f"explicit_suggested_tool: {explicit_reading_plan[0]['suggested_tool']['tool']}")

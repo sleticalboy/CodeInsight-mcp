@@ -54,6 +54,8 @@ sequence:
 It also asserts the MCP-facing structured fields that clients commonly render:
 
 - `project_overview.recommended_next_tools`
+- `project_overview.recommended_next_tools` calls for `context_pack` and
+  `config_status` execute
 - explicit and auto `context_pack.reading_plan`
 - `context_pack.reading_plan[].next_action` and `question`
 - `context_pack.reading_plan[].suggested_tool`
@@ -89,6 +91,7 @@ tools: 15
 indexed_files: 3
 overview_entrypoints: 1
 overview_recommendations: 4
+overview_context_seed_strategy: auto_entrypoint
 auto_seed_strategy: auto_entrypoint
 auto_reading_plan_steps: 2
 explicit_suggested_tool: file_outline
