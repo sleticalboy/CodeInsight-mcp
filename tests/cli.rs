@@ -1580,8 +1580,8 @@ fn cli_respects_null_package_exports_without_subpath_fallback() {
     let fixture = null_package_exports_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 3);
-    assert_eq!(index["changed_files"], 3);
+    assert_eq!(index["indexed_files"], 4);
+    assert_eq!(index["changed_files"], 4);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -1615,9 +1615,29 @@ fn cli_respects_null_package_exports_without_subpath_fallback() {
             .as_array()
             .unwrap()
             .iter()
+            .any(|dependency| {
+                dependency["target"] == "null-export-lib/conditional"
+                    && dependency["resolved_file"].is_null()
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
             .all(|dependency| {
                 dependency["target"] != "null-export-lib/disabled"
                     || dependency["resolved_file"] != "src/disabled.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "null-export-lib/conditional"
+                    || dependency["resolved_file"] != "src/conditional-fallback.ts"
             })
     );
 
@@ -1633,6 +1653,10 @@ fn cli_respects_null_package_exports_without_subpath_fallback() {
     }));
     assert!(callees.as_array().unwrap().iter().all(|call| {
         call["callee"] != "disabledRender" || call["callee_file"] != "src/disabled.ts"
+    }));
+    assert!(callees.as_array().unwrap().iter().all(|call| {
+        call["callee"] != "conditionalRender"
+            || call["callee_file"] != "src/conditional-fallback.ts"
     }));
 }
 
@@ -3847,10 +3871,12 @@ fn null_package_exports_fixture_project() -> TempDir {
         r#"
 import { enabledRender } from "null-export-lib/enabled";
 import { disabledRender } from "null-export-lib/disabled";
+import { conditionalRender } from "null-export-lib/conditional";
 
 export function nullExportMain() {
   enabledRender();
   disabledRender();
+  conditionalRender();
 }
 "#,
     );
@@ -3862,7 +3888,11 @@ export function nullExportMain() {
   "name": "null-export-lib",
   "exports": {
     "./enabled": "./src/enabled.ts",
-    "./disabled": null
+    "./disabled": null,
+    "./conditional": {
+      "import": null,
+      "default": "./src/conditional-fallback.ts"
+    }
   }
 }
 "#,
@@ -3882,6 +3912,15 @@ export function enabledRender() {
         r#"
 export function disabledRender() {
   return "disabled";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/conditional-fallback.ts",
+        r#"
+export function conditionalRender() {
+  return "conditional";
 }
 "#,
     );

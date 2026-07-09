@@ -15,6 +15,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - JavaScript and TypeScript package resolution now parses `pnpm-workspace.yaml` `catalog` and `catalogs` metadata when classifying catalog dependency sources.
 - JavaScript and TypeScript package `exports` and `imports` resolution now tries array fallback targets in order.
 - JavaScript and TypeScript package `exports` resolution now treats explicit `null` subpath mappings as disabled and does not fall back to package-relative files.
+- JavaScript and TypeScript package `exports` resolution now treats matched conditional `null` branches as disabled instead of continuing to later conditions.
 - JavaScript and TypeScript package `exports` and `imports` condition priority can now be configured with `[javascript].package_conditions`.
 - JavaScript and TypeScript path alias, package `exports`, and package `imports` resolution now supports multiple `*` captures in one mapping.
 - JavaScript and TypeScript package resolution now applies common `package.json#browser` string and object remaps when resolving package entries.

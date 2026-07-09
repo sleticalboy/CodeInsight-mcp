@@ -2732,11 +2732,13 @@ fn package_export_mappings(
     package_conditions: &[String],
 ) -> Option<Vec<PathBuf>> {
     if subpath == "." && !package_exports_uses_subpath_keys(exports) {
-        let targets = package_export_targets(exports, package_conditions)
-            .into_iter()
-            .map(PathBuf::from)
-            .collect();
-        return Some(targets);
+        return Some(
+            package_export_targets(exports, package_conditions)
+                .unwrap_or_default()
+                .into_iter()
+                .map(PathBuf::from)
+                .collect(),
+        );
     }
 
     let Some(entries) = exports.as_object() else {
@@ -2748,6 +2750,7 @@ fn package_export_mappings(
         };
         return Some(
             package_export_targets(value, package_conditions)
+                .unwrap_or_default()
                 .into_iter()
                 .filter_map(|target| apply_path_mapping(&target, &wildcards))
                 .collect(),
@@ -2776,6 +2779,7 @@ fn package_import_mappings(
             continue;
         };
         return package_export_targets(value, package_conditions)
+            .unwrap_or_default()
             .into_iter()
             .filter(|target| target.starts_with("./") || target.starts_with("../"))
             .filter_map(|target| apply_path_mapping(&target, &wildcards))
@@ -2797,30 +2801,35 @@ fn package_metadata_entry(package: &Value, subpath: &str) -> Option<PathBuf> {
     subpath.strip_prefix("./").map(PathBuf::from)
 }
 
-fn package_export_targets(value: &Value, package_conditions: &[String]) -> Vec<String> {
+fn package_export_targets(value: &Value, package_conditions: &[String]) -> Option<Vec<String>> {
     if let Some(target) = value.as_str() {
-        return vec![target.to_string()];
+        return Some(vec![target.to_string()]);
     }
 
     if let Some(targets) = value.as_array() {
-        return targets
-            .iter()
-            .flat_map(|target| package_export_targets(target, package_conditions))
-            .collect();
+        return Some(
+            targets
+                .iter()
+                .flat_map(|target| {
+                    package_export_targets(target, package_conditions).unwrap_or_default()
+                })
+                .collect(),
+        );
+    }
+
+    if value.is_null() {
+        return Some(Vec::new());
     }
 
     let Some(object) = value.as_object() else {
-        return Vec::new();
+        return Some(Vec::new());
     };
     for condition in package_conditions {
         if let Some(target) = object.get(condition) {
-            let targets = package_export_targets(target, package_conditions);
-            if !targets.is_empty() {
-                return targets;
-            }
+            return package_export_targets(target, package_conditions);
         }
     }
-    Vec::new()
+    None
 }
 
 fn resolve_relative_target(
@@ -3948,6 +3957,10 @@ catalogs:
     fn parses_null_package_export_as_disabled_mapping() {
         let exports = serde_json::json!({
             "./disabled": null,
+            "./conditional": {
+                "import": null,
+                "default": "./dist/conditional-fallback.js"
+            },
             "./enabled": "./dist/enabled.js"
         });
 
@@ -3958,6 +3971,18 @@ catalogs:
         assert_eq!(
             package_export_mappings(&exports, "./missing", &default_package_conditions()),
             None
+        );
+        assert_eq!(
+            package_export_mappings(&exports, "./conditional", &default_package_conditions()),
+            Some(Vec::new())
+        );
+        assert_eq!(
+            package_export_mappings(
+                &exports,
+                "./conditional",
+                &["browser".to_string(), "default".to_string()]
+            ),
+            Some(vec![PathBuf::from("./dist/conditional-fallback.js")])
         );
     }
 
