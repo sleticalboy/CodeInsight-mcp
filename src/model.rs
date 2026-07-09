@@ -228,6 +228,7 @@ pub struct ConfigStatusReport {
     pub parse_error: Option<String>,
     pub configured_test_commands: Vec<String>,
     pub configured_suggested_checks: usize,
+    pub configured_package_conditions: Vec<String>,
     pub detected_test_commands: Vec<String>,
     pub commands_override_builtin: bool,
 }

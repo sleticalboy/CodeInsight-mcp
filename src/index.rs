@@ -12,6 +12,7 @@ use sha2::{Digest, Sha256};
 use tree_sitter::{Node, Parser, TreeCursor};
 
 use crate::{
+    config::load_project_config,
     language::{detect_language, tree_sitter_language},
     model::{
         CallEdge, Dependency, IndexError, Language, ProjectIndexReport, SourceFile, Symbol,
@@ -20,9 +21,36 @@ use crate::{
     storage::{INDEX_VERSION, SCHEMA_VERSION, Store},
 };
 
+const DEFAULT_PACKAGE_CONDITIONS: &[&str] = &[
+    "import",
+    "node",
+    "browser",
+    "default",
+    "require",
+    "development",
+    "production",
+];
+
+fn default_package_conditions() -> Vec<String> {
+    DEFAULT_PACKAGE_CONDITIONS
+        .iter()
+        .map(|condition| condition.to_string())
+        .collect()
+}
+
+fn project_package_conditions(root: &Path) -> Vec<String> {
+    match load_project_config(root) {
+        Ok(Some(config)) if !config.javascript.package_conditions.is_empty() => {
+            config.javascript.package_conditions
+        }
+        _ => default_package_conditions(),
+    }
+}
+
 pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
     let started = Instant::now();
     let root = root.canonicalize()?;
+    let package_conditions = project_package_conditions(&root);
     let mut store = Store::open(&root)?;
     if force {
         store.reset()?;
@@ -110,7 +138,7 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
                 continue;
             }
         };
-        resolve_dependencies(&root, &mut dependencies);
+        resolve_dependencies(&root, &mut dependencies, &package_conditions);
         let calls = extract_calls(&source, language, &relative_path, &symbols);
         let source_file = SourceFile {
             path: path.to_path_buf(),
@@ -1670,16 +1698,24 @@ fn matching_delimiter(raw: &str, open_index: usize, open: char, close: char) -> 
     None
 }
 
-fn resolve_dependencies(root: &Path, dependencies: &mut [Dependency]) {
+fn resolve_dependencies(
+    root: &Path,
+    dependencies: &mut [Dependency],
+    package_conditions: &[String],
+) {
     for dependency in dependencies {
-        dependency.resolved_file = resolve_dependency(root, dependency);
+        dependency.resolved_file = resolve_dependency(root, dependency, package_conditions);
     }
 }
 
-fn resolve_dependency(root: &Path, dependency: &Dependency) -> Option<String> {
+fn resolve_dependency(
+    root: &Path,
+    dependency: &Dependency,
+    package_conditions: &[String],
+) -> Option<String> {
     match dependency.language {
         Language::JavaScript | Language::TypeScript | Language::Tsx => {
-            resolve_javascript_like_target(root, dependency)
+            resolve_javascript_like_target(root, dependency, package_conditions)
         }
         Language::C | Language::Cpp => resolve_c_like_target(root, dependency),
         Language::CSharp => None,
@@ -1725,7 +1761,11 @@ fn resolve_c_like_target(root: &Path, dependency: &Dependency) -> Option<String>
     )
 }
 
-fn resolve_javascript_like_target(root: &Path, dependency: &Dependency) -> Option<String> {
+fn resolve_javascript_like_target(
+    root: &Path,
+    dependency: &Dependency,
+    package_conditions: &[String],
+) -> Option<String> {
     const EXTENSIONS: &[&str] = &["ts", "tsx", "js", "jsx", "mjs", "cjs"];
     resolve_relative_target(
         root,
@@ -1733,11 +1773,20 @@ fn resolve_javascript_like_target(root: &Path, dependency: &Dependency) -> Optio
         &dependency.target,
         EXTENSIONS,
     )
-    .or_else(|| resolve_package_imports_target(root, dependency, EXTENSIONS))
+    .or_else(|| resolve_package_imports_target(root, dependency, EXTENSIONS, package_conditions))
     .or_else(|| resolve_tsconfig_target(root, dependency, EXTENSIONS))
-    .or_else(|| resolve_package_exports_target(root, dependency, EXTENSIONS))
-    .or_else(|| resolve_workspace_package_exports_target(root, dependency, EXTENSIONS))
-    .or_else(|| resolve_node_modules_package_exports_target(root, dependency, EXTENSIONS))
+    .or_else(|| resolve_package_exports_target(root, dependency, EXTENSIONS, package_conditions))
+    .or_else(|| {
+        resolve_workspace_package_exports_target(root, dependency, EXTENSIONS, package_conditions)
+    })
+    .or_else(|| {
+        resolve_node_modules_package_exports_target(
+            root,
+            dependency,
+            EXTENSIONS,
+            package_conditions,
+        )
+    })
 }
 
 fn resolve_tsconfig_target(
@@ -1926,6 +1975,7 @@ fn resolve_package_exports_target(
     root: &Path,
     dependency: &Dependency,
     extensions: &[&str],
+    package_conditions: &[String],
 ) -> Option<String> {
     if dependency.target.starts_with('.') || dependency.target.starts_with('/') {
         return None;
@@ -1937,13 +1987,21 @@ fn resolve_package_exports_target(
     let name = package.get("name")?.as_str()?;
     let subpath = package_export_subpath(name, &dependency.target)?;
     let package_dir = package_path.parent().unwrap_or(Path::new(""));
-    resolve_package_entry(root, package_dir, &package, &subpath, extensions)
+    resolve_package_entry(
+        root,
+        package_dir,
+        &package,
+        &subpath,
+        extensions,
+        package_conditions,
+    )
 }
 
 fn resolve_package_imports_target(
     root: &Path,
     dependency: &Dependency,
     extensions: &[&str],
+    package_conditions: &[String],
 ) -> Option<String> {
     if !dependency.target.starts_with('#') {
         return None;
@@ -1954,7 +2012,7 @@ fn resolve_package_imports_target(
     let package: Value = serde_json::from_str(&package_text).ok()?;
     let package_dir = package_path.parent().unwrap_or(Path::new(""));
     let imports = package.get("imports")?;
-    for mapped in package_import_mappings(imports, &dependency.target) {
+    for mapped in package_import_mappings(imports, &dependency.target, package_conditions) {
         if let Some(resolved) = resolve_base(root, package_dir.join(mapped), extensions) {
             return Some(resolved);
         }
@@ -1966,6 +2024,7 @@ fn resolve_node_modules_package_exports_target(
     root: &Path,
     dependency: &Dependency,
     extensions: &[&str],
+    package_conditions: &[String],
 ) -> Option<String> {
     if dependency.target.starts_with('.') || dependency.target.starts_with('/') {
         return None;
@@ -1977,13 +2036,21 @@ fn resolve_node_modules_package_exports_target(
     let package_text = fs::read_to_string(root.join(&package_path)).ok()?;
     let package: Value = serde_json::from_str(&package_text).ok()?;
     let package_dir = package_path.parent().unwrap_or(Path::new(""));
-    resolve_package_entry(root, package_dir, &package, &subpath, extensions)
+    resolve_package_entry(
+        root,
+        package_dir,
+        &package,
+        &subpath,
+        extensions,
+        package_conditions,
+    )
 }
 
 fn resolve_workspace_package_exports_target(
     root: &Path,
     dependency: &Dependency,
     extensions: &[&str],
+    package_conditions: &[String],
 ) -> Option<String> {
     if dependency.target.starts_with('.') || dependency.target.starts_with('/') {
         return None;
@@ -1995,7 +2062,14 @@ fn resolve_workspace_package_exports_target(
     let package_text = fs::read_to_string(root.join(&workspace_package_path)).ok()?;
     let package: Value = serde_json::from_str(&package_text).ok()?;
     let package_dir = workspace_package_path.parent().unwrap_or(Path::new(""));
-    resolve_package_entry(root, package_dir, &package, &subpath, extensions)
+    resolve_package_entry(
+        root,
+        package_dir,
+        &package,
+        &subpath,
+        extensions,
+        package_conditions,
+    )
 }
 
 fn find_package_json(root: &Path, source_file: &str) -> Option<PathBuf> {
@@ -2564,9 +2638,10 @@ fn resolve_package_entry(
     package: &Value,
     subpath: &str,
     extensions: &[&str],
+    package_conditions: &[String],
 ) -> Option<String> {
     if let Some(exports) = package.get("exports") {
-        let mappings = package_export_mappings(exports, subpath);
+        let mappings = package_export_mappings(exports, subpath, package_conditions);
         for mapped in &mappings {
             if let Some(resolved) = resolve_base(root, package_dir.join(mapped), extensions) {
                 return Some(resolved);
@@ -2581,12 +2656,19 @@ fn resolve_package_entry(
     resolve_base(root, package_dir.join(mapped), extensions)
 }
 
-fn package_export_mappings(exports: &Value, subpath: &str) -> Vec<PathBuf> {
+fn package_export_mappings(
+    exports: &Value,
+    subpath: &str,
+    package_conditions: &[String],
+) -> Vec<PathBuf> {
     if subpath == "." {
-        return package_export_targets(exports)
+        let targets: Vec<PathBuf> = package_export_targets(exports, package_conditions)
             .into_iter()
             .map(PathBuf::from)
             .collect();
+        if !targets.is_empty() {
+            return targets;
+        }
     }
 
     let Some(entries) = exports.as_object() else {
@@ -2596,7 +2678,7 @@ fn package_export_mappings(exports: &Value, subpath: &str) -> Vec<PathBuf> {
         let Some(wildcard) = tsconfig_path_wildcard(pattern, subpath) else {
             continue;
         };
-        return package_export_targets(value)
+        return package_export_targets(value, package_conditions)
             .into_iter()
             .filter_map(|target| apply_tsconfig_path_mapping(&target, wildcard.as_deref()))
             .collect();
@@ -2604,7 +2686,11 @@ fn package_export_mappings(exports: &Value, subpath: &str) -> Vec<PathBuf> {
     Vec::new()
 }
 
-fn package_import_mappings(imports: &Value, target: &str) -> Vec<PathBuf> {
+fn package_import_mappings(
+    imports: &Value,
+    target: &str,
+    package_conditions: &[String],
+) -> Vec<PathBuf> {
     let Some(entries) = imports.as_object() else {
         return Vec::new();
     };
@@ -2612,7 +2698,7 @@ fn package_import_mappings(imports: &Value, target: &str) -> Vec<PathBuf> {
         let Some(wildcard) = tsconfig_path_wildcard(pattern, target) else {
             continue;
         };
-        return package_export_targets(value)
+        return package_export_targets(value, package_conditions)
             .into_iter()
             .filter(|target| target.starts_with("./") || target.starts_with("../"))
             .filter_map(|target| apply_tsconfig_path_mapping(&target, wildcard.as_deref()))
@@ -2634,29 +2720,24 @@ fn package_metadata_entry(package: &Value, subpath: &str) -> Option<PathBuf> {
     subpath.strip_prefix("./").map(PathBuf::from)
 }
 
-fn package_export_targets(value: &Value) -> Vec<String> {
+fn package_export_targets(value: &Value, package_conditions: &[String]) -> Vec<String> {
     if let Some(target) = value.as_str() {
         return vec![target.to_string()];
     }
 
     if let Some(targets) = value.as_array() {
-        return targets.iter().flat_map(package_export_targets).collect();
+        return targets
+            .iter()
+            .flat_map(|target| package_export_targets(target, package_conditions))
+            .collect();
     }
 
     let Some(object) = value.as_object() else {
         return Vec::new();
     };
-    for condition in [
-        "import",
-        "node",
-        "browser",
-        "default",
-        "require",
-        "development",
-        "production",
-    ] {
+    for condition in package_conditions {
         if let Some(target) = object.get(condition) {
-            let targets = package_export_targets(target);
+            let targets = package_export_targets(target, package_conditions);
             if !targets.is_empty() {
                 return targets;
             }
@@ -3757,11 +3838,32 @@ catalogs:
         });
 
         assert_eq!(
-            package_export_mappings(&exports, "./feature"),
+            package_export_mappings(&exports, "./feature", &default_package_conditions()),
             vec![
                 PathBuf::from("./dist/missing-feature.js"),
                 PathBuf::from("./dist/feature.js")
             ]
+        );
+    }
+
+    #[test]
+    fn parses_package_export_targets_with_custom_conditions() {
+        let exports = serde_json::json!({
+            ".": {
+                "types": "./dist/index.d.ts",
+                "import": "./dist/index.js",
+                "default": "./dist/default.js"
+            }
+        });
+        let conditions = vec![
+            "types".to_string(),
+            "import".to_string(),
+            "default".to_string(),
+        ];
+
+        assert_eq!(
+            package_export_mappings(&exports, ".", &conditions),
+            vec![PathBuf::from("./dist/index.d.ts")]
         );
     }
 

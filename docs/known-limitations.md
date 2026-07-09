@@ -100,13 +100,13 @@ Limitations:
 
 - Targets are always stored as module strings; `resolved_file` is only populated when a local file can be resolved cheaply.
 - Grouped imports may be compacted rather than expanded precisely.
-- Local package self-reference `exports` resolution supports JSON-compatible `package.json` files with exact or single-wildcard string mappings, common condition objects, and array fallback targets.
-- Local `package.json#imports` resolution supports exact or single-wildcard mappings to relative local files, common condition objects, and array fallback targets.
+- Local package self-reference `exports` resolution supports JSON-compatible `package.json` files with exact or single-wildcard string mappings, configurable common condition priority, and array fallback targets.
+- Local `package.json#imports` resolution supports exact or single-wildcard mappings to relative local files, configurable common condition priority, and array fallback targets.
 - Same-repository workspace package `exports` resolution supports JSON-compatible `package.json` workspaces and common `pnpm-workspace.yaml` package lists with exact-directory, single-segment wildcard, recursive `**`, and negated package patterns.
 - Relative `workspace:` dependency paths such as `workspace:../pkg` can resolve package aliases to local package `exports` targets.
 - Workspace version protocols such as `workspace:*` and `workspace:^` resolve through same-repository workspace package discovery when the dependency name matches a workspace package.
 - `catalog:` and `catalog:name` dependency versions are treated as external catalog references and are not resolved to same-repository workspace packages by name; `pnpm-workspace.yaml` `catalog` and `catalogs` metadata is parsed when available, and nearest `node_modules` package resolution may still resolve installed catalog dependencies.
-- Dependency package `exports` resolution supports nearest `node_modules` packages with exact or single-wildcard mappings, common condition objects, and array fallback targets.
+- Dependency package `exports` resolution supports nearest `node_modules` packages with exact or single-wildcard mappings, configurable common condition priority, and array fallback targets.
 - Package metadata fallback supports root package specifiers through `module`, `main`, `types`, and `typings`, plus package subpaths resolved as package-relative files or index files.
 - TypeScript and JavaScript `baseUrl`/`paths` resolution supports JSON-compatible `tsconfig.json` and `jsconfig.json` files with relative `extends` chains, exact or single-wildcard path mappings, multiple fallback mappings, and directory index files.
 - External `imports` targets and multi-wildcard path segment syntax are not modeled yet.
@@ -170,7 +170,7 @@ Limitations:
 - `callee_file` is a best-effort file hint, not a proof of the exact runtime function.
 - Re-export following is intentionally bounded; arbitrary-depth barrel chains are not expanded.
 - Dependency packages under `node_modules` are skipped during indexing by default, so package export resolution can populate `dependency_graph.resolved_file` without producing `callee_file` hints for those packages.
-- Non-literal dynamic `import()`, external dynamic import handlers, variable-based `require(...)` targets, package-based config `extends`, pnpm/yarn-specific workspace protocols, custom export/import conditions, multi-wildcard aliases/exports, and bundler resolution are not modeled yet.
+- Non-literal dynamic `import()`, external dynamic import handlers, variable-based `require(...)` targets, package-based config `extends`, pnpm/yarn-specific workspace protocols, multi-wildcard aliases/exports, and bundler resolution are not modeled yet.
 - Dynamic dispatch, callbacks, reflection, macros, and higher-order functions are not modeled.
 - Method calls with the same method name on different types may be conflated.
 

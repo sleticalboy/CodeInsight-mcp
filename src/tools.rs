@@ -193,19 +193,26 @@ pub fn config_status_value(root: PathBuf) -> Result<ConfigStatusReport> {
     let exists = path.exists();
     let detected_test_commands = suggested_test_commands_for_root(&root);
 
-    let (loaded, parse_error, configured_test_commands, configured_suggested_checks) = if exists {
+    let (
+        loaded,
+        parse_error,
+        configured_test_commands,
+        configured_suggested_checks,
+        configured_package_conditions,
+    ) = if exists {
         match load_project_config(&root) {
             Ok(Some(config)) => (
                 true,
                 None,
                 config.impact_analysis.test_commands,
                 config.impact_analysis.suggested_checks.len(),
+                config.javascript.package_conditions,
             ),
-            Ok(None) => (false, None, Vec::new(), 0),
-            Err(error) => (false, Some(error.to_string()), Vec::new(), 0),
+            Ok(None) => (false, None, Vec::new(), 0, Vec::new()),
+            Err(error) => (false, Some(error.to_string()), Vec::new(), 0, Vec::new()),
         }
     } else {
-        (false, None, Vec::new(), 0)
+        (false, None, Vec::new(), 0, Vec::new())
     };
     let commands_override_builtin =
         loaded && (!configured_test_commands.is_empty() || configured_suggested_checks > 0);
@@ -218,6 +225,7 @@ pub fn config_status_value(root: PathBuf) -> Result<ConfigStatusReport> {
         parse_error,
         configured_test_commands,
         configured_suggested_checks,
+        configured_package_conditions,
         detected_test_commands,
         commands_override_builtin,
     })

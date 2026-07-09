@@ -1491,6 +1491,35 @@ fn cli_resolves_workspace_protocol_package_exports() {
 }
 
 #[test]
+fn cli_uses_configured_package_conditions() {
+    let fixture = package_conditions_fixture_project();
+
+    let status = run_json(["config-status", fixture.path().to_str().unwrap()]);
+    assert_eq!(status["loaded"], true);
+    assert_eq!(status["configured_package_conditions"][0], "types");
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let deps = run_json([
+        "dependency-graph",
+        fixture.path().to_str().unwrap(),
+        "--limit",
+        "20",
+    ]);
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "typed-lib"
+                    && dependency["resolved_file"] == "node_modules/typed-lib/dist/index.d.ts"
+            })
+    );
+}
+
+#[test]
 fn cli_reports_version_information() {
     Command::cargo_bin("codeinsight")
         .unwrap()
@@ -1529,6 +1558,8 @@ fn cli_init_config_creates_sample_project_config() {
         config_path.canonicalize().unwrap().to_str().unwrap()
     );
     let contents = std::fs::read_to_string(&config_path).unwrap();
+    assert!(contents.contains("[javascript]"));
+    assert!(contents.contains("package_conditions = ["));
     assert!(contents.contains("[impact_analysis]"));
     assert!(contents.contains("test_commands = []"));
     assert!(contents.contains("[[impact_analysis.suggested_checks]]"));
@@ -1567,12 +1598,22 @@ fn cli_config_status_reports_loaded_and_detected_commands() {
     assert_eq!(missing["exists"], false);
     assert_eq!(missing["loaded"], false);
     assert_eq!(missing["commands_override_builtin"], false);
+    assert_eq!(
+        missing["configured_package_conditions"]
+            .as_array()
+            .unwrap()
+            .len(),
+        0
+    );
     assert_eq!(missing["detected_test_commands"][0], "cargo test --locked");
 
     write_file(
         &fixture,
         ".codeinsight/config.toml",
         r#"
+[javascript]
+package_conditions = ["types", "import", "default"]
+
 [impact_analysis]
 test_commands = ["cargo test -p core"]
 
@@ -1587,6 +1628,7 @@ languages = ["rust"]
     assert_eq!(loaded["loaded"], true);
     assert_eq!(loaded["configured_test_commands"][0], "cargo test -p core");
     assert_eq!(loaded["configured_suggested_checks"].as_u64(), Some(1));
+    assert_eq!(loaded["configured_package_conditions"][0], "types");
     assert_eq!(loaded["commands_override_builtin"], true);
     assert!(loaded.get("parse_error").is_none());
 }
@@ -1615,6 +1657,13 @@ export function leaf() {
         0
     );
     assert_eq!(status["configured_suggested_checks"].as_u64(), Some(0));
+    assert_eq!(
+        status["configured_package_conditions"]
+            .as_array()
+            .unwrap()
+            .len(),
+        0
+    );
     assert_eq!(status["detected_test_commands"][0], "cargo test --locked");
     assert!(
         status["parse_error"]
@@ -3200,6 +3249,60 @@ export function workspaceProtocolMain() {
 export function protocolButton() {
   return "protocol";
 }
+"#,
+    );
+    dir
+}
+
+fn package_conditions_fixture_project() -> TempDir {
+    let dir = TempDir::new().unwrap();
+    write_file(
+        &dir,
+        ".codeinsight/config.toml",
+        r#"
+[javascript]
+package_conditions = ["types", "import", "default"]
+"#,
+    );
+    write_file(
+        &dir,
+        "src/main.ts",
+        r#"
+import type { TypedValue } from "typed-lib";
+
+export type AppValue = TypedValue;
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/typed-lib/package.json",
+        r#"
+{
+  "name": "typed-lib",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/default.js"
+    }
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/typed-lib/dist/index.d.ts",
+        r#"
+export interface TypedValue {
+  value: string;
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/typed-lib/dist/index.js",
+        r#"
+export const typedValue = { value: "runtime" };
 "#,
     );
     dir

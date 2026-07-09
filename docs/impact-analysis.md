@@ -86,6 +86,9 @@ codeinsight config-status /path/to/repo
 Example:
 
 ```toml
+[javascript]
+package_conditions = ["types", "import", "node", "default"]
+
 [impact_analysis]
 test_commands = ["pnpm test"]
 
@@ -96,7 +99,7 @@ languages = ["typescript", "tsx"]
 files = ["src/core"]
 ```
 
-`test_commands` are global project commands. `suggested_checks` entries can filter by impacted `languages` and impacted file path prefixes in `files`. Empty filters match any impact report.
+`javascript.package_conditions` controls package `exports`/`imports` condition priority during indexing. `test_commands` are global project commands. `suggested_checks` entries can filter by impacted `languages` and impacted file path prefixes in `files`. Empty filters match any impact report.
 
 Missing config status:
 
@@ -106,6 +109,7 @@ Missing config status:
   "loaded": false,
   "configured_test_commands": [],
   "configured_suggested_checks": 0,
+  "configured_package_conditions": [],
   "detected_test_commands": ["cargo test --locked"],
   "commands_override_builtin": false
 }
@@ -119,6 +123,7 @@ Loaded config status:
   "loaded": true,
   "configured_test_commands": ["pnpm test"],
   "configured_suggested_checks": 1,
+  "configured_package_conditions": ["types", "import", "node", "default"],
   "detected_test_commands": ["pnpm test"],
   "commands_override_builtin": true
 }
@@ -133,6 +138,7 @@ Malformed config status:
   "parse_error": "failed to parse /path/to/repo/.codeinsight/config.toml",
   "configured_test_commands": [],
   "configured_suggested_checks": 0,
+  "configured_package_conditions": [],
   "detected_test_commands": ["pnpm test"],
   "commands_override_builtin": false
 }

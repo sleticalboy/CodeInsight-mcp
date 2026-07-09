@@ -9,6 +9,10 @@ const SAMPLE_PROJECT_CONFIG_TEMPLATE: &str = r#"# CodeInsight project configurat
 # This file is optional. impact_analysis uses built-in suggested check
 # inference until you add project-specific commands here.
 
+[javascript]
+# Package exports/imports condition priority for package.json resolution.
+# package_conditions = ["types", "import", "node", "default"]
+
 [impact_analysis]
 test_commands = {test_commands}
 
@@ -27,6 +31,13 @@ test_commands = {test_commands}
 #[serde(default)]
 pub struct ProjectConfig {
     pub impact_analysis: ImpactAnalysisConfig,
+    pub javascript: JavascriptConfig,
+}
+
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+#[serde(default)]
+pub struct JavascriptConfig {
+    pub package_conditions: Vec<String>,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
