@@ -1742,6 +1742,71 @@ fn cli_resolves_package_json_workspace_array_exclusions() {
 }
 
 #[test]
+fn cli_resolves_package_json_workspace_array_recursive_exclusions() {
+    let fixture = package_workspace_array_recursive_exclusion_fixture_project();
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 3);
+    assert_eq!(index["changed_files"], 3);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let deps = run_json([
+        "dependency-graph",
+        fixture.path().to_str().unwrap(),
+        "--limit",
+        "20",
+    ]);
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "deep-array-ui/button"
+                    && dependency["resolved_file"] == "packages/nested/deep-array-ui/src/button.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "deep-legacy-array-ui/button"
+                    && dependency["resolved_file"]
+                        == "node_modules/deep-legacy-array-ui/dist/button.js"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "deep-legacy-array-ui/button"
+                    || dependency["resolved_file"]
+                        != "packages/legacy/deep-legacy-array-ui/src/button.ts"
+            })
+    );
+
+    let callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "recursiveArrayWorkspaceMain",
+        "--limit",
+        "6",
+    ]);
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "deepArrayButton"
+            && call["callee_file"] == "packages/nested/deep-array-ui/src/button.ts"
+    }));
+    assert!(callees.as_array().unwrap().iter().all(|call| {
+        call["callee"] != "deepLegacyArrayButton"
+            || call["callee_file"] != "packages/legacy/deep-legacy-array-ui/src/button.ts"
+    }));
+}
+
+#[test]
 fn cli_uses_configured_package_conditions() {
     let fixture = package_conditions_fixture_project();
 
@@ -3924,6 +3989,110 @@ export function arrayLegacyButton() {
         r#"
 export function arrayLegacyButton() {
   return "array-legacy-node";
+}
+"#,
+    );
+    dir
+}
+
+fn package_workspace_array_recursive_exclusion_fixture_project() -> TempDir {
+    let dir = TempDir::new().unwrap();
+    write_file(
+        &dir,
+        "package.json",
+        r#"
+{
+  "private": true,
+  "workspaces": ["packages/**", "!packages/legacy/**"]
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "apps/web/package.json",
+        r#"
+{
+  "name": "web",
+  "dependencies": {
+    "deep-array-ui": "workspace:*",
+    "deep-legacy-array-ui": "workspace:*"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "apps/web/src/main.ts",
+        r#"
+import { deepArrayButton } from "deep-array-ui/button";
+import { deepLegacyArrayButton } from "deep-legacy-array-ui/button";
+
+export function recursiveArrayWorkspaceMain() {
+  deepArrayButton();
+  deepLegacyArrayButton();
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/nested/deep-array-ui/package.json",
+        r#"
+{
+  "name": "deep-array-ui",
+  "exports": {
+    "./button": "./src/button.ts"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/nested/deep-array-ui/src/button.ts",
+        r#"
+export function deepArrayButton() {
+  return "deep-array";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/legacy/deep-legacy-array-ui/package.json",
+        r#"
+{
+  "name": "deep-legacy-array-ui",
+  "exports": {
+    "./button": "./src/button.ts"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/legacy/deep-legacy-array-ui/src/button.ts",
+        r#"
+export function deepLegacyArrayButton() {
+  return "deep-legacy-array-workspace";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/deep-legacy-array-ui/package.json",
+        r#"
+{
+  "name": "deep-legacy-array-ui",
+  "exports": {
+    "./button": "./dist/button.js"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/deep-legacy-array-ui/dist/button.js",
+        r#"
+export function deepLegacyArrayButton() {
+  return "deep-legacy-array-node";
 }
 "#,
     );
