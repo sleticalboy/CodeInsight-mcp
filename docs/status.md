@@ -33,8 +33,8 @@ yet a complete language-server-grade code-analysis platform.
 
 ## Next
 
-- Improve package manager metadata handling.
-- Model monorepo workspace boundaries more explicitly.
+- Broaden package manager metadata handling.
+- Model workspace edge cases beyond `package.json` workspace package discovery.
 - Continue tightening README/docs routing so the README stays entry-level.
 
 For accuracy boundaries and current non-goals, see

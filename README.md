@@ -25,7 +25,7 @@ CodeInsight is an early MVP. It can index local repositories, expose CLI and
 MCP navigation tools, build agent-ready context packs, run local impact
 analysis, and optionally use configured semantic embeddings.
 
-Next focus: improve package manager metadata and monorepo boundary handling.
+Next focus: broaden package manager metadata and workspace edge-case handling.
 See [Current status](docs/status.md) for the full implemented capability list.
 
 ## Install From Release

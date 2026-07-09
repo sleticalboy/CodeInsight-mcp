@@ -101,10 +101,11 @@ Limitations:
 - Targets are always stored as module strings; `resolved_file` is only populated when a local file can be resolved cheaply.
 - Grouped imports may be compacted rather than expanded precisely.
 - Local package self-reference `exports` resolution supports JSON-compatible `package.json` files with exact or single-wildcard string mappings.
+- Same-repository workspace package `exports` resolution supports JSON-compatible `package.json` workspaces with common exact-directory and single-segment wildcard package patterns.
 - Dependency package `exports` resolution supports nearest `node_modules` packages with exact or single-wildcard mappings and common condition objects.
 - Package metadata fallback supports root package specifiers through `module`, `main`, `types`, and `typings`, plus package subpaths resolved as package-relative files or index files.
 - TypeScript and JavaScript `baseUrl`/`paths` resolution supports JSON-compatible `tsconfig.json` and `jsconfig.json` files with relative `extends` chains, exact or single-wildcard path mappings, multiple fallback mappings, and directory index files.
-- Monorepo workspace boundaries are not modeled yet.
+- pnpm/yarn-specific workspace protocols, catalog metadata, and advanced glob syntax are not modeled yet.
 - Go and Java import paths are not resolved to files yet.
 - C/C++ quoted local includes are resolved when the target file is obvious; system includes such as `<stdio.h>` are recorded but not resolved.
 
@@ -153,6 +154,7 @@ Currently supported JavaScript/TypeScript imported target hints:
 - Static-string dynamic import callback aliases: `import("./ui").then((ui) => ui.render())`.
 - TypeScript and JavaScript `baseUrl`/`paths` imports, including aliases inherited through relative config `extends`, when the target resolves to an indexed local file.
 - Local package self-reference `exports` imports when the target resolves to an indexed local file.
+- Same-repository workspace package `exports` imports when the target resolves to an indexed local file.
 - Default imports when the target has an indexed `export default` symbol.
 - One-hop named/default re-exports, `export * from`, and `export * as`.
 - Two-hop named/default re-export aliases and two-hop namespace re-export aliases.
@@ -163,7 +165,7 @@ Limitations:
 - `callee_file` is a best-effort file hint, not a proof of the exact runtime function.
 - Re-export following is intentionally bounded; arbitrary-depth barrel chains are not expanded.
 - Dependency packages under `node_modules` are skipped during indexing by default, so package export resolution can populate `dependency_graph.resolved_file` without producing `callee_file` hints for those packages.
-- Non-literal dynamic `import()`, external dynamic import handlers, variable-based `require(...)` targets, package-based config `extends`, multi-wildcard aliases/exports, and bundler resolution are not modeled yet.
+- Non-literal dynamic `import()`, external dynamic import handlers, variable-based `require(...)` targets, package-based config `extends`, pnpm/yarn-specific workspace protocols, multi-wildcard aliases/exports, and bundler resolution are not modeled yet.
 - Dynamic dispatch, callbacks, reflection, macros, and higher-order functions are not modeled.
 - Method calls with the same method name on different types may be conflated.
 
@@ -213,7 +215,7 @@ Do not treat current MVP output as a formal static-analysis proof.
 Near-term improvements:
 
 - Improve external dynamic import handlers and variable-based `require(...)` handling where obvious.
-- Add broader package manager metadata handling and monorepo workspace boundary modeling.
+- Add broader package manager metadata handling and workspace edge-case modeling.
 - Use broader graph hints in `context_pack` ranking.
 - Exclude or down-rank tests and comments in reference search.
 - Add fixture repositories for each supported language.

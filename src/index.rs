@@ -1735,6 +1735,7 @@ fn resolve_javascript_like_target(root: &Path, dependency: &Dependency) -> Optio
     )
     .or_else(|| resolve_tsconfig_target(root, dependency, EXTENSIONS))
     .or_else(|| resolve_package_exports_target(root, dependency, EXTENSIONS))
+    .or_else(|| resolve_workspace_package_exports_target(root, dependency, EXTENSIONS))
     .or_else(|| resolve_node_modules_package_exports_target(root, dependency, EXTENSIONS))
 }
 
@@ -1964,6 +1965,28 @@ fn resolve_node_modules_package_exports_target(
     resolve_base(root, package_dir.join(mapped), extensions)
 }
 
+fn resolve_workspace_package_exports_target(
+    root: &Path,
+    dependency: &Dependency,
+    extensions: &[&str],
+) -> Option<String> {
+    if dependency.target.starts_with('.') || dependency.target.starts_with('/') {
+        return None;
+    }
+
+    let (package_name, subpath) = package_specifier_parts(&dependency.target)?;
+    let workspace_package_path =
+        find_workspace_package_json(root, &dependency.source_file, &package_name)?;
+    let package_text = fs::read_to_string(root.join(&workspace_package_path)).ok()?;
+    let package: Value = serde_json::from_str(&package_text).ok()?;
+    let package_dir = workspace_package_path.parent().unwrap_or(Path::new(""));
+    let mapped = package
+        .get("exports")
+        .and_then(|exports| package_export_mapping(exports, &subpath))
+        .or_else(|| package_metadata_entry(&package, &subpath))?;
+    resolve_base(root, package_dir.join(mapped), extensions)
+}
+
 fn find_package_json(root: &Path, source_file: &str) -> Option<PathBuf> {
     let mut current = Path::new(source_file)
         .parent()
@@ -1981,6 +2004,141 @@ fn find_package_json(root: &Path, source_file: &str) -> Option<PathBuf> {
         }
         current.pop();
     }
+}
+
+fn find_workspace_package_json(
+    root: &Path,
+    source_file: &str,
+    package_name: &str,
+) -> Option<PathBuf> {
+    let mut current = Path::new(source_file)
+        .parent()
+        .unwrap_or(Path::new(""))
+        .to_path_buf();
+
+    loop {
+        let candidate = current.join("package.json");
+        if root.join(&candidate).is_file()
+            && let Some(package_path) =
+                find_workspace_package_from_root(root, &candidate, package_name)
+        {
+            return Some(package_path);
+        }
+
+        if current.as_os_str().is_empty() {
+            return None;
+        }
+        current.pop();
+    }
+}
+
+fn find_workspace_package_from_root(
+    root: &Path,
+    workspace_package_json: &Path,
+    package_name: &str,
+) -> Option<PathBuf> {
+    let package_text = fs::read_to_string(root.join(workspace_package_json)).ok()?;
+    let package: Value = serde_json::from_str(&package_text).ok()?;
+    let workspace_patterns = package_workspace_patterns(&package)?;
+    let workspace_dir = workspace_package_json.parent().unwrap_or(Path::new(""));
+
+    for pattern in workspace_patterns {
+        for package_dir in expand_workspace_pattern(root, workspace_dir, pattern) {
+            let package_path = package_dir.join("package.json");
+            let Ok(package_text) = fs::read_to_string(root.join(&package_path)) else {
+                continue;
+            };
+            let Ok(package) = serde_json::from_str::<Value>(&package_text) else {
+                continue;
+            };
+            if package.get("name").and_then(Value::as_str) == Some(package_name) {
+                return Some(package_path);
+            }
+        }
+    }
+
+    None
+}
+
+fn package_workspace_patterns(package: &Value) -> Option<Vec<&str>> {
+    let workspaces = package.get("workspaces")?;
+    if let Some(patterns) = workspaces.as_array() {
+        return Some(patterns.iter().filter_map(Value::as_str).collect());
+    }
+
+    workspaces
+        .get("packages")
+        .and_then(Value::as_array)
+        .map(|patterns| patterns.iter().filter_map(Value::as_str).collect())
+}
+
+fn expand_workspace_pattern(root: &Path, workspace_dir: &Path, pattern: &str) -> Vec<PathBuf> {
+    if pattern.starts_with('!') || Path::new(pattern).is_absolute() {
+        return Vec::new();
+    }
+
+    let segments = pattern
+        .split('/')
+        .filter(|segment| !segment.is_empty() && *segment != ".")
+        .collect::<Vec<_>>();
+    let mut matches = Vec::new();
+    expand_workspace_pattern_segments(root, workspace_dir.to_path_buf(), &segments, &mut matches);
+    matches
+}
+
+fn expand_workspace_pattern_segments(
+    root: &Path,
+    base: PathBuf,
+    segments: &[&str],
+    matches: &mut Vec<PathBuf>,
+) {
+    let Some((segment, remaining)) = segments.split_first() else {
+        if root.join(&base).join("package.json").is_file() {
+            matches.push(normalize_path(&base));
+        }
+        return;
+    };
+
+    if segment.contains('*') {
+        let Ok(entries) = fs::read_dir(root.join(&base)) else {
+            return;
+        };
+        let mut child_dirs = entries
+            .filter_map(|entry| entry.ok())
+            .filter_map(|entry| {
+                entry
+                    .file_type()
+                    .ok()
+                    .filter(|file_type| file_type.is_dir())
+                    .map(|_| entry.file_name())
+            })
+            .collect::<Vec<_>>();
+        child_dirs.sort();
+
+        for child_dir in child_dirs {
+            let child_name = child_dir.to_string_lossy();
+            if workspace_segment_matches(segment, &child_name) {
+                expand_workspace_pattern_segments(root, base.join(child_dir), remaining, matches);
+            }
+        }
+    } else {
+        expand_workspace_pattern_segments(root, base.join(segment), remaining, matches);
+    }
+}
+
+fn workspace_segment_matches(pattern: &str, value: &str) -> bool {
+    let Some(star_index) = pattern.find('*') else {
+        return pattern == value;
+    };
+    if pattern[star_index + 1..].contains('*') {
+        return false;
+    }
+
+    let prefix = &pattern[..star_index];
+    let suffix = &pattern[star_index + 1..];
+    value.starts_with(prefix)
+        && value.ends_with(suffix)
+        && value.len() >= prefix.len() + suffix.len()
 }
 
 fn find_node_modules_package_json(

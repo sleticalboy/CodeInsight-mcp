@@ -11,12 +11,12 @@ fn cli_indexes_and_queries_fixture_project() {
     let fixture = fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 19);
-    assert_eq!(index["changed_files"], 19);
+    assert_eq!(index["indexed_files"], 20);
+    assert_eq!(index["changed_files"], 20);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let overview = run_json(["overview", fixture.path().to_str().unwrap()]);
-    assert_eq!(overview["indexed_files"], 19);
+    assert_eq!(overview["indexed_files"], 20);
     assert!(overview["total_lines"].as_u64().unwrap() > 0);
     assert!(
         overview["summary"]
@@ -125,7 +125,7 @@ fn cli_indexes_and_queries_fixture_project() {
 
     let second_index = run_json(["index", fixture.path().to_str().unwrap()]);
     assert_eq!(second_index["changed_files"], 0);
-    assert_eq!(second_index["unchanged_files"], 19);
+    assert_eq!(second_index["unchanged_files"], 20);
 
     let semantic_index = run_json([
         "semantic-index",
@@ -358,6 +358,7 @@ fn cli_indexes_and_queries_fixture_project() {
     assert!(targets.contains(&"dep-lib/node-feature"));
     assert!(targets.contains(&"legacy-lib"));
     assert!(targets.contains(&"legacy-lib/plugin"));
+    assert!(targets.contains(&"workspace-ui/button"));
     assert!(
         deps["dependencies"]
             .as_array()
@@ -445,6 +446,16 @@ fn cli_indexes_and_queries_fixture_project() {
             .any(|dependency| {
                 dependency["target"] == "fixture-lib/package-ui"
                     && dependency["resolved_file"] == "src/package-ui.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "workspace-ui/button"
+                    && dependency["resolved_file"] == "packages/workspace-ui/src/button.ts"
             })
     );
     assert!(
@@ -1245,6 +1256,24 @@ fn cli_indexes_and_queries_fixture_project() {
             .iter()
             .any(|call| {
                 call["callee"] == "packageRender" && call["callee_file"] == "src/package-ui.ts"
+            })
+    );
+
+    let workspace_package_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "workspacePackageMain",
+        "--limit",
+        "5",
+    ]);
+    assert!(
+        workspace_package_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| {
+                call["callee"] == "workspaceButton"
+                    && call["callee_file"] == "packages/workspace-ui/src/button.ts"
             })
     );
 }
@@ -2193,6 +2222,7 @@ fn fixture_project() -> TempDir {
         r#"
 {
   "name": "fixture-lib",
+  "workspaces": ["packages/*"],
   "exports": {
     "./package-*": "./src/package-*.ts"
   }
@@ -2297,6 +2327,7 @@ import { depRender } from "dep-lib/feature";
 import { depNodeRender } from "dep-lib/node-feature";
 import { legacyRender } from "legacy-lib";
 import { legacyPluginRender } from "legacy-lib/plugin";
+import { workspaceButton } from "workspace-ui/button";
 const { render: draw } = require("./ui");
 const uiModule = require("./ui");
 const computedUiModule = require("./" + "ui");
@@ -2394,6 +2425,10 @@ export function dependencyPackageMain() {
   legacyRender();
   legacyPluginRender();
 }
+
+export function workspacePackageMain() {
+  workspaceButton();
+}
 "#,
     );
     write_file(
@@ -2435,6 +2470,27 @@ export function callGraphEntry() {
       "default": "./dist/default-feature.js"
     }
   }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/workspace-ui/package.json",
+        r#"
+{
+  "name": "workspace-ui",
+  "exports": {
+    "./button": "./src/button.ts"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/workspace-ui/src/button.ts",
+        r#"
+export function workspaceButton() {
+  return "workspace";
 }
 "#,
     );
