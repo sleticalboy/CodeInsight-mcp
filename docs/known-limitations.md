@@ -105,11 +105,11 @@ Limitations:
 - Same-repository workspace package `exports` resolution supports JSON-compatible `package.json` workspaces and common `pnpm-workspace.yaml` package lists with exact-directory, single-segment wildcard, recursive `**`, and negated package patterns.
 - Relative `workspace:` dependency paths such as `workspace:../pkg` can resolve package aliases to local package `exports` targets.
 - Workspace version protocols such as `workspace:*` and `workspace:^` resolve through same-repository workspace package discovery when the dependency name matches a workspace package.
-- `catalog:` and `catalog:name` dependency versions are treated as external catalog references and are not resolved to same-repository workspace packages by name; nearest `node_modules` package resolution may still resolve installed catalog dependencies.
+- `catalog:` and `catalog:name` dependency versions are treated as external catalog references and are not resolved to same-repository workspace packages by name; `pnpm-workspace.yaml` `catalog` and `catalogs` metadata is parsed when available, and nearest `node_modules` package resolution may still resolve installed catalog dependencies.
 - Dependency package `exports` resolution supports nearest `node_modules` packages with exact or single-wildcard mappings and common condition objects.
 - Package metadata fallback supports root package specifiers through `module`, `main`, `types`, and `typings`, plus package subpaths resolved as package-relative files or index files.
 - TypeScript and JavaScript `baseUrl`/`paths` resolution supports JSON-compatible `tsconfig.json` and `jsconfig.json` files with relative `extends` chains, exact or single-wildcard path mappings, multiple fallback mappings, and directory index files.
-- External `imports` targets, catalog metadata expansion, and multi-wildcard path segment syntax are not modeled yet.
+- External `imports` targets and multi-wildcard path segment syntax are not modeled yet.
 - Go and Java import paths are not resolved to files yet.
 - C/C++ quoted local includes are resolved when the target file is obvious; system includes such as `<stdio.h>` are recorded but not resolved.
 
@@ -220,7 +220,7 @@ Do not treat current MVP output as a formal static-analysis proof.
 Near-term improvements:
 
 - Improve external dynamic import handlers and variable-based `require(...)` handling where obvious.
-- Add broader catalog metadata expansion and advanced workspace glob edge-case handling.
+- Add advanced workspace glob and JavaScript package metadata edge-case handling.
 - Use broader graph hints in `context_pack` ranking.
 - Exclude or down-rank tests and comments in reference search.
 - Add fixture repositories for each supported language.

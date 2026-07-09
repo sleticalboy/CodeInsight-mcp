@@ -2187,8 +2187,19 @@ fn package_declares_catalog_dependency(root: &Path, source_file: &str, package_n
     let Ok(source_package) = serde_json::from_str::<Value>(&source_package_text) else {
         return false;
     };
-    package_dependency_value(&source_package, package_name)
-        .is_some_and(is_catalog_protocol_dependency)
+    let Some(catalog_name) =
+        package_dependency_value(&source_package, package_name).and_then(catalog_protocol_name)
+    else {
+        return false;
+    };
+
+    pnpm_workspace_declares_catalog_dependency(
+        root,
+        &source_package_path,
+        catalog_name,
+        package_name,
+    )
+    .unwrap_or(true)
 }
 
 fn package_dependency_value<'a>(package: &'a Value, package_name: &str) -> Option<&'a str> {
@@ -2210,8 +2221,13 @@ fn package_dependency_value<'a>(package: &'a Value, package_name: &str) -> Optio
     None
 }
 
-fn is_catalog_protocol_dependency(value: &str) -> bool {
-    value == "catalog:" || value.starts_with("catalog:")
+fn catalog_protocol_name(value: &str) -> Option<&str> {
+    let catalog_name = value.strip_prefix("catalog:")?.trim();
+    Some(if catalog_name.is_empty() {
+        "default"
+    } else {
+        catalog_name
+    })
 }
 
 fn workspace_protocol_relative_path(value: &str) -> Option<PathBuf> {
@@ -2268,6 +2284,113 @@ fn pnpm_workspace_patterns(text: &str) -> Vec<String> {
     }
 
     patterns
+}
+
+fn pnpm_workspace_declares_catalog_dependency(
+    root: &Path,
+    source_package_path: &Path,
+    catalog_name: &str,
+    package_name: &str,
+) -> Option<bool> {
+    let source_package_dir = source_package_path.parent().unwrap_or(Path::new(""));
+    let workspace_path = find_nearest_pnpm_workspace_yaml(root, source_package_dir)?;
+    let workspace_text = fs::read_to_string(root.join(workspace_path)).ok()?;
+    Some(pnpm_workspace_catalog_declares_dependency(
+        &workspace_text,
+        catalog_name,
+        package_name,
+    ))
+}
+
+fn find_nearest_pnpm_workspace_yaml(root: &Path, from_dir: &Path) -> Option<PathBuf> {
+    let mut current = from_dir.to_path_buf();
+
+    loop {
+        let candidate = current.join("pnpm-workspace.yaml");
+        if root.join(&candidate).is_file() {
+            return Some(candidate);
+        }
+
+        if current.as_os_str().is_empty() {
+            return None;
+        }
+        current.pop();
+    }
+}
+
+fn pnpm_workspace_catalog_declares_dependency(
+    text: &str,
+    catalog_name: &str,
+    package_name: &str,
+) -> bool {
+    #[derive(Clone, Copy, PartialEq, Eq)]
+    enum CatalogSection {
+        Default,
+        Named,
+    }
+
+    let mut section = None;
+    let mut current_named_catalog = None::<String>;
+    let mut current_named_catalog_indent = 0;
+
+    for raw_line in text.lines() {
+        let line = strip_yaml_comment(raw_line);
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+
+        let indent = yaml_line_indent(line);
+        if indent == 0 {
+            section = None;
+            current_named_catalog = None;
+            current_named_catalog_indent = 0;
+
+            if trimmed.starts_with("catalog:") {
+                section = Some(CatalogSection::Default);
+                continue;
+            }
+            if trimmed.starts_with("catalogs:") {
+                section = Some(CatalogSection::Named);
+                continue;
+            }
+        }
+
+        match section {
+            Some(CatalogSection::Default) if catalog_name == "default" => {
+                if yaml_mapping_key(trimmed).as_deref() == Some(package_name) {
+                    return true;
+                }
+            }
+            Some(CatalogSection::Named) => {
+                if current_named_catalog.is_none() || indent <= current_named_catalog_indent {
+                    current_named_catalog = yaml_mapping_key(trimmed);
+                    current_named_catalog_indent = indent;
+                    continue;
+                }
+
+                if current_named_catalog.as_deref() == Some(catalog_name)
+                    && yaml_mapping_key(trimmed).as_deref() == Some(package_name)
+                {
+                    return true;
+                }
+            }
+            _ => {}
+        }
+    }
+
+    false
+}
+
+fn yaml_line_indent(line: &str) -> usize {
+    line.chars()
+        .take_while(|character| *character == ' ' || *character == '\t')
+        .count()
+}
+
+fn yaml_mapping_key(line: &str) -> Option<String> {
+    let (key, _) = line.split_once(':')?;
+    clean_yaml_string(key)
 }
 
 fn yaml_string_values(value: &str) -> Vec<String> {
@@ -3547,6 +3670,55 @@ fn normalize_path(path: &Path) -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn parses_pnpm_workspace_catalog_metadata() {
+        let workspace = r#"
+packages:
+  - "packages/**"
+catalog:
+  default-catalog-ui: ^1.0.0
+  ignored-default-ui: ^2.0.0 # comment
+catalogs:
+  react18:
+    catalog-ui: ^18.0.0
+  react17:
+    catalog-ui: ^17.0.0
+"#;
+
+        assert!(pnpm_workspace_catalog_declares_dependency(
+            workspace,
+            "default",
+            "default-catalog-ui"
+        ));
+        assert!(pnpm_workspace_catalog_declares_dependency(
+            workspace,
+            "react18",
+            "catalog-ui"
+        ));
+        assert!(pnpm_workspace_catalog_declares_dependency(
+            workspace,
+            "react17",
+            "catalog-ui"
+        ));
+        assert!(!pnpm_workspace_catalog_declares_dependency(
+            workspace,
+            "react18",
+            "default-catalog-ui"
+        ));
+        assert!(!pnpm_workspace_catalog_declares_dependency(
+            workspace,
+            "missing",
+            "catalog-ui"
+        ));
+    }
+
+    #[test]
+    fn parses_catalog_protocol_names() {
+        assert_eq!(catalog_protocol_name("catalog:"), Some("default"));
+        assert_eq!(catalog_protocol_name("catalog:react18"), Some("react18"));
+        assert_eq!(catalog_protocol_name("^1.0.0"), None);
+    }
 
     #[test]
     fn extracts_python_symbols() {
