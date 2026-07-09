@@ -1580,8 +1580,8 @@ fn cli_resolves_yarn_package_json_workspaces() {
     let fixture = yarn_workspace_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 5);
-    assert_eq!(index["changed_files"], 5);
+    assert_eq!(index["indexed_files"], 6);
+    assert_eq!(index["changed_files"], 6);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -1630,13 +1630,33 @@ fn cli_resolves_yarn_package_json_workspaces() {
                     && dependency["resolved_file"] == "packages/yarn-version-ui/src/button.ts"
             })
     );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "yarn-legacy-ui/button"
+                    && dependency["resolved_file"] == "node_modules/yarn-legacy-ui/dist/button.js"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "yarn-legacy-ui/button"
+                    || dependency["resolved_file"] != "packages/legacy-yarn-ui/src/button.ts"
+            })
+    );
 
     let callees = run_json([
         "callees",
         fixture.path().to_str().unwrap(),
         "yarnWorkspaceMain",
         "--limit",
-        "8",
+        "10",
     ]);
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "yarnButton" && call["callee_file"] == "packages/yarn-ui/src/button.ts"
@@ -1652,6 +1672,10 @@ fn cli_resolves_yarn_package_json_workspaces() {
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "yarnVersionButton"
             && call["callee_file"] == "packages/yarn-version-ui/src/button.ts"
+    }));
+    assert!(callees.as_array().unwrap().iter().all(|call| {
+        call["callee"] != "yarnLegacyButton"
+            || call["callee_file"] != "packages/legacy-yarn-ui/src/button.ts"
     }));
 }
 
@@ -3571,7 +3595,7 @@ fn yarn_workspace_fixture_project() -> TempDir {
 {
   "private": true,
   "workspaces": {
-    "packages": ["packages/*"]
+    "packages": ["packages/*", "!packages/legacy-*"]
   }
 }
 "#,
@@ -3586,7 +3610,8 @@ fn yarn_workspace_fixture_project() -> TempDir {
     "yarn-ui": "workspace:*",
     "yarn-caret-ui": "workspace:^",
     "yarn-tilde-ui": "workspace:~",
-    "yarn-version-ui": "workspace:1.2.3"
+    "yarn-version-ui": "workspace:1.2.3",
+    "yarn-legacy-ui": "workspace:*"
   }
 }
 "#,
@@ -3599,12 +3624,14 @@ import { yarnButton } from "yarn-ui/button";
 import { yarnCaretButton } from "yarn-caret-ui/button";
 import { yarnTildeButton } from "yarn-tilde-ui/button";
 import { yarnVersionButton } from "yarn-version-ui/button";
+import { yarnLegacyButton } from "yarn-legacy-ui/button";
 
 export function yarnWorkspaceMain() {
   yarnButton();
   yarnCaretButton();
   yarnTildeButton();
   yarnVersionButton();
+  yarnLegacyButton();
 }
 "#,
     );
@@ -3689,6 +3716,48 @@ export function yarnTildeButton() {
         r#"
 export function yarnVersionButton() {
   return "yarn-version";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/legacy-yarn-ui/package.json",
+        r#"
+{
+  "name": "yarn-legacy-ui",
+  "exports": {
+    "./button": "./src/button.ts"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/legacy-yarn-ui/src/button.ts",
+        r#"
+export function yarnLegacyButton() {
+  return "yarn-legacy-workspace";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/yarn-legacy-ui/package.json",
+        r#"
+{
+  "name": "yarn-legacy-ui",
+  "exports": {
+    "./button": "./dist/button.js"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/yarn-legacy-ui/dist/button.js",
+        r#"
+export function yarnLegacyButton() {
+  return "yarn-legacy-node";
 }
 "#,
     );
