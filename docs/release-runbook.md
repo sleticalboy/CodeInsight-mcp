@@ -42,7 +42,7 @@ The script updates:
 - `Cargo.toml`
 - `Cargo.lock`
 - `CHANGELOG.md`
-- version examples in `README.md`, if they mention a specific release
+- version examples in `docs/install.md`
 
 The target version must be greater than the current `Cargo.toml` package
 version. If you intentionally need to cut a metadata-only release while
@@ -63,7 +63,7 @@ scripts/release-install-smoke.sh
 Commit and push the release prep:
 
 ```bash
-git add Cargo.toml Cargo.lock CHANGELOG.md README.md
+git add Cargo.toml Cargo.lock CHANGELOG.md docs/install.md
 git commit -m "chore: prepare vX.Y.Z release"
 git push origin main
 ```

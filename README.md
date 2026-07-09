@@ -18,6 +18,7 @@ The product direction and execution plan live in:
 - [Known limitations](docs/known-limitations.md)
 - [MCP client configuration](docs/mcp-client-config.md)
 - [MCP client smoke test](docs/mcp-client-smoke.md)
+- [Install](docs/install.md)
 - [Navigation tools](docs/navigation-tools.md)
 - [Impact analysis](docs/impact-analysis.md)
 - [Embedding providers](docs/embedding-providers.md)
@@ -56,51 +57,16 @@ Next:
 
 ## Install From Release
 
-Install the latest release for the current macOS or Linux platform:
+Install the latest macOS or Linux release:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/sleticalboy/CodeInsight-mcp/main/scripts/install.sh | sh
 ```
 
-Install a specific version:
-
-```bash
-CODEINSIGHT_VERSION=v0.1.9 sh scripts/install.sh
-```
-
-Choose a custom install directory:
-
-```bash
-INSTALL_DIR="$HOME/bin" sh scripts/install.sh
-```
-
-The installer supports:
-
-- `x86_64-unknown-linux-gnu`
-- `aarch64-unknown-linux-gnu`
-- `x86_64-apple-darwin`
-- `aarch64-apple-darwin`
-
-For private repositories or rate-limited environments, install and authenticate
-GitHub CLI first:
-
-```bash
-gh auth login
-sh scripts/install.sh
-```
-
-Without GitHub CLI, the installer falls back to `curl`. Set `GITHUB_TOKEN` if
-the release assets require authentication.
-
-Smoke test the packaged installer path locally:
-
-```bash
-scripts/release-install-smoke.sh
-```
+For version pinning, custom install directories, authenticated downloads, and
+installer smoke tests, see [Install](docs/install.md).
 
 ## Install With Homebrew
-
-Install from the shared Homebrew tap:
 
 ```bash
 brew tap sleticalboy/tap
@@ -115,28 +81,13 @@ cargo install --path .
 
 ## Run With Docker
 
-Build and run the local image:
-
-```bash
-docker build -t codeinsight:local .
-docker run --rm -v "$PWD:/workspace" codeinsight:local overview /workspace
-```
-
-Tagged releases publish a GHCR image:
-
 ```bash
 docker pull ghcr.io/sleticalboy/codeinsight-mcp:latest
 docker run --rm -v "$PWD:/workspace" ghcr.io/sleticalboy/codeinsight-mcp:latest overview /workspace
 ```
 
-Release images are published for `linux/amd64` and `linux/arm64`.
-
-Smoke test the Docker image locally:
-
-```bash
-scripts/docker-smoke.sh
-CODEINSIGHT_DOCKER_PLATFORM=linux/arm64 scripts/docker-smoke.sh
-```
+For local image builds, platform details, and Docker smoke tests, see
+[Install](docs/install.md).
 
 ## CLI Usage
 
@@ -276,7 +227,8 @@ refresh reports without enforcing budgets, set
 
 ## Release Builds
 
-The `Release Build` workflow can be triggered manually or by pushing a `v*` tag. Manual runs build Linux and macOS artifacts and upload them as workflow artifacts. Tag runs also create or update the matching GitHub Release.
+The `Release Build` workflow supports manual artifact builds and tagged GitHub
+releases. See [Release runbook](docs/release-runbook.md).
 
 ## License
 

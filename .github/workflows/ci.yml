@@ -84,6 +84,10 @@ jobs:
           EOF
           touch "$tmp/Cargo.lock"
           cat >"$tmp/README.md" <<'EOF'
+          # Test README
+          EOF
+          mkdir -p "$tmp/docs"
+          cat >"$tmp/docs/install.md" <<'EOF'
           CODEINSIGHT_VERSION=v1.2.3 sh scripts/install.sh
           EOF
           cat >"$tmp/CHANGELOG.md" <<'EOF'
@@ -103,7 +107,7 @@ jobs:
           EOF
           CODEINSIGHT_ROOT_DIR="$tmp" CODEINSIGHT_RELEASE_DATE=2026-07-08 CODEINSIGHT_SKIP_CARGO_CHECK=1 scripts/prepare-release.sh v9.8.7
           grep -q 'version = "9.8.7"' "$tmp/Cargo.toml"
-          grep -q 'CODEINSIGHT_VERSION=v9.8.7' "$tmp/README.md"
+          grep -q 'CODEINSIGHT_VERSION=v9.8.7' "$tmp/docs/install.md"
           grep -q '## \[9.8.7\] - 2026-07-08' "$tmp/CHANGELOG.md"
           scripts/extract-release-notes.sh "$tmp/CHANGELOG.md" latest "$tmp/notes.md"
           grep -q 'Test release automation' "$tmp/notes.md"
@@ -124,7 +128,9 @@ jobs:
           version = "1.2.3"
           EOF
           touch "$empty/Cargo.lock"
-          printf 'CODEINSIGHT_VERSION=v1.2.3 sh scripts/install.sh\n' >"$empty/README.md"
+          printf '# Test README\n' >"$empty/README.md"
+          mkdir -p "$empty/docs"
+          printf 'CODEINSIGHT_VERSION=v1.2.3 sh scripts/install.sh\n' >"$empty/docs/install.md"
           cat >"$empty/CHANGELOG.md" <<'EOF'
           # Changelog
 
@@ -142,7 +148,7 @@ jobs:
           fi
           grep -q 'CHANGELOG Unreleased section is empty' "$empty/empty.out"
           grep -q 'version = "1.2.3"' "$empty/Cargo.toml"
-          grep -q 'CODEINSIGHT_VERSION=v1.2.3' "$empty/README.md"
+          grep -q 'CODEINSIGHT_VERSION=v1.2.3' "$empty/docs/install.md"
           CODEINSIGHT_ROOT_DIR="$empty" CODEINSIGHT_ALLOW_EMPTY_CHANGELOG=1 CODEINSIGHT_SKIP_CARGO_CHECK=1 scripts/prepare-release.sh v1.2.4
           grep -q 'version = "1.2.4"' "$empty/Cargo.toml"
           grep -q '## \[1.2.4\] - ' "$empty/CHANGELOG.md"

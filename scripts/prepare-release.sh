@@ -18,7 +18,7 @@ usage: scripts/prepare-release.sh [--dry-run] <tag-or-version>
 Prepares a CodeInsight release by updating:
 - Cargo.toml package version
 - Cargo.lock package version, unless CODEINSIGHT_SKIP_CARGO_CHECK=1
-- README install example
+- docs/install.md version example
 - CHANGELOG Unreleased section into a dated release section
 
 Environment:
@@ -88,6 +88,10 @@ if [ "$DRY_RUN" -eq 1 ]; then
   temp_dir="$(mktemp -d)"
   mkdir -p "$temp_dir"
   cp "$ROOT_DIR/Cargo.toml" "$ROOT_DIR/Cargo.lock" "$ROOT_DIR/README.md" "$ROOT_DIR/CHANGELOG.md" "$temp_dir/"
+  if [ -f "$ROOT_DIR/docs/install.md" ]; then
+    mkdir -p "$temp_dir/docs"
+    cp "$ROOT_DIR/docs/install.md" "$temp_dir/docs/"
+  fi
   work_dir="$temp_dir"
 fi
 
@@ -147,7 +151,18 @@ abort("Cargo.toml package version not found") unless changed
 readme_path = path(work_dir, "README.md")
 readme = File.read(readme_path)
 readme_changed = readme.gsub!(/CODEINSIGHT_VERSION=v\d+\.\d+\.\d+/, "CODEINSIGHT_VERSION=#{tag}")
-abort("README install version example not found") unless readme_changed
+
+install_doc_path = path(work_dir, "docs/install.md")
+install_doc_changed = false
+if File.exist?(install_doc_path)
+  install_doc = File.read(install_doc_path)
+  install_doc_changed = install_doc.gsub!(/CODEINSIGHT_VERSION=v\d+\.\d+\.\d+/, "CODEINSIGHT_VERSION=#{tag}")
+  File.write(install_doc_path, install_doc) if install_doc_changed
+end
+
+unless readme_changed || install_doc_changed
+  abort("install version example not found in docs/install.md or README.md")
+end
 
 changelog_path = path(work_dir, "CHANGELOG.md")
 changelog = File.read(changelog_path)
@@ -167,7 +182,7 @@ new_section = "## [#{version}] - #{date}\n\n#{body}\n\n"
 next_changelog = "#{prefix}\n#{new_section}#{suffix}"
 
 File.write(cargo_path, next_cargo)
-File.write(readme_path, readme)
+File.write(readme_path, readme) if readme_changed
 File.write(changelog_path, next_changelog)
 RUBY
 
@@ -175,6 +190,9 @@ if [ "$DRY_RUN" -eq 1 ]; then
   for file in Cargo.toml README.md CHANGELOG.md; do
     diff -u "$ROOT_DIR/$file" "$work_dir/$file" || true
   done
+  if [ -f "$ROOT_DIR/docs/install.md" ] || [ -f "$work_dir/docs/install.md" ]; then
+    diff -u "$ROOT_DIR/docs/install.md" "$work_dir/docs/install.md" || true
+  fi
   echo "dry run completed for $tag"
   exit 0
 fi

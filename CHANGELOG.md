@@ -8,6 +8,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ### Changed
 
+- Moved detailed install, Homebrew, and Docker usage notes from README into a dedicated install document.
+- Updated release-prep automation and CI smoke coverage to maintain the install-document version example.
 - Added a navigation-tools contract document and shortened the README references/call-graph sections.
 - Shortened the README impact-analysis section to point at the detailed impact-analysis contract.
 - Moved detailed semantic search/index/status workflow notes from README into the embedding providers documentation.
