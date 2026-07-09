@@ -8,6 +8,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ### Changed
 
+- TypeScript and JavaScript config resolution now follows relative `extends` chains for inherited `baseUrl` and `paths` aliases.
 - Added a documentation index and shortened the README document-link list.
 - Added a current-status document and shortened the README status section.
 - Moved detailed MCP tool summaries from README into the MCP tools guide.

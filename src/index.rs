@@ -1748,27 +1748,91 @@ fn resolve_tsconfig_target(
     }
 
     let config_path = find_javascript_config(root, &dependency.source_file)?;
-    let config_text = fs::read_to_string(root.join(&config_path)).ok()?;
-    let config: Value = serde_json::from_str(&config_text).ok()?;
-    let compiler_options = config.get("compilerOptions")?;
-    let config_dir = config_path.parent().unwrap_or(Path::new(""));
-    let base_dir = compiler_options
-        .get("baseUrl")
-        .and_then(Value::as_str)
-        .map(|base_url| config_dir.join(base_url))
-        .unwrap_or_else(|| config_dir.to_path_buf());
+    let config = load_javascript_config(root, &config_path, &mut HashSet::new())?;
 
-    if let Some(paths_target) = resolve_tsconfig_paths_target(
-        root,
-        &dependency.target,
-        compiler_options,
-        &base_dir,
-        extensions,
-    ) {
+    if let Some(paths) = config.paths.as_ref()
+        && let Some(paths_target) = resolve_tsconfig_paths_target(
+            root,
+            &dependency.target,
+            paths,
+            &config.base_dir,
+            extensions,
+        )
+    {
         return Some(paths_target);
     }
 
-    resolve_base(root, base_dir.join(&dependency.target), extensions)
+    resolve_base(root, config.base_dir.join(&dependency.target), extensions)
+}
+
+#[derive(Debug)]
+struct JavascriptConfig {
+    base_dir: PathBuf,
+    paths: Option<Value>,
+}
+
+fn load_javascript_config(
+    root: &Path,
+    config_path: &Path,
+    seen: &mut HashSet<PathBuf>,
+) -> Option<JavascriptConfig> {
+    let config_path = normalize_path(config_path);
+    if !seen.insert(config_path.clone()) {
+        return None;
+    }
+
+    let config_text = fs::read_to_string(root.join(&config_path)).ok()?;
+    let config: Value = serde_json::from_str(&config_text).ok()?;
+    let config_dir = config_path.parent().unwrap_or(Path::new(""));
+
+    let inherited = config
+        .get("extends")
+        .and_then(Value::as_str)
+        .and_then(|extends| resolve_javascript_config_extends(root, config_dir, extends))
+        .and_then(|extends_path| load_javascript_config(root, &extends_path, seen));
+
+    let compiler_options = config.get("compilerOptions");
+    let base_dir = compiler_options
+        .and_then(|options| options.get("baseUrl"))
+        .and_then(Value::as_str)
+        .map(|base_url| normalize_path(&config_dir.join(base_url)))
+        .or_else(|| inherited.as_ref().map(|config| config.base_dir.clone()))
+        .unwrap_or_else(|| config_dir.to_path_buf());
+
+    let paths = compiler_options
+        .and_then(|options| options.get("paths"))
+        .cloned()
+        .or_else(|| inherited.and_then(|config| config.paths));
+
+    Some(JavascriptConfig { base_dir, paths })
+}
+
+fn resolve_javascript_config_extends(
+    root: &Path,
+    config_dir: &Path,
+    extends: &str,
+) -> Option<PathBuf> {
+    let extends_path = Path::new(extends);
+    if !(extends.starts_with('.') || extends_path.is_absolute()) {
+        return None;
+    }
+
+    let base = if extends_path.is_absolute() {
+        extends_path.strip_prefix(root).ok()?.to_path_buf()
+    } else {
+        normalize_path(&config_dir.join(extends_path))
+    };
+    let mut candidates = vec![base.clone()];
+    if base.extension().is_none() {
+        candidates.push(base.with_extension("json"));
+        candidates.push(base.join("tsconfig.json"));
+        candidates.push(base.join("jsconfig.json"));
+    }
+
+    candidates
+        .into_iter()
+        .map(|candidate| normalize_path(&candidate))
+        .find(|candidate| root.join(candidate).is_file())
 }
 
 fn find_javascript_config(root: &Path, source_file: &str) -> Option<PathBuf> {
@@ -1795,11 +1859,11 @@ fn find_javascript_config(root: &Path, source_file: &str) -> Option<PathBuf> {
 fn resolve_tsconfig_paths_target(
     root: &Path,
     target: &str,
-    compiler_options: &Value,
+    paths_value: &Value,
     base_dir: &Path,
     extensions: &[&str],
 ) -> Option<String> {
-    let paths = compiler_options.get("paths")?.as_object()?;
+    let paths = paths_value.as_object()?;
     for (pattern, mappings) in paths {
         let Some(wildcard) = tsconfig_path_wildcard(pattern, target) else {
             continue;
@@ -3054,9 +3118,17 @@ fn should_enter(path: &Path) -> bool {
 
 #[allow(dead_code)]
 fn normalize_path(path: &Path) -> PathBuf {
-    path.components()
-        .filter(|component| !matches!(component, Component::CurDir))
-        .collect()
+    let mut normalized = PathBuf::new();
+    for component in path.components() {
+        match component {
+            Component::CurDir => {}
+            Component::ParentDir => {
+                normalized.pop();
+            }
+            other => normalized.push(other.as_os_str()),
+        }
+    }
+    normalized
 }
 
 #[cfg(test)]

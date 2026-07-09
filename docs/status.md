@@ -33,8 +33,8 @@ yet a complete language-server-grade code-analysis platform.
 
 ## Next
 
-- Improve broader TypeScript path alias edge cases.
 - Improve package manager metadata handling.
+- Model monorepo workspace boundaries more explicitly.
 - Continue tightening README/docs routing so the README stays entry-level.
 
 For accuracy boundaries and current non-goals, see

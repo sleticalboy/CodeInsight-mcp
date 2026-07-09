@@ -11,12 +11,12 @@ fn cli_indexes_and_queries_fixture_project() {
     let fixture = fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 17);
-    assert_eq!(index["changed_files"], 17);
+    assert_eq!(index["indexed_files"], 19);
+    assert_eq!(index["changed_files"], 19);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let overview = run_json(["overview", fixture.path().to_str().unwrap()]);
-    assert_eq!(overview["indexed_files"], 17);
+    assert_eq!(overview["indexed_files"], 19);
     assert!(overview["total_lines"].as_u64().unwrap() > 0);
     assert!(
         overview["summary"]
@@ -125,7 +125,7 @@ fn cli_indexes_and_queries_fixture_project() {
 
     let second_index = run_json(["index", fixture.path().to_str().unwrap()]);
     assert_eq!(second_index["changed_files"], 0);
-    assert_eq!(second_index["unchanged_files"], 17);
+    assert_eq!(second_index["unchanged_files"], 19);
 
     let semantic_index = run_json([
         "semantic-index",
@@ -351,6 +351,7 @@ fn cli_indexes_and_queries_fixture_project() {
     assert!(targets.contains(&"./ui"));
     assert!(targets.contains(&"@app/path-ui"));
     assert!(targets.contains(&"@fallback/fallback-ui"));
+    assert!(targets.contains(&"@base/base-ui"));
     assert!(targets.contains(&"shared"));
     assert!(targets.contains(&"fixture-lib/package-ui"));
     assert!(targets.contains(&"dep-lib/feature"));
@@ -364,6 +365,16 @@ fn cli_indexes_and_queries_fixture_project() {
             .iter()
             .any(|dependency| {
                 dependency["target"] == "./ui" && dependency["resolved_file"] == "src/ui.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "@base/base-ui"
+                    && dependency["resolved_file"] == "src/base/base-ui.ts"
             })
     );
     assert!(
@@ -1200,6 +1211,23 @@ fn cli_indexes_and_queries_fixture_project() {
             .iter()
             .any(|call| {
                 call["callee"] == "sharedRender" && call["callee_file"] == "src/shared/index.ts"
+            })
+    );
+
+    let inherited_paths_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "inheritedPathsMain",
+        "--limit",
+        "5",
+    ]);
+    assert!(
+        inherited_paths_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| {
+                call["callee"] == "baseRender" && call["callee_file"] == "src/base/base-ui.ts"
             })
     );
 
@@ -2173,9 +2201,24 @@ fn fixture_project() -> TempDir {
     );
     write_file(
         &dir,
+        "tsconfig.base.json",
+        r#"
+{
+  "compilerOptions": {
+    "baseUrl": "src",
+    "paths": {
+      "@base/*": ["base/*"]
+    }
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
         "tsconfig.json",
         r#"
 {
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "baseUrl": "src",
     "paths": {
@@ -2183,6 +2226,15 @@ fn fixture_project() -> TempDir {
       "@fallback/*": ["missing/*", "*"]
     }
   }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/feature/tsconfig.json",
+        r#"
+{
+  "extends": "../../tsconfig.base.json"
 }
 "#,
     );
@@ -2346,6 +2398,17 @@ export function dependencyPackageMain() {
     );
     write_file(
         &dir,
+        "src/feature/entry.ts",
+        r#"
+import { baseRender } from "@base/base-ui";
+
+export function inheritedPathsMain() {
+  baseRender();
+}
+"#,
+    );
+    write_file(
+        &dir,
         "src/call-entry.ts",
         r#"
 import { relayRender } from "./barrel";
@@ -2475,6 +2538,15 @@ export function fallbackRender() {
         r#"
 export function sharedRender() {
   return "shared";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/base/base-ui.ts",
+        r#"
+export function baseRender() {
+  return "base";
 }
 "#,
     );
