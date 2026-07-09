@@ -15,6 +15,7 @@ The product direction and execution plan live in:
 - [Product prototype](docs/product-prototype.md)
 - [Implementation plan](docs/implementation-plan.md)
 - [MVP backlog](docs/mvp-backlog.md)
+- [Current status](docs/status.md)
 - [Known limitations](docs/known-limitations.md)
 - [MCP client configuration](docs/mcp-client-config.md)
 - [MCP client smoke test](docs/mcp-client-smoke.md)
@@ -32,30 +33,13 @@ The product direction and execution plan live in:
 
 ## Current Status
 
-This repository is an early MVP scaffold. It is not yet a complete MCP code-analysis server.
+CodeInsight is an early MVP. It can index local repositories, expose CLI and
+MCP navigation tools, build agent-ready context packs, run local impact
+analysis, and optionally use configured semantic embeddings.
 
-Implemented:
-
-- Rust CLI entrypoint
-- local SQLite index cache under `.codeinsight/`
-- incremental indexing with file-hash skips and stale file cleanup
-- index metadata with schema and index version tracking
-- per-file indexing errors in reports without aborting the whole project scan
-- Tree-sitter parsing for TypeScript/JavaScript, Python, Go, Rust, Java, C, C++, C#, PHP, and Ruby
-- symbol extraction for common declarations
-- repository overview, dependency graph, text reference search, impact analysis, context packs, and call graph tools with imported target hints
-- relative file resolution for local dependency graph edges
-- embedding provider interface, provider status reporting, and local semantic search paths over local vectors
-- local semantic chunk index storage with optional deterministic local-hash embedding generation
-- `index`, `init-config`, `config-status`, `overview`, `symbols`, `outline`, `dependency-graph`, `impact-analysis`, `find-references`, `semantic-search`, `semantic-index`, `embedding-status`, `context-pack`, `callers`, and `callees` CLI commands
-- MCP stdio `initialize`, `tools/list`, and `tools/call` for P0 tools
-- MCP tool argument validation with stable JSON-RPC errors
-- fixture-based CLI and MCP stdio integration tests
-- local smoke scripts for MCP stdio, semantic search, Docker, release install, and benchmark fixtures
-
-Next:
-
-- improve broader TypeScript path alias edge cases and package manager metadata handling
+Next focus: improve broader TypeScript path alias edge cases and package
+manager metadata handling. See [Current status](docs/status.md) for the full
+implemented capability list.
 
 ## Install From Release
 
