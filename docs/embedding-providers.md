@@ -49,6 +49,35 @@ also includes `batch_size` and `batch_size_env` so MCP clients can inspect the
 current indexing request size before deciding whether to run `semantic_index`
 or `semantic_search`.
 
+## Semantic Workflow Contract
+
+`semantic_search` queries local semantic vectors for the configured provider.
+Without a configured provider, it returns a clear configuration error instead
+of silently falling back to lexical search.
+
+`semantic_index` builds local source-text chunks from the existing project
+index and stores them in SQLite as the local boundary for semantic search. It
+is deterministic and zero-network by default. Set
+`CODEINSIGHT_EMBEDDING_PROVIDER=local-hash` to also generate deterministic
+local embeddings for those chunks.
+
+External providers are requested in batches controlled by
+`CODEINSIGHT_EMBEDDING_BATCH_SIZE`, which defaults to 64 chunks per request.
+Re-running `semantic_index` preserves embeddings for unchanged chunks and only
+embeds chunks missing vectors for the selected provider/model.
+
+The report keeps total `chunks` and `embeddings` counts and includes
+incremental cache-effectiveness counters:
+
+- `chunks_added`
+- `chunks_updated`
+- `chunks_removed`
+- `embeddings_generated`
+- `embeddings_reused`
+
+Pass CLI `--explain` or MCP `explain: true` to include per-chunk `changes`
+entries with add/update/remove ranges and content hashes.
+
 `context_pack` also checks the selected provider/model. When vectors exist for
 that pair, it embeds the task text and adds top vector matches as context
 candidates. If no provider is configured, no matching vectors exist, or the
