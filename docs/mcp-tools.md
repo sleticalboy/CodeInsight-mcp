@@ -34,20 +34,20 @@ The stdio server currently exposes 15 tools:
 | Tool | Purpose |
 | --- | --- |
 | `index_project` | Index a local repository for repeatable local analysis. |
-| `config_status` | Report `.codeinsight/config.toml`, configured checks, parse errors, and detected test commands. |
-| `project_overview` | Return repository summary, role-aware directories, entrypoint candidates, recommendations, and index metadata. |
+| `config_status` | Report `.codeinsight/config.toml`, load status, parse errors, configured impact-analysis checks, detected fallback test commands, and whether configured commands override built-in inference. |
+| `project_overview` | Return the repository briefing an agent should fetch first: summaries, role-aware directories, entrypoint candidates, `recommended_next_tools`, and index metadata. |
 | `symbol_search` | Search extracted symbols in an indexed repository. |
 | `file_outline` | Parse one source file and return a symbol outline. |
 | `dependency_graph` | Return module-level dependencies extracted during indexing. |
-| `impact_analysis` | Estimate local impact radius from seed symbols or files. |
-| `find_references` | Find ranked text references for a symbol across indexed files. |
+| `impact_analysis` | Estimate local impact radius from seed symbols or files using definitions, text references, static calls, and resolved local dependencies; returns ranked files, paths, risk, reasons, and suggested checks. |
+| `find_references` | Find ranked text references across indexed files with file, location, context, approximate reference kind, and confidence. |
 | `semantic_search` | Query local semantic vectors through a configured embedding provider. |
-| `semantic_index` | Build local semantic text chunks and optional embeddings. |
-| `embedding_status` | Report provider, batch-size, and optional local semantic-index state without network calls. |
+| `semantic_index` | Build local semantic text chunks and optional embeddings; can report incremental chunk changes. |
+| `embedding_status` | Report provider, batch size, and optional local semantic-index state without network calls. |
 | `version` | Return package version and target platform information. |
-| `context_pack` | Build token-budgeted agent context from explicit or inferred seeds. |
-| `callers` | Return static call sites that call a function or method. |
-| `callees` | Return static callees for a function or method. |
+| `context_pack` | Build token-budgeted agent context from explicit seeds or inferred entrypoints, including selected files/ranges, seed strategy, selected seeds, reading plan, semantic status, and follow-up suggestions. |
+| `callers` | Return static call sites that call a function or method, including imported target hints when available. |
+| `callees` | Return static callees for a function or method, including imported target hints when available. |
 
 ## Recommended First Read
 

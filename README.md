@@ -119,23 +119,9 @@ Recommended MCP first-read flow:
    `files` to let CodeInsight auto-select the highest-confidence source
    entrypoint.
 
-For the full tool list and `tools/call` examples, see [MCP tools](docs/mcp-tools.md). For client setup snippets, see [MCP client configuration](docs/mcp-client-config.md).
-
-`project_overview` / `overview` returns the indexed repository briefing an agent should fetch before deeper tools, including role-aware directories, entrypoint candidates, summaries, index metadata, and `recommended_next_tools`. See [Recommendation contract](docs/recommendation-contract.md) for the shared recommendation shape.
-
-`find_references` is a fast text-reference pass over indexed files. It returns ranked file, location, context, approximate reference kind, and confidence entries, with obvious comment/string matches filtered and test or fixture paths downranked. See [Navigation tools](docs/navigation-tools.md) for CLI/MCP usage and response fields.
-
-`impact_analysis` estimates a local change radius from seed symbols and/or files using definitions, text references, static calls, and resolved local dependencies. It returns ranked impacted files, paths, risk level, top reasons, and suggested checks. See [Impact analysis](docs/impact-analysis.md) for CLI/MCP usage, scoring, risk levels, and validation-command configuration.
-
-`config_status` / `config-status` reports whether `.codeinsight/config.toml` exists, whether it loaded successfully, configured impact-analysis commands, detected fallback test commands, and whether configured commands will override built-in command inference.
-
-`semantic_search`, `semantic_index`, and `embedding_status` provide the optional semantic search path. Semantic indexing is local and zero-network by default, embeddings are generated only when a provider is configured, and `embedding_status` reports provider/index state without making network calls. See [Embedding providers](docs/embedding-providers.md) for provider setup, batching, incremental indexing counters, explain output, and external-provider boundaries.
-
-`context_pack` returns a token-budgeted, agent-ready context bundle from explicit seeds or inferred source entrypoints. It includes selected files and ranges, `seed_strategy`, `selected_seeds`, `reading_plan`, semantic status, and prioritized follow-up tool suggestions. See [First-read workflow](docs/first-read-workflow.md) for the full ranking and response contract.
-
-`callers` and `callees` use a static call graph. They return same-file call edges and best-effort imported target hints such as JavaScript/TypeScript `callee_file` values when local import/export paths resolve to indexed symbols. See [Navigation tools](docs/navigation-tools.md) for supported hints and boundaries.
-
-For accuracy boundaries and current non-goals, see [Known limitations](docs/known-limitations.md).
+For the full tool list, `tools/call` examples, topic contracts, and accuracy
+boundaries, see [MCP tools](docs/mcp-tools.md). For client setup snippets, see
+[MCP client configuration](docs/mcp-client-config.md).
 
 ## Development
 
