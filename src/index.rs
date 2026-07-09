@@ -2157,7 +2157,7 @@ fn package_declares_catalog_dependency(root: &Path, source_file: &str, package_n
         return false;
     };
     package_dependency_value(&source_package, package_name)
-        .is_some_and(|value| value == "catalog:" || value.starts_with("catalog:"))
+        .is_some_and(is_catalog_protocol_dependency)
 }
 
 fn package_dependency_value<'a>(package: &'a Value, package_name: &str) -> Option<&'a str> {
@@ -2177,6 +2177,10 @@ fn package_dependency_value<'a>(package: &'a Value, package_name: &str) -> Optio
         }
     }
     None
+}
+
+fn is_catalog_protocol_dependency(value: &str) -> bool {
+    value == "catalog:" || value.starts_with("catalog:")
 }
 
 fn workspace_protocol_relative_path(value: &str) -> Option<PathBuf> {

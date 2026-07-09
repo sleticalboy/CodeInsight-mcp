@@ -1357,7 +1357,8 @@ fn cli_resolves_pnpm_workspace_package_exports() {
             .unwrap()
             .iter()
             .any(|dependency| {
-                dependency["target"] == "catalog-ui/button" && dependency["resolved_file"].is_null()
+                dependency["target"] == "catalog-ui/button"
+                    && dependency["resolved_file"] == "node_modules/catalog-ui/dist/button.js"
             })
     );
 
@@ -2810,6 +2811,9 @@ fn pnpm_workspace_fixture_project() -> TempDir {
         r#"
 packages:
   - "packages/*"
+catalogs:
+  react18:
+    catalog-ui: ^1.2.3
 "#,
     );
     write_file(
@@ -2821,7 +2825,7 @@ packages:
   "dependencies": {
     "version-star-ui": "workspace:*",
     "version-caret-ui": "workspace:^",
-    "catalog-ui": "catalog:"
+    "catalog-ui": "catalog:react18"
   }
 }
 "#,
@@ -2927,6 +2931,27 @@ export function versionCaretButton() {
         r#"
 export function catalogButton() {
   return "catalog";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/catalog-ui/package.json",
+        r#"
+{
+  "name": "catalog-ui",
+  "exports": {
+    "./button": "./dist/button.js"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/catalog-ui/dist/button.js",
+        r#"
+export function catalogButton() {
+  return "catalog-node";
 }
 "#,
     );
