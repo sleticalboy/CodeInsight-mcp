@@ -4132,6 +4132,7 @@ catalogs:
         let browser_object_package = serde_json::json!({
             "browser": {
                 "./dist/server.js": "./dist/browser-server.js",
+                "dist/plain.js": "./dist/browser-plain.js",
                 "./dist/disabled.js": false
             }
         });
@@ -4142,6 +4143,14 @@ catalogs:
                 &[PathBuf::from("./dist/server.js")]
             ),
             vec![PathBuf::from("./dist/browser-server.js")]
+        );
+        assert_eq!(
+            package_browser_mappings(
+                &browser_object_package,
+                "./plain",
+                &[PathBuf::from("./dist/plain.js")]
+            ),
+            vec![PathBuf::from("./dist/browser-plain.js")]
         );
         assert!(
             package_browser_mappings(

@@ -359,6 +359,7 @@ fn cli_indexes_and_queries_fixture_project() {
     assert!(targets.contains(&"dep-lib/node-feature"));
     assert!(targets.contains(&"browser-lib"));
     assert!(targets.contains(&"browser-object-lib/server"));
+    assert!(targets.contains(&"browser-object-lib/plain"));
     assert!(targets.contains(&"browser-object-lib/disabled"));
     assert!(targets.contains(&"legacy-lib"));
     assert!(targets.contains(&"legacy-lib/plugin"));
@@ -477,6 +478,17 @@ fn cli_indexes_and_queries_fixture_project() {
                 dependency["target"] == "browser-object-lib/server"
                     && dependency["resolved_file"]
                         == "node_modules/browser-object-lib/dist/browser-server.js"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "browser-object-lib/plain"
+                    && dependency["resolved_file"]
+                        == "node_modules/browser-object-lib/dist/browser-plain.js"
             })
     );
     assert!(
@@ -3299,6 +3311,7 @@ import { depArrayRender } from "dep-lib/array-feature";
 import { depNodeRender } from "dep-lib/node-feature";
 import { browserRootRender } from "browser-lib";
 import { browserServerRender } from "browser-object-lib/server";
+import { browserPlainRender } from "browser-object-lib/plain";
 import { browserDisabledRender } from "browser-object-lib/disabled";
 import { legacyRender } from "legacy-lib";
 import { legacyPluginRender } from "legacy-lib/plugin";
@@ -3405,6 +3418,7 @@ export function dependencyPackageMain() {
   depNodeRender();
   browserRootRender();
   browserServerRender();
+  browserPlainRender();
   browserDisabledRender();
   legacyRender();
   legacyPluginRender();
@@ -3532,10 +3546,12 @@ export function browserRootRender() {
   "name": "browser-object-lib",
   "exports": {
     "./server": "./dist/server.js",
+    "./plain": "./dist/plain.js",
     "./disabled": "./dist/disabled.js"
   },
   "browser": {
     "./dist/server.js": "./dist/browser-server.js",
+    "dist/plain.js": "./dist/browser-plain.js",
     "./dist/disabled.js": false
   }
 }
@@ -3547,6 +3563,15 @@ export function browserRootRender() {
         r#"
 export function browserServerRender() {
   return "browser-server";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/browser-object-lib/dist/browser-plain.js",
+        r#"
+export function browserPlainRender() {
+  return "browser-plain";
 }
 "#,
     );
