@@ -1580,8 +1580,8 @@ fn cli_respects_null_package_exports_without_subpath_fallback() {
     let fixture = null_package_exports_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 6);
-    assert_eq!(index["changed_files"], 6);
+    assert_eq!(index["indexed_files"], 7);
+    assert_eq!(index["changed_files"], 7);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -1635,6 +1635,16 @@ fn cli_respects_null_package_exports_without_subpath_fallback() {
             .as_array()
             .unwrap()
             .iter()
+            .any(|dependency| {
+                dependency["target"] == "null-export-lib/conditional-external"
+                    && dependency["resolved_file"].is_null()
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
             .all(|dependency| {
                 dependency["target"] != "null-export-lib/disabled"
                     || dependency["resolved_file"] != "src/disabled.ts"
@@ -1648,6 +1658,26 @@ fn cli_respects_null_package_exports_without_subpath_fallback() {
             .all(|dependency| {
                 dependency["target"] != "null-export-lib/conditional"
                     || dependency["resolved_file"] != "src/conditional-fallback.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "null-export-lib/conditional-external"
+                    || dependency["resolved_file"] != "src/conditional-external-fallback.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "null-export-lib/conditional-external"
+                    || dependency["resolved_file"] != "external-export-lib.ts"
             })
     );
     assert!(
@@ -1681,6 +1711,14 @@ fn cli_respects_null_package_exports_without_subpath_fallback() {
         call["callee"] != "conditionalRender"
             || call["callee_file"] != "src/conditional-fallback.ts"
     }));
+    assert!(callees.as_array().unwrap().iter().all(|call| {
+        call["callee"] != "conditionalExternalRender"
+            || call["callee_file"] != "src/conditional-external-fallback.ts"
+    }));
+    assert!(callees.as_array().unwrap().iter().all(|call| {
+        call["callee"] != "conditionalExternalRender"
+            || call["callee_file"] != "external-export-lib.ts"
+    }));
 }
 
 #[test]
@@ -1688,8 +1726,8 @@ fn cli_respects_null_package_imports_without_tsconfig_fallback() {
     let fixture = null_package_imports_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 6);
-    assert_eq!(index["changed_files"], 6);
+    assert_eq!(index["indexed_files"], 8);
+    assert_eq!(index["changed_files"], 8);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -1732,9 +1770,49 @@ fn cli_respects_null_package_imports_without_tsconfig_fallback() {
             .as_array()
             .unwrap()
             .iter()
+            .any(|dependency| {
+                dependency["target"] == "#conditional-external"
+                    && dependency["resolved_file"].is_null()
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
             .all(|dependency| {
                 dependency["target"] != "#conditional"
                     || dependency["resolved_file"] != "src/tsconfig-fallback.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "#conditional-external"
+                    || dependency["resolved_file"] != "src/default-external-import.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "#conditional-external"
+                    || dependency["resolved_file"] != "src/tsconfig-external-fallback.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "#conditional-external"
+                    || dependency["resolved_file"] != "external-import-lib.ts"
             })
     );
     assert!(
@@ -1764,6 +1842,18 @@ fn cli_respects_null_package_imports_without_tsconfig_fallback() {
     assert!(callees.as_array().unwrap().iter().all(|call| {
         call["callee"] != "conditionalImportRender"
             || call["callee_file"] != "src/tsconfig-fallback.ts"
+    }));
+    assert!(callees.as_array().unwrap().iter().all(|call| {
+        call["callee"] != "conditionalExternalImportRender"
+            || call["callee_file"] != "src/default-external-import.ts"
+    }));
+    assert!(callees.as_array().unwrap().iter().all(|call| {
+        call["callee"] != "conditionalExternalImportRender"
+            || call["callee_file"] != "src/tsconfig-external-fallback.ts"
+    }));
+    assert!(callees.as_array().unwrap().iter().all(|call| {
+        call["callee"] != "conditionalExternalImportRender"
+            || call["callee_file"] != "external-import-lib.ts"
     }));
 }
 
@@ -3980,12 +4070,14 @@ import { enabledRender } from "null-export-lib/enabled";
 import { arrayRender } from "null-export-lib/array";
 import { disabledRender } from "null-export-lib/disabled";
 import { conditionalRender } from "null-export-lib/conditional";
+import { conditionalExternalRender } from "null-export-lib/conditional-external";
 
 export function nullExportMain() {
   enabledRender();
   arrayRender();
   disabledRender();
   conditionalRender();
+  conditionalExternalRender();
 }
 "#,
     );
@@ -4006,6 +4098,10 @@ export function nullExportMain() {
     "./conditional": {
       "import": null,
       "default": "./src/conditional-fallback.ts"
+    },
+    "./conditional-external": {
+      "import": "external-export-lib",
+      "default": "./src/conditional-external-fallback.ts"
     }
   }
 }
@@ -4036,6 +4132,10 @@ export function arrayRender() {
 export function arrayRender() {
   return "external-export";
 }
+
+export function conditionalExternalRender() {
+  return "external-conditional";
+}
 "#,
     );
     write_file(
@@ -4053,6 +4153,15 @@ export function disabledRender() {
         r#"
 export function conditionalRender() {
   return "conditional";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/conditional-external-fallback.ts",
+        r#"
+export function conditionalExternalRender() {
+  return "conditional-external";
 }
 "#,
     );
@@ -4076,6 +4185,10 @@ fn null_package_imports_fixture_project() -> TempDir {
     "#conditional": {
       "import": null,
       "default": "./src/default-import.ts"
+    },
+    "#conditional-external": {
+      "import": "external-import-lib",
+      "default": "./src/default-external-import.ts"
     }
   }
 }
@@ -4089,7 +4202,8 @@ fn null_package_imports_fixture_project() -> TempDir {
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "#conditional": ["src/tsconfig-fallback.ts"]
+      "#conditional": ["src/tsconfig-fallback.ts"],
+      "#conditional-external": ["src/tsconfig-external-fallback.ts"]
     }
   }
 }
@@ -4102,11 +4216,13 @@ fn null_package_imports_fixture_project() -> TempDir {
 import { enabledImportRender } from "#enabled";
 import { arrayImportRender } from "#array";
 import { conditionalImportRender } from "#conditional";
+import { conditionalExternalImportRender } from "#conditional-external";
 
 export function nullImportMain() {
   enabledImportRender();
   arrayImportRender();
   conditionalImportRender();
+  conditionalExternalImportRender();
 }
 "##,
     );
@@ -4135,6 +4251,10 @@ export function arrayImportRender() {
 export function arrayImportRender() {
   return "external-import";
 }
+
+export function conditionalExternalImportRender() {
+  return "external-conditional-import";
+}
 "#,
     );
     write_file(
@@ -4152,6 +4272,24 @@ export function conditionalImportRender() {
         r#"
 export function conditionalImportRender() {
   return "default-import";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/default-external-import.ts",
+        r#"
+export function conditionalExternalImportRender() {
+  return "default-external-import";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/tsconfig-external-fallback.ts",
+        r#"
+export function conditionalExternalImportRender() {
+  return "tsconfig-external-fallback";
 }
 "#,
     );

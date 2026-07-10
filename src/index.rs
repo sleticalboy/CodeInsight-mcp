@@ -4006,6 +4006,10 @@ catalogs:
                 "import": null,
                 "default": "./dist/conditional-fallback.js"
             },
+            "./conditional-external": {
+                "import": "external-lib",
+                "default": "./dist/conditional-external-fallback.js"
+            },
             "./enabled": "./dist/enabled.js"
         });
 
@@ -4019,6 +4023,14 @@ catalogs:
         );
         assert_eq!(
             package_export_mappings(&exports, "./conditional", &default_package_conditions()),
+            Some(Vec::new())
+        );
+        assert_eq!(
+            package_export_mappings(
+                &exports,
+                "./conditional-external",
+                &default_package_conditions()
+            ),
             Some(Vec::new())
         );
         assert_eq!(
@@ -4039,6 +4051,10 @@ catalogs:
                 "import": null,
                 "default": "./src/conditional-fallback.ts"
             },
+            "#conditional-external": {
+                "import": "external-import",
+                "default": "./src/conditional-external-fallback.ts"
+            },
             "#array": [
                 null,
                 "external-import",
@@ -4057,6 +4073,14 @@ catalogs:
         );
         assert_eq!(
             package_import_mappings(&imports, "#conditional", &default_package_conditions()),
+            Some(Vec::new())
+        );
+        assert_eq!(
+            package_import_mappings(
+                &imports,
+                "#conditional-external",
+                &default_package_conditions()
+            ),
             Some(Vec::new())
         );
         assert_eq!(
