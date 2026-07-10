@@ -2121,6 +2121,53 @@ fn cli_resolves_java_source_imports() {
 }
 
 #[test]
+fn cli_resolves_php_namespace_use_imports() {
+    let fixture = php_namespace_use_fixture_project();
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 3);
+    assert_eq!(index["changed_files"], 3);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let deps = run_json([
+        "dependency-graph",
+        fixture.path().to_str().unwrap(),
+        "--limit",
+        "20",
+    ]);
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "App\\Repository\\UserRepository"
+                    && dependency["resolved_file"] == "src/Repository/UserRepository.php"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "App\\Support\\audit_login"
+                    && dependency["resolved_file"] == "src/Support/audit_login.php"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "Vendor\\Package\\RemoteClient"
+                    && dependency["resolved_file"].is_null()
+            })
+    );
+}
+
+#[test]
 fn cli_respects_null_package_imports_without_tsconfig_fallback() {
     let fixture = null_package_imports_fixture_project();
 
@@ -4910,6 +4957,59 @@ public class Names {
     public static String defaultName() {
         return "guest";
     }
+}
+"#,
+    );
+    dir
+}
+
+fn php_namespace_use_fixture_project() -> TempDir {
+    let dir = TempDir::new().unwrap();
+    write_file(
+        &dir,
+        "src/Controller/AuthController.php",
+        r#"<?php
+namespace App\Controller;
+
+use App\Repository\UserRepository;
+use function App\Support\audit_login;
+use Vendor\Package\RemoteClient;
+
+class AuthController
+{
+    public function __construct(private UserRepository $users) {}
+
+    public function login(RemoteClient $remote): bool
+    {
+        audit_login($remote->id());
+        return $this->users->exists($remote->id());
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/Repository/UserRepository.php",
+        r#"<?php
+namespace App\Repository;
+
+class UserRepository
+{
+    public function exists(string $id): bool
+    {
+        return $id !== '';
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/Support/audit_login.php",
+        r#"<?php
+namespace App\Support;
+
+function audit_login(string $id): void
+{
 }
 "#,
     );

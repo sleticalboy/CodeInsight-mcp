@@ -1739,7 +1739,7 @@ fn resolve_dependency(
         Language::Python => resolve_python_target(root, dependency),
         Language::Ruby => None,
         Language::Rust => resolve_rust_target(root, dependency),
-        Language::Php => None,
+        Language::Php => resolve_php_target(root, dependency),
     }
 }
 
@@ -1900,6 +1900,73 @@ fn java_source_roots(source_file: &str) -> Vec<PathBuf> {
         PathBuf::from("src/main/java"),
         PathBuf::from("src/test/java"),
         PathBuf::from("src"),
+        PathBuf::new(),
+    ]);
+    roots.sort();
+    roots.dedup();
+    roots
+}
+
+fn resolve_php_target(root: &Path, dependency: &Dependency) -> Option<String> {
+    if dependency.kind != "use" {
+        return None;
+    }
+
+    let import_paths = php_use_candidate_paths(&dependency.target);
+    if import_paths.is_empty() {
+        return None;
+    }
+
+    let candidates = php_source_roots(&dependency.source_file)
+        .into_iter()
+        .flat_map(|source_root| {
+            import_paths
+                .iter()
+                .map(move |import_path| source_root.join(import_path))
+        })
+        .collect::<Vec<_>>();
+    existing_relative(root, candidates)
+}
+
+fn php_use_candidate_paths(target: &str) -> Vec<PathBuf> {
+    let normalized = target
+        .trim_start_matches('\\')
+        .replace('\\', "/")
+        .trim_matches('/')
+        .to_string();
+    if normalized.is_empty() {
+        return Vec::new();
+    }
+
+    let mut candidates = vec![PathBuf::from(&normalized).with_extension("php")];
+    if let Some(app_relative) = normalized.strip_prefix("App/") {
+        candidates.push(PathBuf::from(app_relative).with_extension("php"));
+    }
+    candidates.sort();
+    candidates.dedup();
+    candidates
+}
+
+fn php_source_roots(source_file: &str) -> Vec<PathBuf> {
+    let normalized = source_file.replace('\\', "/");
+    let mut roots = Vec::new();
+
+    for marker in ["src", "app", "lib"] {
+        let marker_with_slash = format!("{marker}/");
+        if normalized.starts_with(&marker_with_slash) {
+            roots.push(PathBuf::from(marker));
+        }
+
+        let nested_marker = format!("/{marker}/");
+        if let Some(index) = normalized.find(&nested_marker) {
+            roots.push(PathBuf::from(&normalized[..index]).join(marker));
+        }
+    }
+
+    roots.extend([
+        PathBuf::from("src"),
+        PathBuf::from("app"),
+        PathBuf::from("lib"),
         PathBuf::new(),
     ]);
     roots.sort();
@@ -4851,6 +4918,21 @@ interface UserRepository {
             calls
                 .iter()
                 .any(|call| call.caller == "AuthController.login" && call.callee == "audit")
+        );
+    }
+
+    #[test]
+    fn builds_php_use_candidate_paths() {
+        assert_eq!(
+            php_use_candidate_paths("App\\Repository\\UserRepository"),
+            vec![
+                PathBuf::from("App/Repository/UserRepository.php"),
+                PathBuf::from("Repository/UserRepository.php"),
+            ]
+        );
+        assert_eq!(
+            php_use_candidate_paths("\\Vendor\\Package\\Client"),
+            vec![PathBuf::from("Vendor/Package/Client.php")]
         );
     }
 
