@@ -2168,6 +2168,42 @@ fn cli_resolves_php_namespace_use_imports() {
 }
 
 #[test]
+fn cli_resolves_ruby_require_relative_imports() {
+    let fixture = ruby_require_relative_fixture_project();
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 2);
+    assert_eq!(index["changed_files"], 2);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let deps = run_json([
+        "dependency-graph",
+        fixture.path().to_str().unwrap(),
+        "--limit",
+        "20",
+    ]);
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "support/audit"
+                    && dependency["resolved_file"] == "lib/support/audit.rb"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "json" && dependency["resolved_file"].is_null()
+            })
+    );
+}
+
+#[test]
 fn cli_respects_null_package_imports_without_tsconfig_fallback() {
     let fixture = null_package_imports_fixture_project();
 
@@ -5011,6 +5047,41 @@ namespace App\Support;
 function audit_login(string $id): void
 {
 }
+"#,
+    );
+    dir
+}
+
+fn ruby_require_relative_fixture_project() -> TempDir {
+    let dir = TempDir::new().unwrap();
+    write_file(
+        &dir,
+        "lib/auth_service.rb",
+        r#"
+require "json"
+require_relative "support/audit"
+
+module Example
+  class AuthService
+    def login(id)
+      Audit.record(id)
+      JSON.generate(id: id)
+    end
+  end
+end
+"#,
+    );
+    write_file(
+        &dir,
+        "lib/support/audit.rb",
+        r#"
+module Example
+  module Audit
+    def self.record(id)
+      id
+    end
+  end
+end
 "#,
     );
     dir

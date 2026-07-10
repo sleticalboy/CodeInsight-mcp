@@ -1737,7 +1737,7 @@ fn resolve_dependency(
         Language::Go => resolve_go_target(root, dependency),
         Language::Java => resolve_java_target(root, dependency),
         Language::Python => resolve_python_target(root, dependency),
-        Language::Ruby => None,
+        Language::Ruby => resolve_ruby_target(root, dependency),
         Language::Rust => resolve_rust_target(root, dependency),
         Language::Php => resolve_php_target(root, dependency),
     }
@@ -1981,6 +1981,17 @@ fn resolve_python_target(root: &Path, dependency: &Dependency) -> Option<String>
     } else {
         resolve_module_target(root, &dependency.target.replace('.', "/"), &["py"])
     }
+}
+
+fn resolve_ruby_target(root: &Path, dependency: &Dependency) -> Option<String> {
+    if dependency.kind != "require_relative" {
+        return None;
+    }
+
+    let source_dir = Path::new(&dependency.source_file)
+        .parent()
+        .unwrap_or(Path::new(""));
+    resolve_base(root, source_dir.join(&dependency.target), &["rb"])
 }
 
 fn resolve_rust_target(root: &Path, dependency: &Dependency) -> Option<String> {
