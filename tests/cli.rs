@@ -359,6 +359,7 @@ fn cli_indexes_and_queries_fixture_project() {
     assert!(targets.contains(&"dep-lib/node-feature"));
     assert!(targets.contains(&"browser-lib"));
     assert!(targets.contains(&"browser-object-lib/server"));
+    assert!(targets.contains(&"browser-object-lib/disabled"));
     assert!(targets.contains(&"legacy-lib"));
     assert!(targets.contains(&"legacy-lib/plugin"));
     assert!(targets.contains(&"workspace-ui/button"));
@@ -476,6 +477,27 @@ fn cli_indexes_and_queries_fixture_project() {
                 dependency["target"] == "browser-object-lib/server"
                     && dependency["resolved_file"]
                         == "node_modules/browser-object-lib/dist/browser-server.js"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "browser-object-lib/disabled"
+                    && dependency["resolved_file"].is_null()
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "browser-object-lib/disabled"
+                    || dependency["resolved_file"]
+                        != "node_modules/browser-object-lib/dist/disabled.js"
             })
     );
     assert!(
@@ -1381,6 +1403,24 @@ fn cli_indexes_and_queries_fixture_project() {
             .iter()
             .any(|call| {
                 call["callee"] == "logInternal" && call["callee_file"] == "src/internal/logger.ts"
+            })
+    );
+
+    let dependency_package_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "dependencyPackageMain",
+        "--limit",
+        "10",
+    ]);
+    assert!(
+        dependency_package_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|call| {
+                call["callee"] != "browserDisabledRender"
+                    || call["callee_file"] != "node_modules/browser-object-lib/dist/disabled.js"
             })
     );
 }
@@ -3259,6 +3299,7 @@ import { depArrayRender } from "dep-lib/array-feature";
 import { depNodeRender } from "dep-lib/node-feature";
 import { browserRootRender } from "browser-lib";
 import { browserServerRender } from "browser-object-lib/server";
+import { browserDisabledRender } from "browser-object-lib/disabled";
 import { legacyRender } from "legacy-lib";
 import { legacyPluginRender } from "legacy-lib/plugin";
 import { workspaceButton } from "workspace-ui/button";
@@ -3364,6 +3405,7 @@ export function dependencyPackageMain() {
   depNodeRender();
   browserRootRender();
   browserServerRender();
+  browserDisabledRender();
   legacyRender();
   legacyPluginRender();
 }
@@ -3489,10 +3531,12 @@ export function browserRootRender() {
 {
   "name": "browser-object-lib",
   "exports": {
-    "./server": "./dist/server.js"
+    "./server": "./dist/server.js",
+    "./disabled": "./dist/disabled.js"
   },
   "browser": {
-    "./dist/server.js": "./dist/browser-server.js"
+    "./dist/server.js": "./dist/browser-server.js",
+    "./dist/disabled.js": false
   }
 }
 "#,
@@ -3512,6 +3556,15 @@ export function browserServerRender() {
         r#"
 export function browserServerRender() {
   return "node-server";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/browser-object-lib/dist/disabled.js",
+        r#"
+export function browserDisabledRender() {
+  return "node-disabled";
 }
 "#,
     );

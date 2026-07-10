@@ -18,6 +18,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - JavaScript and TypeScript package `exports` and `imports` array fallback resolution now skips external package targets while continuing to later local targets.
 - JavaScript and TypeScript package `exports` and `imports` matched conditional external package targets now block local fallback resolution instead of falling through to later conditions.
 - JavaScript and TypeScript package `exports` resolution now treats explicit `null` subpath mappings as disabled and does not fall back to package-relative files.
+- JavaScript and TypeScript dependency package `browser` object remaps are now covered for disabled `false` entries in CLI dependency graph resolution.
 - JavaScript and TypeScript package `exports` resolution now treats matched conditional `null` branches as disabled instead of continuing to later conditions.
 - JavaScript and TypeScript package `imports` resolution now treats matched conditional `null` branches as disabled and does not fall through to `tsconfig` path aliases.
 - JavaScript and TypeScript package `exports` and `imports` condition priority can now be configured with `[javascript].package_conditions`.
