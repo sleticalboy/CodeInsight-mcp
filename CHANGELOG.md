@@ -22,6 +22,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - JavaScript and TypeScript dependency package `browser` object remap keys are now covered for both `./path` and `path` forms.
 - JavaScript and TypeScript dependency package `browser` object remap values now skip external package targets instead of treating them as package-local files.
 - JavaScript and TypeScript dependency package root `browser` string entries now skip external package targets instead of treating them as package-local files.
+- JavaScript and TypeScript dependency package `browser` object remap values are now covered for absolute path and non-string entries that should block local resolution.
 - JavaScript and TypeScript package `exports` resolution now treats matched conditional `null` branches as disabled instead of continuing to later conditions.
 - JavaScript and TypeScript package `imports` resolution now treats matched conditional `null` branches as disabled and does not fall through to `tsconfig` path aliases.
 - JavaScript and TypeScript package `exports` and `imports` condition priority can now be configured with `[javascript].package_conditions`.

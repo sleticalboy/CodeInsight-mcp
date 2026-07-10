@@ -362,6 +362,8 @@ fn cli_indexes_and_queries_fixture_project() {
     assert!(targets.contains(&"browser-object-lib/server"));
     assert!(targets.contains(&"browser-object-lib/plain"));
     assert!(targets.contains(&"browser-object-lib/external"));
+    assert!(targets.contains(&"browser-object-lib/absolute"));
+    assert!(targets.contains(&"browser-object-lib/object"));
     assert!(targets.contains(&"browser-object-lib/disabled"));
     assert!(targets.contains(&"legacy-lib"));
     assert!(targets.contains(&"legacy-lib/plugin"));
@@ -555,6 +557,70 @@ fn cli_indexes_and_queries_fixture_project() {
                 dependency["target"] != "browser-object-lib/external"
                     || dependency["resolved_file"]
                         != "node_modules/browser-object-lib/dist/external.js"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "browser-object-lib/absolute"
+                    && dependency["resolved_file"].is_null()
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "browser-object-lib/absolute"
+                    || dependency["resolved_file"]
+                        != "node_modules/browser-object-lib/dist/browser-absolute.js"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "browser-object-lib/absolute"
+                    || dependency["resolved_file"]
+                        != "node_modules/browser-object-lib/dist/absolute.js"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "browser-object-lib/object"
+                    && dependency["resolved_file"].is_null()
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "browser-object-lib/object"
+                    || dependency["resolved_file"]
+                        != "node_modules/browser-object-lib/dist/browser-object.js"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "browser-object-lib/object"
+                    || dependency["resolved_file"]
+                        != "node_modules/browser-object-lib/dist/object.js"
             })
     );
     assert!(
@@ -3380,6 +3446,8 @@ import { browserExternalRootRender } from "browser-external-lib";
 import { browserServerRender } from "browser-object-lib/server";
 import { browserPlainRender } from "browser-object-lib/plain";
 import { browserExternalRender } from "browser-object-lib/external";
+import { browserAbsoluteRender } from "browser-object-lib/absolute";
+import { browserObjectRender } from "browser-object-lib/object";
 import { browserDisabledRender } from "browser-object-lib/disabled";
 import { legacyRender } from "legacy-lib";
 import { legacyPluginRender } from "legacy-lib/plugin";
@@ -3489,6 +3557,8 @@ export function dependencyPackageMain() {
   browserServerRender();
   browserPlainRender();
   browserExternalRender();
+  browserAbsoluteRender();
+  browserObjectRender();
   browserDisabledRender();
   legacyRender();
   legacyPluginRender();
@@ -3647,12 +3717,18 @@ export function browserExternalRootRender() {
     "./server": "./dist/server.js",
     "./plain": "./dist/plain.js",
     "./external": "./dist/external.js",
+    "./absolute": "./dist/absolute.js",
+    "./object": "./dist/object.js",
     "./disabled": "./dist/disabled.js"
   },
   "browser": {
     "./dist/server.js": "./dist/browser-server.js",
     "dist/plain.js": "./dist/browser-plain.js",
     "./dist/external.js": "external-browser-shim",
+    "./dist/absolute.js": "/dist/browser-absolute.js",
+    "./dist/object.js": {
+      "browser": "./dist/browser-object.js"
+    },
     "./dist/disabled.js": false
   }
 }
@@ -3691,6 +3767,42 @@ export function browserServerRender() {
         r#"
 export function browserExternalRender() {
   return "node-external";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/browser-object-lib/dist/browser-absolute.js",
+        r#"
+export function browserAbsoluteRender() {
+  return "browser-absolute";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/browser-object-lib/dist/absolute.js",
+        r#"
+export function browserAbsoluteRender() {
+  return "node-absolute";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/browser-object-lib/dist/browser-object.js",
+        r#"
+export function browserObjectRender() {
+  return "browser-object";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/browser-object-lib/dist/object.js",
+        r#"
+export function browserObjectRender() {
+  return "node-object";
 }
 "#,
     );

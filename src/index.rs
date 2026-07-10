@@ -4150,6 +4150,10 @@ catalogs:
                 "./dist/server.js": "./dist/browser-server.js",
                 "dist/plain.js": "./dist/browser-plain.js",
                 "./dist/external.js": "external-browser-shim",
+                "./dist/absolute.js": "/dist/browser-absolute.js",
+                "./dist/object.js": {
+                    "browser": "./dist/browser-object.js"
+                },
                 "./dist/disabled.js": false
             }
         });
@@ -4174,6 +4178,22 @@ catalogs:
                 &browser_object_package,
                 "./external",
                 &[PathBuf::from("./dist/external.js")]
+            )
+            .is_empty()
+        );
+        assert!(
+            package_browser_mappings(
+                &browser_object_package,
+                "./absolute",
+                &[PathBuf::from("./dist/absolute.js")]
+            )
+            .is_empty()
+        );
+        assert!(
+            package_browser_mappings(
+                &browser_object_package,
+                "./object",
+                &[PathBuf::from("./dist/object.js")]
             )
             .is_empty()
         );
