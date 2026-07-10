@@ -11,12 +11,12 @@ fn cli_indexes_and_queries_fixture_project() {
     let fixture = fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 22);
-    assert_eq!(index["changed_files"], 22);
+    assert_eq!(index["indexed_files"], 23);
+    assert_eq!(index["changed_files"], 23);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let overview = run_json(["overview", fixture.path().to_str().unwrap()]);
-    assert_eq!(overview["indexed_files"], 22);
+    assert_eq!(overview["indexed_files"], 23);
     assert!(overview["total_lines"].as_u64().unwrap() > 0);
     assert!(
         overview["summary"]
@@ -125,7 +125,7 @@ fn cli_indexes_and_queries_fixture_project() {
 
     let second_index = run_json(["index", fixture.path().to_str().unwrap()]);
     assert_eq!(second_index["changed_files"], 0);
-    assert_eq!(second_index["unchanged_files"], 22);
+    assert_eq!(second_index["unchanged_files"], 23);
 
     let semantic_index = run_json([
         "semantic-index",
@@ -366,6 +366,7 @@ fn cli_indexes_and_queries_fixture_project() {
     assert!(targets.contains(&"browser-object-lib/object"));
     assert!(targets.contains(&"browser-object-lib/disabled"));
     assert!(targets.contains(&"legacy-lib"));
+    assert!(targets.contains(&"metadata-invalid-lib"));
     assert!(targets.contains(&"legacy-lib/plugin"));
     assert!(targets.contains(&"workspace-ui/button"));
     assert!(targets.contains(&"#internal/logger"));
@@ -410,6 +411,38 @@ fn cli_indexes_and_queries_fixture_project() {
             .any(|dependency| {
                 dependency["target"] == "legacy-lib"
                     && dependency["resolved_file"] == "node_modules/legacy-lib/dist/index.js"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "metadata-invalid-lib"
+                    && dependency["resolved_file"].is_null()
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "metadata-invalid-lib"
+                    || dependency["resolved_file"]
+                        != "node_modules/metadata-invalid-lib/external-entry.js"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "metadata-invalid-lib"
+                    || dependency["resolved_file"]
+                        != "node_modules/metadata-invalid-lib/dist/absolute-entry.js"
             })
     );
     assert!(
@@ -923,7 +956,7 @@ fn cli_indexes_and_queries_fixture_project() {
         "--file",
         "src/main.ts",
         "--token-budget",
-        "1600",
+        "2000",
     ]);
     let context_files = file_context["files"]
         .as_array()
@@ -3582,6 +3615,17 @@ export function multiWildcardMain() {
     );
     write_file(
         &dir,
+        "src/metadata-entry.ts",
+        r#"
+import { invalidMetadataRender } from "metadata-invalid-lib";
+
+export function metadataEntryMain() {
+  invalidMetadataRender();
+}
+"#,
+    );
+    write_file(
+        &dir,
         "src/feature/entry.ts",
         r#"
 import { baseRender } from "@base/base-ui";
@@ -3841,6 +3885,39 @@ export function browserDisabledRender() {
         r#"
 export function legacyRender() {
   return "legacy";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/metadata-invalid-lib/package.json",
+        r#"
+{
+  "name": "metadata-invalid-lib",
+  "module": "external-entry",
+  "main": "/dist/absolute-entry.js",
+  "types": {
+    "default": "./dist/index.d.ts"
+  },
+  "typings": false
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/metadata-invalid-lib/external-entry.js",
+        r#"
+export function invalidMetadataRender() {
+  return "external";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/metadata-invalid-lib/dist/absolute-entry.js",
+        r#"
+export function invalidMetadataRender() {
+  return "absolute";
 }
 "#,
     );

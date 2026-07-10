@@ -2839,7 +2839,9 @@ fn package_metadata_entry(package: &Value, subpath: &str) -> Option<PathBuf> {
     if subpath == "." {
         for field in ["module", "main", "types", "typings"] {
             if let Some(target) = package.get(field).and_then(Value::as_str) {
-                return Some(PathBuf::from(target));
+                if let Some(target) = package_local_target_path(target.to_string()) {
+                    return Some(target);
+                }
             }
         }
         return None;
@@ -4204,6 +4206,33 @@ catalogs:
                 &[PathBuf::from("./dist/disabled.js")]
             )
             .is_empty()
+        );
+    }
+
+    #[test]
+    fn parses_package_metadata_entries_as_local_targets() {
+        let package = serde_json::json!({
+            "module": "external-entry",
+            "main": "/dist/main.js",
+            "types": "./dist/index.d.ts"
+        });
+        assert_eq!(
+            package_metadata_entry(&package, "."),
+            Some(PathBuf::from("./dist/index.d.ts"))
+        );
+
+        let invalid_package = serde_json::json!({
+            "module": "external-entry",
+            "main": "/dist/main.js",
+            "types": {
+                "default": "./dist/index.d.ts"
+            },
+            "typings": false
+        });
+        assert_eq!(package_metadata_entry(&invalid_package, "."), None);
+        assert_eq!(
+            package_metadata_entry(&invalid_package, "./feature"),
+            Some(PathBuf::from("feature"))
         );
     }
 
