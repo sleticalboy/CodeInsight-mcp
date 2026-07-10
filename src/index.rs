@@ -2725,7 +2725,9 @@ fn package_browser_mappings(package: &Value, subpath: &str, mappings: &[PathBuf]
     if subpath == "."
         && let Some(browser_entry) = browser.as_str()
     {
-        return vec![PathBuf::from(browser_entry)];
+        return package_local_target_path(browser_entry.to_string())
+            .into_iter()
+            .collect();
     }
 
     let Some(browser_entries) = browser.as_object() else {
@@ -4129,6 +4131,18 @@ catalogs:
                 &[PathBuf::from("./dist/node.js")]
             ),
             vec![PathBuf::from("./dist/browser.js")]
+        );
+        let external_browser_string_package = serde_json::json!({
+            "main": "./dist/node.js",
+            "browser": "external-browser-entry"
+        });
+        assert!(
+            package_browser_mappings(
+                &external_browser_string_package,
+                ".",
+                &[PathBuf::from("./dist/node.js")]
+            )
+            .is_empty()
         );
 
         let browser_object_package = serde_json::json!({

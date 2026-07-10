@@ -358,6 +358,7 @@ fn cli_indexes_and_queries_fixture_project() {
     assert!(targets.contains(&"dep-lib/array-feature"));
     assert!(targets.contains(&"dep-lib/node-feature"));
     assert!(targets.contains(&"browser-lib"));
+    assert!(targets.contains(&"browser-external-lib"));
     assert!(targets.contains(&"browser-object-lib/server"));
     assert!(targets.contains(&"browser-object-lib/plain"));
     assert!(targets.contains(&"browser-object-lib/external"));
@@ -468,6 +469,38 @@ fn cli_indexes_and_queries_fixture_project() {
                 dependency["target"] == "browser-lib"
                     && dependency["resolved_file"]
                         == "node_modules/browser-lib/dist/browser-entry.js"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "browser-external-lib"
+                    && dependency["resolved_file"].is_null()
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "browser-external-lib"
+                    || dependency["resolved_file"]
+                        != "node_modules/browser-external-lib/external-browser-entry.js"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "browser-external-lib"
+                    || dependency["resolved_file"]
+                        != "node_modules/browser-external-lib/dist/node-entry.js"
             })
     );
     assert!(
@@ -3343,6 +3376,7 @@ import { depRender } from "dep-lib/feature";
 import { depArrayRender } from "dep-lib/array-feature";
 import { depNodeRender } from "dep-lib/node-feature";
 import { browserRootRender } from "browser-lib";
+import { browserExternalRootRender } from "browser-external-lib";
 import { browserServerRender } from "browser-object-lib/server";
 import { browserPlainRender } from "browser-object-lib/plain";
 import { browserExternalRender } from "browser-object-lib/external";
@@ -3451,6 +3485,7 @@ export function dependencyPackageMain() {
   depArrayRender();
   depNodeRender();
   browserRootRender();
+  browserExternalRootRender();
   browserServerRender();
   browserPlainRender();
   browserExternalRender();
@@ -3570,6 +3605,35 @@ export function browserRootRender() {
         r#"
 export function browserRootRender() {
   return "node-root";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/browser-external-lib/package.json",
+        r#"
+{
+  "name": "browser-external-lib",
+  "main": "./dist/node-entry.js",
+  "browser": "external-browser-entry"
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/browser-external-lib/dist/node-entry.js",
+        r#"
+export function browserExternalRootRender() {
+  return "node-root";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/browser-external-lib/external-browser-entry.js",
+        r#"
+export function browserExternalRootRender() {
+  return "external-root";
 }
 "#,
     );
