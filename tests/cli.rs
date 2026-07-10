@@ -1939,6 +1939,75 @@ fn cli_respects_null_package_exports_without_subpath_fallback() {
 }
 
 #[test]
+fn cli_resolves_package_subpath_metadata_fallbacks() {
+    let fixture = package_subpath_fallback_fixture_project();
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 1);
+    assert_eq!(index["changed_files"], 1);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let deps = run_json([
+        "dependency-graph",
+        fixture.path().to_str().unwrap(),
+        "--limit",
+        "20",
+    ]);
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "subpath-fallback-lib/file"
+                    && dependency["resolved_file"] == "node_modules/subpath-fallback-lib/file.js"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "subpath-fallback-lib/dir"
+                    && dependency["resolved_file"]
+                        == "node_modules/subpath-fallback-lib/dir/index.js"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "subpath-fallback-lib/missing"
+                    && dependency["resolved_file"].is_null()
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "subpath-disabled-lib/disabled"
+                    && dependency["resolved_file"].is_null()
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "subpath-disabled-lib/disabled"
+                    || dependency["resolved_file"]
+                        != "node_modules/subpath-disabled-lib/disabled.js"
+            })
+    );
+}
+
+#[test]
 fn cli_respects_null_package_imports_without_tsconfig_fallback() {
     let fixture = null_package_imports_fixture_project();
 
@@ -4548,6 +4617,76 @@ export function conditionalRender() {
         r#"
 export function conditionalExternalRender() {
   return "conditional-external";
+}
+"#,
+    );
+    dir
+}
+
+fn package_subpath_fallback_fixture_project() -> TempDir {
+    let dir = TempDir::new().unwrap();
+    write_file(
+        &dir,
+        "src/main.ts",
+        r#"
+import { fileRender } from "subpath-fallback-lib/file";
+import { indexRender } from "subpath-fallback-lib/dir";
+import { missingRender } from "subpath-fallback-lib/missing";
+import { disabledRender } from "subpath-disabled-lib/disabled";
+
+export function packageSubpathFallbackMain() {
+  fileRender();
+  indexRender();
+  missingRender();
+  disabledRender();
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/subpath-fallback-lib/package.json",
+        r#"
+{
+  "name": "subpath-fallback-lib"
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/subpath-fallback-lib/file.js",
+        r#"
+export function fileRender() {
+  return "file";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/subpath-fallback-lib/dir/index.js",
+        r#"
+export function indexRender() {
+  return "index";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/subpath-disabled-lib/package.json",
+        r#"
+{
+  "name": "subpath-disabled-lib",
+  "exports": {
+    "./disabled": null
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/subpath-disabled-lib/disabled.js",
+        r#"
+export function disabledRender() {
+  return "disabled";
 }
 "#,
     );
