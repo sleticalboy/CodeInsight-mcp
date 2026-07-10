@@ -2064,6 +2064,63 @@ fn cli_resolves_go_module_imports() {
 }
 
 #[test]
+fn cli_resolves_java_source_imports() {
+    let fixture = java_source_import_fixture_project();
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 3);
+    assert_eq!(index["changed_files"], 3);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let deps = run_json([
+        "dependency-graph",
+        fixture.path().to_str().unwrap(),
+        "--limit",
+        "20",
+    ]);
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "com.example.auth.AuthService"
+                    && dependency["resolved_file"]
+                        == "src/main/java/com/example/auth/AuthService.java"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "com.example.util.Names.defaultName"
+                    && dependency["resolved_file"] == "src/main/java/com/example/util/Names.java"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "java.util.List" && dependency["resolved_file"].is_null()
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "com.acme.RemoteClient"
+                    && dependency["resolved_file"].is_null()
+            })
+    );
+}
+
+#[test]
 fn cli_respects_null_package_imports_without_tsconfig_fallback() {
     let fixture = null_package_imports_fixture_project();
 
@@ -4798,6 +4855,61 @@ package config
 
 func Load() string {
   return "local"
+}
+"#,
+    );
+    dir
+}
+
+fn java_source_import_fixture_project() -> TempDir {
+    let dir = TempDir::new().unwrap();
+    write_file(
+        &dir,
+        "src/main/java/com/example/app/App.java",
+        r#"
+package com.example.app;
+
+import com.acme.RemoteClient;
+import com.example.auth.AuthService;
+import static com.example.util.Names.defaultName;
+import java.util.List;
+
+public class App {
+    private final List<String> names;
+
+    public App(List<String> names) {
+        this.names = names;
+    }
+
+    public String run(RemoteClient remote) {
+        return AuthService.login(defaultName(), names.size(), remote.id());
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/main/java/com/example/auth/AuthService.java",
+        r#"
+package com.example.auth;
+
+public class AuthService {
+    public static String login(String name, int count, String remoteId) {
+        return name + count + remoteId;
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/main/java/com/example/util/Names.java",
+        r#"
+package com.example.util;
+
+public class Names {
+    public static String defaultName() {
+        return "guest";
+    }
 }
 "#,
     );

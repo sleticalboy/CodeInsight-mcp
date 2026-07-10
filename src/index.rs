@@ -816,14 +816,7 @@ fn java_dependencies(
     source_file: &str,
 ) -> Vec<Dependency> {
     match node.kind() {
-        "import_declaration" => text_dependencies(
-            node,
-            source,
-            language,
-            source_file,
-            "import",
-            java_import_targets,
-        ),
+        "import_declaration" => java_import_dependencies(node, source, language, source_file),
         "package_declaration" => text_dependencies(
             node,
             source,
@@ -834,6 +827,28 @@ fn java_dependencies(
         ),
         _ => Vec::new(),
     }
+}
+
+fn java_import_dependencies(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+) -> Vec<Dependency> {
+    let text = node.utf8_text(source).unwrap_or_default();
+    java_import_target(text)
+        .into_iter()
+        .map(|(target, kind)| Dependency {
+            source_file: source_file.to_string(),
+            resolved_file: None,
+            target,
+            local_alias: None,
+            imported_symbol: None,
+            kind: kind.to_string(),
+            language,
+            line: node.start_position().row + 1,
+        })
+        .collect()
 }
 
 fn c_like_dependencies(
@@ -1720,10 +1735,11 @@ fn resolve_dependency(
         Language::C | Language::Cpp => resolve_c_like_target(root, dependency),
         Language::CSharp => None,
         Language::Go => resolve_go_target(root, dependency),
+        Language::Java => resolve_java_target(root, dependency),
         Language::Python => resolve_python_target(root, dependency),
         Language::Ruby => None,
         Language::Rust => resolve_rust_target(root, dependency),
-        Language::Java | Language::Php => None,
+        Language::Php => None,
     }
 }
 
@@ -1813,6 +1829,82 @@ fn resolve_go_package_dir(root: &Path, package_dir: PathBuf) -> Option<String> {
         )
     });
     existing_relative(root, candidates)
+}
+
+fn resolve_java_target(root: &Path, dependency: &Dependency) -> Option<String> {
+    if !matches!(dependency.kind.as_str(), "import" | "import_static")
+        || dependency.target.ends_with(".*")
+    {
+        return None;
+    }
+
+    let import_paths =
+        java_import_candidate_paths(&dependency.target, dependency.kind == "import_static");
+    if import_paths.is_empty() {
+        return None;
+    }
+
+    let candidates = java_source_roots(&dependency.source_file)
+        .into_iter()
+        .flat_map(|source_root| {
+            import_paths
+                .iter()
+                .map(move |import_path| source_root.join(import_path))
+        })
+        .collect::<Vec<_>>();
+    existing_relative(root, candidates)
+}
+
+fn java_import_candidate_paths(target: &str, allow_member_fallback: bool) -> Vec<PathBuf> {
+    let segments = target
+        .split('.')
+        .filter(|segment| !segment.is_empty())
+        .collect::<Vec<_>>();
+    if segments.is_empty() {
+        return Vec::new();
+    }
+
+    if !allow_member_fallback {
+        return vec![PathBuf::from(segments.join("/")).with_extension("java")];
+    }
+
+    (1..=segments.len())
+        .rev()
+        .map(|len| PathBuf::from(segments[..len].join("/")).with_extension("java"))
+        .collect()
+}
+
+fn java_source_roots(source_file: &str) -> Vec<PathBuf> {
+    let normalized = source_file.replace('\\', "/");
+    let mut roots = Vec::new();
+
+    for marker in [
+        "src/main/java",
+        "src/test/java",
+        "src/integrationTest/java",
+        "src/androidTest/java",
+        "src",
+    ] {
+        let marker_with_slash = format!("{marker}/");
+        if normalized.starts_with(&marker_with_slash) {
+            roots.push(PathBuf::from(marker));
+        }
+
+        let nested_marker = format!("/{marker}/");
+        if let Some(index) = normalized.find(&nested_marker) {
+            roots.push(PathBuf::from(&normalized[..index]).join(marker));
+        }
+    }
+
+    roots.extend([
+        PathBuf::from("src/main/java"),
+        PathBuf::from("src/test/java"),
+        PathBuf::from("src"),
+        PathBuf::new(),
+    ]);
+    roots.sort();
+    roots.dedup();
+    roots
 }
 
 fn resolve_python_target(root: &Path, dependency: &Dependency) -> Option<String> {
@@ -3065,14 +3157,14 @@ fn python_import_targets(text: &str) -> Vec<String> {
         .unwrap_or_default()
 }
 
-fn java_import_targets(text: &str) -> Vec<String> {
-    text.trim()
-        .strip_prefix("import ")
-        .map(|target| target.trim_start_matches("static ").trim())
-        .map(|target| target.trim_end_matches(';').trim())
-        .filter(|target| !target.is_empty())
-        .map(|target| vec![target.to_string()])
-        .unwrap_or_default()
+fn java_import_target(text: &str) -> Option<(String, &'static str)> {
+    let target = text.trim().strip_prefix("import ")?.trim();
+    let (target, kind) = target
+        .strip_prefix("static ")
+        .map(|target| (target.trim(), "import_static"))
+        .unwrap_or((target, "import"));
+    let target = target.trim_end_matches(';').trim();
+    (!target.is_empty()).then(|| (target.to_string(), kind))
 }
 
 fn java_package_targets(text: &str) -> Vec<String> {
@@ -4874,6 +4966,24 @@ interface UserRepository {
             calls
                 .iter()
                 .any(|call| call.caller == "AuthService.login" && call.callee == "audit")
+        );
+    }
+
+    #[test]
+    fn builds_java_import_candidate_paths() {
+        assert_eq!(
+            java_import_candidate_paths("com.example.auth.AuthService", false),
+            vec![PathBuf::from("com/example/auth/AuthService.java")]
+        );
+        assert_eq!(
+            java_import_candidate_paths("com.example.util.Names.defaultName", true),
+            vec![
+                PathBuf::from("com/example/util/Names/defaultName.java"),
+                PathBuf::from("com/example/util/Names.java"),
+                PathBuf::from("com/example/util.java"),
+                PathBuf::from("com/example.java"),
+                PathBuf::from("com.java"),
+            ]
         );
     }
 
