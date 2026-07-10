@@ -2008,6 +2008,62 @@ fn cli_resolves_package_subpath_metadata_fallbacks() {
 }
 
 #[test]
+fn cli_resolves_go_module_imports() {
+    let fixture = go_module_import_fixture_project();
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 3);
+    assert_eq!(index["changed_files"], 3);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let deps = run_json([
+        "dependency-graph",
+        fixture.path().to_str().unwrap(),
+        "--limit",
+        "20",
+    ]);
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "github.com/example/codeinsight/internal/auth"
+                    && dependency["resolved_file"] == "internal/auth/service.go"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "github.com/example/codeinsight/internal/config"
+                    && dependency["resolved_file"] == "internal/config/config.go"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "fmt" && dependency["resolved_file"].is_null()
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "github.com/acme/remote"
+                    && dependency["resolved_file"].is_null()
+            })
+    );
+}
+
+#[test]
 fn cli_respects_null_package_imports_without_tsconfig_fallback() {
     let fixture = null_package_imports_fixture_project();
 
@@ -4687,6 +4743,61 @@ export function indexRender() {
         r#"
 export function disabledRender() {
   return "disabled";
+}
+"#,
+    );
+    dir
+}
+
+fn go_module_import_fixture_project() -> TempDir {
+    let dir = TempDir::new().unwrap();
+    write_file(
+        &dir,
+        "go.mod",
+        r#"
+module github.com/example/codeinsight
+
+go 1.22
+"#,
+    );
+    write_file(
+        &dir,
+        "cmd/server/main.go",
+        r#"
+package main
+
+import (
+  "fmt"
+
+  "github.com/acme/remote"
+  "github.com/example/codeinsight/internal/auth"
+  "github.com/example/codeinsight/internal/config"
+)
+
+func main() {
+  fmt.Println(remote.Name, auth.Login(), config.Load())
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "internal/auth/service.go",
+        r#"
+package auth
+
+func Login() string {
+  return "ok"
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "internal/config/config.go",
+        r#"
+package config
+
+func Load() string {
+  return "local"
 }
 "#,
     );

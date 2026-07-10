@@ -8,6 +8,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ### Changed
 
+- Go dependency graph resolution now resolves same-module package imports declared by the nearest `go.mod` to representative local `.go` files.
 - JavaScript and TypeScript package resolution now follows same-repository `package.json` and `pnpm-workspace.yaml` workspaces for local package `exports` targets.
 - JavaScript and TypeScript package resolution now follows relative `workspace:` dependency paths such as `workspace:../pkg` for local package `exports` targets.
 - JavaScript and TypeScript package resolution now treats workspace version protocols such as `workspace:*`, `workspace:^`, `workspace:~`, and `workspace:<semver>` as local workspace package references.

@@ -110,7 +110,7 @@ Limitations:
 - Package metadata fallback supports root package specifiers through local relative `module`, `main`, `types`, and `typings` targets, skipping external, absolute, or non-string field values, plus package subpaths resolved as package-relative files or index files when no explicit `exports` mapping disables the subpath.
 - TypeScript and JavaScript `baseUrl`/`paths` resolution supports JSON-compatible `tsconfig.json` and `jsconfig.json` files with relative `extends` chains, exact, single-wildcard, or multi-wildcard path mappings, multiple fallback mappings, and directory index files.
 - External `imports` targets are not modeled yet.
-- Go and Java import paths are not resolved to files yet.
+- Go import paths resolve same-module packages declared by the nearest `go.mod`; standard library, third-party, `replace`, `vendor`, and Java import paths are not resolved to files yet.
 - C/C++ quoted local includes are resolved when the target file is obvious; system includes such as `<stdio.h>` are recorded but not resolved.
 
 ### `context_pack`

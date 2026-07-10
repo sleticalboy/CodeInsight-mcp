@@ -1719,11 +1719,100 @@ fn resolve_dependency(
         }
         Language::C | Language::Cpp => resolve_c_like_target(root, dependency),
         Language::CSharp => None,
+        Language::Go => resolve_go_target(root, dependency),
         Language::Python => resolve_python_target(root, dependency),
         Language::Ruby => None,
         Language::Rust => resolve_rust_target(root, dependency),
-        Language::Go | Language::Java | Language::Php => None,
+        Language::Java | Language::Php => None,
     }
+}
+
+fn resolve_go_target(root: &Path, dependency: &Dependency) -> Option<String> {
+    let go_mod_path = find_nearest_go_mod(root, &dependency.source_file)?;
+    let module_path = go_module_path(root, &go_mod_path)?;
+    let package_suffix = dependency.target.strip_prefix(&module_path)?;
+    if !package_suffix.is_empty() && !package_suffix.starts_with('/') {
+        return None;
+    }
+
+    let module_dir = go_mod_path.parent().unwrap_or(Path::new(""));
+    let package_dir = module_dir.join(package_suffix.trim_start_matches('/'));
+    resolve_go_package_dir(root, package_dir)
+}
+
+fn find_nearest_go_mod(root: &Path, source_file: &str) -> Option<PathBuf> {
+    let mut current = Path::new(source_file)
+        .parent()
+        .unwrap_or(Path::new(""))
+        .to_path_buf();
+
+    loop {
+        let candidate = current.join("go.mod");
+        if root.join(&candidate).is_file() {
+            return Some(candidate);
+        }
+
+        if current.as_os_str().is_empty() {
+            return None;
+        }
+        current.pop();
+    }
+}
+
+fn go_module_path(root: &Path, go_mod_path: &Path) -> Option<String> {
+    let text = fs::read_to_string(root.join(go_mod_path)).ok()?;
+    parse_go_module_path(&text)
+}
+
+fn parse_go_module_path(text: &str) -> Option<String> {
+    for raw_line in text.lines() {
+        let line = raw_line
+            .split_once("//")
+            .map(|(before, _)| before)
+            .unwrap_or(raw_line)
+            .trim();
+        let Some(module_path) = line.strip_prefix("module") else {
+            continue;
+        };
+        if !module_path.chars().next().is_some_and(char::is_whitespace) {
+            continue;
+        }
+        let module_path = module_path.trim().trim_matches(['"', '`']);
+        if !module_path.is_empty() {
+            return Some(module_path.to_string());
+        }
+    }
+    None
+}
+
+fn resolve_go_package_dir(root: &Path, package_dir: PathBuf) -> Option<String> {
+    let mut candidates = fs::read_dir(root.join(&package_dir))
+        .ok()?
+        .filter_map(|entry| entry.ok())
+        .filter_map(|entry| {
+            entry
+                .file_type()
+                .ok()
+                .filter(|file_type| file_type.is_file())
+                .and_then(|_| {
+                    let file_name = entry.file_name();
+                    let file_name_text = file_name.to_string_lossy();
+                    file_name_text
+                        .ends_with(".go")
+                        .then(|| package_dir.join(file_name))
+                })
+        })
+        .collect::<Vec<_>>();
+    candidates.sort_by_key(|candidate| {
+        (
+            candidate
+                .file_name()
+                .and_then(|name| name.to_str())
+                .is_some_and(|name| name.ends_with("_test.go")),
+            candidate.clone(),
+        )
+    });
+    existing_relative(root, candidates)
 }
 
 fn resolve_python_target(root: &Path, dependency: &Dependency) -> Option<String> {
@@ -4437,6 +4526,21 @@ func (s *Service) Login() {}
         assert!(names.contains(&"Service"));
         assert!(names.contains(&"NewService"));
         assert!(names.contains(&"Login"));
+    }
+
+    #[test]
+    fn parses_go_module_path() {
+        let text = r#"
+// comment
+module github.com/example/codeinsight // inline comment
+
+go 1.22
+"#;
+        assert_eq!(
+            parse_go_module_path(text).as_deref(),
+            Some("github.com/example/codeinsight")
+        );
+        assert_eq!(parse_go_module_path("modulefoo invalid"), None);
     }
 
     #[test]
