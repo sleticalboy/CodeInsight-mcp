@@ -1580,8 +1580,8 @@ fn cli_respects_null_package_exports_without_subpath_fallback() {
     let fixture = null_package_exports_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 5);
-    assert_eq!(index["changed_files"], 5);
+    assert_eq!(index["indexed_files"], 6);
+    assert_eq!(index["changed_files"], 6);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -1650,6 +1650,16 @@ fn cli_respects_null_package_exports_without_subpath_fallback() {
                     || dependency["resolved_file"] != "src/conditional-fallback.ts"
             })
     );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "null-export-lib/array"
+                    || dependency["resolved_file"] != "external-export-lib.ts"
+            })
+    );
 
     let callees = run_json([
         "callees",
@@ -1678,8 +1688,8 @@ fn cli_respects_null_package_imports_without_tsconfig_fallback() {
     let fixture = null_package_imports_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 5);
-    assert_eq!(index["changed_files"], 5);
+    assert_eq!(index["indexed_files"], 6);
+    assert_eq!(index["changed_files"], 6);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -1725,6 +1735,16 @@ fn cli_respects_null_package_imports_without_tsconfig_fallback() {
             .all(|dependency| {
                 dependency["target"] != "#conditional"
                     || dependency["resolved_file"] != "src/tsconfig-fallback.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "#array"
+                    || dependency["resolved_file"] != "external-import-lib.ts"
             })
     );
 
@@ -3979,6 +3999,7 @@ export function nullExportMain() {
     "./enabled": "./src/enabled.ts",
     "./array": [
       null,
+      "external-export-lib",
       "./src/array-fallback.ts"
     ],
     "./disabled": null,
@@ -4005,6 +4026,15 @@ export function enabledRender() {
         r#"
 export function arrayRender() {
   return "array-fallback";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "external-export-lib.ts",
+        r#"
+export function arrayRender() {
+  return "external-export";
 }
 "#,
     );
@@ -4040,6 +4070,7 @@ fn null_package_imports_fixture_project() -> TempDir {
     "#enabled": "./src/enabled-import.ts",
     "#array": [
       null,
+      "external-import-lib",
       "./src/array-import.ts"
     ],
     "#conditional": {
@@ -4094,6 +4125,15 @@ export function enabledImportRender() {
         r#"
 export function arrayImportRender() {
   return "array-import";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "external-import-lib.ts",
+        r#"
+export function arrayImportRender() {
+  return "external-import";
 }
 "#,
     );

@@ -2772,7 +2772,7 @@ fn package_export_mappings(
             package_export_targets(exports, package_conditions)
                 .unwrap_or_default()
                 .into_iter()
-                .map(PathBuf::from)
+                .filter_map(package_local_target_path)
                 .collect(),
         );
     }
@@ -2788,7 +2788,8 @@ fn package_export_mappings(
             package_export_targets(value, package_conditions)
                 .unwrap_or_default()
                 .into_iter()
-                .filter_map(|target| apply_path_mapping(&target, &wildcards))
+                .filter_map(package_local_target_path)
+                .filter_map(|target| apply_path_mapping(&target.to_string_lossy(), &wildcards))
                 .collect(),
         );
     }
@@ -2818,12 +2819,16 @@ fn package_import_mappings(
             package_export_targets(value, package_conditions)
                 .unwrap_or_default()
                 .into_iter()
-                .filter(|target| target.starts_with("./") || target.starts_with("../"))
-                .filter_map(|target| apply_path_mapping(&target, &wildcards))
+                .filter_map(package_local_target_path)
+                .filter_map(|target| apply_path_mapping(&target.to_string_lossy(), &wildcards))
                 .collect(),
         );
     }
     None
+}
+
+fn package_local_target_path(target: String) -> Option<PathBuf> {
+    (target.starts_with("./") || target.starts_with("../")).then(|| PathBuf::from(target))
 }
 
 fn package_metadata_entry(package: &Value, subpath: &str) -> Option<PathBuf> {
@@ -3955,6 +3960,7 @@ catalogs:
             "./feature": {
                 "import": [
                     null,
+                    "external-lib",
                     "./dist/missing-feature.js",
                     "./dist/feature.js"
                 ],
@@ -4035,6 +4041,7 @@ catalogs:
             },
             "#array": [
                 null,
+                "external-import",
                 "./src/array-fallback.ts"
             ],
             "#enabled/*": "./src/*.ts"
