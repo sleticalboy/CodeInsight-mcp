@@ -2755,7 +2755,9 @@ fn package_browser_mapping(
             if value.as_bool() == Some(false) {
                 return None;
             }
-            return value.as_str().map(PathBuf::from);
+            return value
+                .as_str()
+                .and_then(|target| package_local_target_path(target.to_string()));
         }
     }
 
@@ -4133,6 +4135,7 @@ catalogs:
             "browser": {
                 "./dist/server.js": "./dist/browser-server.js",
                 "dist/plain.js": "./dist/browser-plain.js",
+                "./dist/external.js": "external-browser-shim",
                 "./dist/disabled.js": false
             }
         });
@@ -4151,6 +4154,14 @@ catalogs:
                 &[PathBuf::from("./dist/plain.js")]
             ),
             vec![PathBuf::from("./dist/browser-plain.js")]
+        );
+        assert!(
+            package_browser_mappings(
+                &browser_object_package,
+                "./external",
+                &[PathBuf::from("./dist/external.js")]
+            )
+            .is_empty()
         );
         assert!(
             package_browser_mappings(

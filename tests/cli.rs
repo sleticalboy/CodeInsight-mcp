@@ -360,6 +360,7 @@ fn cli_indexes_and_queries_fixture_project() {
     assert!(targets.contains(&"browser-lib"));
     assert!(targets.contains(&"browser-object-lib/server"));
     assert!(targets.contains(&"browser-object-lib/plain"));
+    assert!(targets.contains(&"browser-object-lib/external"));
     assert!(targets.contains(&"browser-object-lib/disabled"));
     assert!(targets.contains(&"legacy-lib"));
     assert!(targets.contains(&"legacy-lib/plugin"));
@@ -489,6 +490,38 @@ fn cli_indexes_and_queries_fixture_project() {
                 dependency["target"] == "browser-object-lib/plain"
                     && dependency["resolved_file"]
                         == "node_modules/browser-object-lib/dist/browser-plain.js"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "browser-object-lib/external"
+                    && dependency["resolved_file"].is_null()
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "browser-object-lib/external"
+                    || dependency["resolved_file"]
+                        != "node_modules/browser-object-lib/external-browser-shim.js"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "browser-object-lib/external"
+                    || dependency["resolved_file"]
+                        != "node_modules/browser-object-lib/dist/external.js"
             })
     );
     assert!(
@@ -3312,6 +3345,7 @@ import { depNodeRender } from "dep-lib/node-feature";
 import { browserRootRender } from "browser-lib";
 import { browserServerRender } from "browser-object-lib/server";
 import { browserPlainRender } from "browser-object-lib/plain";
+import { browserExternalRender } from "browser-object-lib/external";
 import { browserDisabledRender } from "browser-object-lib/disabled";
 import { legacyRender } from "legacy-lib";
 import { legacyPluginRender } from "legacy-lib/plugin";
@@ -3419,6 +3453,7 @@ export function dependencyPackageMain() {
   browserRootRender();
   browserServerRender();
   browserPlainRender();
+  browserExternalRender();
   browserDisabledRender();
   legacyRender();
   legacyPluginRender();
@@ -3547,11 +3582,13 @@ export function browserRootRender() {
   "exports": {
     "./server": "./dist/server.js",
     "./plain": "./dist/plain.js",
+    "./external": "./dist/external.js",
     "./disabled": "./dist/disabled.js"
   },
   "browser": {
     "./dist/server.js": "./dist/browser-server.js",
     "dist/plain.js": "./dist/browser-plain.js",
+    "./dist/external.js": "external-browser-shim",
     "./dist/disabled.js": false
   }
 }
@@ -3581,6 +3618,24 @@ export function browserPlainRender() {
         r#"
 export function browserServerRender() {
   return "node-server";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/browser-object-lib/dist/external.js",
+        r#"
+export function browserExternalRender() {
+  return "node-external";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/browser-object-lib/external-browser-shim.js",
+        r#"
+export function browserExternalRender() {
+  return "external-shim";
 }
 "#,
     );
