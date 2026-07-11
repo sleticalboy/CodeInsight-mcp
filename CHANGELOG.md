@@ -72,6 +72,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - Java wildcard imports such as `import com.example.reporting.*` can now provide `callee_file` hints for explicit class-qualified calls like `Report.log` without marking the wildcard dependency itself as resolved.
 - Java same-package class-qualified calls such as `LocalFormatter.decorate` can now receive `callee_file` hints from the source file's `package` declaration without marking the package dependency as resolved.
 - C# `callees` output now preserves qualified call names such as `Audit.Record` and can attach `callee_file` hints for resolved local alias and static `using` directives.
+- C# same-namespace class-qualified calls such as `LocalFormatter.Normalize` can now receive `callee_file` hints from the source file's `namespace` declaration without marking the namespace dependency as resolved.
 - C# dependency graph resolution now resolves obvious same-repository `using` directives under common roots such as `src`, including alias/static using targets and namespace directories with representative `.cs` files.
 - PHP `callees` output now preserves scoped call names such as `AuditLog.record` and can attach `callee_file` hints for resolved local class and function `use` imports.
 - PHP grouped `use` declarations such as `use App\Support\{Metrics as MetricsAlias}` and grouped function imports now resolve to local files and can provide `callee_file` hints.

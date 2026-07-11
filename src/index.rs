@@ -1141,6 +1141,14 @@ fn csharp_dependencies(
 ) -> Vec<Dependency> {
     match node.kind() {
         "using_directive" => csharp_using_dependencies(node, source, language, source_file),
+        "namespace_declaration" | "file_scoped_namespace_declaration" => text_dependencies(
+            node,
+            source,
+            language,
+            source_file,
+            "namespace",
+            csharp_namespace_targets,
+        ),
         _ => Vec::new(),
     }
 }
@@ -4007,6 +4015,15 @@ fn csharp_using_target(text: &str) -> Option<(String, &'static str)> {
     })
 }
 
+fn csharp_namespace_targets(text: &str) -> Vec<String> {
+    text.trim()
+        .strip_prefix("namespace ")
+        .map(|target| target.split([';', '{']).next().unwrap_or_default().trim())
+        .filter(|target| !target.is_empty())
+        .map(|target| vec![target.to_string()])
+        .unwrap_or_default()
+}
+
 fn csharp_using_alias(text: &str, target: &str, kind: &str) -> (Option<String>, Option<String>) {
     match kind {
         "using_alias" => {
@@ -5911,6 +5928,18 @@ public interface UserRepository {
                 "using_static"
             ),
             (None, Some("*".to_string()))
+        );
+    }
+
+    #[test]
+    fn parses_csharp_namespace_targets() {
+        assert_eq!(
+            csharp_namespace_targets("namespace App.Controllers;"),
+            vec!["App.Controllers".to_string()]
+        );
+        assert_eq!(
+            csharp_namespace_targets("namespace App.Controllers {"),
+            vec!["App.Controllers".to_string()]
         );
     }
 

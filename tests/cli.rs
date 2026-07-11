@@ -2958,8 +2958,8 @@ fn cli_resolves_csharp_using_imports() {
     let fixture = csharp_using_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 4);
-    assert_eq!(index["changed_files"], 4);
+    assert_eq!(index["indexed_files"], 5);
+    assert_eq!(index["changed_files"], 5);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -3007,6 +3007,17 @@ fn cli_resolves_csharp_using_imports() {
                 dependency["target"] == "System" && dependency["resolved_file"].is_null()
             })
     );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "App.Controllers"
+                    && dependency["kind"] == "namespace"
+                    && dependency["resolved_file"].is_null()
+            })
+    );
 
     let callees = run_json([
         "callees",
@@ -3020,6 +3031,10 @@ fn cli_resolves_csharp_using_imports() {
     }));
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "ClampName" && call["callee_file"] == "src/App/Support/MathUtil.cs"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "LocalFormatter.Normalize"
+            && call["callee_file"] == "src/App/Controllers/LocalFormatter.cs"
     }));
     assert!(
         callees
@@ -6695,7 +6710,7 @@ public class AuthController {
 
     public string Login(string id) {
         Audit.Record(id);
-        return ClampName(users.Find(id));
+        return LocalFormatter.Normalize(ClampName(users.Find(id)));
     }
 }
 "#,
@@ -6733,6 +6748,19 @@ namespace App.Support;
 public static class MathUtil {
     public static string ClampName(string name) {
         return name;
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/App/Controllers/LocalFormatter.cs",
+        r#"
+namespace App.Controllers;
+
+public static class LocalFormatter {
+    public static string Normalize(string name) {
+        return name.Trim();
     }
 }
 "#,
