@@ -73,6 +73,12 @@ Rust is included early so the project can index itself during development.
 - [x] Add auto-entrypoint seed selection for `context_pack`.
 - [x] Add `reading_plan` with next actions, questions, and MCP-ready suggested tools.
 - [x] Add semantic status reporting and local semantic chunk fallback signals.
+- [x] Add budget metadata for requested/applied token budgets and selected vs
+  omitted candidate counts.
+- [x] Add bounded omitted-candidate follow-ups for files excluded from the
+  selected context.
+- [x] Add `continuation_summary` so clients can expose a single next action
+  without interpreting budget counters directly.
 
 ## P1
 
@@ -151,6 +157,8 @@ Rust is included early so the project can index itself during development.
 
 - Dependency graph and references available.
 - `context_pack` useful for bugfix and code-reading tasks.
+- `context_pack` exposes budget, continuation, and omitted-candidate metadata
+  for multi-step code-reading workflows.
 - Incremental indexing avoids full rebuild on unchanged files.
 
 ### v0.3.0

@@ -35,6 +35,9 @@ MVP workflow is now implemented end to end.
 - `context_pack` semantic status, reading plan, and file-scoped follow-up tool
   suggestions for `file_outline`, `impact_analysis`, `dependency_graph`, and
   focused `context_pack` calls.
+- `context_pack` budget metadata, bounded omitted-candidate follow-ups, and a
+  `continuation_summary` that lets MCP clients expose a single next action
+  after the initial reading plan.
 - CLI commands: `index`, `init-config`, `config-status`, `overview`,
   `symbols`, `outline`, `dependency-graph`, `impact-analysis`,
   `find-references`, `semantic-search`, `semantic-index`, `embedding-status`,
@@ -51,8 +54,8 @@ MVP workflow is now implemented end to end.
 
 ## Next
 
-- Tighten post-release ergonomics, including shorter release notes and clearer
-  Homebrew tap PR handoff during verification.
+- Turn the first-read, continuation, and impact-analysis flow into a clearer
+  client consumption guide with concrete examples.
 - Keep tightening JavaScript package-manager and bundler-specific edge cases
   where they improve local code navigation.
 - Add broader real-repository benchmark evidence for token/context reduction.
