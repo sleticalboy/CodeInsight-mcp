@@ -3014,8 +3014,8 @@ fn cli_resolves_python_relative_imports() {
     let fixture = python_relative_import_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 5);
-    assert_eq!(index["changed_files"], 5);
+    assert_eq!(index["indexed_files"], 6);
+    assert_eq!(index["changed_files"], 6);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -3060,6 +3060,17 @@ fn cli_resolves_python_relative_imports() {
             .unwrap()
             .iter()
             .any(|dependency| {
+                dependency["target"] == "app.shared"
+                    && dependency["resolved_file"] == "app/shared/__init__.py"
+                    && dependency["local_alias"] == "shared"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
                 dependency["target"] == "requests" && dependency["resolved_file"].is_null()
             })
     );
@@ -3081,6 +3092,9 @@ fn cli_resolves_python_relative_imports() {
     }));
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "service.load" && call["callee_file"] == "app/core/service.py"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "shared.ping" && call["callee_file"] == "app/shared/__init__.py"
     }));
 }
 
@@ -6566,6 +6580,7 @@ fn python_relative_import_fixture_project() -> TempDir {
 from . import support
 from .support import audit
 from ..core import service
+import app.shared as shared
 import requests
 
 
@@ -6573,6 +6588,7 @@ class AuthController:
     def login(self, user_id):
         audit.record(user_id)
         support.describe()
+        shared.ping()
         return service.load(user_id)
 "#,
     );
@@ -6599,6 +6615,14 @@ def record(user_id):
         r#"
 def load(user_id):
     return user_id
+"#,
+    );
+    write_file(
+        &dir,
+        "app/shared/__init__.py",
+        r#"
+def ping():
+    return "pong"
 "#,
     );
     dir
