@@ -144,7 +144,7 @@ Limitations:
 
 ### `callers` and `callees`
 
-`callers` and `callees` use a static call graph extracted from call expressions and Java method invocations. Same-file calls are recorded by normalized callee name. JavaScript, TypeScript, and some Python calls can also receive a `callee_file` hint when an obvious local import/export edge resolves to an indexed file with a matching symbol.
+`callers` and `callees` use a static call graph extracted from call expressions and Java method invocations. Same-file calls are recorded by normalized callee name. JavaScript, TypeScript, Python, and Rust calls can also receive a `callee_file` hint when an obvious local import/export edge resolves to an indexed file with a matching symbol.
 
 Currently supported JavaScript/TypeScript imported target hints:
 
@@ -164,6 +164,7 @@ Currently supported JavaScript/TypeScript imported target hints:
 - One-hop named/default re-exports, `export * from`, and `export * as`.
 - Two-hop named/default re-export aliases and two-hop namespace re-export aliases.
 - Python relative `from .` / `from ..` imports can provide `callee_file` hints for member calls such as `audit.record()` when the resolved local file contains the called member symbol.
+- Rust local `use crate::`, `use self::`, and `use super::` imports can provide `callee_file` hints for scoped calls such as `audit::record()` and direct imported calls when the resolved local file contains the called symbol.
 
 Limitations:
 

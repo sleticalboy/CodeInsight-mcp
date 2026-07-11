@@ -10,6 +10,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 - Python `callees` output now preserves member call names such as `audit.record` and can attach `callee_file` hints when a resolved local `from ... import ...` dependency contains the called member symbol.
 - Python dependency graph resolution now expands `from ... import ...` member targets and resolves relative `from .` / `from ..` imports to nearby package `.py` files.
+- Rust `callees` output now preserves scoped call names such as `audit.record` and can attach `callee_file` hints when local `use crate::`, `use self::`, or `use super::` dependencies resolve to a file containing the called symbol.
 - Rust dependency graph resolution now resolves obvious local `crate::`, `self::`, and `super::` use paths to module files while leaving external crate imports unresolved.
 - C# dependency graph resolution now resolves obvious same-repository `using` directives under common roots such as `src`, including alias/static using targets and namespace directories with representative `.cs` files.
 - Ruby dependency graph resolution now resolves `require_relative` imports to neighboring local `.rb` files while leaving gem-style `require` imports unresolved.

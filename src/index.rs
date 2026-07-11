@@ -417,6 +417,9 @@ fn normalize_callee(raw: &str, language: Language) -> Option<String> {
     if language == Language::Python {
         return normalize_python_callee(raw);
     }
+    if language == Language::Rust {
+        return normalize_rust_callee(raw);
+    }
 
     normalize_simple_callee(raw)
 }
@@ -557,6 +560,31 @@ fn normalize_python_callee(raw: &str) -> Option<String> {
                 part
             }
         })
+        .collect::<Vec<_>>();
+    if parts.is_empty() || parts.iter().any(|part| !is_js_identifier(part)) {
+        return normalize_simple_callee(trimmed);
+    }
+
+    Some(parts.join("."))
+}
+
+fn normalize_rust_callee(raw: &str) -> Option<String> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+
+    let parts = trimmed
+        .split("::")
+        .map(str::trim)
+        .map(|part| {
+            if let Some(open) = part.find('(') {
+                part[..open].trim()
+            } else {
+                part
+            }
+        })
+        .filter(|part| !part.is_empty())
         .collect::<Vec<_>>();
     if parts.is_empty() || parts.iter().any(|part| !is_js_identifier(part)) {
         return normalize_simple_callee(trimmed);
@@ -1058,14 +1086,38 @@ fn rust_dependencies(
     source_file: &str,
 ) -> Vec<Dependency> {
     match node.kind() {
-        "use_declaration" => {
-            text_dependencies(node, source, language, source_file, "use", rust_use_targets)
-        }
+        "use_declaration" => rust_use_dependencies(node, source, language, source_file),
         "mod_item" => {
             text_dependencies(node, source, language, source_file, "mod", rust_mod_targets)
         }
         _ => Vec::new(),
     }
+}
+
+fn rust_use_dependencies(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+) -> Vec<Dependency> {
+    let text = node.utf8_text(source).unwrap_or_default();
+    let line = node.start_position().row + 1;
+    rust_use_entries(text)
+        .into_iter()
+        .map(|(target, explicit_alias)| {
+            let (local_alias, imported_symbol) = rust_use_alias(&target, explicit_alias.as_deref());
+            Dependency {
+                source_file: source_file.to_string(),
+                resolved_file: None,
+                target,
+                local_alias,
+                imported_symbol,
+                kind: "use".to_string(),
+                language,
+                line,
+            }
+        })
+        .collect()
 }
 
 fn javascript_like_dependencies(
@@ -3681,7 +3733,15 @@ fn php_use_targets(text: &str) -> Vec<String> {
         .unwrap_or_default()
 }
 
+#[cfg(test)]
 fn rust_use_targets(text: &str) -> Vec<String> {
+    rust_use_entries(text)
+        .into_iter()
+        .map(|(target, _)| target)
+        .collect()
+}
+
+fn rust_use_entries(text: &str) -> Vec<(String, Option<String>)> {
     text.trim()
         .strip_prefix("use ")
         .map(|target| {
@@ -3690,9 +3750,45 @@ fn rust_use_targets(text: &str) -> Vec<String> {
                 .trim()
                 .replace("::{", "::")
                 .replace(['{', '}'], "");
-            vec![compact_whitespace(&cleaned)]
+            let cleaned = compact_whitespace(&cleaned);
+            let (target, alias) = if let Some((target, alias)) = cleaned.rsplit_once(" as ") {
+                (target.trim(), Some(alias.trim().to_string()))
+            } else {
+                (cleaned.trim(), None)
+            };
+            vec![(target.to_string(), alias.filter(|alias| !alias.is_empty()))]
         })
         .unwrap_or_default()
+}
+
+fn rust_use_alias(target: &str, explicit_alias: Option<&str>) -> (Option<String>, Option<String>) {
+    let trimmed = target.trim();
+    if trimmed.is_empty() || trimmed.contains(',') {
+        return (None, None);
+    }
+
+    let imported_symbol = trimmed
+        .rsplit("::")
+        .find(|part| {
+            let part = part.trim();
+            !part.is_empty() && !matches!(part, "crate" | "self" | "super")
+        })
+        .map(str::to_string);
+    let local_alias = explicit_alias
+        .filter(|alias| !alias.is_empty())
+        .map(str::to_string)
+        .or_else(|| imported_symbol.clone());
+
+    match (local_alias, imported_symbol) {
+        (Some(local_alias), Some(imported_symbol)) => {
+            if local_alias == imported_symbol {
+                (Some(local_alias), Some("*".to_string()))
+            } else {
+                (Some(local_alias), Some(imported_symbol))
+            }
+        }
+        _ => (None, None),
+    }
 }
 
 fn rust_mod_targets(text: &str) -> Vec<String> {
@@ -5502,6 +5598,40 @@ fn helper() {}
             rust_super_module_dir("src/controllers/auth.rs"),
             PathBuf::from("src/controllers")
         );
+    }
+
+    #[test]
+    fn parses_rust_use_aliases() {
+        assert_eq!(
+            rust_use_targets("use crate::support::audit as audit_log;"),
+            vec!["crate::support::audit"]
+        );
+        assert_eq!(
+            rust_use_alias("crate::support::audit", Some("audit_log")),
+            (Some("audit_log".to_string()), Some("audit".to_string()))
+        );
+        assert_eq!(
+            rust_use_alias("super::support::helper", None),
+            (Some("helper".to_string()), Some("*".to_string()))
+        );
+    }
+
+    #[test]
+    fn normalizes_rust_scoped_calls() {
+        let source = r#"
+pub fn run() {
+    audit::record("root");
+    helper("id");
+}
+"#;
+        let symbols = extract_symbols(source, Language::Rust, "lib.rs").unwrap();
+        let calls = extract_calls(source, Language::Rust, "lib.rs", &symbols);
+        let callees = calls
+            .iter()
+            .map(|call| call.callee.as_str())
+            .collect::<Vec<_>>();
+        assert!(callees.contains(&"audit.record"));
+        assert!(callees.contains(&"helper"));
     }
 
     #[test]

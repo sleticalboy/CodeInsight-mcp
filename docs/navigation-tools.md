@@ -80,6 +80,9 @@ Current behavior:
 - Python member calls such as `audit.record()` can include `callee_file` when a
   local `from .` / `from ..` import resolves to an indexed file with a matching
   symbol.
+- Rust scoped calls such as `audit::record()` can include `callee_file` when a
+  local `use crate::`, `use self::`, or `use super::` import resolves to an
+  indexed file with a matching symbol.
 
 ## Boundaries
 

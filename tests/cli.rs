@@ -2303,6 +2303,28 @@ fn cli_resolves_rust_crate_and_super_use_imports() {
                 dependency["target"] == "serde::Serialize" && dependency["resolved_file"].is_null()
             })
     );
+
+    let root_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "run",
+        "--limit",
+        "10",
+    ]);
+    assert!(root_callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "audit.record" && call["callee_file"] == "src/support/audit.rs"
+    }));
+
+    let auth_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "login",
+        "--limit",
+        "10",
+    ]);
+    assert!(auth_callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "helper" && call["callee_file"] == "src/controllers/support.rs"
+    }));
 }
 
 #[test]
