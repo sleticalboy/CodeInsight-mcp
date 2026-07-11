@@ -2767,18 +2767,12 @@ fn resolve_tsconfig_paths_target(
     extensions: &[&str],
 ) -> Option<String> {
     let paths = paths_value.as_object()?;
-    for (pattern, mappings) in paths {
-        let Some(wildcards) = path_pattern_captures(pattern, target) else {
-            continue;
-        };
-        let Some(mapping_values) = mappings.as_array() else {
-            continue;
-        };
-        for mapping in mapping_values.iter().filter_map(Value::as_str) {
-            let mapped = apply_path_mapping(mapping, &wildcards)?;
-            if let Some(resolved) = resolve_base(root, base_dir.join(mapped), extensions) {
-                return Some(resolved);
-            }
+    let (mappings, wildcards) = path_pattern_mapping(paths, target)?;
+    let mapping_values = mappings.as_array()?;
+    for mapping in mapping_values.iter().filter_map(Value::as_str) {
+        let mapped = apply_path_mapping(mapping, &wildcards)?;
+        if let Some(resolved) = resolve_base(root, base_dir.join(mapped), extensions) {
+            return Some(resolved);
         }
     }
     None
@@ -3613,7 +3607,7 @@ fn package_export_mappings(
     }
 
     let entries = exports.as_object()?;
-    let (value, wildcards) = package_subpath_mapping(entries, subpath)?;
+    let (value, wildcards) = path_pattern_mapping(entries, subpath)?;
     Some(
         package_export_targets(value, package_conditions)
             .unwrap_or_default()
@@ -3637,7 +3631,7 @@ fn package_import_mappings(
     package_conditions: &[String],
 ) -> Option<Vec<PathBuf>> {
     let entries = imports.as_object()?;
-    let (value, wildcards) = package_subpath_mapping(entries, target)?;
+    let (value, wildcards) = path_pattern_mapping(entries, target)?;
     Some(
         package_export_targets(value, package_conditions)
             .unwrap_or_default()
@@ -3648,7 +3642,7 @@ fn package_import_mappings(
     )
 }
 
-fn package_subpath_mapping<'a>(
+fn path_pattern_mapping<'a>(
     entries: &'a serde_json::Map<String, Value>,
     target: &str,
 ) -> Option<(&'a Value, Vec<String>)> {
@@ -5238,6 +5232,28 @@ catalogs:
             Some(PathBuf::from("src/admin/component/button.ts"))
         );
         assert_eq!(apply_path_mapping("src/*.ts", &captures), None);
+    }
+
+    #[test]
+    fn prefers_exact_path_pattern_mapping_before_wildcards() {
+        let mappings = serde_json::json!({
+            "@app/*": ["*"],
+            "@app/special": ["special.ts"],
+            "@app/special/*": ["special/*.ts"]
+        });
+        let entries = mappings.as_object().unwrap();
+
+        assert_eq!(
+            path_pattern_mapping(entries, "@app/special"),
+            Some((entries.get("@app/special").unwrap(), Vec::<String>::new()))
+        );
+        assert_eq!(
+            path_pattern_mapping(entries, "@app/special/button"),
+            Some((
+                entries.get("@app/special/*").unwrap(),
+                vec!["button".to_string()]
+            ))
+        );
     }
 
     #[test]

@@ -30,6 +30,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   mappings that point at extensionless local files.
 - Fixed package `exports` and `imports` subpath matching so exact entries and
   more specific wildcard patterns take precedence over broader wildcard entries.
+- Fixed TypeScript/JavaScript `paths` alias matching to use the same exact and
+  more-specific wildcard precedence when resolving imports.
 - Updated MVP status docs after the verified `v0.1.10` release.
 
 ## [0.1.10] - 2026-07-11

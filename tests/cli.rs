@@ -11,12 +11,12 @@ fn cli_indexes_and_queries_fixture_project() {
     let fixture = fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 23);
-    assert_eq!(index["changed_files"], 23);
+    assert_eq!(index["indexed_files"], 27);
+    assert_eq!(index["changed_files"], 27);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let overview = run_json(["overview", fixture.path().to_str().unwrap()]);
-    assert_eq!(overview["indexed_files"], 23);
+    assert_eq!(overview["indexed_files"], 27);
     assert!(overview["total_lines"].as_u64().unwrap() > 0);
     assert!(
         overview["summary"]
@@ -129,7 +129,7 @@ fn cli_indexes_and_queries_fixture_project() {
 
     let second_index = run_json(["index", fixture.path().to_str().unwrap()]);
     assert_eq!(second_index["changed_files"], 0);
-    assert_eq!(second_index["unchanged_files"], 23);
+    assert_eq!(second_index["unchanged_files"], 27);
 
     let semantic_index = run_json([
         "semantic-index",
@@ -354,6 +354,8 @@ fn cli_indexes_and_queries_fixture_project() {
     assert!(targets.contains(&"os"));
     assert!(targets.contains(&"./ui"));
     assert!(targets.contains(&"@app/path-ui"));
+    assert!(targets.contains(&"@app/special"));
+    assert!(targets.contains(&"@app/special/button"));
     assert!(targets.contains(&"@fallback/fallback-ui"));
     assert!(targets.contains(&"@base/base-ui"));
     assert!(targets.contains(&"shared"));
@@ -759,6 +761,36 @@ fn cli_indexes_and_queries_fixture_project() {
             .any(|dependency| {
                 dependency["target"] == "@app/path-ui"
                     && dependency["resolved_file"] == "src/path-ui.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "@app/special"
+                    && dependency["resolved_file"] == "src/path-special.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "@app/special/button"
+                    && dependency["resolved_file"] == "src/path-special/button.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "@app/special"
+                    || dependency["resolved_file"] != "src/special.ts"
             })
     );
     assert_eq!(deps["offset"].as_u64(), Some(0));
@@ -1620,6 +1652,34 @@ fn cli_indexes_and_queries_fixture_project() {
         path_alias_callees.as_array().unwrap().iter().any(|call| {
             call["callee"] == "pathRender" && call["callee_file"] == "src/path-ui.ts"
         })
+    );
+
+    let path_alias_precedence_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "pathAliasPrecedenceMain",
+        "--limit",
+        "6",
+    ]);
+    assert!(
+        path_alias_precedence_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| {
+                call["callee"] == "specialPathRender"
+                    && call["callee_file"] == "src/path-special.ts"
+            })
+    );
+    assert!(
+        path_alias_precedence_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| {
+                call["callee"] == "specialButtonPathRender"
+                    && call["callee_file"] == "src/path-special/button.ts"
+            })
     );
 
     let fallback_alias_callees = run_json([
@@ -4411,6 +4471,8 @@ fn fixture_project() -> TempDir {
     "baseUrl": "src",
     "paths": {
       "@app/*": ["*"],
+      "@app/special": ["path-special.ts"],
+      "@app/special/*": ["path-special/*.ts"],
       "@fallback/*": ["missing/*", "*"],
       "@multi/*/component/*": ["multi/*/component/*.ts"]
     }
@@ -4479,6 +4541,8 @@ import { relayRender, relayDefault, render as starRender, uiApi } from "./barrel
 import { finalApi, finalDefault, finalRender } from "./barrel2";
 import * as ui from "./ui";
 import { pathRender } from "@app/path-ui";
+import { specialPathRender } from "@app/special";
+import { specialButtonPathRender } from "@app/special/button";
 import { fallbackRender } from "@fallback/fallback-ui";
 import { sharedRender } from "shared";
 import { packageRender } from "fixture-lib/package-ui";
@@ -4578,6 +4642,11 @@ export function dynamicImportThenMain() {
 
 export function pathAliasMain() {
   pathRender();
+}
+
+export function pathAliasPrecedenceMain() {
+  specialPathRender();
+  specialButtonPathRender();
 }
 
 export function fallbackAliasMain() {
@@ -5003,6 +5072,42 @@ export default function defaultRender() {
         r#"
 export function pathRender() {
   return "path";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/path-special.ts",
+        r#"
+export function specialPathRender() {
+  return "path-special";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/path-special/button.ts",
+        r#"
+export function specialButtonPathRender() {
+  return "path-special-button";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/special.ts",
+        r#"
+export function specialPathRender() {
+  return "broad-special";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/special/button.ts",
+        r#"
+export function specialButtonPathRender() {
+  return "broad-special-button";
 }
 "#,
     );
