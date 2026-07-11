@@ -2122,6 +2122,17 @@ fn cli_resolves_package_subpath_metadata_fallbacks() {
             .unwrap()
             .iter()
             .any(|dependency| {
+                dependency["target"] == "extensionless-export-lib/feature"
+                    && dependency["resolved_file"]
+                        == "node_modules/extensionless-export-lib/dist/feature.js"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
                 dependency["target"] == "subpath-fallback-lib/missing"
                     && dependency["resolved_file"].is_null()
             })
@@ -5529,12 +5540,14 @@ fn package_subpath_fallback_fixture_project() -> TempDir {
         r#"
 import { fileRender } from "subpath-fallback-lib/file";
 import { indexRender } from "subpath-fallback-lib/dir";
+import { extensionlessRender } from "extensionless-export-lib/feature";
 import { missingRender } from "subpath-fallback-lib/missing";
 import { disabledRender } from "subpath-disabled-lib/disabled";
 
 export function packageSubpathFallbackMain() {
   fileRender();
   indexRender();
+  extensionlessRender();
   missingRender();
   disabledRender();
 }
@@ -5564,6 +5577,27 @@ export function fileRender() {
         r#"
 export function indexRender() {
   return "index";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/extensionless-export-lib/package.json",
+        r#"
+{
+  "name": "extensionless-export-lib",
+  "exports": {
+    "./feature": "./dist/feature"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/extensionless-export-lib/dist/feature.js",
+        r#"
+export function extensionlessRender() {
+  return "extensionless";
 }
 "#,
     );
