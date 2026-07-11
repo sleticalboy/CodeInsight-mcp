@@ -2855,8 +2855,8 @@ fn cli_resolves_ruby_require_relative_imports() {
     let fixture = ruby_require_relative_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 2);
-    assert_eq!(index["changed_files"], 2);
+    assert_eq!(index["indexed_files"], 3);
+    assert_eq!(index["changed_files"], 3);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -2881,6 +2881,16 @@ fn cli_resolves_ruby_require_relative_imports() {
             .unwrap()
             .iter()
             .any(|dependency| {
+                dependency["target"] == "../support/audit.rb"
+                    && dependency["resolved_file"] == "lib/support/audit.rb"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
                 dependency["target"] == "json" && dependency["resolved_file"].is_null()
             })
     );
@@ -2893,6 +2903,16 @@ fn cli_resolves_ruby_require_relative_imports() {
         "10",
     ]);
     assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "Audit.record" && call["callee_file"] == "lib/support/audit.rb"
+    }));
+    let nested_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "Example.Services.Runner.run",
+        "--limit",
+        "10",
+    ]);
+    assert!(nested_callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "Audit.record" && call["callee_file"] == "lib/support/audit.rb"
     }));
     assert!(
@@ -4462,7 +4482,7 @@ fn cli_context_pack_uses_imported_callee_file_hints() {
     let fixture = ruby_require_relative_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 2);
+    assert_eq!(index["indexed_files"], 3);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let context = run_json([
@@ -6543,6 +6563,23 @@ module Example
     def login(id)
       Audit.record(id)
       JSON.generate(id: id)
+    end
+  end
+end
+"#,
+    );
+    write_file(
+        &dir,
+        "lib/services/runner.rb",
+        r#"
+require_relative "../support/audit.rb"
+
+module Example
+  module Services
+    class Runner
+      def run(id)
+        Audit.record(id)
+      end
     end
   end
 end

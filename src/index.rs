@@ -6051,6 +6051,10 @@ interface UserRepository {
             ruby_require_alias("support/audit_log", "require_relative"),
             (Some("AuditLog".to_string()), Some("*".to_string()))
         );
+        assert_eq!(
+            ruby_require_alias("../support/audit.rb", "require_relative"),
+            (Some("Audit".to_string()), Some("*".to_string()))
+        );
         assert_eq!(ruby_require_alias("json", "require"), (None, None));
     }
 
