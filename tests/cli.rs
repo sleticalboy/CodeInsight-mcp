@@ -373,6 +373,7 @@ fn cli_indexes_and_queries_fixture_project() {
     assert!(targets.contains(&"browser-object-lib/disabled"));
     assert!(targets.contains(&"legacy-lib"));
     assert!(targets.contains(&"root-array-lib"));
+    assert!(targets.contains(&"root-browser-export-lib"));
     assert!(targets.contains(&"metadata-invalid-lib"));
     assert!(targets.contains(&"legacy-lib/plugin"));
     assert!(targets.contains(&"workspace-ui/button"));
@@ -440,6 +441,28 @@ fn cli_indexes_and_queries_fixture_project() {
             .all(|dependency| {
                 dependency["target"] != "root-array-lib"
                     || dependency["resolved_file"] != "node_modules/root-array-lib/external-root.js"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "root-browser-export-lib"
+                    && dependency["resolved_file"]
+                        == "node_modules/root-browser-export-lib/dist/browser.js"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "root-browser-export-lib"
+                    || dependency["resolved_file"]
+                        != "node_modules/root-browser-export-lib/dist/node.js"
             })
     );
     assert!(
@@ -4674,6 +4697,7 @@ import { browserDisabledRender } from "browser-object-lib/disabled";
 import { legacyRender } from "legacy-lib";
 import { legacyPluginRender } from "legacy-lib/plugin";
 import { rootArrayRender } from "root-array-lib";
+import { rootBrowserExportRender } from "root-browser-export-lib";
 import { workspaceButton } from "workspace-ui/button";
 import { logInternal } from "#internal/logger";
 import { specialInternalRender } from "#internal/special";
@@ -4793,6 +4817,7 @@ export function dependencyPackageMain() {
   legacyRender();
   legacyPluginRender();
   rootArrayRender();
+  rootBrowserExportRender();
 }
 
 export function workspacePackageMain() {
@@ -4923,6 +4948,39 @@ export function rootArrayRender() {
         r#"
 export function rootArrayRender() {
   return "external-root";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/root-browser-export-lib/package.json",
+        r#"
+{
+  "name": "root-browser-export-lib",
+  "exports": {
+    ".": {
+      "import": "./dist/node.js"
+    }
+  },
+  "browser": "./dist/browser.js"
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/root-browser-export-lib/dist/browser.js",
+        r#"
+export function rootBrowserExportRender() {
+  return "browser-export-root";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/root-browser-export-lib/dist/node.js",
+        r#"
+export function rootBrowserExportRender() {
+  return "node-export-root";
 }
 "#,
     );
