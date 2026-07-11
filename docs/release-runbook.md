@@ -223,7 +223,13 @@ scripts/extract-release-notes.sh CHANGELOG.md vX.Y.Z /tmp/codeinsight-release-no
 sed -n '1,80p' /tmp/codeinsight-release-notes.md
 ```
 
-The generated notes must not include older release sections.
+The generated notes must not include older release sections. Use the compact
+summary form for the public GitHub Release page when a changelog section is
+large:
+
+```bash
+scripts/extract-release-notes.sh --summary --max-items 12 CHANGELOG.md vX.Y.Z /tmp/codeinsight-release-notes.md
+```
 
 CI validates the first versioned changelog section automatically:
 
@@ -255,6 +261,6 @@ gh release upload vX.Y.Z release-assets/*.tar.gz --clobber
 Update release notes only:
 
 ```bash
-scripts/extract-release-notes.sh CHANGELOG.md vX.Y.Z /tmp/codeinsight-release-notes.md
+scripts/extract-release-notes.sh --summary --max-items 12 CHANGELOG.md vX.Y.Z /tmp/codeinsight-release-notes.md
 gh release edit vX.Y.Z --notes-file /tmp/codeinsight-release-notes.md
 ```

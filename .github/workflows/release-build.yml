@@ -104,7 +104,7 @@ jobs:
       - name: Prepare release notes
         env:
           TAG_NAME: ${{ github.ref_name }}
-        run: scripts/extract-release-notes.sh CHANGELOG.md "${TAG_NAME}" release-notes.md
+        run: scripts/extract-release-notes.sh --summary --max-items 12 CHANGELOG.md "${TAG_NAME}" release-notes.md
 
       - name: Publish GitHub Release
         env:

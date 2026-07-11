@@ -53,9 +53,13 @@ jobs:
           test -n "$latest_version"
           scripts/extract-release-notes.sh CHANGELOG.md latest /tmp/codeinsight-release-notes.md
           scripts/extract-release-notes.sh CHANGELOG.md "$latest_version" /tmp/codeinsight-release-notes-explicit.md
+          scripts/extract-release-notes.sh --summary --max-items 2 CHANGELOG.md "$latest_version" /tmp/codeinsight-release-notes-summary.md
           cmp /tmp/codeinsight-release-notes.md /tmp/codeinsight-release-notes-explicit.md
           ! grep -Eq '^## \[[0-9]+\.[0-9]+\.[0-9]+\]' /tmp/codeinsight-release-notes.md
           ! grep -Eq '^## \[Unreleased\]' /tmp/codeinsight-release-notes.md
+          grep -q '^### Highlights' /tmp/codeinsight-release-notes-summary.md
+          grep -q 'This release has ' /tmp/codeinsight-release-notes-summary.md
+          test "$(grep -c '^- ' /tmp/codeinsight-release-notes-summary.md)" -le 2
       - run: |
           set -euo pipefail
           tmp="$(mktemp -d)"
@@ -112,6 +116,9 @@ jobs:
           grep -q '## \[9.8.7\] - 2026-07-08' "$tmp/CHANGELOG.md"
           scripts/extract-release-notes.sh "$tmp/CHANGELOG.md" latest "$tmp/notes.md"
           grep -q 'Test release automation' "$tmp/notes.md"
+          scripts/extract-release-notes.sh --summary --max-items 1 "$tmp/CHANGELOG.md" latest "$tmp/summary-notes.md"
+          grep -q 'Test release automation' "$tmp/summary-notes.md"
+          ! grep -q 'This release has ' "$tmp/summary-notes.md"
           if CODEINSIGHT_ROOT_DIR="$tmp" CODEINSIGHT_SKIP_CARGO_CHECK=1 scripts/prepare-release.sh v9.8.7 >"$tmp/repeat.out" 2>&1; then
             echo "repeat release unexpectedly succeeded" >&2
             exit 1

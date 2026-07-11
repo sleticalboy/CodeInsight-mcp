@@ -171,6 +171,6 @@ Rust is included early so the project can index itself during development.
   semantic smoke, and release install smoke.
 - [x] Decide the next public tag/version and prepare release notes.
 - [x] Verify GitHub Release, Docker image, and Homebrew tap after tagging.
-- [ ] Shorten generated release notes for large accumulated changelog sections.
+- [x] Shorten generated release notes for large accumulated changelog sections.
 - [ ] Run a clean release-readiness rehearsal from a fresh checkout before the
   next public tag.

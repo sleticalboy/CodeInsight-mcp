@@ -10,6 +10,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 - `scripts/verify-release.sh` now reports a pending Homebrew tap PR when the
   shared tap formula has not been merged to `main` yet.
+- `scripts/extract-release-notes.sh` now supports compact summary output for
+  GitHub Release pages while keeping full changelog extraction as the default.
 - Updated MVP status docs after the verified `v0.1.10` release.
 
 ## [0.1.10] - 2026-07-11
