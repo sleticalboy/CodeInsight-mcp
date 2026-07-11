@@ -2584,6 +2584,7 @@ fn cli_resolves_go_module_imports() {
             .any(|dependency| {
                 dependency["target"] == "github.com/example/codeinsight/internal/config"
                     && dependency["resolved_file"] == "internal/config/config.go"
+                    && dependency["local_alias"] == "cfg"
             })
     );
     assert!(
@@ -2637,7 +2638,7 @@ fn cli_resolves_go_module_imports() {
         call["callee"] == "auth.Login" && call["callee_file"] == "internal/auth/service.go"
     }));
     assert!(callees.as_array().unwrap().iter().any(|call| {
-        call["callee"] == "config.Load" && call["callee_file"] == "internal/config/config.go"
+        call["callee"] == "cfg.Load" && call["callee_file"] == "internal/config/config.go"
     }));
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "metrics.Track" && call["callee_file"] == "internal/metrics/metrics.go"
@@ -6198,12 +6199,12 @@ import (
 
   "github.com/acme/remote"
   "github.com/example/codeinsight/internal/auth"
-  "github.com/example/codeinsight/internal/config"
+  cfg "github.com/example/codeinsight/internal/config"
   "github.com/example/codeinsight/internal/metrics"
 )
 
 func main() {
-  fmt.Println(remote.Name, auth.Login(), config.Load(), metrics.Track())
+  fmt.Println(remote.Name, auth.Login(), cfg.Load(), metrics.Track())
 }
 "#,
     );
