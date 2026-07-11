@@ -10,6 +10,7 @@ release documents for CodeInsight.
 - [CLI usage](cli-usage.md)
 - [MCP tools](mcp-tools.md)
 - [MCP client configuration](mcp-client-config.md)
+- [Client workflow](client-workflow.md)
 - [Known limitations](known-limitations.md)
 
 ## Product And Planning
@@ -21,6 +22,7 @@ release documents for CodeInsight.
 ## Tool Contracts
 
 - [First-read workflow](first-read-workflow.md)
+- [Client workflow](client-workflow.md)
 - [Recommendation contract](recommendation-contract.md)
 - [Navigation tools](navigation-tools.md)
 - [Impact analysis](impact-analysis.md)

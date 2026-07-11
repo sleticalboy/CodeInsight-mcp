@@ -15,6 +15,8 @@ Recommended MCP first-read flow:
    entrypoint.
 
 For client setup snippets, see [MCP client configuration](mcp-client-config.md).
+For a full client-side read, continue, and edit-preflight sequence, see
+[Client workflow](client-workflow.md).
 For recommendation fields and priorities, see
 [Recommendation contract](recommendation-contract.md).
 

@@ -61,12 +61,15 @@ Recommended MCP first-read flow:
    entrypoint.
 
 For the full response contract, see [First-read workflow](first-read-workflow.md).
+For an end-to-end client consumption flow, see
+[Client workflow](client-workflow.md).
 For recommendation priorities and client sorting guidance, see
 [Recommendation contract](recommendation-contract.md).
 
 ## Topic Contracts
 
 - Overview and context-pack ranking: [First-read workflow](first-read-workflow.md)
+- End-to-end client flow: [Client workflow](client-workflow.md)
 - `recommended_next_tools` and `reading_plan[].suggested_tool`:
   [Recommendation contract](recommendation-contract.md)
 - `find_references`, `callers`, and `callees`:

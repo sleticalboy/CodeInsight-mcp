@@ -54,11 +54,9 @@ MVP workflow is now implemented end to end.
 
 ## Next
 
-- Turn the first-read, continuation, and impact-analysis flow into a clearer
-  client consumption guide with concrete examples.
+- Add broader real-repository benchmark evidence for token/context reduction.
 - Keep tightening JavaScript package-manager and bundler-specific edge cases
   where they improve local code navigation.
-- Add broader real-repository benchmark evidence for token/context reduction.
 - Continue tightening README/docs routing so the README stays entry-level while
   detailed operational guidance stays in `docs/`.
 

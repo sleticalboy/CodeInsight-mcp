@@ -22,6 +22,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   single next action without interpreting budget counters directly.
 - MCP stdio smoke coverage now validates `context_pack` budget metadata and
   omitted-candidate follow-up calls.
+- Added a client workflow guide that connects overview, context packs, reading
+  plans, continuation follow-ups, and impact analysis.
 - Updated MVP status docs after the verified `v0.1.10` release.
 
 ## [0.1.10] - 2026-07-11
