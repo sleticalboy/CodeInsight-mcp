@@ -48,6 +48,7 @@ Print local dependencies:
 
 ```bash
 codeinsight dependency-graph /path/to/repo --limit 50
+codeinsight dependency-graph /path/to/repo --file src/service.cpp --language cpp --limit 50
 ```
 
 Find references:

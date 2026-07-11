@@ -2060,6 +2060,76 @@ fn cli_resolves_c_like_local_includes() {
                 dependency["target"] == "<stdio.h>" && dependency["resolved_file"].is_null()
             })
     );
+
+    let c_deps = run_json([
+        "dependency-graph",
+        fixture.path().to_str().unwrap(),
+        "--language",
+        "c",
+        "--limit",
+        "20",
+    ]);
+    assert!(
+        c_deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| dependency["language"] == "c")
+    );
+    assert!(
+        c_deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| dependency["target"] == "auth.h")
+    );
+    assert!(
+        c_deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| dependency["target"] != "include/shared.hpp")
+    );
+
+    let source_file_deps = run_json([
+        "dependency-graph",
+        fixture.path().to_str().unwrap(),
+        "--file",
+        "src/service.cpp",
+        "--limit",
+        "20",
+    ]);
+    assert_eq!(source_file_deps["edges"].as_u64(), Some(1));
+    assert_eq!(
+        source_file_deps["dependencies"][0]["source_file"],
+        "src/service.cpp"
+    );
+    assert_eq!(
+        source_file_deps["dependencies"][0]["resolved_file"],
+        "include/shared.hpp"
+    );
+
+    let target_file_deps = run_json([
+        "dependency-graph",
+        fixture.path().to_str().unwrap(),
+        "--file",
+        "include/shared.hpp",
+        "--language",
+        "c++",
+        "--limit",
+        "20",
+    ]);
+    assert_eq!(target_file_deps["edges"].as_u64(), Some(2));
+    assert!(
+        target_file_deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["language"] == "cpp"
+                    && dependency["resolved_file"] == "include/shared.hpp"
+            })
+    );
 }
 
 #[test]

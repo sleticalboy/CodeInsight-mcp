@@ -84,6 +84,10 @@ pub struct OutlineArgs {
 #[derive(Debug, Args)]
 pub struct DependencyGraphArgs {
     pub root: PathBuf,
+    #[arg(long = "file")]
+    pub files: Vec<String>,
+    #[arg(long = "language")]
+    pub languages: Vec<String>,
     #[arg(long, default_value_t = 500)]
     pub limit: usize,
 }

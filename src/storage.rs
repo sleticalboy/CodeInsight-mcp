@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::{Context, Result, bail};
-use rusqlite::{Connection, Row, params, params_from_iter};
+use rusqlite::{Connection, Row, params, params_from_iter, types::Value as SqlValue};
 use serde_json::json;
 
 use crate::model::{
@@ -946,16 +946,27 @@ impl Store {
         Ok(symbols)
     }
 
-    pub fn dependency_graph(&self, root: &Path, limit: usize) -> Result<DependencyGraph> {
-        let mut stmt = self.conn.prepare(
+    pub fn dependency_graph(
+        &self,
+        root: &Path,
+        limit: usize,
+        files: &[String],
+        languages: &[String],
+    ) -> Result<DependencyGraph> {
+        let mut query_params = Vec::new();
+        let where_clause = dependency_graph_filter_clause(files, languages, &mut query_params);
+        let query = format!(
             "select f.path, d.target, d.resolved_file, d.local_alias, d.imported_symbol, d.kind, d.language, d.line
              from dependencies d
              join files f on f.id = d.source_file_id
+             {where_clause}
              order by f.path, d.line
-             limit ?1",
-        )?;
+             limit ?"
+        );
+        query_params.push(SqlValue::Integer(limit as i64));
+        let mut stmt = self.conn.prepare(&query)?;
         let dependencies = stmt
-            .query_map(params![limit as i64], |row| {
+            .query_map(params_from_iter(query_params), |row| {
                 let language: String = row.get(6)?;
                 Ok(Dependency {
                     source_file: row.get(0)?,
@@ -970,20 +981,60 @@ impl Store {
             })?
             .collect::<rusqlite::Result<Vec<_>>>()?;
 
-        let nodes = self.conn.query_row(
-            "select count(*) from (
+        let (nodes, edges) = if files.is_empty() && languages.is_empty() {
+            let nodes = self.conn.query_row(
+                "select count(*) from (
                     select path from files
                     union
                     select target from dependencies
                  )",
-            [],
-            |row| row.get::<_, i64>(0),
-        )? as usize;
-        let edges = self
-            .conn
-            .query_row("select count(*) from dependencies", [], |row| {
-                row.get::<_, i64>(0)
-            })? as usize;
+                [],
+                |row| row.get::<_, i64>(0),
+            )? as usize;
+            let edges = self
+                .conn
+                .query_row("select count(*) from dependencies", [], |row| {
+                    row.get::<_, i64>(0)
+                })? as usize;
+            (nodes, edges)
+        } else {
+            let mut edge_params = Vec::new();
+            let edge_where = dependency_graph_filter_clause(files, languages, &mut edge_params);
+            let edge_query = format!(
+                "select count(*)
+                 from dependencies d
+                 join files f on f.id = d.source_file_id
+                 {edge_where}"
+            );
+            let edges = self
+                .conn
+                .query_row(&edge_query, params_from_iter(edge_params), |row| {
+                    row.get::<_, i64>(0)
+                })? as usize;
+
+            let mut node_params = Vec::new();
+            let source_where = dependency_graph_filter_clause(files, languages, &mut node_params);
+            let target_where = dependency_graph_filter_clause(files, languages, &mut node_params);
+            let node_query = format!(
+                "select count(*) from (
+                    select f.path
+                    from dependencies d
+                    join files f on f.id = d.source_file_id
+                    {source_where}
+                    union
+                    select d.target
+                    from dependencies d
+                    join files f on f.id = d.source_file_id
+                    {target_where}
+                 )"
+            );
+            let nodes = self
+                .conn
+                .query_row(&node_query, params_from_iter(node_params), |row| {
+                    row.get::<_, i64>(0)
+                })? as usize;
+            (nodes, edges)
+        };
 
         Ok(DependencyGraph {
             root: root.display().to_string(),
@@ -1741,6 +1792,33 @@ fn parse_language(language: &str) -> Language {
     }
 }
 
+fn dependency_graph_filter_clause(
+    files: &[String],
+    languages: &[String],
+    params: &mut Vec<SqlValue>,
+) -> String {
+    let mut conditions = Vec::new();
+    if !files.is_empty() {
+        let placeholders = vec!["?"; files.len()].join(", ");
+        conditions.push(format!(
+            "(f.path in ({placeholders}) or d.resolved_file in ({placeholders}))"
+        ));
+        params.extend(files.iter().cloned().map(SqlValue::Text));
+        params.extend(files.iter().cloned().map(SqlValue::Text));
+    }
+    if !languages.is_empty() {
+        let placeholders = vec!["?"; languages.len()].join(", ");
+        conditions.push(format!("d.language in ({placeholders})"));
+        params.extend(languages.iter().cloned().map(SqlValue::Text));
+    }
+
+    if conditions.is_empty() {
+        String::new()
+    } else {
+        format!("where {}", conditions.join(" and "))
+    }
+}
+
 fn overview_summary(
     indexed_files: usize,
     total_lines: usize,
@@ -2136,7 +2214,7 @@ mod tests {
             }],
         )?;
 
-        let graph = store.dependency_graph(temp.path(), 10)?;
+        let graph = store.dependency_graph(temp.path(), 10, &[], &[])?;
         assert_eq!(graph.dependencies.len(), 1);
         assert_eq!(
             graph.dependencies[0].resolved_file.as_deref(),

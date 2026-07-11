@@ -103,8 +103,12 @@ fn handle_tool_call(params: Value) -> Result<Value> {
         }
         "dependency_graph" => {
             let root = required_path(&arguments, "root")?;
+            let files = optional_string_array(&arguments, "files")?;
+            let languages = optional_string_array(&arguments, "languages")?;
             let limit = optional_positive_usize(&arguments, "limit", 500)?;
-            serde_json::to_value(tools::dependency_graph_value(root, limit)?)?
+            serde_json::to_value(tools::dependency_graph_value(
+                root, files, languages, limit,
+            )?)?
         }
         "impact_analysis" => {
             let root = required_path(&arguments, "root")?;
@@ -260,6 +264,14 @@ fn tool_definitions() -> Value {
                 "type": "object",
                 "properties": {
                     "root": {"type": "string"},
+                    "files": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    },
+                    "languages": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    },
                     "limit": {"type": "integer", "minimum": 1}
                 },
                 "required": ["root"]
@@ -947,6 +959,54 @@ def helper():
         assert_eq!(
             callees_result["structuredContent"][0]["callee"].as_str(),
             Some("helper")
+        );
+    }
+
+    #[test]
+    fn dependency_graph_filters_tool_arguments() {
+        let dir = TempDir::new().unwrap();
+        std::fs::create_dir_all(dir.path().join("src")).unwrap();
+        std::fs::write(
+            dir.path().join("src/auth.c"),
+            r#"
+#include "auth.h"
+#include <stdio.h>
+
+int login(void) {
+    return AUTH_OK;
+}
+"#,
+        )
+        .unwrap();
+        std::fs::write(dir.path().join("src/auth.h"), "#define AUTH_OK 1\n").unwrap();
+
+        handle_tool_call(json!({
+            "name": "index_project",
+            "arguments": {
+                "root": dir.path(),
+                "force": true
+            }
+        }))
+        .unwrap();
+
+        let graph_result = handle_tool_call(json!({
+            "name": "dependency_graph",
+            "arguments": {
+                "root": dir.path(),
+                "files": ["src/auth.h"],
+                "languages": ["c"],
+                "limit": 10
+            }
+        }))
+        .unwrap();
+        assert_eq!(graph_result["structuredContent"]["edges"].as_u64(), Some(1));
+        assert_eq!(
+            graph_result["structuredContent"]["dependencies"][0]["source_file"].as_str(),
+            Some("src/auth.c")
+        );
+        assert_eq!(
+            graph_result["structuredContent"]["dependencies"][0]["resolved_file"].as_str(),
+            Some("src/auth.h")
         );
     }
 

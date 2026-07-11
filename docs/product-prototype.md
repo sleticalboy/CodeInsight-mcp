@@ -268,6 +268,8 @@ MVP 不追求“支持最多语言”，而追求“核心场景闭环可用”�
 ```json
 {
   "root": "/absolute/path/to/repo",
+  "files": ["src/service.cpp"],
+  "languages": ["cpp"],
   "limit": 500
 }
 ```

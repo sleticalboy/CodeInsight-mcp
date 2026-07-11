@@ -95,8 +95,13 @@ pub fn file_outline(path: PathBuf) -> Result<()> {
     print_json(&symbols)
 }
 
-pub fn dependency_graph(root: PathBuf, limit: usize) -> Result<()> {
-    let graph = dependency_graph_value(root, limit)?;
+pub fn dependency_graph(
+    root: PathBuf,
+    files: Vec<String>,
+    languages: Vec<String>,
+    limit: usize,
+) -> Result<()> {
+    let graph = dependency_graph_value(root, files, languages, limit)?;
     print_json(&graph)
 }
 
@@ -247,10 +252,20 @@ pub fn file_outline_value(path: PathBuf) -> Result<Vec<Symbol>> {
     index::outline_file(&path)
 }
 
-pub fn dependency_graph_value(root: PathBuf, limit: usize) -> Result<DependencyGraph> {
+pub fn dependency_graph_value(
+    root: PathBuf,
+    files: Vec<String>,
+    languages: Vec<String>,
+    limit: usize,
+) -> Result<DependencyGraph> {
     let root = root.canonicalize()?;
+    let files = files
+        .iter()
+        .map(|file| normalize_seed_file(&root, file))
+        .collect::<Result<Vec<_>>>()?;
+    let languages = normalize_dependency_languages(&languages)?;
     let store = Store::open(&root)?;
-    store.dependency_graph(&root, limit)
+    store.dependency_graph(&root, limit, &files, &languages)
 }
 
 pub fn impact_analysis_value(
@@ -2680,6 +2695,46 @@ fn normalize_seed_file(root: &Path, file: &str) -> Result<String> {
         .strip_prefix(root)
         .with_context(|| format!("seed file is outside project root: {file}"))?;
     Ok(relative.to_string_lossy().replace('\\', "/"))
+}
+
+fn normalize_dependency_languages(languages: &[String]) -> Result<Vec<String>> {
+    languages
+        .iter()
+        .map(|language| normalize_dependency_language(language))
+        .collect()
+}
+
+fn normalize_dependency_language(language: &str) -> Result<String> {
+    let normalized = language.trim().to_ascii_lowercase();
+    let normalized = match normalized.as_str() {
+        "js" => "javascript",
+        "ts" => "typescript",
+        "c++" => "cpp",
+        "c#" => "csharp",
+        value => value,
+    };
+    let allowed = [
+        Language::C,
+        Language::Cpp,
+        Language::CSharp,
+        Language::Go,
+        Language::Java,
+        Language::JavaScript,
+        Language::Php,
+        Language::Python,
+        Language::Ruby,
+        Language::Rust,
+        Language::TypeScript,
+        Language::Tsx,
+    ];
+    if allowed
+        .iter()
+        .any(|language| language.as_str() == normalized)
+    {
+        Ok(normalized.to_string())
+    } else {
+        bail!("unsupported dependency graph language filter: {language}")
+    }
 }
 
 #[cfg(test)]
