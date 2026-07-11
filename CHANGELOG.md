@@ -75,6 +75,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - Ruby `callees` output now preserves member call names such as `Audit.record` and can attach `callee_file` hints for resolved local `require_relative` imports.
 - Ruby dependency graph resolution now resolves `require_relative` imports to neighboring local `.rb` files while leaving gem-style `require` imports unresolved.
 - C/C++ local includes can now provide `callee_file` hints for calls to indexed inline/header function definitions such as `shared_value`.
+- C/C++ symbol extraction now indexes simple function prototype declarations, enabling local include `callee_file` hints for header-declared calls such as `declared_value`.
 - C/C++ dependency graph resolution now resolves quoted local includes from the source file directory, explicit relative paths, and obvious repository-root subpaths while leaving system includes unresolved.
 - PHP dependency graph resolution now resolves obvious same-repository namespace `use` imports under common roots such as `src`, including `App\` PSR-4 style paths and function imports when a matching file exists.
 - Java dependency graph resolution now resolves obvious same-repository class imports under common source roots such as `src/main/java`, including static member imports that can fall back to the containing class file.

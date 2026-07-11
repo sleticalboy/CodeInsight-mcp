@@ -173,7 +173,7 @@ Currently supported JavaScript/TypeScript imported target hints:
 - C# same-repository alias and static `using` directives can provide `callee_file` hints for qualified calls such as `Audit.Record()` and static imported calls such as `ClampName()` when the resolved local file contains the called symbol.
 - PHP same-repository class, grouped class, function, and grouped function `use` imports can provide `callee_file` hints for scoped calls such as `AuditLog::record()` and imported function calls such as `audit_login()` when the resolved local file contains the called symbol.
 - Ruby `require_relative` imports, including parent-relative paths such as `../support/audit.rb`, can provide `callee_file` hints for member calls such as `Audit.record()` when the resolved local file contains the called member symbol.
-- C/C++ quoted local includes can provide `callee_file` hints for calls such as `shared_value()` when the resolved header contains an indexed function definition such as an inline helper; standalone declarations are not indexed as call targets yet.
+- C/C++ quoted local includes can provide `callee_file` hints for calls such as `shared_value()` or `declared_value()` when the resolved header contains an indexed inline function definition or simple function prototype declaration.
 
 Limitations:
 

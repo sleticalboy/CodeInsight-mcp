@@ -2571,6 +2571,9 @@ fn cli_resolves_c_like_local_includes() {
     assert!(client_callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "shared_value" && call["callee_file"] == "include/shared.hpp"
     }));
+    assert!(client_callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "declared_value" && call["callee_file"] == "include/shared.hpp"
+    }));
 }
 
 #[test]
@@ -6312,7 +6315,7 @@ int service(void) {
 #include "../include/shared.hpp"
 
 int client(void) {
-  return shared_value();
+  return shared_value() + declared_value();
 }
 "#,
     );
@@ -6323,6 +6326,8 @@ int client(void) {
 inline int shared_value() {
   return 1;
 }
+
+int declared_value(void);
 "#,
     );
     dir

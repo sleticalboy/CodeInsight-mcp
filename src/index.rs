@@ -4312,6 +4312,9 @@ fn c_like_symbol(node: Node<'_>, source: &[u8]) -> Option<(String, SymbolKind)> 
         "function_definition" => {
             find_c_function_name(node, source).map(|name| (name, SymbolKind::Function))
         }
+        "declaration" => {
+            find_c_function_declaration_name(node, source).map(|name| (name, SymbolKind::Function))
+        }
         "struct_specifier" | "union_specifier" | "class_specifier" => {
             child_text(node, "name", source).map(|name| (name, SymbolKind::Struct))
         }
@@ -4919,6 +4922,19 @@ fn find_ruby_constant_assignment(node: Node<'_>, source: &[u8]) -> Option<(Strin
 
 fn find_c_function_name(node: Node<'_>, source: &[u8]) -> Option<String> {
     find_c_declarator_identifier(node.child_by_field_name("declarator")?, source)
+}
+
+fn find_c_function_declaration_name(node: Node<'_>, source: &[u8]) -> Option<String> {
+    let declarator = node.child_by_field_name("declarator")?;
+    if declarator.kind() != "function_declarator" {
+        return None;
+    }
+
+    declarator
+        .child_by_field_name("declarator")
+        .filter(|child| matches!(child.kind(), "identifier" | "field_identifier"))
+        .and_then(|child| child.utf8_text(source).ok())
+        .map(ToOwned::to_owned)
 }
 
 fn find_c_typedef_name(node: Node<'_>, source: &[u8]) -> Option<(String, SymbolKind)> {
@@ -5707,8 +5723,10 @@ int helper(int value) {
   return value + 1;
 }
 
+int declared_helper(int value);
+
 int login(AuthService *service) {
-  return helper(service->count);
+  return helper(declared_helper(service->count));
 }
 "#;
         let symbols = extract_symbols(source, Language::C, "auth.c").unwrap();
@@ -5719,6 +5737,7 @@ int login(AuthService *service) {
         assert!(names.contains(&"AUTH_MAX"));
         assert!(names.contains(&"AuthService"));
         assert!(names.contains(&"helper"));
+        assert!(names.contains(&"declared_helper"));
         assert!(names.contains(&"login"));
 
         let deps = extract_dependencies(source, Language::C, "auth.c").unwrap();
