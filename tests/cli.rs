@@ -2093,7 +2093,7 @@ fn cli_resolves_package_subpath_metadata_fallbacks() {
         "dependency-graph",
         fixture.path().to_str().unwrap(),
         "--limit",
-        "20",
+        "30",
     ]);
     assert!(
         deps["dependencies"]
@@ -2125,6 +2125,39 @@ fn cli_resolves_package_subpath_metadata_fallbacks() {
                 dependency["target"] == "extensionless-export-lib/feature"
                     && dependency["resolved_file"]
                         == "node_modules/extensionless-export-lib/dist/feature.js"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "wildcard-precedence-lib/feature/special"
+                    && dependency["resolved_file"]
+                        == "node_modules/wildcard-precedence-lib/dist/special.js"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "wildcard-precedence-lib/feature/special/button"
+                    && dependency["resolved_file"]
+                        == "node_modules/wildcard-precedence-lib/dist/special/button.js"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "wildcard-precedence-lib/feature/special"
+                    || dependency["resolved_file"]
+                        != "node_modules/wildcard-precedence-lib/dist/wildcard/special.js"
             })
     );
     assert!(
@@ -5541,6 +5574,8 @@ fn package_subpath_fallback_fixture_project() -> TempDir {
 import { fileRender } from "subpath-fallback-lib/file";
 import { indexRender } from "subpath-fallback-lib/dir";
 import { extensionlessRender } from "extensionless-export-lib/feature";
+import { specialRender } from "wildcard-precedence-lib/feature/special";
+import { specialButtonRender } from "wildcard-precedence-lib/feature/special/button";
 import { missingRender } from "subpath-fallback-lib/missing";
 import { disabledRender } from "subpath-disabled-lib/disabled";
 
@@ -5548,6 +5583,8 @@ export function packageSubpathFallbackMain() {
   fileRender();
   indexRender();
   extensionlessRender();
+  specialRender();
+  specialButtonRender();
   missingRender();
   disabledRender();
 }
@@ -5598,6 +5635,47 @@ export function indexRender() {
         r#"
 export function extensionlessRender() {
   return "extensionless";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/wildcard-precedence-lib/package.json",
+        r#"
+{
+  "name": "wildcard-precedence-lib",
+  "exports": {
+    "./feature/*": "./dist/wildcard/*.js",
+    "./feature/special": "./dist/special.js",
+    "./feature/special/*": "./dist/special/*.js"
+  }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/wildcard-precedence-lib/dist/special.js",
+        r#"
+export function specialRender() {
+  return "special";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/wildcard-precedence-lib/dist/special/button.js",
+        r#"
+export function specialButtonRender() {
+  return "special-button";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/wildcard-precedence-lib/dist/wildcard/special.js",
+        r#"
+export function specialRender() {
+  return "wildcard-special";
 }
 "#,
     );

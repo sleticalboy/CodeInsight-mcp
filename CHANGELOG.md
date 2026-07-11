@@ -28,6 +28,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   continuation status metrics, and the smoke/large reports were refreshed.
 - Added CLI coverage and limitation docs for dependency package `exports`
   mappings that point at extensionless local files.
+- Fixed package `exports` and `imports` subpath matching so exact entries and
+  more specific wildcard patterns take precedence over broader wildcard entries.
 - Updated MVP status docs after the verified `v0.1.10` release.
 
 ## [0.1.10] - 2026-07-11

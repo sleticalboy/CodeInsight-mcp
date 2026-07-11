@@ -3612,23 +3612,16 @@ fn package_export_mappings(
         );
     }
 
-    let Some(entries) = exports.as_object() else {
-        return None;
-    };
-    for (pattern, value) in entries {
-        let Some(wildcards) = path_pattern_captures(pattern, subpath) else {
-            continue;
-        };
-        return Some(
-            package_export_targets(value, package_conditions)
-                .unwrap_or_default()
-                .into_iter()
-                .filter_map(package_local_target_path)
-                .filter_map(|target| apply_path_mapping(&target.to_string_lossy(), &wildcards))
-                .collect(),
-        );
-    }
-    None
+    let entries = exports.as_object()?;
+    let (value, wildcards) = package_subpath_mapping(entries, subpath)?;
+    Some(
+        package_export_targets(value, package_conditions)
+            .unwrap_or_default()
+            .into_iter()
+            .filter_map(package_local_target_path)
+            .filter_map(|target| apply_path_mapping(&target.to_string_lossy(), &wildcards))
+            .collect(),
+    )
 }
 
 fn package_exports_uses_subpath_keys(exports: &Value) -> bool {
@@ -3643,23 +3636,41 @@ fn package_import_mappings(
     target: &str,
     package_conditions: &[String],
 ) -> Option<Vec<PathBuf>> {
-    let Some(entries) = imports.as_object() else {
-        return None;
-    };
-    for (pattern, value) in entries {
-        let Some(wildcards) = path_pattern_captures(pattern, target) else {
-            continue;
-        };
-        return Some(
-            package_export_targets(value, package_conditions)
-                .unwrap_or_default()
-                .into_iter()
-                .filter_map(package_local_target_path)
-                .filter_map(|target| apply_path_mapping(&target.to_string_lossy(), &wildcards))
-                .collect(),
-        );
+    let entries = imports.as_object()?;
+    let (value, wildcards) = package_subpath_mapping(entries, target)?;
+    Some(
+        package_export_targets(value, package_conditions)
+            .unwrap_or_default()
+            .into_iter()
+            .filter_map(package_local_target_path)
+            .filter_map(|target| apply_path_mapping(&target.to_string_lossy(), &wildcards))
+            .collect(),
+    )
+}
+
+fn package_subpath_mapping<'a>(
+    entries: &'a serde_json::Map<String, Value>,
+    target: &str,
+) -> Option<(&'a Value, Vec<String>)> {
+    if let Some(value) = entries.get(target) {
+        return Some((value, Vec::new()));
     }
-    None
+
+    entries
+        .iter()
+        .filter(|(pattern, _)| pattern.contains('*'))
+        .filter_map(|(pattern, value)| {
+            let wildcards = path_pattern_captures(pattern, target)?;
+            Some((pattern, value, wildcards))
+        })
+        .max_by(|(left, _, _), (right, _, _)| {
+            path_pattern_specificity(left).cmp(&path_pattern_specificity(right))
+        })
+        .map(|(_, value, wildcards)| (value, wildcards))
+}
+
+fn path_pattern_specificity(pattern: &str) -> (usize, usize) {
+    (pattern.find('*').unwrap_or(pattern.len()), pattern.len())
 }
 
 fn package_local_target_path(target: String) -> Option<PathBuf> {
@@ -5066,6 +5077,50 @@ catalogs:
         assert_eq!(
             package_export_mappings(&exports, ".", &conditions),
             Some(vec![PathBuf::from("./dist/index.d.ts")])
+        );
+    }
+
+    #[test]
+    fn prefers_exact_package_export_mapping_before_wildcards() {
+        let exports = serde_json::json!({
+            "./feature/*": "./dist/wildcard/*.js",
+            "./feature/special": "./dist/special.js",
+            "./feature/special/*": "./dist/special/*.js"
+        });
+
+        assert_eq!(
+            package_export_mappings(&exports, "./feature/special", &default_package_conditions()),
+            Some(vec![PathBuf::from("./dist/special.js")])
+        );
+        assert_eq!(
+            package_export_mappings(
+                &exports,
+                "./feature/special/button",
+                &default_package_conditions()
+            ),
+            Some(vec![PathBuf::from("./dist/special/button.js")])
+        );
+    }
+
+    #[test]
+    fn prefers_exact_package_import_mapping_before_wildcards() {
+        let imports = serde_json::json!({
+            "#feature/*": "./src/wildcard/*.ts",
+            "#feature/special": "./src/special.ts",
+            "#feature/special/*": "./src/special/*.ts"
+        });
+
+        assert_eq!(
+            package_import_mappings(&imports, "#feature/special", &default_package_conditions()),
+            Some(vec![PathBuf::from("./src/special.ts")])
+        );
+        assert_eq!(
+            package_import_mappings(
+                &imports,
+                "#feature/special/button",
+                &default_package_conditions()
+            ),
+            Some(vec![PathBuf::from("./src/special/button.ts")])
         );
     }
 
