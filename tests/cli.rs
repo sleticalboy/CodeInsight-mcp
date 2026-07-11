@@ -372,6 +372,7 @@ fn cli_indexes_and_queries_fixture_project() {
     assert!(targets.contains(&"browser-object-lib/object"));
     assert!(targets.contains(&"browser-object-lib/disabled"));
     assert!(targets.contains(&"legacy-lib"));
+    assert!(targets.contains(&"root-array-lib"));
     assert!(targets.contains(&"metadata-invalid-lib"));
     assert!(targets.contains(&"legacy-lib/plugin"));
     assert!(targets.contains(&"workspace-ui/button"));
@@ -419,6 +420,26 @@ fn cli_indexes_and_queries_fixture_project() {
             .any(|dependency| {
                 dependency["target"] == "legacy-lib"
                     && dependency["resolved_file"] == "node_modules/legacy-lib/dist/index.js"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "root-array-lib"
+                    && dependency["resolved_file"] == "node_modules/root-array-lib/dist/index.js"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "root-array-lib"
+                    || dependency["resolved_file"] != "node_modules/root-array-lib/external-root.js"
             })
     );
     assert!(
@@ -4652,6 +4673,7 @@ import { browserObjectRender } from "browser-object-lib/object";
 import { browserDisabledRender } from "browser-object-lib/disabled";
 import { legacyRender } from "legacy-lib";
 import { legacyPluginRender } from "legacy-lib/plugin";
+import { rootArrayRender } from "root-array-lib";
 import { workspaceButton } from "workspace-ui/button";
 import { logInternal } from "#internal/logger";
 import { specialInternalRender } from "#internal/special";
@@ -4770,6 +4792,7 @@ export function dependencyPackageMain() {
   browserDisabledRender();
   legacyRender();
   legacyPluginRender();
+  rootArrayRender();
 }
 
 export function workspacePackageMain() {
@@ -4867,6 +4890,39 @@ export function callGraphEntry() {
         r#"
 export function workspaceButton() {
   return "workspace";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/root-array-lib/package.json",
+        r#"
+{
+  "name": "root-array-lib",
+  "exports": [
+    null,
+    "external-root",
+    "./dist/missing-index.js",
+    "./dist/index.js"
+  ]
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/root-array-lib/dist/index.js",
+        r#"
+export function rootArrayRender() {
+  return "root-array";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "node_modules/root-array-lib/external-root.js",
+        r#"
+export function rootArrayRender() {
+  return "external-root";
 }
 "#,
     );

@@ -36,6 +36,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   wildcard precedence in dependency and callee resolution.
 - Added CLI coverage for workspace protocol package `exports` exact and
   more-specific wildcard precedence.
+- Added CLI coverage for dependency package root `exports` array fallbacks that
+  skip disabled, external, and missing targets before resolving a local file.
 - Updated MVP status docs after the verified `v0.1.10` release.
 
 ## [0.1.10] - 2026-07-11
