@@ -63,6 +63,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - `context_pack.reading_plan[].suggested_tool` now scopes dependency follow-up recommendations to the selected context file.
 - Python `callees` output now preserves member call names such as `audit.record` and can attach `callee_file` hints when a resolved local `from ... import ...` dependency contains the called member symbol.
 - Python absolute `from ... import name as alias` imports are now covered for direct alias call `callee_file` hints such as `shared_ping`, including package `__init__.py` fallback when the member is defined in the package file.
+- Python parenthesized multi-line `from ... import (...)` declarations and imported submodule aliases are now covered for `callee_file` hints such as `shared_tools.pong`.
 - Python dependency graph resolution now expands `from ... import ...` member targets and resolves relative `from .` / `from ..` imports to nearby package `.py` files.
 - Rust `callees` output now preserves scoped call names such as `audit.record` and can attach `callee_file` hints when local `use crate::`, `use self::`, or `use super::` dependencies resolve to a file containing the called symbol.
 - Rust dependency graph resolution now resolves obvious local `crate::`, `self::`, and `super::` use paths to module files while leaving external crate imports unresolved.

@@ -6363,6 +6363,16 @@ pub fn run() {
             vec!["app.shared".to_string(), "app.shared.ping".to_string()]
         );
         assert_eq!(
+            python_import_targets(
+                "from app.shared import (\n  ping as shared_ping,\n  tools as shared_tools,\n)"
+            ),
+            vec![
+                "app.shared".to_string(),
+                "app.shared.ping".to_string(),
+                "app.shared.tools".to_string(),
+            ]
+        );
+        assert_eq!(
             python_target_candidates(PathBuf::from("app/controllers/support/audit")),
             vec![
                 PathBuf::from("app/controllers/support/audit"),

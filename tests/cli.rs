@@ -3144,8 +3144,8 @@ fn cli_resolves_python_relative_imports() {
     let fixture = python_relative_import_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 6);
-    assert_eq!(index["changed_files"], 6);
+    assert_eq!(index["indexed_files"], 7);
+    assert_eq!(index["changed_files"], 7);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -3201,6 +3201,28 @@ fn cli_resolves_python_relative_imports() {
             .unwrap()
             .iter()
             .any(|dependency| {
+                dependency["target"] == "app.shared.ping"
+                    && dependency["resolved_file"] == "app/shared/__init__.py"
+                    && dependency["local_alias"] == "shared_ping"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "app.shared.tools"
+                    && dependency["resolved_file"] == "app/shared/tools.py"
+                    && dependency["local_alias"] == "shared_tools"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
                 dependency["target"] == "requests" && dependency["resolved_file"].is_null()
             })
     );
@@ -3228,6 +3250,9 @@ fn cli_resolves_python_relative_imports() {
     }));
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "shared_ping" && call["callee_file"] == "app/shared/__init__.py"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "shared_tools.pong" && call["callee_file"] == "app/shared/tools.py"
     }));
 }
 
@@ -6824,7 +6849,10 @@ from . import support
 from .support import audit
 from ..core import service
 import app.shared as shared
-from app.shared import ping as shared_ping
+from app.shared import (
+    ping as shared_ping,
+    tools as shared_tools,
+)
 import requests
 
 
@@ -6834,6 +6862,7 @@ class AuthController:
         support.describe()
         shared.ping()
         shared_ping()
+        shared_tools.pong()
         return service.load(user_id)
 "#,
     );
@@ -6868,6 +6897,14 @@ def load(user_id):
         r#"
 def ping():
     return "pong"
+"#,
+    );
+    write_file(
+        &dir,
+        "app/shared/tools.py",
+        r#"
+def pong():
+    return "ping"
 "#,
     );
     dir
