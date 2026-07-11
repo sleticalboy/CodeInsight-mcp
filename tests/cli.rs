@@ -3892,6 +3892,62 @@ export function spec() {
 }
 
 #[test]
+fn cli_context_pack_scopes_dependency_suggested_tool() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        "app/main.py",
+        r#"
+from . import support
+
+class Entry:
+    pass
+"#,
+    );
+    write_file(
+        &fixture,
+        "app/support.py",
+        r#"
+def helper():
+    return "ok"
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 2);
+
+    let context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand local support dependency",
+        "--file",
+        "app/main.py",
+        "--token-budget",
+        "1800",
+    ]);
+    let dependency_step = context["reading_plan"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|step| step["file"] == "app/support.py")
+        .unwrap();
+    assert_eq!(dependency_step["next_action"], "inspect_dependency");
+    assert_eq!(
+        dependency_step["suggested_tool"]["tool"],
+        "dependency_graph"
+    );
+    assert_eq!(
+        dependency_step["suggested_tool"]["suggested_arguments"]["files"][0],
+        "app/support.py"
+    );
+    assert_eq!(
+        dependency_step["suggested_tool"]["suggested_arguments"]["limit"].as_u64(),
+        Some(100)
+    );
+}
+
+#[test]
 fn cli_context_pack_uses_imported_callee_file_hints() {
     let fixture = ruby_require_relative_fixture_project();
 

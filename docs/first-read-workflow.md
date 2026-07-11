@@ -105,6 +105,8 @@ The plan is derived from the final selected `files[]` after token-budget
 selection. It is a client hint, not a separate ranking pass. Suggested tool
 calls are heuristic routing hints and should be executed through MCP
 `tools/call`.
+Dependency follow-up suggestions include a file-scoped `dependency_graph`
+argument when a selected context file came from local dependency evidence.
 
 ## Semantic Status
 

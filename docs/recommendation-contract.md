@@ -66,7 +66,7 @@ Current mappings:
 
 - `inspect_seed_file` and `inspect_symbol_definition` -> `file_outline`
 - `follow_call_graph` and `inspect_references` -> `impact_analysis`
-- `inspect_dependency` -> `dependency_graph`
+- `inspect_dependency` -> file-scoped `dependency_graph`
 - `review_semantic_matches` -> file-scoped `context_pack`
 - fallback -> file-scoped `context_pack`
 

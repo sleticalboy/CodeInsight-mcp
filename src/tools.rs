@@ -1277,6 +1277,7 @@ fn context_reading_suggested_tool(root: &Path, file: &ContextFile) -> ContextSug
                 .to_string(),
             suggested_arguments: json!({
                 "root": root_arg,
+                "files": [file.file.clone()],
                 "limit": 100
             }),
         },

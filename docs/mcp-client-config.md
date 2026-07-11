@@ -211,6 +211,8 @@ controls or follow-up tool routing, and `question` is a short prompt that can be
 shown directly to an agent or user. `suggested_tool` contains an MCP-ready
 `tool`, `priority`, `reason`, and `suggested_arguments` object for the next
 local analysis call after reading that step.
+Dependency follow-ups are scoped with the current file in
+`suggested_arguments.files` when the suggested tool is `dependency_graph`.
 
 Known `source` values are `seed_file`, `symbol_definition`, `reference`,
 `call_graph`, `semantic`, and `dependency`.
