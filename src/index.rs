@@ -414,6 +414,9 @@ fn normalize_callee(raw: &str, language: Language) -> Option<String> {
     ) {
         return normalize_javascript_callee(raw);
     }
+    if language == Language::Python {
+        return normalize_python_callee(raw);
+    }
 
     normalize_simple_callee(raw)
 }
@@ -534,6 +537,32 @@ fn normalize_js_call_or_identifier_segment(segment: &str) -> Option<String> {
     } else {
         None
     }
+}
+
+fn normalize_python_callee(raw: &str) -> Option<String> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+
+    let parts = trimmed
+        .split('.')
+        .map(str::trim)
+        .map(|part| part.trim_end_matches('?'))
+        .filter(|part| !part.is_empty())
+        .map(|part| {
+            if let Some(open) = part.find('(') {
+                part[..open].trim()
+            } else {
+                part
+            }
+        })
+        .collect::<Vec<_>>();
+    if parts.is_empty() || parts.iter().any(|part| !is_js_identifier(part)) {
+        return normalize_simple_callee(trimmed);
+    }
+
+    Some(parts.join("."))
 }
 
 fn top_level_index(raw: &str, needle: char) -> Option<usize> {
@@ -778,16 +807,89 @@ fn python_dependencies(
     source_file: &str,
 ) -> Vec<Dependency> {
     match node.kind() {
-        "import_statement" | "import_from_statement" => text_dependencies(
-            node,
-            source,
-            language,
-            source_file,
-            "import",
-            python_import_targets,
-        ),
+        "import_statement" | "import_from_statement" => {
+            python_import_dependencies(node, source, language, source_file)
+        }
         _ => Vec::new(),
     }
+}
+
+fn python_import_dependencies(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+) -> Vec<Dependency> {
+    let text = node.utf8_text(source).unwrap_or_default();
+    let line = node.start_position().row + 1;
+    let trimmed = text.trim();
+    if let Some(rest) = trimmed.strip_prefix("from ") {
+        let Some((module, imports)) = rest.split_once(" import ") else {
+            return rest
+                .split_whitespace()
+                .next()
+                .map(|target| {
+                    vec![Dependency {
+                        source_file: source_file.to_string(),
+                        target: target.to_string(),
+                        resolved_file: None,
+                        local_alias: None,
+                        imported_symbol: None,
+                        kind: "import".to_string(),
+                        language,
+                        line,
+                    }]
+                })
+                .unwrap_or_default();
+        };
+        let module = module.trim();
+        if module.is_empty() {
+            return Vec::new();
+        }
+
+        let mut dependencies = vec![Dependency {
+            source_file: source_file.to_string(),
+            target: module.to_string(),
+            resolved_file: None,
+            local_alias: None,
+            imported_symbol: None,
+            kind: "import".to_string(),
+            language,
+            line,
+        }];
+        dependencies.extend(python_from_import_aliases(imports).into_iter().map(
+            |(imported_symbol, local_alias)| Dependency {
+                source_file: source_file.to_string(),
+                target: python_join_import_target(module, &imported_symbol),
+                resolved_file: None,
+                local_alias: Some(local_alias),
+                imported_symbol: Some(imported_symbol),
+                kind: "import".to_string(),
+                language,
+                line,
+            },
+        ));
+        return dependencies;
+    }
+
+    trimmed
+        .strip_prefix("import ")
+        .map(|rest| {
+            python_import_aliases(rest)
+                .into_iter()
+                .map(|(target, local_alias)| Dependency {
+                    source_file: source_file.to_string(),
+                    target,
+                    resolved_file: None,
+                    local_alias,
+                    imported_symbol: Some("*".to_string()),
+                    kind: "import".to_string(),
+                    language,
+                    line,
+                })
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 fn go_dependencies(
@@ -3416,6 +3518,7 @@ fn string_literal_targets(text: &str) -> Vec<String> {
     targets
 }
 
+#[cfg(test)]
 fn python_import_targets(text: &str) -> Vec<String> {
     let trimmed = text.trim();
     if let Some(rest) = trimmed.strip_prefix("from ") {
@@ -3432,7 +3535,7 @@ fn python_import_targets(text: &str) -> Vec<String> {
         }
 
         let mut targets = vec![module.to_string()];
-        for imported in python_from_import_names(imports) {
+        for (imported, _) in python_from_import_aliases(imports) {
             targets.push(python_join_import_target(module, &imported));
         }
         targets.sort();
@@ -3443,22 +3546,48 @@ fn python_import_targets(text: &str) -> Vec<String> {
     trimmed
         .strip_prefix("import ")
         .map(|rest| {
-            rest.split(',')
-                .filter_map(|part| part.split_whitespace().next())
-                .map(ToOwned::to_owned)
+            python_import_aliases(rest)
+                .into_iter()
+                .map(|(target, _)| target)
                 .collect()
         })
         .unwrap_or_default()
 }
 
-fn python_from_import_names(text: &str) -> Vec<String> {
+fn python_from_import_aliases(text: &str) -> Vec<(String, String)> {
     text.trim()
         .trim_matches(['(', ')'])
         .split(',')
-        .filter_map(|part| part.split_whitespace().next())
-        .filter(|part| !part.is_empty() && *part != "*")
-        .map(ToOwned::to_owned)
+        .filter_map(python_alias_pair)
+        .filter(|(imported, _)| imported != "*")
         .collect()
+}
+
+fn python_import_aliases(text: &str) -> Vec<(String, Option<String>)> {
+    text.split(',')
+        .filter_map(python_alias_pair)
+        .map(|(target, alias)| {
+            let local_alias = if alias == target { None } else { Some(alias) };
+            (target, local_alias)
+        })
+        .collect()
+}
+
+fn python_alias_pair(part: &str) -> Option<(String, String)> {
+    let mut tokens = part.split_whitespace();
+    let imported = tokens.next()?.trim();
+    if imported.is_empty() {
+        return None;
+    }
+    let alias = match (tokens.next(), tokens.next()) {
+        (Some("as"), Some(alias)) => alias.trim(),
+        _ => imported,
+    };
+    if alias.is_empty() {
+        return None;
+    }
+
+    Some((imported.to_string(), alias.to_string()))
 }
 
 fn python_join_import_target(module: &str, imported: &str) -> String {
@@ -5543,6 +5672,24 @@ def helper():
                 .iter()
                 .any(|call| { call.caller == "AuthService.login" && call.callee == "helper" })
         );
+    }
+
+    #[test]
+    fn normalizes_python_member_calls() {
+        let source = r#"
+class AuthController:
+    def login(self, user_id):
+        audit.record(user_id)
+        return service.load(user_id)
+"#;
+        let symbols = extract_symbols(source, Language::Python, "auth.py").unwrap();
+        let calls = extract_calls(source, Language::Python, "auth.py", &symbols);
+        let callees = calls
+            .iter()
+            .map(|call| call.callee.as_str())
+            .collect::<Vec<_>>();
+        assert!(callees.contains(&"audit.record"));
+        assert!(callees.contains(&"service.load"));
     }
 
     #[test]

@@ -1192,6 +1192,14 @@ impl Store {
                                 or s.qualified_name like '%.' || substr(c.callee, length(d.local_alias) + 2)
                               )
                                 then 0
+                            when d.local_alias is not null
+                              and c.callee like d.local_alias || '.%'
+                              and (
+                                s.name = substr(c.callee, length(d.local_alias) + 2)
+                                or s.qualified_name = substr(c.callee, length(d.local_alias) + 2)
+                                or s.qualified_name like '%.' || substr(c.callee, length(d.local_alias) + 2)
+                              )
+                                then 0
                             when c.callee like 'require.%'
                               and d.line = c.line
                               and (
@@ -1223,6 +1231,15 @@ impl Store {
                         )
                         or (
                             d.imported_symbol = '*'
+                            and c.callee like d.local_alias || '.%'
+                            and (
+                                s.name = substr(c.callee, length(d.local_alias) + 2)
+                                or s.qualified_name = substr(c.callee, length(d.local_alias) + 2)
+                                or s.qualified_name like '%.' || substr(c.callee, length(d.local_alias) + 2)
+                            )
+                        )
+                        or (
+                            d.local_alias is not null
                             and c.callee like d.local_alias || '.%'
                             and (
                                 s.name = substr(c.callee, length(d.local_alias) + 2)

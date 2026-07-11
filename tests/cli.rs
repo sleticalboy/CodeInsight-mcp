@@ -2349,6 +2349,21 @@ fn cli_resolves_python_relative_imports() {
                 dependency["target"] == "requests" && dependency["resolved_file"].is_null()
             })
     );
+
+    let callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "AuthController.login",
+        "--limit",
+        "10",
+    ]);
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "audit.record"
+            && call["callee_file"] == "app/controllers/support/audit.py"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "service.load" && call["callee_file"] == "app/core/service.py"
+    }));
 }
 
 #[test]

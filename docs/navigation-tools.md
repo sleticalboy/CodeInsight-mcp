@@ -77,6 +77,9 @@ Current behavior:
   local import, alias, namespace import, default import, re-export, CommonJS
   require, dynamic import alias, `baseUrl`/`paths` import, or local package
   export resolves to an indexed file with a matching symbol.
+- Python member calls such as `audit.record()` can include `callee_file` when a
+  local `from .` / `from ..` import resolves to an indexed file with a matching
+  symbol.
 
 ## Boundaries
 
