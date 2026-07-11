@@ -17,8 +17,8 @@ use crate::{
     embedding, index,
     language::detect_language,
     model::{
-        CallEdge, ConfigInitReport, ConfigStatusReport, ContextBudget, ContextFile,
-        ContextOmittedCandidate, ContextPack, ContextRange, ContextReadingRange,
+        CallEdge, ConfigInitReport, ConfigStatusReport, ContextBudget, ContextContinuationSummary,
+        ContextFile, ContextOmittedCandidate, ContextPack, ContextRange, ContextReadingRange,
         ContextReadingStep, ContextSeed, ContextSemanticStatus, ContextSuggestedTool, Dependency,
         DependencyGraph, EmbeddingProviderStatus, ImpactAnalysisReport, ImpactCounts, ImpactFile,
         ImpactPath, IndexError, Language, OllamaEmbeddingStatus, OpenAiEmbeddingStatus,
@@ -1222,6 +1222,7 @@ pub fn context_pack_value(
             selected_ranges,
         ),
     };
+    let continuation_summary = context_continuation_summary(&budget_summary, &omitted_candidates);
 
     Ok(ContextPack {
         task,
@@ -1231,6 +1232,7 @@ pub fn context_pack_value(
         reading_plan,
         semantic_status: semantic_status.status,
         budget: budget_summary,
+        continuation_summary,
         omitted_candidates,
         files,
         symbols,
@@ -1278,6 +1280,77 @@ fn context_omitted_candidates(
         .take(limit)
         .filter_map(|candidate| context_omitted_candidate(root, task, candidate))
         .collect()
+}
+
+fn context_continuation_summary(
+    budget: &ContextBudget,
+    omitted_candidates: &[ContextOmittedCandidate],
+) -> ContextContinuationSummary {
+    if let Some(candidate) = omitted_candidates.first() {
+        return ContextContinuationSummary {
+            status: "omitted_candidates_available".to_string(),
+            message: format!(
+                "{} selected files fit the context budget; {} candidate files were omitted. Continue with {} if more context is needed.",
+                budget.selected_files, budget.omitted_files, candidate.file
+            ),
+            next_action: "run_omitted_candidate_context_pack".to_string(),
+            omitted_candidate_count: omitted_candidates.len(),
+            first_omitted_file: Some(candidate.file.clone()),
+            suggested_tool: Some(candidate.suggested_tool.clone()),
+        };
+    }
+
+    if budget.truncated {
+        return ContextContinuationSummary {
+            status: "token_budget_exhausted".to_string(),
+            message: format!(
+                "{} selected files fit the context budget, but some ranges were truncated. Increase token_budget or narrow the task for deeper context.",
+                budget.selected_files
+            ),
+            next_action: "increase_token_budget_or_narrow_task".to_string(),
+            omitted_candidate_count: 0,
+            first_omitted_file: None,
+            suggested_tool: None,
+        };
+    }
+
+    if budget.truncation_reason == "minimum_budget_applied" {
+        return ContextContinuationSummary {
+            status: "minimum_budget_applied".to_string(),
+            message: format!(
+                "The requested token budget was below the minimum, so {} tokens were applied.",
+                budget.applied_token_budget
+            ),
+            next_action: "read_selected_context".to_string(),
+            omitted_candidate_count: 0,
+            first_omitted_file: None,
+            suggested_tool: None,
+        };
+    }
+
+    if budget.omitted_files > 0 || budget.omitted_ranges > 0 {
+        return ContextContinuationSummary {
+            status: "lower_ranked_context_omitted".to_string(),
+            message: format!(
+                "{} lower-ranked files and {} ranges were omitted; use a narrower seed if those signals are needed.",
+                budget.omitted_files, budget.omitted_ranges
+            ),
+            next_action: "narrow_task_or_seed".to_string(),
+            omitted_candidate_count: 0,
+            first_omitted_file: None,
+            suggested_tool: None,
+        };
+    }
+
+    ContextContinuationSummary {
+        status: "complete".to_string(),
+        message: "Selected context fits the applied token budget; follow the reading_plan first."
+            .to_string(),
+        next_action: "read_selected_context".to_string(),
+        omitted_candidate_count: 0,
+        first_omitted_file: None,
+        suggested_tool: None,
+    }
 }
 
 fn context_omitted_candidate(

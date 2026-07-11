@@ -195,6 +195,24 @@ Example `context_pack` response shape:
     "truncated": true,
     "truncation_reason": "token_budget_exhausted"
   },
+  "continuation_summary": {
+    "status": "omitted_candidates_available",
+    "message": "3 selected files fit the context budget; 6 candidate files were omitted. Continue with src/session.ts if more context is needed.",
+    "next_action": "run_omitted_candidate_context_pack",
+    "omitted_candidate_count": 1,
+    "first_omitted_file": "src/session.ts",
+    "suggested_tool": {
+      "tool": "context_pack",
+      "priority": 60,
+      "reason": "Rebuild a focused context pack around this omitted candidate.",
+      "suggested_arguments": {
+        "root": "/repo",
+        "task": "understand auth flow",
+        "files": ["src/session.ts"],
+        "token_budget": 4000
+      }
+    }
+  },
   "omitted_candidates": [
     {
       "file": "src/session.ts",

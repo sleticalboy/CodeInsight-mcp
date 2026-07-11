@@ -93,6 +93,11 @@ and file-level `score` is the highest selected range score.
 `truncation_reason` to explain why a large repository context was shortened and
 whether a follow-up, narrower `context_pack` call is useful.
 
+`continuation_summary` condenses the budget and omission state into a
+client-facing status, message, and `next_action`. When omitted candidates are
+available, it repeats the first focused `suggested_tool` so clients can offer a
+single "continue" action without interpreting budget counters themselves.
+
 When high-ranked files are omitted entirely, `omitted_candidates` returns a
 bounded, excerpt-free list of the next files to inspect. Each entry includes
 range metadata and a `suggested_tool` with a focused `context_pack` call so MCP

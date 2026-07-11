@@ -858,6 +858,24 @@ fn cli_indexes_and_queries_fixture_project() {
             .unwrap()
             .is_empty()
     );
+    assert!(
+        !context["continuation_summary"]["status"]
+            .as_str()
+            .unwrap()
+            .is_empty()
+    );
+    assert!(
+        !context["continuation_summary"]["message"]
+            .as_str()
+            .unwrap()
+            .is_empty()
+    );
+    assert!(
+        !context["continuation_summary"]["next_action"]
+            .as_str()
+            .unwrap()
+            .is_empty()
+    );
     let omitted_candidates = context["omitted_candidates"].as_array().unwrap();
     if context["budget"]["omitted_files"].as_u64().unwrap() > 0 {
         assert!(!omitted_candidates.is_empty());
@@ -880,6 +898,27 @@ fn cli_indexes_and_queries_fixture_project() {
         assert_eq!(
             first_omitted["suggested_tool"]["suggested_arguments"]["token_budget"].as_u64(),
             Some(4000)
+        );
+        assert_eq!(
+            context["continuation_summary"]["status"],
+            "omitted_candidates_available"
+        );
+        assert_eq!(
+            context["continuation_summary"]["omitted_candidate_count"].as_u64(),
+            Some(omitted_candidates.len() as u64)
+        );
+        assert_eq!(
+            context["continuation_summary"]["first_omitted_file"],
+            first_omitted["file"]
+        );
+        assert_eq!(
+            context["continuation_summary"]["suggested_tool"]["suggested_arguments"]["files"][0],
+            first_omitted["file"]
+        );
+    } else {
+        assert_eq!(
+            context["continuation_summary"]["omitted_candidate_count"].as_u64(),
+            Some(0)
         );
     }
     assert_eq!(context["seed_strategy"], "explicit");

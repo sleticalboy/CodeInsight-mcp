@@ -79,6 +79,10 @@ complete.
 
 ## Omitted Candidate Recommendations
 
+`context_pack.continuation_summary` is the compact client-facing view of the
+same state. It reports a status, message, next action, omitted candidate count,
+and, when available, the first omitted-candidate `suggested_tool`.
+
 `context_pack.omitted_candidates[]` reports high-ranked candidate files that
 were excluded from the final selected context. It is emitted after token-budget
 selection and intentionally omits code excerpts, so clients can show what was

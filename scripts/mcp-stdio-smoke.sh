@@ -357,6 +357,9 @@ try:
     )
     assert context_result["budget"]["truncation_reason"]
     assert "omitted_candidates" in context_result
+    assert context_result["continuation_summary"]["status"]
+    assert context_result["continuation_summary"]["message"]
+    assert context_result["continuation_summary"]["next_action"]
     explicit_reading_plan = context_result["reading_plan"]
     assert explicit_reading_plan, "explicit context reading_plan missing"
     assert explicit_reading_plan[0]["order"] == 1
@@ -389,6 +392,10 @@ try:
         assert omitted_candidate["suggested_tool"]["tool"] == "context_pack"
         assert omitted_candidate["suggested_tool"]["priority"] >= 50
         assert omitted_candidate["suggested_tool"]["suggested_arguments"]["files"][0] == omitted_candidate["file"]
+        assert context_result["continuation_summary"]["status"] == "omitted_candidates_available"
+        assert context_result["continuation_summary"]["omitted_candidate_count"] == len(context_result["omitted_candidates"])
+        assert context_result["continuation_summary"]["first_omitted_file"] == omitted_candidate["file"]
+        assert context_result["continuation_summary"]["suggested_tool"]["suggested_arguments"]["files"][0] == omitted_candidate["file"]
         omitted_follow_up_result = call_suggested_tool(
             omitted_candidate["suggested_tool"],
             16,

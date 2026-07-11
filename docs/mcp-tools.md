@@ -45,7 +45,7 @@ The stdio server currently exposes 15 tools:
 | `semantic_index` | Build local semantic text chunks and optional embeddings; can report incremental chunk changes. |
 | `embedding_status` | Report provider, batch size, and optional local semantic-index state without network calls. |
 | `version` | Return package version and target platform information. |
-| `context_pack` | Build token-budgeted agent context from explicit seeds or inferred entrypoints, including selected files/ranges, seed strategy, selected seeds, budget metadata, omitted candidate follow-ups, reading plan, semantic status, and follow-up suggestions. |
+| `context_pack` | Build token-budgeted agent context from explicit seeds or inferred entrypoints, including selected files/ranges, seed strategy, selected seeds, budget metadata, continuation summary, omitted candidate follow-ups, reading plan, semantic status, and follow-up suggestions. |
 | `callers` | Return static call sites that call a function or method, including imported target hints when available. |
 | `callees` | Return static callees for a function or method, including imported target hints when available. |
 

@@ -61,6 +61,8 @@ It also asserts the MCP-facing structured fields that clients commonly render:
 - `context_pack.reading_plan[].suggested_tool`
 - first explicit and auto `reading_plan[].suggested_tool` calls execute
 - explicit `context_pack.budget` metadata matches legacy top-level fields
+- explicit `context_pack.continuation_summary` exposes a client-facing next
+  action
 - explicit `context_pack.omitted_candidates` is present, excerpt-free, and its
   first suggested follow-up executes when omitted files exist
 

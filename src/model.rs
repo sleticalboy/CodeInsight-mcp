@@ -293,6 +293,7 @@ pub struct ContextPack {
     pub reading_plan: Vec<ContextReadingStep>,
     pub semantic_status: ContextSemanticStatus,
     pub budget: ContextBudget,
+    pub continuation_summary: ContextContinuationSummary,
     pub omitted_candidates: Vec<ContextOmittedCandidate>,
     pub files: Vec<ContextFile>,
     pub symbols: Vec<Symbol>,
@@ -314,6 +315,18 @@ pub struct ContextBudget {
     pub omitted_ranges: usize,
     pub truncated: bool,
     pub truncation_reason: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ContextContinuationSummary {
+    pub status: String,
+    pub message: String,
+    pub next_action: String,
+    pub omitted_candidate_count: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub first_omitted_file: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub suggested_tool: Option<ContextSuggestedTool>,
 }
 
 #[derive(Debug, Clone, Serialize)]

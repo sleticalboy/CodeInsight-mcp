@@ -18,6 +18,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   applied token budgets, selected/omitted candidate counts, and truncation reason.
 - `context_pack` now returns bounded `omitted_candidates` follow-ups for
   high-ranked files that were excluded from the selected context.
+- `context_pack` now returns `continuation_summary` so clients can expose a
+  single next action without interpreting budget counters directly.
 - MCP stdio smoke coverage now validates `context_pack` budget metadata and
   omitted-candidate follow-up calls.
 - Updated MVP status docs after the verified `v0.1.10` release.
