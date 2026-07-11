@@ -2060,6 +2060,32 @@ fn cli_resolves_c_like_local_includes() {
                 dependency["target"] == "<stdio.h>" && dependency["resolved_file"].is_null()
             })
     );
+    assert_eq!(deps["summary"]["edges"].as_u64(), Some(4));
+    assert_eq!(deps["summary"]["resolved_edges"].as_u64(), Some(3));
+    assert_eq!(deps["summary"]["local_edges"].as_u64(), Some(3));
+    assert_eq!(deps["summary"]["unresolved_edges"].as_u64(), Some(1));
+    assert_eq!(deps["summary"]["external_targets"].as_u64(), Some(1));
+    assert!(
+        deps["summary"]["top_external_targets"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|target| target["target"] == "<stdio.h>" && target["edges"] == 1)
+    );
+    assert!(
+        deps["top_sources"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|source| source["source_file"] == "src/auth.c" && source["edges"] == 2)
+    );
+    assert!(
+        deps["top_targets"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|target| target["target"] == "include/shared.hpp" && target["edges"] == 1)
+    );
 
     let c_deps = run_json([
         "dependency-graph",
@@ -2120,6 +2146,18 @@ fn cli_resolves_c_like_local_includes() {
         "20",
     ]);
     assert_eq!(target_file_deps["edges"].as_u64(), Some(2));
+    assert_eq!(target_file_deps["summary"]["edges"].as_u64(), Some(2));
+    assert_eq!(
+        target_file_deps["summary"]["resolved_edges"].as_u64(),
+        Some(2)
+    );
+    assert!(
+        target_file_deps["top_targets"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|target| target["target"] == "include/shared.hpp" && target["edges"] == 1)
+    );
     assert!(
         target_file_deps["dependencies"]
             .as_array()

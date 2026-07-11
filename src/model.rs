@@ -94,6 +94,9 @@ pub struct DependencyGraph {
     pub dependencies: Vec<Dependency>,
     pub nodes: usize,
     pub edges: usize,
+    pub summary: DependencySummary,
+    pub top_sources: Vec<DependencySourceStat>,
+    pub top_targets: Vec<DependencyTargetStat>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -512,6 +515,12 @@ pub struct DependencySummary {
 #[derive(Debug, Serialize)]
 pub struct DependencyTargetStat {
     pub target: String,
+    pub edges: usize,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DependencySourceStat {
+    pub source_file: String,
     pub edges: usize,
 }
 

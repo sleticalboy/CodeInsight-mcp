@@ -280,6 +280,9 @@ MVP 不追求“支持最多语言”，而追求“核心场景闭环可用”�
 - dependencies
 - nodes
 - edges
+- summary
+- top_sources
+- top_targets
 - 已解析的本地文件路径提示
 
 ### 5.9 `impact_analysis_basic`

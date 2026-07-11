@@ -1001,6 +1001,18 @@ int login(void) {
         .unwrap();
         assert_eq!(graph_result["structuredContent"]["edges"].as_u64(), Some(1));
         assert_eq!(
+            graph_result["structuredContent"]["summary"]["edges"].as_u64(),
+            Some(1)
+        );
+        assert_eq!(
+            graph_result["structuredContent"]["top_sources"][0]["source_file"].as_str(),
+            Some("src/auth.c")
+        );
+        assert_eq!(
+            graph_result["structuredContent"]["top_targets"][0]["target"].as_str(),
+            Some("auth.h")
+        );
+        assert_eq!(
             graph_result["structuredContent"]["dependencies"][0]["source_file"].as_str(),
             Some("src/auth.c")
         );

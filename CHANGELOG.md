@@ -8,7 +8,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ### Changed
 
-- `dependency_graph` CLI and MCP output can now be filtered by source/target file and indexed language to reduce large-repository dependency noise.
+- `dependency_graph` CLI and MCP output can now be filtered by source/target file and indexed language, and includes summary, top source, and top target stats to reduce large-repository dependency noise.
 - Python `callees` output now preserves member call names such as `audit.record` and can attach `callee_file` hints when a resolved local `from ... import ...` dependency contains the called member symbol.
 - Python dependency graph resolution now expands `from ... import ...` member targets and resolves relative `from .` / `from ..` imports to nearby package `.py` files.
 - Rust `callees` output now preserves scoped call names such as `audit.record` and can attach `callee_file` hints when local `use crate::`, `use self::`, or `use super::` dependencies resolve to a file containing the called symbol.
