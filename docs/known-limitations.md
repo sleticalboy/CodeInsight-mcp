@@ -147,7 +147,7 @@ Limitations:
 
 ### `callers` and `callees`
 
-`callers` and `callees` use a static call graph extracted from call expressions and Java method invocations. Same-file calls are recorded by normalized callee name. JavaScript, TypeScript, Python, Rust, Go, Java, C#, PHP, and Ruby calls can also receive a `callee_file` hint when an obvious local import/export edge resolves to an indexed file with a matching symbol.
+`callers` and `callees` use a static call graph extracted from call expressions and Java method invocations. Same-file calls are recorded by normalized callee name. JavaScript, TypeScript, Python, Rust, Go, Java, C#, PHP, Ruby, C, and C++ calls can also receive a `callee_file` hint when an obvious local import/export/include edge resolves to an indexed file with a matching symbol.
 
 Currently supported JavaScript/TypeScript imported target hints:
 
@@ -173,6 +173,7 @@ Currently supported JavaScript/TypeScript imported target hints:
 - C# same-repository alias and static `using` directives can provide `callee_file` hints for qualified calls such as `Audit.Record()` and static imported calls such as `ClampName()` when the resolved local file contains the called symbol.
 - PHP same-repository class, grouped class, function, and grouped function `use` imports can provide `callee_file` hints for scoped calls such as `AuditLog::record()` and imported function calls such as `audit_login()` when the resolved local file contains the called symbol.
 - Ruby `require_relative` imports, including parent-relative paths such as `../support/audit.rb`, can provide `callee_file` hints for member calls such as `Audit.record()` when the resolved local file contains the called member symbol.
+- C/C++ quoted local includes can provide `callee_file` hints for calls such as `shared_value()` when the resolved header contains an indexed function definition such as an inline helper; standalone declarations are not indexed as call targets yet.
 
 Limitations:
 

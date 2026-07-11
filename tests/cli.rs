@@ -2549,6 +2549,28 @@ fn cli_resolves_c_like_local_includes() {
                     && dependency["resolved_file"] == "include/shared.hpp"
             })
     );
+
+    let service_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "service",
+        "--limit",
+        "10",
+    ]);
+    assert!(service_callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "shared_value" && call["callee_file"] == "include/shared.hpp"
+    }));
+
+    let client_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "client",
+        "--limit",
+        "10",
+    ]);
+    assert!(client_callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "shared_value" && call["callee_file"] == "include/shared.hpp"
+    }));
 }
 
 #[test]
