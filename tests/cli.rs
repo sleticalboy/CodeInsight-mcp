@@ -11,12 +11,12 @@ fn cli_indexes_and_queries_fixture_project() {
     let fixture = fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 27);
-    assert_eq!(index["changed_files"], 27);
+    assert_eq!(index["indexed_files"], 31);
+    assert_eq!(index["changed_files"], 31);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let overview = run_json(["overview", fixture.path().to_str().unwrap()]);
-    assert_eq!(overview["indexed_files"], 27);
+    assert_eq!(overview["indexed_files"], 31);
     assert!(overview["total_lines"].as_u64().unwrap() > 0);
     assert!(
         overview["summary"]
@@ -129,7 +129,7 @@ fn cli_indexes_and_queries_fixture_project() {
 
     let second_index = run_json(["index", fixture.path().to_str().unwrap()]);
     assert_eq!(second_index["changed_files"], 0);
-    assert_eq!(second_index["unchanged_files"], 27);
+    assert_eq!(second_index["unchanged_files"], 31);
 
     let semantic_index = run_json([
         "semantic-index",
@@ -376,6 +376,8 @@ fn cli_indexes_and_queries_fixture_project() {
     assert!(targets.contains(&"legacy-lib/plugin"));
     assert!(targets.contains(&"workspace-ui/button"));
     assert!(targets.contains(&"#internal/logger"));
+    assert!(targets.contains(&"#internal/special"));
+    assert!(targets.contains(&"#internal/special/button"));
     assert!(targets.contains(&"#fallback/logger"));
     assert!(targets.contains(&"@multi/admin/component/card"));
     assert!(targets.contains(&"fixture-lib/multi/admin/component/card"));
@@ -711,6 +713,36 @@ fn cli_indexes_and_queries_fixture_project() {
             .any(|dependency| {
                 dependency["target"] == "#internal/logger"
                     && dependency["resolved_file"] == "src/internal/logger.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "#internal/special"
+                    && dependency["resolved_file"] == "src/import-special.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "#internal/special/button"
+                    && dependency["resolved_file"] == "src/import-special/button.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "#internal/special"
+                    || dependency["resolved_file"] != "src/internal/special.ts"
             })
     );
     assert!(
@@ -1782,6 +1814,26 @@ fn cli_indexes_and_queries_fixture_project() {
             .iter()
             .any(|call| {
                 call["callee"] == "logInternal" && call["callee_file"] == "src/internal/logger.ts"
+            })
+    );
+    assert!(
+        package_import_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| {
+                call["callee"] == "specialInternalRender"
+                    && call["callee_file"] == "src/import-special.ts"
+            })
+    );
+    assert!(
+        package_import_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| {
+                call["callee"] == "specialInternalButtonRender"
+                    && call["callee_file"] == "src/import-special/button.ts"
             })
     );
 
@@ -4437,6 +4489,8 @@ fn fixture_project() -> TempDir {
   "workspaces": ["packages/*"],
   "imports": {
     "#internal/*": "./src/internal/*.ts",
+    "#internal/special": "./src/import-special.ts",
+    "#internal/special/*": "./src/import-special/*.ts",
     "#fallback/*": ["./src/missing/*.ts", "./src/internal/*.ts"],
     "#multi/*/component/*": "./src/multi/*/component/*.ts"
   },
@@ -4561,6 +4615,8 @@ import { legacyRender } from "legacy-lib";
 import { legacyPluginRender } from "legacy-lib/plugin";
 import { workspaceButton } from "workspace-ui/button";
 import { logInternal } from "#internal/logger";
+import { specialInternalRender } from "#internal/special";
+import { specialInternalButtonRender } from "#internal/special/button";
 import { logInternal as logFallback } from "#fallback/logger";
 import { multiPathRender } from "@multi/admin/component/card";
 import { multiPackageRender } from "fixture-lib/multi/admin/component/card";
@@ -4683,6 +4739,8 @@ export function workspacePackageMain() {
 
 export function packageImportMain() {
   logInternal();
+  specialInternalRender();
+  specialInternalButtonRender();
   logFallback();
 }
 
@@ -5153,6 +5211,42 @@ export function packageRender() {
         r#"
 export function logInternal() {
   return "log";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/import-special.ts",
+        r#"
+export function specialInternalRender() {
+  return "import-special";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/import-special/button.ts",
+        r#"
+export function specialInternalButtonRender() {
+  return "import-special-button";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/internal/special.ts",
+        r#"
+export function specialInternalRender() {
+  return "broad-import-special";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/internal/special/button.ts",
+        r#"
+export function specialInternalButtonRender() {
+  return "broad-import-special-button";
 }
 "#,
     );

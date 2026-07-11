@@ -32,6 +32,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   more specific wildcard patterns take precedence over broader wildcard entries.
 - Fixed TypeScript/JavaScript `paths` alias matching to use the same exact and
   more-specific wildcard precedence when resolving imports.
+- Added CLI coverage for local `package.json#imports` exact and more-specific
+  wildcard precedence in dependency and callee resolution.
 - Updated MVP status docs after the verified `v0.1.10` release.
 
 ## [0.1.10] - 2026-07-11
