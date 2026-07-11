@@ -2012,8 +2012,8 @@ fn cli_resolves_workspace_protocol_package_exports() {
     let fixture = workspace_protocol_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 2);
-    assert_eq!(index["changed_files"], 2);
+    assert_eq!(index["indexed_files"], 6);
+    assert_eq!(index["changed_files"], 6);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -2032,17 +2032,56 @@ fn cli_resolves_workspace_protocol_package_exports() {
                     && dependency["resolved_file"] == "packages/protocol-ui/src/button.ts"
             })
     );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "protocol-ui/feature/special"
+                    && dependency["resolved_file"] == "packages/protocol-ui/src/feature-special.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "protocol-ui/feature/special/button"
+                    && dependency["resolved_file"]
+                        == "packages/protocol-ui/src/feature-special/button.ts"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "protocol-ui/feature/special"
+                    || dependency["resolved_file"] != "packages/protocol-ui/src/feature/special.ts"
+            })
+    );
 
     let callees = run_json([
         "callees",
         fixture.path().to_str().unwrap(),
         "workspaceProtocolMain",
         "--limit",
-        "5",
+        "8",
     ]);
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "protocolButton"
             && call["callee_file"] == "packages/protocol-ui/src/button.ts"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "protocolSpecial"
+            && call["callee_file"] == "packages/protocol-ui/src/feature-special.ts"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "protocolSpecialButton"
+            && call["callee_file"] == "packages/protocol-ui/src/feature-special/button.ts"
     }));
 }
 
@@ -5626,9 +5665,13 @@ fn workspace_protocol_fixture_project() -> TempDir {
         "apps/web/src/main.ts",
         r#"
 import { protocolButton } from "protocol-ui/button";
+import { protocolSpecial } from "protocol-ui/feature/special";
+import { protocolSpecialButton } from "protocol-ui/feature/special/button";
 
 export function workspaceProtocolMain() {
   protocolButton();
+  protocolSpecial();
+  protocolSpecialButton();
 }
 "#,
     );
@@ -5639,7 +5682,10 @@ export function workspaceProtocolMain() {
 {
   "name": "internal-ui",
   "exports": {
-    "./button": "./src/button.ts"
+    "./button": "./src/button.ts",
+    "./feature/*": "./src/feature/*.ts",
+    "./feature/special": "./src/feature-special.ts",
+    "./feature/special/*": "./src/feature-special/*.ts"
   }
 }
 "#,
@@ -5650,6 +5696,42 @@ export function workspaceProtocolMain() {
         r#"
 export function protocolButton() {
   return "protocol";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/protocol-ui/src/feature-special.ts",
+        r#"
+export function protocolSpecial() {
+  return "protocol-special";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/protocol-ui/src/feature-special/button.ts",
+        r#"
+export function protocolSpecialButton() {
+  return "protocol-special-button";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/protocol-ui/src/feature/special.ts",
+        r#"
+export function protocolSpecial() {
+  return "broad-protocol-special";
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "packages/protocol-ui/src/feature/special/button.ts",
+        r#"
+export function protocolSpecialButton() {
+  return "broad-protocol-special-button";
 }
 "#,
     );
