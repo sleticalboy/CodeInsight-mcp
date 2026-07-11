@@ -4,6 +4,7 @@ CodeInsight exposes local next-step suggestions in two places:
 
 - `project_overview.recommended_next_tools[]`
 - `context_pack.reading_plan[].suggested_tool`
+- `context_pack.omitted_candidates[].suggested_tool`
 
 Both shapes are designed for MCP clients that want to show or execute likely
 next calls without parsing explanation text.
@@ -33,6 +34,8 @@ Current priority bands:
   `impact_analysis` or `callers`.
 - `50`: focused follow-up context rebuilds, such as file-scoped
   `context_pack`.
+- `60`: omitted-context follow-ups, such as rebuilding context around a
+  high-ranked file that did not fit the original token budget.
 - `80`: validation and environment checks, such as `config_status`.
 
 The exact values are stable enough for client ordering, but they are not a
@@ -74,6 +77,25 @@ Current mappings:
 They do not prove that the related graph, dependency, or semantic view is
 complete.
 
+## Omitted Candidate Recommendations
+
+`context_pack.omitted_candidates[]` reports high-ranked candidate files that
+were excluded from the final selected context. It is emitted after token-budget
+selection and intentionally omits code excerpts, so clients can show what was
+left out without expanding the response back toward the original repository
+size.
+
+Each omitted candidate includes:
+
+- `file`, `source`, `score`, and `reason` for display and ranking context.
+- `ranges[]` with line numbers, source, and importance, but no excerpt.
+- `suggested_tool` pointing to a file-scoped `context_pack` call.
+
+Clients should treat omitted candidates as continuation options after the user
+or agent has consumed the primary `reading_plan`. They are not a replacement
+for the selected context and may represent lower-ranked or budget-excluded
+signals.
+
 ## Client Guidance
 
 Recommended client behavior:
@@ -83,6 +105,8 @@ Recommended client behavior:
 - Validate or adjust `suggested_arguments` when the user asks a narrower task.
 - Execute suggested calls through MCP `tools/call`.
 - Keep original response order for equal priority values.
+- Prefer `reading_plan[].suggested_tool` while reading selected context, then
+  use `omitted_candidates[].suggested_tool` when more context is needed.
 
 Do not infer repository safety or change risk from recommendation priority.
 Use `impact_analysis.risk_level`, `impact_counts`, evidence, and

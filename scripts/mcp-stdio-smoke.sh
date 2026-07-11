@@ -39,6 +39,16 @@ def helper():
     return "ok"
 EOF
 
+  for index in $(seq 1 30); do
+    cat >"$SMOKE_ROOT/src/consumer_${index}.py" <<'EOF'
+from auth import AuthService
+
+def build_service():
+    details = "this intentionally verbose service reference line includes many descriptive words so that budget pressure can omit lower ranked context candidates during smoke testing and continue with focused follow up recommendations"
+    return AuthService().login(), details
+EOF
+  done
+
   cat >"$SMOKE_ROOT/src/main.ts" <<'EOF'
 import { render } from "./ui";
 
@@ -316,7 +326,7 @@ try:
                     "root": smoke_root,
                     "task": f"understand {smoke_symbol}",
                     "symbols": [smoke_symbol],
-                    "token_budget": 1200,
+                    "token_budget": 500,
                 },
             },
         }
@@ -325,17 +335,32 @@ try:
         symbol["name"] == smoke_symbol
         for symbol in context["result"]["structuredContent"]["symbols"]
     ), f"context symbol not found: {smoke_symbol}"
-    assert context["result"]["structuredContent"]["seed_strategy"] == "explicit"
+    context_result = context["result"]["structuredContent"]
+    assert context_result["seed_strategy"] == "explicit"
     assert any(
         seed["kind"] == "symbol"
         and seed["value"] == smoke_symbol
         and seed["source"] == "explicit"
-        for seed in context["result"]["structuredContent"]["selected_seeds"]
+        for seed in context_result["selected_seeds"]
     ), "explicit context seed not found"
-    explicit_reading_plan = context["result"]["structuredContent"]["reading_plan"]
+    assert context_result["budget"]["requested_token_budget"] == 500
+    assert context_result["budget"]["applied_token_budget"] == 500
+    assert context_result["budget"]["estimated_tokens"] == context_result["estimated_tokens"]
+    assert context_result["budget"]["truncated"] == context_result["truncated"]
+    assert context_result["budget"]["candidate_files"] >= context_result["budget"]["selected_files"]
+    assert context_result["budget"]["candidate_ranges"] >= context_result["budget"]["selected_ranges"]
+    assert context_result["budget"]["omitted_files"] == (
+        context_result["budget"]["candidate_files"] - context_result["budget"]["selected_files"]
+    )
+    assert context_result["budget"]["omitted_ranges"] == (
+        context_result["budget"]["candidate_ranges"] - context_result["budget"]["selected_ranges"]
+    )
+    assert context_result["budget"]["truncation_reason"]
+    assert "omitted_candidates" in context_result
+    explicit_reading_plan = context_result["reading_plan"]
     assert explicit_reading_plan, "explicit context reading_plan missing"
     assert explicit_reading_plan[0]["order"] == 1
-    assert explicit_reading_plan[0]["file"] == context["result"]["structuredContent"]["files"][0]["file"]
+    assert explicit_reading_plan[0]["file"] == context_result["files"][0]["file"]
     assert explicit_reading_plan[0]["next_action"]
     assert explicit_reading_plan[0]["question"]
     assert explicit_reading_plan[0]["suggested_tool"]["tool"]
@@ -352,6 +377,26 @@ try:
             symbol["name"] == smoke_symbol
             for symbol in explicit_suggested_result
         ), "explicit suggested file_outline did not return seed symbol"
+    if context_result["budget"]["omitted_files"] > 0:
+        assert context_result["omitted_candidates"], "omitted context candidates missing"
+        omitted_candidate = context_result["omitted_candidates"][0]
+        assert omitted_candidate["file"]
+        assert omitted_candidate["source"]
+        assert omitted_candidate["score"] > 0
+        assert omitted_candidate["reason"]
+        assert omitted_candidate["ranges"], "omitted candidate ranges missing"
+        assert "excerpt" not in omitted_candidate["ranges"][0]
+        assert omitted_candidate["suggested_tool"]["tool"] == "context_pack"
+        assert omitted_candidate["suggested_tool"]["priority"] >= 50
+        assert omitted_candidate["suggested_tool"]["suggested_arguments"]["files"][0] == omitted_candidate["file"]
+        omitted_follow_up_result = call_suggested_tool(
+            omitted_candidate["suggested_tool"],
+            16,
+        )
+        assert any(
+            item["file"] == omitted_candidate["file"]
+            for item in omitted_follow_up_result["files"]
+        ), "omitted candidate follow-up did not select requested file"
 
     auto_context = request(
         {
@@ -414,6 +459,7 @@ try:
     print(f"auto_reading_plan_steps: {len(auto_context_result['reading_plan'])}")
     print(f"explicit_suggested_tool: {explicit_reading_plan[0]['suggested_tool']['tool']}")
     print(f"auto_suggested_tool: {auto_context_result['reading_plan'][0]['suggested_tool']['tool']}")
+    print(f"explicit_omitted_candidates: {len(context_result['omitted_candidates'])}")
 finally:
     proc.terminate()
     try:

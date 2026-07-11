@@ -60,6 +60,9 @@ It also asserts the MCP-facing structured fields that clients commonly render:
 - `context_pack.reading_plan[].next_action` and `question`
 - `context_pack.reading_plan[].suggested_tool`
 - first explicit and auto `reading_plan[].suggested_tool` calls execute
+- explicit `context_pack.budget` metadata matches legacy top-level fields
+- explicit `context_pack.omitted_candidates` is present, excerpt-free, and its
+  first suggested follow-up executes when omitted files exist
 
 Use a real repository instead of the generated fixture:
 
@@ -88,7 +91,7 @@ MCP stdio smoke passed
 root: /path/to/repo
 symbol: AuthService
 tools: 15
-indexed_files: 3
+indexed_files: 33
 overview_entrypoints: 1
 overview_recommendations: 4
 overview_context_seed_strategy: auto_entrypoint
@@ -96,11 +99,13 @@ auto_seed_strategy: auto_entrypoint
 auto_reading_plan_steps: 2
 explicit_suggested_tool: file_outline
 auto_suggested_tool: file_outline
+explicit_omitted_candidates: 8
 ```
 
 `indexed_files`, `overview_entrypoints`, `overview_recommendations`, and
 `auto_reading_plan_steps` vary with the tested repository. Suggested tool names
-also vary with the selected first reading step.
+and `explicit_omitted_candidates` also vary with the selected first reading
+step, seed symbol, and token budget.
 
 ## Troubleshooting
 
