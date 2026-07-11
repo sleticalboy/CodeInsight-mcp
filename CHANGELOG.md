@@ -44,6 +44,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   over package `doc.go` and `_test.go` files when choosing a package representative.
 - Added CLI coverage for explicit Go import aliases flowing through
   dependency metadata and package-qualified `callee_file` hints.
+- Added CLI coverage for Python relative package imports resolving through
+  package `__init__.py` files and providing member-call `callee_file` hints.
 - Updated MVP status docs after the verified `v0.1.10` release.
 
 ## [0.1.10] - 2026-07-11

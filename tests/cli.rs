@@ -3040,6 +3040,16 @@ fn cli_resolves_python_relative_imports() {
             .unwrap()
             .iter()
             .any(|dependency| {
+                dependency["target"] == ".support"
+                    && dependency["resolved_file"] == "app/controllers/support/__init__.py"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
                 dependency["target"] == "..core.service"
                     && dependency["resolved_file"] == "app/core/service.py"
             })
@@ -3064,6 +3074,10 @@ fn cli_resolves_python_relative_imports() {
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "audit.record"
             && call["callee_file"] == "app/controllers/support/audit.py"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "support.describe"
+            && call["callee_file"] == "app/controllers/support/__init__.py"
     }));
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "service.load" && call["callee_file"] == "app/core/service.py"
@@ -6549,6 +6563,7 @@ fn python_relative_import_fixture_project() -> TempDir {
         &dir,
         "app/controllers/auth.py",
         r#"
+from . import support
 from .support import audit
 from ..core import service
 import requests
@@ -6557,10 +6572,18 @@ import requests
 class AuthController:
     def login(self, user_id):
         audit.record(user_id)
+        support.describe()
         return service.load(user_id)
 "#,
     );
-    write_file(&dir, "app/controllers/support/__init__.py", "");
+    write_file(
+        &dir,
+        "app/controllers/support/__init__.py",
+        r#"
+def describe():
+    return "support"
+"#,
+    );
     write_file(
         &dir,
         "app/controllers/support/audit.py",
