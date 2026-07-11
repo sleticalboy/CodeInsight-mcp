@@ -2946,8 +2946,8 @@ fn cli_resolves_rust_crate_and_super_use_imports() {
     let fixture = rust_use_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 6);
-    assert_eq!(index["changed_files"], 6);
+    assert_eq!(index["indexed_files"], 7);
+    assert_eq!(index["changed_files"], 7);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -2982,6 +2982,16 @@ fn cli_resolves_rust_crate_and_super_use_imports() {
             .unwrap()
             .iter()
             .any(|dependency| {
+                dependency["target"] == "self::nested::tool"
+                    && dependency["resolved_file"] == "src/support/nested.rs"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
                 dependency["target"] == "serde::Serialize" && dependency["resolved_file"].is_null()
             })
     );
@@ -2995,6 +3005,17 @@ fn cli_resolves_rust_crate_and_super_use_imports() {
     ]);
     assert!(root_callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "audit.record" && call["callee_file"] == "src/support/audit.rs"
+    }));
+
+    let support_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "run_nested",
+        "--limit",
+        "10",
+    ]);
+    assert!(support_callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "tool" && call["callee_file"] == "src/support/nested.rs"
     }));
 
     let auth_callees = run_json([
@@ -6529,6 +6550,22 @@ pub fn run() {
         "src/support/mod.rs",
         r#"
 pub mod audit;
+pub mod nested;
+
+use self::nested::tool;
+
+pub fn run_nested() -> String {
+    tool()
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/support/nested.rs",
+        r#"
+pub fn tool() -> String {
+    "nested".to_string()
+}
 "#,
     );
     write_file(

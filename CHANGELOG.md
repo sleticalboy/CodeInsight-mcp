@@ -48,6 +48,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   package `__init__.py` files and providing member-call `callee_file` hints.
 - Added CLI coverage for Python absolute package imports resolving through
   package `__init__.py` files with explicit aliases.
+- Added CLI coverage for Rust `self::` use imports from a `mod.rs` module to a
+  nested sibling module file with `callee_file` hints.
 - Updated MVP status docs after the verified `v0.1.10` release.
 
 ## [0.1.10] - 2026-07-11
