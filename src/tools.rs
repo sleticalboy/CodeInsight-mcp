@@ -100,8 +100,9 @@ pub fn dependency_graph(
     files: Vec<String>,
     languages: Vec<String>,
     limit: usize,
+    offset: usize,
 ) -> Result<()> {
-    let graph = dependency_graph_value(root, files, languages, limit)?;
+    let graph = dependency_graph_value(root, files, languages, limit, offset)?;
     print_json(&graph)
 }
 
@@ -257,6 +258,7 @@ pub fn dependency_graph_value(
     files: Vec<String>,
     languages: Vec<String>,
     limit: usize,
+    offset: usize,
 ) -> Result<DependencyGraph> {
     let root = root.canonicalize()?;
     let files = files
@@ -265,7 +267,7 @@ pub fn dependency_graph_value(
         .collect::<Result<Vec<_>>>()?;
     let languages = normalize_dependency_languages(&languages)?;
     let store = Store::open(&root)?;
-    store.dependency_graph(&root, limit, &files, &languages)
+    store.dependency_graph(&root, limit, offset, &files, &languages)
 }
 
 pub fn impact_analysis_value(

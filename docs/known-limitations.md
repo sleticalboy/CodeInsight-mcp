@@ -99,7 +99,7 @@ Limitations:
 Limitations:
 
 - Optional `files` filters match dependencies whose source file or resolved target file touches the requested file; optional `languages` filters match the indexed source language of the dependency edge.
-- Output includes `summary`, `top_sources`, and `top_targets` computed across all matching dependency edges before `limit` truncates the returned edge list.
+- Output includes `summary`, `top_sources`, and `top_targets` computed across all matching dependency edges before `limit` and `offset` page the returned edge list. Use `page_size` and `has_more` to drive follow-up pages.
 - Targets are always stored as module strings; `resolved_file` is only populated when a local file can be resolved cheaply.
 - Grouped imports may be compacted rather than expanded precisely.
 - Local package self-reference `exports` resolution supports JSON-compatible `package.json` files with exact, single-wildcard, or multi-wildcard string mappings, configurable common condition priority, array fallback targets with skipped `null` or external package entries, explicit `null` disabled subpaths, and matched conditional `null` or external package branches.

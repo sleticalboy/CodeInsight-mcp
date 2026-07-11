@@ -90,6 +90,8 @@ pub struct DependencyGraphArgs {
     pub languages: Vec<String>,
     #[arg(long, default_value_t = 500)]
     pub limit: usize,
+    #[arg(long, default_value_t = 0)]
+    pub offset: usize,
 }
 
 #[derive(Debug, Args)]

@@ -106,8 +106,9 @@ fn handle_tool_call(params: Value) -> Result<Value> {
             let files = optional_string_array(&arguments, "files")?;
             let languages = optional_string_array(&arguments, "languages")?;
             let limit = optional_positive_usize(&arguments, "limit", 500)?;
+            let offset = optional_min_usize(&arguments, "offset", 0, 0)?;
             serde_json::to_value(tools::dependency_graph_value(
-                root, files, languages, limit,
+                root, files, languages, limit, offset,
             )?)?
         }
         "impact_analysis" => {
@@ -272,7 +273,8 @@ fn tool_definitions() -> Value {
                         "type": "array",
                         "items": {"type": "string"}
                     },
-                    "limit": {"type": "integer", "minimum": 1}
+                    "limit": {"type": "integer", "minimum": 1},
+                    "offset": {"type": "integer", "minimum": 0}
                 },
                 "required": ["root"]
             }
@@ -980,6 +982,7 @@ def helper():
             dir.path().join("src/auth.c"),
             r#"
 #include "auth.h"
+#include "audit.h"
 #include <stdio.h>
 
 int login(void) {
@@ -989,6 +992,7 @@ int login(void) {
         )
         .unwrap();
         std::fs::write(dir.path().join("src/auth.h"), "#define AUTH_OK 1\n").unwrap();
+        std::fs::write(dir.path().join("src/audit.h"), "#define AUDIT_OK 1\n").unwrap();
 
         handle_tool_call(json!({
             "name": "index_project",
@@ -1029,6 +1033,31 @@ int login(void) {
         assert_eq!(
             graph_result["structuredContent"]["dependencies"][0]["resolved_file"].as_str(),
             Some("src/auth.h")
+        );
+
+        let paged_graph = handle_tool_call(json!({
+            "name": "dependency_graph",
+            "arguments": {
+                "root": dir.path(),
+                "limit": 1,
+                "offset": 1
+            }
+        }))
+        .unwrap();
+        assert_eq!(paged_graph["structuredContent"]["edges"].as_u64(), Some(3));
+        assert_eq!(paged_graph["structuredContent"]["limit"].as_u64(), Some(1));
+        assert_eq!(paged_graph["structuredContent"]["offset"].as_u64(), Some(1));
+        assert_eq!(
+            paged_graph["structuredContent"]["page_size"].as_u64(),
+            Some(1)
+        );
+        assert_eq!(
+            paged_graph["structuredContent"]["has_more"].as_bool(),
+            Some(true)
+        );
+        assert_eq!(
+            paged_graph["structuredContent"]["dependencies"][0]["target"].as_str(),
+            Some("audit.h")
         );
     }
 

@@ -12,6 +12,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   shared tap formula has not been merged to `main` yet.
 - `scripts/extract-release-notes.sh` now supports compact summary output for
   GitHub Release pages while keeping full changelog extraction as the default.
+- `dependency_graph` CLI and MCP outputs now support `offset` pagination and
+  return `page_size` / `has_more` metadata for large dependency graphs.
 - Updated MVP status docs after the verified `v0.1.10` release.
 
 ## [0.1.10] - 2026-07-11

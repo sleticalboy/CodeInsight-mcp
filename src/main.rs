@@ -27,9 +27,13 @@ async fn main() -> Result<()> {
         Command::Overview(args) => tools::project_overview(args.root)?,
         Command::Symbols(args) => tools::symbol_search(args.root, args.query, args.limit)?,
         Command::Outline(args) => tools::file_outline(args.path)?,
-        Command::DependencyGraph(args) => {
-            tools::dependency_graph(args.root, args.files, args.languages, args.limit)?
-        }
+        Command::DependencyGraph(args) => tools::dependency_graph(
+            args.root,
+            args.files,
+            args.languages,
+            args.limit,
+            args.offset,
+        )?,
         Command::ImpactAnalysis(args) => tools::impact_analysis(
             args.root,
             args.symbols,

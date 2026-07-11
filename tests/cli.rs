@@ -761,6 +761,34 @@ fn cli_indexes_and_queries_fixture_project() {
                     && dependency["resolved_file"] == "src/path-ui.ts"
             })
     );
+    assert_eq!(deps["offset"].as_u64(), Some(0));
+    assert_eq!(
+        deps["page_size"].as_u64(),
+        Some(deps["dependencies"].as_array().unwrap().len() as u64)
+    );
+
+    let dep_page = run_json([
+        "dependency-graph",
+        fixture.path().to_str().unwrap(),
+        "--limit",
+        "2",
+        "--offset",
+        "1",
+    ]);
+    assert_eq!(dep_page["edges"], deps["edges"]);
+    assert_eq!(dep_page["summary"]["edges"], deps["summary"]["edges"]);
+    assert_eq!(dep_page["limit"].as_u64(), Some(2));
+    assert_eq!(dep_page["offset"].as_u64(), Some(1));
+    assert_eq!(dep_page["page_size"].as_u64(), Some(2));
+    assert_eq!(dep_page["has_more"].as_bool(), Some(true));
+    assert_eq!(
+        dep_page["dependencies"][0]["source_file"],
+        deps["dependencies"][1]["source_file"]
+    );
+    assert_eq!(
+        dep_page["dependencies"][0]["target"],
+        deps["dependencies"][1]["target"]
+    );
 
     let refs = run_json([
         "find-references",

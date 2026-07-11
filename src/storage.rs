@@ -950,6 +950,7 @@ impl Store {
         &self,
         root: &Path,
         limit: usize,
+        offset: usize,
         files: &[String],
         languages: &[String],
     ) -> Result<DependencyGraph> {
@@ -961,11 +962,13 @@ impl Store {
              join files f on f.id = d.source_file_id
              {where_clause}
              order by f.path, d.line
-             limit ?"
+             limit ? offset ?"
         );
-        query_params.push(SqlValue::Integer(limit as i64));
+        let page_query_limit = limit.saturating_add(1);
+        query_params.push(SqlValue::Integer(page_query_limit as i64));
+        query_params.push(SqlValue::Integer(offset as i64));
         let mut stmt = self.conn.prepare(&query)?;
-        let dependencies = stmt
+        let mut dependencies = stmt
             .query_map(params_from_iter(query_params), |row| {
                 let language: String = row.get(6)?;
                 Ok(Dependency {
@@ -980,6 +983,11 @@ impl Store {
                 })
             })?
             .collect::<rusqlite::Result<Vec<_>>>()?;
+        let has_more = dependencies.len() > limit;
+        if has_more {
+            dependencies.truncate(limit);
+        }
+        let page_size = dependencies.len();
 
         let (nodes, edges) = if files.is_empty() && languages.is_empty() {
             let nodes = self.conn.query_row(
@@ -1045,6 +1053,10 @@ impl Store {
             dependencies,
             nodes,
             edges,
+            limit,
+            offset,
+            page_size,
+            has_more,
             summary,
             top_sources,
             top_targets,
@@ -2363,7 +2375,7 @@ mod tests {
             }],
         )?;
 
-        let graph = store.dependency_graph(temp.path(), 10, &[], &[])?;
+        let graph = store.dependency_graph(temp.path(), 10, 0, &[], &[])?;
         assert_eq!(graph.dependencies.len(), 1);
         assert_eq!(
             graph.dependencies[0].resolved_file.as_deref(),
