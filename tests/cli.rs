@@ -2301,6 +2301,27 @@ fn cli_resolves_csharp_using_imports() {
                 dependency["target"] == "System" && dependency["resolved_file"].is_null()
             })
     );
+
+    let callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "AuthController.Login",
+        "--limit",
+        "10",
+    ]);
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "Audit.Record" && call["callee_file"] == "src/App/Support/AuditLog.cs"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "ClampName" && call["callee_file"] == "src/App/Support/MathUtil.cs"
+    }));
+    assert!(
+        callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|call| { call["callee"] != "users.Find" || call["callee_file"].is_null() })
+    );
 }
 
 #[test]

@@ -89,6 +89,9 @@ Current behavior:
 - Java class-qualified calls such as `AuthService.login()` and static imported
   calls such as `defaultName()` can include `callee_file` when the import
   resolves to an indexed local source file with a matching symbol.
+- C# alias-qualified calls such as `Audit.Record()` and static imported calls
+  such as `ClampName()` can include `callee_file` when the `using` directive
+  resolves to an indexed local source file with a matching symbol.
 
 ## Boundaries
 

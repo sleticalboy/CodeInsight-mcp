@@ -375,6 +375,11 @@ fn call_target_text(node: Node<'_>, source: &[u8], language: Language) -> Option
     {
         return Some(target);
     }
+    if language == Language::CSharp
+        && let Some(target) = csharp_call_target_text(node, source)
+    {
+        return Some(target);
+    }
 
     node.child_by_field_name("function")
         .or_else(|| node.child_by_field_name("name"))
@@ -431,6 +436,23 @@ fn java_call_target_text(node: Node<'_>, source: &[u8]) -> Option<String> {
     }
 }
 
+fn csharp_call_target_text(node: Node<'_>, source: &[u8]) -> Option<String> {
+    match node.kind() {
+        "invocation_expression" => node
+            .child_by_field_name("function")
+            .or_else(|| node.child_by_field_name("name"))
+            .or_else(|| node.child(0))
+            .and_then(|child| child.utf8_text(source).ok())
+            .map(ToOwned::to_owned),
+        "object_creation_expression" => child_text(node, "type", source).or_else(|| {
+            node.child(0)
+                .and_then(|child| child.utf8_text(source).ok())
+                .map(ToOwned::to_owned)
+        }),
+        _ => None,
+    }
+}
+
 fn normalize_callee(raw: &str, language: Language) -> Option<String> {
     if matches!(
         language,
@@ -449,6 +471,9 @@ fn normalize_callee(raw: &str, language: Language) -> Option<String> {
     }
     if language == Language::Java {
         return normalize_java_callee(raw);
+    }
+    if language == Language::CSharp {
+        return normalize_csharp_callee(raw);
     }
 
     normalize_simple_callee(raw)
@@ -628,6 +653,10 @@ fn normalize_go_callee(raw: &str) -> Option<String> {
 }
 
 fn normalize_java_callee(raw: &str) -> Option<String> {
+    normalize_dot_callee(raw)
+}
+
+fn normalize_csharp_callee(raw: &str) -> Option<String> {
     normalize_dot_callee(raw)
 }
 
@@ -1103,15 +1132,18 @@ fn csharp_using_dependencies(
     let text = node.utf8_text(source).unwrap_or_default();
     csharp_using_target(text)
         .into_iter()
-        .map(|(target, kind)| Dependency {
-            source_file: source_file.to_string(),
-            resolved_file: None,
-            target,
-            local_alias: None,
-            imported_symbol: None,
-            kind: kind.to_string(),
-            language,
-            line: node.start_position().row + 1,
+        .map(|(target, kind)| {
+            let (local_alias, imported_symbol) = csharp_using_alias(&text, &target, kind);
+            Dependency {
+                source_file: source_file.to_string(),
+                resolved_file: None,
+                target,
+                local_alias,
+                imported_symbol,
+                kind: kind.to_string(),
+                language,
+                line: node.start_position().row + 1,
+            }
         })
         .collect()
 }
@@ -3860,6 +3892,31 @@ fn csharp_using_target(text: &str) -> Option<(String, &'static str)> {
     })
 }
 
+fn csharp_using_alias(text: &str, target: &str, kind: &str) -> (Option<String>, Option<String>) {
+    match kind {
+        "using_alias" => {
+            let alias = text
+                .trim()
+                .strip_prefix("using ")
+                .and_then(|rest| rest.split_once('='))
+                .map(|(alias, _)| alias.trim())
+                .filter(|alias| !alias.is_empty());
+            match alias {
+                Some(alias) => (Some(alias.to_string()), Some("*".to_string())),
+                None => (None, None),
+            }
+        }
+        "using_static" => (None, Some("*".to_string())),
+        "using" => target
+            .split('.')
+            .next_back()
+            .filter(|alias| !alias.is_empty())
+            .map(|alias| (Some(alias.to_string()), Some("*".to_string())))
+            .unwrap_or((None, None)),
+        _ => (None, None),
+    }
+}
+
 fn php_use_targets(text: &str) -> Vec<String> {
     text.trim()
         .strip_prefix("use ")
@@ -5548,6 +5605,46 @@ public interface UserRepository {
             Some(("App.Support.MathUtil".to_string(), "using_static"))
         );
         assert_eq!(csharp_using_target("using (resource) {}"), None);
+    }
+
+    #[test]
+    fn parses_csharp_using_aliases() {
+        assert_eq!(
+            csharp_using_alias(
+                "using Audit = App.Support.AuditLog;",
+                "App.Support.AuditLog",
+                "using_alias"
+            ),
+            (Some("Audit".to_string()), Some("*".to_string()))
+        );
+        assert_eq!(
+            csharp_using_alias(
+                "using static App.Support.MathUtil;",
+                "App.Support.MathUtil",
+                "using_static"
+            ),
+            (None, Some("*".to_string()))
+        );
+    }
+
+    #[test]
+    fn normalizes_csharp_qualified_calls() {
+        let source = r#"
+public class AuthController {
+    public string Login(string id) {
+        Audit.Record(id);
+        return ClampName(id);
+    }
+}
+"#;
+        let symbols = extract_symbols(source, Language::CSharp, "AuthController.cs").unwrap();
+        let calls = extract_calls(source, Language::CSharp, "AuthController.cs", &symbols);
+        let callees = calls
+            .iter()
+            .map(|call| call.callee.as_str())
+            .collect::<Vec<_>>();
+        assert!(callees.contains(&"Audit.Record"));
+        assert!(callees.contains(&"ClampName"));
     }
 
     #[test]
