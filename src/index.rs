@@ -420,6 +420,9 @@ fn normalize_callee(raw: &str, language: Language) -> Option<String> {
     if language == Language::Rust {
         return normalize_rust_callee(raw);
     }
+    if language == Language::Go {
+        return normalize_go_callee(raw);
+    }
 
     normalize_simple_callee(raw)
 }
@@ -576,6 +579,35 @@ fn normalize_rust_callee(raw: &str) -> Option<String> {
 
     let parts = trimmed
         .split("::")
+        .map(str::trim)
+        .map(|part| {
+            if let Some(open) = part.find('(') {
+                part[..open].trim()
+            } else {
+                part
+            }
+        })
+        .filter(|part| !part.is_empty())
+        .collect::<Vec<_>>();
+    if parts.is_empty() || parts.iter().any(|part| !is_js_identifier(part)) {
+        return normalize_simple_callee(trimmed);
+    }
+
+    Some(parts.join("."))
+}
+
+fn normalize_go_callee(raw: &str) -> Option<String> {
+    normalize_dot_callee(raw)
+}
+
+fn normalize_dot_callee(raw: &str) -> Option<String> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+
+    let parts = trimmed
+        .split('.')
         .map(str::trim)
         .map(|part| {
             if let Some(open) = part.find('(') {
@@ -927,16 +959,32 @@ fn go_dependencies(
     source_file: &str,
 ) -> Vec<Dependency> {
     match node.kind() {
-        "import_declaration" => text_dependencies(
-            node,
-            source,
-            language,
-            source_file,
-            "import",
-            string_literal_targets,
-        ),
+        "import_declaration" => go_import_dependencies(node, source, language, source_file),
         _ => Vec::new(),
     }
+}
+
+fn go_import_dependencies(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+) -> Vec<Dependency> {
+    let text = node.utf8_text(source).unwrap_or_default();
+    let line = node.start_position().row + 1;
+    go_import_specs(text)
+        .into_iter()
+        .map(|(target, local_alias)| Dependency {
+            source_file: source_file.to_string(),
+            resolved_file: None,
+            target,
+            local_alias,
+            imported_symbol: Some("*".to_string()),
+            kind: "import".to_string(),
+            language,
+            line,
+        })
+        .collect()
 }
 
 fn java_dependencies(
@@ -3570,6 +3618,55 @@ fn string_literal_targets(text: &str) -> Vec<String> {
     targets
 }
 
+fn go_import_specs(text: &str) -> Vec<(String, Option<String>)> {
+    let trimmed = text.trim();
+    let Some(rest) = trimmed.strip_prefix("import") else {
+        return Vec::new();
+    };
+    let rest = rest.trim();
+    let specs = if rest.starts_with('(') && rest.ends_with(')') {
+        rest.trim_start_matches('(')
+            .trim_end_matches(')')
+            .lines()
+            .collect::<Vec<_>>()
+    } else {
+        vec![rest]
+    };
+
+    specs.into_iter().filter_map(go_import_spec).collect()
+}
+
+fn go_import_spec(spec: &str) -> Option<(String, Option<String>)> {
+    let spec = spec
+        .split("//")
+        .next()
+        .unwrap_or_default()
+        .trim()
+        .trim_end_matches(';')
+        .trim();
+    if spec.is_empty() {
+        return None;
+    }
+
+    let quote_index = spec
+        .char_indices()
+        .find_map(|(index, ch)| matches!(ch, '"' | '\'' | '`').then_some(index))?;
+    let target = string_literal_targets(&spec[quote_index..])
+        .into_iter()
+        .next()?;
+    let alias = spec[..quote_index].split_whitespace().last();
+    let local_alias = match alias {
+        Some("_" | ".") => None,
+        Some(alias) => Some(alias.to_string()),
+        None => target
+            .rsplit('/')
+            .find(|part| !part.is_empty())
+            .map(str::to_string),
+    };
+
+    Some((target, local_alias))
+}
+
 #[cfg(test)]
 fn python_import_targets(text: &str) -> Vec<String> {
     let trimmed = text.trim();
@@ -5155,6 +5252,59 @@ func (s *Service) Login() {}
         assert!(names.contains(&"Service"));
         assert!(names.contains(&"NewService"));
         assert!(names.contains(&"Login"));
+    }
+
+    #[test]
+    fn parses_go_import_aliases() {
+        assert_eq!(
+            go_import_specs(
+                r#"
+import (
+  "fmt"
+  authsvc "github.com/example/codeinsight/internal/auth"
+  _ "github.com/example/codeinsight/internal/sideeffect"
+)
+"#
+            ),
+            vec![
+                ("fmt".to_string(), Some("fmt".to_string())),
+                (
+                    "github.com/example/codeinsight/internal/auth".to_string(),
+                    Some("authsvc".to_string())
+                ),
+                (
+                    "github.com/example/codeinsight/internal/sideeffect".to_string(),
+                    None
+                ),
+            ]
+        );
+        assert_eq!(
+            go_import_specs(r#"import "github.com/example/codeinsight/internal/config""#),
+            vec![(
+                "github.com/example/codeinsight/internal/config".to_string(),
+                Some("config".to_string())
+            )]
+        );
+    }
+
+    #[test]
+    fn normalizes_go_package_calls() {
+        let source = r#"
+package main
+
+func main() {
+    auth.Login()
+    config.Load()
+}
+"#;
+        let symbols = extract_symbols(source, Language::Go, "main.go").unwrap();
+        let calls = extract_calls(source, Language::Go, "main.go", &symbols);
+        let callees = calls
+            .iter()
+            .map(|call| call.callee.as_str())
+            .collect::<Vec<_>>();
+        assert!(callees.contains(&"auth.Login"));
+        assert!(callees.contains(&"config.Load"));
     }
 
     #[test]

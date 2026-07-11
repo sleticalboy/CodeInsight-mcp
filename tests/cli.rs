@@ -2061,6 +2061,27 @@ fn cli_resolves_go_module_imports() {
                     && dependency["resolved_file"].is_null()
             })
     );
+
+    let callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "main",
+        "--limit",
+        "10",
+    ]);
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "auth.Login" && call["callee_file"] == "internal/auth/service.go"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "config.Load" && call["callee_file"] == "internal/config/config.go"
+    }));
+    assert!(
+        callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|call| { call["callee"] != "remote.Name" || call["callee_file"].is_null() })
+    );
 }
 
 #[test]

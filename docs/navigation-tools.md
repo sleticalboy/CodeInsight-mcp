@@ -83,6 +83,9 @@ Current behavior:
 - Rust scoped calls such as `audit::record()` can include `callee_file` when a
   local `use crate::`, `use self::`, or `use super::` import resolves to an
   indexed file with a matching symbol.
+- Go package-qualified calls such as `auth.Login()` can include `callee_file`
+  when a same-module import resolves to an indexed local package file with a
+  matching symbol.
 
 ## Boundaries
 
