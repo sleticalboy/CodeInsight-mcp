@@ -14,6 +14,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   GitHub Release pages while keeping full changelog extraction as the default.
 - `dependency_graph` CLI and MCP outputs now support `offset` pagination and
   return `page_size` / `has_more` metadata for large dependency graphs.
+- `context_pack` now returns structured `budget` metadata with requested and
+  applied token budgets, selected/omitted candidate counts, and truncation reason.
 - Updated MVP status docs after the verified `v0.1.10` release.
 
 ## [0.1.10] - 2026-07-11

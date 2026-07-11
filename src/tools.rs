@@ -17,8 +17,8 @@ use crate::{
     embedding, index,
     language::detect_language,
     model::{
-        CallEdge, ConfigInitReport, ConfigStatusReport, ContextFile, ContextPack, ContextRange,
-        ContextReadingRange, ContextReadingStep, ContextSeed, ContextSemanticStatus,
+        CallEdge, ConfigInitReport, ConfigStatusReport, ContextBudget, ContextFile, ContextPack,
+        ContextRange, ContextReadingRange, ContextReadingStep, ContextSeed, ContextSemanticStatus,
         ContextSuggestedTool, Dependency, DependencyGraph, EmbeddingProviderStatus,
         ImpactAnalysisReport, ImpactCounts, ImpactFile, ImpactPath, IndexError, Language,
         OllamaEmbeddingStatus, OpenAiEmbeddingStatus, ProjectIndexReport, ProjectOverview,
@@ -1072,6 +1072,11 @@ pub fn context_pack_value(
         })
         .collect::<Vec<_>>();
     candidates.sort_by(compare_context_file_candidates);
+    let candidate_files = candidates.len();
+    let candidate_ranges = candidates
+        .iter()
+        .map(|candidate| candidate.ranges.len())
+        .sum::<usize>();
 
     let mut estimated_tokens = estimate_tokens(&task);
     let mut files = Vec::new();
@@ -1185,6 +1190,29 @@ pub fn context_pack_value(
     semantic_status.status.recommendation =
         context_semantic_recommendation(&semantic_status.status);
     let reading_plan = context_reading_plan(&root, &files);
+    let selected_files = files.len();
+    let selected_ranges = files.iter().map(|file| file.ranges.len()).sum::<usize>();
+    let budget_summary = ContextBudget {
+        requested_token_budget: token_budget,
+        applied_token_budget: budget,
+        estimated_tokens,
+        candidate_files,
+        selected_files,
+        omitted_files: candidate_files.saturating_sub(selected_files),
+        candidate_ranges,
+        selected_ranges,
+        omitted_ranges: candidate_ranges.saturating_sub(selected_ranges),
+        truncated,
+        truncation_reason: context_budget_truncation_reason(
+            token_budget,
+            budget,
+            truncated,
+            candidate_files,
+            selected_files,
+            candidate_ranges,
+            selected_ranges,
+        ),
+    };
 
     Ok(ContextPack {
         task,
@@ -1193,12 +1221,34 @@ pub fn context_pack_value(
         selected_seeds,
         reading_plan,
         semantic_status: semantic_status.status,
+        budget: budget_summary,
         files,
         symbols,
         references,
         estimated_tokens,
         truncated,
     })
+}
+
+fn context_budget_truncation_reason(
+    requested_token_budget: usize,
+    applied_token_budget: usize,
+    truncated: bool,
+    candidate_files: usize,
+    selected_files: usize,
+    candidate_ranges: usize,
+    selected_ranges: usize,
+) -> String {
+    if requested_token_budget < applied_token_budget {
+        return "minimum_budget_applied".to_string();
+    }
+    if truncated {
+        return "token_budget_exhausted".to_string();
+    }
+    if selected_files < candidate_files || selected_ranges < candidate_ranges {
+        return "candidate_selection_omitted_lower_ranked_context".to_string();
+    }
+    "none".to_string()
 }
 
 fn context_reading_plan(root: &Path, files: &[ContextFile]) -> Vec<ContextReadingStep> {

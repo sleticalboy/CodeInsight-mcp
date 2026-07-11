@@ -292,11 +292,27 @@ pub struct ContextPack {
     pub selected_seeds: Vec<ContextSeed>,
     pub reading_plan: Vec<ContextReadingStep>,
     pub semantic_status: ContextSemanticStatus,
+    pub budget: ContextBudget,
     pub files: Vec<ContextFile>,
     pub symbols: Vec<Symbol>,
     pub references: Vec<ReferenceMatch>,
     pub estimated_tokens: usize,
     pub truncated: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ContextBudget {
+    pub requested_token_budget: usize,
+    pub applied_token_budget: usize,
+    pub estimated_tokens: usize,
+    pub candidate_files: usize,
+    pub selected_files: usize,
+    pub omitted_files: usize,
+    pub candidate_ranges: usize,
+    pub selected_ranges: usize,
+    pub omitted_ranges: usize,
+    pub truncated: bool,
+    pub truncation_reason: String,
 }
 
 #[derive(Debug, Clone, Serialize)]

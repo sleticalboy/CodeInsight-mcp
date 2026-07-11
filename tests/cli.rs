@@ -810,7 +810,54 @@ fn cli_indexes_and_queries_fixture_project() {
         "--token-budget",
         "1600",
     ]);
+    let selected_range_count = context["files"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|file| file["ranges"].as_array().unwrap().len() as u64)
+        .sum::<u64>();
     assert_eq!(context["symbols"][0]["name"], "AuthService");
+    assert_eq!(
+        context["budget"]["requested_token_budget"].as_u64(),
+        Some(1600)
+    );
+    assert_eq!(
+        context["budget"]["applied_token_budget"].as_u64(),
+        Some(1600)
+    );
+    assert_eq!(
+        context["budget"]["estimated_tokens"],
+        context["estimated_tokens"]
+    );
+    assert_eq!(context["budget"]["truncated"], context["truncated"]);
+    assert_eq!(
+        context["budget"]["selected_files"].as_u64(),
+        Some(context["files"].as_array().unwrap().len() as u64)
+    );
+    assert_eq!(
+        context["budget"]["selected_ranges"].as_u64(),
+        Some(selected_range_count)
+    );
+    assert!(
+        context["budget"]["candidate_files"].as_u64().unwrap()
+            >= context["budget"]["selected_files"].as_u64().unwrap()
+    );
+    assert_eq!(
+        context["budget"]["omitted_files"].as_u64().unwrap(),
+        context["budget"]["candidate_files"].as_u64().unwrap()
+            - context["budget"]["selected_files"].as_u64().unwrap()
+    );
+    assert_eq!(
+        context["budget"]["omitted_ranges"].as_u64().unwrap(),
+        context["budget"]["candidate_ranges"].as_u64().unwrap()
+            - context["budget"]["selected_ranges"].as_u64().unwrap()
+    );
+    assert!(
+        !context["budget"]["truncation_reason"]
+            .as_str()
+            .unwrap()
+            .is_empty()
+    );
     assert_eq!(context["seed_strategy"], "explicit");
     assert!(
         context["selected_seeds"]

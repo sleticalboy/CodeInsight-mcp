@@ -182,6 +182,19 @@ Example `context_pack` response shape:
       ]
     }
   ],
+  "budget": {
+    "requested_token_budget": 6000,
+    "applied_token_budget": 6000,
+    "estimated_tokens": 4210,
+    "candidate_files": 9,
+    "selected_files": 3,
+    "omitted_files": 6,
+    "candidate_ranges": 14,
+    "selected_ranges": 5,
+    "omitted_ranges": 9,
+    "truncated": true,
+    "truncation_reason": "token_budget_exhausted"
+  },
   "files": [
     {
       "file": "src/auth.ts",

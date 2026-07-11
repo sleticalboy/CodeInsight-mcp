@@ -86,6 +86,13 @@ to avoid duplicate lines, and are ordered by source line within each file.
 File-level `source` and `reason` values identify the dominant selected source,
 and file-level `score` is the highest selected range score.
 
+`context_pack` returns a `budget` object alongside the legacy top-level
+`estimated_tokens` and `truncated` fields. Use `requested_token_budget`,
+`applied_token_budget`, `candidate_files`, `selected_files`, `omitted_files`,
+`candidate_ranges`, `selected_ranges`, `omitted_ranges`, and
+`truncation_reason` to explain why a large repository context was shortened and
+whether a follow-up, narrower `context_pack` call is useful.
+
 Known source values include:
 
 - `seed_file`
