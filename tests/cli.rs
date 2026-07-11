@@ -3725,6 +3725,48 @@ export function spec() {
 }
 
 #[test]
+fn cli_context_pack_uses_imported_callee_file_hints() {
+    let fixture = ruby_require_relative_fixture_project();
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 2);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand login audit behavior",
+        "--symbol",
+        "Example.AuthService.login",
+        "--token-budget",
+        "1800",
+    ]);
+    assert_eq!(context["seed_strategy"], "explicit");
+
+    let audit_file = context["files"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|file| file["file"] == "lib/support/audit.rb")
+        .unwrap();
+    assert_eq!(audit_file["source"], "call_graph");
+    assert!(audit_file["score"].as_i64().unwrap() > 0);
+    assert!(
+        audit_file["ranges"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|range| {
+                range["source"] == "call_graph"
+                    && range["reason"]
+                        .as_str()
+                        .is_some_and(|reason| reason.contains("Audit.record"))
+            })
+    );
+}
+
+#[test]
 fn cli_semantic_search_requires_embedding_provider() {
     let fixture = fixture_project();
 
