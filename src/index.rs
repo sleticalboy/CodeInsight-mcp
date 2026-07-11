@@ -370,6 +370,11 @@ fn call_target_text(node: Node<'_>, source: &[u8], language: Language) -> Option
     {
         return Some(target);
     }
+    if language == Language::Java
+        && let Some(target) = java_call_target_text(node, source)
+    {
+        return Some(target);
+    }
 
     node.child_by_field_name("function")
         .or_else(|| node.child_by_field_name("name"))
@@ -407,6 +412,25 @@ fn php_call_target_text(node: Node<'_>, source: &[u8]) -> Option<String> {
     }
 }
 
+fn java_call_target_text(node: Node<'_>, source: &[u8]) -> Option<String> {
+    match node.kind() {
+        "method_invocation" => {
+            let name = child_text(node, "name", source)?;
+            if let Some(object) = child_text(node, "object", source) {
+                Some(format!("{object}.{name}"))
+            } else {
+                Some(name)
+            }
+        }
+        "object_creation_expression" => child_text(node, "type", source).or_else(|| {
+            node.child(0)
+                .and_then(|child| child.utf8_text(source).ok())
+                .map(ToOwned::to_owned)
+        }),
+        _ => None,
+    }
+}
+
 fn normalize_callee(raw: &str, language: Language) -> Option<String> {
     if matches!(
         language,
@@ -422,6 +446,9 @@ fn normalize_callee(raw: &str, language: Language) -> Option<String> {
     }
     if language == Language::Go {
         return normalize_go_callee(raw);
+    }
+    if language == Language::Java {
+        return normalize_java_callee(raw);
     }
 
     normalize_simple_callee(raw)
@@ -597,6 +624,10 @@ fn normalize_rust_callee(raw: &str) -> Option<String> {
 }
 
 fn normalize_go_callee(raw: &str) -> Option<String> {
+    normalize_dot_callee(raw)
+}
+
+fn normalize_java_callee(raw: &str) -> Option<String> {
     normalize_dot_callee(raw)
 }
 
@@ -1016,15 +1047,18 @@ fn java_import_dependencies(
     let text = node.utf8_text(source).unwrap_or_default();
     java_import_target(text)
         .into_iter()
-        .map(|(target, kind)| Dependency {
-            source_file: source_file.to_string(),
-            resolved_file: None,
-            target,
-            local_alias: None,
-            imported_symbol: None,
-            kind: kind.to_string(),
-            language,
-            line: node.start_position().row + 1,
+        .map(|(target, kind)| {
+            let (local_alias, imported_symbol) = java_import_alias(&target, kind);
+            Dependency {
+                source_file: source_file.to_string(),
+                resolved_file: None,
+                target,
+                local_alias,
+                imported_symbol,
+                kind: kind.to_string(),
+                language,
+                line: node.start_position().row + 1,
+            }
         })
         .collect()
 }
@@ -3667,6 +3701,23 @@ fn go_import_spec(spec: &str) -> Option<(String, Option<String>)> {
     Some((target, local_alias))
 }
 
+fn java_import_alias(target: &str, kind: &str) -> (Option<String>, Option<String>) {
+    let mut parts = target
+        .split('.')
+        .map(str::trim)
+        .filter(|part| !part.is_empty())
+        .collect::<Vec<_>>();
+    let Some(local_alias) = parts.pop() else {
+        return (None, None);
+    };
+
+    match kind {
+        "static_import" => (Some(local_alias.to_string()), Some(local_alias.to_string())),
+        "import" => (Some(local_alias.to_string()), Some("*".to_string())),
+        _ => (None, None),
+    }
+}
+
 #[cfg(test)]
 fn python_import_targets(text: &str) -> Vec<String> {
     let trimmed = text.trim();
@@ -5686,6 +5737,40 @@ interface UserRepository {
                 .iter()
                 .any(|call| call.caller == "AuthService.login" && call.callee == "audit")
         );
+    }
+
+    #[test]
+    fn parses_java_import_aliases() {
+        assert_eq!(
+            java_import_alias("com.example.auth.AuthService", "import"),
+            (Some("AuthService".to_string()), Some("*".to_string()))
+        );
+        assert_eq!(
+            java_import_alias("com.example.util.Names.defaultName", "static_import"),
+            (
+                Some("defaultName".to_string()),
+                Some("defaultName".to_string())
+            )
+        );
+    }
+
+    #[test]
+    fn normalizes_java_qualified_calls() {
+        let source = r#"
+public class App {
+    public String run() {
+        return AuthService.login(defaultName());
+    }
+}
+"#;
+        let symbols = extract_symbols(source, Language::Java, "App.java").unwrap();
+        let calls = extract_calls(source, Language::Java, "App.java", &symbols);
+        let callees = calls
+            .iter()
+            .map(|call| call.callee.as_str())
+            .collect::<Vec<_>>();
+        assert!(callees.contains(&"AuthService.login"));
+        assert!(callees.contains(&"defaultName"));
     }
 
     #[test]

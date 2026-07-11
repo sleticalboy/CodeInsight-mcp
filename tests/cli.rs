@@ -2139,6 +2139,29 @@ fn cli_resolves_java_source_imports() {
                     && dependency["resolved_file"].is_null()
             })
     );
+
+    let callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "App.run",
+        "--limit",
+        "10",
+    ]);
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "AuthService.login"
+            && call["callee_file"] == "src/main/java/com/example/auth/AuthService.java"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "defaultName"
+            && call["callee_file"] == "src/main/java/com/example/util/Names.java"
+    }));
+    assert!(
+        callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|call| { call["callee"] != "remote.id" || call["callee_file"].is_null() })
+    );
 }
 
 #[test]

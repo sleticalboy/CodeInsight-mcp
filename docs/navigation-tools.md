@@ -86,6 +86,9 @@ Current behavior:
 - Go package-qualified calls such as `auth.Login()` can include `callee_file`
   when a same-module import resolves to an indexed local package file with a
   matching symbol.
+- Java class-qualified calls such as `AuthService.login()` and static imported
+  calls such as `defaultName()` can include `callee_file` when the import
+  resolves to an indexed local source file with a matching symbol.
 
 ## Boundaries
 
