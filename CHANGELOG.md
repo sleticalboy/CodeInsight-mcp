@@ -6,6 +6,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ## [Unreleased]
 
+## [0.1.10] - 2026-07-11
+
 ### Changed
 
 - `dependency_graph` CLI and MCP output can now be filtered by source/target file and indexed language, and includes summary, top source, and top target stats to reduce large-repository dependency noise.
