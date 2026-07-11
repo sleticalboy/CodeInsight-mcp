@@ -475,6 +475,9 @@ fn normalize_callee(raw: &str, language: Language) -> Option<String> {
     if language == Language::CSharp {
         return normalize_csharp_callee(raw);
     }
+    if language == Language::Php {
+        return normalize_php_callee(raw);
+    }
 
     normalize_simple_callee(raw)
 }
@@ -658,6 +661,11 @@ fn normalize_java_callee(raw: &str) -> Option<String> {
 
 fn normalize_csharp_callee(raw: &str) -> Option<String> {
     normalize_dot_callee(raw)
+}
+
+fn normalize_php_callee(raw: &str) -> Option<String> {
+    let trimmed = raw.trim().trim_start_matches('\\').replace("::", ".");
+    normalize_dot_callee(&trimmed)
 }
 
 fn normalize_dot_callee(raw: &str) -> Option<String> {
@@ -1155,11 +1163,32 @@ fn php_dependencies(
     source_file: &str,
 ) -> Vec<Dependency> {
     match node.kind() {
-        "namespace_use_declaration" => {
-            text_dependencies(node, source, language, source_file, "use", php_use_targets)
-        }
+        "namespace_use_declaration" => php_use_dependencies(node, source, language, source_file),
         _ => Vec::new(),
     }
+}
+
+fn php_use_dependencies(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+) -> Vec<Dependency> {
+    let text = node.utf8_text(source).unwrap_or_default();
+    let line = node.start_position().row + 1;
+    php_use_entries(text)
+        .into_iter()
+        .map(|(target, local_alias, imported_symbol)| Dependency {
+            source_file: source_file.to_string(),
+            target,
+            resolved_file: None,
+            local_alias,
+            imported_symbol,
+            kind: "use".to_string(),
+            language,
+            line,
+        })
+        .collect()
 }
 
 fn ruby_dependencies(
@@ -3917,25 +3946,65 @@ fn csharp_using_alias(text: &str, target: &str, kind: &str) -> (Option<String>, 
     }
 }
 
-fn php_use_targets(text: &str) -> Vec<String> {
+fn php_use_entries(text: &str) -> Vec<(String, Option<String>, Option<String>)> {
     text.trim()
         .strip_prefix("use ")
-        .map(|target| {
-            target
-                .trim_start_matches("function ")
-                .trim_start_matches("const ")
-                .trim_end_matches(';')
-        })
-        .map(|target| {
-            target
-                .split(',')
-                .filter_map(|part| part.split(" as ").next())
-                .map(str::trim)
-                .filter(|part| !part.is_empty() && !part.contains('{'))
-                .map(ToOwned::to_owned)
-                .collect()
-        })
+        .map(|target| php_use_entries_from_target(target))
         .unwrap_or_default()
+}
+
+fn php_use_entries_from_target(target: &str) -> Vec<(String, Option<String>, Option<String>)> {
+    let target = target.trim().trim_end_matches(';').trim();
+    let (target, use_kind) = if let Some(target) = target.strip_prefix("function ") {
+        (target.trim(), "function")
+    } else if let Some(target) = target.strip_prefix("const ") {
+        (target.trim(), "const")
+    } else {
+        (target, "class")
+    };
+
+    target
+        .split(',')
+        .filter_map(|part| php_use_entry(part, use_kind))
+        .collect()
+}
+
+fn php_use_entry(part: &str, use_kind: &str) -> Option<(String, Option<String>, Option<String>)> {
+    let part = part.trim();
+    if part.is_empty() || part.contains('{') {
+        return None;
+    }
+
+    let (target, explicit_alias) = split_case_insensitive_once(part, " as ")
+        .map(|(target, alias)| (target.trim(), Some(alias.trim())))
+        .unwrap_or((part, None));
+    let target = target.trim_start_matches('\\').trim();
+    if target.is_empty() {
+        return None;
+    }
+
+    let imported = target
+        .rsplit('\\')
+        .find(|segment| !segment.trim().is_empty())?
+        .trim()
+        .to_string();
+    let local_alias = explicit_alias
+        .filter(|alias| !alias.is_empty())
+        .map(str::to_string)
+        .or_else(|| Some(imported.clone()));
+    let imported_symbol = match use_kind {
+        "function" | "const" => Some(imported),
+        _ => Some("*".to_string()),
+    };
+
+    Some((target.to_string(), local_alias, imported_symbol))
+}
+
+fn split_case_insensitive_once<'a>(text: &'a str, needle: &str) -> Option<(&'a str, &'a str)> {
+    let text_lower = text.to_ascii_lowercase();
+    let needle_lower = needle.to_ascii_lowercase();
+    let index = text_lower.find(&needle_lower)?;
+    Some((&text[..index], &text[index + needle.len()..]))
 }
 
 #[cfg(test)]
@@ -5653,6 +5722,7 @@ public class AuthController {
 namespace App\Controller;
 
 use App\Repository\UserRepository;
+use App\Support\AuditLog;
 use function App\Support\audit_login;
 
 class AuthController {
@@ -5665,6 +5735,8 @@ class AuthController {
 
     public function login(string $id): bool {
         $user = $this->users->find($id);
+        AuditLog::record($id);
+        audit_login($id);
         $this->audit($user);
         return true;
     }
@@ -5696,6 +5768,7 @@ interface UserRepository {
             .map(|dependency| dependency.target.as_str())
             .collect::<Vec<_>>();
         assert!(targets.contains(&"App\\Repository\\UserRepository"));
+        assert!(targets.contains(&"App\\Support\\AuditLog"));
         assert!(targets.contains(&"App\\Support\\audit_login"));
 
         let calls = extract_calls(source, Language::Php, "AuthController.php", &symbols);
@@ -5703,6 +5776,14 @@ interface UserRepository {
             calls
                 .iter()
                 .any(|call| call.caller == "AuthController.login" && call.callee == "audit")
+        );
+        assert!(calls.iter().any(|call| {
+            call.caller == "AuthController.login" && call.callee == "AuditLog.record"
+        }));
+        assert!(
+            calls.iter().any(|call| {
+                call.caller == "AuthController.login" && call.callee == "audit_login"
+            })
         );
     }
 
@@ -5718,6 +5799,26 @@ interface UserRepository {
         assert_eq!(
             php_use_candidate_paths("\\Vendor\\Package\\Client"),
             vec![PathBuf::from("Vendor/Package/Client.php")]
+        );
+    }
+
+    #[test]
+    fn parses_php_use_entries_with_aliases() {
+        assert_eq!(
+            php_use_entries("use App\\Support\\AuditLog as Audit;"),
+            vec![(
+                "App\\Support\\AuditLog".to_string(),
+                Some("Audit".to_string()),
+                Some("*".to_string())
+            )]
+        );
+        assert_eq!(
+            php_use_entries("use function App\\Support\\audit_login;"),
+            vec![(
+                "App\\Support\\audit_login".to_string(),
+                Some("audit_login".to_string()),
+                Some("audit_login".to_string())
+            )]
         );
     }
 

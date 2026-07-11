@@ -2169,8 +2169,8 @@ fn cli_resolves_php_namespace_use_imports() {
     let fixture = php_namespace_use_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 3);
-    assert_eq!(index["changed_files"], 3);
+    assert_eq!(index["indexed_files"], 4);
+    assert_eq!(index["changed_files"], 4);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -2195,6 +2195,16 @@ fn cli_resolves_php_namespace_use_imports() {
             .unwrap()
             .iter()
             .any(|dependency| {
+                dependency["target"] == "App\\Support\\AuditLog"
+                    && dependency["resolved_file"] == "src/Support/AuditLog.php"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
                 dependency["target"] == "App\\Support\\audit_login"
                     && dependency["resolved_file"] == "src/Support/audit_login.php"
             })
@@ -2208,6 +2218,27 @@ fn cli_resolves_php_namespace_use_imports() {
                 dependency["target"] == "Vendor\\Package\\RemoteClient"
                     && dependency["resolved_file"].is_null()
             })
+    );
+
+    let callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "AuthController.login",
+        "--limit",
+        "10",
+    ]);
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "AuditLog.record" && call["callee_file"] == "src/Support/AuditLog.php"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "audit_login" && call["callee_file"] == "src/Support/audit_login.php"
+    }));
+    assert!(
+        callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|call| { call["callee"] != "id" || call["callee_file"].is_null() })
     );
 }
 
@@ -5258,6 +5289,7 @@ fn php_namespace_use_fixture_project() -> TempDir {
 namespace App\Controller;
 
 use App\Repository\UserRepository;
+use App\Support\AuditLog;
 use function App\Support\audit_login;
 use Vendor\Package\RemoteClient;
 
@@ -5267,6 +5299,7 @@ class AuthController
 
     public function login(RemoteClient $remote): bool
     {
+        AuditLog::record($remote->id());
         audit_login($remote->id());
         return $this->users->exists($remote->id());
     }
@@ -5284,6 +5317,20 @@ class UserRepository
     public function exists(string $id): bool
     {
         return $id !== '';
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/Support/AuditLog.php",
+        r#"<?php
+namespace App\Support;
+
+class AuditLog
+{
+    public static function record(string $id): void
+    {
     }
 }
 "#,

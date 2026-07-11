@@ -16,6 +16,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - Java `callees` output now preserves class-qualified call names such as `AuthService.login` and can attach `callee_file` hints for resolved local class and static imports.
 - C# `callees` output now preserves qualified call names such as `Audit.Record` and can attach `callee_file` hints for resolved local alias and static `using` directives.
 - C# dependency graph resolution now resolves obvious same-repository `using` directives under common roots such as `src`, including alias/static using targets and namespace directories with representative `.cs` files.
+- PHP `callees` output now preserves scoped call names such as `AuditLog.record` and can attach `callee_file` hints for resolved local class and function `use` imports.
 - Ruby dependency graph resolution now resolves `require_relative` imports to neighboring local `.rb` files while leaving gem-style `require` imports unresolved.
 - PHP dependency graph resolution now resolves obvious same-repository namespace `use` imports under common roots such as `src`, including `App\` PSR-4 style paths and function imports when a matching file exists.
 - Java dependency graph resolution now resolves obvious same-repository class imports under common source roots such as `src/main/java`, including static member imports that can fall back to the containing class file.

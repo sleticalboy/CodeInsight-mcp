@@ -92,6 +92,9 @@ Current behavior:
 - C# alias-qualified calls such as `Audit.Record()` and static imported calls
   such as `ClampName()` can include `callee_file` when the `using` directive
   resolves to an indexed local source file with a matching symbol.
+- PHP scoped calls such as `AuditLog::record()` and imported function calls
+  such as `audit_login()` can include `callee_file` when the `use` import
+  resolves to an indexed local source file with a matching symbol.
 
 ## Boundaries
 
