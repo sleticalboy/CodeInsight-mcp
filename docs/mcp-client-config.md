@@ -195,6 +195,33 @@ Example `context_pack` response shape:
     "truncated": true,
     "truncation_reason": "token_budget_exhausted"
   },
+  "omitted_candidates": [
+    {
+      "file": "src/session.ts",
+      "source": "reference",
+      "score": 60,
+      "reason": "Omitted from selected context due to budget or lower rank; top reason: References symbol near line 42",
+      "ranges": [
+        {
+          "start_line": 40,
+          "end_line": 44,
+          "source": "reference",
+          "importance": "medium"
+        }
+      ],
+      "suggested_tool": {
+        "tool": "context_pack",
+        "priority": 60,
+        "reason": "Rebuild a focused context pack around this omitted candidate.",
+        "suggested_arguments": {
+          "root": "/repo",
+          "task": "understand auth flow",
+          "files": ["src/session.ts"],
+          "token_budget": 4000
+        }
+      }
+    }
+  ],
   "files": [
     {
       "file": "src/auth.ts",

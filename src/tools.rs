@@ -17,14 +17,14 @@ use crate::{
     embedding, index,
     language::detect_language,
     model::{
-        CallEdge, ConfigInitReport, ConfigStatusReport, ContextBudget, ContextFile, ContextPack,
-        ContextRange, ContextReadingRange, ContextReadingStep, ContextSeed, ContextSemanticStatus,
-        ContextSuggestedTool, Dependency, DependencyGraph, EmbeddingProviderStatus,
-        ImpactAnalysisReport, ImpactCounts, ImpactFile, ImpactPath, IndexError, Language,
-        OllamaEmbeddingStatus, OpenAiEmbeddingStatus, ProjectIndexReport, ProjectOverview,
-        ReferenceMatch, SemanticChunk, SemanticChunkInput, SemanticEmbeddingInput,
-        SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus, SemanticSearchResult,
-        SuggestedCheck, Symbol, SymbolKind, VersionInfo,
+        CallEdge, ConfigInitReport, ConfigStatusReport, ContextBudget, ContextFile,
+        ContextOmittedCandidate, ContextPack, ContextRange, ContextReadingRange,
+        ContextReadingStep, ContextSeed, ContextSemanticStatus, ContextSuggestedTool, Dependency,
+        DependencyGraph, EmbeddingProviderStatus, ImpactAnalysisReport, ImpactCounts, ImpactFile,
+        ImpactPath, IndexError, Language, OllamaEmbeddingStatus, OpenAiEmbeddingStatus,
+        ProjectIndexReport, ProjectOverview, ReferenceMatch, SemanticChunk, SemanticChunkInput,
+        SemanticEmbeddingInput, SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus,
+        SemanticSearchResult, SuggestedCheck, Symbol, SymbolKind, VersionInfo,
     },
     storage::Store,
 };
@@ -43,6 +43,8 @@ const CONTEXT_SCORE_LOW_VALUE_FILE_PENALTY: i32 = 35;
 const CONTEXT_SCORE_LOW_VALUE_FILE_TEST_BOOST: i32 = 35;
 const CONTEXT_MAX_SYMBOL_LINES: usize = 80;
 const CONTEXT_MAX_MERGED_RANGE_LINES: usize = 80;
+const CONTEXT_OMITTED_CANDIDATE_LIMIT: usize = 8;
+const CONTEXT_OMITTED_CANDIDATE_RANGE_LIMIT: usize = 4;
 
 const IMPACT_SCORE_SEED_FILE: i32 = 100;
 const IMPACT_SCORE_SYMBOL_DEFINITION: i32 = 90;
@@ -1082,7 +1084,7 @@ pub fn context_pack_value(
     let mut files = Vec::new();
     let mut truncated = false;
 
-    for candidate in candidates {
+    for candidate in &candidates {
         let path = root.join(&candidate.file);
         let Ok(source) = fs::read_to_string(&path) else {
             continue;
@@ -1093,7 +1095,7 @@ pub fn context_pack_value(
         let mut selected_max_score = 0;
         let mut selected_source: Option<String> = None;
 
-        for range in candidate.ranges {
+        for range in &candidate.ranges {
             let uncovered_segments = uncovered_segments(
                 range.start_line,
                 range.end_line.min(lines.len().max(1)),
@@ -1147,7 +1149,7 @@ pub fn context_pack_value(
             let source = selected_source.unwrap_or_else(|| "unknown".to_string());
             context_ranges.sort_by_key(|range| (range.start_line, range.end_line));
             files.push(ContextFile {
-                file: candidate.file,
+                file: candidate.file.clone(),
                 source: source.clone(),
                 score: selected_max_score,
                 reason: format!(
@@ -1192,6 +1194,13 @@ pub fn context_pack_value(
     let reading_plan = context_reading_plan(&root, &files);
     let selected_files = files.len();
     let selected_ranges = files.iter().map(|file| file.ranges.len()).sum::<usize>();
+    let omitted_candidates = context_omitted_candidates(
+        &root,
+        &task,
+        &candidates,
+        &files,
+        CONTEXT_OMITTED_CANDIDATE_LIMIT,
+    );
     let budget_summary = ContextBudget {
         requested_token_budget: token_budget,
         applied_token_budget: budget,
@@ -1222,6 +1231,7 @@ pub fn context_pack_value(
         reading_plan,
         semantic_status: semantic_status.status,
         budget: budget_summary,
+        omitted_candidates,
         files,
         symbols,
         references,
@@ -1249,6 +1259,65 @@ fn context_budget_truncation_reason(
         return "candidate_selection_omitted_lower_ranked_context".to_string();
     }
     "none".to_string()
+}
+
+fn context_omitted_candidates(
+    root: &Path,
+    task: &str,
+    candidates: &[ContextFileCandidate],
+    files: &[ContextFile],
+    limit: usize,
+) -> Vec<ContextOmittedCandidate> {
+    let selected_files = files
+        .iter()
+        .map(|file| file.file.as_str())
+        .collect::<BTreeSet<_>>();
+    candidates
+        .iter()
+        .filter(|candidate| !selected_files.contains(candidate.file.as_str()))
+        .take(limit)
+        .filter_map(|candidate| context_omitted_candidate(root, task, candidate))
+        .collect()
+}
+
+fn context_omitted_candidate(
+    root: &Path,
+    task: &str,
+    candidate: &ContextFileCandidate,
+) -> Option<ContextOmittedCandidate> {
+    let primary_range = candidate.ranges.first()?;
+    let ranges = candidate
+        .ranges
+        .iter()
+        .take(CONTEXT_OMITTED_CANDIDATE_RANGE_LIMIT)
+        .map(|range| ContextReadingRange {
+            start_line: range.start_line,
+            end_line: range.end_line,
+            source: range.source.clone(),
+            importance: importance_for_score(range.score).to_string(),
+        })
+        .collect::<Vec<_>>();
+    Some(ContextOmittedCandidate {
+        file: candidate.file.clone(),
+        source: primary_range.source.clone(),
+        score: candidate.max_score,
+        reason: format!(
+            "Omitted from selected context due to budget or lower rank; top reason: {}",
+            primary_range.reason
+        ),
+        ranges,
+        suggested_tool: ContextSuggestedTool {
+            tool: "context_pack".to_string(),
+            priority: 60,
+            reason: "Rebuild a focused context pack around this omitted candidate.".to_string(),
+            suggested_arguments: json!({
+                "root": root.display().to_string(),
+                "task": task,
+                "files": [candidate.file.clone()],
+                "token_budget": 4000
+            }),
+        },
+    })
 }
 
 fn context_reading_plan(root: &Path, files: &[ContextFile]) -> Vec<ContextReadingStep> {

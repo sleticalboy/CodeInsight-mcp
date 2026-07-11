@@ -858,6 +858,30 @@ fn cli_indexes_and_queries_fixture_project() {
             .unwrap()
             .is_empty()
     );
+    let omitted_candidates = context["omitted_candidates"].as_array().unwrap();
+    if context["budget"]["omitted_files"].as_u64().unwrap() > 0 {
+        assert!(!omitted_candidates.is_empty());
+        assert!(
+            omitted_candidates.len()
+                <= context["budget"]["omitted_files"].as_u64().unwrap() as usize
+        );
+        let first_omitted = &omitted_candidates[0];
+        assert!(first_omitted["file"].as_str().unwrap().starts_with("src/"));
+        assert!(first_omitted["score"].as_i64().unwrap() > 0);
+        assert!(!first_omitted["source"].as_str().unwrap().is_empty());
+        assert!(!first_omitted["reason"].as_str().unwrap().is_empty());
+        assert!(!first_omitted["ranges"].as_array().unwrap().is_empty());
+        assert!(first_omitted["ranges"][0].get("excerpt").is_none());
+        assert_eq!(first_omitted["suggested_tool"]["tool"], "context_pack");
+        assert_eq!(
+            first_omitted["suggested_tool"]["suggested_arguments"]["files"][0],
+            first_omitted["file"]
+        );
+        assert_eq!(
+            first_omitted["suggested_tool"]["suggested_arguments"]["token_budget"].as_u64(),
+            Some(4000)
+        );
+    }
     assert_eq!(context["seed_strategy"], "explicit");
     assert!(
         context["selected_seeds"]

@@ -16,6 +16,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   return `page_size` / `has_more` metadata for large dependency graphs.
 - `context_pack` now returns structured `budget` metadata with requested and
   applied token budgets, selected/omitted candidate counts, and truncation reason.
+- `context_pack` now returns bounded `omitted_candidates` follow-ups for
+  high-ranked files that were excluded from the selected context.
 - Updated MVP status docs after the verified `v0.1.10` release.
 
 ## [0.1.10] - 2026-07-11

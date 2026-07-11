@@ -93,6 +93,11 @@ and file-level `score` is the highest selected range score.
 `truncation_reason` to explain why a large repository context was shortened and
 whether a follow-up, narrower `context_pack` call is useful.
 
+When high-ranked files are omitted entirely, `omitted_candidates` returns a
+bounded, excerpt-free list of the next files to inspect. Each entry includes
+range metadata and a `suggested_tool` with a focused `context_pack` call so MCP
+clients can continue without asking the model to invent follow-up arguments.
+
 Known source values include:
 
 - `seed_file`

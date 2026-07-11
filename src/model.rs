@@ -293,6 +293,7 @@ pub struct ContextPack {
     pub reading_plan: Vec<ContextReadingStep>,
     pub semantic_status: ContextSemanticStatus,
     pub budget: ContextBudget,
+    pub omitted_candidates: Vec<ContextOmittedCandidate>,
     pub files: Vec<ContextFile>,
     pub symbols: Vec<Symbol>,
     pub references: Vec<ReferenceMatch>,
@@ -313,6 +314,16 @@ pub struct ContextBudget {
     pub omitted_ranges: usize,
     pub truncated: bool,
     pub truncation_reason: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ContextOmittedCandidate {
+    pub file: String,
+    pub source: String,
+    pub score: i32,
+    pub reason: String,
+    pub ranges: Vec<ContextReadingRange>,
+    pub suggested_tool: ContextSuggestedTool,
 }
 
 #[derive(Debug, Clone, Serialize)]
