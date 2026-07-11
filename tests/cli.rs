@@ -2306,6 +2306,52 @@ fn cli_resolves_rust_crate_and_super_use_imports() {
 }
 
 #[test]
+fn cli_resolves_python_relative_imports() {
+    let fixture = python_relative_import_fixture_project();
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 5);
+    assert_eq!(index["changed_files"], 5);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let deps = run_json([
+        "dependency-graph",
+        fixture.path().to_str().unwrap(),
+        "--limit",
+        "30",
+    ]);
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == ".support.audit"
+                    && dependency["resolved_file"] == "app/controllers/support/audit.py"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "..core.service"
+                    && dependency["resolved_file"] == "app/core/service.py"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "requests" && dependency["resolved_file"].is_null()
+            })
+    );
+}
+
+#[test]
 fn cli_respects_null_package_imports_without_tsconfig_fallback() {
     let fixture = null_package_imports_fixture_project();
 
@@ -5315,6 +5361,44 @@ pub fn login(id: &str) -> String {
 pub fn helper(id: &str) -> String {
     id.to_string()
 }
+"#,
+    );
+    dir
+}
+
+fn python_relative_import_fixture_project() -> TempDir {
+    let dir = TempDir::new().unwrap();
+    write_file(
+        &dir,
+        "app/controllers/auth.py",
+        r#"
+from .support import audit
+from ..core import service
+import requests
+
+
+class AuthController:
+    def login(self, user_id):
+        audit.record(user_id)
+        return service.load(user_id)
+"#,
+    );
+    write_file(&dir, "app/controllers/support/__init__.py", "");
+    write_file(
+        &dir,
+        "app/controllers/support/audit.py",
+        r#"
+def record(user_id):
+    return user_id
+"#,
+    );
+    write_file(&dir, "app/core/__init__.py", "");
+    write_file(
+        &dir,
+        "app/core/service.py",
+        r#"
+def load(user_id):
+    return user_id
 "#,
     );
     dir

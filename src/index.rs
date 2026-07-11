@@ -2067,11 +2067,52 @@ fn php_source_roots(source_file: &str) -> Vec<PathBuf> {
 
 fn resolve_python_target(root: &Path, dependency: &Dependency) -> Option<String> {
     if dependency.target.starts_with('.') {
-        let relative = dependency.target.replace('.', "/");
-        resolve_relative_target(root, &dependency.source_file, &relative, &["py"])
+        resolve_python_relative_target(root, dependency)
     } else {
         resolve_module_target(root, &dependency.target.replace('.', "/"), &["py"])
     }
+}
+
+fn resolve_python_relative_target(root: &Path, dependency: &Dependency) -> Option<String> {
+    let leading_dots = dependency
+        .target
+        .chars()
+        .take_while(|character| *character == '.')
+        .count();
+    if leading_dots == 0 {
+        return None;
+    }
+
+    let mut base = Path::new(&dependency.source_file)
+        .parent()
+        .unwrap_or(Path::new(""))
+        .to_path_buf();
+    for _ in 1..leading_dots {
+        base.pop();
+    }
+
+    let rest = dependency.target[leading_dots..].replace('.', "/");
+    let target_base = if rest.is_empty() {
+        base
+    } else {
+        base.join(rest)
+    };
+    for candidate in python_relative_target_candidates(target_base) {
+        if let Some(resolved) = resolve_base(root, candidate, &["py"]) {
+            return Some(resolved);
+        }
+    }
+    None
+}
+
+fn python_relative_target_candidates(target: PathBuf) -> Vec<PathBuf> {
+    let mut candidates = Vec::new();
+    let mut current = Some(target.as_path());
+    while let Some(candidate) = current {
+        candidates.push(candidate.to_path_buf());
+        current = candidate.parent().filter(|parent| parent != &Path::new(""));
+    }
+    candidates
 }
 
 fn resolve_ruby_target(root: &Path, dependency: &Dependency) -> Option<String> {
@@ -3378,11 +3419,25 @@ fn string_literal_targets(text: &str) -> Vec<String> {
 fn python_import_targets(text: &str) -> Vec<String> {
     let trimmed = text.trim();
     if let Some(rest) = trimmed.strip_prefix("from ") {
-        return rest
-            .split_whitespace()
-            .next()
-            .map(|target| vec![target.to_string()])
-            .unwrap_or_default();
+        let Some((module, imports)) = rest.split_once(" import ") else {
+            return rest
+                .split_whitespace()
+                .next()
+                .map(|target| vec![target.to_string()])
+                .unwrap_or_default();
+        };
+        let module = module.trim();
+        if module.is_empty() {
+            return Vec::new();
+        }
+
+        let mut targets = vec![module.to_string()];
+        for imported in python_from_import_names(imports) {
+            targets.push(python_join_import_target(module, &imported));
+        }
+        targets.sort();
+        targets.dedup();
+        return targets;
     }
 
     trimmed
@@ -3394,6 +3449,24 @@ fn python_import_targets(text: &str) -> Vec<String> {
                 .collect()
         })
         .unwrap_or_default()
+}
+
+fn python_from_import_names(text: &str) -> Vec<String> {
+    text.trim()
+        .trim_matches(['(', ')'])
+        .split(',')
+        .filter_map(|part| part.split_whitespace().next())
+        .filter(|part| !part.is_empty() && *part != "*")
+        .map(ToOwned::to_owned)
+        .collect()
+}
+
+fn python_join_import_target(module: &str, imported: &str) -> String {
+    if module.chars().all(|character| character == '.') {
+        format!("{module}{imported}")
+    } else {
+        format!("{module}.{imported}")
+    }
 }
 
 fn java_import_target(text: &str) -> Option<(String, &'static str)> {
@@ -5299,6 +5372,31 @@ fn helper() {}
         assert_eq!(
             rust_super_module_dir("src/controllers/auth.rs"),
             PathBuf::from("src/controllers")
+        );
+    }
+
+    #[test]
+    fn parses_python_from_import_member_targets() {
+        assert_eq!(
+            python_import_targets("from .support import audit, logger as log"),
+            vec![
+                ".support".to_string(),
+                ".support.audit".to_string(),
+                ".support.logger".to_string(),
+            ]
+        );
+        assert_eq!(
+            python_import_targets("from . import support"),
+            vec![".".to_string(), ".support".to_string()]
+        );
+        assert_eq!(
+            python_relative_target_candidates(PathBuf::from("app/controllers/support/audit")),
+            vec![
+                PathBuf::from("app/controllers/support/audit"),
+                PathBuf::from("app/controllers/support"),
+                PathBuf::from("app/controllers"),
+                PathBuf::from("app"),
+            ]
         );
     }
 
