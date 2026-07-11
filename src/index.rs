@@ -877,16 +877,31 @@ fn csharp_dependencies(
     source_file: &str,
 ) -> Vec<Dependency> {
     match node.kind() {
-        "using_directive" => text_dependencies(
-            node,
-            source,
-            language,
-            source_file,
-            "using",
-            csharp_using_targets,
-        ),
+        "using_directive" => csharp_using_dependencies(node, source, language, source_file),
         _ => Vec::new(),
     }
+}
+
+fn csharp_using_dependencies(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+) -> Vec<Dependency> {
+    let text = node.utf8_text(source).unwrap_or_default();
+    csharp_using_target(text)
+        .into_iter()
+        .map(|(target, kind)| Dependency {
+            source_file: source_file.to_string(),
+            resolved_file: None,
+            target,
+            local_alias: None,
+            imported_symbol: None,
+            kind: kind.to_string(),
+            language,
+            line: node.start_position().row + 1,
+        })
+        .collect()
 }
 
 fn php_dependencies(
@@ -1733,7 +1748,7 @@ fn resolve_dependency(
             resolve_javascript_like_target(root, dependency, package_conditions)
         }
         Language::C | Language::Cpp => resolve_c_like_target(root, dependency),
-        Language::CSharp => None,
+        Language::CSharp => resolve_csharp_target(root, dependency),
         Language::Go => resolve_go_target(root, dependency),
         Language::Java => resolve_java_target(root, dependency),
         Language::Python => resolve_python_target(root, dependency),
@@ -1828,6 +1843,82 @@ fn resolve_go_package_dir(root: &Path, package_dir: PathBuf) -> Option<String> {
             candidate.clone(),
         )
     });
+    existing_relative(root, candidates)
+}
+
+fn resolve_csharp_target(root: &Path, dependency: &Dependency) -> Option<String> {
+    if !matches!(
+        dependency.kind.as_str(),
+        "using" | "using_alias" | "using_static"
+    ) || csharp_external_target(&dependency.target)
+    {
+        return None;
+    }
+
+    let target_path = dependency.target.replace('.', "/");
+    let roots = csharp_source_roots(&dependency.source_file);
+    let exact_candidates = roots
+        .iter()
+        .map(|source_root| source_root.join(&target_path).with_extension("cs"))
+        .collect::<Vec<_>>();
+    if let Some(resolved) = existing_relative(root, exact_candidates) {
+        return Some(resolved);
+    }
+
+    for source_root in roots {
+        if let Some(resolved) = first_csharp_file_in_dir(root, source_root.join(&target_path)) {
+            return Some(resolved);
+        }
+    }
+    None
+}
+
+fn csharp_external_target(target: &str) -> bool {
+    target == "System"
+        || target.starts_with("System.")
+        || target == "Microsoft"
+        || target.starts_with("Microsoft.")
+}
+
+fn csharp_source_roots(source_file: &str) -> Vec<PathBuf> {
+    let normalized = source_file.replace('\\', "/");
+    let mut roots = Vec::new();
+
+    for marker in ["src", "test", "tests"] {
+        let marker_with_slash = format!("{marker}/");
+        if normalized.starts_with(&marker_with_slash) {
+            roots.push(PathBuf::from(marker));
+        }
+
+        let nested_marker = format!("/{marker}/");
+        if let Some(index) = normalized.find(&nested_marker) {
+            roots.push(PathBuf::from(&normalized[..index]).join(marker));
+        }
+    }
+
+    roots.extend([PathBuf::from("src"), PathBuf::new()]);
+    roots.sort();
+    roots.dedup();
+    roots
+}
+
+fn first_csharp_file_in_dir(root: &Path, dir: PathBuf) -> Option<String> {
+    let mut candidates = fs::read_dir(root.join(&dir))
+        .ok()?
+        .filter_map(|entry| entry.ok())
+        .filter_map(|entry| {
+            entry
+                .file_type()
+                .ok()
+                .filter(|file_type| file_type.is_file())
+                .and_then(|_| {
+                    let file_name = entry.file_name();
+                    let file_name_text = file_name.to_string_lossy();
+                    file_name_text.ends_with(".cs").then(|| dir.join(file_name))
+                })
+        })
+        .collect::<Vec<_>>();
+    candidates.sort();
     existing_relative(root, candidates)
 }
 
@@ -3271,30 +3362,30 @@ fn c_include_targets(text: &str) -> Vec<String> {
     Vec::new()
 }
 
-fn csharp_using_targets(text: &str) -> Vec<String> {
+fn csharp_using_target(text: &str) -> Option<(String, &'static str)> {
     let trimmed = text.trim();
     if trimmed.starts_with("using static ") {
-        return trimmed
-            .strip_prefix("using static ")
-            .map(|target| target.trim_end_matches(';').trim())
-            .filter(|target| !target.is_empty())
-            .map(|target| vec![target.to_string()])
-            .unwrap_or_default();
+        let target = trimmed
+            .strip_prefix("using static ")?
+            .trim_end_matches(';')
+            .trim();
+        return (!target.is_empty()).then(|| (target.to_string(), "using_static"));
     }
 
-    trimmed
-        .strip_prefix("using ")
-        .map(|target| {
-            target
-                .split('=')
-                .next_back()
-                .unwrap_or(target)
-                .trim_end_matches(';')
-                .trim()
-        })
-        .filter(|target| !target.is_empty() && !target.starts_with('('))
-        .map(|target| vec![target.to_string()])
-        .unwrap_or_default()
+    let target = trimmed.strip_prefix("using ")?;
+    let is_alias = target.contains('=');
+    let target = target
+        .split('=')
+        .next_back()
+        .unwrap_or(target)
+        .trim_end_matches(';')
+        .trim();
+    (!target.is_empty() && !target.starts_with('(')).then(|| {
+        (
+            target.to_string(),
+            if is_alias { "using_alias" } else { "using" },
+        )
+    })
 }
 
 fn php_use_targets(text: &str) -> Vec<String> {
@@ -4871,6 +4962,23 @@ public interface UserRepository {
                 .iter()
                 .any(|call| call.caller == "AuthService.Login" && call.callee == "Audit")
         );
+    }
+
+    #[test]
+    fn parses_csharp_using_targets_with_kinds() {
+        assert_eq!(
+            csharp_using_target("using App.Services;"),
+            Some(("App.Services".to_string(), "using"))
+        );
+        assert_eq!(
+            csharp_using_target("using Alias = App.Support.AuditLog;"),
+            Some(("App.Support.AuditLog".to_string(), "using_alias"))
+        );
+        assert_eq!(
+            csharp_using_target("using static App.Support.MathUtil;"),
+            Some(("App.Support.MathUtil".to_string(), "using_static"))
+        );
+        assert_eq!(csharp_using_target("using (resource) {}"), None);
     }
 
     #[test]

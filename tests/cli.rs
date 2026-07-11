@@ -2204,6 +2204,62 @@ fn cli_resolves_ruby_require_relative_imports() {
 }
 
 #[test]
+fn cli_resolves_csharp_using_imports() {
+    let fixture = csharp_using_fixture_project();
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 4);
+    assert_eq!(index["changed_files"], 4);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let deps = run_json([
+        "dependency-graph",
+        fixture.path().to_str().unwrap(),
+        "--limit",
+        "20",
+    ]);
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "App.Services"
+                    && dependency["resolved_file"] == "src/App/Services/UserService.cs"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "App.Support.AuditLog"
+                    && dependency["resolved_file"] == "src/App/Support/AuditLog.cs"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "App.Support.MathUtil"
+                    && dependency["resolved_file"] == "src/App/Support/MathUtil.cs"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "System" && dependency["resolved_file"].is_null()
+            })
+    );
+}
+
+#[test]
 fn cli_respects_null_package_imports_without_tsconfig_fallback() {
     let fixture = null_package_imports_fixture_project();
 
@@ -5082,6 +5138,73 @@ module Example
     end
   end
 end
+"#,
+    );
+    dir
+}
+
+fn csharp_using_fixture_project() -> TempDir {
+    let dir = TempDir::new().unwrap();
+    write_file(
+        &dir,
+        "src/App/Controllers/AuthController.cs",
+        r#"
+using System;
+using App.Services;
+using Audit = App.Support.AuditLog;
+using static App.Support.MathUtil;
+
+namespace App.Controllers;
+
+public class AuthController {
+    private readonly UserService users;
+
+    public AuthController(UserService users) {
+        this.users = users;
+    }
+
+    public string Login(string id) {
+        Audit.Record(id);
+        return ClampName(users.Find(id));
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/App/Services/UserService.cs",
+        r#"
+namespace App.Services;
+
+public class UserService {
+    public string Find(string id) {
+        return id;
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/App/Support/AuditLog.cs",
+        r#"
+namespace App.Support;
+
+public static class AuditLog {
+    public static void Record(string id) {}
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/App/Support/MathUtil.cs",
+        r#"
+namespace App.Support;
+
+public static class MathUtil {
+    public static string ClampName(string name) {
+        return name;
+    }
+}
 "#,
     );
     dir
