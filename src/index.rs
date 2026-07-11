@@ -2561,12 +2561,35 @@ fn resolve_c_like_target(root: &Path, dependency: &Dependency) -> Option<String>
         return None;
     }
 
-    resolve_relative_target(
+    if let Some(resolved) = resolve_relative_target(
         root,
         &dependency.source_file,
         &dependency.target,
         &["h", "hpp", "hh", "hxx", "c", "cc", "cpp", "cxx"],
-    )
+    ) {
+        return Some(resolved);
+    }
+
+    let source_dir = Path::new(&dependency.source_file)
+        .parent()
+        .unwrap_or(Path::new(""));
+    if let Some(resolved) = resolve_base(
+        root,
+        source_dir.join(&dependency.target),
+        &["h", "hpp", "hh", "hxx", "c", "cc", "cpp", "cxx"],
+    ) {
+        return Some(resolved);
+    }
+
+    if dependency.target.contains('/') {
+        return resolve_base(
+            root,
+            PathBuf::from(&dependency.target),
+            &["h", "hpp", "hh", "hxx", "c", "cc", "cpp", "cxx"],
+        );
+    }
+
+    None
 }
 
 fn resolve_javascript_like_target(

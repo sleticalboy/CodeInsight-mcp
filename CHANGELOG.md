@@ -19,6 +19,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - PHP `callees` output now preserves scoped call names such as `AuditLog.record` and can attach `callee_file` hints for resolved local class and function `use` imports.
 - Ruby `callees` output now preserves member call names such as `Audit.record` and can attach `callee_file` hints for resolved local `require_relative` imports.
 - Ruby dependency graph resolution now resolves `require_relative` imports to neighboring local `.rb` files while leaving gem-style `require` imports unresolved.
+- C/C++ dependency graph resolution now resolves quoted local includes from the source file directory, explicit relative paths, and obvious repository-root subpaths while leaving system includes unresolved.
 - PHP dependency graph resolution now resolves obvious same-repository namespace `use` imports under common roots such as `src`, including `App\` PSR-4 style paths and function imports when a matching file exists.
 - Java dependency graph resolution now resolves obvious same-repository class imports under common source roots such as `src/main/java`, including static member imports that can fall back to the containing class file.
 - Go dependency graph resolution now resolves same-module package imports declared by the nearest `go.mod` to representative local `.go` files.

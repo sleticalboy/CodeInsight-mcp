@@ -2008,6 +2008,61 @@ fn cli_resolves_package_subpath_metadata_fallbacks() {
 }
 
 #[test]
+fn cli_resolves_c_like_local_includes() {
+    let fixture = c_like_include_fixture_project();
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 5);
+    assert_eq!(index["changed_files"], 5);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let deps = run_json([
+        "dependency-graph",
+        fixture.path().to_str().unwrap(),
+        "--limit",
+        "20",
+    ]);
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "auth.h" && dependency["resolved_file"] == "src/auth.h"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "include/shared.hpp"
+                    && dependency["resolved_file"] == "include/shared.hpp"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "../include/shared.hpp"
+                    && dependency["resolved_file"] == "include/shared.hpp"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "<stdio.h>" && dependency["resolved_file"].is_null()
+            })
+    );
+}
+
+#[test]
 fn cli_resolves_go_module_imports() {
     let fixture = go_module_import_fixture_project();
 
@@ -5224,6 +5279,61 @@ export function indexRender() {
         r#"
 export function disabledRender() {
   return "disabled";
+}
+"#,
+    );
+    dir
+}
+
+fn c_like_include_fixture_project() -> TempDir {
+    let dir = TempDir::new().unwrap();
+    write_file(
+        &dir,
+        "src/auth.c",
+        r#"
+#include "auth.h"
+#include <stdio.h>
+
+int login(void) {
+  return AUTH_OK;
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/auth.h",
+        r#"
+#define AUTH_OK 1
+"#,
+    );
+    write_file(
+        &dir,
+        "src/service.cpp",
+        r#"
+#include "include/shared.hpp"
+
+int service(void) {
+  return shared_value();
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/client.cpp",
+        r#"
+#include "../include/shared.hpp"
+
+int client(void) {
+  return shared_value();
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "include/shared.hpp",
+        r#"
+inline int shared_value() {
+  return 1;
 }
 "#,
     );
