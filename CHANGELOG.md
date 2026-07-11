@@ -67,6 +67,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - Rust dependency graph resolution now resolves obvious local `crate::`, `self::`, and `super::` use paths to module files while leaving external crate imports unresolved.
 - Go `callees` output now preserves package-qualified call names such as `auth.Login` and can attach `callee_file` hints when same-module imports resolve to indexed local package files.
 - Java `callees` output now preserves class-qualified call names such as `AuthService.login` and can attach `callee_file` hints for resolved local class and static imports.
+- Java wildcard imports such as `import com.example.reporting.*` can now provide `callee_file` hints for explicit class-qualified calls like `Report.log` without marking the wildcard dependency itself as resolved.
 - C# `callees` output now preserves qualified call names such as `Audit.Record` and can attach `callee_file` hints for resolved local alias and static `using` directives.
 - C# dependency graph resolution now resolves obvious same-repository `using` directives under common roots such as `src`, including alias/static using targets and namespace directories with representative `.cs` files.
 - PHP `callees` output now preserves scoped call names such as `AuditLog.record` and can attach `callee_file` hints for resolved local class and function `use` imports.

@@ -2657,8 +2657,8 @@ fn cli_resolves_java_source_imports() {
     let fixture = java_source_import_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 3);
-    assert_eq!(index["changed_files"], 3);
+    assert_eq!(index["indexed_files"], 4);
+    assert_eq!(index["changed_files"], 4);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -2703,6 +2703,16 @@ fn cli_resolves_java_source_imports() {
             .unwrap()
             .iter()
             .any(|dependency| {
+                dependency["target"] == "com.example.reporting.*"
+                    && dependency["resolved_file"].is_null()
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
                 dependency["target"] == "com.acme.RemoteClient"
                     && dependency["resolved_file"].is_null()
             })
@@ -2722,6 +2732,10 @@ fn cli_resolves_java_source_imports() {
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "defaultName"
             && call["callee_file"] == "src/main/java/com/example/util/Names.java"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "Report.log"
+            && call["callee_file"] == "src/main/java/com/example/reporting/Report.java"
     }));
     assert!(
         callees
@@ -6332,6 +6346,7 @@ package com.example.app;
 
 import com.acme.RemoteClient;
 import com.example.auth.AuthService;
+import com.example.reporting.*;
 import static com.example.util.Names.defaultName;
 import java.util.List;
 
@@ -6343,6 +6358,7 @@ public class App {
     }
 
     public String run(RemoteClient remote) {
+        Report.log();
         return AuthService.login(defaultName(), names.size(), remote.id());
     }
 }
@@ -6370,6 +6386,18 @@ package com.example.util;
 public class Names {
     public static String defaultName() {
         return "guest";
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/main/java/com/example/reporting/Report.java",
+        r#"
+package com.example.reporting;
+
+public class Report {
+    public static void log() {
     }
 }
 "#,
