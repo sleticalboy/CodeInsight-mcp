@@ -8,6 +8,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ### Changed
 
+- Rust dependency graph resolution now resolves obvious local `crate::`, `self::`, and `super::` use paths to module files while leaving external crate imports unresolved.
 - C# dependency graph resolution now resolves obvious same-repository `using` directives under common roots such as `src`, including alias/static using targets and namespace directories with representative `.cs` files.
 - Ruby dependency graph resolution now resolves `require_relative` imports to neighboring local `.rb` files while leaving gem-style `require` imports unresolved.
 - PHP dependency graph resolution now resolves obvious same-repository namespace `use` imports under common roots such as `src`, including `App\` PSR-4 style paths and function imports when a matching file exists.

@@ -2095,7 +2095,77 @@ fn resolve_rust_target(root: &Path, dependency: &Dependency) -> Option<String> {
         return existing_relative(root, vec![direct, nested]);
     }
 
+    if dependency.kind == "use" {
+        return resolve_rust_use_target(root, dependency);
+    }
+
     None
+}
+
+fn resolve_rust_use_target(root: &Path, dependency: &Dependency) -> Option<String> {
+    let (base, rest) = if let Some(rest) = dependency.target.strip_prefix("crate::") {
+        (rust_crate_source_root(&dependency.source_file), rest)
+    } else if let Some(rest) = dependency.target.strip_prefix("super::") {
+        (rust_super_module_dir(&dependency.source_file), rest)
+    } else if let Some(rest) = dependency.target.strip_prefix("self::") {
+        (rust_current_module_dir(&dependency.source_file), rest)
+    } else {
+        return None;
+    };
+
+    let candidates = rust_use_path_candidates(base, rest);
+    existing_relative(root, candidates)
+}
+
+fn rust_crate_source_root(source_file: &str) -> PathBuf {
+    let normalized = source_file.replace('\\', "/");
+    if normalized.starts_with("src/") || normalized == "src" {
+        return PathBuf::from("src");
+    }
+    if let Some(index) = normalized.find("/src/") {
+        return PathBuf::from(&normalized[..index]).join("src");
+    }
+    PathBuf::new()
+}
+
+fn rust_super_module_dir(source_file: &str) -> PathBuf {
+    let source_path = Path::new(source_file);
+    let source_dir = source_path.parent().unwrap_or(Path::new(""));
+    if source_path.file_name().and_then(|name| name.to_str()) == Some("mod.rs") {
+        return source_dir.parent().unwrap_or(Path::new("")).to_path_buf();
+    }
+    source_dir.to_path_buf()
+}
+
+fn rust_current_module_dir(source_file: &str) -> PathBuf {
+    let source_path = Path::new(source_file);
+    let source_dir = source_path.parent().unwrap_or(Path::new(""));
+    if source_path.file_name().and_then(|name| name.to_str()) == Some("mod.rs") {
+        return source_dir.to_path_buf();
+    }
+    let Some(stem) = source_path.file_stem() else {
+        return source_dir.to_path_buf();
+    };
+    source_dir.join(stem)
+}
+
+fn rust_use_path_candidates(base: PathBuf, target: &str) -> Vec<PathBuf> {
+    let segments = target
+        .split("::")
+        .map(|segment| segment.trim())
+        .filter(|segment| !segment.is_empty())
+        .collect::<Vec<_>>();
+    if segments.is_empty() {
+        return Vec::new();
+    }
+
+    let mut candidates = Vec::new();
+    for len in (1..=segments.len()).rev() {
+        let candidate = base.join(segments[..len].join("/"));
+        candidates.push(candidate.with_extension("rs"));
+        candidates.push(candidate.join("mod.rs"));
+    }
+    candidates
 }
 
 fn resolve_c_like_target(root: &Path, dependency: &Dependency) -> Option<String> {
@@ -5207,6 +5277,29 @@ fn helper() {}
         assert!(names.contains(&"Store"));
         assert!(names.contains(&"open"));
         assert!(names.contains(&"helper"));
+    }
+
+    #[test]
+    fn builds_rust_use_path_candidates() {
+        assert_eq!(
+            rust_use_path_candidates(PathBuf::from("src"), "support::audit::record"),
+            vec![
+                PathBuf::from("src/support/audit/record.rs"),
+                PathBuf::from("src/support/audit/record/mod.rs"),
+                PathBuf::from("src/support/audit.rs"),
+                PathBuf::from("src/support/audit/mod.rs"),
+                PathBuf::from("src/support.rs"),
+                PathBuf::from("src/support/mod.rs"),
+            ]
+        );
+        assert_eq!(
+            rust_crate_source_root("crates/app/src/lib.rs"),
+            PathBuf::from("crates/app/src")
+        );
+        assert_eq!(
+            rust_super_module_dir("src/controllers/auth.rs"),
+            PathBuf::from("src/controllers")
+        );
     }
 
     #[test]

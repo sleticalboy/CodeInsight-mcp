@@ -2260,6 +2260,52 @@ fn cli_resolves_csharp_using_imports() {
 }
 
 #[test]
+fn cli_resolves_rust_crate_and_super_use_imports() {
+    let fixture = rust_use_fixture_project();
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 6);
+    assert_eq!(index["changed_files"], 6);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let deps = run_json([
+        "dependency-graph",
+        fixture.path().to_str().unwrap(),
+        "--limit",
+        "30",
+    ]);
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "crate::support::audit"
+                    && dependency["resolved_file"] == "src/support/audit.rs"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "super::support::helper"
+                    && dependency["resolved_file"] == "src/controllers/support.rs"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "serde::Serialize" && dependency["resolved_file"].is_null()
+            })
+    );
+}
+
+#[test]
 fn cli_respects_null_package_imports_without_tsconfig_fallback() {
     let fixture = null_package_imports_fixture_project();
 
@@ -5204,6 +5250,70 @@ public static class MathUtil {
     public static string ClampName(string name) {
         return name;
     }
+}
+"#,
+    );
+    dir
+}
+
+fn rust_use_fixture_project() -> TempDir {
+    let dir = TempDir::new().unwrap();
+    write_file(
+        &dir,
+        "src/lib.rs",
+        r#"
+mod controllers;
+mod support;
+
+use crate::support::audit;
+use serde::Serialize;
+
+pub fn run() {
+    audit::record("root");
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/support/mod.rs",
+        r#"
+pub mod audit;
+"#,
+    );
+    write_file(
+        &dir,
+        "src/support/audit.rs",
+        r#"
+pub fn record(id: &str) {
+    let _ = id;
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/controllers/mod.rs",
+        r#"
+pub mod auth;
+pub mod support;
+"#,
+    );
+    write_file(
+        &dir,
+        "src/controllers/auth.rs",
+        r#"
+use super::support::helper;
+
+pub fn login(id: &str) -> String {
+    helper(id)
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/controllers/support.rs",
+        r#"
+pub fn helper(id: &str) -> String {
+    id.to_string()
 }
 "#,
     );
