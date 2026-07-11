@@ -167,6 +167,10 @@ Rust is included early so the project can index itself during development.
 - [x] Release note extraction and prepare-release scripts.
 - [x] Homebrew formula update/sync scripts.
 - [x] Release verification script.
-- [ ] Run a clean release-readiness rehearsal from a fresh checkout.
-- [ ] Decide the next public tag/version and prepare release notes.
-- [ ] Verify GitHub Release, Docker image, and Homebrew tap after tagging.
+- [x] Run a release-readiness rehearsal covering format, tests, MCP smoke,
+  semantic smoke, and release install smoke.
+- [x] Decide the next public tag/version and prepare release notes.
+- [x] Verify GitHub Release, Docker image, and Homebrew tap after tagging.
+- [ ] Shorten generated release notes for large accumulated changelog sections.
+- [ ] Run a clean release-readiness rehearsal from a fresh checkout before the
+  next public tag.

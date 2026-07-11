@@ -46,12 +46,13 @@ MVP workflow is now implemented end to end.
   and benchmark fixtures.
 - Release, Docker image, Homebrew tap sync, install, verify, and release-note
   helper scripts.
+- Published and verified `v0.1.10` with GitHub Release assets, Docker
+  multi-arch images, public install script, and Homebrew tap formula.
 
 ## Next
 
-- Release-readiness pass: verify install paths, release notes, Docker image
-  workflow, Homebrew tap sync, and tagged-release verification from a clean
-  checkout.
+- Tighten post-release ergonomics, including shorter release notes and clearer
+  Homebrew tap PR handoff during verification.
 - Keep tightening JavaScript package-manager and bundler-specific edge cases
   where they improve local code navigation.
 - Add broader real-repository benchmark evidence for token/context reduction.

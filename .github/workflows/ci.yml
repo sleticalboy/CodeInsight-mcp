@@ -74,6 +74,7 @@ jobs:
       - run: |
           set -euo pipefail
           grep -q 'usage: scripts/verify-release.sh <tag-or-version>' /tmp/codeinsight-verify-release-help.txt
+          grep -q 'Homebrew tap update is still waiting in an open PR' /tmp/codeinsight-verify-release-help.txt
       - run: |
           set -euo pipefail
           tmp="$(mktemp -d)"

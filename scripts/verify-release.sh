@@ -31,6 +31,9 @@ Verifies a published CodeInsight release:
 - GHCR multi-arch Docker manifests and container version output
 - Homebrew tap formula and fetch checksum
 
+If the Homebrew tap update is still waiting in an open PR, this script reports
+the pending PR and exits non-zero. Merge the tap PR, then rerun verification.
+
 Environment:
   CODEINSIGHT_REPO=sleticalboy/CodeInsight-mcp
   CODEINSIGHT_DOCKER_IMAGE=ghcr.io/sleticalboy/codeinsight-mcp
@@ -199,14 +202,53 @@ verify_homebrew_remote_formula() {
   log "Verify remote Homebrew formula"
   formula="$(gh api "repos/${HOMEBREW_REPO}/contents/Formula/codeinsight.rb" --jq .content | base64 --decode)"
 
-  grep -q "releases/download/${tag}/codeinsight-aarch64-apple-darwin.tar.gz" <<<"$formula"
-  grep -q "releases/download/${tag}/codeinsight-x86_64-apple-darwin.tar.gz" <<<"$formula"
-  grep -q "releases/download/${tag}/codeinsight-aarch64-unknown-linux-gnu.tar.gz" <<<"$formula"
-  grep -q "releases/download/${tag}/codeinsight-x86_64-unknown-linux-gnu.tar.gz" <<<"$formula"
+  if ! homebrew_formula_has_tag "$formula" "$tag"; then
+    if report_pending_homebrew_pr "$tag"; then
+      exit 1
+    fi
+    echo "remote Homebrew formula does not reference ${tag}: ${HOMEBREW_REPO}/Formula/codeinsight.rb" >&2
+    exit 1
+  fi
 
   printf '%s\n' "$formula" >"$TEMP_DIR/codeinsight.rb"
   ruby -c "$TEMP_DIR/codeinsight.rb" >/dev/null
   printf 'remote formula: %s\n' "$tag"
+}
+
+homebrew_formula_has_tag() {
+  local formula="$1"
+  local tag="$2"
+
+  grep -q "releases/download/${tag}/codeinsight-aarch64-apple-darwin.tar.gz" <<<"$formula" &&
+    grep -q "releases/download/${tag}/codeinsight-x86_64-apple-darwin.tar.gz" <<<"$formula" &&
+    grep -q "releases/download/${tag}/codeinsight-aarch64-unknown-linux-gnu.tar.gz" <<<"$formula" &&
+    grep -q "releases/download/${tag}/codeinsight-x86_64-unknown-linux-gnu.tar.gz" <<<"$formula"
+}
+
+report_pending_homebrew_pr() {
+  local tag="$1"
+  local branch="codeinsight-${tag}"
+  local pr_json number url title
+
+  pr_json="$(gh pr list \
+    --repo "$HOMEBREW_REPO" \
+    --head "$branch" \
+    --base main \
+    --state open \
+    --json number,title,url \
+    --jq '.[0] // empty')" || true
+
+  if [ -z "$pr_json" ]; then
+    return 1
+  fi
+
+  number="$(jq -r .number <<<"$pr_json")"
+  title="$(jq -r .title <<<"$pr_json")"
+  url="$(jq -r .url <<<"$pr_json")"
+  echo "remote Homebrew formula does not reference ${tag} yet." >&2
+  echo "pending Homebrew tap PR #${number}: ${title}" >&2
+  echo "$url" >&2
+  echo "merge the tap PR, then rerun: scripts/verify-release.sh ${tag}" >&2
 }
 
 tap_path() {
