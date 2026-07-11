@@ -95,6 +95,9 @@ Current behavior:
 - PHP scoped calls such as `AuditLog::record()` and imported function calls
   such as `audit_login()` can include `callee_file` when the `use` import
   resolves to an indexed local source file with a matching symbol.
+- Ruby member calls such as `Audit.record()` can include `callee_file` when a
+  local `require_relative` import resolves to an indexed local source file with
+  a matching symbol.
 
 ## Boundaries
 

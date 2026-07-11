@@ -2276,6 +2276,24 @@ fn cli_resolves_ruby_require_relative_imports() {
                 dependency["target"] == "json" && dependency["resolved_file"].is_null()
             })
     );
+
+    let callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "Example.AuthService.login",
+        "--limit",
+        "10",
+    ]);
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "Audit.record" && call["callee_file"] == "lib/support/audit.rb"
+    }));
+    assert!(
+        callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|call| { call["callee"] != "JSON.generate" || call["callee_file"].is_null() })
+    );
 }
 
 #[test]

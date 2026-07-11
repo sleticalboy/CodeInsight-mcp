@@ -390,6 +390,13 @@ fn call_target_text(node: Node<'_>, source: &[u8], language: Language) -> Option
 }
 
 fn ruby_call_target_text(node: Node<'_>, source: &[u8]) -> Option<String> {
+    if let (Some(receiver), Some(method)) = (
+        child_text(node, "receiver", source),
+        child_text(node, "method", source),
+    ) {
+        return Some(format!("{receiver}.{method}"));
+    }
+
     child_text(node, "method", source)
         .or_else(|| child_text(node, "name", source))
         .or_else(|| {
@@ -477,6 +484,9 @@ fn normalize_callee(raw: &str, language: Language) -> Option<String> {
     }
     if language == Language::Php {
         return normalize_php_callee(raw);
+    }
+    if language == Language::Ruby {
+        return normalize_ruby_callee(raw);
     }
 
     normalize_simple_callee(raw)
@@ -666,6 +676,10 @@ fn normalize_csharp_callee(raw: &str) -> Option<String> {
 fn normalize_php_callee(raw: &str) -> Option<String> {
     let trimmed = raw.trim().trim_start_matches('\\').replace("::", ".");
     normalize_dot_callee(&trimmed)
+}
+
+fn normalize_ruby_callee(raw: &str) -> Option<String> {
+    normalize_dot_callee(raw)
 }
 
 fn normalize_dot_callee(raw: &str) -> Option<String> {
@@ -1209,17 +1223,53 @@ fn ruby_dependencies(
 
     ruby_string_argument_targets(node, source)
         .into_iter()
-        .map(|target| Dependency {
-            source_file: source_file.to_string(),
-            target,
-            resolved_file: None,
-            local_alias: None,
-            imported_symbol: None,
-            kind: method.clone(),
-            language,
-            line: node.start_position().row + 1,
+        .map(|target| {
+            let (local_alias, imported_symbol) = ruby_require_alias(&target, &method);
+            Dependency {
+                source_file: source_file.to_string(),
+                target,
+                resolved_file: None,
+                local_alias,
+                imported_symbol,
+                kind: method.clone(),
+                language,
+                line: node.start_position().row + 1,
+            }
         })
         .collect()
+}
+
+fn ruby_require_alias(target: &str, kind: &str) -> (Option<String>, Option<String>) {
+    if kind != "require_relative" {
+        return (None, None);
+    }
+
+    let Some(stem) = Path::new(target).file_stem().and_then(|stem| stem.to_str()) else {
+        return (None, None);
+    };
+    let Some(alias) = ruby_constant_alias(stem) else {
+        return (None, None);
+    };
+
+    (Some(alias), Some("*".to_string()))
+}
+
+fn ruby_constant_alias(stem: &str) -> Option<String> {
+    let mut alias = String::new();
+    for part in stem
+        .split(['_', '-'])
+        .map(str::trim)
+        .filter(|part| !part.is_empty())
+    {
+        let mut chars = part.chars();
+        let Some(first) = chars.next() else {
+            continue;
+        };
+        alias.extend(first.to_uppercase());
+        alias.push_str(chars.as_str());
+    }
+
+    if alias.is_empty() { None } else { Some(alias) }
 }
 
 fn rust_dependencies(
@@ -5823,6 +5873,27 @@ interface UserRepository {
     }
 
     #[test]
+    fn parses_ruby_require_relative_aliases() {
+        assert_eq!(
+            ruby_require_alias("support/audit_log", "require_relative"),
+            (Some("AuditLog".to_string()), Some("*".to_string()))
+        );
+        assert_eq!(ruby_require_alias("json", "require"), (None, None));
+    }
+
+    #[test]
+    fn normalizes_ruby_member_calls() {
+        assert_eq!(
+            normalize_callee("Audit.record", Language::Ruby),
+            Some("Audit.record".to_string())
+        );
+        assert_eq!(
+            normalize_callee("audit(user)", Language::Ruby),
+            Some("audit".to_string())
+        );
+    }
+
+    #[test]
     fn extracts_ruby_symbols_dependencies_and_calls() {
         let source = r#"
 require "json"
@@ -5838,6 +5909,7 @@ module Example
 
     def login(id)
       user = @repository.find(id)
+      Audit.record(user)
       audit(user)
       true
     end
@@ -5880,6 +5952,9 @@ end
                 .iter()
                 .any(|call| call.caller == "Example.AuthService.login" && call.callee == "audit")
         );
+        assert!(calls.iter().any(|call| {
+            call.caller == "Example.AuthService.login" && call.callee == "Audit.record"
+        }));
     }
 
     #[test]
