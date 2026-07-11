@@ -71,6 +71,7 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - C# `callees` output now preserves qualified call names such as `Audit.Record` and can attach `callee_file` hints for resolved local alias and static `using` directives.
 - C# dependency graph resolution now resolves obvious same-repository `using` directives under common roots such as `src`, including alias/static using targets and namespace directories with representative `.cs` files.
 - PHP `callees` output now preserves scoped call names such as `AuditLog.record` and can attach `callee_file` hints for resolved local class and function `use` imports.
+- PHP grouped `use` declarations such as `use App\Support\{Metrics as MetricsAlias}` and grouped function imports now resolve to local files and can provide `callee_file` hints.
 - Ruby `callees` output now preserves member call names such as `Audit.record` and can attach `callee_file` hints for resolved local `require_relative` imports.
 - Ruby dependency graph resolution now resolves `require_relative` imports to neighboring local `.rb` files while leaving gem-style `require` imports unresolved.
 - C/C++ dependency graph resolution now resolves quoted local includes from the source file directory, explicit relative paths, and obvious repository-root subpaths while leaving system includes unresolved.

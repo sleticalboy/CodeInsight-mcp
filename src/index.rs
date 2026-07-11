@@ -4043,9 +4043,56 @@ fn php_use_entries_from_target(target: &str) -> Vec<(String, Option<String>, Opt
         (target, "class")
     };
 
+    if target.contains('{') {
+        return php_grouped_use_entries(target, use_kind);
+    }
+
     target
         .split(',')
         .filter_map(|part| php_use_entry(part, use_kind))
+        .collect()
+}
+
+fn php_grouped_use_entries(
+    target: &str,
+    use_kind: &str,
+) -> Vec<(String, Option<String>, Option<String>)> {
+    let Some(open) = target.find('{') else {
+        return Vec::new();
+    };
+    let Some(close) = matching_delimiter(target, open, '{', '}') else {
+        return Vec::new();
+    };
+    let prefix = target[..open]
+        .trim()
+        .trim_start_matches('\\')
+        .trim_end_matches('\\')
+        .trim();
+    let members = &target[open + 1..close];
+
+    split_top_level_commas(members)
+        .into_iter()
+        .filter_map(|member| {
+            let member = member.trim();
+            if member.is_empty() {
+                return None;
+            }
+
+            let (member, member_kind) = if let Some(member) = member.strip_prefix("function ") {
+                (member.trim(), "function")
+            } else if let Some(member) = member.strip_prefix("const ") {
+                (member.trim(), "const")
+            } else {
+                (member, use_kind)
+            };
+
+            let full_target = if prefix.is_empty() {
+                member.to_string()
+            } else {
+                format!("{prefix}\\{member}")
+            };
+            php_use_entry(&full_target, member_kind)
+        })
         .collect()
 }
 
@@ -5965,6 +6012,36 @@ interface UserRepository {
                 Some("audit_login".to_string()),
                 Some("audit_login".to_string())
             )]
+        );
+        assert_eq!(
+            php_use_entries("use App\\Support\\{AuditLog, Metrics as MetricsAlias};"),
+            vec![
+                (
+                    "App\\Support\\AuditLog".to_string(),
+                    Some("AuditLog".to_string()),
+                    Some("*".to_string())
+                ),
+                (
+                    "App\\Support\\Metrics".to_string(),
+                    Some("MetricsAlias".to_string()),
+                    Some("*".to_string())
+                )
+            ]
+        );
+        assert_eq!(
+            php_use_entries("use function App\\Support\\{audit_login, audit_event as event};"),
+            vec![
+                (
+                    "App\\Support\\audit_login".to_string(),
+                    Some("audit_login".to_string()),
+                    Some("audit_login".to_string())
+                ),
+                (
+                    "App\\Support\\audit_event".to_string(),
+                    Some("event".to_string()),
+                    Some("audit_event".to_string())
+                )
+            ]
         );
     }
 

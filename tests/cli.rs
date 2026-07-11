@@ -2751,8 +2751,8 @@ fn cli_resolves_php_namespace_use_imports() {
     let fixture = php_namespace_use_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 4);
-    assert_eq!(index["changed_files"], 4);
+    assert_eq!(index["indexed_files"], 6);
+    assert_eq!(index["changed_files"], 6);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -2797,6 +2797,26 @@ fn cli_resolves_php_namespace_use_imports() {
             .unwrap()
             .iter()
             .any(|dependency| {
+                dependency["target"] == "App\\Support\\Metrics"
+                    && dependency["resolved_file"] == "src/Support/Metrics.php"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "App\\Support\\audit_event"
+                    && dependency["resolved_file"] == "src/Support/audit_event.php"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
                 dependency["target"] == "Vendor\\Package\\RemoteClient"
                     && dependency["resolved_file"].is_null()
             })
@@ -2814,6 +2834,12 @@ fn cli_resolves_php_namespace_use_imports() {
     }));
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "audit_login" && call["callee_file"] == "src/Support/audit_login.php"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "MetricsAlias.track" && call["callee_file"] == "src/Support/Metrics.php"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "event" && call["callee_file"] == "src/Support/audit_event.php"
     }));
     assert!(
         callees
@@ -6415,7 +6441,9 @@ namespace App\Controller;
 
 use App\Repository\UserRepository;
 use App\Support\AuditLog;
+use App\Support\{Metrics as MetricsAlias};
 use function App\Support\audit_login;
+use function App\Support\{audit_event as event};
 use Vendor\Package\RemoteClient;
 
 class AuthController
@@ -6426,6 +6454,8 @@ class AuthController
     {
         AuditLog::record($remote->id());
         audit_login($remote->id());
+        MetricsAlias::track();
+        event($remote->id());
         return $this->users->exists($remote->id());
     }
 }
@@ -6467,6 +6497,31 @@ class AuditLog
 namespace App\Support;
 
 function audit_login(string $id): void
+{
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/Support/Metrics.php",
+        r#"<?php
+namespace App\Support;
+
+class Metrics
+{
+    public static function track(): void
+    {
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/Support/audit_event.php",
+        r#"<?php
+namespace App\Support;
+
+function audit_event(string $id): void
 {
 }
 "#,
