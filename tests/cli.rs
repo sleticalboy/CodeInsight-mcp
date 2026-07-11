@@ -2946,8 +2946,8 @@ fn cli_resolves_rust_crate_and_super_use_imports() {
     let fixture = rust_use_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 7);
-    assert_eq!(index["changed_files"], 7);
+    assert_eq!(index["indexed_files"], 9);
+    assert_eq!(index["changed_files"], 9);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -2984,6 +2984,26 @@ fn cli_resolves_rust_crate_and_super_use_imports() {
             .any(|dependency| {
                 dependency["target"] == "self::nested::tool"
                     && dependency["resolved_file"] == "src/support/nested.rs"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "plain"
+                    && dependency["kind"] == "mod"
+                    && dependency["resolved_file"] == "src/plain.rs"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "plain" || dependency["resolved_file"] != "src/plain/mod.rs"
             })
     );
     assert!(
@@ -6535,6 +6555,7 @@ fn rust_use_fixture_project() -> TempDir {
         "src/lib.rs",
         r#"
 mod controllers;
+mod plain;
 mod support;
 
 use crate::support::audit;
@@ -6542,6 +6563,24 @@ use serde::Serialize;
 
 pub fn run() {
     audit::record("root");
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/plain.rs",
+        r#"
+pub fn direct() -> &'static str {
+    "direct"
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/plain/mod.rs",
+        r#"
+pub fn nested() -> &'static str {
+    "nested"
 }
 "#,
     );
