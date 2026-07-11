@@ -24,6 +24,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   omitted-candidate follow-up calls.
 - Added a client workflow guide that connects overview, context packs, reading
   plans, continuation follow-ups, and impact analysis.
+- Benchmark reports now include context-pack applied budget, omitted-file, and
+  continuation status metrics, and the smoke/large reports were refreshed.
 - Updated MVP status docs after the verified `v0.1.10` release.
 
 ## [0.1.10] - 2026-07-11

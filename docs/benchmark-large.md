@@ -1,6 +1,6 @@
 # CodeInsight v0.1 Large Repository Benchmark
 
-Generated at: 2026-07-06 03:50:53 UTC
+Generated at: 2026-07-11 11:00:55 UTC
 
 This is a benchmark fixture report, not a controlled performance benchmark. It
 verifies that CodeInsight can index real public repositories across the MVP
@@ -18,22 +18,22 @@ Environment:
 
 ## Summary
 
-| Repository | Focus | Commit | Files | Lines | Symbols | Skipped | Errors | Index ms | Index budget ms | Budget status | DB size | Context files | Ranges | Context lines | Line reduction | Tokens | Truncated | First context file |
-| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
-| express | JavaScript | `66878d3` | 141 | 21440 | 2428 | 72 | 0 | 3205 | 10000 | pass | 5.6M | 4 | 13 | 362 | 98.3% | 2360 | false | `lib/application.js` |
-| flask | Python | `36e4a82` | 83 | 18337 | 1620 | 153 | 0 | 292 | 5000 | pass | 968K | 1 | 4 | 157 | 99.1% | 1830 | false | `src/flask/app.py` |
-| gin | Go | `34dac20` | 99 | 24099 | 1857 | 31 | 0 | 453 | 5000 | pass | 1.6M | 1 | 9 | 229 | 99.0% | 2387 | false | `gin.go` |
-| tokio | Rust | `c637f6e` | 789 | 177186 | 8447 | 75 | 0 | 3049 | 20000 | pass | 5.8M | 11 | 15 | 188 | 99.9% | 1389 | false | `tokio/src/lib.rs` |
+| Repository | Focus | Commit | Files | Lines | Symbols | Skipped | Errors | Index ms | Index budget ms | Budget status | DB size | Context files | Ranges | Context lines | Line reduction | Tokens | Applied budget | Omitted files | Continuation | Truncated | First context file |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |
+| express | JavaScript | `ba00676` | 141 | 21440 | 2428 | 72 | 0 | 5925 | 10000 | pass | 6.1M | 4 | 13 | 362 | 98.3% | 2360 | 6000 | 0 | complete | false | `lib/application.js` |
+| flask | Python | `36e4a82` | 83 | 18337 | 1620 | 153 | 0 | 588 | 5000 | pass | 1.2M | 12 | 15 | 573 | 96.9% | 5851 | 6000 | 2 | omitted_candidates_available | true | `src/flask/app.py` |
+| gin | Go | `34dac20` | 99 | 24099 | 1857 | 31 | 0 | 611 | 5000 | pass | 1.8M | 4 | 12 | 305 | 98.7% | 2969 | 6000 | 0 | complete | false | `gin.go` |
+| tokio | Rust | `9c465e2` | 789 | 177263 | 8451 | 75 | 0 | 4322 | 20000 | pass | 6.6M | 18 | 23 | 508 | 99.7% | 5054 | 6000 | 0 | complete | false | `tokio/src/lib.rs` |
 
 ## Details
 
 ## express
 
 - URL: https://github.com/expressjs/express.git
-- Commit: `66878d3e70437ba7b887ec519a3e33edc5bca0c7`
+- Commit: `ba006766fb964571723138708eacaba0f55759cd`
 - Indexed files: 141
 - Symbols: 2428
-- Duration: 3205 ms
+- Duration: 5925 ms
 - Index budget: 10000 ms (pass)
 - Context seed file: `lib/application.js`
 - Context task: understand express application routing behavior
@@ -41,6 +41,11 @@ Environment:
 - Context ranges: 13
 - Context lines: 362 of 21440 (98.3% reduction)
 - Context estimated tokens: 2360
+- Context applied token budget: 6000
+- Context omitted files: 0
+- Context omitted ranges: 0
+- Context truncation reason: none
+- Context continuation status: complete
 - Context truncated: false
 
 Context pack files:
@@ -94,21 +99,37 @@ Call edge guardrails:
 - Commit: `36e4a824f340fdee7ed50937ba8e7f6bc7d17f81`
 - Indexed files: 83
 - Symbols: 1620
-- Duration: 292 ms
+- Duration: 588 ms
 - Index budget: 5000 ms (pass)
 - Context seed file: `src/flask/app.py`
 - Context task: understand flask application dispatch behavior
-- Context files: 1
-- Context ranges: 4
-- Context lines: 157 of 18337 (99.1% reduction)
-- Context estimated tokens: 1830
-- Context truncated: false
+- Context files: 12
+- Context ranges: 15
+- Context lines: 573 of 18337 (96.9% reduction)
+- Context estimated tokens: 5851
+- Context applied token budget: 6000
+- Context omitted files: 2
+- Context omitted ranges: 2
+- Context truncation reason: token_budget_exhausted
+- Context continuation status: omitted_candidates_available
+- Context truncated: true
 
 Context pack files:
 
 | File | Ranges | First range | Importances |
 | --- | ---: | --- | --- |
 | `src/flask/app.py` | 4 | 1-40 | high |
+| `src/flask/globals.py` | 1 | 1-40 | high |
+| `src/flask/__init__.py` | 1 | 1-39 | medium |
+| `src/flask/cli.py` | 1 | 1-40 | medium |
+| `src/flask/ctx.py` | 1 | 1-40 | medium |
+| `src/flask/debughelpers.py` | 1 | 1-40 | medium |
+| `src/flask/helpers.py` | 1 | 1-40 | medium |
+| `src/flask/sansio/app.py` | 1 | 1-40 | medium |
+| `src/flask/sessions.py` | 1 | 1-40 | medium |
+| `src/flask/signals.py` | 1 | 1-17 | medium |
+| `src/flask/templating.py` | 1 | 1-40 | medium |
+| `src/flask/testing.py` | 1 | 1-40 | medium |
 
 Language breakdown:
 
@@ -122,14 +143,19 @@ Language breakdown:
 - Commit: `34dac209ffb6ef85cc78c5d217bbb7ad001d68fd`
 - Indexed files: 99
 - Symbols: 1857
-- Duration: 453 ms
+- Duration: 611 ms
 - Index budget: 5000 ms (pass)
 - Context seed file: `gin.go`
 - Context task: understand gin engine routing behavior
-- Context files: 1
-- Context ranges: 9
-- Context lines: 229 of 24099 (99.0% reduction)
-- Context estimated tokens: 2387
+- Context files: 4
+- Context ranges: 12
+- Context lines: 305 of 24099 (98.7% reduction)
+- Context estimated tokens: 2969
+- Context applied token budget: 6000
+- Context omitted files: 0
+- Context omitted ranges: 0
+- Context truncation reason: none
+- Context continuation status: complete
 - Context truncated: false
 
 Context pack files:
@@ -137,6 +163,9 @@ Context pack files:
 | File | Ranges | First range | Importances |
 | --- | ---: | --- | --- |
 | `gin.go` | 9 | 1-7 | high |
+| `internal/bytesconv/bytesconv.go` | 1 | 1-21 | high |
+| `internal/fs/fs.go` | 1 | 1-21 | medium |
+| `render/bson.go` | 1 | 1-34 | medium |
 
 Language breakdown:
 
@@ -147,17 +176,22 @@ Language breakdown:
 ## tokio
 
 - URL: https://github.com/tokio-rs/tokio.git
-- Commit: `c637f6e73d06f36d933cc3edaf45111c06b79c18`
+- Commit: `9c465e2f427f12999054bf086682080764dd3364`
 - Indexed files: 789
-- Symbols: 8447
-- Duration: 3049 ms
+- Symbols: 8451
+- Duration: 4322 ms
 - Index budget: 20000 ms (pass)
 - Context seed file: `tokio/src/lib.rs`
 - Context task: understand tokio runtime public API
-- Context files: 11
-- Context ranges: 15
-- Context lines: 188 of 177186 (99.9% reduction)
-- Context estimated tokens: 1389
+- Context files: 18
+- Context ranges: 23
+- Context lines: 508 of 177263 (99.7% reduction)
+- Context estimated tokens: 5054
+- Context applied token budget: 6000
+- Context omitted files: 0
+- Context omitted ranges: 0
+- Context truncation reason: none
+- Context continuation status: complete
 - Context truncated: false
 
 Context pack files:
@@ -165,19 +199,26 @@ Context pack files:
 | File | Ranges | First range | Importances |
 | --- | ---: | --- | --- |
 | `tokio/src/lib.rs` | 3 | 1-1 | high |
+| `tokio/src/sync/watch.rs` | 3 | 1-40 | high, medium |
 | `tokio/src/sync/once_cell.rs` | 2 | 353-357 | high |
-| `tokio/src/sync/watch.rs` | 2 | 985-989 | high |
 | `tokio/src/sync/barrier.rs` | 1 | 138-142 | high |
 | `tokio/src/sync/mpsc/bounded.rs` | 1 | 1271-1275 | high |
 | `tokio/src/sync/mutex.rs` | 1 | 654-658 | high |
 | `tokio/src/blocking.rs` | 1 | 1-40 | medium |
 | `tokio/src/future/mod.rs` | 1 | 1-28 | medium |
 | `tokio/src/loom/mod.rs` | 1 | 1-14 | medium |
-| `tokio/src/sync/tests/mod.rs` | 1 | 1-18 | medium |
+| `tokio/src/sync/Notify.rs` | 1 | 1-40 | medium |
+| `tokio/src/sync/batch_semaphore.rs` | 1 | 1-40 | medium |
+| `tokio/src/sync/mpsc/chan.rs` | 1 | 1-40 | medium |
+| `tokio/src/sync/mpsc/error.rs` | 1 | 1-40 | medium |
+| `tokio/src/sync/notify.rs` | 1 | 1-40 | medium |
+| `tokio/src/task/coop/mod.rs` | 1 | 1-40 | medium |
 | `tokio/src/util/mod.rs` | 1 | 1-40 | medium |
+| `tokio/src/util/trace.rs` | 1 | 1-40 | medium |
+| `tokio/src/sync/tests/mod.rs` | 1 | 1-18 | medium |
 
 Language breakdown:
 
 | Language | Files | Lines |
 | --- | ---: | ---: |
-| rust | 789 | 177186 |
+| rust | 789 | 177263 |

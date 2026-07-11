@@ -1,6 +1,6 @@
 # CodeInsight v0.1 Smoke Benchmark
 
-Generated at: 2026-07-06 03:51:06 UTC
+Generated at: 2026-07-11 11:00:19 UTC
 
 This is a benchmark fixture report, not a controlled performance benchmark. It
 verifies that CodeInsight can index real public repositories across the MVP
@@ -18,12 +18,12 @@ Environment:
 
 ## Summary
 
-| Repository | Focus | Commit | Files | Lines | Symbols | Skipped | Errors | Index ms | Index budget ms | Budget status | DB size | Context files | Ranges | Context lines | Line reduction | Tokens | Truncated | First context file |
-| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
-| p-limit | TypeScript | `42599eb` | 6 | 1123 | 184 | 10 | 0 | 45 | 5000 | pass | 176K | 1 | 5 | 102 | 90.9% | 875 | false | `index.js` |
-| itsdangerous | Python | `672971d` | 15 | 1712 | 144 | 35 | 0 | 41 | 5000 | pass | 172K | 1 | 5 | 122 | 92.9% | 1417 | false | `src/itsdangerous/serializer.py` |
-| go-example | Go | `7f05d21` | 38 | 3537 | 189 | 33 | 0 | 90 | 5000 | pass | 208K | 2 | 4 | 69 | 98.0% | 436 | false | `hello/hello.go` |
-| memchr | Rust | `e21e9fb` | 64 | 69365 | 4045 | 100 | 0 | 1471 | 10000 | pass | 2.2M | 7 | 7 | 196 | 99.7% | 1899 | false | `src/lib.rs` |
+| Repository | Focus | Commit | Files | Lines | Symbols | Skipped | Errors | Index ms | Index budget ms | Budget status | DB size | Context files | Ranges | Context lines | Line reduction | Tokens | Applied budget | Omitted files | Continuation | Truncated | First context file |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |
+| p-limit | TypeScript | `42599eb` | 6 | 1123 | 184 | 10 | 0 | 69 | 5000 | pass | 216K | 1 | 5 | 102 | 90.9% | 875 | 6000 | 0 | lower_ranked_context_omitted | false | `index.js` |
+| itsdangerous | Python | `672971d` | 15 | 1712 | 144 | 35 | 0 | 47 | 5000 | pass | 248K | 4 | 8 | 242 | 85.9% | 2373 | 6000 | 0 | complete | false | `src/itsdangerous/serializer.py` |
+| go-example | Go | `7f05d21` | 38 | 3537 | 189 | 33 | 0 | 79 | 5000 | pass | 264K | 4 | 6 | 89 | 97.5% | 600 | 6000 | 0 | lower_ranked_context_omitted | false | `hello/hello.go` |
+| memchr | Rust | `4e1c173` | 64 | 69371 | 4045 | 110 | 0 | 1464 | 10000 | pass | 3.3M | 7 | 7 | 196 | 99.7% | 1899 | 6000 | 0 | complete | false | `src/lib.rs` |
 
 ## Details
 
@@ -33,7 +33,7 @@ Environment:
 - Commit: `42599ebbbb1228a5bdab381fcf8f4ac20eb8d551`
 - Indexed files: 6
 - Symbols: 184
-- Duration: 45 ms
+- Duration: 69 ms
 - Index budget: 5000 ms (pass)
 - Context seed file: `index.js`
 - Context task: understand limit scheduling behavior
@@ -41,6 +41,11 @@ Environment:
 - Context ranges: 5
 - Context lines: 102 of 1123 (90.9% reduction)
 - Context estimated tokens: 875
+- Context applied token budget: 6000
+- Context omitted files: 0
+- Context omitted ranges: 1
+- Context truncation reason: candidate_selection_omitted_lower_ranked_context
+- Context continuation status: lower_ranked_context_omitted
 - Context truncated: false
 
 Context pack files:
@@ -62,14 +67,19 @@ Language breakdown:
 - Commit: `672971d66a2ef9f85151e53283113f33d642dabd`
 - Indexed files: 15
 - Symbols: 144
-- Duration: 41 ms
+- Duration: 47 ms
 - Index budget: 5000 ms (pass)
 - Context seed file: `src/itsdangerous/serializer.py`
 - Context task: understand serializer signing behavior
-- Context files: 1
-- Context ranges: 5
-- Context lines: 122 of 1712 (92.9% reduction)
-- Context estimated tokens: 1417
+- Context files: 4
+- Context ranges: 8
+- Context lines: 242 of 1712 (85.9% reduction)
+- Context estimated tokens: 2373
+- Context applied token budget: 6000
+- Context omitted files: 0
+- Context omitted ranges: 0
+- Context truncation reason: none
+- Context continuation status: complete
 - Context truncated: false
 
 Context pack files:
@@ -77,6 +87,9 @@ Context pack files:
 | File | Ranges | First range | Importances |
 | --- | ---: | --- | --- |
 | `src/itsdangerous/serializer.py` | 5 | 1-12 | high |
+| `src/itsdangerous/encoding.py` | 1 | 1-40 | medium |
+| `src/itsdangerous/exc.py` | 1 | 1-40 | medium |
+| `src/itsdangerous/signer.py` | 1 | 1-40 | medium |
 
 Language breakdown:
 
@@ -90,14 +103,19 @@ Language breakdown:
 - Commit: `7f05d217867b2af52b0a28c6d1c91df97e1b5b39`
 - Indexed files: 38
 - Symbols: 189
-- Duration: 90 ms
+- Duration: 79 ms
 - Index budget: 5000 ms (pass)
 - Context seed file: `hello/hello.go`
 - Context task: understand hello server behavior
-- Context files: 2
-- Context ranges: 4
-- Context lines: 69 of 3537 (98.0% reduction)
-- Context estimated tokens: 436
+- Context files: 4
+- Context ranges: 6
+- Context lines: 89 of 3537 (97.5% reduction)
+- Context estimated tokens: 600
+- Context applied token budget: 6000
+- Context omitted files: 0
+- Context omitted ranges: 1
+- Context truncation reason: candidate_selection_omitted_lower_ranked_context
+- Context continuation status: lower_ranked_context_omitted
 - Context truncated: false
 
 Context pack files:
@@ -106,6 +124,8 @@ Context pack files:
 | --- | ---: | --- | --- |
 | `hello/hello.go` | 3 | 1-24 | high |
 | `helloserver/server.go` | 1 | 41-45 | high |
+| `internal/cmd/weave/weave.go` | 1 | 47-51 | medium |
+| `hello/reverse/reverse.go` | 1 | 1-15 | medium |
 
 Language breakdown:
 
@@ -117,17 +137,22 @@ Language breakdown:
 ## memchr
 
 - URL: https://github.com/BurntSushi/memchr.git
-- Commit: `e21e9fb47c4362d93a24ce969b20fd778d8618c8`
+- Commit: `4e1c173d87851937d0f9683e1d1d417e521d6ca7`
 - Indexed files: 64
 - Symbols: 4045
-- Duration: 1471 ms
+- Duration: 1464 ms
 - Index budget: 10000 ms (pass)
 - Context seed file: `src/lib.rs`
 - Context task: understand memchr finder API
 - Context files: 7
 - Context ranges: 7
-- Context lines: 196 of 69365 (99.7% reduction)
+- Context lines: 196 of 69371 (99.7% reduction)
 - Context estimated tokens: 1899
+- Context applied token budget: 6000
+- Context omitted files: 0
+- Context omitted ranges: 0
+- Context truncation reason: none
+- Context continuation status: complete
 - Context truncated: false
 
 Context pack files:
@@ -139,11 +164,11 @@ Context pack files:
 | `src/cow.rs` | 1 | 1-40 | medium |
 | `src/ext.rs` | 1 | 1-40 | medium |
 | `src/macros.rs` | 1 | 1-20 | medium |
-| `src/tests/mod.rs` | 1 | 1-15 | medium |
 | `src/vector.rs` | 1 | 1-40 | medium |
+| `src/tests/mod.rs` | 1 | 1-15 | medium |
 
 Language breakdown:
 
 | Language | Files | Lines |
 | --- | ---: | ---: |
-| rust | 64 | 69365 |
+| rust | 64 | 69371 |

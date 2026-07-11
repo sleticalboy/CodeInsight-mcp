@@ -220,8 +220,8 @@ Environment:
 
 ## Summary
 
-| Repository | Focus | Commit | Files | Lines | Symbols | Skipped | Errors | Index ms | Index budget ms | Budget status | DB size | Context files | Ranges | Context lines | Line reduction | Tokens | Truncated | First context file |
-| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| Repository | Focus | Commit | Files | Lines | Symbols | Skipped | Errors | Index ms | Index budget ms | Budget status | DB size | Context files | Ranges | Context lines | Line reduction | Tokens | Applied budget | Omitted files | Continuation | Truncated | First context file |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |
 EOF
 }
 
@@ -362,7 +362,7 @@ append_summary_row() {
   local context_json="$6"
   local max_index_ms="$7"
 
-  local commit files lines symbols skipped errors duration budget db_size context_files ranges selected_lines reduction tokens truncated first_context_file status
+  local commit files lines symbols skipped errors duration budget db_size context_files ranges selected_lines reduction tokens applied_budget omitted_files continuation_status truncated first_context_file status
   commit="$(git -C "$repo_dir" rev-parse --short HEAD)"
   files="$(json_value "$index_json" '.indexed_files')"
   lines="$(json_value "$overview_json" '[.languages[].lines] | add // 0')"
@@ -377,6 +377,9 @@ append_summary_row() {
   selected_lines="$(context_lines "$context_json")"
   reduction="$(line_reduction "$lines" "$selected_lines")"
   tokens="$(json_value "$context_json" '.estimated_tokens')"
+  applied_budget="$(json_value "$context_json" '.budget.applied_token_budget // "-"')"
+  omitted_files="$(json_value "$context_json" '.budget.omitted_files // 0')"
+  continuation_status="$(json_value "$context_json" '.continuation_summary.status // "-"')"
   truncated="$(json_value "$context_json" '.truncated')"
   first_context_file="$(json_value "$context_json" '.files[0].file // "-"')"
   status="$(budget_status "$duration" "$budget")"
@@ -385,9 +388,9 @@ append_summary_row() {
     BUDGET_FAILURES=$((BUDGET_FAILURES + 1))
   fi
 
-  printf "| %s | %s | \`%s\` | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | \`%s\` |\n" \
+  printf "| %s | %s | \`%s\` | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | \`%s\` |\n" \
     "$name" "$language" "$commit" "$files" "$lines" "$symbols" "$skipped" "$errors" "$duration" "$budget" "$status" "$db_size" \
-    "$context_files" "$ranges" "$selected_lines" "$reduction" "$tokens" "$truncated" "$first_context_file" \
+    "$context_files" "$ranges" "$selected_lines" "$reduction" "$tokens" "$applied_budget" "$omitted_files" "$continuation_status" "$truncated" "$first_context_file" \
     >>"$REPORT_FILE"
 }
 
@@ -427,6 +430,11 @@ append_detail_section() {
     echo "- Context ranges: $(json_value "$context_json" '[.files[].ranges | length] | add // 0')"
     echo "- Context lines: $selected_lines of $total_lines ($reduction reduction)"
     echo "- Context estimated tokens: $(json_value "$context_json" '.estimated_tokens')"
+    echo "- Context applied token budget: $(json_value "$context_json" '.budget.applied_token_budget // "-"')"
+    echo "- Context omitted files: $(json_value "$context_json" '.budget.omitted_files // 0')"
+    echo "- Context omitted ranges: $(json_value "$context_json" '.budget.omitted_ranges // 0')"
+    echo "- Context truncation reason: $(json_value "$context_json" '.budget.truncation_reason // "none"')"
+    echo "- Context continuation status: $(json_value "$context_json" '.continuation_summary.status // "-"')"
     echo "- Context truncated: $(json_value "$context_json" '.truncated')"
     echo
     echo "Context pack files:"

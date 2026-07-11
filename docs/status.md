@@ -54,11 +54,12 @@ MVP workflow is now implemented end to end.
 
 ## Next
 
-- Add broader real-repository benchmark evidence for token/context reduction.
 - Keep tightening JavaScript package-manager and bundler-specific edge cases
   where they improve local code navigation.
 - Continue tightening README/docs routing so the README stays entry-level while
   detailed operational guidance stays in `docs/`.
+- Keep benchmark evidence current when context-pack ranking or continuation
+  behavior changes.
 
 For accuracy boundaries and current non-goals, see
 [Known limitations](known-limitations.md).
