@@ -2682,8 +2682,8 @@ fn cli_resolves_java_source_imports() {
     let fixture = java_source_import_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 4);
-    assert_eq!(index["changed_files"], 4);
+    assert_eq!(index["indexed_files"], 5);
+    assert_eq!(index["changed_files"], 5);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -2761,6 +2761,10 @@ fn cli_resolves_java_source_imports() {
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "Report.log"
             && call["callee_file"] == "src/main/java/com/example/reporting/Report.java"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "LocalFormatter.decorate"
+            && call["callee_file"] == "src/main/java/com/example/app/LocalFormatter.java"
     }));
     assert!(
         callees
@@ -6432,7 +6436,20 @@ public class App {
 
     public String run(RemoteClient remote) {
         Report.log();
-        return AuthService.login(defaultName(), names.size(), remote.id());
+        return LocalFormatter.decorate(AuthService.login(defaultName(), names.size(), remote.id()));
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/main/java/com/example/app/LocalFormatter.java",
+        r#"
+package com.example.app;
+
+public class LocalFormatter {
+    public static String decorate(String name) {
+        return name.trim();
     }
 }
 "#,

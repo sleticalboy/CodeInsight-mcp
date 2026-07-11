@@ -1489,6 +1489,34 @@ impl Store {
 
                     select
                         c.id as call_id,
+                        target_files.path as callee_file,
+                        s.qualified_name as qualified_name,
+                        d.line as dependency_line,
+                        s.start_line as start_line,
+                        0 as match_rank
+                    from calls c
+                    join dependencies d on d.source_file_id = c.source_file_id
+                    join files target_files
+                      on target_files.path like '%' ||
+                        replace(d.target, '.', '/') ||
+                        '/' ||
+                        substr(c.callee, 1, instr(c.callee, '.') - 1) ||
+                        '.java'
+                    join symbols s on s.file_id = target_files.id
+                    where c.callee_file is null
+                      and d.language = 'java'
+                      and d.kind = 'package'
+                      and instr(c.callee, '.') > 1
+                      and (
+                        s.name = substr(c.callee, instr(c.callee, '.') + 1)
+                        or s.qualified_name = substr(c.callee, instr(c.callee, '.') + 1)
+                        or s.qualified_name like '%.' || substr(c.callee, instr(c.callee, '.') + 1)
+                      )
+
+                    union all
+
+                    select
+                        c.id as call_id,
                         reexport_files.path as callee_file,
                         s.qualified_name as qualified_name,
                         d.line as dependency_line,
