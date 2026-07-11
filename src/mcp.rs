@@ -581,6 +581,16 @@ def helper():
                 .as_array()
                 .unwrap()
                 .iter()
+                .any(|tool| tool["tool"] == "dependency_graph"
+                    && tool["reason"]
+                        .as_str()
+                        .is_some_and(|reason| reason.contains("os")))
+        );
+        assert!(
+            overview_result["structuredContent"]["recommended_next_tools"]
+                .as_array()
+                .unwrap()
+                .iter()
                 .any(|tool| tool["tool"] == "config_status")
         );
 

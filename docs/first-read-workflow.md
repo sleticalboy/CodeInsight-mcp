@@ -41,8 +41,9 @@ candidates based on conventional file names and entry-like symbols such as
 
 `recommended_next_tools` contains MCP-ready `tool`, `priority`, `reason`, and
 `suggested_arguments` entries for likely next calls such as `context_pack`,
-`dependency_graph`, `impact_analysis`, and `config_status`. Lower `priority`
-values should be displayed first.
+`dependency_graph`, `impact_analysis`, and `config_status`. `dependency_graph`
+recommendations include a source-entrypoint `files` filter when one is
+available. Lower `priority` values should be displayed first.
 
 ## Context Pack
 

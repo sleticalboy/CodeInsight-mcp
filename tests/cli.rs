@@ -110,7 +110,11 @@ fn cli_indexes_and_queries_fixture_project() {
             .iter()
             .any(|tool| tool["tool"] == "dependency_graph"
                 && tool["priority"].as_u64() == Some(30)
-                && tool["suggested_arguments"]["limit"].as_u64() == Some(100))
+                && tool["suggested_arguments"]["limit"].as_u64() == Some(100)
+                && tool["suggested_arguments"]["files"][0] == "src/main.ts"
+                && tool["reason"]
+                    .as_str()
+                    .is_some_and(|reason| reason.contains("source entrypoint")))
     );
     assert!(
         overview["recommended_next_tools"]

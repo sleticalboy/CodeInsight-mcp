@@ -1984,6 +1984,9 @@ fn recommended_next_tools(
 ) -> Vec<RecommendedToolCall> {
     let root = root.display().to_string();
     let mut tools = Vec::new();
+    let source_entrypoint = entrypoints
+        .iter()
+        .find(|entrypoint| entrypoint.role == "source");
 
     tools.push(RecommendedToolCall {
         tool: "context_pack".to_string(),
@@ -2001,22 +2004,33 @@ fn recommended_next_tools(
     });
 
     if dependency_summary.edges > 0 {
+        let mut suggested_arguments = json!({
+            "root": root,
+            "limit": 100
+        });
+        let reason = if let Some(entrypoint) = source_entrypoint {
+            suggested_arguments["files"] = json!([entrypoint.file.clone()]);
+            format!(
+                "Inspect dependency edges touching the source entrypoint {} before deeper navigation.",
+                entrypoint.file
+            )
+        } else if let Some(target) = dependency_summary.top_external_targets.first() {
+            format!(
+                "Inspect module and package relationships; the most frequent external target is {}.",
+                target.target
+            )
+        } else {
+            "Inspect module and package relationships before deeper navigation.".to_string()
+        };
         tools.push(RecommendedToolCall {
             tool: "dependency_graph".to_string(),
             priority: 30,
-            reason: "Inspect module and package relationships before deeper navigation."
-                .to_string(),
-            suggested_arguments: json!({
-                "root": root,
-                "limit": 100
-            }),
+            reason,
+            suggested_arguments,
         });
     }
 
-    if let Some(entrypoint) = entrypoints
-        .iter()
-        .find(|entrypoint| entrypoint.role == "source")
-    {
+    if let Some(entrypoint) = source_entrypoint {
         let mut suggested_arguments = json!({
             "root": root,
             "files": [entrypoint.file.clone()],
