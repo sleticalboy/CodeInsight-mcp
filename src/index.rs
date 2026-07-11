@@ -2182,11 +2182,13 @@ fn resolve_go_package_dir(root: &Path, package_dir: PathBuf) -> Option<String> {
         })
         .collect::<Vec<_>>();
     candidates.sort_by_key(|candidate| {
+        let file_name = candidate
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or_default();
         (
-            candidate
-                .file_name()
-                .and_then(|name| name.to_str())
-                .is_some_and(|name| name.ends_with("_test.go")),
+            file_name == "doc.go",
+            file_name.ends_with("_test.go"),
             candidate.clone(),
         )
     });

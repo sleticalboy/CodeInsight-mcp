@@ -2556,8 +2556,8 @@ fn cli_resolves_go_module_imports() {
     let fixture = go_module_import_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 3);
-    assert_eq!(index["changed_files"], 3);
+    assert_eq!(index["indexed_files"], 5);
+    assert_eq!(index["changed_files"], 5);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -2592,6 +2592,26 @@ fn cli_resolves_go_module_imports() {
             .unwrap()
             .iter()
             .any(|dependency| {
+                dependency["target"] == "github.com/example/codeinsight/internal/metrics"
+                    && dependency["resolved_file"] == "internal/metrics/metrics.go"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "github.com/example/codeinsight/internal/metrics"
+                    || dependency["resolved_file"] != "internal/metrics/doc.go"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
                 dependency["target"] == "fmt" && dependency["resolved_file"].is_null()
             })
     );
@@ -2618,6 +2638,9 @@ fn cli_resolves_go_module_imports() {
     }));
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "config.Load" && call["callee_file"] == "internal/config/config.go"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "metrics.Track" && call["callee_file"] == "internal/metrics/metrics.go"
     }));
     assert!(
         callees
@@ -6176,10 +6199,11 @@ import (
   "github.com/acme/remote"
   "github.com/example/codeinsight/internal/auth"
   "github.com/example/codeinsight/internal/config"
+  "github.com/example/codeinsight/internal/metrics"
 )
 
 func main() {
-  fmt.Println(remote.Name, auth.Login(), config.Load())
+  fmt.Println(remote.Name, auth.Login(), config.Load(), metrics.Track())
 }
 "#,
     );
@@ -6202,6 +6226,26 @@ package config
 
 func Load() string {
   return "local"
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "internal/metrics/doc.go",
+        r#"
+package metrics
+
+// Package metrics records runtime counters.
+"#,
+    );
+    write_file(
+        &dir,
+        "internal/metrics/metrics.go",
+        r#"
+package metrics
+
+func Track() string {
+  return "tracked"
 }
 "#,
     );
