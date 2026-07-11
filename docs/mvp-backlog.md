@@ -6,13 +6,17 @@ Build a local MCP server that helps AI agents understand a repository through in
 
 ## Scope
 
-Initial supported languages:
+Current MVP supported languages:
 
 - TypeScript / JavaScript
 - Python
 - Go
 - Rust
 - Java
+- C / C++
+- C#
+- PHP
+- Ruby
 
 Rust is included early so the project can index itself during development.
 
@@ -66,6 +70,9 @@ Rust is included early so the project can index itself during development.
 - [x] Return line ranges with reasons.
 - [x] Add `context_pack` CLI command.
 - [x] Add `context_pack` MCP tool.
+- [x] Add auto-entrypoint seed selection for `context_pack`.
+- [x] Add `reading_plan` with next actions, questions, and MCP-ready suggested tools.
+- [x] Add semantic status reporting and local semantic chunk fallback signals.
 
 ## P1
 
@@ -74,6 +81,8 @@ Rust is included early so the project can index itself during development.
 - [x] Extract import/require/use/package dependencies.
 - [x] Store file-to-file dependencies.
 - [x] Implement `dependency_graph`.
+- [x] Add dependency graph filters by touching file and source language.
+- [x] Add dependency graph summaries, top sources, and top targets.
 - [x] Implement simple textual reference search scoped by indexed files.
 - [x] Add `find_references` tool.
 
@@ -82,9 +91,18 @@ Rust is included early so the project can index itself during development.
 - [x] Extract function call expressions.
 - [x] Resolve direct same-file calls.
 - [x] Resolve imported calls where obvious.
+- [x] Add imported `callee_file` hints for obvious local calls across
+  JavaScript/TypeScript, Python, Rust, Go, Java, C#, PHP, and Ruby.
 - [x] Implement `callers`.
 - [x] Implement `callees`.
 - [x] Include confidence score.
+
+### Agent Recommendations
+
+- [x] Add `project_overview.recommended_next_tools`.
+- [x] Scope overview dependency graph recommendations to source entrypoints when available.
+- [x] Scope dependency reading-plan suggestions to the selected context file.
+- [x] Document recommendation priority bands and suggested-tool contracts.
 
 ### Quality
 
@@ -109,6 +127,9 @@ Rust is included early so the project can index itself during development.
 - [x] Provider interface for embeddings.
 - [x] Optional local embedding index.
 - [x] Hybrid symbol + semantic ranking skeleton.
+- [x] Provider status reporting.
+- [x] Incremental semantic chunk storage with unchanged-vector preservation.
+- [x] Local deterministic `local-hash` provider for smoke and preview flows.
 
 ### Distribution
 
@@ -137,3 +158,15 @@ Rust is included early so the project can index itself during development.
 - Basic call graph available.
 - More robust TypeScript, Python, Go, Rust, Java, C/C++, C#, PHP, and Ruby extraction.
 - Benchmark report for token/context reduction.
+
+### Release Readiness
+
+- [x] Release build workflow.
+- [x] Docker image workflow.
+- [x] Release install smoke script.
+- [x] Release note extraction and prepare-release scripts.
+- [x] Homebrew formula update/sync scripts.
+- [x] Release verification script.
+- [ ] Run a clean release-readiness rehearsal from a fresh checkout.
+- [ ] Decide the next public tag/version and prepare release notes.
+- [ ] Verify GitHub Release, Docker image, and Homebrew tap after tagging.
