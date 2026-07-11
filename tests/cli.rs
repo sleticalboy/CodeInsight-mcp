@@ -3226,6 +3226,9 @@ fn cli_resolves_python_relative_imports() {
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "shared.ping" && call["callee_file"] == "app/shared/__init__.py"
     }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "shared_ping" && call["callee_file"] == "app/shared/__init__.py"
+    }));
 }
 
 #[test]
@@ -6821,6 +6824,7 @@ from . import support
 from .support import audit
 from ..core import service
 import app.shared as shared
+from app.shared import ping as shared_ping
 import requests
 
 
@@ -6829,6 +6833,7 @@ class AuthController:
         audit.record(user_id)
         support.describe()
         shared.ping()
+        shared_ping()
         return service.load(user_id)
 "#,
     );

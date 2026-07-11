@@ -2418,8 +2418,18 @@ fn resolve_python_target(root: &Path, dependency: &Dependency) -> Option<String>
     if dependency.target.starts_with('.') {
         resolve_python_relative_target(root, dependency)
     } else {
-        resolve_module_target(root, &dependency.target.replace('.', "/"), &["py"])
+        resolve_python_absolute_target(root, dependency)
     }
+}
+
+fn resolve_python_absolute_target(root: &Path, dependency: &Dependency) -> Option<String> {
+    let target_base = PathBuf::from(dependency.target.replace('.', "/"));
+    for candidate in python_target_candidates(target_base) {
+        if let Some(resolved) = resolve_base(root, candidate, &["py"]) {
+            return Some(resolved);
+        }
+    }
+    None
 }
 
 fn resolve_python_relative_target(root: &Path, dependency: &Dependency) -> Option<String> {
@@ -2446,7 +2456,7 @@ fn resolve_python_relative_target(root: &Path, dependency: &Dependency) -> Optio
     } else {
         base.join(rest)
     };
-    for candidate in python_relative_target_candidates(target_base) {
+    for candidate in python_target_candidates(target_base) {
         if let Some(resolved) = resolve_base(root, candidate, &["py"]) {
             return Some(resolved);
         }
@@ -2454,7 +2464,7 @@ fn resolve_python_relative_target(root: &Path, dependency: &Dependency) -> Optio
     None
 }
 
-fn python_relative_target_candidates(target: PathBuf) -> Vec<PathBuf> {
+fn python_target_candidates(target: PathBuf) -> Vec<PathBuf> {
     let mut candidates = Vec::new();
     let mut current = Some(target.as_path());
     while let Some(candidate) = current {
@@ -3737,10 +3747,6 @@ fn resolve_relative_target(
     };
 
     resolve_base(root, base, extensions)
-}
-
-fn resolve_module_target(root: &Path, target: &str, extensions: &[&str]) -> Option<String> {
-    resolve_base(root, PathBuf::from(target), extensions)
 }
 
 fn resolve_base(root: &Path, base: PathBuf, extensions: &[&str]) -> Option<String> {
@@ -6353,11 +6359,23 @@ pub fn run() {
             vec![".".to_string(), ".support".to_string()]
         );
         assert_eq!(
-            python_relative_target_candidates(PathBuf::from("app/controllers/support/audit")),
+            python_import_targets("from app.shared import ping as shared_ping"),
+            vec!["app.shared".to_string(), "app.shared.ping".to_string()]
+        );
+        assert_eq!(
+            python_target_candidates(PathBuf::from("app/controllers/support/audit")),
             vec![
                 PathBuf::from("app/controllers/support/audit"),
                 PathBuf::from("app/controllers/support"),
                 PathBuf::from("app/controllers"),
+                PathBuf::from("app"),
+            ]
+        );
+        assert_eq!(
+            python_target_candidates(PathBuf::from("app/shared/ping")),
+            vec![
+                PathBuf::from("app/shared/ping"),
+                PathBuf::from("app/shared"),
                 PathBuf::from("app"),
             ]
         );
