@@ -6145,6 +6145,10 @@ public interface UserRepository {
             vec![("App.Services.UserService".to_string(), "users".to_string())]
         );
         assert_eq!(
+            csharp_type_bindings("UserService? maybeUsers = users;"),
+            vec![("UserService".to_string(), "maybeUsers".to_string())]
+        );
+        assert_eq!(
             csharp_type_bindings("var createdUsers = new UserService();"),
             vec![("UserService".to_string(), "createdUsers".to_string())]
         );

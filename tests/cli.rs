@@ -2651,7 +2651,6 @@ fn cli_resolves_go_module_imports() {
                     && dependency["resolved_file"].is_null()
             })
     );
-
     let callees = run_json([
         "callees",
         fixture.path().to_str().unwrap(),
@@ -2742,7 +2741,6 @@ fn cli_resolves_java_source_imports() {
                     && dependency["resolved_file"].is_null()
             })
     );
-
     let callees = run_json([
         "callees",
         fixture.path().to_str().unwrap(),
@@ -3090,6 +3088,18 @@ fn cli_resolves_csharp_using_imports() {
                     && dependency["resolved_file"].is_null()
             })
     );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "UserService"
+                    && dependency["kind"] == "type_binding"
+                    && dependency["local_alias"] == "maybeUsers"
+                    && dependency["resolved_file"].is_null()
+            })
+    );
 
     let callees = run_json([
         "callees",
@@ -3129,6 +3139,10 @@ fn cli_resolves_csharp_using_imports() {
     }));
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "targetUsers.Find"
+            && call["callee_file"] == "src/App/Services/UserService.cs"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "maybeUsers.Find"
             && call["callee_file"] == "src/App/Services/UserService.cs"
     }));
     assert!(
@@ -6879,6 +6893,7 @@ public class AuthController : BaseController {
         var createdUsers = new UserService();
         var createdBackupUsers = new App.Services.UserService();
         UserService targetUsers = new();
+        UserService? maybeUsers = users;
         var optionalUsers = users?.Find(id);
         var forcedUsers = users!.Find(id);
         var optionalThisUsers = this.users?.Find(id);
@@ -6887,8 +6902,9 @@ public class AuthController : BaseController {
         var asyncThisUsers = await this.users.FindAsync(id);
         var genericUsers = users.FindAs<string>(id);
         var genericThisUsers = this.users.FindAs<string>(id);
+        var maybeUser = maybeUsers.Find(id);
         Audit.Record(id);
-        return LocalFormatter.Normalize(ClampName(genericUsers + genericThisUsers + asyncUsers + asyncThisUsers + optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
+        return LocalFormatter.Normalize(ClampName(maybeUser + genericUsers + genericThisUsers + asyncUsers + asyncThisUsers + optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
     }
 
     private string LocalTag(string id) {
