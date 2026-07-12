@@ -3319,8 +3319,12 @@ fn cli_resolves_csharp_using_imports() {
             .as_array()
             .unwrap()
             .iter()
-            .all(|dependency| {
-                dependency["local_alias"] != "lazyUsers" || dependency["kind"] != "type_binding"
+            .any(|dependency| {
+                dependency["target"] == "UserService"
+                    && dependency["kind"] == "type_binding"
+                    && dependency["local_alias"] == "lazyUsers"
+                    && dependency["imported_symbol"] == "Value"
+                    && dependency["resolved_file"].is_null()
             })
     );
 
@@ -3329,7 +3333,7 @@ fn cli_resolves_csharp_using_imports() {
         fixture.path().to_str().unwrap(),
         "AuthController.Login",
         "--limit",
-        "100",
+        "105",
     ]);
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "Audit.Record" && call["callee_file"] == "src/App/Support/AuditLog.cs"
@@ -3388,11 +3392,10 @@ fn cli_resolves_csharp_using_imports() {
         call["callee"] != "directory.Find"
             || call["callee_file"] != "src/App/Implementations/UserDirectory.cs"
     }));
-    assert!(
-        callees.as_array().unwrap().iter().any(|call| {
-            call["callee"] == "lazyUsers.Value.Find" && call["callee_file"].is_null()
-        })
-    );
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "lazyUsers.Value.Find"
+            && call["callee_file"] == "src/App/Services/UserService.cs"
+    }));
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "users.FormatForDisplay" && call["callee_file"].is_null()
     }));
@@ -3426,6 +3429,10 @@ fn cli_resolves_csharp_using_imports() {
     }));
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "targetUsers.ExternalProfile.Load"
+            && call["callee_file"] == "src/App/Profiles/ExternalProfile.cs"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "lazyUsers.Value.ExternalProfile.Load"
             && call["callee_file"] == "src/App/Profiles/ExternalProfile.cs"
     }));
     assert!(
@@ -7285,6 +7292,7 @@ public class AuthController : App.Controllers.BaseController, IAuthController {
         var createdExternalProfile = createdUsers.ExternalProfile.Load(id);
         var createdBackupExternalProfile = createdBackupUsers.ExternalProfile.Load(id);
         var targetExternalProfile = targetUsers.ExternalProfile.Load(id);
+        var lazyExternalProfile = lazyUsers.Value.ExternalProfile.Load(id);
         var optionalExternalProfile = maybeUsers?.ExternalProfile.Load(id);
         var forcedExternalProfile = maybeUsers!.ExternalProfile.Load(id);
         var pooledExternalProfile = servicePool[0].ExternalProfile.Load(id);
@@ -7296,7 +7304,7 @@ public class AuthController : App.Controllers.BaseController, IAuthController {
         var extensionUser = users.FormatForDisplay(id);
         var rootTag = base.RootTag(id);
         Audit.Record(id);
-        return LocalFormatter.Normalize(ClampName(rootTag + extensionUser + profileMetadata + mappedExternalProfile + listedExternalProfile + pooledExternalProfile + forcedExternalProfile + optionalExternalProfile + targetExternalProfile + createdBackupExternalProfile + createdExternalProfile + thisBackupExternalProfile + thisExternalProfile + thisRepoExternalProfile + repoExternalProfile + backupQualifiedExternalProfile + backupExternalProfile + qualifiedExternalProfile + externalProfile + thisProfile + directoryUser + detailedUser + lazyUser + mappedUser + listedUser + pooledUser + maybeUser + genericUsers + genericThisUsers + asyncUsers + asyncThisUsers + optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
+        return LocalFormatter.Normalize(ClampName(rootTag + extensionUser + profileMetadata + mappedExternalProfile + listedExternalProfile + pooledExternalProfile + forcedExternalProfile + optionalExternalProfile + lazyExternalProfile + targetExternalProfile + createdBackupExternalProfile + createdExternalProfile + thisBackupExternalProfile + thisExternalProfile + thisRepoExternalProfile + repoExternalProfile + backupQualifiedExternalProfile + backupExternalProfile + qualifiedExternalProfile + externalProfile + thisProfile + directoryUser + detailedUser + lazyUser + mappedUser + listedUser + pooledUser + maybeUser + genericUsers + genericThisUsers + asyncUsers + asyncThisUsers + optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
     }
 
     private string LocalTag(string id) {

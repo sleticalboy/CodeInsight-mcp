@@ -1259,12 +1259,12 @@ fn csharp_type_binding_dependencies(
     let text = node.utf8_text(source).unwrap_or_default();
     csharp_type_bindings(text)
         .into_iter()
-        .map(|(target, local_alias)| Dependency {
+        .map(|(target, local_alias, wrapper_member)| Dependency {
             source_file: source_file.to_string(),
             resolved_file: None,
             target,
             local_alias: Some(local_alias),
-            imported_symbol: Some("*".to_string()),
+            imported_symbol: wrapper_member.or_else(|| Some("*".to_string())),
             kind: "type_binding".to_string(),
             language,
             line: node.start_position().row + 1,
@@ -4207,7 +4207,7 @@ fn csharp_direct_base_type(text: &str) -> Option<String> {
     clean_csharp_type_name(candidate).map(ToOwned::to_owned)
 }
 
-fn csharp_type_bindings(text: &str) -> Vec<(String, String)> {
+fn csharp_type_bindings(text: &str) -> Vec<(String, String, Option<String>)> {
     let mut text = text.trim().trim_end_matches(';').trim();
     while let Some((modifier, rest)) = text.split_once(char::is_whitespace) {
         if !csharp_type_binding_modifier(modifier) {
@@ -4225,14 +4225,22 @@ fn csharp_type_bindings(text: &str) -> Vec<(String, String)> {
         return Vec::new();
     }
 
-    let target = if raw_type.trim() == "var" {
-        csharp_new_expression_type(rest)
+    let (target, wrapper_member) = if raw_type.trim() == "var" {
+        (csharp_new_expression_type(rest), None)
+    } else if let Some((target, wrapper_member)) = csharp_value_wrapper_type(raw_type) {
+        (
+            clean_csharp_type_name(target).map(ToOwned::to_owned),
+            Some(wrapper_member.to_string()),
+        )
     } else {
-        clean_csharp_type_name(raw_type).map(ToOwned::to_owned)
+        (
+            clean_csharp_type_name(raw_type).map(ToOwned::to_owned),
+            None,
+        )
     };
 
     target
-        .map(|target| vec![(target, local_alias.to_string())])
+        .map(|target| vec![(target, local_alias.to_string(), wrapper_member)])
         .unwrap_or_default()
 }
 
@@ -4353,6 +4361,30 @@ fn csharp_dictionary_value_type(value: &str) -> Option<&str> {
     csharp_dictionary_type(dictionary_name).then_some(value_type)
 }
 
+fn csharp_value_wrapper_type(value: &str) -> Option<(&str, &str)> {
+    let value = value
+        .trim()
+        .strip_prefix("global::")
+        .unwrap_or(value)
+        .trim_end_matches('?');
+    let (wrapper_type, arguments) = csharp_generic_type_arguments(value)?;
+    if arguments.len() != 1 {
+        return None;
+    }
+    let inner_type = arguments[0];
+    if inner_type.contains('<') || inner_type.contains('>') {
+        return None;
+    }
+
+    let wrapper_name = wrapper_type
+        .trim()
+        .split('.')
+        .next_back()
+        .unwrap_or(wrapper_type)
+        .trim();
+    csharp_value_wrapper_member(wrapper_name).map(|member| (inner_type, member))
+}
+
 fn csharp_generic_type_arguments(value: &str) -> Option<(&str, Vec<&str>)> {
     let (raw_type, raw_arguments) = value.split_once('<')?;
     let raw_arguments = raw_arguments.strip_suffix('>')?;
@@ -4399,6 +4431,10 @@ fn csharp_collection_type(value: &str) -> bool {
 
 fn csharp_dictionary_type(value: &str) -> bool {
     matches!(value, "Dictionary" | "IDictionary" | "IReadOnlyDictionary")
+}
+
+fn csharp_value_wrapper_member(value: &str) -> Option<&'static str> {
+    matches!(value, "Lazy").then_some("Value")
 }
 
 fn csharp_new_expression_type(value: &str) -> Option<String> {
@@ -6385,23 +6421,27 @@ public class BaseAuthService {
     fn parses_csharp_type_bindings() {
         assert_eq!(
             csharp_type_bindings("private readonly UserService users;"),
-            vec![("UserService".to_string(), "users".to_string())]
+            vec![("UserService".to_string(), "users".to_string(), None)]
         );
         assert_eq!(
             csharp_type_bindings("App.Services.UserService users"),
-            vec![("App.Services.UserService".to_string(), "users".to_string())]
+            vec![(
+                "App.Services.UserService".to_string(),
+                "users".to_string(),
+                None
+            )]
         );
         assert_eq!(
             csharp_type_bindings("UserService? maybeUsers = users;"),
-            vec![("UserService".to_string(), "maybeUsers".to_string())]
+            vec![("UserService".to_string(), "maybeUsers".to_string(), None)]
         );
         assert_eq!(
             csharp_type_bindings("UserService[] servicePool = new[] { users };"),
-            vec![("UserService".to_string(), "servicePool".to_string())]
+            vec![("UserService".to_string(), "servicePool".to_string(), None)]
         );
         assert_eq!(
             csharp_type_bindings("List<UserService> listUsers = new();"),
-            vec![("UserService".to_string(), "listUsers".to_string())]
+            vec![("UserService".to_string(), "listUsers".to_string(), None)]
         );
         assert_eq!(
             csharp_type_bindings(
@@ -6409,18 +6449,19 @@ public class BaseAuthService {
             ),
             vec![(
                 "App.Services.UserService".to_string(),
-                "enumerableUsers".to_string()
+                "enumerableUsers".to_string(),
+                None
             )]
         );
         assert_eq!(
             csharp_type_bindings("Dictionary<string, UserService> usersById = new();"),
-            vec![("UserService".to_string(), "usersById".to_string())]
+            vec![("UserService".to_string(), "usersById".to_string(), None)]
         );
         assert_eq!(
             csharp_type_bindings(
                 "Dictionary<string, UserService> usersById = new() { [id] = users };"
             ),
-            vec![("UserService".to_string(), "usersById".to_string())]
+            vec![("UserService".to_string(), "usersById".to_string(), None)]
         );
         assert_eq!(
             csharp_type_bindings(
@@ -6428,23 +6469,41 @@ public class BaseAuthService {
             ),
             vec![(
                 "App.Services.UserService".to_string(),
-                "readOnlyUsers".to_string()
+                "readOnlyUsers".to_string(),
+                None
             )]
         );
         assert_eq!(
             csharp_type_bindings("var createdUsers = new UserService();"),
-            vec![("UserService".to_string(), "createdUsers".to_string())]
+            vec![("UserService".to_string(), "createdUsers".to_string(), None)]
         );
         assert_eq!(
             csharp_type_bindings("var createdBackupUsers = new App.Services.UserService();"),
             vec![(
                 "App.Services.UserService".to_string(),
-                "createdBackupUsers".to_string()
+                "createdBackupUsers".to_string(),
+                None
+            )]
+        );
+        assert_eq!(
+            csharp_type_bindings("Lazy<UserService> lazyUsers = new();"),
+            vec![(
+                "UserService".to_string(),
+                "lazyUsers".to_string(),
+                Some("Value".to_string())
+            )]
+        );
+        assert_eq!(
+            csharp_type_bindings("System.Lazy<App.Services.UserService> lazyUsers = new();"),
+            vec![(
+                "App.Services.UserService".to_string(),
+                "lazyUsers".to_string(),
+                Some("Value".to_string())
             )]
         );
         assert!(csharp_type_bindings("string name").is_empty());
         assert!(csharp_type_bindings("Tuple<string, int, UserService> users").is_empty());
-        assert!(csharp_type_bindings("Lazy<UserService> lazyUsers = new();").is_empty());
+        assert!(csharp_type_bindings("var lazyUsers = new Lazy<UserService>();").is_empty());
         assert!(
             csharp_type_bindings("Tuple<string, int, UserService> tupleUsers = new();").is_empty()
         );
@@ -6471,6 +6530,8 @@ public class AuthController {
         users.FindAs<string>(id);
         this.users.FindAs<string>(id);
         servicePool[0].Find(id);
+        lazyUsers.Value.Find(id);
+        lazyUsers.Value.ExternalProfile.Load(id);
         maybeUsers?.ExternalProfile.Load(id);
         maybeUsers!.ExternalProfile.Load(id);
         servicePool[0].ExternalProfile.Load(id);
@@ -6517,6 +6578,8 @@ public class AuthController {
             2
         );
         assert!(callees.contains(&"servicePool.Find"));
+        assert!(callees.contains(&"lazyUsers.Value.Find"));
+        assert!(callees.contains(&"lazyUsers.Value.ExternalProfile.Load"));
         assert_eq!(
             callees
                 .iter()
