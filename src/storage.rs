@@ -1545,6 +1545,41 @@ impl Store {
 
                     select
                         c.id as call_id,
+                        target_files.path as callee_file,
+                        s.qualified_name as qualified_name,
+                        type_bindings.line as dependency_line,
+                        s.start_line as start_line,
+                        0 as match_rank
+                    from calls c
+                    join dependencies type_bindings
+                      on type_bindings.source_file_id = c.source_file_id
+                    join dependencies scopes
+                      on scopes.source_file_id = c.source_file_id
+                    join files target_files
+                      on target_files.path like '%' ||
+                        replace(scopes.target, '.', '/') ||
+                        '/' ||
+                        type_bindings.target ||
+                        '.cs'
+                    join symbols s on s.file_id = target_files.id
+                    where c.callee_file is null
+                      and c.language = 'csharp'
+                      and type_bindings.language = 'csharp'
+                      and type_bindings.kind = 'type_binding'
+                      and type_bindings.local_alias is not null
+                      and scopes.language = 'csharp'
+                      and scopes.kind in ('using', 'namespace')
+                      and c.callee like type_bindings.local_alias || '.%'
+                      and (
+                        s.name = substr(c.callee, length(type_bindings.local_alias) + 2)
+                        or s.qualified_name = substr(c.callee, length(type_bindings.local_alias) + 2)
+                        or s.qualified_name like '%.' || substr(c.callee, length(type_bindings.local_alias) + 2)
+                      )
+
+                    union all
+
+                    select
+                        c.id as call_id,
                         reexport_files.path as callee_file,
                         s.qualified_name as qualified_name,
                         d.line as dependency_line,

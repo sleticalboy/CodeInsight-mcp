@@ -1149,6 +1149,9 @@ fn csharp_dependencies(
             "namespace",
             csharp_namespace_targets,
         ),
+        "variable_declaration" | "parameter" => {
+            csharp_type_binding_dependencies(node, source, language, source_file)
+        }
         _ => Vec::new(),
     }
 }
@@ -1174,6 +1177,28 @@ fn csharp_using_dependencies(
                 language,
                 line: node.start_position().row + 1,
             }
+        })
+        .collect()
+}
+
+fn csharp_type_binding_dependencies(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+) -> Vec<Dependency> {
+    let text = node.utf8_text(source).unwrap_or_default();
+    csharp_type_bindings(text)
+        .into_iter()
+        .map(|(target, local_alias)| Dependency {
+            source_file: source_file.to_string(),
+            resolved_file: None,
+            target,
+            local_alias: Some(local_alias),
+            imported_symbol: Some("*".to_string()),
+            kind: "type_binding".to_string(),
+            language,
+            line: node.start_position().row + 1,
         })
         .collect()
 }
@@ -4024,6 +4049,97 @@ fn csharp_namespace_targets(text: &str) -> Vec<String> {
         .unwrap_or_default()
 }
 
+fn csharp_type_bindings(text: &str) -> Vec<(String, String)> {
+    let mut text = text.trim().trim_end_matches(';').trim();
+    while let Some((modifier, rest)) = text.split_once(char::is_whitespace) {
+        if !csharp_type_binding_modifier(modifier) {
+            break;
+        }
+        text = rest.trim_start();
+    }
+
+    let Some((raw_type, rest)) = text.split_once(char::is_whitespace) else {
+        return Vec::new();
+    };
+    let Some(target) = clean_csharp_type_name(raw_type) else {
+        return Vec::new();
+    };
+    let local_alias = rest
+        .split(['=', ',', ';', '['])
+        .next()
+        .unwrap_or_default()
+        .trim();
+
+    if local_alias.is_empty() || !is_js_identifier(local_alias) {
+        return Vec::new();
+    }
+
+    vec![(target.to_string(), local_alias.to_string())]
+}
+
+fn csharp_type_binding_modifier(value: &str) -> bool {
+    matches!(
+        value,
+        "private"
+            | "protected"
+            | "internal"
+            | "public"
+            | "static"
+            | "readonly"
+            | "const"
+            | "volatile"
+            | "ref"
+            | "out"
+            | "in"
+            | "params"
+    )
+}
+
+fn clean_csharp_type_name(value: &str) -> Option<&str> {
+    let value = value
+        .trim()
+        .strip_prefix("global::")
+        .unwrap_or(value)
+        .trim_end_matches('?')
+        .trim_end_matches("[]");
+    if value.is_empty()
+        || value.contains('<')
+        || value.contains('>')
+        || csharp_builtin_type(value)
+        || !value
+            .split('.')
+            .all(|segment| !segment.is_empty() && is_js_identifier(segment))
+    {
+        return None;
+    }
+
+    Some(value)
+}
+
+fn csharp_builtin_type(value: &str) -> bool {
+    matches!(
+        value,
+        "bool"
+            | "byte"
+            | "sbyte"
+            | "char"
+            | "decimal"
+            | "double"
+            | "float"
+            | "int"
+            | "uint"
+            | "long"
+            | "ulong"
+            | "object"
+            | "short"
+            | "ushort"
+            | "string"
+            | "var"
+            | "void"
+            | "dynamic"
+    )
+}
+
 fn csharp_using_alias(text: &str, target: &str, kind: &str) -> (Option<String>, Option<String>) {
     match kind {
         "using_alias" => {
@@ -5941,6 +6057,20 @@ public interface UserRepository {
             csharp_namespace_targets("namespace App.Controllers {"),
             vec!["App.Controllers".to_string()]
         );
+    }
+
+    #[test]
+    fn parses_csharp_type_bindings() {
+        assert_eq!(
+            csharp_type_bindings("private readonly UserService users;"),
+            vec![("UserService".to_string(), "users".to_string())]
+        );
+        assert_eq!(
+            csharp_type_bindings("App.Services.UserService users"),
+            vec![("App.Services.UserService".to_string(), "users".to_string())]
+        );
+        assert!(csharp_type_bindings("string name").is_empty());
+        assert!(csharp_type_bindings("List<UserService> users").is_empty());
     }
 
     #[test]

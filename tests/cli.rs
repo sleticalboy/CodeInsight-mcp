@@ -3018,6 +3018,18 @@ fn cli_resolves_csharp_using_imports() {
                     && dependency["resolved_file"].is_null()
             })
     );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "UserService"
+                    && dependency["kind"] == "type_binding"
+                    && dependency["local_alias"] == "users"
+                    && dependency["resolved_file"].is_null()
+            })
+    );
 
     let callees = run_json([
         "callees",
@@ -3036,13 +3048,9 @@ fn cli_resolves_csharp_using_imports() {
         call["callee"] == "LocalFormatter.Normalize"
             && call["callee_file"] == "src/App/Controllers/LocalFormatter.cs"
     }));
-    assert!(
-        callees
-            .as_array()
-            .unwrap()
-            .iter()
-            .all(|call| { call["callee"] != "users.Find" || call["callee_file"].is_null() })
-    );
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "users.Find" && call["callee_file"] == "src/App/Services/UserService.cs"
+    }));
 }
 
 #[test]
