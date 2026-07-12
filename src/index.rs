@@ -6156,13 +6156,15 @@ public interface UserRepository {
     fn normalizes_csharp_qualified_calls() {
         let source = r#"
 public class AuthController {
-    public string Login(string id) {
+    public async Task<string> Login(string id) {
         Audit.Record(id);
         this.users.Find(id);
         users?.Find(id);
         users!.Find(id);
         this.users?.Find(id);
         this.users!.Find(id);
+        await users.FindAsync(id);
+        await this.users.FindAsync(id);
         this.LocalTag(id);
         base.BaseTag(id);
         return ClampName(id);
@@ -6186,6 +6188,13 @@ public class AuthController {
                 .filter(|callee| **callee == "users.Find")
                 .count(),
             5
+        );
+        assert_eq!(
+            callees
+                .iter()
+                .filter(|callee| **callee == "users.FindAsync")
+                .count(),
+            2
         );
     }
 

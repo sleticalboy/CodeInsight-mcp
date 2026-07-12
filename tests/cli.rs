@@ -3149,6 +3149,18 @@ fn cli_resolves_csharp_using_imports() {
             .unwrap()
             .iter()
             .filter(|call| {
+                call["callee"] == "users.FindAsync"
+                    && call["callee_file"] == "src/App/Services/UserService.cs"
+            })
+            .count()
+            >= 2
+    );
+    assert!(
+        callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|call| {
                 call["callee"] == "repoUsers.Find"
                     && call["callee_file"] == "src/App/Services/UserService.cs"
             })
@@ -6832,6 +6844,7 @@ fn csharp_using_fixture_project() -> TempDir {
         "src/App/Controllers/AuthController.cs",
         r#"
 using System;
+using System.Threading.Tasks;
 using App.Services;
 using Audit = App.Support.AuditLog;
 using Repo = App.Services.UserService;
@@ -6850,7 +6863,7 @@ public class AuthController : BaseController {
         this.repoUsers = repoUsers;
     }
 
-    public string Login(string id) {
+    public async Task<string> Login(string id) {
         var createdUsers = new UserService();
         var createdBackupUsers = new App.Services.UserService();
         UserService targetUsers = new();
@@ -6858,8 +6871,10 @@ public class AuthController : BaseController {
         var forcedUsers = users!.Find(id);
         var optionalThisUsers = this.users?.Find(id);
         var forcedThisUsers = this.users!.Find(id);
+        var asyncUsers = await users.FindAsync(id);
+        var asyncThisUsers = await this.users.FindAsync(id);
         Audit.Record(id);
-        return LocalFormatter.Normalize(ClampName(optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
+        return LocalFormatter.Normalize(ClampName(asyncUsers + asyncThisUsers + optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
     }
 
     private string LocalTag(string id) {
@@ -6885,6 +6900,10 @@ public class UserService {
 
     public string Find(string id) {
         return id;
+    }
+
+    public Task<string> FindAsync(string id) {
+        return Task.FromResult(id);
     }
 }
 
