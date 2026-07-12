@@ -3168,6 +3168,13 @@ fn cli_resolves_csharp_using_imports() {
             call["caller"] == "AuthController.Login" && call["callee"] == "LocalTag"
         })
     );
+    assert!(
+        callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| { call["callee"] == "base.BaseTag" && call["callee_file"].is_null() })
+    );
 }
 
 #[test]
@@ -6827,7 +6834,7 @@ using static App.Support.MathUtil;
 
 namespace App.Controllers;
 
-public class AuthController {
+public class AuthController : BaseController {
     private readonly UserService users;
     private readonly App.Services.UserService backupUsers;
     private readonly Repo repoUsers;
@@ -6843,10 +6850,16 @@ public class AuthController {
         var createdBackupUsers = new App.Services.UserService();
         UserService targetUsers = new();
         Audit.Record(id);
-        return LocalFormatter.Normalize(ClampName(users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id)));
+        return LocalFormatter.Normalize(ClampName(users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id)));
     }
 
     private string LocalTag(string id) {
+        return id;
+    }
+}
+
+public class BaseController {
+    protected string BaseTag(string id) {
         return id;
     }
 }
