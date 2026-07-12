@@ -6203,7 +6203,7 @@ using static System.Math;
 
 namespace Example.Auth;
 
-public class AuthService : BaseAuthService {
+public class AuthService : BaseAuthService, IUserService {
     private string token;
 
     public AuthService(string token) {
@@ -6223,6 +6223,8 @@ public class AuthService : BaseAuthService {
 public interface UserRepository {
     User Find(string id);
 }
+
+public interface IUserService {}
 
 public class BaseAuthService {
     protected string BaseTag() => "base";
@@ -6255,6 +6257,9 @@ public class BaseAuthService {
                 && dependency.kind == "base_type"
                 && dependency.local_alias.as_deref() == Some("AuthService")
         }));
+        assert!(deps.iter().all(
+            |dependency| dependency.target != "IUserService" || dependency.kind != "base_type"
+        ));
 
         let calls = extract_calls(source, Language::CSharp, "AuthService.cs", &symbols);
         assert!(

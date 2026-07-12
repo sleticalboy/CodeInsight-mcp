@@ -2956,8 +2956,8 @@ fn cli_resolves_csharp_using_imports() {
     let fixture = csharp_using_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 6);
-    assert_eq!(index["changed_files"], 6);
+    assert_eq!(index["indexed_files"], 7);
+    assert_eq!(index["changed_files"], 7);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let base_symbols = run_json([
@@ -3004,6 +3004,17 @@ fn cli_resolves_csharp_using_imports() {
                 dependency["target"] == "BaseController"
                     && dependency["kind"] == "base_type"
                     && dependency["local_alias"] == "AuthController"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["target"] != "IAuthController"
+                    || dependency["kind"] != "base_type"
+                    || dependency["local_alias"] != "AuthController"
             })
     );
     assert!(
@@ -3312,6 +3323,13 @@ fn cli_resolves_csharp_using_imports() {
         call["callee"] == "base.BaseTag"
             && call["callee_file"] == "src/App/Controllers/BaseController.cs"
     }));
+    assert!(
+        callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| { call["callee"] == "base.RootTag" && call["callee_file"].is_null() })
+    );
     assert!(
         callees
             .as_array()
@@ -6984,7 +7002,7 @@ using static App.Support.MathUtil;
 
 namespace App.Controllers;
 
-public class AuthController : BaseController {
+public class AuthController : BaseController, IAuthController {
     private readonly UserService users;
     private readonly App.Services.UserService backupUsers;
     private readonly Repo repoUsers;
@@ -7019,14 +7037,17 @@ public class AuthController : BaseController {
         var lazyUser = lazyUsers.Value.Find(id);
         var detailedUser = users.Find(id, includeDisabled: true);
         var thisProfile = this.users.Profile.Load(id);
+        var rootTag = base.RootTag(id);
         Audit.Record(id);
-        return LocalFormatter.Normalize(ClampName(thisProfile + detailedUser + lazyUser + mappedUser + listedUser + pooledUser + maybeUser + genericUsers + genericThisUsers + asyncUsers + asyncThisUsers + optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
+        return LocalFormatter.Normalize(ClampName(rootTag + thisProfile + detailedUser + lazyUser + mappedUser + listedUser + pooledUser + maybeUser + genericUsers + genericThisUsers + asyncUsers + asyncThisUsers + optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
     }
 
     private string LocalTag(string id) {
         return id;
     }
 }
+
+public interface IAuthController {}
 "#,
     );
     write_file(
@@ -7035,8 +7056,21 @@ public class AuthController : BaseController {
         r#"
 namespace App.Controllers;
 
-public class BaseController {
+public class BaseController : RootController {
     protected string BaseTag(string id) {
+        return id;
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/App/Controllers/RootController.cs",
+        r#"
+namespace App.Controllers;
+
+public class RootController {
+    protected string RootTag(string id) {
         return id;
     }
 }
