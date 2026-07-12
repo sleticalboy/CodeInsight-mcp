@@ -3175,6 +3175,11 @@ fn cli_resolves_csharp_using_imports() {
             .iter()
             .any(|call| { call["callee"] == "base.BaseTag" && call["callee_file"].is_null() })
     );
+    assert!(
+        callees.as_array().unwrap().iter().any(|call| {
+            call["callee"] == "users.Profile.Load" && call["callee_file"].is_null()
+        })
+    );
 }
 
 #[test]
@@ -6850,7 +6855,7 @@ public class AuthController : BaseController {
         var createdBackupUsers = new App.Services.UserService();
         UserService targetUsers = new();
         Audit.Record(id);
-        return LocalFormatter.Normalize(ClampName(users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id)));
+        return LocalFormatter.Normalize(ClampName(users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
     }
 
     private string LocalTag(string id) {
@@ -6872,7 +6877,15 @@ public class BaseController {
 namespace App.Services;
 
 public class UserService {
+    public ProfileService Profile { get; } = new();
+
     public string Find(string id) {
+        return id;
+    }
+}
+
+public class ProfileService {
+    public string Load(string id) {
         return id;
     }
 }
