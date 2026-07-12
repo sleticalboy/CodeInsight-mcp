@@ -3136,6 +3136,15 @@ fn cli_resolves_csharp_using_imports() {
                     && dependency["resolved_file"].is_null()
             })
     );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| {
+                dependency["local_alias"] != "lazyUsers" || dependency["kind"] != "type_binding"
+            })
+    );
 
     let callees = run_json([
         "callees",
@@ -3193,6 +3202,11 @@ fn cli_resolves_csharp_using_imports() {
         call["callee"] == "usersById.Find"
             && call["callee_file"] == "src/App/Services/UserService.cs"
     }));
+    assert!(
+        callees.as_array().unwrap().iter().any(|call| {
+            call["callee"] == "lazyUsers.Value.Find" && call["callee_file"].is_null()
+        })
+    );
     assert!(
         callees
             .as_array()
@@ -6946,6 +6960,7 @@ public class AuthController : BaseController {
         UserService[] servicePool = new[] { users };
         List<UserService> listUsers = new() { users };
         Dictionary<string, UserService> usersById = new() { [id] = users };
+        Lazy<UserService> lazyUsers = new(() => users);
         var optionalUsers = users?.Find(id);
         var forcedUsers = users!.Find(id);
         var optionalThisUsers = this.users?.Find(id);
@@ -6958,8 +6973,9 @@ public class AuthController : BaseController {
         var pooledUser = servicePool[0].Find(id);
         var listedUser = listUsers[0].Find(id);
         var mappedUser = usersById[id].Find(id);
+        var lazyUser = lazyUsers.Value.Find(id);
         Audit.Record(id);
-        return LocalFormatter.Normalize(ClampName(mappedUser + listedUser + pooledUser + maybeUser + genericUsers + genericThisUsers + asyncUsers + asyncThisUsers + optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
+        return LocalFormatter.Normalize(ClampName(lazyUser + mappedUser + listedUser + pooledUser + maybeUser + genericUsers + genericThisUsers + asyncUsers + asyncThisUsers + optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
     }
 
     private string LocalTag(string id) {

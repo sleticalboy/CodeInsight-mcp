@@ -4225,6 +4225,10 @@ fn csharp_collection_element_type(value: &str) -> Option<&str> {
     if arguments.len() != 1 {
         return None;
     }
+    let element_type = arguments[0];
+    if element_type.contains('<') || element_type.contains('>') {
+        return None;
+    }
 
     let collection_name = collection_type
         .trim()
@@ -4232,12 +4236,16 @@ fn csharp_collection_element_type(value: &str) -> Option<&str> {
         .next_back()
         .unwrap_or(collection_type)
         .trim();
-    csharp_collection_type(collection_name).then_some(arguments[0])
+    csharp_collection_type(collection_name).then_some(element_type)
 }
 
 fn csharp_dictionary_value_type(value: &str) -> Option<&str> {
     let (dictionary_type, arguments) = csharp_generic_type_arguments(value)?;
     if arguments.len() != 2 {
+        return None;
+    }
+    let value_type = arguments[1];
+    if value_type.contains('<') || value_type.contains('>') {
         return None;
     }
 
@@ -4247,7 +4255,7 @@ fn csharp_dictionary_value_type(value: &str) -> Option<&str> {
         .next_back()
         .unwrap_or(dictionary_type)
         .trim();
-    csharp_dictionary_type(dictionary_name).then_some(arguments[1])
+    csharp_dictionary_type(dictionary_name).then_some(value_type)
 }
 
 fn csharp_generic_type_arguments(value: &str) -> Option<(&str, Vec<&str>)> {
@@ -6315,6 +6323,14 @@ public interface UserRepository {
         );
         assert!(csharp_type_bindings("string name").is_empty());
         assert!(csharp_type_bindings("Tuple<string, int, UserService> users").is_empty());
+        assert!(csharp_type_bindings("Lazy<UserService> lazyUsers = new();").is_empty());
+        assert!(
+            csharp_type_bindings("Tuple<string, int, UserService> tupleUsers = new();").is_empty()
+        );
+        assert!(
+            csharp_type_bindings("List<Dictionary<string, UserService>> nestedUsers = new();")
+                .is_empty()
+        );
         assert!(csharp_type_bindings("var users = GetUsers();").is_empty());
     }
 
