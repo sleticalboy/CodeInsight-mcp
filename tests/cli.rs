@@ -3082,6 +3082,18 @@ fn cli_resolves_csharp_using_imports() {
             .as_array()
             .unwrap()
             .iter()
+            .any(|dependency| {
+                dependency["target"] == "App.Profiles.ExternalProfile"
+                    && dependency["kind"] == "property_type"
+                    && dependency["local_alias"] == "QualifiedExternalProfile"
+                    && dependency["imported_symbol"] == "UserService"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
             .all(|dependency| {
                 dependency["target"] != "IAuthController"
                     || dependency["kind"] != "base_type"
@@ -3317,7 +3329,7 @@ fn cli_resolves_csharp_using_imports() {
         fixture.path().to_str().unwrap(),
         "AuthController.Login",
         "--limit",
-        "60",
+        "65",
     ]);
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "Audit.Record" && call["callee_file"] == "src/App/Support/AuditLog.cs"
@@ -3385,7 +3397,12 @@ fn cli_resolves_csharp_using_imports() {
         call["callee"] == "users.FormatForDisplay" && call["callee_file"].is_null()
     }));
     assert!(callees.as_array().unwrap().iter().any(|call| {
-        call["callee"] == "users.ExternalProfile.Load" && call["callee_file"].is_null()
+        call["callee"] == "users.ExternalProfile.Load"
+            && call["callee_file"] == "src/App/Profiles/ExternalProfile.cs"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "users.QualifiedExternalProfile.Load"
+            && call["callee_file"] == "src/App/Profiles/ExternalProfile.cs"
     }));
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "users.Profile.Metadata.Display" && call["callee_file"].is_null()
@@ -7176,11 +7193,12 @@ public class AuthController : App.Controllers.BaseController, IAuthController {
         var directoryUser = directory.Find(id);
         var thisProfile = this.users.Profile.Load(id);
         var externalProfile = users.ExternalProfile.Load(id);
+        var qualifiedExternalProfile = users.QualifiedExternalProfile.Load(id);
         var profileMetadata = users.Profile.Metadata.Display(id);
         var extensionUser = users.FormatForDisplay(id);
         var rootTag = base.RootTag(id);
         Audit.Record(id);
-        return LocalFormatter.Normalize(ClampName(rootTag + extensionUser + profileMetadata + externalProfile + thisProfile + directoryUser + detailedUser + lazyUser + mappedUser + listedUser + pooledUser + maybeUser + genericUsers + genericThisUsers + asyncUsers + asyncThisUsers + optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
+        return LocalFormatter.Normalize(ClampName(rootTag + extensionUser + profileMetadata + qualifiedExternalProfile + externalProfile + thisProfile + directoryUser + detailedUser + lazyUser + mappedUser + listedUser + pooledUser + maybeUser + genericUsers + genericThisUsers + asyncUsers + asyncThisUsers + optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
     }
 
     private string LocalTag(string id) {
@@ -7269,6 +7287,7 @@ namespace App.Services;
 public class UserService {
     public ProfileService Profile { get; } = new();
     public ExternalProfile ExternalProfile { get; } = new();
+    public App.Profiles.ExternalProfile QualifiedExternalProfile { get; } = new();
 
     public string Find(string id) {
         return id;
