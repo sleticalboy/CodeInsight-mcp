@@ -3112,6 +3112,18 @@ fn cli_resolves_csharp_using_imports() {
                     && dependency["resolved_file"].is_null()
             })
     );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "UserService"
+                    && dependency["kind"] == "type_binding"
+                    && dependency["local_alias"] == "listUsers"
+                    && dependency["resolved_file"].is_null()
+            })
+    );
 
     let callees = run_json([
         "callees",
@@ -3159,6 +3171,10 @@ fn cli_resolves_csharp_using_imports() {
     }));
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "servicePool.Find"
+            && call["callee_file"] == "src/App/Services/UserService.cs"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "listUsers.Find"
             && call["callee_file"] == "src/App/Services/UserService.cs"
     }));
     assert!(
@@ -6886,6 +6902,7 @@ fn csharp_using_fixture_project() -> TempDir {
         "src/App/Controllers/AuthController.cs",
         r#"
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Services;
 using Audit = App.Support.AuditLog;
@@ -6911,6 +6928,7 @@ public class AuthController : BaseController {
         UserService targetUsers = new();
         UserService? maybeUsers = users;
         UserService[] servicePool = new[] { users };
+        List<UserService> listUsers = new() { users };
         var optionalUsers = users?.Find(id);
         var forcedUsers = users!.Find(id);
         var optionalThisUsers = this.users?.Find(id);
@@ -6921,8 +6939,9 @@ public class AuthController : BaseController {
         var genericThisUsers = this.users.FindAs<string>(id);
         var maybeUser = maybeUsers.Find(id);
         var pooledUser = servicePool[0].Find(id);
+        var listedUser = listUsers[0].Find(id);
         Audit.Record(id);
-        return LocalFormatter.Normalize(ClampName(pooledUser + maybeUser + genericUsers + genericThisUsers + asyncUsers + asyncThisUsers + optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
+        return LocalFormatter.Normalize(ClampName(listedUser + pooledUser + maybeUser + genericUsers + genericThisUsers + asyncUsers + asyncThisUsers + optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
     }
 
     private string LocalTag(string id) {

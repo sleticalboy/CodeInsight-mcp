@@ -4170,6 +4170,9 @@ fn clean_csharp_type_name(value: &str) -> Option<&str> {
         .unwrap_or(value)
         .trim_end_matches('?')
         .trim_end_matches("[]");
+    if let Some(element_type) = csharp_collection_element_type(value) {
+        return clean_csharp_type_name(element_type);
+    }
     if value.is_empty()
         || value.contains('<')
         || value.contains('>')
@@ -4182,6 +4185,35 @@ fn clean_csharp_type_name(value: &str) -> Option<&str> {
     }
 
     Some(value)
+}
+
+fn csharp_collection_element_type(value: &str) -> Option<&str> {
+    let (collection_type, element_type) = value.split_once('<')?;
+    let element_type = element_type.strip_suffix('>')?.trim();
+    if element_type.is_empty() || element_type.contains(',') {
+        return None;
+    }
+
+    let collection_name = collection_type
+        .trim()
+        .split('.')
+        .next_back()
+        .unwrap_or(collection_type)
+        .trim();
+    csharp_collection_type(collection_name).then_some(element_type)
+}
+
+fn csharp_collection_type(value: &str) -> bool {
+    matches!(
+        value,
+        "List"
+            | "IList"
+            | "IEnumerable"
+            | "ICollection"
+            | "IReadOnlyList"
+            | "IReadOnlyCollection"
+            | "HashSet"
+    )
 }
 
 fn csharp_new_expression_type(value: &str) -> Option<String> {
@@ -6157,6 +6189,19 @@ public interface UserRepository {
             vec![("UserService".to_string(), "servicePool".to_string())]
         );
         assert_eq!(
+            csharp_type_bindings("List<UserService> listUsers = new();"),
+            vec![("UserService".to_string(), "listUsers".to_string())]
+        );
+        assert_eq!(
+            csharp_type_bindings(
+                "System.Collections.Generic.IEnumerable<App.Services.UserService> enumerableUsers = [];"
+            ),
+            vec![(
+                "App.Services.UserService".to_string(),
+                "enumerableUsers".to_string()
+            )]
+        );
+        assert_eq!(
             csharp_type_bindings("var createdUsers = new UserService();"),
             vec![("UserService".to_string(), "createdUsers".to_string())]
         );
@@ -6168,7 +6213,7 @@ public interface UserRepository {
             )]
         );
         assert!(csharp_type_bindings("string name").is_empty());
-        assert!(csharp_type_bindings("List<UserService> users").is_empty());
+        assert!(csharp_type_bindings("Dictionary<string, UserService> users").is_empty());
         assert!(csharp_type_bindings("var users = GetUsers();").is_empty());
     }
 
