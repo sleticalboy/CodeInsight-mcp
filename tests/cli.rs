@@ -2956,8 +2956,8 @@ fn cli_resolves_csharp_using_imports() {
     let fixture = csharp_using_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 7);
-    assert_eq!(index["changed_files"], 7);
+    assert_eq!(index["indexed_files"], 8);
+    assert_eq!(index["changed_files"], 8);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let base_symbols = run_json([
@@ -2988,6 +2988,17 @@ fn cli_resolves_csharp_using_imports() {
             .count()
             >= 2
     );
+    let extension_symbols = run_json([
+        "symbols",
+        fixture.path().to_str().unwrap(),
+        "FormatForDisplay",
+        "--limit",
+        "5",
+    ]);
+    assert!(extension_symbols.as_array().unwrap().iter().any(|symbol| {
+        symbol["name"] == "FormatForDisplay"
+            && symbol["file"] == "src/App/Extensions/UserServiceExtensions.cs"
+    }));
 
     let deps = run_json([
         "dependency-graph",
@@ -3045,6 +3056,16 @@ fn cli_resolves_csharp_using_imports() {
             .any(|dependency| {
                 dependency["target"] == "App.Support.MathUtil"
                     && dependency["resolved_file"] == "src/App/Support/MathUtil.cs"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "App.Extensions"
+                    && dependency["resolved_file"] == "src/App/Extensions/UserServiceExtensions.cs"
             })
     );
     assert!(
@@ -3258,6 +3279,9 @@ fn cli_resolves_csharp_using_imports() {
             call["callee"] == "lazyUsers.Value.Find" && call["callee_file"].is_null()
         })
     );
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "users.FormatForDisplay" && call["callee_file"].is_null()
+    }));
     assert!(
         callees
             .as_array()
@@ -6996,6 +7020,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Services;
+using App.Extensions;
 using Audit = App.Support.AuditLog;
 using Repo = App.Services.UserService;
 using static App.Support.MathUtil;
@@ -7037,9 +7062,10 @@ public class AuthController : App.Controllers.BaseController, IAuthController {
         var lazyUser = lazyUsers.Value.Find(id);
         var detailedUser = users.Find(id, includeDisabled: true);
         var thisProfile = this.users.Profile.Load(id);
+        var extensionUser = users.FormatForDisplay(id);
         var rootTag = base.RootTag(id);
         Audit.Record(id);
-        return LocalFormatter.Normalize(ClampName(rootTag + thisProfile + detailedUser + lazyUser + mappedUser + listedUser + pooledUser + maybeUser + genericUsers + genericThisUsers + asyncUsers + asyncThisUsers + optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
+        return LocalFormatter.Normalize(ClampName(rootTag + extensionUser + thisProfile + detailedUser + lazyUser + mappedUser + listedUser + pooledUser + maybeUser + genericUsers + genericThisUsers + asyncUsers + asyncThisUsers + optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
     }
 
     private string LocalTag(string id) {
@@ -7072,6 +7098,21 @@ namespace App.Controllers;
 public class RootController {
     protected string RootTag(string id) {
         return id;
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/App/Extensions/UserServiceExtensions.cs",
+        r#"
+using App.Services;
+
+namespace App.Extensions;
+
+public static class UserServiceExtensions {
+    public static string FormatForDisplay(this UserService users, string id) {
+        return users.Find(id);
     }
 }
 "#,
