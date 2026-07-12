@@ -2956,8 +2956,8 @@ fn cli_resolves_csharp_using_imports() {
     let fixture = csharp_using_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 10);
-    assert_eq!(index["changed_files"], 10);
+    assert_eq!(index["indexed_files"], 11);
+    assert_eq!(index["changed_files"], 11);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let base_symbols = run_json([
@@ -3030,12 +3030,29 @@ fn cli_resolves_csharp_using_imports() {
     assert!(load_symbols.as_array().unwrap().iter().any(|symbol| {
         symbol["name"] == "Load" && symbol["file"] == "src/App/Services/UserService.cs"
     }));
+    let external_profile_symbols = run_json([
+        "symbols",
+        fixture.path().to_str().unwrap(),
+        "ExternalProfile",
+        "--limit",
+        "5",
+    ]);
+    assert!(
+        external_profile_symbols
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|symbol| {
+                symbol["name"] == "ExternalProfile"
+                    && symbol["file"] == "src/App/Profiles/ExternalProfile.cs"
+            })
+    );
 
     let deps = run_json([
         "dependency-graph",
         fixture.path().to_str().unwrap(),
         "--limit",
-        "100",
+        "120",
     ]);
     assert!(
         deps["dependencies"]
@@ -3046,6 +3063,18 @@ fn cli_resolves_csharp_using_imports() {
                 dependency["target"] == "App.Controllers.BaseController"
                     && dependency["kind"] == "base_type"
                     && dependency["local_alias"] == "AuthController"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "ExternalProfile"
+                    && dependency["kind"] == "property_type"
+                    && dependency["local_alias"] == "ExternalProfile"
+                    && dependency["imported_symbol"] == "UserService"
             })
     );
     assert!(
@@ -3288,7 +3317,7 @@ fn cli_resolves_csharp_using_imports() {
         fixture.path().to_str().unwrap(),
         "AuthController.Login",
         "--limit",
-        "50",
+        "60",
     ]);
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "Audit.Record" && call["callee_file"] == "src/App/Support/AuditLog.cs"
@@ -3354,6 +3383,12 @@ fn cli_resolves_csharp_using_imports() {
     );
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "users.FormatForDisplay" && call["callee_file"].is_null()
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "users.ExternalProfile.Load" && call["callee_file"].is_null()
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "users.Profile.Metadata.Display" && call["callee_file"].is_null()
     }));
     assert!(
         callees
@@ -7140,10 +7175,12 @@ public class AuthController : App.Controllers.BaseController, IAuthController {
         var detailedUser = users.Find(id, includeDisabled: true);
         var directoryUser = directory.Find(id);
         var thisProfile = this.users.Profile.Load(id);
+        var externalProfile = users.ExternalProfile.Load(id);
+        var profileMetadata = users.Profile.Metadata.Display(id);
         var extensionUser = users.FormatForDisplay(id);
         var rootTag = base.RootTag(id);
         Audit.Record(id);
-        return LocalFormatter.Normalize(ClampName(rootTag + extensionUser + thisProfile + directoryUser + detailedUser + lazyUser + mappedUser + listedUser + pooledUser + maybeUser + genericUsers + genericThisUsers + asyncUsers + asyncThisUsers + optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
+        return LocalFormatter.Normalize(ClampName(rootTag + extensionUser + profileMetadata + externalProfile + thisProfile + directoryUser + detailedUser + lazyUser + mappedUser + listedUser + pooledUser + maybeUser + genericUsers + genericThisUsers + asyncUsers + asyncThisUsers + optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
     }
 
     private string LocalTag(string id) {
@@ -7225,10 +7262,13 @@ public static class UserServiceExtensions {
         &dir,
         "src/App/Services/UserService.cs",
         r#"
+using App.Profiles;
+
 namespace App.Services;
 
 public class UserService {
     public ProfileService Profile { get; } = new();
+    public ExternalProfile ExternalProfile { get; } = new();
 
     public string Find(string id) {
         return id;
@@ -7248,6 +7288,27 @@ public class UserService {
 }
 
 public class ProfileService {
+    public ProfileMetadata Metadata { get; } = new();
+
+    public string Load(string id) {
+        return id;
+    }
+}
+
+public class ProfileMetadata {
+    public string Display(string id) {
+        return id;
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/App/Profiles/ExternalProfile.cs",
+        r#"
+namespace App.Profiles;
+
+public class ExternalProfile {
     public string Load(string id) {
         return id;
     }
