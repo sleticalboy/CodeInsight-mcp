@@ -2956,9 +2956,20 @@ fn cli_resolves_csharp_using_imports() {
     let fixture = csharp_using_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 5);
-    assert_eq!(index["changed_files"], 5);
+    assert_eq!(index["indexed_files"], 6);
+    assert_eq!(index["changed_files"], 6);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let base_symbols = run_json([
+        "symbols",
+        fixture.path().to_str().unwrap(),
+        "BaseTag",
+        "--limit",
+        "5",
+    ]);
+    assert!(base_symbols.as_array().unwrap().iter().any(|symbol| {
+        symbol["name"] == "BaseTag" && symbol["file"] == "src/App/Controllers/BaseController.cs"
+    }));
 
     let deps = run_json([
         "dependency-graph",
@@ -6989,6 +7000,13 @@ public class AuthController : BaseController {
         return id;
     }
 }
+"#,
+    );
+    write_file(
+        &dir,
+        "src/App/Controllers/BaseController.cs",
+        r#"
+namespace App.Controllers;
 
 public class BaseController {
     protected string BaseTag(string id) {
