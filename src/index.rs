@@ -4437,7 +4437,11 @@ fn csharp_dictionary_type(value: &str) -> bool {
 }
 
 fn csharp_value_wrapper_member(value: &str) -> Option<&'static str> {
-    matches!(value, "Lazy").then_some("Value")
+    match value {
+        "Lazy" => Some("Value"),
+        "Task" | "ValueTask" => Some("Result"),
+        _ => None,
+    }
 }
 
 fn csharp_new_expression_binding(value: &str) -> Option<(String, Option<String>)> {
@@ -6510,11 +6514,43 @@ public class BaseAuthService {
             )]
         );
         assert_eq!(
+            csharp_type_bindings("Task<UserService> taskUsers = Task.FromResult(users);"),
+            vec![(
+                "UserService".to_string(),
+                "taskUsers".to_string(),
+                Some("Result".to_string())
+            )]
+        );
+        assert_eq!(
+            csharp_type_bindings("ValueTask<UserService> valueTaskUsers = new(users);"),
+            vec![(
+                "UserService".to_string(),
+                "valueTaskUsers".to_string(),
+                Some("Result".to_string())
+            )]
+        );
+        assert_eq!(
             csharp_type_bindings("var lazyUsers = new Lazy<UserService>();"),
             vec![(
                 "UserService".to_string(),
                 "lazyUsers".to_string(),
                 Some("Value".to_string())
+            )]
+        );
+        assert_eq!(
+            csharp_type_bindings("var taskUsers = new Task<UserService>(() => users);"),
+            vec![(
+                "UserService".to_string(),
+                "taskUsers".to_string(),
+                Some("Result".to_string())
+            )]
+        );
+        assert_eq!(
+            csharp_type_bindings("var valueTaskUsers = new ValueTask<UserService>(users);"),
+            vec![(
+                "UserService".to_string(),
+                "valueTaskUsers".to_string(),
+                Some("Result".to_string())
             )]
         );
         assert_eq!(

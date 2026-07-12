@@ -1367,11 +1367,15 @@ impl Store {
                 type_bindings.imported_symbol,
                 type_bindings.line as dependency_line,
                 case
-                    when type_bindings.imported_symbol = 'Value'
-                      and c.callee like type_bindings.local_alias || '.Value.%'
+                    when type_bindings.imported_symbol is not null
+                      and type_bindings.imported_symbol != '*'
+                      and c.callee like
+                        type_bindings.local_alias || '.' || type_bindings.imported_symbol || '.%'
                     then substr(
                         c.callee,
-                        length(type_bindings.local_alias) + length('.Value.') + 1
+                        length(type_bindings.local_alias) +
+                        length(type_bindings.imported_symbol) +
+                        3
                     )
                     else substr(c.callee, length(type_bindings.local_alias) + 2)
                 end as member_tail
