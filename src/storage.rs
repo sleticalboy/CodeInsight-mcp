@@ -1443,6 +1443,52 @@ impl Store {
                 substr(c.callee, length(type_bindings.local_alias) + 2),
                 1,
                 instr(substr(c.callee, length(type_bindings.local_alias) + 2), '.') - 1
+              )
+
+            union all
+
+            select
+                c.id as call_id,
+                owner_files.id as owner_file_id,
+                owner_files.path as owner_file,
+                property_types.target as property_type,
+                property_types.line as dependency_line,
+                substr(
+                    substr(c.callee, length(type_bindings.local_alias) + 2),
+                    instr(substr(c.callee, length(type_bindings.local_alias) + 2), '.') + 1
+                ) as member_tail
+            from calls c
+            join dependencies type_bindings
+              on type_bindings.source_file_id = c.source_file_id
+            join dependencies aliases
+              on aliases.source_file_id = c.source_file_id
+            join files owner_files
+              on owner_files.path like '%' ||
+                replace(aliases.target, '.', '/') ||
+                '.cs'
+            join dependencies property_types
+              on property_types.source_file_id = owner_files.id
+            where c.callee_file is null
+              and c.language = 'csharp'
+              and type_bindings.language = 'csharp'
+              and type_bindings.kind = 'type_binding'
+              and type_bindings.local_alias is not null
+              and aliases.language = 'csharp'
+              and aliases.kind = 'using_alias'
+              and aliases.local_alias = type_bindings.target
+              and property_types.language = 'csharp'
+              and property_types.kind = 'property_type'
+              and property_types.local_alias is not null
+              and property_types.imported_symbol is not null
+              and (
+                property_types.imported_symbol = aliases.target
+                or aliases.target like '%.' || property_types.imported_symbol
+              )
+              and c.callee like type_bindings.local_alias || '.%.%'
+              and property_types.local_alias = substr(
+                substr(c.callee, length(type_bindings.local_alias) + 2),
+                1,
+                instr(substr(c.callee, length(type_bindings.local_alias) + 2), '.') - 1
               );
 
             create temp table imported_call_targets as
