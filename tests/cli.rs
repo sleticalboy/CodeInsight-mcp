@@ -3155,6 +3155,19 @@ fn cli_resolves_csharp_using_imports() {
             .count()
             >= 2
     );
+
+    let local_callers = run_json([
+        "callers",
+        fixture.path().to_str().unwrap(),
+        "LocalTag",
+        "--limit",
+        "5",
+    ]);
+    assert!(
+        local_callers.as_array().unwrap().iter().any(|call| {
+            call["caller"] == "AuthController.Login" && call["callee"] == "LocalTag"
+        })
+    );
 }
 
 #[test]
@@ -6830,7 +6843,11 @@ public class AuthController {
         var createdBackupUsers = new App.Services.UserService();
         UserService targetUsers = new();
         Audit.Record(id);
-        return LocalFormatter.Normalize(ClampName(users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id)));
+        return LocalFormatter.Normalize(ClampName(users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id)));
+    }
+
+    private string LocalTag(string id) {
+        return id;
     }
 }
 "#,

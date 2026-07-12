@@ -6108,6 +6108,8 @@ public class AuthController {
     public string Login(string id) {
         Audit.Record(id);
         this.users.Find(id);
+        this.LocalTag(id);
+        base.BaseTag(id);
         return ClampName(id);
     }
 }
@@ -6120,6 +6122,8 @@ public class AuthController {
             .collect::<Vec<_>>();
         assert!(callees.contains(&"Audit.Record"));
         assert!(callees.contains(&"users.Find"));
+        assert!(callees.contains(&"LocalTag"));
+        assert!(callees.contains(&"base.BaseTag"));
         assert!(callees.contains(&"ClampName"));
     }
 
