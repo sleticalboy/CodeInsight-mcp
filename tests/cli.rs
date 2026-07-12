@@ -3010,6 +3010,26 @@ fn cli_resolves_csharp_using_imports() {
         symbol["name"] == "FormatForDisplay"
             && symbol["file"] == "src/App/Extensions/UserServiceExtensions.cs"
     }));
+    let profile_symbols = run_json([
+        "symbols",
+        fixture.path().to_str().unwrap(),
+        "ProfileService",
+        "--limit",
+        "5",
+    ]);
+    assert!(profile_symbols.as_array().unwrap().iter().any(|symbol| {
+        symbol["name"] == "ProfileService" && symbol["file"] == "src/App/Services/UserService.cs"
+    }));
+    let load_symbols = run_json([
+        "symbols",
+        fixture.path().to_str().unwrap(),
+        "Load",
+        "--limit",
+        "5",
+    ]);
+    assert!(load_symbols.as_array().unwrap().iter().any(|symbol| {
+        symbol["name"] == "Load" && symbol["file"] == "src/App/Services/UserService.cs"
+    }));
 
     let deps = run_json([
         "dependency-graph",
