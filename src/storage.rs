@@ -1355,10 +1355,10 @@ impl Store {
         self.conn.execute_batch(
             "
             drop table if exists temp.imported_call_targets;
-            drop table if exists temp.csharp_type_bound_property_calls;
+            drop table if exists temp.csharp_type_bound_calls;
             drop table if exists temp.csharp_property_call_parts;
 
-            create temp table csharp_type_bound_property_calls as
+            create temp table csharp_type_bound_calls as
             select
                 c.id as call_id,
                 c.source_file_id,
@@ -1368,13 +1368,13 @@ impl Store {
                 type_bindings.line as dependency_line,
                 case
                     when type_bindings.imported_symbol = 'Value'
-                      and c.callee like type_bindings.local_alias || '.Value.%.%'
+                      and c.callee like type_bindings.local_alias || '.Value.%'
                     then substr(
                         c.callee,
                         length(type_bindings.local_alias) + length('.Value.') + 1
                     )
                     else substr(c.callee, length(type_bindings.local_alias) + 2)
-                end as property_tail
+                end as member_tail
             from calls c
             join dependencies type_bindings
               on type_bindings.source_file_id = c.source_file_id
@@ -1383,7 +1383,7 @@ impl Store {
               and type_bindings.language = 'csharp'
               and type_bindings.kind = 'type_binding'
               and type_bindings.local_alias is not null
-              and c.callee like type_bindings.local_alias || '.%.%';
+              and c.callee like type_bindings.local_alias || '.%';
 
             create temp table csharp_property_call_parts as
             select
@@ -1393,10 +1393,10 @@ impl Store {
                 property_types.target as property_type,
                 c.dependency_line,
                 substr(
-                    c.property_tail,
-                    instr(c.property_tail, '.') + 1
+                    c.member_tail,
+                    instr(c.member_tail, '.') + 1
                 ) as member_tail
-            from temp.csharp_type_bound_property_calls c
+            from temp.csharp_type_bound_calls c
             join dependencies scopes
               on scopes.source_file_id = c.source_file_id
             join files owner_files
@@ -1407,7 +1407,8 @@ impl Store {
                 '.cs'
             join dependencies property_types
               on property_types.source_file_id = owner_files.id
-            where scopes.language = 'csharp'
+            where instr(c.member_tail, '.') > 0
+              and scopes.language = 'csharp'
               and scopes.kind in ('using', 'namespace')
               and property_types.language = 'csharp'
               and property_types.kind = 'property_type'
@@ -1418,9 +1419,9 @@ impl Store {
                 or c.target like '%.' || property_types.imported_symbol
               )
               and property_types.local_alias = substr(
-                c.property_tail,
+                c.member_tail,
                 1,
-                instr(c.property_tail, '.') - 1
+                instr(c.member_tail, '.') - 1
               )
 
             union all
@@ -1432,17 +1433,18 @@ impl Store {
                 property_types.target as property_type,
                 c.dependency_line,
                 substr(
-                    c.property_tail,
-                    instr(c.property_tail, '.') + 1
+                    c.member_tail,
+                    instr(c.member_tail, '.') + 1
                 ) as member_tail
-            from temp.csharp_type_bound_property_calls c
+            from temp.csharp_type_bound_calls c
             join files owner_files
               on owner_files.path like '%' ||
                 replace(c.target, '.', '/') ||
                 '.cs'
             join dependencies property_types
               on property_types.source_file_id = owner_files.id
-            where c.target like '%.%'
+            where instr(c.member_tail, '.') > 0
+              and c.target like '%.%'
               and property_types.language = 'csharp'
               and property_types.kind = 'property_type'
               and property_types.local_alias is not null
@@ -1452,9 +1454,9 @@ impl Store {
                 or c.target like '%.' || property_types.imported_symbol
               )
               and property_types.local_alias = substr(
-                c.property_tail,
+                c.member_tail,
                 1,
-                instr(c.property_tail, '.') - 1
+                instr(c.member_tail, '.') - 1
               )
 
             union all
@@ -1466,10 +1468,10 @@ impl Store {
                 property_types.target as property_type,
                 c.dependency_line,
                 substr(
-                    c.property_tail,
-                    instr(c.property_tail, '.') + 1
+                    c.member_tail,
+                    instr(c.member_tail, '.') + 1
                 ) as member_tail
-            from temp.csharp_type_bound_property_calls c
+            from temp.csharp_type_bound_calls c
             join dependencies aliases
               on aliases.source_file_id = c.source_file_id
             join files owner_files
@@ -1478,7 +1480,8 @@ impl Store {
                 '.cs'
             join dependencies property_types
               on property_types.source_file_id = owner_files.id
-            where aliases.language = 'csharp'
+            where instr(c.member_tail, '.') > 0
+              and aliases.language = 'csharp'
               and aliases.kind = 'using_alias'
               and aliases.local_alias = c.target
               and property_types.language = 'csharp'
@@ -1490,9 +1493,9 @@ impl Store {
                 or aliases.target like '%.' || property_types.imported_symbol
               )
               and property_types.local_alias = substr(
-                c.property_tail,
+                c.member_tail,
                 1,
-                instr(c.property_tail, '.') - 1
+                instr(c.member_tail, '.') - 1
               );
 
             create temp table imported_call_targets as
@@ -1750,45 +1753,28 @@ impl Store {
                     union all
 
                     select
-                        c.id as call_id,
+                        c.call_id,
                         target_files.path as callee_file,
                         s.qualified_name as qualified_name,
-                        type_bindings.line as dependency_line,
+                        c.dependency_line,
                         s.start_line as start_line,
                         0 as match_rank
-                    from calls c
-                    join dependencies type_bindings
-                      on type_bindings.source_file_id = c.source_file_id
+                    from temp.csharp_type_bound_calls c
                     join dependencies scopes
                       on scopes.source_file_id = c.source_file_id
                     join files target_files
                       on target_files.path like '%' ||
                         replace(scopes.target, '.', '/') ||
                         '/' ||
-                        type_bindings.target ||
+                        c.target ||
                         '.cs'
                     join symbols s on s.file_id = target_files.id
-                    where c.callee_file is null
-                      and c.language = 'csharp'
-                      and type_bindings.language = 'csharp'
-                      and type_bindings.kind = 'type_binding'
-                      and type_bindings.local_alias is not null
-                      and scopes.language = 'csharp'
+                    where scopes.language = 'csharp'
                       and scopes.kind in ('using', 'namespace')
-                      and c.callee like type_bindings.local_alias || '.%'
                       and (
-                        s.name = substr(c.callee, length(type_bindings.local_alias) + 2)
-                        or s.qualified_name = substr(c.callee, length(type_bindings.local_alias) + 2)
-                        or s.qualified_name like '%.' || substr(c.callee, length(type_bindings.local_alias) + 2)
-                        or (
-                          type_bindings.imported_symbol = 'Value'
-                          and c.callee like type_bindings.local_alias || '.Value.%'
-                          and (
-                            s.name = substr(c.callee, length(type_bindings.local_alias) + length('.Value.') + 1)
-                            or s.qualified_name = substr(c.callee, length(type_bindings.local_alias) + length('.Value.') + 1)
-                            or s.qualified_name like '%.' || substr(c.callee, length(type_bindings.local_alias) + length('.Value.') + 1)
-                          )
-                        )
+                        s.name = c.member_tail
+                        or s.qualified_name = c.member_tail
+                        or s.qualified_name like '%.' || c.member_tail
                       )
 
                     union all
@@ -1873,54 +1859,35 @@ impl Store {
                     union all
 
                     select
-                        c.id as call_id,
+                        c.call_id,
                         target_files.path as callee_file,
                         s.qualified_name as qualified_name,
-                        type_bindings.line as dependency_line,
+                        c.dependency_line,
                         s.start_line as start_line,
                         0 as match_rank
-                    from calls c
-                    join dependencies type_bindings
-                      on type_bindings.source_file_id = c.source_file_id
+                    from temp.csharp_type_bound_calls c
                     join files target_files
                       on target_files.path like '%' ||
-                        replace(type_bindings.target, '.', '/') ||
+                        replace(c.target, '.', '/') ||
                         '.cs'
                     join symbols s on s.file_id = target_files.id
-                    where c.callee_file is null
-                      and c.language = 'csharp'
-                      and type_bindings.language = 'csharp'
-                      and type_bindings.kind = 'type_binding'
-                      and type_bindings.local_alias is not null
-                      and type_bindings.target like '%.%'
-                      and c.callee like type_bindings.local_alias || '.%'
+                    where c.target like '%.%'
                       and (
-                        s.name = substr(c.callee, length(type_bindings.local_alias) + 2)
-                        or s.qualified_name = substr(c.callee, length(type_bindings.local_alias) + 2)
-                        or s.qualified_name like '%.' || substr(c.callee, length(type_bindings.local_alias) + 2)
-                        or (
-                          type_bindings.imported_symbol = 'Value'
-                          and c.callee like type_bindings.local_alias || '.Value.%'
-                          and (
-                            s.name = substr(c.callee, length(type_bindings.local_alias) + length('.Value.') + 1)
-                            or s.qualified_name = substr(c.callee, length(type_bindings.local_alias) + length('.Value.') + 1)
-                            or s.qualified_name like '%.' || substr(c.callee, length(type_bindings.local_alias) + length('.Value.') + 1)
-                          )
-                        )
+                        s.name = c.member_tail
+                        or s.qualified_name = c.member_tail
+                        or s.qualified_name like '%.' || c.member_tail
                       )
 
                     union all
 
                     select
-                        c.id as call_id,
+                        c.call_id,
                         target_files.path as callee_file,
                         s.qualified_name as qualified_name,
-                        type_bindings.line as dependency_line,
+                        c.dependency_line,
                         s.start_line as start_line,
                         0 as match_rank
-                    from calls c
-                    join dependencies type_bindings
-                      on type_bindings.source_file_id = c.source_file_id
+                    from temp.csharp_type_bound_calls c
                     join dependencies aliases
                       on aliases.source_file_id = c.source_file_id
                     join files target_files
@@ -1928,28 +1895,13 @@ impl Store {
                         replace(aliases.target, '.', '/') ||
                         '.cs'
                     join symbols s on s.file_id = target_files.id
-                    where c.callee_file is null
-                      and c.language = 'csharp'
-                      and type_bindings.language = 'csharp'
-                      and type_bindings.kind = 'type_binding'
-                      and type_bindings.local_alias is not null
-                      and aliases.language = 'csharp'
+                    where aliases.language = 'csharp'
                       and aliases.kind = 'using_alias'
-                      and aliases.local_alias = type_bindings.target
-                      and c.callee like type_bindings.local_alias || '.%'
+                      and aliases.local_alias = c.target
                       and (
-                        s.name = substr(c.callee, length(type_bindings.local_alias) + 2)
-                        or s.qualified_name = substr(c.callee, length(type_bindings.local_alias) + 2)
-                        or s.qualified_name like '%.' || substr(c.callee, length(type_bindings.local_alias) + 2)
-                        or (
-                          type_bindings.imported_symbol = 'Value'
-                          and c.callee like type_bindings.local_alias || '.Value.%'
-                          and (
-                            s.name = substr(c.callee, length(type_bindings.local_alias) + length('.Value.') + 1)
-                            or s.qualified_name = substr(c.callee, length(type_bindings.local_alias) + length('.Value.') + 1)
-                            or s.qualified_name like '%.' || substr(c.callee, length(type_bindings.local_alias) + length('.Value.') + 1)
-                          )
-                        )
+                        s.name = c.member_tail
+                        or s.qualified_name = c.member_tail
+                        or s.qualified_name like '%.' || c.member_tail
                       )
 
                     union all
