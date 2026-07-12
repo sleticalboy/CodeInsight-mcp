@@ -4061,9 +4061,6 @@ fn csharp_type_bindings(text: &str) -> Vec<(String, String)> {
     let Some((raw_type, rest)) = text.split_once(char::is_whitespace) else {
         return Vec::new();
     };
-    let Some(target) = clean_csharp_type_name(raw_type) else {
-        return Vec::new();
-    };
     let local_alias = rest
         .split(['=', ',', ';', '['])
         .next()
@@ -4074,7 +4071,15 @@ fn csharp_type_bindings(text: &str) -> Vec<(String, String)> {
         return Vec::new();
     }
 
-    vec![(target.to_string(), local_alias.to_string())]
+    let target = if raw_type.trim() == "var" {
+        csharp_new_expression_type(rest)
+    } else {
+        clean_csharp_type_name(raw_type).map(ToOwned::to_owned)
+    };
+
+    target
+        .map(|target| vec![(target, local_alias.to_string())])
+        .unwrap_or_default()
 }
 
 fn csharp_type_binding_modifier(value: &str) -> bool {
@@ -4114,6 +4119,17 @@ fn clean_csharp_type_name(value: &str) -> Option<&str> {
     }
 
     Some(value)
+}
+
+fn csharp_new_expression_type(value: &str) -> Option<String> {
+    let initializer = value.split_once('=')?.1.trim();
+    let constructor = initializer.strip_prefix("new ")?.trim_start();
+    let target = constructor
+        .split(['(', '{', '[', ';'])
+        .next()
+        .unwrap_or_default()
+        .trim();
+    clean_csharp_type_name(target).map(ToOwned::to_owned)
 }
 
 fn csharp_builtin_type(value: &str) -> bool {
@@ -6069,8 +6085,20 @@ public interface UserRepository {
             csharp_type_bindings("App.Services.UserService users"),
             vec![("App.Services.UserService".to_string(), "users".to_string())]
         );
+        assert_eq!(
+            csharp_type_bindings("var createdUsers = new UserService();"),
+            vec![("UserService".to_string(), "createdUsers".to_string())]
+        );
+        assert_eq!(
+            csharp_type_bindings("var createdBackupUsers = new App.Services.UserService();"),
+            vec![(
+                "App.Services.UserService".to_string(),
+                "createdBackupUsers".to_string()
+            )]
+        );
         assert!(csharp_type_bindings("string name").is_empty());
         assert!(csharp_type_bindings("List<UserService> users").is_empty());
+        assert!(csharp_type_bindings("var users = GetUsers();").is_empty());
     }
 
     #[test]

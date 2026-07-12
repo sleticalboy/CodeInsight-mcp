@@ -3054,6 +3054,30 @@ fn cli_resolves_csharp_using_imports() {
                     && dependency["resolved_file"].is_null()
             })
     );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "UserService"
+                    && dependency["kind"] == "type_binding"
+                    && dependency["local_alias"] == "createdUsers"
+                    && dependency["resolved_file"].is_null()
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "App.Services.UserService"
+                    && dependency["kind"] == "type_binding"
+                    && dependency["local_alias"] == "createdBackupUsers"
+                    && dependency["resolved_file"].is_null()
+            })
+    );
 
     let callees = run_json([
         "callees",
@@ -3081,6 +3105,14 @@ fn cli_resolves_csharp_using_imports() {
     }));
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "repoUsers.Find"
+            && call["callee_file"] == "src/App/Services/UserService.cs"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "createdUsers.Find"
+            && call["callee_file"] == "src/App/Services/UserService.cs"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "createdBackupUsers.Find"
             && call["callee_file"] == "src/App/Services/UserService.cs"
     }));
 }
@@ -6754,8 +6786,10 @@ public class AuthController {
     }
 
     public string Login(string id) {
+        var createdUsers = new UserService();
+        var createdBackupUsers = new App.Services.UserService();
         Audit.Record(id);
-        return LocalFormatter.Normalize(ClampName(users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id)));
+        return LocalFormatter.Normalize(ClampName(users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id)));
     }
 }
 "#,
