@@ -670,7 +670,7 @@ fn normalize_java_callee(raw: &str) -> Option<String> {
 }
 
 fn normalize_csharp_callee(raw: &str) -> Option<String> {
-    normalize_dot_callee(raw)
+    normalize_dot_callee(raw.trim().strip_prefix("this.").unwrap_or(raw))
 }
 
 fn normalize_php_callee(raw: &str) -> Option<String> {
@@ -6107,6 +6107,7 @@ public interface UserRepository {
 public class AuthController {
     public string Login(string id) {
         Audit.Record(id);
+        this.users.Find(id);
         return ClampName(id);
     }
 }
@@ -6118,6 +6119,7 @@ public class AuthController {
             .map(|call| call.callee.as_str())
             .collect::<Vec<_>>();
         assert!(callees.contains(&"Audit.Record"));
+        assert!(callees.contains(&"users.Find"));
         assert!(callees.contains(&"ClampName"));
     }
 

@@ -3096,7 +3096,7 @@ fn cli_resolves_csharp_using_imports() {
         fixture.path().to_str().unwrap(),
         "AuthController.Login",
         "--limit",
-        "20",
+        "30",
     ]);
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "Audit.Record" && call["callee_file"] == "src/App/Support/AuditLog.cs"
@@ -3131,6 +3131,30 @@ fn cli_resolves_csharp_using_imports() {
         call["callee"] == "targetUsers.Find"
             && call["callee_file"] == "src/App/Services/UserService.cs"
     }));
+    assert!(
+        callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|call| {
+                call["callee"] == "users.Find"
+                    && call["callee_file"] == "src/App/Services/UserService.cs"
+            })
+            .count()
+            >= 2
+    );
+    assert!(
+        callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|call| {
+                call["callee"] == "repoUsers.Find"
+                    && call["callee_file"] == "src/App/Services/UserService.cs"
+            })
+            .count()
+            >= 2
+    );
 }
 
 #[test]
@@ -6806,7 +6830,7 @@ public class AuthController {
         var createdBackupUsers = new App.Services.UserService();
         UserService targetUsers = new();
         Audit.Record(id);
-        return LocalFormatter.Normalize(ClampName(users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id)));
+        return LocalFormatter.Normalize(ClampName(users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id)));
     }
 }
 "#,
