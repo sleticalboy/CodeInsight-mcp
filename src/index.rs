@@ -1215,6 +1215,9 @@ fn csharp_dependencies(
         "class_declaration" | "record_declaration" => {
             csharp_base_type_dependencies(node, source, language, source_file)
         }
+        "property_declaration" => {
+            csharp_property_type_dependencies(node, source, language, source_file)
+        }
         "variable_declaration" | "parameter" => {
             csharp_type_binding_dependencies(node, source, language, source_file)
         }
@@ -1292,6 +1295,54 @@ fn csharp_base_type_dependencies(
             line: node.start_position().row + 1,
         })
         .collect()
+}
+
+fn csharp_property_type_dependencies(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+) -> Vec<Dependency> {
+    let Some(owner) = csharp_containing_type_name(node, source) else {
+        return Vec::new();
+    };
+    let Some(property) = child_text(node, "name", source) else {
+        return Vec::new();
+    };
+    let Some(raw_type) = child_text(node, "type", source) else {
+        return Vec::new();
+    };
+    let Some(target) = clean_csharp_type_name(&raw_type).map(ToOwned::to_owned) else {
+        return Vec::new();
+    };
+
+    vec![Dependency {
+        source_file: source_file.to_string(),
+        resolved_file: None,
+        target,
+        local_alias: Some(property),
+        imported_symbol: Some(owner),
+        kind: "property_type".to_string(),
+        language,
+        line: node.start_position().row + 1,
+    }]
+}
+
+fn csharp_containing_type_name(node: Node<'_>, source: &[u8]) -> Option<String> {
+    let mut current = node.parent();
+    while let Some(parent) = current {
+        if matches!(
+            parent.kind(),
+            "class_declaration"
+                | "record_declaration"
+                | "struct_declaration"
+                | "interface_declaration"
+        ) {
+            return child_text(parent, "name", source);
+        }
+        current = parent.parent();
+    }
+    None
 }
 
 fn php_dependencies(
@@ -6212,6 +6263,8 @@ public class AuthService : Example.Auth.BaseAuthService, IUserService {
 
     public int Count { get; set; }
 
+    public ProfileService Profile { get; } = new();
+
     public bool Login(User user) {
         Audit(user);
         return true;
@@ -6225,6 +6278,10 @@ public interface UserRepository {
 }
 
 public interface IUserService {}
+
+public class ProfileService {
+    public string Load(string id) => id;
+}
 
 public class BaseAuthService {
     protected string BaseTag() => "base";
@@ -6256,6 +6313,12 @@ public class BaseAuthService {
             dependency.target == "Example.Auth.BaseAuthService"
                 && dependency.kind == "base_type"
                 && dependency.local_alias.as_deref() == Some("AuthService")
+        }));
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "ProfileService"
+                && dependency.kind == "property_type"
+                && dependency.local_alias.as_deref() == Some("Profile")
+                && dependency.imported_symbol.as_deref() == Some("AuthService")
         }));
         assert!(deps.iter().all(
             |dependency| dependency.target != "IUserService" || dependency.kind != "base_type"

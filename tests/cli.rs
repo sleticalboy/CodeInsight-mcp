@@ -3147,6 +3147,18 @@ fn cli_resolves_csharp_using_imports() {
             .unwrap()
             .iter()
             .any(|dependency| {
+                dependency["target"] == "ProfileService"
+                    && dependency["kind"] == "property_type"
+                    && dependency["local_alias"] == "Profile"
+                    && dependency["imported_symbol"] == "UserService"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
                 dependency["target"] == "UserService"
                     && dependency["kind"] == "type_binding"
                     && dependency["local_alias"] == "users"
@@ -3421,7 +3433,8 @@ fn cli_resolves_csharp_using_imports() {
             .unwrap()
             .iter()
             .filter(|call| {
-                call["callee"] == "users.Profile.Load" && call["callee_file"].is_null()
+                call["callee"] == "users.Profile.Load"
+                    && call["callee_file"] == "src/App/Services/UserService.cs"
             })
             .count()
             >= 2
