@@ -6605,6 +6605,8 @@ public class BaseAuthService {
 public class AuthController {
     public async Task<string> Login(string id) {
         Audit.Record(id);
+        App.Support.AuditLog.Record(id);
+        App.Support.MathUtil.ClampName(id);
         this.users.Find(id);
         users?.Find(id);
         users!.Find(id);
@@ -6636,6 +6638,8 @@ public class AuthController {
             .map(|call| call.callee.as_str())
             .collect::<Vec<_>>();
         assert!(callees.contains(&"Audit.Record"));
+        assert!(callees.contains(&"App.Support.AuditLog.Record"));
+        assert!(callees.contains(&"App.Support.MathUtil.ClampName"));
         assert!(callees.contains(&"users.Find"));
         assert!(callees.contains(&"LocalTag"));
         assert!(callees.contains(&"base.BaseTag"));

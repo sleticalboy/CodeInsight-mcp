@@ -1616,6 +1616,33 @@ impl Store {
                         c.id as call_id,
                         target_files.path as callee_file,
                         s.qualified_name as qualified_name,
+                        0 as dependency_line,
+                        s.start_line as start_line,
+                        0 as match_rank
+                    from calls c
+                    join symbols s
+                      on s.language = 'csharp'
+                    join files target_files
+                      on target_files.id = s.file_id
+                      and target_files.path like '%' ||
+                        replace(
+                          substr(c.callee, 1, length(c.callee) - length(s.name) - 1),
+                          '.',
+                          '/'
+                        ) ||
+                        '.cs'
+                    where c.callee_file is null
+                      and c.language = 'csharp'
+                      and c.callee like '%.%'
+                      and instr(substr(c.callee, instr(c.callee, '.') + 1), '.') > 0
+                      and c.callee like '%.' || s.name
+
+                    union all
+
+                    select
+                        c.id as call_id,
+                        target_files.path as callee_file,
+                        s.qualified_name as qualified_name,
                         d.line as dependency_line,
                         s.start_line as start_line,
                         0 as match_rank
