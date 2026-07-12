@@ -3276,9 +3276,15 @@ fn cli_resolves_csharp_using_imports() {
             .any(|call| { call["callee"] == "base.BaseTag" && call["callee_file"].is_null() })
     );
     assert!(
-        callees.as_array().unwrap().iter().any(|call| {
-            call["callee"] == "users.Profile.Load" && call["callee_file"].is_null()
-        })
+        callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|call| {
+                call["callee"] == "users.Profile.Load" && call["callee_file"].is_null()
+            })
+            .count()
+            >= 2
     );
 }
 
@@ -6974,8 +6980,9 @@ public class AuthController : BaseController {
         var listedUser = listUsers[0].Find(id);
         var mappedUser = usersById[id].Find(id);
         var lazyUser = lazyUsers.Value.Find(id);
+        var thisProfile = this.users.Profile.Load(id);
         Audit.Record(id);
-        return LocalFormatter.Normalize(ClampName(lazyUser + mappedUser + listedUser + pooledUser + maybeUser + genericUsers + genericThisUsers + asyncUsers + asyncThisUsers + optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
+        return LocalFormatter.Normalize(ClampName(thisProfile + lazyUser + mappedUser + listedUser + pooledUser + maybeUser + genericUsers + genericThisUsers + asyncUsers + asyncThisUsers + optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
     }
 
     private string LocalTag(string id) {

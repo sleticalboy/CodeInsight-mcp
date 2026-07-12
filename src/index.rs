@@ -6350,6 +6350,7 @@ public class AuthController {
         users.FindAs<string>(id);
         this.users.FindAs<string>(id);
         servicePool[0].Find(id);
+        this.users.Profile.Load(id);
         this.LocalTag(id);
         base.BaseTag(id);
         return ClampName(id);
@@ -6367,6 +6368,7 @@ public class AuthController {
         assert!(callees.contains(&"LocalTag"));
         assert!(callees.contains(&"base.BaseTag"));
         assert!(callees.contains(&"ClampName"));
+        assert!(callees.contains(&"users.Profile.Load"));
         assert_eq!(
             callees
                 .iter()
