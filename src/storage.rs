@@ -1667,7 +1667,7 @@ impl Store {
                         s.qualified_name as qualified_name,
                         d.line as dependency_line,
                         s.start_line as start_line,
-                        0 as match_rank
+                        1 as match_rank
                     from calls c
                     join dependencies d on d.source_file_id = c.source_file_id
                     join files target_files

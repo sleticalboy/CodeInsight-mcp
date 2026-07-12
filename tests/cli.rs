@@ -2956,8 +2956,8 @@ fn cli_resolves_csharp_using_imports() {
     let fixture = csharp_using_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 11);
-    assert_eq!(index["changed_files"], 11);
+    assert_eq!(index["indexed_files"], 13);
+    assert_eq!(index["changed_files"], 13);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let base_symbols = run_json([
@@ -3420,12 +3420,19 @@ fn cli_resolves_csharp_using_imports() {
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "Audit.Record" && call["callee_file"] == "src/App/Support/AuditLog.cs"
     }));
+    assert!(callees.as_array().unwrap().iter().all(|call| {
+        call["callee"] != "Audit.Record" || call["callee_file"] != "src/App/Controllers/Audit.cs"
+    }));
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "ClampName" && call["callee_file"] == "src/App/Support/MathUtil.cs"
     }));
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "LocalFormatter.Normalize"
             && call["callee_file"] == "src/App/Controllers/LocalFormatter.cs"
+    }));
+    assert!(callees.as_array().unwrap().iter().all(|call| {
+        call["callee"] != "LocalFormatter.Normalize"
+            || call["callee_file"] != "src/App/Conflicts/LocalFormatter.cs"
     }));
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "users.Find" && call["callee_file"] == "src/App/Services/UserService.cs"
@@ -7429,6 +7436,7 @@ using System.Threading.Tasks;
 using App.Services;
 using App.Extensions;
 using App.Contracts;
+using App.Conflicts;
 using Audit = App.Support.AuditLog;
 using Repo = App.Services.UserService;
 using static App.Support.MathUtil;
@@ -7721,6 +7729,30 @@ namespace App.Controllers;
 public static class LocalFormatter {
     public static string Normalize(string name) {
         return name.Trim();
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/App/Controllers/Audit.cs",
+        r#"
+namespace App.Controllers;
+
+public static class Audit {
+    public static void Record(string id) {}
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/App/Conflicts/LocalFormatter.cs",
+        r#"
+namespace App.Conflicts;
+
+public static class LocalFormatter {
+    public static string Normalize(string name) {
+        return name;
     }
 }
 "#,
