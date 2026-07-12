@@ -3001,7 +3001,7 @@ fn cli_resolves_csharp_using_imports() {
             .unwrap()
             .iter()
             .any(|dependency| {
-                dependency["target"] == "BaseController"
+                dependency["target"] == "App.Controllers.BaseController"
                     && dependency["kind"] == "base_type"
                     && dependency["local_alias"] == "AuthController"
             })
@@ -7002,7 +7002,7 @@ using static App.Support.MathUtil;
 
 namespace App.Controllers;
 
-public class AuthController : BaseController, IAuthController {
+public class AuthController : App.Controllers.BaseController, IAuthController {
     private readonly UserService users;
     private readonly App.Services.UserService backupUsers;
     private readonly Repo repoUsers;

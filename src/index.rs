@@ -6203,7 +6203,7 @@ using static System.Math;
 
 namespace Example.Auth;
 
-public class AuthService : BaseAuthService, IUserService {
+public class AuthService : Example.Auth.BaseAuthService, IUserService {
     private string token;
 
     public AuthService(string token) {
@@ -6253,7 +6253,7 @@ public class BaseAuthService {
         assert!(targets.contains(&"System.Text.StringBuilder"));
         assert!(targets.contains(&"System.Math"));
         assert!(deps.iter().any(|dependency| {
-            dependency.target == "BaseAuthService"
+            dependency.target == "Example.Auth.BaseAuthService"
                 && dependency.kind == "base_type"
                 && dependency.local_alias.as_deref() == Some("AuthService")
         }));
