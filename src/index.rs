@@ -6572,6 +6572,30 @@ public class BaseAuthService {
             csharp_type_bindings("List<Dictionary<string, UserService>> nestedUsers = new();")
                 .is_empty()
         );
+        assert!(
+            csharp_type_bindings(
+                "Task<List<UserService>> taskListUsers = Task.FromResult(listUsers);"
+            )
+            .is_empty()
+        );
+        assert!(
+            csharp_type_bindings(
+                "Lazy<Dictionary<string, UserService>> lazyMappedUsers = new(() => usersById);"
+            )
+            .is_empty()
+        );
+        assert!(
+            csharp_type_bindings(
+                "var taskListUsers = new Task<List<UserService>>(() => listUsers);"
+            )
+            .is_empty()
+        );
+        assert!(
+            csharp_type_bindings(
+                "var lazyMappedUsers = new Lazy<Dictionary<string, UserService>>(() => usersById);"
+            )
+            .is_empty()
+        );
         assert!(csharp_type_bindings("var users = GetUsers();").is_empty());
     }
 
