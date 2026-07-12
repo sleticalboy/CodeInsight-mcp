@@ -3042,6 +3042,18 @@ fn cli_resolves_csharp_using_imports() {
                     && dependency["resolved_file"].is_null()
             })
     );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "Repo"
+                    && dependency["kind"] == "type_binding"
+                    && dependency["local_alias"] == "repoUsers"
+                    && dependency["resolved_file"].is_null()
+            })
+    );
 
     let callees = run_json([
         "callees",
@@ -3065,6 +3077,10 @@ fn cli_resolves_csharp_using_imports() {
     }));
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "backupUsers.Find"
+            && call["callee_file"] == "src/App/Services/UserService.cs"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "repoUsers.Find"
             && call["callee_file"] == "src/App/Services/UserService.cs"
     }));
 }
@@ -6721,6 +6737,7 @@ fn csharp_using_fixture_project() -> TempDir {
 using System;
 using App.Services;
 using Audit = App.Support.AuditLog;
+using Repo = App.Services.UserService;
 using static App.Support.MathUtil;
 
 namespace App.Controllers;
@@ -6728,15 +6745,17 @@ namespace App.Controllers;
 public class AuthController {
     private readonly UserService users;
     private readonly App.Services.UserService backupUsers;
+    private readonly Repo repoUsers;
 
-    public AuthController(UserService users, App.Services.UserService backupUsers) {
+    public AuthController(UserService users, App.Services.UserService backupUsers, Repo repoUsers) {
         this.users = users;
         this.backupUsers = backupUsers;
+        this.repoUsers = repoUsers;
     }
 
     public string Login(string id) {
         Audit.Record(id);
-        return LocalFormatter.Normalize(ClampName(users.Find(id) + backupUsers.Find(id)));
+        return LocalFormatter.Normalize(ClampName(users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id)));
     }
 }
 "#,
