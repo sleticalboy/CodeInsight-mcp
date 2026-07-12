@@ -726,6 +726,10 @@ fn normalize_csharp_dot_callee(raw: &str) -> Option<String> {
 
 fn csharp_callee_segment_name(segment: &str) -> &str {
     let segment = segment.trim().trim_end_matches(['?', '!']).trim();
+    let segment = segment
+        .split_once('[')
+        .map(|(name, _)| name.trim())
+        .unwrap_or(segment);
     segment
         .split_once('<')
         .map(|(name, _)| name.trim())
@@ -6149,6 +6153,10 @@ public interface UserRepository {
             vec![("UserService".to_string(), "maybeUsers".to_string())]
         );
         assert_eq!(
+            csharp_type_bindings("UserService[] servicePool = new[] { users };"),
+            vec![("UserService".to_string(), "servicePool".to_string())]
+        );
+        assert_eq!(
             csharp_type_bindings("var createdUsers = new UserService();"),
             vec![("UserService".to_string(), "createdUsers".to_string())]
         );
@@ -6179,6 +6187,7 @@ public class AuthController {
         await this.users.FindAsync(id);
         users.FindAs<string>(id);
         this.users.FindAs<string>(id);
+        servicePool[0].Find(id);
         this.LocalTag(id);
         base.BaseTag(id);
         return ClampName(id);
@@ -6217,6 +6226,7 @@ public class AuthController {
                 .count(),
             2
         );
+        assert!(callees.contains(&"servicePool.Find"));
     }
 
     #[test]
