@@ -305,6 +305,7 @@ fn visit_call_node(
     calls: &mut Vec<CallEdge>,
 ) {
     if is_call_node(node, language)
+        && !should_skip_call_node(node, language)
         && let Some(raw_target) = call_target_text(node, source, language)
         && let Some(callee) = normalize_callee(&raw_target, language)
     {
@@ -327,6 +328,29 @@ fn visit_call_node(
     for child in node_children(&mut cursor) {
         visit_call_node(child, source, language, source_file, symbols, calls);
     }
+}
+
+fn should_skip_call_node(node: Node<'_>, language: Language) -> bool {
+    language == Language::CSharp
+        && node.kind() == "invocation_expression"
+        && csharp_call_target_has_nested_invocation(node)
+}
+
+fn csharp_call_target_has_nested_invocation(node: Node<'_>) -> bool {
+    node.child_by_field_name("function")
+        .or_else(|| node.child_by_field_name("name"))
+        .or_else(|| node.child(0))
+        .is_some_and(|target| has_descendant_kind(target, "invocation_expression"))
+}
+
+fn has_descendant_kind(node: Node<'_>, kind: &str) -> bool {
+    let mut cursor = node.walk();
+    for child in node_children(&mut cursor) {
+        if child.kind() == kind || has_descendant_kind(child, kind) {
+            return true;
+        }
+    }
+    false
 }
 
 fn is_call_node(node: Node<'_>, language: Language) -> bool {
@@ -670,7 +694,34 @@ fn normalize_java_callee(raw: &str) -> Option<String> {
 }
 
 fn normalize_csharp_callee(raw: &str) -> Option<String> {
-    normalize_dot_callee(raw.trim().strip_prefix("this.").unwrap_or(raw))
+    let trimmed = raw.trim().replace("?.", ".");
+    normalize_csharp_dot_callee(trimmed.strip_prefix("this.").unwrap_or(&trimmed))
+}
+
+fn normalize_csharp_dot_callee(raw: &str) -> Option<String> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+
+    let parts = trimmed
+        .split('.')
+        .map(str::trim)
+        .map(|part| {
+            let part = if let Some(open) = part.find('(') {
+                part[..open].trim()
+            } else {
+                part
+            };
+            part.trim_end_matches(['?', '!'])
+        })
+        .filter(|part| !part.is_empty())
+        .collect::<Vec<_>>();
+    if parts.is_empty() || parts.iter().any(|part| !is_js_identifier(part)) {
+        return normalize_simple_callee(trimmed);
+    }
+
+    Some(parts.join("."))
 }
 
 fn normalize_php_callee(raw: &str) -> Option<String> {
@@ -6108,6 +6159,10 @@ public class AuthController {
     public string Login(string id) {
         Audit.Record(id);
         this.users.Find(id);
+        users?.Find(id);
+        users!.Find(id);
+        this.users?.Find(id);
+        this.users!.Find(id);
         this.LocalTag(id);
         base.BaseTag(id);
         return ClampName(id);
@@ -6125,6 +6180,38 @@ public class AuthController {
         assert!(callees.contains(&"LocalTag"));
         assert!(callees.contains(&"base.BaseTag"));
         assert!(callees.contains(&"ClampName"));
+        assert_eq!(
+            callees
+                .iter()
+                .filter(|callee| **callee == "users.Find")
+                .count(),
+            5
+        );
+    }
+
+    #[test]
+    fn skips_csharp_conditional_access_outer_invocations() {
+        let source = r#"
+public class AuthController {
+    public string Login(string id) {
+        return ClampName(users.Find(id) + users?.Find(id) + users!.Find(id) + this.users?.Find(id) + this.users!.Find(id));
+    }
+}
+"#;
+        let symbols = extract_symbols(source, Language::CSharp, "AuthController.cs").unwrap();
+        let calls = extract_calls(source, Language::CSharp, "AuthController.cs", &symbols);
+        let callees = calls
+            .iter()
+            .map(|call| call.callee.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(callees.contains(&"ClampName"));
+        assert!(callees.contains(&"users.Find"));
+        assert!(
+            callees
+                .iter()
+                .all(|callee| !callee.contains("users.Find.users.Find"))
+        );
     }
 
     #[test]

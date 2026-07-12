@@ -3141,7 +3141,7 @@ fn cli_resolves_csharp_using_imports() {
                     && call["callee_file"] == "src/App/Services/UserService.cs"
             })
             .count()
-            >= 2
+            >= 6
     );
     assert!(
         callees
@@ -6854,8 +6854,12 @@ public class AuthController : BaseController {
         var createdUsers = new UserService();
         var createdBackupUsers = new App.Services.UserService();
         UserService targetUsers = new();
+        var optionalUsers = users?.Find(id);
+        var forcedUsers = users!.Find(id);
+        var optionalThisUsers = this.users?.Find(id);
+        var forcedThisUsers = this.users!.Find(id);
         Audit.Record(id);
-        return LocalFormatter.Normalize(ClampName(users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
+        return LocalFormatter.Normalize(ClampName(optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
     }
 
     private string LocalTag(string id) {
