@@ -4121,14 +4121,10 @@ fn csharp_type_bindings(text: &str) -> Vec<(String, String)> {
         text = rest.trim_start();
     }
 
-    let Some((raw_type, rest)) = text.split_once(char::is_whitespace) else {
+    let Some((raw_type, rest)) = csharp_type_binding_parts(text) else {
         return Vec::new();
     };
-    let local_alias = rest
-        .split(['=', ',', ';', '['])
-        .next()
-        .unwrap_or_default()
-        .trim();
+    let local_alias = csharp_local_alias(rest).unwrap_or_default();
 
     if local_alias.is_empty() || !is_js_identifier(local_alias) {
         return Vec::new();
@@ -4143,6 +4139,40 @@ fn csharp_type_bindings(text: &str) -> Vec<(String, String)> {
     target
         .map(|target| vec![(target, local_alias.to_string())])
         .unwrap_or_default()
+}
+
+fn csharp_local_alias(rest: &str) -> Option<&str> {
+    let rest = rest.trim_start();
+    let end = rest
+        .char_indices()
+        .find_map(|(index, character)| {
+            (!(character == '_' || character == '$' || character.is_ascii_alphanumeric()))
+                .then_some(index)
+        })
+        .unwrap_or(rest.len());
+    let alias = rest[..end].trim();
+    (!alias.is_empty()).then_some(alias)
+}
+
+fn csharp_type_binding_parts(text: &str) -> Option<(&str, &str)> {
+    let mut angle_depth = 0;
+    for (index, character) in text.char_indices() {
+        match character {
+            '<' => angle_depth += 1,
+            '>' if angle_depth > 0 => angle_depth -= 1,
+            _ if character.is_whitespace() && angle_depth == 0 => {
+                let raw_type = text[..index].trim();
+                let rest = text[index..].trim_start();
+                if raw_type.is_empty() || rest.is_empty() {
+                    return None;
+                }
+                return Some((raw_type, rest));
+            }
+            _ => {}
+        }
+    }
+
+    None
 }
 
 fn csharp_type_binding_modifier(value: &str) -> bool {
@@ -4173,6 +4203,9 @@ fn clean_csharp_type_name(value: &str) -> Option<&str> {
     if let Some(element_type) = csharp_collection_element_type(value) {
         return clean_csharp_type_name(element_type);
     }
+    if let Some(value_type) = csharp_dictionary_value_type(value) {
+        return clean_csharp_type_name(value_type);
+    }
     if value.is_empty()
         || value.contains('<')
         || value.contains('>')
@@ -4188,9 +4221,8 @@ fn clean_csharp_type_name(value: &str) -> Option<&str> {
 }
 
 fn csharp_collection_element_type(value: &str) -> Option<&str> {
-    let (collection_type, element_type) = value.split_once('<')?;
-    let element_type = element_type.strip_suffix('>')?.trim();
-    if element_type.is_empty() || element_type.contains(',') {
+    let (collection_type, arguments) = csharp_generic_type_arguments(value)?;
+    if arguments.len() != 1 {
         return None;
     }
 
@@ -4200,7 +4232,53 @@ fn csharp_collection_element_type(value: &str) -> Option<&str> {
         .next_back()
         .unwrap_or(collection_type)
         .trim();
-    csharp_collection_type(collection_name).then_some(element_type)
+    csharp_collection_type(collection_name).then_some(arguments[0])
+}
+
+fn csharp_dictionary_value_type(value: &str) -> Option<&str> {
+    let (dictionary_type, arguments) = csharp_generic_type_arguments(value)?;
+    if arguments.len() != 2 {
+        return None;
+    }
+
+    let dictionary_name = dictionary_type
+        .trim()
+        .split('.')
+        .next_back()
+        .unwrap_or(dictionary_type)
+        .trim();
+    csharp_dictionary_type(dictionary_name).then_some(arguments[1])
+}
+
+fn csharp_generic_type_arguments(value: &str) -> Option<(&str, Vec<&str>)> {
+    let (raw_type, raw_arguments) = value.split_once('<')?;
+    let raw_arguments = raw_arguments.strip_suffix('>')?;
+    let mut arguments = Vec::new();
+    let mut start = 0;
+    let mut angle_depth = 0;
+
+    for (index, character) in raw_arguments.char_indices() {
+        match character {
+            '<' => angle_depth += 1,
+            '>' if angle_depth > 0 => angle_depth -= 1,
+            ',' if angle_depth == 0 => {
+                let argument = raw_arguments[start..index].trim();
+                if argument.is_empty() {
+                    return None;
+                }
+                arguments.push(argument);
+                start = index + character.len_utf8();
+            }
+            _ => {}
+        }
+    }
+
+    let argument = raw_arguments[start..].trim();
+    if argument.is_empty() {
+        return None;
+    }
+    arguments.push(argument);
+    Some((raw_type, arguments))
 }
 
 fn csharp_collection_type(value: &str) -> bool {
@@ -4214,6 +4292,10 @@ fn csharp_collection_type(value: &str) -> bool {
             | "IReadOnlyCollection"
             | "HashSet"
     )
+}
+
+fn csharp_dictionary_type(value: &str) -> bool {
+    matches!(value, "Dictionary" | "IDictionary" | "IReadOnlyDictionary")
 }
 
 fn csharp_new_expression_type(value: &str) -> Option<String> {
@@ -6202,6 +6284,25 @@ public interface UserRepository {
             )]
         );
         assert_eq!(
+            csharp_type_bindings("Dictionary<string, UserService> usersById = new();"),
+            vec![("UserService".to_string(), "usersById".to_string())]
+        );
+        assert_eq!(
+            csharp_type_bindings(
+                "Dictionary<string, UserService> usersById = new() { [id] = users };"
+            ),
+            vec![("UserService".to_string(), "usersById".to_string())]
+        );
+        assert_eq!(
+            csharp_type_bindings(
+                "System.Collections.Generic.IReadOnlyDictionary<string, App.Services.UserService> readOnlyUsers = usersById;"
+            ),
+            vec![(
+                "App.Services.UserService".to_string(),
+                "readOnlyUsers".to_string()
+            )]
+        );
+        assert_eq!(
             csharp_type_bindings("var createdUsers = new UserService();"),
             vec![("UserService".to_string(), "createdUsers".to_string())]
         );
@@ -6213,7 +6314,7 @@ public interface UserRepository {
             )]
         );
         assert!(csharp_type_bindings("string name").is_empty());
-        assert!(csharp_type_bindings("Dictionary<string, UserService> users").is_empty());
+        assert!(csharp_type_bindings("Tuple<string, int, UserService> users").is_empty());
         assert!(csharp_type_bindings("var users = GetUsers();").is_empty());
     }
 
