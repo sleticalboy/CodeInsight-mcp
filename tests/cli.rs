@@ -2956,8 +2956,8 @@ fn cli_resolves_csharp_using_imports() {
     let fixture = csharp_using_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 13);
-    assert_eq!(index["changed_files"], 13);
+    assert_eq!(index["indexed_files"], 14);
+    assert_eq!(index["changed_files"], 14);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let base_symbols = run_json([
@@ -3425,6 +3425,9 @@ fn cli_resolves_csharp_using_imports() {
     }));
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "ClampName" && call["callee_file"] == "src/App/Support/MathUtil.cs"
+    }));
+    assert!(callees.as_array().unwrap().iter().all(|call| {
+        call["callee"] != "ClampName" || call["callee_file"] != "src/App/Conflicts/A.cs"
     }));
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "LocalFormatter.Normalize"
@@ -7741,6 +7744,19 @@ namespace App.Controllers;
 
 public static class Audit {
     public static void Record(string id) {}
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/App/Conflicts/A.cs",
+        r#"
+namespace App.Conflicts;
+
+public static class A {
+    public static string ClampName(string name) {
+        return name;
+    }
 }
 "#,
     );

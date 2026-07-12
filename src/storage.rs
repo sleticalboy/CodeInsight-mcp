@@ -1552,6 +1552,14 @@ impl Store {
                                 or s.qualified_name like '%.' || substr(c.callee, length('require') + 2)
                               )
                                 then 0
+                            when d.language = 'csharp'
+                              and d.kind = 'using_static'
+                              and s.name = c.callee
+                                then 0
+                            when d.language = 'csharp'
+                              and d.kind in ('using', 'namespace')
+                              and s.name = c.callee
+                                then 2
                             when s.name = c.callee then 1
                             else 2
                         end as match_rank
