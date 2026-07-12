@@ -3366,13 +3366,39 @@ fn cli_resolves_csharp_using_imports() {
                     && dependency["resolved_file"].is_null()
             })
     );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "UserService"
+                    && dependency["kind"] == "type_binding"
+                    && dependency["local_alias"] == "inferredTaskUsers"
+                    && dependency["imported_symbol"] == "Result"
+                    && dependency["resolved_file"].is_null()
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "UserService"
+                    && dependency["kind"] == "type_binding"
+                    && dependency["local_alias"] == "inferredValueTaskUsers"
+                    && dependency["imported_symbol"] == "Result"
+                    && dependency["resolved_file"].is_null()
+            })
+    );
 
     let callees = run_json([
         "callees",
         fixture.path().to_str().unwrap(),
         "AuthController.Login",
         "--limit",
-        "115",
+        "120",
     ]);
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "Audit.Record" && call["callee_file"] == "src/App/Support/AuditLog.cs"
@@ -3448,6 +3474,14 @@ fn cli_resolves_csharp_using_imports() {
             && call["callee_file"] == "src/App/Services/UserService.cs"
     }));
     assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "inferredTaskUsers.Result.Find"
+            && call["callee_file"] == "src/App/Services/UserService.cs"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "inferredValueTaskUsers.Result.Find"
+            && call["callee_file"] == "src/App/Services/UserService.cs"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "users.FormatForDisplay" && call["callee_file"].is_null()
     }));
     assert!(callees.as_array().unwrap().iter().any(|call| {
@@ -3496,6 +3530,14 @@ fn cli_resolves_csharp_using_imports() {
     }));
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "valueTaskUsers.Result.ExternalProfile.Load"
+            && call["callee_file"] == "src/App/Profiles/ExternalProfile.cs"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "inferredTaskUsers.Result.ExternalProfile.Load"
+            && call["callee_file"] == "src/App/Profiles/ExternalProfile.cs"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "inferredValueTaskUsers.Result.ExternalProfile.Load"
             && call["callee_file"] == "src/App/Profiles/ExternalProfile.cs"
     }));
     assert!(
@@ -7333,6 +7375,8 @@ public class AuthController : App.Controllers.BaseController, IAuthController {
         var inferredLazyUsers = new Lazy<UserService>(() => users);
         Task<UserService> taskUsers = Task.FromResult(users);
         ValueTask<UserService> valueTaskUsers = new(users);
+        var inferredTaskUsers = new Task<UserService>(() => users);
+        var inferredValueTaskUsers = new ValueTask<UserService>(users);
         var optionalUsers = users?.Find(id);
         var forcedUsers = users!.Find(id);
         var optionalThisUsers = this.users?.Find(id);
@@ -7349,6 +7393,8 @@ public class AuthController : App.Controllers.BaseController, IAuthController {
         var inferredLazyUser = inferredLazyUsers.Value.Find(id);
         var taskUser = taskUsers.Result.Find(id);
         var valueTaskUser = valueTaskUsers.Result.Find(id);
+        var inferredTaskUser = inferredTaskUsers.Result.Find(id);
+        var inferredValueTaskUser = inferredValueTaskUsers.Result.Find(id);
         var detailedUser = users.Find(id, includeDisabled: true);
         var directoryUser = directory.Find(id);
         var thisProfile = this.users.Profile.Load(id);
@@ -7365,6 +7411,8 @@ public class AuthController : App.Controllers.BaseController, IAuthController {
         var inferredLazyExternalProfile = inferredLazyUsers.Value.ExternalProfile.Load(id);
         var taskExternalProfile = taskUsers.Result.ExternalProfile.Load(id);
         var valueTaskExternalProfile = valueTaskUsers.Result.ExternalProfile.Load(id);
+        var inferredTaskExternalProfile = inferredTaskUsers.Result.ExternalProfile.Load(id);
+        var inferredValueTaskExternalProfile = inferredValueTaskUsers.Result.ExternalProfile.Load(id);
         var optionalExternalProfile = maybeUsers?.ExternalProfile.Load(id);
         var forcedExternalProfile = maybeUsers!.ExternalProfile.Load(id);
         var pooledExternalProfile = servicePool[0].ExternalProfile.Load(id);
@@ -7376,7 +7424,7 @@ public class AuthController : App.Controllers.BaseController, IAuthController {
         var extensionUser = users.FormatForDisplay(id);
         var rootTag = base.RootTag(id);
         Audit.Record(id);
-        return LocalFormatter.Normalize(ClampName(rootTag + extensionUser + profileMetadata + mappedExternalProfile + listedExternalProfile + pooledExternalProfile + valueTaskExternalProfile + taskExternalProfile + forcedExternalProfile + optionalExternalProfile + inferredLazyExternalProfile + lazyExternalProfile + targetExternalProfile + createdBackupExternalProfile + createdExternalProfile + thisBackupExternalProfile + thisExternalProfile + thisRepoExternalProfile + repoExternalProfile + backupQualifiedExternalProfile + backupExternalProfile + qualifiedExternalProfile + externalProfile + thisProfile + directoryUser + detailedUser + valueTaskUser + taskUser + inferredLazyUser + lazyUser + mappedUser + listedUser + pooledUser + maybeUser + genericUsers + genericThisUsers + asyncUsers + asyncThisUsers + optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
+        return LocalFormatter.Normalize(ClampName(rootTag + extensionUser + profileMetadata + mappedExternalProfile + listedExternalProfile + pooledExternalProfile + inferredValueTaskExternalProfile + inferredTaskExternalProfile + valueTaskExternalProfile + taskExternalProfile + forcedExternalProfile + optionalExternalProfile + inferredLazyExternalProfile + lazyExternalProfile + targetExternalProfile + createdBackupExternalProfile + createdExternalProfile + thisBackupExternalProfile + thisExternalProfile + thisRepoExternalProfile + repoExternalProfile + backupQualifiedExternalProfile + backupExternalProfile + qualifiedExternalProfile + externalProfile + thisProfile + directoryUser + detailedUser + inferredValueTaskUser + inferredTaskUser + valueTaskUser + taskUser + inferredLazyUser + lazyUser + mappedUser + listedUser + pooledUser + maybeUser + genericUsers + genericThisUsers + asyncUsers + asyncThisUsers + optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
     }
 
     private string LocalTag(string id) {
