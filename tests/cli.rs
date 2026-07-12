@@ -2970,6 +2970,24 @@ fn cli_resolves_csharp_using_imports() {
     assert!(base_symbols.as_array().unwrap().iter().any(|symbol| {
         symbol["name"] == "BaseTag" && symbol["file"] == "src/App/Controllers/BaseController.cs"
     }));
+    let find_symbols = run_json([
+        "symbols",
+        fixture.path().to_str().unwrap(),
+        "Find",
+        "--limit",
+        "20",
+    ]);
+    assert!(
+        find_symbols
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|symbol| {
+                symbol["name"] == "Find" && symbol["file"] == "src/App/Services/UserService.cs"
+            })
+            .count()
+            >= 2
+    );
 
     let deps = run_json([
         "dependency-graph",
@@ -3228,7 +3246,7 @@ fn cli_resolves_csharp_using_imports() {
                     && call["callee_file"] == "src/App/Services/UserService.cs"
             })
             .count()
-            >= 6
+            >= 7
     );
     assert!(
         callees
@@ -6991,9 +7009,10 @@ public class AuthController : BaseController {
         var listedUser = listUsers[0].Find(id);
         var mappedUser = usersById[id].Find(id);
         var lazyUser = lazyUsers.Value.Find(id);
+        var detailedUser = users.Find(id, includeDisabled: true);
         var thisProfile = this.users.Profile.Load(id);
         Audit.Record(id);
-        return LocalFormatter.Normalize(ClampName(thisProfile + lazyUser + mappedUser + listedUser + pooledUser + maybeUser + genericUsers + genericThisUsers + asyncUsers + asyncThisUsers + optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
+        return LocalFormatter.Normalize(ClampName(thisProfile + detailedUser + lazyUser + mappedUser + listedUser + pooledUser + maybeUser + genericUsers + genericThisUsers + asyncUsers + asyncThisUsers + optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
     }
 
     private string LocalTag(string id) {
@@ -7025,6 +7044,10 @@ public class UserService {
     public ProfileService Profile { get; } = new();
 
     public string Find(string id) {
+        return id;
+    }
+
+    public string Find(string id, bool includeDisabled) {
         return id;
     }
 
