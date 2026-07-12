@@ -2956,8 +2956,8 @@ fn cli_resolves_csharp_using_imports() {
     let fixture = csharp_using_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 8);
-    assert_eq!(index["changed_files"], 8);
+    assert_eq!(index["indexed_files"], 10);
+    assert_eq!(index["changed_files"], 10);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let base_symbols = run_json([
@@ -2988,6 +2988,17 @@ fn cli_resolves_csharp_using_imports() {
             .count()
             >= 2
     );
+    let interface_symbols = run_json([
+        "symbols",
+        fixture.path().to_str().unwrap(),
+        "IUserDirectory",
+        "--limit",
+        "5",
+    ]);
+    assert!(interface_symbols.as_array().unwrap().iter().any(|symbol| {
+        symbol["name"] == "IUserDirectory"
+            && symbol["file"] == "src/App/Contracts/IUserDirectory.cs"
+    }));
     let extension_symbols = run_json([
         "symbols",
         fixture.path().to_str().unwrap(),
@@ -3074,7 +3085,29 @@ fn cli_resolves_csharp_using_imports() {
             .unwrap()
             .iter()
             .any(|dependency| {
+                dependency["target"] == "App.Contracts"
+                    && dependency["resolved_file"] == "src/App/Contracts/IUserDirectory.cs"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
                 dependency["target"] == "System" && dependency["resolved_file"].is_null()
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "IUserDirectory"
+                    && dependency["kind"] == "type_binding"
+                    && dependency["local_alias"] == "directory"
+                    && dependency["resolved_file"].is_null()
             })
     );
     assert!(
@@ -3223,7 +3256,7 @@ fn cli_resolves_csharp_using_imports() {
         fixture.path().to_str().unwrap(),
         "AuthController.Login",
         "--limit",
-        "40",
+        "50",
     ]);
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "Audit.Record" && call["callee_file"] == "src/App/Support/AuditLog.cs"
@@ -3273,6 +3306,14 @@ fn cli_resolves_csharp_using_imports() {
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "usersById.Find"
             && call["callee_file"] == "src/App/Services/UserService.cs"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "directory.Find"
+            && call["callee_file"] == "src/App/Contracts/IUserDirectory.cs"
+    }));
+    assert!(callees.as_array().unwrap().iter().all(|call| {
+        call["callee"] != "directory.Find"
+            || call["callee_file"] != "src/App/Implementations/UserDirectory.cs"
     }));
     assert!(
         callees.as_array().unwrap().iter().any(|call| {
@@ -7021,6 +7062,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using App.Services;
 using App.Extensions;
+using App.Contracts;
 using Audit = App.Support.AuditLog;
 using Repo = App.Services.UserService;
 using static App.Support.MathUtil;
@@ -7031,11 +7073,13 @@ public class AuthController : App.Controllers.BaseController, IAuthController {
     private readonly UserService users;
     private readonly App.Services.UserService backupUsers;
     private readonly Repo repoUsers;
+    private readonly IUserDirectory directory;
 
-    public AuthController(UserService users, App.Services.UserService backupUsers, Repo repoUsers) {
+    public AuthController(UserService users, App.Services.UserService backupUsers, Repo repoUsers, IUserDirectory directory) {
         this.users = users;
         this.backupUsers = backupUsers;
         this.repoUsers = repoUsers;
+        this.directory = directory;
     }
 
     public async Task<string> Login(string id) {
@@ -7061,11 +7105,12 @@ public class AuthController : App.Controllers.BaseController, IAuthController {
         var mappedUser = usersById[id].Find(id);
         var lazyUser = lazyUsers.Value.Find(id);
         var detailedUser = users.Find(id, includeDisabled: true);
+        var directoryUser = directory.Find(id);
         var thisProfile = this.users.Profile.Load(id);
         var extensionUser = users.FormatForDisplay(id);
         var rootTag = base.RootTag(id);
         Audit.Record(id);
-        return LocalFormatter.Normalize(ClampName(rootTag + extensionUser + thisProfile + detailedUser + lazyUser + mappedUser + listedUser + pooledUser + maybeUser + genericUsers + genericThisUsers + asyncUsers + asyncThisUsers + optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
+        return LocalFormatter.Normalize(ClampName(rootTag + extensionUser + thisProfile + directoryUser + detailedUser + lazyUser + mappedUser + listedUser + pooledUser + maybeUser + genericUsers + genericThisUsers + asyncUsers + asyncThisUsers + optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
     }
 
     private string LocalTag(string id) {
@@ -7074,6 +7119,32 @@ public class AuthController : App.Controllers.BaseController, IAuthController {
 }
 
 public interface IAuthController {}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/App/Contracts/IUserDirectory.cs",
+        r#"
+namespace App.Contracts;
+
+public interface IUserDirectory {
+    string Find(string id);
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/App/Implementations/UserDirectory.cs",
+        r#"
+using App.Contracts;
+
+namespace App.Implementations;
+
+public class UserDirectory : IUserDirectory {
+    public string Find(string id) {
+        return id;
+    }
+}
 "#,
     );
     write_file(
