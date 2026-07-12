@@ -3329,7 +3329,7 @@ fn cli_resolves_csharp_using_imports() {
         fixture.path().to_str().unwrap(),
         "AuthController.Login",
         "--limit",
-        "90",
+        "95",
     ]);
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "Audit.Record" && call["callee_file"] == "src/App/Support/AuditLog.cs"
@@ -3426,6 +3426,18 @@ fn cli_resolves_csharp_using_imports() {
     }));
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "targetUsers.ExternalProfile.Load"
+            && call["callee_file"] == "src/App/Profiles/ExternalProfile.cs"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "servicePool.ExternalProfile.Load"
+            && call["callee_file"] == "src/App/Profiles/ExternalProfile.cs"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "listUsers.ExternalProfile.Load"
+            && call["callee_file"] == "src/App/Profiles/ExternalProfile.cs"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "usersById.ExternalProfile.Load"
             && call["callee_file"] == "src/App/Profiles/ExternalProfile.cs"
     }));
     assert!(
@@ -7261,13 +7273,16 @@ public class AuthController : App.Controllers.BaseController, IAuthController {
         var createdExternalProfile = createdUsers.ExternalProfile.Load(id);
         var createdBackupExternalProfile = createdBackupUsers.ExternalProfile.Load(id);
         var targetExternalProfile = targetUsers.ExternalProfile.Load(id);
+        var pooledExternalProfile = servicePool[0].ExternalProfile.Load(id);
+        var listedExternalProfile = listUsers[0].ExternalProfile.Load(id);
+        var mappedExternalProfile = usersById[id].ExternalProfile.Load(id);
         var thisExternalProfile = this.users.ExternalProfile.Load(id);
         var thisBackupExternalProfile = this.backupUsers.ExternalProfile.Load(id);
         var profileMetadata = users.Profile.Metadata.Display(id);
         var extensionUser = users.FormatForDisplay(id);
         var rootTag = base.RootTag(id);
         Audit.Record(id);
-        return LocalFormatter.Normalize(ClampName(rootTag + extensionUser + profileMetadata + targetExternalProfile + createdBackupExternalProfile + createdExternalProfile + thisBackupExternalProfile + thisExternalProfile + thisRepoExternalProfile + repoExternalProfile + backupQualifiedExternalProfile + backupExternalProfile + qualifiedExternalProfile + externalProfile + thisProfile + directoryUser + detailedUser + lazyUser + mappedUser + listedUser + pooledUser + maybeUser + genericUsers + genericThisUsers + asyncUsers + asyncThisUsers + optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
+        return LocalFormatter.Normalize(ClampName(rootTag + extensionUser + profileMetadata + mappedExternalProfile + listedExternalProfile + pooledExternalProfile + targetExternalProfile + createdBackupExternalProfile + createdExternalProfile + thisBackupExternalProfile + thisExternalProfile + thisRepoExternalProfile + repoExternalProfile + backupQualifiedExternalProfile + backupExternalProfile + qualifiedExternalProfile + externalProfile + thisProfile + directoryUser + detailedUser + lazyUser + mappedUser + listedUser + pooledUser + maybeUser + genericUsers + genericThisUsers + asyncUsers + asyncThisUsers + optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
     }
 
     private string LocalTag(string id) {

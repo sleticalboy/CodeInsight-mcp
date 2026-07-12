@@ -6471,6 +6471,9 @@ public class AuthController {
         users.FindAs<string>(id);
         this.users.FindAs<string>(id);
         servicePool[0].Find(id);
+        servicePool[0].ExternalProfile.Load(id);
+        listUsers[0].ExternalProfile.Load(id);
+        usersById[id].ExternalProfile.Load(id);
         this.users.Profile.Load(id);
         this.LocalTag(id);
         base.BaseTag(id);
@@ -6512,6 +6515,9 @@ public class AuthController {
             2
         );
         assert!(callees.contains(&"servicePool.Find"));
+        assert!(callees.contains(&"servicePool.ExternalProfile.Load"));
+        assert!(callees.contains(&"listUsers.ExternalProfile.Load"));
+        assert!(callees.contains(&"usersById.ExternalProfile.Load"));
     }
 
     #[test]
