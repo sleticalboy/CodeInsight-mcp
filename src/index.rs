@@ -1212,6 +1212,9 @@ fn csharp_dependencies(
             "namespace",
             csharp_namespace_targets,
         ),
+        "class_declaration" | "record_declaration" => {
+            csharp_base_type_dependencies(node, source, language, source_file)
+        }
         "variable_declaration" | "parameter" => {
             csharp_type_binding_dependencies(node, source, language, source_file)
         }
@@ -1260,6 +1263,31 @@ fn csharp_type_binding_dependencies(
             local_alias: Some(local_alias),
             imported_symbol: Some("*".to_string()),
             kind: "type_binding".to_string(),
+            language,
+            line: node.start_position().row + 1,
+        })
+        .collect()
+}
+
+fn csharp_base_type_dependencies(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+) -> Vec<Dependency> {
+    let Some(local_alias) = child_text(node, "name", source) else {
+        return Vec::new();
+    };
+    let text = node.utf8_text(source).unwrap_or_default();
+    csharp_direct_base_type(text)
+        .into_iter()
+        .map(|target| Dependency {
+            source_file: source_file.to_string(),
+            resolved_file: None,
+            target,
+            local_alias: Some(local_alias.clone()),
+            imported_symbol: Some("base".to_string()),
+            kind: "base_type".to_string(),
             language,
             line: node.start_position().row + 1,
         })
@@ -4112,6 +4140,22 @@ fn csharp_namespace_targets(text: &str) -> Vec<String> {
         .unwrap_or_default()
 }
 
+fn csharp_direct_base_type(text: &str) -> Option<String> {
+    let (_, rest) = text.split_once(':')?;
+    let candidate = rest
+        .split(['{', ';'])
+        .next()
+        .unwrap_or_default()
+        .split(',')
+        .next()
+        .unwrap_or_default()
+        .split_whitespace()
+        .next()
+        .unwrap_or_default()
+        .trim();
+    clean_csharp_type_name(candidate).map(ToOwned::to_owned)
+}
+
 fn csharp_type_bindings(text: &str) -> Vec<(String, String)> {
     let mut text = text.trim().trim_end_matches(';').trim();
     while let Some((modifier, rest)) = text.split_once(char::is_whitespace) {
@@ -6159,7 +6203,7 @@ using static System.Math;
 
 namespace Example.Auth;
 
-public class AuthService {
+public class AuthService : BaseAuthService {
     private string token;
 
     public AuthService(string token) {
@@ -6178,6 +6222,10 @@ public class AuthService {
 
 public interface UserRepository {
     User Find(string id);
+}
+
+public class BaseAuthService {
+    protected string BaseTag() => "base";
 }
 "#;
         let symbols = extract_symbols(source, Language::CSharp, "AuthService.cs").unwrap();
@@ -6202,6 +6250,11 @@ public interface UserRepository {
         assert!(targets.contains(&"System"));
         assert!(targets.contains(&"System.Text.StringBuilder"));
         assert!(targets.contains(&"System.Math"));
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "BaseAuthService"
+                && dependency.kind == "base_type"
+                && dependency.local_alias.as_deref() == Some("AuthService")
+        }));
 
         let calls = extract_calls(source, Language::CSharp, "AuthService.cs", &symbols);
         assert!(

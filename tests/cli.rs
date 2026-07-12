@@ -3001,6 +3001,17 @@ fn cli_resolves_csharp_using_imports() {
             .unwrap()
             .iter()
             .any(|dependency| {
+                dependency["target"] == "BaseController"
+                    && dependency["kind"] == "base_type"
+                    && dependency["local_alias"] == "AuthController"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
                 dependency["target"] == "App.Services"
                     && dependency["resolved_file"] == "src/App/Services/UserService.cs"
             })
@@ -3297,13 +3308,10 @@ fn cli_resolves_csharp_using_imports() {
             call["caller"] == "AuthController.Login" && call["callee"] == "LocalTag"
         })
     );
-    assert!(
-        callees
-            .as_array()
-            .unwrap()
-            .iter()
-            .any(|call| { call["callee"] == "base.BaseTag" && call["callee_file"].is_null() })
-    );
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "base.BaseTag"
+            && call["callee_file"] == "src/App/Controllers/BaseController.cs"
+    }));
     assert!(
         callees
             .as_array()

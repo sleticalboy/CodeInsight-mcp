@@ -1547,6 +1547,73 @@ impl Store {
                         c.id as call_id,
                         target_files.path as callee_file,
                         s.qualified_name as qualified_name,
+                        base_types.line as dependency_line,
+                        s.start_line as start_line,
+                        0 as match_rank
+                    from calls c
+                    join dependencies base_types
+                      on base_types.source_file_id = c.source_file_id
+                    join dependencies scopes
+                      on scopes.source_file_id = c.source_file_id
+                    join files target_files
+                      on target_files.path like '%' ||
+                        replace(scopes.target, '.', '/') ||
+                        '/' ||
+                        base_types.target ||
+                        '.cs'
+                    join symbols s on s.file_id = target_files.id
+                    where c.callee_file is null
+                      and c.language = 'csharp'
+                      and base_types.language = 'csharp'
+                      and base_types.kind = 'base_type'
+                      and base_types.local_alias is not null
+                      and scopes.language = 'csharp'
+                      and scopes.kind in ('using', 'namespace')
+                      and c.caller like base_types.local_alias || '.%'
+                      and c.callee like 'base.%'
+                      and (
+                        s.name = substr(c.callee, length('base') + 2)
+                        or s.qualified_name = substr(c.callee, length('base') + 2)
+                        or s.qualified_name like '%.' || substr(c.callee, length('base') + 2)
+                      )
+
+                    union all
+
+                    select
+                        c.id as call_id,
+                        target_files.path as callee_file,
+                        s.qualified_name as qualified_name,
+                        base_types.line as dependency_line,
+                        s.start_line as start_line,
+                        0 as match_rank
+                    from calls c
+                    join dependencies base_types
+                      on base_types.source_file_id = c.source_file_id
+                    join files target_files
+                      on target_files.path like '%' ||
+                        replace(base_types.target, '.', '/') ||
+                        '.cs'
+                    join symbols s on s.file_id = target_files.id
+                    where c.callee_file is null
+                      and c.language = 'csharp'
+                      and base_types.language = 'csharp'
+                      and base_types.kind = 'base_type'
+                      and base_types.local_alias is not null
+                      and base_types.target like '%.%'
+                      and c.caller like base_types.local_alias || '.%'
+                      and c.callee like 'base.%'
+                      and (
+                        s.name = substr(c.callee, length('base') + 2)
+                        or s.qualified_name = substr(c.callee, length('base') + 2)
+                        or s.qualified_name like '%.' || substr(c.callee, length('base') + 2)
+                      )
+
+                    union all
+
+                    select
+                        c.id as call_id,
+                        target_files.path as callee_file,
+                        s.qualified_name as qualified_name,
                         type_bindings.line as dependency_line,
                         s.start_line as start_line,
                         0 as match_rank
