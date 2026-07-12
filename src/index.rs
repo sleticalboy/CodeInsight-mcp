@@ -713,7 +713,7 @@ fn normalize_csharp_dot_callee(raw: &str) -> Option<String> {
             } else {
                 part
             };
-            part.trim_end_matches(['?', '!'])
+            csharp_callee_segment_name(part)
         })
         .filter(|part| !part.is_empty())
         .collect::<Vec<_>>();
@@ -722,6 +722,14 @@ fn normalize_csharp_dot_callee(raw: &str) -> Option<String> {
     }
 
     Some(parts.join("."))
+}
+
+fn csharp_callee_segment_name(segment: &str) -> &str {
+    let segment = segment.trim().trim_end_matches(['?', '!']).trim();
+    segment
+        .split_once('<')
+        .map(|(name, _)| name.trim())
+        .unwrap_or(segment)
 }
 
 fn normalize_php_callee(raw: &str) -> Option<String> {
@@ -6165,6 +6173,8 @@ public class AuthController {
         this.users!.Find(id);
         await users.FindAsync(id);
         await this.users.FindAsync(id);
+        users.FindAs<string>(id);
+        this.users.FindAs<string>(id);
         this.LocalTag(id);
         base.BaseTag(id);
         return ClampName(id);
@@ -6193,6 +6203,13 @@ public class AuthController {
             callees
                 .iter()
                 .filter(|callee| **callee == "users.FindAsync")
+                .count(),
+            2
+        );
+        assert_eq!(
+            callees
+                .iter()
+                .filter(|callee| **callee == "users.FindAs")
                 .count(),
             2
         );

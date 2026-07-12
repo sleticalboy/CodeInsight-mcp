@@ -3161,6 +3161,18 @@ fn cli_resolves_csharp_using_imports() {
             .unwrap()
             .iter()
             .filter(|call| {
+                call["callee"] == "users.FindAs"
+                    && call["callee_file"] == "src/App/Services/UserService.cs"
+            })
+            .count()
+            >= 2
+    );
+    assert!(
+        callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|call| {
                 call["callee"] == "repoUsers.Find"
                     && call["callee_file"] == "src/App/Services/UserService.cs"
             })
@@ -6873,8 +6885,10 @@ public class AuthController : BaseController {
         var forcedThisUsers = this.users!.Find(id);
         var asyncUsers = await users.FindAsync(id);
         var asyncThisUsers = await this.users.FindAsync(id);
+        var genericUsers = users.FindAs<string>(id);
+        var genericThisUsers = this.users.FindAs<string>(id);
         Audit.Record(id);
-        return LocalFormatter.Normalize(ClampName(asyncUsers + asyncThisUsers + optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
+        return LocalFormatter.Normalize(ClampName(genericUsers + genericThisUsers + asyncUsers + asyncThisUsers + optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
     }
 
     private string LocalTag(string id) {
@@ -6904,6 +6918,10 @@ public class UserService {
 
     public Task<string> FindAsync(string id) {
         return Task.FromResult(id);
+    }
+
+    public T FindAs<T>(string id) {
+        return default!;
     }
 }
 
