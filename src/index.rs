@@ -6471,6 +6471,8 @@ public class AuthController {
         users.FindAs<string>(id);
         this.users.FindAs<string>(id);
         servicePool[0].Find(id);
+        maybeUsers?.ExternalProfile.Load(id);
+        maybeUsers!.ExternalProfile.Load(id);
         servicePool[0].ExternalProfile.Load(id);
         listUsers[0].ExternalProfile.Load(id);
         usersById[id].ExternalProfile.Load(id);
@@ -6515,6 +6517,13 @@ public class AuthController {
             2
         );
         assert!(callees.contains(&"servicePool.Find"));
+        assert_eq!(
+            callees
+                .iter()
+                .filter(|callee| **callee == "maybeUsers.ExternalProfile.Load")
+                .count(),
+            2
+        );
         assert!(callees.contains(&"servicePool.ExternalProfile.Load"));
         assert!(callees.contains(&"listUsers.ExternalProfile.Load"));
         assert!(callees.contains(&"usersById.ExternalProfile.Load"));
