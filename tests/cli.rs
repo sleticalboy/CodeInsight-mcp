@@ -3529,9 +3529,27 @@ fn cli_resolves_csharp_using_imports() {
             })
         );
     }
-    assert!(callees.as_array().unwrap().iter().any(|call| {
-        call["callee"] == "users.FormatForDisplay" && call["callee_file"].is_null()
-    }));
+    for (unresolved_callee, expected_count) in [
+        ("users.FormatForDisplay", 2),
+        ("maybeUsers.FormatForDisplay", 2),
+        ("listUsers.FormatForDisplay", 1),
+    ] {
+        assert!(
+            callees
+                .as_array()
+                .unwrap()
+                .iter()
+                .filter(|call| {
+                    call["callee"] == unresolved_callee && call["callee_file"].is_null()
+                })
+                .count()
+                >= expected_count
+        );
+        assert!(callees.as_array().unwrap().iter().all(|call| {
+            call["callee"] != unresolved_callee
+                || call["callee_file"] != "src/App/Extensions/UserServiceExtensions.cs"
+        }));
+    }
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "users.ExternalProfile.Load"
             && call["callee_file"] == "src/App/Profiles/ExternalProfile.cs"
@@ -7484,9 +7502,13 @@ public class AuthController : App.Controllers.BaseController, IAuthController {
         var thisBackupExternalProfile = this.backupUsers.ExternalProfile.Load(id);
         var profileMetadata = users.Profile.Metadata.Display(id);
         var extensionUser = users.FormatForDisplay(id);
+        var thisExtensionUser = this.users.FormatForDisplay(id);
+        var optionalExtensionUser = maybeUsers?.FormatForDisplay(id);
+        var forcedExtensionUser = maybeUsers!.FormatForDisplay(id);
+        var listedExtensionUser = listUsers[0].FormatForDisplay(id);
         var rootTag = base.RootTag(id);
         Audit.Record(id);
-        return LocalFormatter.Normalize(ClampName(rootTag + extensionUser + profileMetadata + inferredNestedMappedExternalProfile + inferredNestedListExternalProfile + nestedMappedExternalProfile + nestedListExternalProfile + mappedExternalProfile + listedExternalProfile + pooledExternalProfile + inferredValueTaskExternalProfile + inferredTaskExternalProfile + valueTaskExternalProfile + taskExternalProfile + forcedExternalProfile + optionalExternalProfile + inferredLazyExternalProfile + lazyExternalProfile + targetExternalProfile + createdBackupExternalProfile + createdExternalProfile + thisBackupExternalProfile + thisExternalProfile + thisRepoExternalProfile + repoExternalProfile + backupQualifiedExternalProfile + backupExternalProfile + qualifiedExternalProfile + externalProfile + thisProfile + directoryImplementationProfile + directoryUser + detailedUser + inferredNestedMappedUser + inferredNestedListUser + nestedMappedUser + nestedListUser + inferredValueTaskUser + inferredTaskUser + valueTaskUser + taskUser + inferredLazyUser + lazyUser + mappedUser + listedUser + pooledUser + maybeUser + genericUsers + genericThisUsers + asyncUsers + asyncThisUsers + optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
+        return LocalFormatter.Normalize(ClampName(rootTag + listedExtensionUser + forcedExtensionUser + optionalExtensionUser + thisExtensionUser + extensionUser + profileMetadata + inferredNestedMappedExternalProfile + inferredNestedListExternalProfile + nestedMappedExternalProfile + nestedListExternalProfile + mappedExternalProfile + listedExternalProfile + pooledExternalProfile + inferredValueTaskExternalProfile + inferredTaskExternalProfile + valueTaskExternalProfile + taskExternalProfile + forcedExternalProfile + optionalExternalProfile + inferredLazyExternalProfile + lazyExternalProfile + targetExternalProfile + createdBackupExternalProfile + createdExternalProfile + thisBackupExternalProfile + thisExternalProfile + thisRepoExternalProfile + repoExternalProfile + backupQualifiedExternalProfile + backupExternalProfile + qualifiedExternalProfile + externalProfile + thisProfile + directoryImplementationProfile + directoryUser + detailedUser + inferredNestedMappedUser + inferredNestedListUser + nestedMappedUser + nestedListUser + inferredValueTaskUser + inferredTaskUser + valueTaskUser + taskUser + inferredLazyUser + lazyUser + mappedUser + listedUser + pooledUser + maybeUser + genericUsers + genericThisUsers + asyncUsers + asyncThisUsers + optionalUsers + forcedUsers + optionalThisUsers + forcedThisUsers + users.Find(id) + this.users.Find(id) + backupUsers.Find(id) + repoUsers.Find(id) + this.repoUsers.Find(id) + createdUsers.Find(id) + createdBackupUsers.Find(id) + targetUsers.Find(id) + this.LocalTag(id) + base.BaseTag(id) + users.Profile.Load(id)));
     }
 
     private string LocalTag(string id) {
