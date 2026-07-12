@@ -6684,6 +6684,10 @@ public class AuthController {
     public string Login(string id) {
         return ClampName(users.Find(id) + users?.Find(id) + users!.Find(id) + this.users?.Find(id) + this.users!.Find(id));
     }
+
+    public string Profile(string id) {
+        return ClampName(maybeUsers?.ExternalProfile.Load(id) + maybeUsers!.ExternalProfile.Load(id) + users?.FormatForDisplay(id));
+    }
 }
 "#;
         let symbols = extract_symbols(source, Language::CSharp, "AuthController.cs").unwrap();
@@ -6699,6 +6703,25 @@ public class AuthController {
             callees
                 .iter()
                 .all(|callee| !callee.contains("users.Find.users.Find"))
+        );
+        assert!(callees.contains(&"maybeUsers.ExternalProfile.Load"));
+        assert!(
+            callees
+                .iter()
+                .all(|callee| !callee.contains("ClampName.users"))
+        );
+        assert!(
+            callees
+                .iter()
+                .all(|callee| !callee.contains("ClampName.maybeUsers"))
+        );
+        assert!(callees.iter().all(|callee| {
+            !callee.contains("maybeUsers.ExternalProfile.Load.maybeUsers.ExternalProfile.Load")
+        }));
+        assert!(
+            callees
+                .iter()
+                .all(|callee| !callee.contains("users.FormatForDisplay.users.FormatForDisplay"))
         );
     }
 
