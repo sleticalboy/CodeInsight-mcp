@@ -4226,7 +4226,10 @@ fn csharp_type_bindings(text: &str) -> Vec<(String, String, Option<String>)> {
     }
 
     let (target, wrapper_member) = if raw_type.trim() == "var" {
-        (csharp_new_expression_type(rest), None)
+        let Some((target, wrapper_member)) = csharp_new_expression_binding(rest) else {
+            return Vec::new();
+        };
+        (Some(target), wrapper_member)
     } else if let Some((target, wrapper_member)) = csharp_value_wrapper_type(raw_type) {
         (
             clean_csharp_type_name(target).map(ToOwned::to_owned),
@@ -4437,7 +4440,7 @@ fn csharp_value_wrapper_member(value: &str) -> Option<&'static str> {
     matches!(value, "Lazy").then_some("Value")
 }
 
-fn csharp_new_expression_type(value: &str) -> Option<String> {
+fn csharp_new_expression_binding(value: &str) -> Option<(String, Option<String>)> {
     let initializer = value.split_once('=')?.1.trim();
     let constructor = initializer.strip_prefix("new ")?.trim_start();
     let target = constructor
@@ -4445,7 +4448,12 @@ fn csharp_new_expression_type(value: &str) -> Option<String> {
         .next()
         .unwrap_or_default()
         .trim();
-    clean_csharp_type_name(target).map(ToOwned::to_owned)
+    if let Some((target, wrapper_member)) = csharp_value_wrapper_type(target) {
+        return clean_csharp_type_name(target)
+            .map(|target| (target.to_string(), Some(wrapper_member.to_string())));
+    }
+
+    clean_csharp_type_name(target).map(|target| (target.to_string(), None))
 }
 
 fn csharp_builtin_type(value: &str) -> bool {
@@ -6501,9 +6509,26 @@ public class BaseAuthService {
                 Some("Value".to_string())
             )]
         );
+        assert_eq!(
+            csharp_type_bindings("var lazyUsers = new Lazy<UserService>();"),
+            vec![(
+                "UserService".to_string(),
+                "lazyUsers".to_string(),
+                Some("Value".to_string())
+            )]
+        );
+        assert_eq!(
+            csharp_type_bindings(
+                "var lazyUsers = new System.Lazy<App.Services.UserService>(() => users);"
+            ),
+            vec![(
+                "App.Services.UserService".to_string(),
+                "lazyUsers".to_string(),
+                Some("Value".to_string())
+            )]
+        );
         assert!(csharp_type_bindings("string name").is_empty());
         assert!(csharp_type_bindings("Tuple<string, int, UserService> users").is_empty());
-        assert!(csharp_type_bindings("var lazyUsers = new Lazy<UserService>();").is_empty());
         assert!(
             csharp_type_bindings("Tuple<string, int, UserService> tupleUsers = new();").is_empty()
         );
