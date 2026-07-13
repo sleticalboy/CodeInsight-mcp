@@ -181,5 +181,9 @@ Rust is included early so the project can index itself during development.
 - [x] Verify GitHub Release, Docker image, and Homebrew tap after tagging.
 - [x] Shorten generated release notes for large accumulated changelog sections.
 - [x] Document public MVP release-readiness gates.
-- [ ] Run a clean release-readiness rehearsal from a fresh checkout before the
+- [x] Run a clean release-readiness rehearsal from a fresh checkout before the
   next public tag.
+  - 2026-07-14 evidence: fresh clone from GitHub at
+    `547e6d2f9fa333b968ba2f6192deb29add7ee5c5`; passed `cargo test --locked`,
+    `cargo build --locked --release`, `scripts/agent-router-demo.sh`,
+    `scripts/mcp-stdio-smoke.sh`, and `scripts/release-install-smoke.sh`.
