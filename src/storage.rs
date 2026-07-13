@@ -2118,6 +2118,44 @@ impl Store {
 
                     select
                         c.id as call_id,
+                        extension_files.path as callee_file,
+                        s.qualified_name as qualified_name,
+                        extension_methods.line as dependency_line,
+                        s.start_line as start_line,
+                        2 as match_rank
+                    from calls c
+                    join dependencies imported_extensions
+                      on imported_extensions.source_file_id = c.source_file_id
+                    join files extension_files
+                      on extension_files.path = imported_extensions.resolved_file
+                    join dependencies extension_methods
+                      on extension_methods.source_file_id = extension_files.id
+                    join symbols s
+                      on s.file_id = extension_files.id
+                    where c.callee_file is null
+                      and c.language = 'csharp'
+                      and c.callee like '%.%'
+                      and imported_extensions.language = 'csharp'
+                      and imported_extensions.kind in ('using', 'namespace')
+                      and extension_methods.language = 'csharp'
+                      and extension_methods.kind = 'extension_method'
+                      and (
+                        c.callee =
+                          extension_methods.target ||
+                          '.' ||
+                          extension_methods.local_alias
+                        or c.callee like
+                          '%.' ||
+                          extension_methods.target ||
+                          '.' ||
+                          extension_methods.local_alias
+                      )
+                      and s.name = extension_methods.local_alias
+
+                    union all
+
+                    select
+                        c.id as call_id,
                         reexport_files.path as callee_file,
                         s.qualified_name as qualified_name,
                         d.line as dependency_line,
