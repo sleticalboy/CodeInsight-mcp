@@ -1308,6 +1308,9 @@ fn csharp_dependencies(
         "property_declaration" => {
             csharp_property_type_dependencies(node, source, language, source_file)
         }
+        "method_declaration" => {
+            csharp_extension_method_dependencies(node, source, language, source_file)
+        }
         "variable_declaration" | "parameter" => {
             csharp_type_binding_dependencies(node, source, language, source_file)
         }
@@ -1360,6 +1363,32 @@ fn csharp_type_binding_dependencies(
             line: node.start_position().row + 1,
         })
         .collect()
+}
+
+fn csharp_extension_method_dependencies(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+) -> Vec<Dependency> {
+    let Some(method) = child_text(node, "name", source) else {
+        return Vec::new();
+    };
+    let text = node.utf8_text(source).unwrap_or_default();
+    let Some(target) = csharp_extension_receiver_type(text) else {
+        return Vec::new();
+    };
+
+    vec![Dependency {
+        source_file: source_file.to_string(),
+        resolved_file: None,
+        target,
+        local_alias: Some(method),
+        imported_symbol: None,
+        kind: "extension_method".to_string(),
+        language,
+        line: node.start_position().row + 1,
+    }]
 }
 
 fn csharp_base_type_dependencies(
@@ -4297,6 +4326,34 @@ fn csharp_direct_base_type(text: &str) -> Option<String> {
     clean_csharp_type_name(candidate).map(ToOwned::to_owned)
 }
 
+fn csharp_extension_receiver_type(text: &str) -> Option<String> {
+    let params_open = text.find('(')?;
+    let params_close = matching_close_paren(text, params_open)?;
+    let params = text[params_open + 1..params_close].trim();
+    let first_param = csharp_first_parameter(params)?.trim();
+    let receiver = first_param.strip_prefix("this ")?.trim_start();
+    let (raw_type, _) = csharp_type_binding_parts(receiver)?;
+    clean_csharp_type_name(raw_type).map(ToOwned::to_owned)
+}
+
+fn csharp_first_parameter(params: &str) -> Option<&str> {
+    let mut angle_depth = 0;
+    for (index, character) in params.char_indices() {
+        match character {
+            '<' => angle_depth += 1,
+            '>' if angle_depth > 0 => angle_depth -= 1,
+            ',' if angle_depth == 0 => {
+                let first = params[..index].trim();
+                return (!first.is_empty()).then_some(first);
+            }
+            _ => {}
+        }
+    }
+
+    let first = params.trim();
+    (!first.is_empty()).then_some(first)
+}
+
 fn csharp_type_bindings(text: &str) -> Vec<(String, String, Option<String>)> {
     let mut text = text.trim().trim_end_matches(';').trim();
     while let Some((modifier, rest)) = text.split_once(char::is_whitespace) {
@@ -6516,6 +6573,34 @@ public class BaseAuthService {
         assert_eq!(
             csharp_namespace_targets("namespace App.Controllers {"),
             vec!["App.Controllers".to_string()]
+        );
+    }
+
+    #[test]
+    fn parses_csharp_extension_receiver_types() {
+        assert_eq!(
+            csharp_extension_receiver_type(
+                "public static string FormatForDisplay(this UserService users, string id) { }"
+            ),
+            Some("UserService".to_string())
+        );
+        assert_eq!(
+            csharp_extension_receiver_type(
+                "public static string FormatForDisplay(this App.Services.UserService users, string id) { }"
+            ),
+            Some("App.Services.UserService".to_string())
+        );
+        assert_eq!(
+            csharp_extension_receiver_type(
+                "public static string FormatForDisplay(this List<UserService> users, string id) { }"
+            ),
+            Some("UserService".to_string())
+        );
+        assert_eq!(
+            csharp_extension_receiver_type(
+                "public static string FormatForDisplay(UserService users, string id) { }"
+            ),
+            None
         );
     }
 

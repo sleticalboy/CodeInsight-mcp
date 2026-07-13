@@ -3188,6 +3188,18 @@ fn cli_resolves_csharp_using_imports() {
             .unwrap()
             .iter()
             .any(|dependency| {
+                dependency["target"] == "UserService"
+                    && dependency["kind"] == "extension_method"
+                    && dependency["local_alias"] == "FormatForDisplay"
+                    && dependency["resolved_file"].is_null()
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
                 dependency["target"] == "ProfileService"
                     && dependency["kind"] == "property_type"
                     && dependency["local_alias"] == "Profile"
@@ -3606,15 +3618,12 @@ fn cli_resolves_csharp_using_imports() {
                 .unwrap()
                 .iter()
                 .filter(|call| {
-                    call["callee"] == unresolved_callee && call["callee_file"].is_null()
+                    call["callee"] == unresolved_callee
+                        && call["callee_file"] == "src/App/Extensions/UserServiceExtensions.cs"
                 })
                 .count()
                 >= expected_count
         );
-        assert!(callees.as_array().unwrap().iter().all(|call| {
-            call["callee"] != unresolved_callee
-                || call["callee_file"] != "src/App/Extensions/UserServiceExtensions.cs"
-        }));
     }
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "users.ExternalProfile.Load"

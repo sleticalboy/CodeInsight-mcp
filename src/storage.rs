@@ -2087,6 +2087,36 @@ impl Store {
                     union all
 
                     select
+                        c.call_id,
+                        extension_files.path as callee_file,
+                        s.qualified_name as qualified_name,
+                        extension_methods.line as dependency_line,
+                        s.start_line as start_line,
+                        1 as match_rank
+                    from temp.csharp_type_bound_calls c
+                    join dependencies imported_extensions
+                      on imported_extensions.source_file_id = c.source_file_id
+                    join files extension_files
+                      on extension_files.path = imported_extensions.resolved_file
+                    join dependencies extension_methods
+                      on extension_methods.source_file_id = extension_files.id
+                    join symbols s
+                      on s.file_id = extension_files.id
+                    where imported_extensions.language = 'csharp'
+                      and imported_extensions.kind in ('using', 'namespace')
+                      and extension_methods.language = 'csharp'
+                      and extension_methods.kind = 'extension_method'
+                      and extension_methods.local_alias = c.member_tail
+                      and (
+                        extension_methods.target = c.target
+                        or extension_methods.target like '%.' || c.target
+                        or c.target like '%.' || extension_methods.target
+                      )
+                      and s.name = c.member_tail
+
+                    union all
+
+                    select
                         c.id as call_id,
                         reexport_files.path as callee_file,
                         s.qualified_name as qualified_name,
