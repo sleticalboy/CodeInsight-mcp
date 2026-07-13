@@ -3876,8 +3876,8 @@ fn cli_leaves_csharp_extension_method_boundaries_unresolved() {
     let fixture = csharp_extension_method_boundary_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 5);
-    assert_eq!(index["changed_files"], 5);
+    assert_eq!(index["indexed_files"], 7);
+    assert_eq!(index["changed_files"], 7);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let missing_import_callees = run_json([
@@ -3930,6 +3930,60 @@ fn cli_leaves_csharp_extension_method_boundaries_unresolved() {
             .iter()
             .all(|call| {
                 call["callee"] != "product.FormatForDisplay"
+                    || call["callee_file"] != "src/App/Extensions/UserServiceExtensions.cs"
+            })
+    );
+
+    let missing_import_temporary_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "MissingImportTemporaryController.Login",
+        "--limit",
+        "10",
+    ]);
+    assert!(
+        missing_import_temporary_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| {
+                call["callee"] == "UserService.FormatForDisplay" && call["callee_file"].is_null()
+            })
+    );
+    assert!(
+        missing_import_temporary_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|call| {
+                call["callee"] != "UserService.FormatForDisplay"
+                    || call["callee_file"] != "src/App/Extensions/UserServiceExtensions.cs"
+            })
+    );
+
+    let wrong_temporary_receiver_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "WrongTemporaryReceiverController.Login",
+        "--limit",
+        "10",
+    ]);
+    assert!(
+        wrong_temporary_receiver_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| {
+                call["callee"] == "ProductService.FormatForDisplay" && call["callee_file"].is_null()
+            })
+    );
+    assert!(
+        wrong_temporary_receiver_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|call| {
+                call["callee"] != "ProductService.FormatForDisplay"
                     || call["callee_file"] != "src/App/Extensions/UserServiceExtensions.cs"
             })
     );
@@ -8203,6 +8257,37 @@ namespace App.Controllers;
 public class WrongReceiverController {
     public string Login(ProductService product, string id) {
         return product.FormatForDisplay(id);
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/App/Controllers/MissingImportTemporaryController.cs",
+        r#"
+using App.Services;
+
+namespace App.Controllers;
+
+public class MissingImportTemporaryController {
+    public string Login(string id) {
+        return new UserService().FormatForDisplay(id);
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/App/Controllers/WrongTemporaryReceiverController.cs",
+        r#"
+using App.Extensions;
+using App.Services;
+
+namespace App.Controllers;
+
+public class WrongTemporaryReceiverController {
+    public string Login(string id) {
+        return new ProductService().FormatForDisplay(id);
     }
 }
 "#,
