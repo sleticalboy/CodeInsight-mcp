@@ -8,6 +8,9 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ### Changed
 
+- `scripts/prepare-release.sh --dry-run` now uses `git diff --no-index` so
+  release previews still work when another toolchain shadows the system
+  `diff`.
 - `scripts/verify-release.sh` now reports a pending Homebrew tap PR when the
   shared tap formula has not been merged to `main` yet.
 - `scripts/extract-release-notes.sh` now supports compact summary output for

@@ -188,11 +188,15 @@ File.write(changelog_path, next_changelog)
 RUBY
 
 if [ "$DRY_RUN" -eq 1 ]; then
+  show_diff() {
+    git diff --no-index --no-ext-diff --no-color -- "$1" "$2" || true
+  }
+
   for file in Cargo.toml README.md CHANGELOG.md; do
-    diff -u "$ROOT_DIR/$file" "$work_dir/$file" || true
+    show_diff "$ROOT_DIR/$file" "$work_dir/$file"
   done
   if [ -f "$ROOT_DIR/docs/install.md" ] || [ -f "$work_dir/docs/install.md" ]; then
-    diff -u "$ROOT_DIR/docs/install.md" "$work_dir/docs/install.md" || true
+    show_diff "$ROOT_DIR/docs/install.md" "$work_dir/docs/install.md"
   fi
   echo "dry run completed for $tag"
   exit 0
