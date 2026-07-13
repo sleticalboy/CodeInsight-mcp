@@ -698,6 +698,9 @@ fn normalize_csharp_callee(raw: &str) -> Option<String> {
     if let Some(callee) = normalize_csharp_new_chain(&trimmed) {
         return Some(callee);
     }
+    if trimmed.starts_with("new ") {
+        return None;
+    }
     normalize_csharp_dot_callee(trimmed.strip_prefix("this.").unwrap_or(&trimmed))
 }
 
@@ -6805,6 +6808,39 @@ public class AuthController {
         assert!(callees.contains(&"servicePool.ExternalProfile.Load"));
         assert!(callees.contains(&"listUsers.ExternalProfile.Load"));
         assert!(callees.contains(&"usersById.ExternalProfile.Load"));
+    }
+
+    #[test]
+    fn skips_csharp_nested_temporary_wrapper_calls() {
+        let source = r#"
+public class AuthController {
+    public string Login(string id) {
+        var nestedMappedUser = new Lazy<Dictionary<string, UserService>>(() => usersById).Value[id].Find(id);
+        var nestedListUser = new Task<List<UserService>>(() => listUsers).Result[0].Find(id);
+        var nestedMappedExternalProfile = new Lazy<Dictionary<string, UserService>>(() => usersById).Value[id].ExternalProfile.Load(id);
+        return nestedMappedUser + nestedListUser + nestedMappedExternalProfile;
+    }
+}
+"#;
+        let symbols = extract_symbols(source, Language::CSharp, "AuthController.cs").unwrap();
+        let calls = extract_calls(source, Language::CSharp, "AuthController.cs", &symbols);
+        let callees = calls
+            .iter()
+            .map(|call| call.callee.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(
+            callees
+                .iter()
+                .all(|callee| !callee.starts_with("UserService."))
+        );
+        assert!(
+            callees
+                .iter()
+                .all(|callee| !callee.starts_with("App.Services.UserService."))
+        );
+        assert!(!callees.contains(&"Find"));
+        assert!(!callees.contains(&"Load"));
     }
 
     #[test]

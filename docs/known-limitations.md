@@ -180,6 +180,7 @@ Limitations:
 
 - Calls are resolved by normalized callee name, not by type information.
 - `callee_file` is a best-effort file hint, not a proof of the exact runtime function.
+- C# temporary `new` chains with nested generic wrappers, such as `new Lazy<Dictionary<string, UserService>>(...).Value[id].Find()`, are conservatively skipped instead of falling back to a simple callee name.
 - Re-export following is intentionally bounded; arbitrary-depth barrel chains are not expanded.
 - Dependency packages under `node_modules` are skipped during indexing by default, so package export resolution can populate `dependency_graph.resolved_file` without producing `callee_file` hints for those packages.
 - Non-literal dynamic `import()`, external dynamic import handlers, variable-based `require(...)` targets, package-based config `extends`, pnpm/yarn-specific workspace protocols, and broader bundler-specific resolution are not modeled yet.

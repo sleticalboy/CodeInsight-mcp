@@ -3841,6 +3841,28 @@ fn cli_resolves_csharp_using_imports() {
 }
 
 #[test]
+fn cli_leaves_csharp_nested_temporary_wrappers_unresolved() {
+    let fixture = csharp_nested_temporary_wrapper_fixture_project();
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 3);
+    assert_eq!(index["changed_files"], 3);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "AuthController.Login",
+        "--limit",
+        "20",
+    ]);
+    assert!(callees.as_array().unwrap().iter().all(|call| {
+        call["callee_file"] != "src/App/Services/UserService.cs"
+            && call["callee_file"] != "src/App/Profiles/ExternalProfile.cs"
+    }));
+}
+
+#[test]
 fn cli_resolves_rust_crate_and_super_use_imports() {
     let fixture = rust_use_fixture_project();
 
@@ -7842,6 +7864,62 @@ namespace App.Conflicts;
 public static class LocalFormatter {
     public static string Normalize(string name) {
         return name;
+    }
+}
+"#,
+    );
+    dir
+}
+
+fn csharp_nested_temporary_wrapper_fixture_project() -> TempDir {
+    let dir = TempDir::new().unwrap();
+    write_file(
+        &dir,
+        "src/App/Controllers/AuthController.cs",
+        r#"
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using App.Services;
+
+namespace App.Controllers;
+
+public class AuthController {
+    public string Login(string id, Dictionary<string, UserService> usersById, List<UserService> listUsers) {
+        var nestedMappedUser = new Lazy<Dictionary<string, UserService>>(() => usersById).Value[id].Find(id);
+        var nestedListUser = new Task<List<UserService>>(() => listUsers).Result[0].Find(id);
+        var nestedMappedExternalProfile = new Lazy<Dictionary<string, UserService>>(() => usersById).Value[id].ExternalProfile.Load(id);
+        return nestedMappedUser + nestedListUser + nestedMappedExternalProfile;
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/App/Services/UserService.cs",
+        r#"
+using App.Profiles;
+
+namespace App.Services;
+
+public class UserService {
+    public ExternalProfile ExternalProfile { get; } = new();
+
+    public string Find(string id) {
+        return id;
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/App/Profiles/ExternalProfile.cs",
+        r#"
+namespace App.Profiles;
+
+public class ExternalProfile {
+    public string Load(string id) {
+        return id;
     }
 }
 "#,
