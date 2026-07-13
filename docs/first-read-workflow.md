@@ -3,6 +3,32 @@
 This document describes the recommended CodeInsight flow for helping an agent
 understand a repository before deeper navigation or edits.
 
+## CLI Demo
+
+Run the local demo from the repository root:
+
+```bash
+scripts/agent-router-demo.sh
+```
+
+Run it against another repository:
+
+```bash
+CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/agent-router-demo.sh
+```
+
+The script executes the product path that an MCP client should follow:
+`index -> overview -> context-pack -> impact-analysis`.
+
+It reports:
+
+- index timing, indexed files, symbols, and errors
+- overview entrypoint and recommendation counts
+- context-pack selected files, selected ranges, estimated tokens, and
+  line-reduction percentage
+- continuation status for follow-up context calls
+- impact-analysis risk, impacted file count, path count, and suggested checks
+
 ## MCP Flow
 
 Recommended MCP first-read flow:

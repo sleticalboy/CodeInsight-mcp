@@ -7,6 +7,7 @@ release documents for CodeInsight.
 
 - [Current status](status.md)
 - [Install](install.md)
+- [First-read workflow](first-read-workflow.md)
 - [CLI usage](cli-usage.md)
 - [MCP tools](mcp-tools.md)
 - [MCP client configuration](mcp-client-config.md)
@@ -30,6 +31,7 @@ release documents for CodeInsight.
 
 ## Validation
 
+- Agent-router demo: `scripts/agent-router-demo.sh`
 - [MCP client smoke test](mcp-client-smoke.md)
 - [Semantic smoke test](semantic-smoke.md)
 - [Smoke benchmark](benchmark-v0.1.md)

@@ -45,8 +45,8 @@ MVP workflow is now implemented end to end.
 - MCP stdio `initialize`, `tools/list`, and `tools/call`.
 - MCP tool argument validation with stable JSON-RPC errors.
 - Fixture-based CLI and MCP stdio integration tests.
-- Local smoke scripts for MCP stdio, semantic search, Docker, release install,
-  and benchmark fixtures.
+- Local smoke scripts for the agent-router first-read demo, MCP stdio,
+  semantic search, Docker, release install, and benchmark fixtures.
 - Release, Docker image, Homebrew tap sync, install, verify, and release-note
   helper scripts.
 - Published and verified `v0.1.10` with GitHub Release assets, Docker
@@ -54,10 +54,11 @@ MVP workflow is now implemented end to end.
 
 ## Next
 
-- Keep tightening JavaScript package-manager and bundler-specific edge cases
-  where they improve local code navigation.
-- Continue tightening README/docs routing so the README stays entry-level while
-  detailed operational guidance stays in `docs/`.
+- Keep the README/demo/benchmark path centered on the AI-agent first-read
+  workflow: `index_project`, `project_overview`, `context_pack`, and
+  `impact_analysis`.
+- Tighten language resolver edge cases only when they materially improve
+  context routing or impact triage.
 - Keep benchmark evidence current when context-pack ranking or continuation
   behavior changes.
 

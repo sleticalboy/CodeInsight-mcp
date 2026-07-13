@@ -1,14 +1,56 @@
 # CodeInsight MCP Server
 
-CodeInsight MCP Server is a local-first code intelligence layer for AI coding agents.
+CodeInsight MCP Server is a local-first code context router for AI coding
+agents.
 
-The MVP focuses on a narrow, verifiable loop:
+It is built for the first-read problem: before an agent edits a repository, it
+needs to know which files matter, what entrypoints to inspect, what context fits
+the token budget, and what may be impacted by a change. CodeInsight keeps that
+loop local and exposes it through CLI and MCP tools.
 
-- index a local repository
-- extract source symbols with Tree-sitter
-- search symbols from a local SQLite index
-- expose an MCP stdio server scaffold
-- build toward agent-ready context packs
+The primary agent loop is:
+
+1. `index_project` to build a local SQLite index.
+2. `project_overview` to identify entrypoints, directory roles, and next tools.
+3. `context_pack` to select a token-budgeted reading set.
+4. `impact_analysis` to estimate change radius before edits.
+
+CodeInsight is not trying to replace an IDE, LSP, compiler, or Sourcegraph. Its
+job is to help AI agents read less code, pick better context, and stop guessing
+which file to open next.
+
+## Two-Minute Demo
+
+Run the local agent-router demo against this repository:
+
+```bash
+scripts/agent-router-demo.sh
+```
+
+Run it against another repository:
+
+```bash
+CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/agent-router-demo.sh
+```
+
+The demo executes the same product path an MCP client should follow:
+`index -> overview -> context-pack -> impact-analysis`. It prints index timing,
+entrypoint and recommendation counts, selected context size, line-reduction
+percentage, continuation status, and impact-analysis summary.
+
+## Current Evidence
+
+The checked-in benchmark reports exercise real public repositories and measure
+how much source text `context_pack` keeps under a 6000-token budget:
+
+- [Smoke benchmark](docs/benchmark-v0.1.md): p-limit, itsdangerous, Go example,
+  and memchr.
+- [Large repository benchmark](docs/benchmark-large.md): express, Flask, Gin,
+  and Tokio.
+
+These are fixture reports, not controlled performance claims, but they verify
+that CodeInsight can index real repositories and return bounded context packs
+without external services.
 
 Key docs:
 
@@ -16,6 +58,7 @@ Key docs:
 - [Install](docs/install.md)
 - [CLI usage](docs/cli-usage.md)
 - [MCP tools](docs/mcp-tools.md)
+- [First-read workflow](docs/first-read-workflow.md)
 - [Known limitations](docs/known-limitations.md)
 - [Documentation index](docs/README.md)
 
@@ -25,7 +68,8 @@ CodeInsight is an early MVP. It can index local repositories, expose CLI and
 MCP navigation tools, build agent-ready context packs, run local impact
 analysis, and optionally use configured semantic embeddings.
 
-Next focus: broaden JavaScript package-manager and bundler-specific edge-case handling.
+Next focus: tighten the README/demo/benchmark path around the AI-agent
+first-read workflow.
 See [Current status](docs/status.md) for the full implemented capability list.
 
 ## Install From Release
