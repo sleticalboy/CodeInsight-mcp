@@ -10,7 +10,8 @@ release documents for CodeInsight.
 - [First-read workflow](first-read-workflow.md)
 - [CLI usage](cli-usage.md)
 - [MCP tools](mcp-tools.md)
-- [MCP client configuration](mcp-client-config.md)
+- [MCP client configuration](mcp-client-config.md) for Codex, Claude Code,
+  Cursor, and generic MCP JSON clients
 - [Client workflow](client-workflow.md)
 - [Known limitations](known-limitations.md)
 

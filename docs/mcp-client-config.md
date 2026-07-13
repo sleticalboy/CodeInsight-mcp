@@ -63,6 +63,120 @@ For a development checkout, run through Cargo:
 }
 ```
 
+## Client-Specific Setup
+
+Use an installed `codeinsight` binary when possible. GUI clients often do not
+inherit your shell `PATH`, so use an absolute `command` path if the server does
+not start.
+
+### Codex
+
+Add this to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.codeinsight]
+type = "stdio"
+command = "codeinsight"
+args = ["serve", "--transport", "stdio"]
+startup_timeout_sec = 30
+tool_timeout_sec = 120
+```
+
+If Codex cannot find the binary:
+
+```toml
+[mcp_servers.codeinsight]
+type = "stdio"
+command = "/absolute/path/to/codeinsight"
+args = ["serve", "--transport", "stdio"]
+startup_timeout_sec = 30
+tool_timeout_sec = 120
+```
+
+Put the [Agent Policy Prompt](client-workflow.md#agent-policy-prompt) in a
+repo-level `AGENTS.md` when you want Codex to consistently use CodeInsight for
+first-read routing in that repository.
+
+### Claude Code
+
+For a personal local server in the current project:
+
+```bash
+claude mcp add --transport stdio codeinsight -- codeinsight serve --transport stdio
+```
+
+For a project-shared `.mcp.json` entry:
+
+```bash
+claude mcp add --transport stdio --scope project codeinsight -- codeinsight serve --transport stdio
+```
+
+The resulting project file can also be written directly:
+
+```json
+{
+  "mcpServers": {
+    "codeinsight": {
+      "command": "codeinsight",
+      "args": ["serve", "--transport", "stdio"]
+    }
+  }
+}
+```
+
+Claude Code prompts before using project-scoped `.mcp.json` servers in a newly
+trusted checkout. Keep the [Agent Policy Prompt](client-workflow.md#agent-policy-prompt)
+in project instructions or paste it into the session when you want the agent to
+prefer CodeInsight before ad hoc repository search.
+
+### Cursor
+
+For a user-level Cursor MCP entry, add this to `~/.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "codeinsight": {
+      "type": "stdio",
+      "command": "codeinsight",
+      "args": ["serve", "--transport", "stdio"]
+    }
+  }
+}
+```
+
+For a repository-specific Cursor setup, use `.cursor/mcp.json` in the project
+root with the same `mcpServers` shape. Put the
+[Agent Policy Prompt](client-workflow.md#agent-policy-prompt) in your Cursor
+rules or paste it into the agent prompt so Cursor uses `project_overview` and
+`context_pack` before broad file search.
+
+### Generic MCP JSON Clients
+
+Clients that accept the standard `mcpServers` JSON shape can use:
+
+```json
+{
+  "mcpServers": {
+    "codeinsight": {
+      "type": "stdio",
+      "command": "/absolute/path/to/codeinsight",
+      "args": ["serve", "--transport", "stdio"]
+    }
+  }
+}
+```
+
+For clients that do not accept `type`, remove it and keep `command` plus
+`args`.
+
+Client MCP configuration surfaces can change between releases. Check the
+official client docs when wiring a new environment:
+
+- Codex config reference: https://developers.openai.com/codex/config-reference
+- Claude Code MCP guide: https://docs.anthropic.com/en/docs/claude-code/mcp
+- Cursor MCP guide: https://cursor.com/docs/mcp
+
 ## Tool Inputs
 
 CodeInsight tools accept explicit repository or file paths. The server does not
