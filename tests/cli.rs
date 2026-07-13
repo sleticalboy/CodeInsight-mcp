@@ -3876,8 +3876,8 @@ fn cli_leaves_csharp_extension_method_boundaries_unresolved() {
     let fixture = csharp_extension_method_boundary_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 7);
-    assert_eq!(index["changed_files"], 7);
+    assert_eq!(index["indexed_files"], 8);
+    assert_eq!(index["changed_files"], 8);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let missing_import_callees = run_json([
@@ -3986,6 +3986,21 @@ fn cli_leaves_csharp_extension_method_boundaries_unresolved() {
                 call["callee"] != "ProductService.FormatForDisplay"
                     || call["callee_file"] != "src/App/Extensions/UserServiceExtensions.cs"
             })
+    );
+
+    let nested_temporary_receiver_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "NestedTemporaryReceiverController.Login",
+        "--limit",
+        "10",
+    ]);
+    assert!(
+        nested_temporary_receiver_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|call| { call["callee_file"] != "src/App/Extensions/UserServiceExtensions.cs" })
     );
 }
 
@@ -8288,6 +8303,24 @@ namespace App.Controllers;
 public class WrongTemporaryReceiverController {
     public string Login(string id) {
         return new ProductService().FormatForDisplay(id);
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/App/Controllers/NestedTemporaryReceiverController.cs",
+        r#"
+using System;
+using System.Collections.Generic;
+using App.Extensions;
+using App.Services;
+
+namespace App.Controllers;
+
+public class NestedTemporaryReceiverController {
+    public string Login(string id, Dictionary<string, ProductService> productsById) {
+        return new Lazy<Dictionary<string, ProductService>>(() => productsById).Value[id].FormatForDisplay(id);
     }
 }
 "#,
