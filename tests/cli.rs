@@ -3936,6 +3936,40 @@ fn cli_leaves_csharp_extension_method_boundaries_unresolved() {
 }
 
 #[test]
+fn cli_keeps_csharp_static_using_and_extension_methods_distinct() {
+    let fixture = csharp_static_using_extension_conflict_fixture_project();
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 4);
+    assert_eq!(index["changed_files"], 4);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "ConflictController.Login",
+        "--limit",
+        "20",
+    ]);
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "FormatForDisplay"
+            && call["callee_file"] == "src/App/Support/DisplayFormatters.cs"
+    }));
+    assert!(callees.as_array().unwrap().iter().all(|call| {
+        call["callee"] != "FormatForDisplay"
+            || call["callee_file"] != "src/App/Extensions/UserServiceExtensions.cs"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "users.FormatForDisplay"
+            && call["callee_file"] == "src/App/Extensions/UserServiceExtensions.cs"
+    }));
+    assert!(callees.as_array().unwrap().iter().all(|call| {
+        call["callee"] != "users.FormatForDisplay"
+            || call["callee_file"] != "src/App/Support/DisplayFormatters.cs"
+    }));
+}
+
+#[test]
 fn cli_resolves_rust_crate_and_super_use_imports() {
     let fixture = rust_use_fixture_project();
 
@@ -8064,6 +8098,65 @@ public class UserService {}
 namespace App.Services;
 
 public class ProductService {}
+"#,
+    );
+    dir
+}
+
+fn csharp_static_using_extension_conflict_fixture_project() -> TempDir {
+    let dir = TempDir::new().unwrap();
+    write_file(
+        &dir,
+        "src/App/Controllers/ConflictController.cs",
+        r#"
+using App.Extensions;
+using App.Services;
+using static App.Support.DisplayFormatters;
+
+namespace App.Controllers;
+
+public class ConflictController {
+    public string Login(UserService users, string id) {
+        return FormatForDisplay(id) + users.FormatForDisplay(id);
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/App/Extensions/UserServiceExtensions.cs",
+        r#"
+using App.Services;
+
+namespace App.Extensions;
+
+public static class UserServiceExtensions {
+    public static string FormatForDisplay(this UserService users, string id) {
+        return id;
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/App/Support/DisplayFormatters.cs",
+        r#"
+namespace App.Support;
+
+public static class DisplayFormatters {
+    public static string FormatForDisplay(string id) {
+        return id;
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/App/Services/UserService.cs",
+        r#"
+namespace App.Services;
+
+public class UserService {}
 "#,
     );
     dir
