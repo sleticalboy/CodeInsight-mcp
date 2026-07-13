@@ -180,5 +180,6 @@ Rust is included early so the project can index itself during development.
 - [x] Decide the next public tag/version and prepare release notes.
 - [x] Verify GitHub Release, Docker image, and Homebrew tap after tagging.
 - [x] Shorten generated release notes for large accumulated changelog sections.
+- [x] Document public MVP release-readiness gates.
 - [ ] Run a clean release-readiness rehearsal from a fresh checkout before the
   next public tag.
