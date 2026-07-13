@@ -3970,6 +3970,48 @@ fn cli_keeps_csharp_static_using_and_extension_methods_distinct() {
 }
 
 #[test]
+fn cli_resolves_csharp_extension_method_receiver_variants() {
+    let fixture = csharp_extension_method_receiver_variant_fixture_project();
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 3);
+    assert_eq!(index["changed_files"], 3);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "ReceiverController.Login",
+        "--limit",
+        "20",
+    ]);
+    assert!(
+        callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|call| {
+                call["callee"] == "users.FormatForDisplay"
+                    && call["callee_file"] == "src/App/Extensions/UserServiceExtensions.cs"
+            })
+            .count()
+            >= 2
+    );
+    assert!(
+        callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|call| {
+                call["callee"] == "maybeUsers.FormatForDisplay"
+                    && call["callee_file"] == "src/App/Extensions/UserServiceExtensions.cs"
+            })
+            .count()
+            >= 2
+    );
+}
+
+#[test]
 fn cli_resolves_rust_crate_and_super_use_imports() {
     let fixture = rust_use_fixture_project();
 
@@ -8145,6 +8187,63 @@ namespace App.Support;
 
 public static class DisplayFormatters {
     public static string FormatForDisplay(string id) {
+        return id;
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/App/Services/UserService.cs",
+        r#"
+namespace App.Services;
+
+public class UserService {}
+"#,
+    );
+    dir
+}
+
+fn csharp_extension_method_receiver_variant_fixture_project() -> TempDir {
+    let dir = TempDir::new().unwrap();
+    write_file(
+        &dir,
+        "src/App/Controllers/ReceiverController.cs",
+        r#"
+using App.Extensions;
+using App.Services;
+
+namespace App.Controllers;
+
+public class ReceiverController {
+    private readonly UserService users;
+
+    public ReceiverController(UserService users) {
+        this.users = users;
+    }
+
+    public string Login(string id) {
+        UserService? maybeUsers = users;
+        var optionalUser = maybeUsers?.FormatForDisplay(id);
+        var forcedUser = maybeUsers!.FormatForDisplay(id);
+        return this.users.FormatForDisplay(id)
+            + users.FormatForDisplay(id)
+            + optionalUser
+            + forcedUser;
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/App/Extensions/UserServiceExtensions.cs",
+        r#"
+using App.Services;
+
+namespace App.Extensions;
+
+public static class UserServiceExtensions {
+    public static string FormatForDisplay(this UserService users, string id) {
         return id;
     }
 }
