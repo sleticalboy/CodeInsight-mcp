@@ -38,6 +38,9 @@ The demo executes the same product path an MCP client should follow:
 entrypoint and recommendation counts, selected context size, line-reduction
 percentage, continuation status, and impact-analysis summary.
 
+For a recording or project introduction, use the
+[two-minute demo script](docs/demo-script.md).
+
 ## Current Evidence
 
 The checked-in benchmark reports exercise real public repositories and measure
@@ -73,6 +76,7 @@ Key docs:
 
 - [Quickstart](docs/quickstart.md)
 - [Adoption checklist](docs/adoption-checklist.md)
+- [Demo script](docs/demo-script.md)
 - [Current status](docs/status.md)
 - [Install](docs/install.md)
 - [CLI usage](docs/cli-usage.md)

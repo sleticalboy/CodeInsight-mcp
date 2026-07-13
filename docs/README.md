@@ -7,6 +7,7 @@ release documents for CodeInsight.
 
 - [Quickstart](quickstart.md)
 - [Adoption checklist](adoption-checklist.md)
+- [Demo script](demo-script.md)
 - [Current status](status.md)
 - [Install](install.md)
 - [First-read workflow](first-read-workflow.md)
@@ -35,6 +36,7 @@ release documents for CodeInsight.
 ## Validation
 
 - Agent-router demo: `scripts/agent-router-demo.sh`
+- [Two-minute demo script](demo-script.md)
 - [MCP client smoke test](mcp-client-smoke.md)
 - [Semantic smoke test](semantic-smoke.md)
 - [Smoke benchmark](benchmark-v0.1.md)
