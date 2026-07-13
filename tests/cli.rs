@@ -4040,6 +4040,34 @@ fn cli_resolves_csharp_extension_method_collection_receivers() {
 }
 
 #[test]
+fn cli_resolves_csharp_extension_method_wrapper_receivers() {
+    let fixture = csharp_extension_method_wrapper_receiver_fixture_project();
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 3);
+    assert_eq!(index["changed_files"], 3);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "WrapperReceiverController.Login",
+        "--limit",
+        "20",
+    ]);
+    for expected_callee in [
+        "lazyUsers.Value.FormatForDisplay",
+        "taskUsers.Result.FormatForDisplay",
+        "valueTaskUsers.Result.FormatForDisplay",
+    ] {
+        assert!(callees.as_array().unwrap().iter().any(|call| {
+            call["callee"] == expected_callee
+                && call["callee_file"] == "src/App/Extensions/UserServiceExtensions.cs"
+        }));
+    }
+}
+
+#[test]
 fn cli_resolves_rust_crate_and_super_use_imports() {
     let fixture = rust_use_fixture_project();
 
@@ -8306,6 +8334,55 @@ public class CollectionReceiverController {
         return servicePool[0].FormatForDisplay(id)
             + listUsers[0].FormatForDisplay(id)
             + usersById[id].FormatForDisplay(id);
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/App/Extensions/UserServiceExtensions.cs",
+        r#"
+using App.Services;
+
+namespace App.Extensions;
+
+public static class UserServiceExtensions {
+    public static string FormatForDisplay(this UserService users, string id) {
+        return id;
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/App/Services/UserService.cs",
+        r#"
+namespace App.Services;
+
+public class UserService {}
+"#,
+    );
+    dir
+}
+
+fn csharp_extension_method_wrapper_receiver_fixture_project() -> TempDir {
+    let dir = TempDir::new().unwrap();
+    write_file(
+        &dir,
+        "src/App/Controllers/WrapperReceiverController.cs",
+        r#"
+using System;
+using System.Threading.Tasks;
+using App.Extensions;
+using App.Services;
+
+namespace App.Controllers;
+
+public class WrapperReceiverController {
+    public string Login(string id, Lazy<UserService> lazyUsers, Task<UserService> taskUsers, ValueTask<UserService> valueTaskUsers) {
+        return lazyUsers.Value.FormatForDisplay(id)
+            + taskUsers.Result.FormatForDisplay(id)
+            + valueTaskUsers.Result.FormatForDisplay(id);
     }
 }
 "#,
