@@ -704,27 +704,58 @@ fn normalize_csharp_callee(raw: &str) -> Option<String> {
 fn normalize_csharp_new_chain(raw: &str) -> Option<String> {
     let raw = raw.trim();
     let rest = raw.strip_prefix("new ")?;
-    let open = top_level_index(rest, '(')?;
-    let raw_type = rest[..open].trim();
+    let paren_open = top_level_index(rest, '(');
+    let brace_open = top_level_index(rest, '{');
+    let type_end = match (paren_open, brace_open) {
+        (Some(paren_open), Some(brace_open)) => paren_open.min(brace_open),
+        (Some(paren_open), None) => paren_open,
+        (None, Some(brace_open)) => brace_open,
+        (None, None) => return None,
+    };
+    let raw_type = rest[..type_end].trim();
     let target = clean_csharp_type_name(raw_type)?;
-    let close = matching_close_paren(rest, open)?;
-    let member_tail = rest[close + 1..].trim().strip_prefix('.')?.trim();
+    let mut after_new = &rest[type_end..];
+    if after_new.trim_start().starts_with('(') {
+        let open = after_new.find('(')?;
+        let close = matching_close_paren(after_new, open)?;
+        after_new = &after_new[close + 1..];
+    }
+    after_new = after_new.trim_start();
+    if after_new.starts_with('{') {
+        let close = matching_close_brace(after_new, 0)?;
+        after_new = &after_new[close + 1..];
+    }
+    let member_tail = after_new.trim().strip_prefix('.')?.trim();
     let member_tail = normalize_csharp_dot_callee(member_tail)?;
     Some(format!("{target}.{member_tail}"))
 }
 
 fn matching_close_paren(raw: &str, open: usize) -> Option<usize> {
+    matching_close_delimiter(raw, open, '(', ')')
+}
+
+fn matching_close_brace(raw: &str, open: usize) -> Option<usize> {
+    matching_close_delimiter(raw, open, '{', '}')
+}
+
+fn matching_close_delimiter(
+    raw: &str,
+    open: usize,
+    open_delimiter: char,
+    close_delimiter: char,
+) -> Option<usize> {
     let mut depth = 0usize;
     for (index, character) in raw.char_indices().skip_while(|(index, _)| *index < open) {
-        match character {
-            '(' => depth += 1,
-            ')' => {
-                depth = depth.checked_sub(1)?;
-                if depth == 0 {
-                    return Some(index);
-                }
+        if character == open_delimiter {
+            depth += 1;
+        } else if character == close_delimiter {
+            if depth == 0 {
+                return None;
             }
-            _ => {}
+            depth -= 1;
+            if depth == 0 {
+                return Some(index);
+            }
         }
     }
     None
@@ -6641,6 +6672,9 @@ public class AuthController {
         App.Support.MathUtil.ClampName(id);
         new UserService().Find(id);
         new App.Services.UserService().ExternalProfile.Load(id);
+        new UserService { }.Find(id);
+        new App.Services.UserService { }.ExternalProfile.Load(id);
+        new UserService() { }.Find(id);
         this.users.Find(id);
         users?.Find(id);
         users!.Find(id);
@@ -6676,6 +6710,20 @@ public class AuthController {
         assert!(callees.contains(&"App.Support.MathUtil.ClampName"));
         assert!(callees.contains(&"UserService.Find"));
         assert!(callees.contains(&"App.Services.UserService.ExternalProfile.Load"));
+        assert!(
+            callees
+                .iter()
+                .filter(|callee| **callee == "UserService.Find")
+                .count()
+                >= 3
+        );
+        assert!(
+            callees
+                .iter()
+                .filter(|callee| **callee == "App.Services.UserService.ExternalProfile.Load")
+                .count()
+                >= 2
+        );
         assert!(callees.contains(&"users.Find"));
         assert!(callees.contains(&"LocalTag"));
         assert!(callees.contains(&"base.BaseTag"));
