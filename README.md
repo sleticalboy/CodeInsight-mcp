@@ -71,6 +71,7 @@ CODEINSIGHT_BENCH_PROFILE=large scripts/benchmark-smoke.sh
 
 Key docs:
 
+- [Quickstart](docs/quickstart.md)
 - [Current status](docs/status.md)
 - [Install](docs/install.md)
 - [CLI usage](docs/cli-usage.md)
@@ -100,6 +101,8 @@ curl -fsSL https://raw.githubusercontent.com/sleticalboy/CodeInsight-mcp/main/sc
 
 For version pinning, custom install directories, authenticated downloads, and
 installer smoke tests, see [Install](docs/install.md).
+
+For the full install-to-agent path, see [Quickstart](docs/quickstart.md).
 
 ## Install With Homebrew
 

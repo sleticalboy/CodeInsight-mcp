@@ -5,6 +5,7 @@ release documents for CodeInsight.
 
 ## Start Here
 
+- [Quickstart](quickstart.md)
 - [Current status](status.md)
 - [Install](install.md)
 - [First-read workflow](first-read-workflow.md)
