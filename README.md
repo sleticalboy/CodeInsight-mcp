@@ -72,6 +72,7 @@ CODEINSIGHT_BENCH_PROFILE=large scripts/benchmark-smoke.sh
 Key docs:
 
 - [Quickstart](docs/quickstart.md)
+- [Adoption checklist](docs/adoption-checklist.md)
 - [Current status](docs/status.md)
 - [Install](docs/install.md)
 - [CLI usage](docs/cli-usage.md)

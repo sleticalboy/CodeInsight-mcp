@@ -179,3 +179,8 @@ Report risk_level, impacted_files, paths, and suggested_checks before changing c
   `continuation_summary.suggested_tool` when present.
 - Client config differs from these examples: check
   [MCP client configuration](mcp-client-config.md) and the official client docs.
+
+## Next
+
+Use the [Adoption checklist](adoption-checklist.md) to verify that CodeInsight
+is fully wired into your MCP client and agent workflow.
