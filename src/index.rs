@@ -6689,10 +6689,12 @@ public class AuthController {
         new UserService().Find(id);
         new App.Services.UserService().ExternalProfile.Load(id);
         new UserService { }.Find(id);
+        new UserService { }.ExternalProfile.Load(id);
         new App.Services.UserService { }.ExternalProfile.Load(id);
         new UserService() { }.Find(id);
         new List<UserService> { users }[0].Find(id);
         new Dictionary<string, UserService> { [id] = users }[id].Find(id);
+        new List<UserService> { users }[0].ExternalProfile.Load(id);
         this.users.Find(id);
         users?.Find(id);
         users!.Find(id);
@@ -6727,6 +6729,7 @@ public class AuthController {
         assert!(callees.contains(&"App.Support.AuditLog.Record"));
         assert!(callees.contains(&"App.Support.MathUtil.ClampName"));
         assert!(callees.contains(&"UserService.Find"));
+        assert!(callees.contains(&"UserService.ExternalProfile.Load"));
         assert!(callees.contains(&"App.Services.UserService.ExternalProfile.Load"));
         assert!(
             callees
@@ -6734,6 +6737,13 @@ public class AuthController {
                 .filter(|callee| **callee == "UserService.Find")
                 .count()
                 >= 5
+        );
+        assert!(
+            callees
+                .iter()
+                .filter(|callee| **callee == "UserService.ExternalProfile.Load")
+                .count()
+                >= 2
         );
         assert!(
             callees
