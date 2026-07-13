@@ -6706,6 +6706,9 @@ public class AuthController {
         new Lazy<UserService>(() => users).Value.Find(id);
         new Task<UserService>(() => users).Result.Find(id);
         new Lazy<UserService>(() => users).Value.ExternalProfile.Load(id);
+        new ValueTask<UserService>(users).Result.Find(id);
+        new System.Lazy<App.Services.UserService>(() => users).Value.Find(id);
+        new System.Lazy<App.Services.UserService>(() => users).Value.ExternalProfile.Load(id);
         this.users.Find(id);
         users?.Find(id);
         users!.Find(id);
@@ -6747,7 +6750,7 @@ public class AuthController {
                 .iter()
                 .filter(|callee| **callee == "UserService.Find")
                 .count()
-                >= 7
+                >= 8
         );
         assert!(
             callees
@@ -6761,7 +6764,7 @@ public class AuthController {
                 .iter()
                 .filter(|callee| **callee == "App.Services.UserService.ExternalProfile.Load")
                 .count()
-                >= 2
+                >= 3
         );
         assert!(callees.contains(&"users.Find"));
         assert!(callees.contains(&"LocalTag"));
