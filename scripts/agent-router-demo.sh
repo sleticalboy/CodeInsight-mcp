@@ -7,7 +7,7 @@ DEMO_TASK="${CODEINSIGHT_DEMO_TASK:-understand agent context routing}"
 TOKEN_BUDGET="${CODEINSIGHT_DEMO_TOKEN_BUDGET:-6000}"
 IMPACT_FILE="${CODEINSIGHT_DEMO_IMPACT_FILE:-}"
 FORCE_INDEX="${CODEINSIGHT_DEMO_FORCE_INDEX:-1}"
-CODEINSIGHT_BIN="${CODEINSIGHT_BIN:-$ROOT_DIR/target/release/codeinsight}"
+CODEINSIGHT_BIN="${CODEINSIGHT_BIN:-}"
 
 require_command() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -42,18 +42,19 @@ line_reduction() {
 }
 
 build_binary_if_needed() {
+  if [ -z "$CODEINSIGHT_BIN" ]; then
+    require_command cargo
+    echo "building release binary..."
+    cargo build --release --locked --manifest-path "$ROOT_DIR/Cargo.toml"
+    CODEINSIGHT_BIN="$(cargo metadata --no-deps --format-version 1 --manifest-path "$ROOT_DIR/Cargo.toml" | jq -r '.target_directory')/release/codeinsight"
+  fi
+
   if [ -x "$CODEINSIGHT_BIN" ]; then
     return
   fi
 
-  if [ "$CODEINSIGHT_BIN" != "$ROOT_DIR/target/release/codeinsight" ]; then
-    echo "configured CODEINSIGHT_BIN is not executable: $CODEINSIGHT_BIN" >&2
-    exit 1
-  fi
-
-  require_command cargo
-  echo "building release binary..."
-  cargo build --release --locked
+  echo "CODEINSIGHT_BIN is not executable: $CODEINSIGHT_BIN" >&2
+  exit 1
 }
 
 main() {

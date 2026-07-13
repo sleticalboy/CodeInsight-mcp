@@ -6,11 +6,15 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ## [Unreleased]
 
+## [0.1.11] - 2026-07-14
+
 ### Changed
 
 - `scripts/prepare-release.sh --dry-run` now uses `git diff --no-index` so
   release previews still work when another toolchain shadows the system
   `diff`.
+- Smoke and release-install scripts now locate release binaries through Cargo
+  metadata so they work when `CARGO_TARGET_DIR` points outside the repository.
 - `scripts/verify-release.sh` now reports a pending Homebrew tap PR when the
   shared tap formula has not been merged to `main` yet.
 - `scripts/extract-release-notes.sh` now supports compact summary output for
@@ -27,6 +31,14 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   omitted-candidate follow-up calls.
 - Added a client workflow guide that connects overview, context packs, reading
   plans, continuation follow-ups, and impact analysis.
+- Added an adoption checklist for validating CodeInsight as an AI-agent code
+  context router in a real repository.
+- Added a two-minute demo script for presenting the `index_project`,
+  `project_overview`, `context_pack`, and `impact_analysis` flow.
+- Added copy-paste agent prompt templates for first reads, change preflight,
+  budget continuation, and review planning.
+- Added a public MVP release-readiness checklist and recorded a fresh-checkout
+  rehearsal for the next public tag.
 - Benchmark reports now include context-pack applied budget, omitted-file, and
   continuation status metrics, and the smoke/large reports were refreshed.
 - Added CLI coverage and limitation docs for dependency package `exports`

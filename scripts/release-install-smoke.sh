@@ -41,11 +41,13 @@ package_current_target() {
   local target="$1"
   local asset="$2"
   local name="codeinsight-$target"
+  local target_dir
 
   cargo build --locked --release --target "$target" --manifest-path "$ROOT_DIR/Cargo.toml"
+  target_dir="$(cargo metadata --no-deps --format-version 1 --manifest-path "$ROOT_DIR/Cargo.toml" | jq -r '.target_directory')"
   rm -rf "$ROOT_DIR/dist/$name"
   mkdir -p "$ROOT_DIR/dist/$name"
-  cp "$ROOT_DIR/target/$target/release/codeinsight" "$ROOT_DIR/dist/$name/"
+  cp "$target_dir/$target/release/codeinsight" "$ROOT_DIR/dist/$name/"
   cp "$ROOT_DIR/README.md" "$ROOT_DIR"/LICENSE* "$ROOT_DIR/dist/$name/" 2>/dev/null || true
   tar -C "$ROOT_DIR/dist" -czf "$asset" "$name"
 }

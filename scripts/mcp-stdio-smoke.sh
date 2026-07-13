@@ -3,8 +3,8 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 if [ -z "${CODEINSIGHT_BIN:-}" ]; then
-  CODEINSIGHT_BIN="$ROOT_DIR/target/release/codeinsight"
   BUILD_LOCAL_BINARY=true
+  CODEINSIGHT_BIN=""
 else
   BUILD_LOCAL_BINARY=false
 fi
@@ -20,8 +20,14 @@ require_command() {
 }
 
 build_binary_if_needed() {
-  if [ "$BUILD_LOCAL_BINARY" = true ] || [ ! -x "$CODEINSIGHT_BIN" ]; then
+  if [ "$BUILD_LOCAL_BINARY" = true ]; then
     cargo build --locked --release --manifest-path "$ROOT_DIR/Cargo.toml"
+    CODEINSIGHT_BIN="$(cargo metadata --no-deps --format-version 1 --manifest-path "$ROOT_DIR/Cargo.toml" | python3 -c 'import json,sys; print(json.load(sys.stdin)["target_directory"])')/release/codeinsight"
+  fi
+
+  if [ ! -x "$CODEINSIGHT_BIN" ]; then
+    echo "CODEINSIGHT_BIN is not executable: $CODEINSIGHT_BIN" >&2
+    exit 1
   fi
 }
 
