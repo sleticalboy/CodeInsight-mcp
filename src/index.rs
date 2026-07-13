@@ -713,7 +713,6 @@ fn normalize_csharp_new_chain(raw: &str) -> Option<String> {
         (None, None) => return None,
     };
     let raw_type = rest[..type_end].trim();
-    let target = clean_csharp_type_name(raw_type)?;
     let mut after_new = &rest[type_end..];
     if after_new.trim_start().starts_with('(') {
         let open = after_new.find('(')?;
@@ -727,6 +726,15 @@ fn normalize_csharp_new_chain(raw: &str) -> Option<String> {
     }
     after_new = strip_leading_csharp_indexers(after_new)?;
     let member_tail = after_new.trim().strip_prefix('.')?.trim();
+    let (target, member_tail) =
+        if let Some((target, wrapper_member)) = csharp_value_wrapper_type(raw_type) {
+            let member_tail = member_tail
+                .strip_prefix(wrapper_member)?
+                .strip_prefix('.')?;
+            (clean_csharp_type_name(target)?, member_tail)
+        } else {
+            (clean_csharp_type_name(raw_type)?, member_tail)
+        };
     let member_tail = normalize_csharp_dot_callee(member_tail)?;
     Some(format!("{target}.{member_tail}"))
 }
@@ -6695,6 +6703,9 @@ public class AuthController {
         new List<UserService> { users }[0].Find(id);
         new Dictionary<string, UserService> { [id] = users }[id].Find(id);
         new List<UserService> { users }[0].ExternalProfile.Load(id);
+        new Lazy<UserService>(() => users).Value.Find(id);
+        new Task<UserService>(() => users).Result.Find(id);
+        new Lazy<UserService>(() => users).Value.ExternalProfile.Load(id);
         this.users.Find(id);
         users?.Find(id);
         users!.Find(id);
@@ -6736,14 +6747,14 @@ public class AuthController {
                 .iter()
                 .filter(|callee| **callee == "UserService.Find")
                 .count()
-                >= 5
+                >= 7
         );
         assert!(
             callees
                 .iter()
                 .filter(|callee| **callee == "UserService.ExternalProfile.Load")
                 .count()
-                >= 2
+                >= 3
         );
         assert!(
             callees
