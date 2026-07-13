@@ -20,7 +20,8 @@ for a multi-step code-reading task.
 ## Agent Policy Prompt
 
 Use this policy in MCP client instructions or agent system prompts when
-CodeInsight is available:
+CodeInsight is available. For copy-paste task variants, see
+[Agent prompt templates](agent-prompt-template.md).
 
 ```text
 When working in a repository with CodeInsight MCP available:

@@ -8,6 +8,7 @@ release documents for CodeInsight.
 - [Quickstart](quickstart.md)
 - [Adoption checklist](adoption-checklist.md)
 - [Demo script](demo-script.md)
+- [Agent prompt templates](agent-prompt-template.md)
 - [Current status](status.md)
 - [Install](install.md)
 - [First-read workflow](first-read-workflow.md)
@@ -28,6 +29,7 @@ release documents for CodeInsight.
 
 - [First-read workflow](first-read-workflow.md)
 - [Client workflow](client-workflow.md)
+- [Agent prompt templates](agent-prompt-template.md)
 - [Recommendation contract](recommendation-contract.md)
 - [Navigation tools](navigation-tools.md)
 - [Impact analysis](impact-analysis.md)

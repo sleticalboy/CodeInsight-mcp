@@ -77,6 +77,7 @@ Key docs:
 - [Quickstart](docs/quickstart.md)
 - [Adoption checklist](docs/adoption-checklist.md)
 - [Demo script](docs/demo-script.md)
+- [Agent prompt templates](docs/agent-prompt-template.md)
 - [Current status](docs/status.md)
 - [Install](docs/install.md)
 - [CLI usage](docs/cli-usage.md)
