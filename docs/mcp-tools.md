@@ -62,7 +62,8 @@ Recommended MCP first-read flow:
 
 For the full response contract, see [First-read workflow](first-read-workflow.md).
 For an end-to-end client consumption flow, see
-[Client workflow](client-workflow.md).
+[Client workflow](client-workflow.md), including a copyable agent policy prompt
+and task-routing matrix.
 For recommendation priorities and client sorting guidance, see
 [Recommendation contract](recommendation-contract.md).
 

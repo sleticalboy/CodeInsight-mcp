@@ -76,6 +76,7 @@ Key docs:
 - [CLI usage](docs/cli-usage.md)
 - [MCP tools](docs/mcp-tools.md)
 - [First-read workflow](docs/first-read-workflow.md)
+- [Client workflow](docs/client-workflow.md)
 - [Known limitations](docs/known-limitations.md)
 - [Documentation index](docs/README.md)
 

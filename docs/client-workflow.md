@@ -17,6 +17,52 @@ for a multi-step code-reading task.
 7. Use `impact_analysis` before edits or refactors to estimate local change
    radius and suggested checks.
 
+## Agent Policy Prompt
+
+Use this policy in MCP client instructions or agent system prompts when
+CodeInsight is available:
+
+```text
+When working in a repository with CodeInsight MCP available:
+
+1. Before broad code reading, call index_project for the repository root unless
+   the current index is known to be fresh.
+2. Call project_overview before using ad hoc file search. Use its entrypoints,
+   directory roles, and recommended_next_tools to choose the first read path.
+3. For initial understanding, call context_pack with root, task, and
+   token_budget. Do not pass files or symbols unless the user named a specific
+   target.
+4. Read context_pack.files in reading_plan order. Treat reading_plan questions
+   as the local reading checklist.
+5. Prefer reading_plan[].suggested_tool for deeper evidence on the current
+   file. Prefer continuation_summary.suggested_tool only after the selected
+   context has been consumed.
+6. If continuation_summary.status is complete, do not fetch more context unless
+   the user asks a narrower follow-up or the selected context does not answer
+   the task.
+7. Before editing, call impact_analysis with the selected files or symbols and
+   run or report the suggested_checks that apply to the change.
+8. Treat CodeInsight call graphs and references as best-effort navigation
+   evidence, not compiler-grade proof.
+```
+
+The intent is to reduce blind `rg` / `cat` exploration. Agents should still use
+normal file reads when CodeInsight points to a file or when the user requests a
+specific source location.
+
+## Task Routing Matrix
+
+| User intent | First CodeInsight call after indexing | Follow-up rule |
+| --- | --- | --- |
+| "Understand this repo" | `project_overview`, then top `context_pack` recommendation | Read `reading_plan[]`; continue only if `continuation_summary` suggests it. |
+| "Where is the entrypoint?" | `project_overview` | Inspect `entrypoints[]`; call `context_pack` for the highest-confidence source entrypoint when needed. |
+| "Explain this module/file" | `context_pack` with `files[]` set to the named file | Use `file_outline` from `reading_plan[].suggested_tool` for local structure. |
+| "Explain this class/function" | `symbol_search`, then `context_pack` with the symbol | Use `callers` or `callees` only when the task asks about flow or dependencies. |
+| "What happens if I change this?" | `impact_analysis` with the file or symbol | Review `risk_level`, `impact_counts`, `impacted_files`, `paths`, and `suggested_checks`. |
+| "Find references" | `find_references` | Use `context_pack` with selected files if references need surrounding context. |
+| "Trace calls" | `callers` or `callees` | Use `impact_analysis` when the trace should become edit-planning evidence. |
+| "Need more context" | `continuation_summary.suggested_tool` when present | Prefer omitted-candidate follow-ups after selected context, not before. |
+
 ## Project Overview
 
 `project_overview` is the repository briefing. Clients should render:
