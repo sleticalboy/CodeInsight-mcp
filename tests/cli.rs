@@ -3876,8 +3876,8 @@ fn cli_leaves_csharp_extension_method_boundaries_unresolved() {
     let fixture = csharp_extension_method_boundary_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 8);
-    assert_eq!(index["changed_files"], 8);
+    assert_eq!(index["indexed_files"], 10);
+    assert_eq!(index["changed_files"], 10);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let missing_import_callees = run_json([
@@ -3997,6 +3997,36 @@ fn cli_leaves_csharp_extension_method_boundaries_unresolved() {
     ]);
     assert!(
         nested_temporary_receiver_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|call| { call["callee_file"] != "src/App/Extensions/UserServiceExtensions.cs" })
+    );
+
+    let missing_import_qualified_temporary_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "MissingImportQualifiedTemporaryController.Login",
+        "--limit",
+        "10",
+    ]);
+    assert!(
+        missing_import_qualified_temporary_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|call| { call["callee_file"] != "src/App/Extensions/UserServiceExtensions.cs" })
+    );
+
+    let wrong_qualified_temporary_receiver_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "WrongQualifiedTemporaryReceiverController.Login",
+        "--limit",
+        "10",
+    ]);
+    assert!(
+        wrong_qualified_temporary_receiver_callees
             .as_array()
             .unwrap()
             .iter()
@@ -8321,6 +8351,34 @@ namespace App.Controllers;
 public class NestedTemporaryReceiverController {
     public string Login(string id, Dictionary<string, ProductService> productsById) {
         return new Lazy<Dictionary<string, ProductService>>(() => productsById).Value[id].FormatForDisplay(id);
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/App/Controllers/MissingImportQualifiedTemporaryController.cs",
+        r#"
+namespace App.Controllers;
+
+public class MissingImportQualifiedTemporaryController {
+    public string Login(string id) {
+        return new App.Services.UserService().FormatForDisplay(id);
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/App/Controllers/WrongQualifiedTemporaryReceiverController.cs",
+        r#"
+using App.Extensions;
+
+namespace App.Controllers;
+
+public class WrongQualifiedTemporaryReceiverController {
+    public string Login(string id) {
+        return new App.Services.ProductService().FormatForDisplay(id);
     }
 }
 "#,
