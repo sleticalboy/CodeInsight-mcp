@@ -1792,6 +1792,147 @@ impl Store {
                     union all
 
                     select
+                        c.id as call_id,
+                        target_files.path as callee_file,
+                        s.qualified_name,
+                        property_types.line as dependency_line,
+                        s.start_line as start_line,
+                        0 as match_rank
+                    from calls c
+                    join dependencies property_types
+                      on property_types.language = 'csharp'
+                      and property_types.kind = 'property_type'
+                      and property_types.local_alias is not null
+                      and property_types.imported_symbol is not null
+                    join files owner_files
+                      on owner_files.id = property_types.source_file_id
+                      and owner_files.path like '%' ||
+                        replace(
+                          substr(
+                            c.callee,
+                            1,
+                            instr(c.callee, '.' || property_types.local_alias || '.') - 1
+                          ),
+                          '.',
+                          '/'
+                        ) ||
+                        '.cs'
+                    join dependencies property_scopes
+                      on property_scopes.source_file_id = owner_files.id
+                    join files target_files
+                      on target_files.path like '%' ||
+                        replace(property_scopes.target, '.', '/') ||
+                        '/' ||
+                        property_types.target ||
+                        '.cs'
+                    join symbols s on s.file_id = target_files.id
+                    where c.callee_file is null
+                      and c.language = 'csharp'
+                      and property_scopes.language = 'csharp'
+                      and property_scopes.kind in ('using', 'namespace')
+                      and instr(c.callee, '.' || property_types.local_alias || '.') > 0
+                      and (
+                        property_types.imported_symbol =
+                          substr(
+                            c.callee,
+                            1,
+                            instr(c.callee, '.' || property_types.local_alias || '.') - 1
+                          )
+                        or substr(
+                            c.callee,
+                            1,
+                            instr(c.callee, '.' || property_types.local_alias || '.') - 1
+                          ) like '%.' || property_types.imported_symbol
+                      )
+                      and (
+                        s.name = substr(
+                          c.callee,
+                          instr(c.callee, '.' || property_types.local_alias || '.') +
+                            length(property_types.local_alias) + 2
+                        )
+                        or s.qualified_name = substr(
+                          c.callee,
+                          instr(c.callee, '.' || property_types.local_alias || '.') +
+                            length(property_types.local_alias) + 2
+                        )
+                        or s.qualified_name like '%' || '.' || substr(
+                          c.callee,
+                          instr(c.callee, '.' || property_types.local_alias || '.') +
+                            length(property_types.local_alias) + 2
+                        )
+                      )
+
+                    union all
+
+                    select
+                        c.id as call_id,
+                        target_files.path as callee_file,
+                        s.qualified_name,
+                        property_types.line as dependency_line,
+                        s.start_line as start_line,
+                        0 as match_rank
+                    from calls c
+                    join dependencies property_types
+                      on property_types.language = 'csharp'
+                      and property_types.kind = 'property_type'
+                      and property_types.local_alias is not null
+                      and property_types.imported_symbol is not null
+                    join files owner_files
+                      on owner_files.id = property_types.source_file_id
+                      and owner_files.path like '%' ||
+                        replace(
+                          substr(
+                            c.callee,
+                            1,
+                            instr(c.callee, '.' || property_types.local_alias || '.') - 1
+                          ),
+                          '.',
+                          '/'
+                        ) ||
+                        '.cs'
+                    join files target_files
+                      on target_files.path like '%' ||
+                        replace(property_types.target, '.', '/') ||
+                        '.cs'
+                    join symbols s on s.file_id = target_files.id
+                    where c.callee_file is null
+                      and c.language = 'csharp'
+                      and property_types.target like '%.%'
+                      and instr(c.callee, '.' || property_types.local_alias || '.') > 0
+                      and (
+                        property_types.imported_symbol =
+                          substr(
+                            c.callee,
+                            1,
+                            instr(c.callee, '.' || property_types.local_alias || '.') - 1
+                          )
+                        or substr(
+                            c.callee,
+                            1,
+                            instr(c.callee, '.' || property_types.local_alias || '.') - 1
+                          ) like '%.' || property_types.imported_symbol
+                      )
+                      and (
+                        s.name = substr(
+                          c.callee,
+                          instr(c.callee, '.' || property_types.local_alias || '.') +
+                            length(property_types.local_alias) + 2
+                        )
+                        or s.qualified_name = substr(
+                          c.callee,
+                          instr(c.callee, '.' || property_types.local_alias || '.') +
+                            length(property_types.local_alias) + 2
+                        )
+                        or s.qualified_name like '%' || '.' || substr(
+                          c.callee,
+                          instr(c.callee, '.' || property_types.local_alias || '.') +
+                            length(property_types.local_alias) + 2
+                        )
+                      )
+
+                    union all
+
+                    select
                         c.call_id,
                         target_files.path as callee_file,
                         s.qualified_name as qualified_name,

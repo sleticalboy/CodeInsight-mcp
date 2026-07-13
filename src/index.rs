@@ -695,7 +695,39 @@ fn normalize_java_callee(raw: &str) -> Option<String> {
 
 fn normalize_csharp_callee(raw: &str) -> Option<String> {
     let trimmed = raw.trim().replace("?.", ".");
+    if let Some(callee) = normalize_csharp_new_chain(&trimmed) {
+        return Some(callee);
+    }
     normalize_csharp_dot_callee(trimmed.strip_prefix("this.").unwrap_or(&trimmed))
+}
+
+fn normalize_csharp_new_chain(raw: &str) -> Option<String> {
+    let raw = raw.trim();
+    let rest = raw.strip_prefix("new ")?;
+    let open = top_level_index(rest, '(')?;
+    let raw_type = rest[..open].trim();
+    let target = clean_csharp_type_name(raw_type)?;
+    let close = matching_close_paren(rest, open)?;
+    let member_tail = rest[close + 1..].trim().strip_prefix('.')?.trim();
+    let member_tail = normalize_csharp_dot_callee(member_tail)?;
+    Some(format!("{target}.{member_tail}"))
+}
+
+fn matching_close_paren(raw: &str, open: usize) -> Option<usize> {
+    let mut depth = 0usize;
+    for (index, character) in raw.char_indices().skip_while(|(index, _)| *index < open) {
+        match character {
+            '(' => depth += 1,
+            ')' => {
+                depth = depth.checked_sub(1)?;
+                if depth == 0 {
+                    return Some(index);
+                }
+            }
+            _ => {}
+        }
+    }
+    None
 }
 
 fn normalize_csharp_dot_callee(raw: &str) -> Option<String> {
@@ -6607,6 +6639,8 @@ public class AuthController {
         Audit.Record(id);
         App.Support.AuditLog.Record(id);
         App.Support.MathUtil.ClampName(id);
+        new UserService().Find(id);
+        new App.Services.UserService().ExternalProfile.Load(id);
         this.users.Find(id);
         users?.Find(id);
         users!.Find(id);
@@ -6640,6 +6674,8 @@ public class AuthController {
         assert!(callees.contains(&"Audit.Record"));
         assert!(callees.contains(&"App.Support.AuditLog.Record"));
         assert!(callees.contains(&"App.Support.MathUtil.ClampName"));
+        assert!(callees.contains(&"UserService.Find"));
+        assert!(callees.contains(&"App.Services.UserService.ExternalProfile.Load"));
         assert!(callees.contains(&"users.Find"));
         assert!(callees.contains(&"LocalTag"));
         assert!(callees.contains(&"base.BaseTag"));
