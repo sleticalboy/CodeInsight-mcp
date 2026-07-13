@@ -725,9 +725,21 @@ fn normalize_csharp_new_chain(raw: &str) -> Option<String> {
         let close = matching_close_brace(after_new, 0)?;
         after_new = &after_new[close + 1..];
     }
+    after_new = strip_leading_csharp_indexers(after_new)?;
     let member_tail = after_new.trim().strip_prefix('.')?.trim();
     let member_tail = normalize_csharp_dot_callee(member_tail)?;
     Some(format!("{target}.{member_tail}"))
+}
+
+fn strip_leading_csharp_indexers(mut raw: &str) -> Option<&str> {
+    loop {
+        raw = raw.trim_start();
+        if !raw.starts_with('[') {
+            return Some(raw);
+        }
+        let close = matching_close_bracket(raw, 0)?;
+        raw = &raw[close + 1..];
+    }
 }
 
 fn matching_close_paren(raw: &str, open: usize) -> Option<usize> {
@@ -736,6 +748,10 @@ fn matching_close_paren(raw: &str, open: usize) -> Option<usize> {
 
 fn matching_close_brace(raw: &str, open: usize) -> Option<usize> {
     matching_close_delimiter(raw, open, '{', '}')
+}
+
+fn matching_close_bracket(raw: &str, open: usize) -> Option<usize> {
+    matching_close_delimiter(raw, open, '[', ']')
 }
 
 fn matching_close_delimiter(
@@ -6675,6 +6691,8 @@ public class AuthController {
         new UserService { }.Find(id);
         new App.Services.UserService { }.ExternalProfile.Load(id);
         new UserService() { }.Find(id);
+        new List<UserService> { users }[0].Find(id);
+        new Dictionary<string, UserService> { [id] = users }[id].Find(id);
         this.users.Find(id);
         users?.Find(id);
         users!.Find(id);
@@ -6715,7 +6733,7 @@ public class AuthController {
                 .iter()
                 .filter(|callee| **callee == "UserService.Find")
                 .count()
-                >= 3
+                >= 5
         );
         assert!(
             callees
