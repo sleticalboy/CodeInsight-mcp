@@ -4095,6 +4095,18 @@ fn cli_resolves_csharp_extension_method_temporary_receivers() {
             .count()
             >= 4
     );
+    assert!(
+        callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|call| {
+                call["callee"] == "App.Services.UserService.FormatForDisplay"
+                    && call["callee_file"] == "src/App/Extensions/UserServiceExtensions.cs"
+            })
+            .count()
+            >= 2
+    );
 }
 
 #[test]
@@ -8462,7 +8474,9 @@ public class TemporaryReceiverController {
         return new UserService().FormatForDisplay(id)
             + new UserService { }.FormatForDisplay(id)
             + new Lazy<UserService>(() => users).Value.FormatForDisplay(id)
-            + new ValueTask<UserService>(users).Result.FormatForDisplay(id);
+            + new ValueTask<UserService>(users).Result.FormatForDisplay(id)
+            + new App.Services.UserService().FormatForDisplay(id)
+            + new System.Lazy<App.Services.UserService>(() => users).Value.FormatForDisplay(id);
     }
 }
 "#,
