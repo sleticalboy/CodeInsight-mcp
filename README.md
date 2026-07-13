@@ -41,7 +41,8 @@ percentage, continuation status, and impact-analysis summary.
 ## Current Evidence
 
 The checked-in benchmark reports exercise real public repositories and measure
-how much source text `context_pack` keeps under a 6000-token budget:
+how much source text `context_pack` keeps under a 6000-token budget, plus the
+entrypoint and recommended-tool routing decisions from `project_overview`:
 
 - [Smoke benchmark](docs/benchmark-v0.1.md): p-limit, itsdangerous, Go example,
   and memchr.
@@ -51,6 +52,22 @@ how much source text `context_pack` keeps under a 6000-token budget:
 These are fixture reports, not controlled performance claims, but they verify
 that CodeInsight can index real repositories and return bounded context packs
 without external services.
+
+Current benchmark snapshot:
+
+- Smoke repositories select 89-242 context lines from 1,123-69,381 indexed
+  lines, a 85.9%-99.7% line reduction.
+- Large repositories select 305-573 context lines from 18,337-177,479 indexed
+  lines, a 96.9%-99.7% line reduction.
+- Every benchmarked repository returns four recommended next tools, with
+  `context_pack` as the first recommended action.
+
+Refresh the reports locally:
+
+```bash
+scripts/benchmark-smoke.sh
+CODEINSIGHT_BENCH_PROFILE=large scripts/benchmark-smoke.sh
+```
 
 Key docs:
 

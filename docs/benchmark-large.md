@@ -1,6 +1,6 @@
 # CodeInsight v0.1 Large Repository Benchmark
 
-Generated at: 2026-07-11 11:00:55 UTC
+Generated at: 2026-07-13 14:58:22 UTC
 
 This is a benchmark fixture report, not a controlled performance benchmark. It
 verifies that CodeInsight can index real public repositories across the MVP
@@ -18,28 +18,31 @@ Environment:
 
 ## Summary
 
-| Repository | Focus | Commit | Files | Lines | Symbols | Skipped | Errors | Index ms | Index budget ms | Budget status | DB size | Context files | Ranges | Context lines | Line reduction | Tokens | Applied budget | Omitted files | Continuation | Truncated | First context file |
-| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |
-| express | JavaScript | `ba00676` | 141 | 21440 | 2428 | 72 | 0 | 5925 | 10000 | pass | 6.1M | 4 | 13 | 362 | 98.3% | 2360 | 6000 | 0 | complete | false | `lib/application.js` |
-| flask | Python | `36e4a82` | 83 | 18337 | 1620 | 153 | 0 | 588 | 5000 | pass | 1.2M | 12 | 15 | 573 | 96.9% | 5851 | 6000 | 2 | omitted_candidates_available | true | `src/flask/app.py` |
-| gin | Go | `34dac20` | 99 | 24099 | 1857 | 31 | 0 | 611 | 5000 | pass | 1.8M | 4 | 12 | 305 | 98.7% | 2969 | 6000 | 0 | complete | false | `gin.go` |
-| tokio | Rust | `9c465e2` | 789 | 177263 | 8451 | 75 | 0 | 4322 | 20000 | pass | 6.6M | 18 | 23 | 508 | 99.7% | 5054 | 6000 | 0 | complete | false | `tokio/src/lib.rs` |
+| Repository | Focus | Commit | Files | Lines | Symbols | Skipped | Errors | Index ms | Index budget ms | Budget status | DB size | Entrypoints | First entrypoint | Recommended tools | First recommended tool | Context files | Ranges | Context lines | Line reduction | Tokens | Applied budget | Omitted files | Continuation | Truncated | First context file |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |
+| express | JavaScript | `ae6dd37` | 141 | 21478 | 2432 | 72 | 0 | 3269 | 10000 | pass | 5.6M | 12 | `examples/auth/index.js` | 4 | `context_pack` | 4 | 13 | 362 | 98.3% | 2360 | 6000 | 0 | complete | false | `lib/application.js` |
+| flask | Python | `36e4a82` | 83 | 18337 | 1620 | 153 | 0 | 410 | 5000 | pass | 1.2M | 6 | `src/flask/cli.py` | 4 | `context_pack` | 12 | 15 | 573 | 96.9% | 5851 | 6000 | 2 | omitted_candidates_available | true | `src/flask/app.py` |
+| gin | Go | `34dac20` | 99 | 24099 | 1857 | 31 | 0 | 471 | 5000 | pass | 1.8M | 3 | `gin.go` | 4 | `context_pack` | 4 | 12 | 305 | 98.7% | 2969 | 6000 | 0 | complete | false | `gin.go` |
+| tokio | Rust | `b6f30ca` | 790 | 177479 | 8465 | 75 | 0 | 3380 | 20000 | pass | 6.5M | 12 | `examples/chat.rs` | 4 | `context_pack` | 18 | 23 | 508 | 99.7% | 5054 | 6000 | 0 | complete | false | `tokio/src/lib.rs` |
 
 ## Details
 
 ## express
 
 - URL: https://github.com/expressjs/express.git
-- Commit: `ba006766fb964571723138708eacaba0f55759cd`
+- Commit: `ae6dd37680e3a00618d6c8a3e522f0ee4eeba1a4`
 - Indexed files: 141
-- Symbols: 2428
-- Duration: 5925 ms
+- Symbols: 2432
+- Duration: 3269 ms
 - Index budget: 10000 ms (pass)
+- Entrypoint candidates: 12
+- First entrypoint candidate: `examples/auth/index.js`
+- Recommended next tools: 4
 - Context seed file: `lib/application.js`
 - Context task: understand express application routing behavior
 - Context files: 4
 - Context ranges: 13
-- Context lines: 362 of 21440 (98.3% reduction)
+- Context lines: 362 of 21478 (98.3% reduction)
 - Context estimated tokens: 2360
 - Context applied token budget: 6000
 - Context omitted files: 0
@@ -47,6 +50,25 @@ Environment:
 - Context truncation reason: none
 - Context continuation status: complete
 - Context truncated: false
+
+Entrypoint candidates:
+
+| File | Symbol | Role | Confidence | Reason |
+| --- | --- | --- | ---: | --- |
+| `examples/auth/index.js` | `-` | example | 0.73 | conventional index file |
+| `examples/content-negotiation/index.js` | `-` | example | 0.73 | conventional index file |
+| `examples/cookie-sessions/index.js` | `-` | example | 0.73 | conventional index file |
+| `examples/cookies/index.js` | `-` | example | 0.73 | conventional index file |
+| `examples/downloads/index.js` | `-` | example | 0.73 | conventional index file |
+
+Recommended next tools:
+
+| Tool | Priority | Reason |
+| --- | ---: | --- |
+| `context_pack` | 10 | Build first-read context from indexed source files because no source entrypoint was detected. |
+| `dependency_graph` | 30 | Inspect module and package relationships; the most frequent external target is Content-Type. |
+| `callers` | 40 | Inspect static call graph edges because no source entrypoint was detected. |
+| `config_status` | 80 | Check project-specific validation commands before planning changes. |
 
 Context pack files:
 
@@ -61,7 +83,7 @@ Language breakdown:
 
 | Language | Files | Lines |
 | --- | ---: | ---: |
-| javascript | 141 | 21440 |
+| javascript | 141 | 21478 |
 
 Symbol target guardrails:
 
@@ -99,8 +121,11 @@ Call edge guardrails:
 - Commit: `36e4a824f340fdee7ed50937ba8e7f6bc7d17f81`
 - Indexed files: 83
 - Symbols: 1620
-- Duration: 588 ms
+- Duration: 410 ms
 - Index budget: 5000 ms (pass)
+- Entrypoint candidates: 6
+- First entrypoint candidate: `src/flask/cli.py`
+- Recommended next tools: 4
 - Context seed file: `src/flask/app.py`
 - Context task: understand flask application dispatch behavior
 - Context files: 12
@@ -113,6 +138,25 @@ Call edge guardrails:
 - Context truncation reason: token_budget_exhausted
 - Context continuation status: omitted_candidates_available
 - Context truncated: true
+
+Entrypoint candidates:
+
+| File | Symbol | Role | Confidence | Reason |
+| --- | --- | --- | ---: | --- |
+| `src/flask/cli.py` | `main` | source | 1.0 | entry symbol named main |
+| `src/flask/app.py` | `run` | source | 0.8 | entry-like symbol named run |
+| `tests/test_appctx.py` | `handler` | test | 0.71 | service entry-like symbol named handler |
+| `tests/test_basic.py` | `handler` | test | 0.71 | service entry-like symbol named handler |
+| `src/flask/sansio/app.py` | `-` | source | 0.68 | conventional app file |
+
+Recommended next tools:
+
+| Tool | Priority | Reason |
+| --- | ---: | --- |
+| `context_pack` | 10 | Build first-read context from the highest-confidence source entrypoint. |
+| `dependency_graph` | 30 | Inspect dependency edges touching the source entrypoint src/flask/cli.py before deeper navigation. |
+| `impact_analysis` | 40 | Estimate the entrypoint change radius using call and dependency signals. |
+| `config_status` | 80 | Check project-specific validation commands before planning changes. |
 
 Context pack files:
 
@@ -143,8 +187,11 @@ Language breakdown:
 - Commit: `34dac209ffb6ef85cc78c5d217bbb7ad001d68fd`
 - Indexed files: 99
 - Symbols: 1857
-- Duration: 611 ms
+- Duration: 471 ms
 - Index budget: 5000 ms (pass)
+- Entrypoint candidates: 3
+- First entrypoint candidate: `gin.go`
+- Recommended next tools: 4
 - Context seed file: `gin.go`
 - Context task: understand gin engine routing behavior
 - Context files: 4
@@ -157,6 +204,23 @@ Language breakdown:
 - Context truncation reason: none
 - Context continuation status: complete
 - Context truncated: false
+
+Entrypoint candidates:
+
+| File | Symbol | Role | Confidence | Reason |
+| --- | --- | --- | ---: | --- |
+| `gin.go` | `Run` | source | 0.8 | entry-like symbol named Run |
+| `ginS/gins.go` | `Run` | source | 0.8 | entry-like symbol named Run |
+| `context.go` | `Handler` | source | 0.71 | service entry-like symbol named Handler |
+
+Recommended next tools:
+
+| Tool | Priority | Reason |
+| --- | ---: | --- |
+| `context_pack` | 10 | Build first-read context from the highest-confidence source entrypoint. |
+| `dependency_graph` | 30 | Inspect dependency edges touching the source entrypoint gin.go before deeper navigation. |
+| `impact_analysis` | 40 | Estimate the entrypoint change radius using call and dependency signals. |
+| `config_status` | 80 | Check project-specific validation commands before planning changes. |
 
 Context pack files:
 
@@ -176,16 +240,19 @@ Language breakdown:
 ## tokio
 
 - URL: https://github.com/tokio-rs/tokio.git
-- Commit: `9c465e2f427f12999054bf086682080764dd3364`
-- Indexed files: 789
-- Symbols: 8451
-- Duration: 4322 ms
+- Commit: `b6f30cae9a504aacb71c14aa035e2cfdadbfa17a`
+- Indexed files: 790
+- Symbols: 8465
+- Duration: 3380 ms
 - Index budget: 20000 ms (pass)
+- Entrypoint candidates: 12
+- First entrypoint candidate: `examples/chat.rs`
+- Recommended next tools: 4
 - Context seed file: `tokio/src/lib.rs`
 - Context task: understand tokio runtime public API
 - Context files: 18
 - Context ranges: 23
-- Context lines: 508 of 177263 (99.7% reduction)
+- Context lines: 508 of 177479 (99.7% reduction)
 - Context estimated tokens: 5054
 - Context applied token budget: 6000
 - Context omitted files: 0
@@ -193,6 +260,25 @@ Language breakdown:
 - Context truncation reason: none
 - Context continuation status: complete
 - Context truncated: false
+
+Entrypoint candidates:
+
+| File | Symbol | Role | Confidence | Reason |
+| --- | --- | --- | ---: | --- |
+| `examples/chat.rs` | `main` | example | 1.0 | entry symbol named main |
+| `examples/connect-tcp.rs` | `main` | example | 1.0 | entry symbol named main |
+| `examples/connect-udp.rs` | `main` | example | 1.0 | entry symbol named main |
+| `examples/custom-executor-tokio-context.rs` | `main` | example | 1.0 | entry symbol named main |
+| `examples/custom-executor.rs` | `main` | example | 1.0 | entry symbol named main |
+
+Recommended next tools:
+
+| Tool | Priority | Reason |
+| --- | ---: | --- |
+| `context_pack` | 10 | Build first-read context from indexed source files because no source entrypoint was detected. |
+| `dependency_graph` | 30 | Inspect module and package relationships; the most frequent external target is std::pin::Pin. |
+| `callers` | 40 | Inspect static call graph edges because no source entrypoint was detected. |
+| `config_status` | 80 | Check project-specific validation commands before planning changes. |
 
 Context pack files:
 
@@ -221,4 +307,4 @@ Language breakdown:
 
 | Language | Files | Lines |
 | --- | ---: | ---: |
-| rust | 789 | 177263 |
+| rust | 790 | 177479 |

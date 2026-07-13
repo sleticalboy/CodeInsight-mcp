@@ -220,8 +220,8 @@ Environment:
 
 ## Summary
 
-| Repository | Focus | Commit | Files | Lines | Symbols | Skipped | Errors | Index ms | Index budget ms | Budget status | DB size | Context files | Ranges | Context lines | Line reduction | Tokens | Applied budget | Omitted files | Continuation | Truncated | First context file |
-| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |
+| Repository | Focus | Commit | Files | Lines | Symbols | Skipped | Errors | Index ms | Index budget ms | Budget status | DB size | Entrypoints | First entrypoint | Recommended tools | First recommended tool | Context files | Ranges | Context lines | Line reduction | Tokens | Applied budget | Omitted files | Continuation | Truncated | First context file |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |
 EOF
 }
 
@@ -362,7 +362,7 @@ append_summary_row() {
   local context_json="$6"
   local max_index_ms="$7"
 
-  local commit files lines symbols skipped errors duration budget db_size context_files ranges selected_lines reduction tokens applied_budget omitted_files continuation_status truncated first_context_file status
+  local commit files lines symbols skipped errors duration budget db_size entrypoints first_entrypoint recommended_tools first_recommended_tool context_files ranges selected_lines reduction tokens applied_budget omitted_files continuation_status truncated first_context_file status
   commit="$(git -C "$repo_dir" rev-parse --short HEAD)"
   files="$(json_value "$index_json" '.indexed_files')"
   lines="$(json_value "$overview_json" '[.languages[].lines] | add // 0')"
@@ -372,6 +372,10 @@ append_summary_row() {
   duration="$(json_value "$index_json" '.duration_ms')"
   budget="$max_index_ms"
   db_size="$(du -h "$repo_dir/.codeinsight/index.db" | awk '{print $1}')"
+  entrypoints="$(json_value "$overview_json" '.entrypoints | length')"
+  first_entrypoint="$(json_value "$overview_json" '.entrypoints[0].file // "-"')"
+  recommended_tools="$(json_value "$overview_json" '.recommended_next_tools | length')"
+  first_recommended_tool="$(json_value "$overview_json" '.recommended_next_tools[0].tool // "-"')"
   context_files="$(json_value "$context_json" '.files | length')"
   ranges="$(json_value "$context_json" '[.files[].ranges | length] | add // 0')"
   selected_lines="$(context_lines "$context_json")"
@@ -388,8 +392,9 @@ append_summary_row() {
     BUDGET_FAILURES=$((BUDGET_FAILURES + 1))
   fi
 
-  printf "| %s | %s | \`%s\` | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | \`%s\` |\n" \
+  printf "| %s | %s | \`%s\` | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | \`%s\` | %s | \`%s\` | %s | %s | %s | %s | %s | %s | %s | %s | %s | \`%s\` |\n" \
     "$name" "$language" "$commit" "$files" "$lines" "$symbols" "$skipped" "$errors" "$duration" "$budget" "$status" "$db_size" \
+    "$entrypoints" "$first_entrypoint" "$recommended_tools" "$first_recommended_tool" \
     "$context_files" "$ranges" "$selected_lines" "$reduction" "$tokens" "$applied_budget" "$omitted_files" "$continuation_status" "$truncated" "$first_context_file" \
     >>"$REPORT_FILE"
 }
@@ -424,6 +429,9 @@ append_detail_section() {
     echo "- Symbols: $(json_value "$index_json" '.symbols')"
     echo "- Duration: $duration ms"
     echo "- Index budget: $max_index_ms ms ($status)"
+    echo "- Entrypoint candidates: $(json_value "$overview_json" '.entrypoints | length')"
+    echo "- First entrypoint candidate: \`$(json_value "$overview_json" '.entrypoints[0].file // "-"')\`"
+    echo "- Recommended next tools: $(json_value "$overview_json" '.recommended_next_tools | length')"
     echo "- Context seed file: \`$context_file\`"
     echo "- Context task: $context_task"
     echo "- Context files: $(json_value "$context_json" '.files | length')"
@@ -436,6 +444,44 @@ append_detail_section() {
     echo "- Context truncation reason: $(json_value "$context_json" '.budget.truncation_reason // "none"')"
     echo "- Context continuation status: $(json_value "$context_json" '.continuation_summary.status // "-"')"
     echo "- Context truncated: $(json_value "$context_json" '.truncated')"
+    echo
+    echo "Entrypoint candidates:"
+    echo
+    echo "| File | Symbol | Role | Confidence | Reason |"
+    echo "| --- | --- | --- | ---: | --- |"
+  } >>"$REPORT_FILE"
+
+  jq -r '
+    def clean: tostring | gsub("\\|"; "\\|");
+    (.entrypoints[:5] // [])
+    | if length == 0 then
+        ["| - | - | - | 0 | none |"]
+      else
+        map("| `" + (.file // "-" | clean) + "` | `" + (.symbol // "-" | clean) + "` | " + (.role // "-" | clean) + " | " + ((.confidence // 0) | tostring) + " | " + (.reason // "-" | clean) + " |")
+      end
+    | .[]
+  ' "$overview_json" >>"$REPORT_FILE"
+
+  {
+    echo
+    echo "Recommended next tools:"
+    echo
+    echo "| Tool | Priority | Reason |"
+    echo "| --- | ---: | --- |"
+  } >>"$REPORT_FILE"
+
+  jq -r '
+    def clean: tostring | gsub("\\|"; "\\|");
+    (.recommended_next_tools[:5] // [])
+    | if length == 0 then
+        ["| - | 0 | none |"]
+      else
+        map("| `" + (.tool // "-" | clean) + "` | " + ((.priority // 0) | tostring) + " | " + (.reason // "-" | clean) + " |")
+      end
+    | .[]
+  ' "$overview_json" >>"$REPORT_FILE"
+
+  {
     echo
     echo "Context pack files:"
     echo

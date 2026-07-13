@@ -1,6 +1,6 @@
 # CodeInsight v0.1 Smoke Benchmark
 
-Generated at: 2026-07-11 11:00:19 UTC
+Generated at: 2026-07-13 14:58:00 UTC
 
 This is a benchmark fixture report, not a controlled performance benchmark. It
 verifies that CodeInsight can index real public repositories across the MVP
@@ -18,12 +18,12 @@ Environment:
 
 ## Summary
 
-| Repository | Focus | Commit | Files | Lines | Symbols | Skipped | Errors | Index ms | Index budget ms | Budget status | DB size | Context files | Ranges | Context lines | Line reduction | Tokens | Applied budget | Omitted files | Continuation | Truncated | First context file |
-| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |
-| p-limit | TypeScript | `42599eb` | 6 | 1123 | 184 | 10 | 0 | 69 | 5000 | pass | 216K | 1 | 5 | 102 | 90.9% | 875 | 6000 | 0 | lower_ranked_context_omitted | false | `index.js` |
-| itsdangerous | Python | `672971d` | 15 | 1712 | 144 | 35 | 0 | 47 | 5000 | pass | 248K | 4 | 8 | 242 | 85.9% | 2373 | 6000 | 0 | complete | false | `src/itsdangerous/serializer.py` |
-| go-example | Go | `7f05d21` | 38 | 3537 | 189 | 33 | 0 | 79 | 5000 | pass | 264K | 4 | 6 | 89 | 97.5% | 600 | 6000 | 0 | lower_ranked_context_omitted | false | `hello/hello.go` |
-| memchr | Rust | `4e1c173` | 64 | 69371 | 4045 | 110 | 0 | 1464 | 10000 | pass | 3.3M | 7 | 7 | 196 | 99.7% | 1899 | 6000 | 0 | complete | false | `src/lib.rs` |
+| Repository | Focus | Commit | Files | Lines | Symbols | Skipped | Errors | Index ms | Index budget ms | Budget status | DB size | Entrypoints | First entrypoint | Recommended tools | First recommended tool | Context files | Ranges | Context lines | Line reduction | Tokens | Applied budget | Omitted files | Continuation | Truncated | First context file |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |
+| p-limit | TypeScript | `42599eb` | 6 | 1123 | 184 | 10 | 0 | 59 | 5000 | pass | 216K | 4 | `index.js` | 4 | `context_pack` | 1 | 5 | 102 | 90.9% | 875 | 6000 | 0 | lower_ranked_context_omitted | false | `index.js` |
+| itsdangerous | Python | `672971d` | 15 | 1712 | 144 | 35 | 0 | 45 | 5000 | pass | 248K | 0 | `-` | 4 | `context_pack` | 4 | 8 | 242 | 85.9% | 2373 | 6000 | 0 | complete | false | `src/itsdangerous/serializer.py` |
+| go-example | Go | `7f05d21` | 38 | 3537 | 189 | 33 | 0 | 85 | 5000 | pass | 264K | 12 | `gotypes/defsuses/main.go` | 4 | `context_pack` | 4 | 6 | 89 | 97.5% | 600 | 6000 | 0 | lower_ranked_context_omitted | false | `hello/hello.go` |
+| memchr | Rust | `bce7df7` | 64 | 69381 | 4046 | 110 | 0 | 785 | 10000 | pass | 2.3M | 12 | `benchmarks/engines/libc/main.rs` | 4 | `context_pack` | 7 | 7 | 196 | 99.7% | 1899 | 6000 | 0 | complete | false | `src/lib.rs` |
 
 ## Details
 
@@ -33,8 +33,11 @@ Environment:
 - Commit: `42599ebbbb1228a5bdab381fcf8f4ac20eb8d551`
 - Indexed files: 6
 - Symbols: 184
-- Duration: 69 ms
+- Duration: 59 ms
 - Index budget: 5000 ms (pass)
+- Entrypoint candidates: 4
+- First entrypoint candidate: `index.js`
+- Recommended next tools: 4
 - Context seed file: `index.js`
 - Context task: understand limit scheduling behavior
 - Context files: 1
@@ -47,6 +50,24 @@ Environment:
 - Context truncation reason: candidate_selection_omitted_lower_ranked_context
 - Context continuation status: lower_ranked_context_omitted
 - Context truncated: false
+
+Entrypoint candidates:
+
+| File | Symbol | Role | Confidence | Reason |
+| --- | --- | --- | ---: | --- |
+| `index.js` | `run` | source | 0.8 | entry-like symbol named run |
+| `scripts/benchmarker.js` | `run` | source | 0.8 | entry-like symbol named run |
+| `index.d.ts` | `-` | source | 0.73 | conventional index file |
+| `index.test-d.ts` | `-` | source | 0.73 | conventional index file |
+
+Recommended next tools:
+
+| Tool | Priority | Reason |
+| --- | ---: | --- |
+| `context_pack` | 10 | Build first-read context from the highest-confidence source entrypoint. |
+| `dependency_graph` | 30 | Inspect dependency edges touching the source entrypoint index.js before deeper navigation. |
+| `impact_analysis` | 40 | Estimate the entrypoint change radius using call and dependency signals. |
+| `config_status` | 80 | Check project-specific validation commands before planning changes. |
 
 Context pack files:
 
@@ -67,8 +88,11 @@ Language breakdown:
 - Commit: `672971d66a2ef9f85151e53283113f33d642dabd`
 - Indexed files: 15
 - Symbols: 144
-- Duration: 47 ms
+- Duration: 45 ms
 - Index budget: 5000 ms (pass)
+- Entrypoint candidates: 0
+- First entrypoint candidate: `-`
+- Recommended next tools: 4
 - Context seed file: `src/itsdangerous/serializer.py`
 - Context task: understand serializer signing behavior
 - Context files: 4
@@ -81,6 +105,21 @@ Language breakdown:
 - Context truncation reason: none
 - Context continuation status: complete
 - Context truncated: false
+
+Entrypoint candidates:
+
+| File | Symbol | Role | Confidence | Reason |
+| --- | --- | --- | ---: | --- |
+| - | - | - | 0 | none |
+
+Recommended next tools:
+
+| Tool | Priority | Reason |
+| --- | ---: | --- |
+| `context_pack` | 10 | Build first-read context from indexed source files because no source entrypoint was detected. |
+| `dependency_graph` | 30 | Inspect module and package relationships; the most frequent external target is typing. |
+| `callers` | 40 | Inspect static call graph edges because no source entrypoint was detected. |
+| `config_status` | 80 | Check project-specific validation commands before planning changes. |
 
 Context pack files:
 
@@ -103,8 +142,11 @@ Language breakdown:
 - Commit: `7f05d217867b2af52b0a28c6d1c91df97e1b5b39`
 - Indexed files: 38
 - Symbols: 189
-- Duration: 79 ms
+- Duration: 85 ms
 - Index budget: 5000 ms (pass)
+- Entrypoint candidates: 12
+- First entrypoint candidate: `gotypes/defsuses/main.go`
+- Recommended next tools: 4
 - Context seed file: `hello/hello.go`
 - Context task: understand hello server behavior
 - Context files: 4
@@ -117,6 +159,25 @@ Language breakdown:
 - Context truncation reason: candidate_selection_omitted_lower_ranked_context
 - Context continuation status: lower_ranked_context_omitted
 - Context truncated: false
+
+Entrypoint candidates:
+
+| File | Symbol | Role | Confidence | Reason |
+| --- | --- | --- | ---: | --- |
+| `gotypes/defsuses/main.go` | `main` | source | 1.0 | entry symbol named main |
+| `gotypes/doc/main.go` | `main` | source | 1.0 | entry symbol named main |
+| `gotypes/hello/hello.go` | `main` | source | 1.0 | entry symbol named main |
+| `gotypes/hugeparam/main.go` | `main` | source | 1.0 | entry symbol named main |
+| `gotypes/implements/main.go` | `main` | source | 1.0 | entry symbol named main |
+
+Recommended next tools:
+
+| Tool | Priority | Reason |
+| --- | ---: | --- |
+| `context_pack` | 10 | Build first-read context from the highest-confidence source entrypoint. |
+| `dependency_graph` | 30 | Inspect dependency edges touching the source entrypoint gotypes/defsuses/main.go before deeper navigation. |
+| `impact_analysis` | 40 | Estimate the entrypoint change radius using call and dependency signals. |
+| `config_status` | 80 | Check project-specific validation commands before planning changes. |
 
 Context pack files:
 
@@ -137,16 +198,19 @@ Language breakdown:
 ## memchr
 
 - URL: https://github.com/BurntSushi/memchr.git
-- Commit: `4e1c173d87851937d0f9683e1d1d417e521d6ca7`
+- Commit: `bce7df7140acff420478a358cde5587904000cb1`
 - Indexed files: 64
-- Symbols: 4045
-- Duration: 1464 ms
+- Symbols: 4046
+- Duration: 785 ms
 - Index budget: 10000 ms (pass)
+- Entrypoint candidates: 12
+- First entrypoint candidate: `benchmarks/engines/libc/main.rs`
+- Recommended next tools: 4
 - Context seed file: `src/lib.rs`
 - Context task: understand memchr finder API
 - Context files: 7
 - Context ranges: 7
-- Context lines: 196 of 69371 (99.7% reduction)
+- Context lines: 196 of 69381 (99.7% reduction)
 - Context estimated tokens: 1899
 - Context applied token budget: 6000
 - Context omitted files: 0
@@ -154,6 +218,25 @@ Language breakdown:
 - Context truncation reason: none
 - Context continuation status: complete
 - Context truncated: false
+
+Entrypoint candidates:
+
+| File | Symbol | Role | Confidence | Reason |
+| --- | --- | --- | ---: | --- |
+| `benchmarks/engines/libc/main.rs` | `main` | source | 1.0 | entry symbol named main |
+| `benchmarks/engines/rust-bytecount/main.rs` | `main` | source | 1.0 | entry symbol named main |
+| `benchmarks/engines/rust-jetscii/main.rs` | `main` | source | 1.0 | entry symbol named main |
+| `benchmarks/engines/rust-memchr/main.rs` | `main` | source | 1.0 | entry symbol named main |
+| `benchmarks/engines/rust-memchrold/main.rs` | `main` | source | 1.0 | entry symbol named main |
+
+Recommended next tools:
+
+| Tool | Priority | Reason |
+| --- | ---: | --- |
+| `context_pack` | 10 | Build first-read context from the highest-confidence source entrypoint. |
+| `dependency_graph` | 30 | Inspect dependency edges touching the source entrypoint benchmarks/engines/libc/main.rs before deeper navigation. |
+| `impact_analysis` | 40 | Estimate the entrypoint change radius using call and dependency signals. |
+| `config_status` | 80 | Check project-specific validation commands before planning changes. |
 
 Context pack files:
 
@@ -171,4 +254,4 @@ Language breakdown:
 
 | Language | Files | Lines |
 | --- | ---: | ---: |
-| rust | 64 | 69371 |
+| rust | 64 | 69381 |
