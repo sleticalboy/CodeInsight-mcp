@@ -86,12 +86,17 @@ release-verification hardening for the next tag:
 - CI covers the installer fallback, GitHub CLI auth failure, asset-download
   fallback, Docker failure, Homebrew failure, and JSON summary paths through
   dedicated smoke scripts.
+- `scripts/prepare-release.sh --dry-run v0.1.12` passes on 2026-07-14 and
+  previews the expected Cargo version, CHANGELOG section, and install example
+  updates for the next candidate tag.
 
 Known local environment caveats on the current development machine:
 
 - `gh` release API checks fail with `401 Unauthorized` until GitHub CLI auth is
   refreshed.
 - Docker CLI is installed, but the local Docker daemon is not running.
+- `README.md` still lists `v0.1.11` as the latest verified release; keep that
+  baseline until a `v0.1.12` tag and artifacts are actually verified.
 
 ## Next
 

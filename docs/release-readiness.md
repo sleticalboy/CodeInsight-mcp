@@ -64,6 +64,11 @@ working GitHub CLI auth. If local Docker or Homebrew are unavailable, use the
 explicit skip variables and verify those gates through the corresponding
 GitHub Actions workflow, GHCR tag, or remote tap formula.
 
+`scripts/prepare-release.sh --dry-run v0.1.12` was rehearsed on 2026-07-14 and
+previewed the expected Cargo version, CHANGELOG `0.1.12` section, and
+`docs/install.md` version-pin update. The README's latest-verified baseline
+should remain `v0.1.11` until `v0.1.12` artifacts are published and verified.
+
 ## Public MVP Gate
 
 Before calling a build publicly ready, verify:
