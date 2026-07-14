@@ -68,6 +68,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   count and first next action.
 - `scripts/agent-router-demo.sh` now fails fast when `context_pack` does not
   return selected files, reading-plan steps, or a first next action.
+- `scripts/local-ci-smoke.sh` now includes the agent-router demo so local
+  non-network checks cover the first-read product flow.
 
 ## [0.1.12] - 2026-07-14
 
