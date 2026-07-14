@@ -42,6 +42,28 @@ checklist is repeated.
 - Homebrew tap PR `sleticalboy/homebrew-tap#22` was merged, and tap `main`
   points to `4e9d032ab84aba359bb3ef41e035766cfe07632c`.
 
+## Current Release Tooling Baseline
+
+Post-`v0.1.11` `main` has a stricter verification path for the next tag:
+
+- Public installer verification tolerates a broken local `gh` install by
+  falling back to `curl`.
+- GitHub Release archive checks include direct URL reachability, with ranged
+  `GET` fallback when `HEAD` is rejected.
+- GitHub CLI, Docker, and Homebrew failures include tool-specific recovery
+  guidance.
+- Docker verification separates local daemon/Buildx problems from registry,
+  manifest, and platform problems.
+- Homebrew verification separates dirty local taps, formula version mismatch,
+  remote tap state, and fetch/checksum failures.
+- `scripts/verify-release.sh --json vX.Y.Z` emits a final summary after all
+  enabled gates pass.
+
+Before the next public tag, rerun the artifact gate from an environment with
+working GitHub CLI auth. If local Docker or Homebrew are unavailable, use the
+explicit skip variables and verify those gates through the corresponding
+GitHub Actions workflow, GHCR tag, or remote tap formula.
+
 ## Public MVP Gate
 
 Before calling a build publicly ready, verify:

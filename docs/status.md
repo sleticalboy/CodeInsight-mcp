@@ -66,6 +66,33 @@ MVP workflow is now implemented end to end.
 - Homebrew tap `sleticalboy/homebrew-tap` updated to `v0.1.11` at
   `4e9d032ab84aba359bb3ef41e035766cfe07632c`.
 
+## Current Release Tooling State
+
+The published baseline is still `v0.1.11`, but `main` now includes additional
+release-verification hardening for the next tag:
+
+- `scripts/install.sh` falls back from a failing `gh release download` path to
+  `curl` for public release assets.
+- `scripts/verify-release.sh` checks direct HTTP downloadability for all four
+  expected release archives.
+- GitHub CLI, Docker, and Homebrew verification failures now preserve the
+  original tool error and add actionable diagnostics.
+- Docker verification checks daemon and Buildx availability before GHCR
+  manifest and platform checks.
+- Homebrew verification distinguishes remote formula state, local tap state,
+  stable version mismatches, and fetch/checksum failures.
+- `scripts/verify-release.sh --json` prints a final machine-readable summary
+  only after all release gates pass.
+- CI covers the installer fallback, GitHub CLI auth failure, asset-download
+  fallback, Docker failure, Homebrew failure, and JSON summary paths through
+  dedicated smoke scripts.
+
+Known local environment caveats on the current development machine:
+
+- `gh` release API checks fail with `401 Unauthorized` until GitHub CLI auth is
+  refreshed.
+- Docker CLI is installed, but the local Docker daemon is not running.
+
 ## Next
 
 - Keep the README/demo/benchmark path centered on the AI-agent first-read
