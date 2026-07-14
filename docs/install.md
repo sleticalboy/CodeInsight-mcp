@@ -15,13 +15,13 @@ curl -fsSL https://raw.githubusercontent.com/sleticalboy/CodeInsight-mcp/main/sc
 Install a specific version:
 
 ```bash
-CODEINSIGHT_VERSION=v0.1.12 sh scripts/install.sh
+curl -fsSL https://raw.githubusercontent.com/sleticalboy/CodeInsight-mcp/main/scripts/install.sh | CODEINSIGHT_VERSION=v0.1.12 sh
 ```
 
 Choose a custom install directory:
 
 ```bash
-INSTALL_DIR="$HOME/bin" sh scripts/install.sh
+curl -fsSL https://raw.githubusercontent.com/sleticalboy/CodeInsight-mcp/main/scripts/install.sh | INSTALL_DIR="$HOME/bin" sh
 ```
 
 The installer supports:
@@ -36,12 +36,18 @@ GitHub CLI first:
 
 ```bash
 gh auth login
-sh scripts/install.sh
+curl -fsSL https://raw.githubusercontent.com/sleticalboy/CodeInsight-mcp/main/scripts/install.sh | sh
 ```
 
 Without GitHub CLI, the installer falls back to `curl`. If GitHub CLI is
 installed but cannot download the asset, the installer also falls back to
 `curl`. Set `GITHUB_TOKEN` if the release assets require authentication.
+
+From a local checkout, run the checked-in installer directly:
+
+```bash
+sh scripts/install.sh
+```
 
 Smoke test the packaged installer path locally:
 

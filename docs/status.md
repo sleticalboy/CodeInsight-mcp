@@ -71,14 +71,21 @@ MVP workflow is now implemented end to end.
     `sha256:52bdef03b67f3e00e4b9a89a7dca1cb2f0515e58adefd1cffc1ec5120b631406`
   - `codeinsight-x86_64-unknown-linux-gnu.tar.gz`:
     `sha256:ab7919ba44780d97389368186e1afc68c272828df843bd55a18592217c2ed1df`
-- Public installer path was verified locally during release preparation with
-  `scripts/release-install-smoke.sh`.
+- Public installer path was verified with the remote install command and
+  `CODEINSIGHT_VERSION=v0.1.12`.
 - Docker image verified at `ghcr.io/sleticalboy/codeinsight-mcp:0.1.12`
   with digest
   `sha256:09238cfbca454e94cc04b4006f4dd1220619b640177f23c41cb7d819469ed2df`
   and `linux/amd64` and `linux/arm64` manifests.
 - Homebrew tap PR `sleticalboy/homebrew-tap#23` was merged, and tap `main`
   points to `dc691f27b6279141232d845bd1b833d25ab0f148`.
+- Post-release install regression on 2026-07-14 verified the remote installer,
+  Homebrew `brew install sleticalboy/tap/codeinsight`, and GHCR `latest` /
+  `0.1.12` manifest metadata.
+- Consolidated release verification passed with
+  `CODEINSIGHT_SKIP_DOCKER=1 scripts/verify-release.sh --json v0.1.12`:
+  GitHub Release metadata, direct asset downloads, release notes, public
+  installer, remote Homebrew formula, and Homebrew fetch all passed.
 
 ## Current Release Tooling State
 
@@ -111,11 +118,9 @@ Known local environment caveats on the current development machine:
 
 - GitHub CLI auth was refreshed on 2026-07-14 after the previous token returned
   `401 Unauthorized`.
-- Docker CLI is installed, but the local Docker daemon is not running.
-- Direct `curl` checks against `github.com/releases/download/...` and local
-  Homebrew tap `git fetch` currently time out from this machine, while
-  `api.github.com`, GitHub Actions, release metadata, GHCR manifest inspection,
-  and the remote Homebrew formula are reachable.
+- Docker CLI is installed, but the local Docker daemon is not running, so
+  `docker pull` / `docker run` were not executed locally. GHCR manifest
+  inspection confirmed the published multi-arch image.
 
 ## Next
 

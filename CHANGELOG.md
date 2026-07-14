@@ -12,6 +12,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   when GitHub Release assets exist in API metadata but
   `github.com/releases/download` is unreachable, and supports an explicit
   metadata-only override for that case.
+- Install docs now show pipe-compatible commands for version-pinned,
+  custom-directory, and authenticated remote installer use.
 
 ## [0.1.12] - 2026-07-14
 
