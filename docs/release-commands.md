@@ -20,10 +20,7 @@ scripts/prepare-release.sh vX.Y.Z
 Run the local release gate:
 
 ```bash
-cargo check
-cargo fmt --check
-cargo test --locked
-bash -n scripts/*.sh
+scripts/local-ci-smoke.sh
 scripts/semantic-smoke.sh
 scripts/mcp-stdio-smoke.sh
 scripts/release-install-smoke.sh

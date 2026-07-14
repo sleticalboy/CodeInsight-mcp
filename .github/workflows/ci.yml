@@ -83,6 +83,7 @@ jobs:
       - run: bash -n scripts/verify-release-homebrew-failure-smoke.sh
       - run: bash -n scripts/verify-release-summary-smoke.sh
       - run: bash -n scripts/release-tooling-smoke.sh
+      - run: bash -n scripts/local-ci-smoke.sh
       - run: bash -n scripts/docs-smoke.sh
       - run: bash -n scripts/docs-link-smoke.sh
       - run: bash -n scripts/docs-positioning-smoke.sh

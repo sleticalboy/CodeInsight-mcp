@@ -41,6 +41,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   smoke checks.
 - Added `scripts/release-tooling-smoke.sh` as the single local entrypoint for
   release-tooling smoke checks.
+- Added `scripts/local-ci-smoke.sh` as the single local entrypoint for the
+  standard non-network CI gate.
 
 ## [0.1.12] - 2026-07-14
 

@@ -173,8 +173,9 @@ boundaries, see [MCP tools](docs/mcp-tools.md). For client setup snippets, see
 ## Development
 
 ```bash
-cargo fmt
-cargo test
+cargo fmt --check
+cargo test --locked
+scripts/local-ci-smoke.sh
 ```
 
 Run benchmark profiles:

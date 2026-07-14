@@ -26,11 +26,7 @@ docs when a task needs more detail.
 - Run the standard local gate:
 
   ```bash
-  cargo fmt --check
-  cargo test --locked
-  bash -n scripts/*.sh
-  scripts/docs-smoke.sh
-  git diff --check
+  scripts/local-ci-smoke.sh
   ```
 
 - For changes that affect first-read routing, context packing, MCP output, or
