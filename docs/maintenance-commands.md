@@ -13,6 +13,7 @@ scripts/local-ci-smoke.sh
 
 This prints numbered stages and runs formatting, Rust tests, shell syntax
 checks, release-tooling smokes, docs smokes, and whitespace diff checks.
+Nested smoke groups also print their own numbered stages.
 
 ## Maintenance Smoke Groups
 

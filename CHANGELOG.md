@@ -61,6 +61,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   gate.
 - `scripts/release-tooling-smoke.sh` now prints numbered stage labels before
   each release-tooling smoke.
+- `scripts/docs-smoke.sh` now prints numbered stage labels before each docs
+  smoke.
 
 ## [0.1.12] - 2026-07-14
 
