@@ -79,6 +79,7 @@ Key docs:
 - [Demo script](docs/demo-script.md)
 - [Agent prompt templates](docs/agent-prompt-template.md)
 - [Current status](docs/status.md)
+- [Maintainer checklist](docs/maintainer-checklist.md)
 - [Install](docs/install.md)
 - [CLI usage](docs/cli-usage.md)
 - [MCP tools](docs/mcp-tools.md)

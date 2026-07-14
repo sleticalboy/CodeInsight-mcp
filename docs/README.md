@@ -10,6 +10,7 @@ release documents for CodeInsight.
 - [Demo script](demo-script.md)
 - [Agent prompt templates](agent-prompt-template.md)
 - [Current status](status.md)
+- [Maintainer checklist](maintainer-checklist.md)
 - [Install](install.md)
 - [First-read workflow](first-read-workflow.md)
 - [CLI usage](cli-usage.md)
@@ -46,6 +47,7 @@ release documents for CodeInsight.
 
 ## Release
 
+- [Maintainer checklist](maintainer-checklist.md)
 - [Release commands](release-commands.md)
 - [Release readiness](release-readiness.md)
 - [Release runbook](release-runbook.md)

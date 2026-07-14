@@ -29,6 +29,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   JSON summary, and refresh `docs/status.md` through one post-release command.
 - Added `docs/release-commands.md` as a short release-maintenance command
   index for prepare, publish, verify, and status-update operations.
+- Added `docs/maintainer-checklist.md` to collect routine development, PR,
+  release, and support checks in one place.
 
 ## [0.1.12] - 2026-07-14
 
