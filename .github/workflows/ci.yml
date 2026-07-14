@@ -71,27 +71,7 @@ jobs:
           ruby -c /tmp/codeinsight.rb
           grep -q 'releases/download/v9.8.7' /tmp/codeinsight.rb
           grep -q 'codeinsight-x86_64-unknown-linux-gnu.tar.gz' /tmp/codeinsight.rb
-      - run: bash -n scripts/sync-homebrew-tap.sh
-      - run: bash -n scripts/prepare-release.sh
-      - run: bash -n scripts/verify-release.sh
-      - run: bash -n scripts/installed-quickstart-smoke.sh
-      - run: bash -n scripts/install-fallback-smoke.sh
-      - run: bash -n scripts/verify-release-gh-failure-smoke.sh
-      - run: bash -n scripts/verify-release-asset-download-smoke.sh
-      - run: bash -n scripts/verify-release-asset-unreachable-smoke.sh
-      - run: bash -n scripts/verify-release-docker-failure-smoke.sh
-      - run: bash -n scripts/verify-release-homebrew-failure-smoke.sh
-      - run: bash -n scripts/verify-release-summary-smoke.sh
-      - run: bash -n scripts/release-tooling-smoke.sh
-      - run: bash -n scripts/local-ci-smoke.sh
-      - run: bash -n scripts/docs-smoke.sh
-      - run: bash -n scripts/docs-link-smoke.sh
-      - run: bash -n scripts/docs-positioning-smoke.sh
-      - run: bash -n scripts/docs-benchmark-smoke.sh
-      - run: bash -n scripts/post-release-verify.sh
-      - run: bash -n scripts/post-release-verify-smoke.sh
-      - run: bash -n scripts/update-release-status.sh
-      - run: bash -n scripts/update-release-status-smoke.sh
+      - run: scripts/script-syntax-smoke.sh
       - run: scripts/release-tooling-smoke.sh
       - run: scripts/docs-smoke.sh
       - run: scripts/verify-release.sh --help >/tmp/codeinsight-verify-release-help.txt

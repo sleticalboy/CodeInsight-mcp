@@ -43,6 +43,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   release-tooling smoke checks.
 - Added `scripts/local-ci-smoke.sh` as the single local entrypoint for the
   standard non-network CI gate.
+- Added `scripts/script-syntax-smoke.sh` as the single local entrypoint for
+  shell script syntax checks.
 
 ## [0.1.12] - 2026-07-14
 

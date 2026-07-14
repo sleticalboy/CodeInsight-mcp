@@ -8,7 +8,7 @@ main() {
 
   cargo fmt --check
   cargo test --locked
-  bash -n scripts/*.sh
+  scripts/script-syntax-smoke.sh
   scripts/release-tooling-smoke.sh
   scripts/docs-smoke.sh
   git diff --check

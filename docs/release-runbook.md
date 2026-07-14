@@ -55,7 +55,7 @@ Local release gate:
 cargo check
 cargo fmt --check
 cargo test --locked
-bash -n scripts/*.sh
+scripts/script-syntax-smoke.sh
 scripts/semantic-smoke.sh
 scripts/mcp-stdio-smoke.sh
 scripts/release-install-smoke.sh

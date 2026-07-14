@@ -131,7 +131,7 @@ Expected result:
 Optional local checks when the environment supports them:
 
 ```bash
-bash -n scripts/*.sh
+scripts/script-syntax-smoke.sh
 scripts/docker-smoke.sh
 CODEINSIGHT_DOCKER_PLATFORM=linux/arm64 scripts/docker-smoke.sh
 scripts/benchmark-smoke.sh
