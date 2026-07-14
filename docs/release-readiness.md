@@ -19,32 +19,39 @@ The MVP is release-capable when all of these are true:
 - Benchmarks and limitations are visible before users over-trust the analyzer.
 - CI and release workflows are green for the release commit or tag.
 
-Current published baseline: `v0.1.11` is documented as verified in
+Current published baseline: `v0.1.12` is documented as verified in
 [Current status](status.md). Treat later releases as unverified until this
 checklist is repeated.
 
 ## Latest Release Verification
 
-`v0.1.11` verification was completed on 2026-07-14:
+`v0.1.12` verification was completed on 2026-07-14:
 
-- Release tag `v0.1.11` points to
-  `fada3b030efa920fb0b7cabb55772f7ac93ae033`.
-- `Release Build` run `29272402937` completed successfully.
-- `Docker Image` run `29272402806` completed successfully.
-- All four release archives returned HTTP 200:
+- Release tag `v0.1.12` points to
+  `43010eba5683d45148fb113d743461917c6acb91`.
+- `Release Build` run `29310231429` completed successfully.
+- `Docker Image` run `29310231461` completed successfully.
+- All four release archives exist with GitHub API digests:
   `codeinsight-aarch64-apple-darwin.tar.gz`,
   `codeinsight-x86_64-apple-darwin.tar.gz`,
   `codeinsight-aarch64-unknown-linux-gnu.tar.gz`, and
   `codeinsight-x86_64-unknown-linux-gnu.tar.gz`.
-- Public installer path installed a binary reporting version `0.1.11`.
-- GHCR image `ghcr.io/sleticalboy/codeinsight-mcp:0.1.11` exposes
-  `linux/amd64` and `linux/arm64` manifests.
-- Homebrew tap PR `sleticalboy/homebrew-tap#22` was merged, and tap `main`
-  points to `4e9d032ab84aba359bb3ef41e035766cfe07632c`.
+- Public installer path was covered by the release-install smoke test for the
+  `v0.1.12` candidate.
+- GHCR image `ghcr.io/sleticalboy/codeinsight-mcp:0.1.12` exposes
+  `linux/amd64` and `linux/arm64` manifests, with index digest
+  `sha256:09238cfbca454e94cc04b4006f4dd1220619b640177f23c41cb7d819469ed2df`.
+- Homebrew tap PR `sleticalboy/homebrew-tap#23` was merged, and tap `main`
+  points to `dc691f27b6279141232d845bd1b833d25ab0f148`.
+
+Local caveat: direct `curl` checks against `github.com/releases/download/...`
+and local Homebrew tap `git fetch` timed out on the current development
+machine. GitHub API release metadata, GitHub Actions, GHCR manifest inspection,
+and the remote Homebrew formula were reachable.
 
 ## Current Release Tooling Baseline
 
-Post-`v0.1.11` `main` has a stricter verification path for the next tag:
+`main` has a stricter verification path for tagged releases:
 
 - Public installer verification tolerates a broken local `gh` install by
   falling back to `curl`.
@@ -66,8 +73,7 @@ GitHub Actions workflow, GHCR tag, or remote tap formula.
 
 `scripts/prepare-release.sh --dry-run v0.1.12` was rehearsed on 2026-07-14 and
 previewed the expected Cargo version, CHANGELOG `0.1.12` section, and
-`docs/install.md` version-pin update. The README's latest-verified baseline
-should remain `v0.1.11` until `v0.1.12` artifacts are published and verified.
+`docs/install.md` version-pin update before the release commit was created.
 
 ## Public MVP Gate
 

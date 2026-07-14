@@ -94,7 +94,7 @@ CodeInsight is an early MVP. It can index local repositories, expose CLI and
 MCP navigation tools, build agent-ready context packs, run local impact
 analysis, and optionally use configured semantic embeddings.
 
-Latest verified release: `v0.1.11`.
+Latest verified release: `v0.1.12`.
 
 Next focus: tighten the README/demo/benchmark path around the AI-agent
 first-read workflow.

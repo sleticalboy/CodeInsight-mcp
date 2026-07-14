@@ -49,27 +49,41 @@ MVP workflow is now implemented end to end.
   semantic search, Docker, release install, and benchmark fixtures.
 - Release, Docker image, Homebrew tap sync, install, verify, and release-note
   helper scripts.
-- Published and verified `v0.1.11` with GitHub Release assets, Docker
+- Published and verified `v0.1.12` with GitHub Release assets, Docker
   multi-arch images, public install script, and Homebrew tap formula.
 
 ## Latest Verified Release
 
-`v0.1.11` was published and verified on 2026-07-14.
+`v0.1.12` was published and verified on 2026-07-14.
 
-- GitHub Release: https://github.com/sleticalboy/CodeInsight-mcp/releases/tag/v0.1.11
-- Release Build workflow: `29272402937`, completed successfully.
-- Docker Image workflow: `29272402806`, completed successfully.
-- Release assets verified for macOS and Linux on `aarch64` and `x86_64`.
-- Public installer verified with `CODEINSIGHT_VERSION=v0.1.11`.
-- Docker image verified at `ghcr.io/sleticalboy/codeinsight-mcp:0.1.11`
-  with `linux/amd64` and `linux/arm64` manifests.
-- Homebrew tap `sleticalboy/homebrew-tap` updated to `v0.1.11` at
-  `4e9d032ab84aba359bb3ef41e035766cfe07632c`.
+- GitHub Release: https://github.com/sleticalboy/CodeInsight-mcp/releases/tag/v0.1.12
+- Release tag `v0.1.12` points to
+  `43010eba5683d45148fb113d743461917c6acb91`.
+- Release Build workflow: `29310231429`, completed successfully.
+- Docker Image workflow: `29310231461`, completed successfully.
+- Release assets exist for macOS and Linux on `aarch64` and `x86_64`, with
+  GitHub API digests matching the Homebrew formula:
+  - `codeinsight-aarch64-apple-darwin.tar.gz`:
+    `sha256:2b6042662001f213ad8042960f8dd8be13880efde32b05c830856fa41bf8a230`
+  - `codeinsight-x86_64-apple-darwin.tar.gz`:
+    `sha256:9fd614e77c8aa5729ec6b9e8c615526f43596d00f8ba3618e2c92ccf48b27a24`
+  - `codeinsight-aarch64-unknown-linux-gnu.tar.gz`:
+    `sha256:52bdef03b67f3e00e4b9a89a7dca1cb2f0515e58adefd1cffc1ec5120b631406`
+  - `codeinsight-x86_64-unknown-linux-gnu.tar.gz`:
+    `sha256:ab7919ba44780d97389368186e1afc68c272828df843bd55a18592217c2ed1df`
+- Public installer path was verified locally during release preparation with
+  `scripts/release-install-smoke.sh`.
+- Docker image verified at `ghcr.io/sleticalboy/codeinsight-mcp:0.1.12`
+  with digest
+  `sha256:09238cfbca454e94cc04b4006f4dd1220619b640177f23c41cb7d819469ed2df`
+  and `linux/amd64` and `linux/arm64` manifests.
+- Homebrew tap PR `sleticalboy/homebrew-tap#23` was merged, and tap `main`
+  points to `dc691f27b6279141232d845bd1b833d25ab0f148`.
 
 ## Current Release Tooling State
 
-The published baseline is still `v0.1.11`, but `main` now includes additional
-release-verification hardening for the next tag:
+`main` includes the release-verification hardening used during the `v0.1.12`
+release:
 
 - `scripts/install.sh` falls back from a failing `gh release download` path to
   `curl` for public release assets.
@@ -86,17 +100,19 @@ release-verification hardening for the next tag:
 - CI covers the installer fallback, GitHub CLI auth failure, asset-download
   fallback, Docker failure, Homebrew failure, and JSON summary paths through
   dedicated smoke scripts.
-- `scripts/prepare-release.sh --dry-run v0.1.12` passes on 2026-07-14 and
-  previews the expected Cargo version, CHANGELOG section, and install example
-  updates for the next candidate tag.
+- `scripts/prepare-release.sh --dry-run v0.1.12` passed before the release and
+  previewed the expected Cargo version, CHANGELOG section, and install example
+  updates.
 
 Known local environment caveats on the current development machine:
 
-- `gh` release API checks fail with `401 Unauthorized` until GitHub CLI auth is
-  refreshed.
+- GitHub CLI auth was refreshed on 2026-07-14 after the previous token returned
+  `401 Unauthorized`.
 - Docker CLI is installed, but the local Docker daemon is not running.
-- `README.md` still lists `v0.1.11` as the latest verified release; keep that
-  baseline until a `v0.1.12` tag and artifacts are actually verified.
+- Direct `curl` checks against `github.com/releases/download/...` and local
+  Homebrew tap `git fetch` currently time out from this machine, while
+  `api.github.com`, GitHub Actions, release metadata, GHCR manifest inspection,
+  and the remote Homebrew formula are reachable.
 
 ## Next
 
