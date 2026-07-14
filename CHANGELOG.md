@@ -49,6 +49,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   help text contract checks out of CI workflow YAML.
 - Added `scripts/prepare-release-smoke.sh` to keep release prep fixture checks
   out of CI workflow YAML.
+- Added `scripts/update-homebrew-formula-smoke.sh` to keep Homebrew formula
+  fixture checks out of CI workflow YAML.
 
 ## [0.1.12] - 2026-07-14
 

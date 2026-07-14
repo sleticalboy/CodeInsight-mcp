@@ -60,17 +60,6 @@ jobs:
           grep -q '^### Highlights' /tmp/codeinsight-release-notes-summary.md
           grep -q 'This release has ' /tmp/codeinsight-release-notes-summary.md
           test "$(grep -c '^- ' /tmp/codeinsight-release-notes-summary.md)" -le 2
-      - run: |
-          set -euo pipefail
-          tmp="$(mktemp -d)"
-          printf darwin-arm >"$tmp/codeinsight-aarch64-apple-darwin.tar.gz"
-          printf darwin-intel >"$tmp/codeinsight-x86_64-apple-darwin.tar.gz"
-          printf linux-arm >"$tmp/codeinsight-aarch64-unknown-linux-gnu.tar.gz"
-          printf linux-intel >"$tmp/codeinsight-x86_64-unknown-linux-gnu.tar.gz"
-          scripts/update-homebrew-formula.sh v9.8.7 "$tmp" /tmp/codeinsight.rb
-          ruby -c /tmp/codeinsight.rb
-          grep -q 'releases/download/v9.8.7' /tmp/codeinsight.rb
-          grep -q 'codeinsight-x86_64-unknown-linux-gnu.tar.gz' /tmp/codeinsight.rb
       - run: scripts/script-syntax-smoke.sh
       - run: scripts/release-tooling-smoke.sh
       - run: scripts/docs-smoke.sh
