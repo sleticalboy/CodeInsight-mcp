@@ -125,6 +125,9 @@ For a tagged release, verify artifacts after the `Release Build` and
 scripts/verify-release.sh vX.Y.Z
 ```
 
+Use `scripts/verify-release.sh --json vX.Y.Z` when the final pass/fail summary
+needs to be copied into CI logs, release notes, or the verification record.
+
 If Docker or Homebrew cannot run on the local machine, skip those local checks
 explicitly:
 

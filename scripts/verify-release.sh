@@ -23,7 +23,7 @@ usage() {
   fi
 
   cat >"$stream" <<'EOF'
-usage: scripts/verify-release.sh <tag-or-version>
+usage: scripts/verify-release.sh [--json] <tag-or-version>
 
 Verifies a published CodeInsight release:
 - GitHub Release metadata, notes, and platform assets
@@ -250,6 +250,56 @@ normalize_tag() {
 
 version_from_tag() {
   printf '%s' "${1#v}"
+}
+
+release_verification_summary_json() {
+  local tag="$1"
+  local version="$2"
+  local docker_skipped=false
+  local homebrew_skipped=false
+
+  if [ "${CODEINSIGHT_SKIP_DOCKER:-}" = "1" ]; then
+    docker_skipped=true
+  fi
+  if [ "${CODEINSIGHT_SKIP_HOMEBREW:-}" = "1" ]; then
+    homebrew_skipped=true
+  fi
+
+  jq -n \
+    --arg status passed \
+    --arg tag "$tag" \
+    --arg version "$version" \
+    --arg repo "$REPO" \
+    --arg docker_image "$IMAGE" \
+    --arg homebrew_tap "$HOMEBREW_TAP" \
+    --arg homebrew_repo "$HOMEBREW_REPO" \
+    --argjson expected_assets "$(printf '%s\n' "${EXPECTED_ASSETS[@]}" | jq -R . | jq -s .)" \
+    --argjson docker_skipped "$docker_skipped" \
+    --argjson homebrew_skipped "$homebrew_skipped" \
+    '{
+      status: $status,
+      tag: $tag,
+      version: $version,
+      repo: $repo,
+      gates: {
+        github_release: "passed",
+        release_notes: "passed",
+        install_script: "passed",
+        docker: (if $docker_skipped then "skipped" else "passed" end),
+        homebrew_remote_formula: "passed",
+        homebrew_fetch: (if $homebrew_skipped then "skipped" else "passed" end)
+      },
+      expected_assets: $expected_assets,
+      docker: {
+        image: $docker_image,
+        skipped: $docker_skipped
+      },
+      homebrew: {
+        tap: $homebrew_tap,
+        repo: $homebrew_repo,
+        skipped: $homebrew_skipped
+      }
+    }'
 }
 
 verify_github_release() {
@@ -484,11 +534,43 @@ verify_homebrew_fetch() {
 }
 
 main() {
-  if [ "$#" -eq 1 ] && { [ "$1" = "-h" ] || [ "$1" = "--help" ]; }; then
-    usage 0
-  fi
+  local output_json=0
+  local tag_input=""
 
-  if [ "$#" -ne 1 ]; then
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      -h | --help)
+        usage 0
+        ;;
+      --json)
+        output_json=1
+        ;;
+      --)
+        shift
+        break
+        ;;
+      -*)
+        usage
+        ;;
+      *)
+        if [ -n "$tag_input" ]; then
+          usage
+        fi
+        tag_input="$1"
+        ;;
+    esac
+    shift
+  done
+
+  while [ "$#" -gt 0 ]; do
+    if [ -n "$tag_input" ]; then
+      usage
+    fi
+    tag_input="$1"
+    shift
+  done
+
+  if [ -z "$tag_input" ]; then
     usage
   fi
 
@@ -498,7 +580,7 @@ main() {
   require_command ruby
 
   local tag version
-  tag="$(normalize_tag "$1")"
+  tag="$(normalize_tag "$tag_input")"
   version="$(version_from_tag "$tag")"
 
   TEMP_DIR="$(mktemp -d)"
@@ -513,6 +595,9 @@ main() {
 
   log "Release verification passed"
   printf 'tag: %s\n' "$tag"
+  if [ "$output_json" -eq 1 ]; then
+    release_verification_summary_json "$tag" "$version"
+  fi
 }
 
 if [ "${CODEINSIGHT_VERIFY_RELEASE_NO_MAIN:-}" != "1" ]; then

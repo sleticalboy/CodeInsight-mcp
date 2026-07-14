@@ -20,6 +20,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   tap state, formula version, fetch, checksum, and local environment failures.
 - `scripts/verify-release.sh` now routes GitHub, Docker, and Homebrew command
   checks through a shared status-capture helper to reduce release-script drift.
+- `scripts/verify-release.sh --json` now prints a final machine-readable
+  verification summary after all release gates pass.
 
 ## [0.1.11] - 2026-07-14
 

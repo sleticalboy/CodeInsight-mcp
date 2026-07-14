@@ -107,6 +107,12 @@ workflows finish:
 scripts/verify-release.sh vX.Y.Z
 ```
 
+Print a final machine-readable summary after all gates pass:
+
+```bash
+scripts/verify-release.sh --json vX.Y.Z
+```
+
 The GitHub Release step validates both metadata and direct downloadability for
 all four platform archives. It first tries HTTP `HEAD` for each release asset
 URL, then retries with a ranged `GET` if the server or proxy rejects `HEAD`.
