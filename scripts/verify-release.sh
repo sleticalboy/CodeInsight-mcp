@@ -105,6 +105,44 @@ download_installer() {
     base64 --decode >"$output"
 }
 
+release_asset_url() {
+  local tag="$1"
+  local asset="$2"
+
+  printf 'https://github.com/%s/releases/download/%s/%s' "$REPO" "$tag" "$asset"
+}
+
+verify_release_asset_download_url() {
+  local tag="$1"
+  local asset="$2"
+  local url
+
+  url="$(release_asset_url "$tag" "$asset")"
+
+  if curl --fail --silent --show-error --location --head \
+    --connect-timeout 20 --max-time 60 \
+    "$url" >/dev/null; then
+    return
+  fi
+
+  echo "asset HEAD check failed, retrying with ranged GET: ${asset}" >&2
+  curl --fail --silent --show-error --location --range 0-0 \
+    --connect-timeout 20 --max-time 60 \
+    "$url" \
+    -o /dev/null
+}
+
+verify_release_asset_downloads() {
+  local tag="$1"
+  local asset
+
+  for asset in "${EXPECTED_ASSETS[@]}"; do
+    verify_release_asset_download_url "$tag" "$asset"
+  done
+
+  printf 'asset downloads: verified\n'
+}
+
 cleanup() {
   if [ -n "$TEMP_DIR" ]; then
     rm -rf "$TEMP_DIR"
@@ -139,6 +177,7 @@ verify_github_release() {
   for asset in "${EXPECTED_ASSETS[@]}"; do
     jq -e --arg asset "$asset" '.assets[] | select(.name == $asset and .size > 0)' >/dev/null <<<"$release_json"
   done
+  verify_release_asset_downloads "$tag"
 
   asset_count="$(jq '.assets | length' <<<"$release_json")"
   printf 'release: %s\n' "$(jq -r .url <<<"$release_json")"
@@ -360,4 +399,6 @@ main() {
   printf 'tag: %s\n' "$tag"
 }
 
-main "$@"
+if [ "${CODEINSIGHT_VERIFY_RELEASE_NO_MAIN:-}" != "1" ]; then
+  main "$@"
+fi

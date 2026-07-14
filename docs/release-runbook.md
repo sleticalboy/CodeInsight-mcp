@@ -107,6 +107,10 @@ workflows finish:
 scripts/verify-release.sh vX.Y.Z
 ```
 
+The GitHub Release step validates both metadata and direct downloadability for
+all four platform archives. It first tries HTTP `HEAD` for each release asset
+URL, then retries with a ranged `GET` if the server or proxy rejects `HEAD`.
+
 If the local machine cannot run Docker or Homebrew, skip those checks
 explicitly and rely on the successful GitHub Actions jobs plus the remaining
 remote checks:

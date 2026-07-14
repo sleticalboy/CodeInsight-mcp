@@ -12,6 +12,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   fails, so invalid GitHub CLI auth does not block public release installs.
 - `scripts/verify-release.sh` now adds actionable diagnostics when GitHub CLI
   auth failures or API rate limits block release verification.
+- `scripts/verify-release.sh` now checks direct HTTP downloadability for every
+  expected GitHub Release archive.
 
 ## [0.1.11] - 2026-07-14
 

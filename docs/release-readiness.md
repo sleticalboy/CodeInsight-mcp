@@ -140,7 +140,8 @@ the affected GitHub Actions and release pages manually before announcing.
 The release is not complete until:
 
 - [ ] GitHub Release exists and is not a draft.
-- [ ] macOS and Linux archives exist for supported targets.
+- [ ] macOS and Linux archives exist for supported targets and their release
+      download URLs are reachable.
 - [ ] Public installer can install the requested version.
 - [ ] Homebrew formula is updated or an open tap PR exists.
 - [ ] GHCR image is published for `linux/amd64` and `linux/arm64`.
