@@ -82,6 +82,10 @@ MVP workflow is now implemented end to end.
 - Post-release install regression on 2026-07-14 verified the remote installer,
   Homebrew `brew install sleticalboy/tap/codeinsight`, and GHCR `latest` /
   `0.1.12` manifest metadata.
+- Installed-binary quickstart regression on 2026-07-14 verified
+  `/opt/homebrew/bin/codeinsight` can run `version`, `index`, `overview`,
+  `context-pack`, and MCP stdio calls against a temporary project outside this
+  source checkout.
 - Consolidated release verification passed with
   `CODEINSIGHT_SKIP_DOCKER=1 scripts/verify-release.sh --json v0.1.12`:
   GitHub Release metadata, direct asset downloads, release notes, public
@@ -131,6 +135,8 @@ Known local environment caveats on the current development machine:
   context routing or impact triage.
 - Keep benchmark evidence current when context-pack ranking or continuation
   behavior changes.
+- Keep `scripts/installed-quickstart-smoke.sh` green after install, MCP, or
+  first-read workflow changes.
 
 For accuracy boundaries and current non-goals, see
 [Known limitations](known-limitations.md).

@@ -74,6 +74,7 @@ jobs:
       - run: bash -n scripts/sync-homebrew-tap.sh
       - run: bash -n scripts/prepare-release.sh
       - run: bash -n scripts/verify-release.sh
+      - run: bash -n scripts/installed-quickstart-smoke.sh
       - run: bash -n scripts/install-fallback-smoke.sh
       - run: bash -n scripts/verify-release-gh-failure-smoke.sh
       - run: bash -n scripts/verify-release-asset-download-smoke.sh

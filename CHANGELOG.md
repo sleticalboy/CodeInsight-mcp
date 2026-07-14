@@ -14,6 +14,9 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   metadata-only override for that case.
 - Install docs now show pipe-compatible commands for version-pinned,
   custom-directory, and authenticated remote installer use.
+- Added `scripts/installed-quickstart-smoke.sh` to verify an installed binary
+  can complete the quickstart CLI and MCP stdio flow against a temporary
+  project outside the source checkout.
 
 ## [0.1.12] - 2026-07-14
 

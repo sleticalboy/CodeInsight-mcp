@@ -145,12 +145,23 @@ With an installed binary:
 CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/mcp-stdio-smoke.sh
 ```
 
-Expected output starts with:
+To verify the installed binary without using this repository as the target
+project:
+
+```bash
+scripts/installed-quickstart-smoke.sh
+```
+
+The MCP stdio smoke output starts with:
 
 ```text
 MCP stdio smoke passed
 tools: 15
 ```
+
+The installed quickstart smoke prints `installed quickstart smoke passed` after
+the installed binary completes `version`, `index`, `overview`, `context-pack`,
+and MCP stdio calls against a temporary project.
 
 ## 6. First Agent Task
 
