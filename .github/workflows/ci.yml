@@ -47,19 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - run: |
-          set -euo pipefail
-          latest_version="$(scripts/latest-changelog-version.sh CHANGELOG.md)"
-          test -n "$latest_version"
-          scripts/extract-release-notes.sh CHANGELOG.md latest /tmp/codeinsight-release-notes.md
-          scripts/extract-release-notes.sh CHANGELOG.md "$latest_version" /tmp/codeinsight-release-notes-explicit.md
-          scripts/extract-release-notes.sh --summary --max-items 2 CHANGELOG.md "$latest_version" /tmp/codeinsight-release-notes-summary.md
-          cmp /tmp/codeinsight-release-notes.md /tmp/codeinsight-release-notes-explicit.md
-          ! grep -Eq '^## \[[0-9]+\.[0-9]+\.[0-9]+\]' /tmp/codeinsight-release-notes.md
-          ! grep -Eq '^## \[Unreleased\]' /tmp/codeinsight-release-notes.md
-          grep -q '^### Highlights' /tmp/codeinsight-release-notes-summary.md
-          grep -q 'This release has ' /tmp/codeinsight-release-notes-summary.md
-          test "$(grep -c '^- ' /tmp/codeinsight-release-notes-summary.md)" -le 2
+      - run: scripts/release-notes-smoke.sh
       - run: scripts/script-syntax-smoke.sh
       - run: scripts/release-tooling-smoke.sh
       - run: scripts/docs-smoke.sh
