@@ -3,6 +3,9 @@
 Use this checklist for routine CodeInsight maintenance. It links to the deeper
 docs when a task needs more detail.
 
+For a short index of local development, maintenance smoke, benchmark, and
+optional external checks, see [Maintenance commands](maintenance-commands.md).
+
 ## Before Starting Work
 
 - Check the working tree:
@@ -30,7 +33,8 @@ docs when a task needs more detail.
   ```
 
 - For changes that affect first-read routing, context packing, MCP output, or
-  install behavior, also run the relevant smoke:
+  install behavior, also run the relevant smoke from
+  [Maintenance commands](maintenance-commands.md):
 
   ```bash
   scripts/agent-router-demo.sh

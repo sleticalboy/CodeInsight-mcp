@@ -11,6 +11,7 @@ release documents for CodeInsight.
 - [Agent prompt templates](agent-prompt-template.md)
 - [Current status](status.md)
 - [Maintainer checklist](maintainer-checklist.md)
+- [Maintenance commands](maintenance-commands.md)
 - [Install](install.md)
 - [First-read workflow](first-read-workflow.md)
 - [CLI usage](cli-usage.md)
@@ -38,6 +39,7 @@ release documents for CodeInsight.
 
 ## Validation
 
+- [Maintenance commands](maintenance-commands.md)
 - Agent-router demo: `scripts/agent-router-demo.sh`
 - [Two-minute demo script](demo-script.md)
 - [MCP client smoke test](mcp-client-smoke.md)

@@ -55,6 +55,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   contract checks out of CI workflow YAML.
 - Renamed the CI release-notes smoke job to maintenance smoke to match its
   release notes, release tooling, script syntax, and docs coverage.
+- Added `docs/maintenance-commands.md` as the short command index for local
+  development and maintenance smoke checks.
 
 ## [0.1.12] - 2026-07-14
 

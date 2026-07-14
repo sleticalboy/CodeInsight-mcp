@@ -80,6 +80,7 @@ Key docs:
 - [Agent prompt templates](docs/agent-prompt-template.md)
 - [Current status](docs/status.md)
 - [Maintainer checklist](docs/maintainer-checklist.md)
+- [Maintenance commands](docs/maintenance-commands.md)
 - [Install](docs/install.md)
 - [CLI usage](docs/cli-usage.md)
 - [MCP tools](docs/mcp-tools.md)
@@ -173,21 +174,11 @@ boundaries, see [MCP tools](docs/mcp-tools.md). For client setup snippets, see
 ## Development
 
 ```bash
-cargo fmt --check
-cargo test --locked
 scripts/local-ci-smoke.sh
 ```
 
-Run benchmark profiles:
-
-```bash
-scripts/benchmark-smoke.sh
-CODEINSIGHT_BENCH_PROFILE=large scripts/benchmark-smoke.sh
-```
-
-Benchmark profiles fail if index times exceed fixture guardrail budgets. To
-refresh reports without enforcing budgets, set
-`CODEINSIGHT_BENCH_DISABLE_BUDGETS=1`.
+For focused smoke groups, benchmark checks, and optional external checks, see
+[Maintenance commands](docs/maintenance-commands.md).
 
 ## Release Builds
 
