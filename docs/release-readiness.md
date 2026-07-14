@@ -4,7 +4,8 @@ Use this checklist before a public tag, launch post, demo recording, or wider
 MCP client adoption push. It answers one question: is this build ready to be
 trusted by new users as an MVP?
 
-For the mechanical release commands, use the [Release runbook](release-runbook.md).
+For the mechanical release commands, use [Release commands](release-commands.md)
+or the full [Release runbook](release-runbook.md).
 
 ## Current Baseline
 

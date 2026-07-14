@@ -84,6 +84,7 @@ Key docs:
 - [MCP tools](docs/mcp-tools.md)
 - [First-read workflow](docs/first-read-workflow.md)
 - [Client workflow](docs/client-workflow.md)
+- [Release commands](docs/release-commands.md)
 - [Release readiness](docs/release-readiness.md)
 - [Known limitations](docs/known-limitations.md)
 - [Documentation index](docs/README.md)

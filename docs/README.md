@@ -46,6 +46,7 @@ release documents for CodeInsight.
 
 ## Release
 
+- [Release commands](release-commands.md)
 - [Release readiness](release-readiness.md)
 - [Release runbook](release-runbook.md)
 - [Changelog](../CHANGELOG.md)

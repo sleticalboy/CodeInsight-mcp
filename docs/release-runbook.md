@@ -1,6 +1,7 @@
 # Release Runbook
 
 This document is the operational checklist for publishing CodeInsight releases.
+For the short command index, see [Release commands](release-commands.md).
 
 ## Prerequisites
 
