@@ -56,14 +56,32 @@ require_command() {
   fi
 }
 
-gh_checked() {
-  local description="$1"
+capture_command_stderr() {
+  local __err_file_var="$1"
   shift
 
-  local err_file status
-  err_file="$(mktemp)"
+  local captured_err_file status
+  captured_err_file="$(mktemp)"
   set +e
-  "$@" 2>"$err_file"
+  "$@" 2>"$captured_err_file"
+  status=$?
+  printf -v "$__err_file_var" '%s' "$captured_err_file"
+  return "$status"
+}
+
+checked_command() {
+  local label="$1"
+  local description="$2"
+  local diagnose_fn="$3"
+  shift 3
+
+  if [ "${1:-}" = "--" ]; then
+    shift
+  fi
+
+  local err_file status
+  set +e
+  capture_command_stderr err_file "$@"
   status=$?
   set -e
   if [ "$status" -eq 0 ]; then
@@ -72,7 +90,15 @@ gh_checked() {
   fi
 
   cat "$err_file" >&2
-  echo "GitHub CLI command failed while ${description}." >&2
+  echo "${label} command failed while ${description}." >&2
+  "$diagnose_fn" "$err_file"
+
+  rm -f "$err_file"
+  return "$status"
+}
+
+diagnose_gh_failure() {
+  local err_file="$1"
 
   if grep -Eiq '401|requires authentication|not logged in|authentication' "$err_file"; then
     echo "GitHub CLI authentication is not usable; run 'gh auth status' and 'gh auth login', or export a valid GITHUB_TOKEN for this shell." >&2
@@ -81,28 +107,17 @@ gh_checked() {
   else
     echo "Rerun with 'gh auth status' first if this looks like a local GitHub CLI credential issue." >&2
   fi
-
-  rm -f "$err_file"
-  return "$status"
 }
 
-docker_checked() {
+gh_checked() {
   local description="$1"
   shift
 
-  local err_file status
-  err_file="$(mktemp)"
-  set +e
-  "$@" 2>"$err_file"
-  status=$?
-  set -e
-  if [ "$status" -eq 0 ]; then
-    rm -f "$err_file"
-    return 0
-  fi
+  checked_command "GitHub CLI" "$description" diagnose_gh_failure -- "$@"
+}
 
-  cat "$err_file" >&2
-  echo "Docker command failed while ${description}." >&2
+diagnose_docker_failure() {
+  local err_file="$1"
 
   if grep -Eiq 'Cannot connect to the Docker daemon|docker daemon|daemon is running|permission denied|not running' "$err_file"; then
     echo "Docker is not usable in this shell; start Docker Desktop or the Docker daemon, then rerun verification." >&2
@@ -115,28 +130,17 @@ docker_checked() {
   else
     echo "If this is only a local Docker environment issue, rerun with CODEINSIGHT_SKIP_DOCKER=1 and confirm the Docker Image workflow separately." >&2
   fi
-
-  rm -f "$err_file"
-  return "$status"
 }
 
-brew_checked() {
+docker_checked() {
   local description="$1"
   shift
 
-  local err_file status
-  err_file="$(mktemp)"
-  set +e
-  "$@" 2>"$err_file"
-  status=$?
-  set -e
-  if [ "$status" -eq 0 ]; then
-    rm -f "$err_file"
-    return 0
-  fi
+  checked_command "Docker" "$description" diagnose_docker_failure -- "$@"
+}
 
-  cat "$err_file" >&2
-  echo "Homebrew command failed while ${description}." >&2
+diagnose_brew_failure() {
+  local err_file="$1"
 
   if grep -Eiq 'No available formula|No formulae|No similarly named formulae|Invalid tap|No such keg|not installed|No such file' "$err_file"; then
     echo "Homebrew could not find the tap or formula; confirm the tap was updated and rerun 'brew tap ${HOMEBREW_TAP}'." >&2
@@ -147,32 +151,27 @@ brew_checked() {
   else
     echo "If this is only a local Homebrew environment issue, rerun with CODEINSIGHT_SKIP_HOMEBREW=1 and confirm the tap update separately." >&2
   fi
+}
 
-  rm -f "$err_file"
-  return "$status"
+brew_checked() {
+  local description="$1"
+  shift
+
+  checked_command "Homebrew" "$description" diagnose_brew_failure -- "$@"
+}
+
+diagnose_homebrew_git_failure() {
+  local err_file="$1"
+
+  : "$err_file"
+  echo "Fix the local tap checkout or rerun with CODEINSIGHT_SKIP_HOMEBREW=1 and confirm the remote tap separately." >&2
 }
 
 homebrew_git_checked() {
   local description="$1"
   shift
 
-  local err_file status
-  err_file="$(mktemp)"
-  set +e
-  "$@" 2>"$err_file"
-  status=$?
-  set -e
-  if [ "$status" -eq 0 ]; then
-    rm -f "$err_file"
-    return 0
-  fi
-
-  cat "$err_file" >&2
-  echo "Homebrew tap git command failed while ${description}." >&2
-  echo "Fix the local tap checkout or rerun with CODEINSIGHT_SKIP_HOMEBREW=1 and confirm the remote tap separately." >&2
-
-  rm -f "$err_file"
-  return "$status"
+  checked_command "Homebrew tap git" "$description" diagnose_homebrew_git_failure -- "$@"
 }
 
 download_installer() {

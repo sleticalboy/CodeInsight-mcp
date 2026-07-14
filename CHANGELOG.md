@@ -18,6 +18,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   daemon, Buildx, registry, and platform verification failures.
 - `scripts/verify-release.sh` now gives actionable Homebrew diagnostics for
   tap state, formula version, fetch, checksum, and local environment failures.
+- `scripts/verify-release.sh` now routes GitHub, Docker, and Homebrew command
+  checks through a shared status-capture helper to reduce release-script drift.
 
 ## [0.1.11] - 2026-07-14
 
