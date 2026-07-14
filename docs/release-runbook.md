@@ -58,6 +58,7 @@ bash -n scripts/*.sh
 scripts/semantic-smoke.sh
 scripts/mcp-stdio-smoke.sh
 scripts/release-install-smoke.sh
+scripts/installed-quickstart-smoke.sh
 ```
 
 Commit and push the release prep:
@@ -105,6 +106,7 @@ workflows finish:
 
 ```bash
 scripts/verify-release.sh vX.Y.Z
+scripts/installed-quickstart-smoke.sh
 ```
 
 Print a final machine-readable summary after all gates pass:
@@ -112,6 +114,11 @@ Print a final machine-readable summary after all gates pass:
 ```bash
 scripts/verify-release.sh --json vX.Y.Z
 ```
+
+After the public install path has been refreshed, run
+`scripts/installed-quickstart-smoke.sh` with the installed `codeinsight`
+binary. This confirms a new user can complete the quickstart CLI flow and MCP
+stdio calls against a temporary project outside the source checkout.
 
 The GitHub Release step validates both metadata and direct downloadability for
 all four platform archives. It first tries HTTP `HEAD` for each release asset

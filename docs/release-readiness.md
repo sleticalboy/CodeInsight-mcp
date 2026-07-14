@@ -108,6 +108,7 @@ scripts/agent-router-demo.sh
 scripts/mcp-stdio-smoke.sh
 scripts/semantic-smoke.sh
 scripts/release-install-smoke.sh
+scripts/installed-quickstart-smoke.sh
 git diff --check
 ```
 
@@ -121,6 +122,9 @@ Expected result:
 - Semantic smoke completes with the deterministic local provider.
 - Release install smoke proves the install script can install a packaged local
   artifact.
+- Installed quickstart smoke proves an installed `codeinsight` binary can
+  complete `version`, `index`, `overview`, `context-pack`, and MCP stdio calls
+  against a temporary project outside the source checkout.
 - `git diff --check` reports no whitespace errors.
 
 Optional local checks when the environment supports them:
@@ -147,6 +151,7 @@ cargo build --locked --release
 scripts/agent-router-demo.sh
 scripts/mcp-stdio-smoke.sh
 scripts/release-install-smoke.sh
+scripts/installed-quickstart-smoke.sh
 ```
 
 Accept the rehearsal only if the clean checkout requires no local-only files,
@@ -159,6 +164,7 @@ For a tagged release, verify artifacts after the `Release Build` and
 
 ```bash
 scripts/verify-release.sh vX.Y.Z
+scripts/installed-quickstart-smoke.sh
 ```
 
 Use `scripts/verify-release.sh --json vX.Y.Z` when the final pass/fail summary

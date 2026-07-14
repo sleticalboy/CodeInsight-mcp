@@ -16,7 +16,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   custom-directory, and authenticated remote installer use.
 - Added `scripts/installed-quickstart-smoke.sh` to verify an installed binary
   can complete the quickstart CLI and MCP stdio flow against a temporary
-  project outside the source checkout.
+  project outside the source checkout, and documented it as a release
+  readiness/runbook gate.
 
 ## [0.1.12] - 2026-07-14
 
