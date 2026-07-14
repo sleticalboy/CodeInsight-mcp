@@ -64,6 +64,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - `scripts/docs-smoke.sh` now prints numbered stage labels before each docs
   smoke.
 - Smoke wrappers now share a common numbered-stage helper.
+- `scripts/agent-router-demo.sh` now prints `context_pack` reading-plan step
+  count and first next action.
 
 ## [0.1.12] - 2026-07-14
 

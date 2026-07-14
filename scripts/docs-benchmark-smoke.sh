@@ -126,8 +126,20 @@ main() {
     'context_pack' \
     "context_pack demo stage"
   require_pattern docs/demo-script.md \
+    'reading_plan_steps' \
+    "reading plan demo metric"
+  require_pattern docs/demo-script.md \
+    'first_next_action' \
+    "reading plan next action demo metric"
+  require_pattern docs/demo-script.md \
     'impact_analysis' \
     "impact_analysis demo stage"
+  require_pattern scripts/agent-router-demo.sh \
+    'reading_plan_steps' \
+    "agent-router reading plan output"
+  require_pattern scripts/agent-router-demo.sh \
+    'first_next_action' \
+    "agent-router next action output"
 
   echo "docs benchmark smoke passed"
 }

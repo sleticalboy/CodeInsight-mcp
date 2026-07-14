@@ -124,6 +124,8 @@ main() {
   echo "3. context_pack"
   echo "   selected_files: $(json_value "$context_json" '.files | length')"
   echo "   selected_ranges: $(json_value "$context_json" '[.files[].ranges | length] | add // 0')"
+  echo "   reading_plan_steps: $(json_value "$context_json" '.reading_plan | length')"
+  echo "   first_next_action: $(json_value "$context_json" '.reading_plan[0].next_action // "-"')"
   echo "   selected_lines: $selected_lines"
   echo "   line_reduction: $reduction"
   echo "   estimated_tokens: $(json_value "$context_json" '.estimated_tokens')"

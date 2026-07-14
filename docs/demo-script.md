@@ -86,6 +86,8 @@ Expected shape:
 3. context_pack
    selected_files: 10
    selected_ranges: 11
+   reading_plan_steps: 10
+   first_next_action: inspect_seed_file
    line_reduction: 98.4%
    continuation: complete
 
@@ -142,7 +144,8 @@ Before recording or presenting:
 - Run `scripts/agent-router-demo.sh`.
 - Confirm `indexed_files` is greater than zero.
 - Confirm `recommended_next_tools` is greater than zero.
-- Confirm `context_pack` reports selected files and `line_reduction`.
+- Confirm `context_pack` reports selected files, `reading_plan_steps`, and
+  `line_reduction`.
 - Confirm `impact_analysis` reports risk or suggested checks.
 - Keep [Known limitations](known-limitations.md) available if asked about
   static-analysis precision.

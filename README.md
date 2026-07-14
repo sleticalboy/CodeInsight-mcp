@@ -35,8 +35,9 @@ CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/agent-router-demo.sh
 
 The demo executes the same product path an MCP client should follow:
 `index -> overview -> context-pack -> impact-analysis`. It prints index timing,
-entrypoint and recommendation counts, selected context size, line-reduction
-percentage, continuation status, and impact-analysis summary.
+entrypoint and recommendation counts, selected context size, reading-plan
+steps, line-reduction percentage, continuation status, and impact-analysis
+summary.
 
 For a recording or project introduction, use the
 [two-minute demo script](docs/demo-script.md).
