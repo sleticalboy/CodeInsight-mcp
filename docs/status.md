@@ -143,6 +143,9 @@ release:
   stable version mismatches, and fetch/checksum failures.
 - `scripts/verify-release.sh` runs the installed quickstart smoke after public
   install verification, and `--json` records the installed quickstart gate.
+- `scripts/post-release-verify.sh` wraps release verification, JSON summary
+  persistence, and generated status-summary updates into one post-release
+  command.
 - CI covers the installer fallback, GitHub CLI auth failure, asset-download
   fallback, asset-unreachable diagnostic, Docker failure, Homebrew failure, and
   JSON summary paths through dedicated smoke scripts.

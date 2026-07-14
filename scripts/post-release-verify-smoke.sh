@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+TEMP_DIR=""
+
+cleanup() {
+  if [ -n "$TEMP_DIR" ]; then
+    rm -rf "$TEMP_DIR"
+  fi
+}
+
+main() {
+  TEMP_DIR="$(mktemp -d)"
+  trap cleanup EXIT INT TERM
+
+  local summary_file="$TEMP_DIR/summary.json"
+  local status_doc="$TEMP_DIR/status.md"
+  local fake_verify="$TEMP_DIR/verify-release.sh"
+  local fake_update="$TEMP_DIR/update-release-status.sh"
+
+  cat >"$fake_verify" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+test "${CODEINSIGHT_SKIP_DOCKER:-}" = "1"
+test "${CODEINSIGHT_SKIP_HOMEBREW:-}" = "1"
+test "${CODEINSIGHT_SKIP_INSTALLED_QUICKSTART:-}" = "1"
+test "${CODEINSIGHT_ALLOW_ASSET_DOWNLOAD_UNREACHABLE:-}" = "1"
+test "$1" = "--json"
+test "$2" = "v9.8.7"
+
+cat <<'LOG'
+==> Verify public install script
+{"name":"codeinsight","version":"9.8.7"}
+
+==> Release verification passed
+tag: v9.8.7
+LOG
+cat <<'JSON'
+{
+  "status": "passed",
+  "tag": "v9.8.7",
+  "version": "9.8.7",
+  "repo": "sleticalboy/CodeInsight-mcp",
+  "gates": {
+    "github_release": "passed",
+    "github_asset_downloads": "metadata_only",
+    "release_notes": "passed",
+    "install_script": "passed",
+    "installed_quickstart": "skipped",
+    "docker": "skipped",
+    "homebrew_remote_formula": "passed",
+    "homebrew_fetch": "skipped"
+  },
+  "expected_assets": ["codeinsight-x86_64-unknown-linux-gnu.tar.gz"],
+  "docker": {"image": "ghcr.io/sleticalboy/codeinsight-mcp", "skipped": true},
+  "homebrew": {"tap": "sleticalboy/tap", "repo": "sleticalboy/homebrew-tap", "skipped": true},
+  "installed_quickstart": {"binary": "-", "skipped": true}
+}
+JSON
+EOF
+  chmod +x "$fake_verify"
+
+  cat >"$fake_update" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+test -s "$1"
+test "$2" = "$CODEINSIGHT_EXPECTED_STATUS_DOC"
+cp "$1" "$2"
+EOF
+  chmod +x "$fake_update"
+
+  CODEINSIGHT_EXPECTED_STATUS_DOC="$status_doc" \
+    CODEINSIGHT_VERIFY_RELEASE_SCRIPT="$fake_verify" \
+    CODEINSIGHT_UPDATE_RELEASE_STATUS_SCRIPT="$fake_update" \
+    "$ROOT_DIR/scripts/post-release-verify.sh" \
+    --summary-file "$summary_file" \
+    --status-doc "$status_doc" \
+    --skip-docker \
+    --skip-homebrew \
+    --skip-installed-quickstart \
+    --allow-asset-download-unreachable \
+    9.8.7 >"$TEMP_DIR/post.out"
+
+  jq -e '
+    .tag == "v9.8.7" and
+    .gates.github_asset_downloads == "metadata_only" and
+    .gates.docker == "skipped"
+  ' "$summary_file" >/dev/null
+  cmp "$summary_file" "$status_doc"
+  grep -q "post-release verification passed" "$TEMP_DIR/post.out"
+  grep -q "summary: $summary_file" "$TEMP_DIR/post.out"
+  grep -q "status: $status_doc" "$TEMP_DIR/post.out"
+
+  echo "post-release verify smoke passed"
+}
+
+main "$@"

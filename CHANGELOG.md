@@ -25,6 +25,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - Added `scripts/update-release-status.sh` to refresh the generated
   `docs/status.md` release verification summary from
   `scripts/verify-release.sh --json` output.
+- Added `scripts/post-release-verify.sh` to run release verification, save the
+  JSON summary, and refresh `docs/status.md` through one post-release command.
 
 ## [0.1.12] - 2026-07-14
 

@@ -108,17 +108,18 @@ workflows finish:
 scripts/verify-release.sh vX.Y.Z
 ```
 
-Print a final machine-readable summary after all gates pass:
+Run the post-release verifier to save a machine-readable summary and refresh
+the generated status summary:
 
 ```bash
-scripts/verify-release.sh --json vX.Y.Z
+scripts/post-release-verify.sh vX.Y.Z
 ```
 
-Save the JSON output and refresh the generated status summary:
+If the local machine cannot run Docker or Homebrew, pass the same explicit
+skip options:
 
 ```bash
-scripts/verify-release.sh --json vX.Y.Z > /tmp/codeinsight-release-summary.json
-scripts/update-release-status.sh /tmp/codeinsight-release-summary.json
+scripts/post-release-verify.sh --skip-docker --skip-homebrew vX.Y.Z
 ```
 
 The consolidated script installs the tagged binary with the public installer,
@@ -142,6 +143,12 @@ CODEINSIGHT_ALLOW_ASSET_DOWNLOAD_UNREACHABLE=1 scripts/verify-release.sh vX.Y.Z
 
 The JSON summary marks this as `github_asset_downloads: "metadata_only"` so it
 is not confused with a full direct-download pass.
+
+The same override is available through the post-release wrapper:
+
+```bash
+scripts/post-release-verify.sh --allow-asset-download-unreachable vX.Y.Z
+```
 
 If the local machine cannot run Docker or Homebrew, skip those checks
 explicitly and rely on the successful GitHub Actions jobs plus the remaining
