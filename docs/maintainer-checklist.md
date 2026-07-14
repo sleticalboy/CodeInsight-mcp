@@ -29,6 +29,7 @@ docs when a task needs more detail.
   cargo fmt --check
   cargo test --locked
   bash -n scripts/*.sh
+  scripts/docs-link-smoke.sh
   git diff --check
   ```
 

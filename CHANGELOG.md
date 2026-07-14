@@ -31,6 +31,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   index for prepare, publish, verify, and status-update operations.
 - Added `docs/maintainer-checklist.md` to collect routine development, PR,
   release, and support checks in one place.
+- Added `scripts/docs-link-smoke.sh` to catch broken local Markdown links in
+  README, CHANGELOG, and docs pages.
 
 ## [0.1.12] - 2026-07-14
 
