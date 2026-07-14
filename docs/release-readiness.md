@@ -170,6 +170,8 @@ Use `scripts/verify-release.sh --json vX.Y.Z` when the final pass/fail summary
 needs to be copied into CI logs, release notes, or the verification record.
 The consolidated script also runs the installed quickstart smoke against the
 binary installed by the public install script.
+Use `scripts/update-release-status.sh` with that JSON output to refresh the
+generated verification summary in [Current status](status.md).
 
 If Docker or Homebrew cannot run on the local machine, skip those local checks
 explicitly:

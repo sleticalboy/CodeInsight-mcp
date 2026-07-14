@@ -82,6 +82,8 @@ jobs:
       - run: bash -n scripts/verify-release-docker-failure-smoke.sh
       - run: bash -n scripts/verify-release-homebrew-failure-smoke.sh
       - run: bash -n scripts/verify-release-summary-smoke.sh
+      - run: bash -n scripts/update-release-status.sh
+      - run: bash -n scripts/update-release-status-smoke.sh
       - run: scripts/install-fallback-smoke.sh
       - run: scripts/verify-release-gh-failure-smoke.sh
       - run: scripts/verify-release-asset-download-smoke.sh
@@ -89,6 +91,7 @@ jobs:
       - run: scripts/verify-release-docker-failure-smoke.sh
       - run: scripts/verify-release-homebrew-failure-smoke.sh
       - run: scripts/verify-release-summary-smoke.sh
+      - run: scripts/update-release-status-smoke.sh
       - run: scripts/verify-release.sh --help >/tmp/codeinsight-verify-release-help.txt
       - run: |
           set -euo pipefail

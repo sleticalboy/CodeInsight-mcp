@@ -91,6 +91,35 @@ MVP workflow is now implemented end to end.
   GitHub Release metadata, direct asset downloads, release notes, public
   installer, remote Homebrew formula, and Homebrew fetch all passed.
 
+
+<!-- release-verification-summary:start -->
+### Release Verification Summary
+
+Generated from `scripts/verify-release.sh --json` on 2026-07-14.
+
+- Status: `passed`
+- Tag: `v0.1.12`
+- Version: `0.1.12`
+- Repository: `sleticalboy/CodeInsight-mcp`
+- Gates:
+  - `github_release`: `passed`
+  - `github_asset_downloads`: `passed`
+  - `release_notes`: `passed`
+  - `install_script`: `passed`
+  - `installed_quickstart`: `passed`
+  - `docker`: `skipped`
+  - `homebrew_remote_formula`: `passed`
+  - `homebrew_fetch`: `passed`
+- Expected release assets:
+  - `codeinsight-aarch64-apple-darwin.tar.gz`
+  - `codeinsight-aarch64-unknown-linux-gnu.tar.gz`
+  - `codeinsight-x86_64-apple-darwin.tar.gz`
+  - `codeinsight-x86_64-unknown-linux-gnu.tar.gz`
+- Docker image: `ghcr.io/sleticalboy/codeinsight-mcp` (skipped locally)
+- Homebrew tap: `sleticalboy/tap` (verified)
+- Installed quickstart binary: `/opt/homebrew/bin/codeinsight` (verified)
+<!-- release-verification-summary:end -->
+
 ## Current Release Tooling State
 
 `main` includes the release-verification hardening used during the `v0.1.12`

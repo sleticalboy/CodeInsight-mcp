@@ -22,6 +22,9 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   public install verification and records the gate in `--json` output.
 - `scripts/install.sh` now applies bounded timeouts to GitHub CLI and curl
   release downloads before falling back or failing.
+- Added `scripts/update-release-status.sh` to refresh the generated
+  `docs/status.md` release verification summary from
+  `scripts/verify-release.sh --json` output.
 
 ## [0.1.12] - 2026-07-14
 

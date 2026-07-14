@@ -114,6 +114,13 @@ Print a final machine-readable summary after all gates pass:
 scripts/verify-release.sh --json vX.Y.Z
 ```
 
+Save the JSON output and refresh the generated status summary:
+
+```bash
+scripts/verify-release.sh --json vX.Y.Z > /tmp/codeinsight-release-summary.json
+scripts/update-release-status.sh /tmp/codeinsight-release-summary.json
+```
+
 The consolidated script installs the tagged binary with the public installer,
 then runs `scripts/installed-quickstart-smoke.sh` against that installed
 binary. This confirms a new user can complete the quickstart CLI flow and MCP
