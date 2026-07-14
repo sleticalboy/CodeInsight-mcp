@@ -12,6 +12,7 @@ main() {
   "$ROOT_DIR/scripts/verify-release-homebrew-failure-smoke.sh"
   "$ROOT_DIR/scripts/verify-release-help-smoke.sh"
   "$ROOT_DIR/scripts/verify-release-summary-smoke.sh"
+  "$ROOT_DIR/scripts/prepare-release-smoke.sh"
   "$ROOT_DIR/scripts/post-release-verify-smoke.sh"
   "$ROOT_DIR/scripts/update-release-status-smoke.sh"
 
