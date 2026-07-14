@@ -126,6 +126,13 @@ Docker is not usable on the local machine, treat that as an environment blocker
 or rerun with `CODEINSIGHT_SKIP_DOCKER=1` and confirm the Docker Image workflow
 separately.
 
+When Homebrew verification is enabled, the script checks the remote formula,
+refreshes the local tap when possible, verifies the stable version, and runs
+`brew fetch` to validate the archive checksums. Dirty local tap checkouts,
+formula version mismatches, and checksum/fetch failures are blockers. If only
+local Homebrew state is broken, rerun with `CODEINSIGHT_SKIP_HOMEBREW=1` and
+confirm the remote tap PR or formula manually.
+
 `scripts/verify-release.sh` still requires usable GitHub CLI API access for
 release metadata and Homebrew tap checks. If it reports authentication or rate
 limit errors, run:

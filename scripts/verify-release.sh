@@ -120,6 +120,61 @@ docker_checked() {
   return "$status"
 }
 
+brew_checked() {
+  local description="$1"
+  shift
+
+  local err_file status
+  err_file="$(mktemp)"
+  set +e
+  "$@" 2>"$err_file"
+  status=$?
+  set -e
+  if [ "$status" -eq 0 ]; then
+    rm -f "$err_file"
+    return 0
+  fi
+
+  cat "$err_file" >&2
+  echo "Homebrew command failed while ${description}." >&2
+
+  if grep -Eiq 'No available formula|No formulae|No similarly named formulae|Invalid tap|No such keg|not installed|No such file' "$err_file"; then
+    echo "Homebrew could not find the tap or formula; confirm the tap was updated and rerun 'brew tap ${HOMEBREW_TAP}'." >&2
+  elif grep -Eiq 'SHA256 mismatch|checksum|Failed to download|curl:|HTTP|timed out|Connection' "$err_file"; then
+    echo "Homebrew reached the formula but could not fetch or verify the archive; confirm the release asset URLs and formula checksums." >&2
+  elif grep -Eiq 'Permission denied|Operation not permitted|lock|another active Homebrew process' "$err_file"; then
+    echo "Homebrew is blocked by a local permission or lock issue; fix the local Homebrew state, then rerun verification." >&2
+  else
+    echo "If this is only a local Homebrew environment issue, rerun with CODEINSIGHT_SKIP_HOMEBREW=1 and confirm the tap update separately." >&2
+  fi
+
+  rm -f "$err_file"
+  return "$status"
+}
+
+homebrew_git_checked() {
+  local description="$1"
+  shift
+
+  local err_file status
+  err_file="$(mktemp)"
+  set +e
+  "$@" 2>"$err_file"
+  status=$?
+  set -e
+  if [ "$status" -eq 0 ]; then
+    rm -f "$err_file"
+    return 0
+  fi
+
+  cat "$err_file" >&2
+  echo "Homebrew tap git command failed while ${description}." >&2
+  echo "Fix the local tap checkout or rerun with CODEINSIGHT_SKIP_HOMEBREW=1 and confirm the remote tap separately." >&2
+
+  rm -f "$err_file"
+  return "$status"
+}
+
 download_installer() {
   local installer_url="$1"
   local output="$2"
@@ -386,14 +441,18 @@ fast_forward_local_tap() {
 
   if [ -n "$(git -C "$tap_dir" status --porcelain)" ]; then
     echo "local Homebrew tap has uncommitted changes: $tap_dir" >&2
+    echo "commit, stash, or discard the tap changes before release verification." >&2
+    echo "To verify the non-Homebrew release gates now, rerun with CODEINSIGHT_SKIP_HOMEBREW=1." >&2
     exit 1
   fi
 
-  if ! git -C "$tap_dir" fetch origin main; then
+  if ! homebrew_git_checked "refreshing local Homebrew tap ${tap_dir}" \
+    git -C "$tap_dir" fetch origin main; then
     echo "warning: could not refresh local Homebrew tap; using current local tap state" >&2
     return
   fi
-  git -C "$tap_dir" merge --ff-only origin/main
+  homebrew_git_checked "fast-forwarding local Homebrew tap ${tap_dir}" \
+    git -C "$tap_dir" merge --ff-only origin/main
 }
 
 verify_homebrew_fetch() {
@@ -408,13 +467,21 @@ verify_homebrew_fetch() {
   require_command brew
 
   log "Verify Homebrew fetch"
-  HOMEBREW_NO_AUTO_UPDATE=1 brew tap "$HOMEBREW_TAP" >/dev/null
+  HOMEBREW_NO_AUTO_UPDATE=1 brew_checked "tapping ${HOMEBREW_TAP}" \
+    brew tap "$HOMEBREW_TAP" >/dev/null
   tap_dir="$(tap_path)"
   fast_forward_local_tap "$tap_dir"
 
-  stable_version="$(HOMEBREW_NO_AUTO_UPDATE=1 brew info --json=v2 "${HOMEBREW_TAP}/codeinsight" | jq -r '.formulae[0].versions.stable')"
-  test "$stable_version" = "$version"
-  HOMEBREW_NO_AUTO_UPDATE=1 brew fetch --formula "${HOMEBREW_TAP}/codeinsight" --force
+  stable_version="$(HOMEBREW_NO_AUTO_UPDATE=1 brew_checked "reading Homebrew formula info for ${HOMEBREW_TAP}/codeinsight" \
+    brew info --json=v2 "${HOMEBREW_TAP}/codeinsight" |
+    jq -r '.formulae[0].versions.stable')"
+  if [ "$stable_version" != "$version" ]; then
+    echo "Homebrew formula stable version mismatch: expected ${version}, got ${stable_version}" >&2
+    echo "Confirm the tap formula references ${version}, then rerun verification." >&2
+    exit 1
+  fi
+  HOMEBREW_NO_AUTO_UPDATE=1 brew_checked "fetching Homebrew formula archive for ${HOMEBREW_TAP}/codeinsight" \
+    brew fetch --formula "${HOMEBREW_TAP}/codeinsight" --force
 }
 
 main() {

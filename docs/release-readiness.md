@@ -137,6 +137,11 @@ environment blockers. If they cannot be fixed locally, skip Docker verification
 with `CODEINSIGHT_SKIP_DOCKER=1` and confirm the `Docker Image` workflow result
 plus GHCR tags before announcing.
 
+When Homebrew verification is enabled, dirty local tap checkouts, stable version
+mismatches, and `brew fetch` checksum/download failures are blockers. If the
+local Homebrew environment is the only problem, skip with
+`CODEINSIGHT_SKIP_HOMEBREW=1` and confirm the remote tap formula separately.
+
 `scripts/verify-release.sh` needs working GitHub CLI API access for release
 metadata and remote tap checks. Authentication failures or API rate limits are
 environment blockers; fix with `gh auth status` / `gh auth login`, or verify

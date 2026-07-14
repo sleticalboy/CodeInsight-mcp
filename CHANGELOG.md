@@ -16,6 +16,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   expected GitHub Release archive.
 - `scripts/verify-release.sh` now gives actionable Docker diagnostics for
   daemon, Buildx, registry, and platform verification failures.
+- `scripts/verify-release.sh` now gives actionable Homebrew diagnostics for
+  tap state, formula version, fetch, checksum, and local environment failures.
 
 ## [0.1.11] - 2026-07-14
 

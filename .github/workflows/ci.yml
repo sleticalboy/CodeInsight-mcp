@@ -78,10 +78,12 @@ jobs:
       - run: bash -n scripts/verify-release-gh-failure-smoke.sh
       - run: bash -n scripts/verify-release-asset-download-smoke.sh
       - run: bash -n scripts/verify-release-docker-failure-smoke.sh
+      - run: bash -n scripts/verify-release-homebrew-failure-smoke.sh
       - run: scripts/install-fallback-smoke.sh
       - run: scripts/verify-release-gh-failure-smoke.sh
       - run: scripts/verify-release-asset-download-smoke.sh
       - run: scripts/verify-release-docker-failure-smoke.sh
+      - run: scripts/verify-release-homebrew-failure-smoke.sh
       - run: scripts/verify-release.sh --help >/tmp/codeinsight-verify-release-help.txt
       - run: |
           set -euo pipefail
