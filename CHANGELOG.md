@@ -37,6 +37,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   local-first AI-agent workflow, support checklist, and limitations docs.
 - Added `scripts/docs-benchmark-smoke.sh` to keep README demo/benchmark claims,
   benchmark reports, and benchmark fixture profiles aligned.
+- Added `scripts/docs-smoke.sh` as the single local entrypoint for all docs
+  smoke checks.
 
 ## [0.1.12] - 2026-07-14
 
