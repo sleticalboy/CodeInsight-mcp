@@ -11,8 +11,8 @@ Run the standard non-network local gate:
 scripts/local-ci-smoke.sh
 ```
 
-This runs formatting, Rust tests, shell syntax checks, release-tooling smokes,
-docs smokes, and whitespace diff checks.
+This prints numbered stages and runs formatting, Rust tests, shell syntax
+checks, release-tooling smokes, docs smokes, and whitespace diff checks.
 
 ## Maintenance Smoke Groups
 
