@@ -35,6 +35,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   README, CHANGELOG, and docs pages.
 - Added `scripts/docs-positioning-smoke.sh` to keep entry docs linked to the
   local-first AI-agent workflow, support checklist, and limitations docs.
+- Added `scripts/docs-benchmark-smoke.sh` to keep README demo/benchmark claims,
+  benchmark reports, and benchmark fixture profiles aligned.
 
 ## [0.1.12] - 2026-07-14
 

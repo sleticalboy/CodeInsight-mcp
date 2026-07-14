@@ -31,6 +31,7 @@ docs when a task needs more detail.
   bash -n scripts/*.sh
   scripts/docs-link-smoke.sh
   scripts/docs-positioning-smoke.sh
+  scripts/docs-benchmark-smoke.sh
   git diff --check
   ```
 
