@@ -6,6 +6,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ## [Unreleased]
 
+## [0.1.12] - 2026-07-14
+
 ### Changed
 
 - `scripts/install.sh` now falls back to `curl` when `gh release download`
