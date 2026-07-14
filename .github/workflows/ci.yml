@@ -43,7 +43,7 @@ jobs:
           key: release-install-smoke-${{ matrix.os }}
       - run: scripts/release-install-smoke.sh
 
-  release-notes-smoke:
+  maintenance-smoke:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

@@ -53,6 +53,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   fixture checks out of CI workflow YAML.
 - Added `scripts/release-notes-smoke.sh` to keep release note extraction
   contract checks out of CI workflow YAML.
+- Renamed the CI release-notes smoke job to maintenance smoke to match its
+  release notes, release tooling, script syntax, and docs coverage.
 
 ## [0.1.12] - 2026-07-14
 
