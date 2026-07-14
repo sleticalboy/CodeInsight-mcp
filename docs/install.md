@@ -39,8 +39,9 @@ gh auth login
 sh scripts/install.sh
 ```
 
-Without GitHub CLI, the installer falls back to `curl`. Set `GITHUB_TOKEN` if
-the release assets require authentication.
+Without GitHub CLI, the installer falls back to `curl`. If GitHub CLI is
+installed but cannot download the asset, the installer also falls back to
+`curl`. Set `GITHUB_TOKEN` if the release assets require authentication.
 
 Smoke test the packaged installer path locally:
 

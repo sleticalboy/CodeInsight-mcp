@@ -69,6 +69,27 @@ download_with_curl() {
     fi
 }
 
+download_release_asset() {
+    asset="$1"
+    tmp_dir="$2"
+
+    if command -v gh >/dev/null 2>&1; then
+        if download_with_gh "$asset" "$tmp_dir"; then
+            return 0
+        fi
+
+        rm -f "$tmp_dir/$asset"
+        echo "gh release download failed; falling back to curl" >&2
+    fi
+
+    if command -v curl >/dev/null 2>&1; then
+        download_with_curl "$asset" "$tmp_dir"
+    else
+        echo "install requires either gh or curl" >&2
+        exit 1
+    fi
+}
+
 download_local_asset() {
     asset="$1"
     tmp_dir="$2"
@@ -101,13 +122,8 @@ main() {
 
     if [ -n "${CODEINSIGHT_ASSET_PATH:-}" ]; then
         download_local_asset "$asset" "$tmp_dir"
-    elif command -v gh >/dev/null 2>&1; then
-        download_with_gh "$asset" "$tmp_dir"
-    elif command -v curl >/dev/null 2>&1; then
-        download_with_curl "$asset" "$tmp_dir"
     else
-        echo "install requires either gh or curl" >&2
-        exit 1
+        download_release_asset "$asset" "$tmp_dir"
     fi
 
     tar -xzf "$tmp_dir/$asset" -C "$tmp_dir"
