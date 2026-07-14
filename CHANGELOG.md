@@ -14,6 +14,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   auth failures or API rate limits block release verification.
 - `scripts/verify-release.sh` now checks direct HTTP downloadability for every
   expected GitHub Release archive.
+- `scripts/verify-release.sh` now gives actionable Docker diagnostics for
+  daemon, Buildx, registry, and platform verification failures.
 
 ## [0.1.11] - 2026-07-14
 

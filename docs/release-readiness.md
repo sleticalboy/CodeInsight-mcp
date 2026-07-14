@@ -132,6 +132,11 @@ explicitly:
 CODEINSIGHT_SKIP_DOCKER=1 CODEINSIGHT_SKIP_HOMEBREW=1 scripts/verify-release.sh vX.Y.Z
 ```
 
+When Docker verification is enabled, local Docker daemon and Buildx failures are
+environment blockers. If they cannot be fixed locally, skip Docker verification
+with `CODEINSIGHT_SKIP_DOCKER=1` and confirm the `Docker Image` workflow result
+plus GHCR tags before announcing.
+
 `scripts/verify-release.sh` needs working GitHub CLI API access for release
 metadata and remote tap checks. Authentication failures or API rate limits are
 environment blockers; fix with `gh auth status` / `gh auth login`, or verify

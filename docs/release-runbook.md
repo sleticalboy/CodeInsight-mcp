@@ -119,6 +119,13 @@ remote checks:
 CODEINSIGHT_SKIP_DOCKER=1 CODEINSIGHT_SKIP_HOMEBREW=1 scripts/verify-release.sh vX.Y.Z
 ```
 
+When Docker verification is enabled, `scripts/verify-release.sh` first checks
+Docker daemon and Buildx availability, then validates the GHCR manifest digest,
+`linux/amd64` and `linux/arm64` platforms, and container `version` output. If
+Docker is not usable on the local machine, treat that as an environment blocker
+or rerun with `CODEINSIGHT_SKIP_DOCKER=1` and confirm the Docker Image workflow
+separately.
+
 `scripts/verify-release.sh` still requires usable GitHub CLI API access for
 release metadata and Homebrew tap checks. If it reports authentication or rate
 limit errors, run:

@@ -62,12 +62,15 @@ gh_checked() {
 
   local err_file status
   err_file="$(mktemp)"
-  if "$@" 2>"$err_file"; then
+  set +e
+  "$@" 2>"$err_file"
+  status=$?
+  set -e
+  if [ "$status" -eq 0 ]; then
     rm -f "$err_file"
     return 0
   fi
 
-  status=$?
   cat "$err_file" >&2
   echo "GitHub CLI command failed while ${description}." >&2
 
@@ -77,6 +80,40 @@ gh_checked() {
     echo "GitHub API rate limit blocked verification; authenticate gh for a higher limit or retry after the limit resets." >&2
   else
     echo "Rerun with 'gh auth status' first if this looks like a local GitHub CLI credential issue." >&2
+  fi
+
+  rm -f "$err_file"
+  return "$status"
+}
+
+docker_checked() {
+  local description="$1"
+  shift
+
+  local err_file status
+  err_file="$(mktemp)"
+  set +e
+  "$@" 2>"$err_file"
+  status=$?
+  set -e
+  if [ "$status" -eq 0 ]; then
+    rm -f "$err_file"
+    return 0
+  fi
+
+  cat "$err_file" >&2
+  echo "Docker command failed while ${description}." >&2
+
+  if grep -Eiq 'Cannot connect to the Docker daemon|docker daemon|daemon is running|permission denied|not running' "$err_file"; then
+    echo "Docker is not usable in this shell; start Docker Desktop or the Docker daemon, then rerun verification." >&2
+    echo "To verify the non-Docker release gates now, rerun with CODEINSIGHT_SKIP_DOCKER=1." >&2
+  elif grep -Eiq 'unknown command|buildx|imagetools|no builder|builder' "$err_file"; then
+    echo "Docker buildx/imagetools is unavailable; install or enable Docker Buildx before verifying GHCR manifests." >&2
+    echo "To verify the non-Docker release gates now, rerun with CODEINSIGHT_SKIP_DOCKER=1." >&2
+  elif grep -Eiq 'no matching manifest|manifest unknown|pull access denied|not found|unauthorized|denied' "$err_file"; then
+    echo "Docker image verification reached the registry but the expected image, tag, or platform is unavailable." >&2
+  else
+    echo "If this is only a local Docker environment issue, rerun with CODEINSIGHT_SKIP_DOCKER=1 and confirm the Docker Image workflow separately." >&2
   fi
 
   rm -f "$err_file"
@@ -223,12 +260,22 @@ verify_install_script() {
 
 docker_manifest_platforms() {
   local image_ref="$1"
-  docker buildx imagetools inspect "$image_ref" | awk '/Platform:/ {print $2}' | sort -u
+  docker_checked "inspecting Docker manifest platforms for ${image_ref}" \
+    docker buildx imagetools inspect "$image_ref" |
+    awk '/Platform:/ {print $2}' |
+    sort -u
 }
 
 docker_manifest_digest() {
   local image_ref="$1"
-  docker buildx imagetools inspect "$image_ref" | awk '/^Digest:/ {print $2; exit}'
+  docker_checked "inspecting Docker manifest digest for ${image_ref}" \
+    docker buildx imagetools inspect "$image_ref" |
+    awk '/^Digest:/ {print $2; exit}'
+}
+
+verify_docker_environment() {
+  docker_checked "checking Docker daemon availability" docker info >/dev/null || return
+  docker_checked "checking Docker Buildx availability" docker buildx version >/dev/null || return
 }
 
 verify_docker() {
@@ -243,6 +290,7 @@ verify_docker() {
   fi
 
   require_command docker
+  verify_docker_environment
 
   log "Verify Docker manifests"
   tag_digest="$(docker_manifest_digest "$tag_ref")"
@@ -255,11 +303,13 @@ verify_docker() {
   printf 'docker digest: %s\n' "$tag_digest"
 
   log "Verify Docker version output"
-  version_json="$(docker run --rm --platform linux/arm64 "$tag_ref" version)"
+  version_json="$(docker_checked "running ${tag_ref} for linux/arm64" \
+    docker run --rm --platform linux/arm64 "$tag_ref" version)"
   jq -e --arg version "$version" '.name == "codeinsight" and .version == $version and .target_arch == "aarch64"' >/dev/null <<<"$version_json"
   printf '%s\n' "$version_json"
 
-  version_json="$(docker run --rm --platform linux/amd64 "$tag_ref" version)"
+  version_json="$(docker_checked "running ${tag_ref} for linux/amd64" \
+    docker run --rm --platform linux/amd64 "$tag_ref" version)"
   jq -e --arg version "$version" '.name == "codeinsight" and .version == $version and .target_arch == "x86_64"' >/dev/null <<<"$version_json"
   printf '%s\n' "$version_json"
 }
