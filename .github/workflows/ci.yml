@@ -75,7 +75,9 @@ jobs:
       - run: bash -n scripts/prepare-release.sh
       - run: bash -n scripts/verify-release.sh
       - run: bash -n scripts/install-fallback-smoke.sh
+      - run: bash -n scripts/verify-release-gh-failure-smoke.sh
       - run: scripts/install-fallback-smoke.sh
+      - run: scripts/verify-release-gh-failure-smoke.sh
       - run: scripts/verify-release.sh --help >/tmp/codeinsight-verify-release-help.txt
       - run: |
           set -euo pipefail

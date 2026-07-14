@@ -56,6 +56,33 @@ require_command() {
   fi
 }
 
+gh_checked() {
+  local description="$1"
+  shift
+
+  local err_file status
+  err_file="$(mktemp)"
+  if "$@" 2>"$err_file"; then
+    rm -f "$err_file"
+    return 0
+  fi
+
+  status=$?
+  cat "$err_file" >&2
+  echo "GitHub CLI command failed while ${description}." >&2
+
+  if grep -Eiq '401|requires authentication|not logged in|authentication' "$err_file"; then
+    echo "GitHub CLI authentication is not usable; run 'gh auth status' and 'gh auth login', or export a valid GITHUB_TOKEN for this shell." >&2
+  elif grep -Eiq 'rate limit|403 forbidden|api rate limit' "$err_file"; then
+    echo "GitHub API rate limit blocked verification; authenticate gh for a higher limit or retry after the limit resets." >&2
+  else
+    echo "Rerun with 'gh auth status' first if this looks like a local GitHub CLI credential issue." >&2
+  fi
+
+  rm -f "$err_file"
+  return "$status"
+}
+
 download_installer() {
   local installer_url="$1"
   local output="$2"
@@ -73,7 +100,9 @@ download_installer() {
   done
 
   echo "falling back to GitHub API for scripts/install.sh" >&2
-  gh api "repos/${REPO}/contents/scripts/install.sh?ref=main" --jq .content | base64 --decode >"$output"
+  gh_checked "downloading scripts/install.sh through the GitHub API" \
+    gh api "repos/${REPO}/contents/scripts/install.sh?ref=main" --jq .content |
+    base64 --decode >"$output"
 }
 
 cleanup() {
@@ -99,7 +128,8 @@ verify_github_release() {
   local release_json asset_count
 
   log "Verify GitHub Release ${tag}"
-  release_json="$(gh release view "$tag" --repo "$REPO" --json tagName,isDraft,isPrerelease,url,assets,body)"
+  release_json="$(gh_checked "reading GitHub Release ${tag}" \
+    gh release view "$tag" --repo "$REPO" --json tagName,isDraft,isPrerelease,url,assets,body)"
 
   jq -e \
     --arg tag "$tag" \
@@ -200,7 +230,9 @@ verify_homebrew_remote_formula() {
   local formula
 
   log "Verify remote Homebrew formula"
-  formula="$(gh api "repos/${HOMEBREW_REPO}/contents/Formula/codeinsight.rb" --jq .content | base64 --decode)"
+  formula="$(gh_checked "reading remote Homebrew formula" \
+    gh api "repos/${HOMEBREW_REPO}/contents/Formula/codeinsight.rb" --jq .content |
+    base64 --decode)"
 
   if ! homebrew_formula_has_tag "$formula" "$tag"; then
     if report_pending_homebrew_pr "$tag"; then
@@ -230,7 +262,8 @@ report_pending_homebrew_pr() {
   local branch="codeinsight-${tag}"
   local pr_json number url title
 
-  pr_json="$(gh pr list \
+  pr_json="$(gh_checked "checking for a pending Homebrew tap PR" \
+    gh pr list \
     --repo "$HOMEBREW_REPO" \
     --head "$branch" \
     --base main \

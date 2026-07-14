@@ -10,6 +10,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 - `scripts/install.sh` now falls back to `curl` when `gh release download`
   fails, so invalid GitHub CLI auth does not block public release installs.
+- `scripts/verify-release.sh` now adds actionable diagnostics when GitHub CLI
+  auth failures or API rate limits block release verification.
 
 ## [0.1.11] - 2026-07-14
 

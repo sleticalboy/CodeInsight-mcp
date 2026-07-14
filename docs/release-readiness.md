@@ -132,6 +132,11 @@ explicitly:
 CODEINSIGHT_SKIP_DOCKER=1 CODEINSIGHT_SKIP_HOMEBREW=1 scripts/verify-release.sh vX.Y.Z
 ```
 
+`scripts/verify-release.sh` needs working GitHub CLI API access for release
+metadata and remote tap checks. Authentication failures or API rate limits are
+environment blockers; fix with `gh auth status` / `gh auth login`, or verify
+the affected GitHub Actions and release pages manually before announcing.
+
 The release is not complete until:
 
 - [ ] GitHub Release exists and is not a draft.

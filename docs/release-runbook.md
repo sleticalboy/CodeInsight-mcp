@@ -115,6 +115,19 @@ remote checks:
 CODEINSIGHT_SKIP_DOCKER=1 CODEINSIGHT_SKIP_HOMEBREW=1 scripts/verify-release.sh vX.Y.Z
 ```
 
+`scripts/verify-release.sh` still requires usable GitHub CLI API access for
+release metadata and Homebrew tap checks. If it reports authentication or rate
+limit errors, run:
+
+```bash
+gh auth status
+gh auth login
+```
+
+Then rerun the verification command. The installer check itself can still fall
+back from a broken `gh release download` path to `curl`, but release metadata
+verification remains a GitHub API check.
+
 Check release metadata:
 
 ```bash
