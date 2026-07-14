@@ -2,20 +2,14 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SMOKE_TOTAL=3
 
-run_step() {
-  local index="$1"
-  local label="$2"
-  shift 2
-
-  echo "[$index/3] $label"
-  "$@"
-}
+source "$ROOT_DIR/scripts/smoke-lib.sh"
 
 main() {
-  run_step 1 "docs link smoke" "$ROOT_DIR/scripts/docs-link-smoke.sh"
-  run_step 2 "docs positioning smoke" "$ROOT_DIR/scripts/docs-positioning-smoke.sh"
-  run_step 3 "docs benchmark smoke" "$ROOT_DIR/scripts/docs-benchmark-smoke.sh"
+  smoke_run_step "$SMOKE_TOTAL" 1 "docs link smoke" "$ROOT_DIR/scripts/docs-link-smoke.sh"
+  smoke_run_step "$SMOKE_TOTAL" 2 "docs positioning smoke" "$ROOT_DIR/scripts/docs-positioning-smoke.sh"
+  smoke_run_step "$SMOKE_TOTAL" 3 "docs benchmark smoke" "$ROOT_DIR/scripts/docs-benchmark-smoke.sh"
 
   echo "docs smoke passed"
 }
