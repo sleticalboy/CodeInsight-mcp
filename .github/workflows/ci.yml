@@ -83,6 +83,7 @@ jobs:
       - run: bash -n scripts/verify-release-homebrew-failure-smoke.sh
       - run: bash -n scripts/verify-release-summary-smoke.sh
       - run: bash -n scripts/docs-link-smoke.sh
+      - run: bash -n scripts/docs-positioning-smoke.sh
       - run: bash -n scripts/post-release-verify.sh
       - run: bash -n scripts/post-release-verify-smoke.sh
       - run: bash -n scripts/update-release-status.sh
@@ -95,6 +96,7 @@ jobs:
       - run: scripts/verify-release-homebrew-failure-smoke.sh
       - run: scripts/verify-release-summary-smoke.sh
       - run: scripts/docs-link-smoke.sh
+      - run: scripts/docs-positioning-smoke.sh
       - run: scripts/post-release-verify-smoke.sh
       - run: scripts/update-release-status-smoke.sh
       - run: scripts/verify-release.sh --help >/tmp/codeinsight-verify-release-help.txt

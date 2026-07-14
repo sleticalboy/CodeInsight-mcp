@@ -33,6 +33,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   release, and support checks in one place.
 - Added `scripts/docs-link-smoke.sh` to catch broken local Markdown links in
   README, CHANGELOG, and docs pages.
+- Added `scripts/docs-positioning-smoke.sh` to keep entry docs linked to the
+  local-first AI-agent workflow, support checklist, and limitations docs.
 
 ## [0.1.12] - 2026-07-14
 

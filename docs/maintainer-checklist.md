@@ -30,6 +30,7 @@ docs when a task needs more detail.
   cargo test --locked
   bash -n scripts/*.sh
   scripts/docs-link-smoke.sh
+  scripts/docs-positioning-smoke.sh
   git diff --check
   ```
 
