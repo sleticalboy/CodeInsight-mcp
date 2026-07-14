@@ -49,8 +49,22 @@ MVP workflow is now implemented end to end.
   semantic search, Docker, release install, and benchmark fixtures.
 - Release, Docker image, Homebrew tap sync, install, verify, and release-note
   helper scripts.
-- Published and verified `v0.1.10` with GitHub Release assets, Docker
+- Published and verified `v0.1.11` with GitHub Release assets, Docker
   multi-arch images, public install script, and Homebrew tap formula.
+
+## Latest Verified Release
+
+`v0.1.11` was published and verified on 2026-07-14.
+
+- GitHub Release: https://github.com/sleticalboy/CodeInsight-mcp/releases/tag/v0.1.11
+- Release Build workflow: `29272402937`, completed successfully.
+- Docker Image workflow: `29272402806`, completed successfully.
+- Release assets verified for macOS and Linux on `aarch64` and `x86_64`.
+- Public installer verified with `CODEINSIGHT_VERSION=v0.1.11`.
+- Docker image verified at `ghcr.io/sleticalboy/codeinsight-mcp:0.1.11`
+  with `linux/amd64` and `linux/arm64` manifests.
+- Homebrew tap `sleticalboy/homebrew-tap` updated to `v0.1.11` at
+  `4e9d032ab84aba359bb3ef41e035766cfe07632c`.
 
 ## Next
 

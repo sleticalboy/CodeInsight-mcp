@@ -19,9 +19,28 @@ The MVP is release-capable when all of these are true:
 - Benchmarks and limitations are visible before users over-trust the analyzer.
 - CI and release workflows are green for the release commit or tag.
 
-Current published baseline: `v0.1.10` is documented as verified in
+Current published baseline: `v0.1.11` is documented as verified in
 [Current status](status.md). Treat later releases as unverified until this
 checklist is repeated.
+
+## Latest Release Verification
+
+`v0.1.11` verification was completed on 2026-07-14:
+
+- Release tag `v0.1.11` points to
+  `fada3b030efa920fb0b7cabb55772f7ac93ae033`.
+- `Release Build` run `29272402937` completed successfully.
+- `Docker Image` run `29272402806` completed successfully.
+- All four release archives returned HTTP 200:
+  `codeinsight-aarch64-apple-darwin.tar.gz`,
+  `codeinsight-x86_64-apple-darwin.tar.gz`,
+  `codeinsight-aarch64-unknown-linux-gnu.tar.gz`, and
+  `codeinsight-x86_64-unknown-linux-gnu.tar.gz`.
+- Public installer path installed a binary reporting version `0.1.11`.
+- GHCR image `ghcr.io/sleticalboy/codeinsight-mcp:0.1.11` exposes
+  `linux/amd64` and `linux/arm64` manifests.
+- Homebrew tap PR `sleticalboy/homebrew-tap#22` was merged, and tap `main`
+  points to `4e9d032ab84aba359bb3ef41e035766cfe07632c`.
 
 ## Public MVP Gate
 
