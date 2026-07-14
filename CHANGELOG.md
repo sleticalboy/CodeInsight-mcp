@@ -45,6 +45,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   standard non-network CI gate.
 - Added `scripts/script-syntax-smoke.sh` as the single local entrypoint for
   shell script syntax checks.
+- Added `scripts/verify-release-help-smoke.sh` to keep release verification
+  help text contract checks out of CI workflow YAML.
 
 ## [0.1.12] - 2026-07-14
 

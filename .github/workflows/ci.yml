@@ -74,13 +74,6 @@ jobs:
       - run: scripts/script-syntax-smoke.sh
       - run: scripts/release-tooling-smoke.sh
       - run: scripts/docs-smoke.sh
-      - run: scripts/verify-release.sh --help >/tmp/codeinsight-verify-release-help.txt
-      - run: |
-          set -euo pipefail
-          grep -q 'usage: scripts/verify-release.sh \[--json\] <tag-or-version>' /tmp/codeinsight-verify-release-help.txt
-          grep -q 'Homebrew tap update is still waiting in an open PR' /tmp/codeinsight-verify-release-help.txt
-          grep -q 'CODEINSIGHT_ALLOW_ASSET_DOWNLOAD_UNREACHABLE=1' /tmp/codeinsight-verify-release-help.txt
-          grep -q 'CODEINSIGHT_SKIP_INSTALLED_QUICKSTART=1' /tmp/codeinsight-verify-release-help.txt
       - run: |
           set -euo pipefail
           tmp="$(mktemp -d)"
