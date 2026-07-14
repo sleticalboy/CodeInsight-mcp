@@ -46,10 +46,7 @@ docs when a task needs more detail.
 - For release-tooling changes, run the release script smokes:
 
   ```bash
-  scripts/install-fallback-smoke.sh
-  scripts/verify-release-summary-smoke.sh
-  scripts/post-release-verify-smoke.sh
-  scripts/update-release-status-smoke.sh
+  scripts/release-tooling-smoke.sh
   ```
 
 ## Before Tagging A Release

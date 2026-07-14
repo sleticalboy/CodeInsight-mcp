@@ -39,6 +39,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   benchmark reports, and benchmark fixture profiles aligned.
 - Added `scripts/docs-smoke.sh` as the single local entrypoint for all docs
   smoke checks.
+- Added `scripts/release-tooling-smoke.sh` as the single local entrypoint for
+  release-tooling smoke checks.
 
 ## [0.1.12] - 2026-07-14
 
