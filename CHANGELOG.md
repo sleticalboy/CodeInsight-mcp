@@ -18,6 +18,10 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   can complete the quickstart CLI and MCP stdio flow against a temporary
   project outside the source checkout, and documented it as a release
   readiness/runbook gate.
+- `scripts/verify-release.sh` now runs the installed quickstart smoke after
+  public install verification and records the gate in `--json` output.
+- `scripts/install.sh` now applies bounded timeouts to GitHub CLI and curl
+  release downloads before falling back or failing.
 
 ## [0.1.12] - 2026-07-14
 

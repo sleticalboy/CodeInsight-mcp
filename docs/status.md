@@ -98,6 +98,9 @@ release:
 
 - `scripts/install.sh` falls back from a failing `gh release download` path to
   `curl` for public release assets.
+- `scripts/install.sh` bounds GitHub CLI and curl release downloads with
+  explicit timeouts so installer verification cannot hang indefinitely on a
+  broken local network path.
 - `scripts/verify-release.sh` checks direct HTTP downloadability for all four
   expected release archives.
 - Asset download failures now distinguish missing release assets from local
@@ -109,8 +112,8 @@ release:
   manifest and platform checks.
 - Homebrew verification distinguishes remote formula state, local tap state,
   stable version mismatches, and fetch/checksum failures.
-- `scripts/verify-release.sh --json` prints a final machine-readable summary
-  only after all release gates pass.
+- `scripts/verify-release.sh` runs the installed quickstart smoke after public
+  install verification, and `--json` records the installed quickstart gate.
 - CI covers the installer fallback, GitHub CLI auth failure, asset-download
   fallback, asset-unreachable diagnostic, Docker failure, Homebrew failure, and
   JSON summary paths through dedicated smoke scripts.

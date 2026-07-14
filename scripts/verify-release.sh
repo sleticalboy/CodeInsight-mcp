@@ -8,6 +8,7 @@ HOMEBREW_TAP="${CODEINSIGHT_HOMEBREW_TAP:-sleticalboy/tap}"
 HOMEBREW_REPO="${CODEINSIGHT_HOMEBREW_REPO:-sleticalboy/homebrew-tap}"
 TEMP_DIR=""
 ASSET_DOWNLOADS_METADATA_ONLY=false
+INSTALLED_CODEINSIGHT_BIN=""
 
 EXPECTED_ASSETS=(
   codeinsight-aarch64-apple-darwin.tar.gz
@@ -43,6 +44,7 @@ Environment:
   CODEINSIGHT_ALLOW_ASSET_DOWNLOAD_UNREACHABLE=1
   CODEINSIGHT_SKIP_DOCKER=1
   CODEINSIGHT_SKIP_HOMEBREW=1
+  CODEINSIGHT_SKIP_INSTALLED_QUICKSTART=1
 EOF
   exit "$status"
 }
@@ -296,6 +298,7 @@ release_verification_summary_json() {
   local version="$2"
   local docker_skipped=false
   local homebrew_skipped=false
+  local installed_quickstart_skipped=false
   local asset_downloads_gate=passed
 
   if [ "${CODEINSIGHT_SKIP_DOCKER:-}" = "1" ]; then
@@ -303,6 +306,9 @@ release_verification_summary_json() {
   fi
   if [ "${CODEINSIGHT_SKIP_HOMEBREW:-}" = "1" ]; then
     homebrew_skipped=true
+  fi
+  if [ "${CODEINSIGHT_SKIP_INSTALLED_QUICKSTART:-}" = "1" ]; then
+    installed_quickstart_skipped=true
   fi
   if [ "$ASSET_DOWNLOADS_METADATA_ONLY" = true ]; then
     asset_downloads_gate=metadata_only
@@ -316,10 +322,12 @@ release_verification_summary_json() {
     --arg docker_image "$IMAGE" \
     --arg homebrew_tap "$HOMEBREW_TAP" \
     --arg homebrew_repo "$HOMEBREW_REPO" \
+    --arg installed_codeinsight_bin "$INSTALLED_CODEINSIGHT_BIN" \
     --arg asset_downloads_gate "$asset_downloads_gate" \
     --argjson expected_assets "$(printf '%s\n' "${EXPECTED_ASSETS[@]}" | jq -R . | jq -s .)" \
     --argjson docker_skipped "$docker_skipped" \
     --argjson homebrew_skipped "$homebrew_skipped" \
+    --argjson installed_quickstart_skipped "$installed_quickstart_skipped" \
     '{
       status: $status,
       tag: $tag,
@@ -330,6 +338,7 @@ release_verification_summary_json() {
         github_asset_downloads: $asset_downloads_gate,
         release_notes: "passed",
         install_script: "passed",
+        installed_quickstart: (if $installed_quickstart_skipped then "skipped" else "passed" end),
         docker: (if $docker_skipped then "skipped" else "passed" end),
         homebrew_remote_formula: "passed",
         homebrew_fetch: (if $homebrew_skipped then "skipped" else "passed" end)
@@ -343,6 +352,10 @@ release_verification_summary_json() {
         tap: $homebrew_tap,
         repo: $homebrew_repo,
         skipped: $homebrew_skipped
+      },
+      installed_quickstart: {
+        binary: $installed_codeinsight_bin,
+        skipped: $installed_quickstart_skipped
       }
     }'
 }
@@ -402,9 +415,25 @@ verify_install_script() {
   INSTALL_DIR="$install_dir" CODEINSIGHT_VERSION="$tag" sh "$installer_path"
 
   test -x "$install_dir/codeinsight"
+  INSTALLED_CODEINSIGHT_BIN="$install_dir/codeinsight"
   version_json="$("$install_dir/codeinsight" version)"
   jq -e --arg version "$version" '.name == "codeinsight" and .version == $version' >/dev/null <<<"$version_json"
   printf '%s\n' "$version_json"
+}
+
+verify_installed_quickstart() {
+  if [ "${CODEINSIGHT_SKIP_INSTALLED_QUICKSTART:-}" = "1" ]; then
+    log "Skip installed quickstart verification"
+    return
+  fi
+
+  if [ -z "$INSTALLED_CODEINSIGHT_BIN" ] || [ ! -x "$INSTALLED_CODEINSIGHT_BIN" ]; then
+    echo "installed codeinsight binary is unavailable for quickstart verification" >&2
+    exit 1
+  fi
+
+  log "Verify installed quickstart flow"
+  CODEINSIGHT_BIN="$INSTALLED_CODEINSIGHT_BIN" "$ROOT_DIR/scripts/installed-quickstart-smoke.sh"
 }
 
 docker_manifest_platforms() {
@@ -634,6 +663,7 @@ main() {
   verify_github_release "$tag"
   verify_release_notes "$tag"
   verify_install_script "$tag" "$version"
+  verify_installed_quickstart
   verify_docker "$version"
   verify_homebrew_remote_formula "$tag"
   verify_homebrew_fetch "$version"

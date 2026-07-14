@@ -3,6 +3,9 @@ set -eu
 
 REPO="${CODEINSIGHT_REPO:-sleticalboy/CodeInsight-mcp}"
 VERSION="${CODEINSIGHT_VERSION:-latest}"
+DOWNLOAD_TIMEOUT_SECONDS="${CODEINSIGHT_DOWNLOAD_TIMEOUT_SECONDS:-120}"
+CURL_CONNECT_TIMEOUT_SECONDS="${CODEINSIGHT_CURL_CONNECT_TIMEOUT_SECONDS:-20}"
+CURL_MAX_TIME_SECONDS="${CODEINSIGHT_CURL_MAX_TIME_SECONDS:-120}"
 
 detect_target() {
     os="$(uname -s)"
@@ -42,10 +45,30 @@ download_with_gh() {
     tmp_dir="$2"
 
     if [ "$VERSION" = "latest" ]; then
-        gh release download --repo "$REPO" --pattern "$asset" --dir "$tmp_dir"
+        run_with_timeout gh release download --repo "$REPO" --pattern "$asset" --dir "$tmp_dir"
     else
-        gh release download "$VERSION" --repo "$REPO" --pattern "$asset" --dir "$tmp_dir"
+        run_with_timeout gh release download "$VERSION" --repo "$REPO" --pattern "$asset" --dir "$tmp_dir"
     fi
+}
+
+run_with_timeout() {
+    "$@" &
+    cmd_pid="$!"
+
+    (
+        sleep "$DOWNLOAD_TIMEOUT_SECONDS"
+        if kill -0 "$cmd_pid" 2>/dev/null; then
+            echo "download command timed out after ${DOWNLOAD_TIMEOUT_SECONDS}s: $*" >&2
+            kill "$cmd_pid" 2>/dev/null || true
+        fi
+    ) &
+    watchdog_pid="$!"
+
+    wait "$cmd_pid"
+    status="$?"
+    kill "$watchdog_pid" 2>/dev/null || true
+    wait "$watchdog_pid" 2>/dev/null || true
+    return "$status"
 }
 
 download_with_curl() {
@@ -60,12 +83,18 @@ download_with_curl() {
 
     if [ -n "${GITHUB_TOKEN:-}" ]; then
         curl -fL \
+            --connect-timeout "$CURL_CONNECT_TIMEOUT_SECONDS" \
+            --max-time "$CURL_MAX_TIME_SECONDS" \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
             -H "Accept: application/octet-stream" \
             "$url" \
             -o "$tmp_dir/$asset"
     else
-        curl -fL "$url" -o "$tmp_dir/$asset"
+        curl -fL \
+            --connect-timeout "$CURL_CONNECT_TIMEOUT_SECONDS" \
+            --max-time "$CURL_MAX_TIME_SECONDS" \
+            "$url" \
+            -o "$tmp_dir/$asset"
     fi
 }
 

@@ -30,6 +30,10 @@ EOF
 
   cat >"$fake_bin/gh" <<'EOF'
 #!/usr/bin/env sh
+if [ "${CODEINSIGHT_FAKE_GH_SLEEP:-}" = "1" ]; then
+  sleep 30
+  exit 0
+fi
 exit 42
 EOF
   chmod +x "$fake_bin/gh"
@@ -69,6 +73,20 @@ EOF
 
   test -x "$install_dir/codeinsight"
   grep -q 'gh release download failed; falling back to curl' "$TEMP_DIR/install.err"
+
+  rm -rf "$install_dir"
+  PATH="$fake_bin:$PATH" \
+    CODEINSIGHT_TARGET="$target" \
+    CODEINSIGHT_VERSION=v9.8.7 \
+    CODEINSIGHT_FAKE_ASSET="$asset" \
+    CODEINSIGHT_FAKE_GH_SLEEP=1 \
+    CODEINSIGHT_DOWNLOAD_TIMEOUT_SECONDS=1 \
+    INSTALL_DIR="$install_dir" \
+    sh "$ROOT_DIR/scripts/install.sh" >"$TEMP_DIR/install-timeout.out" 2>"$TEMP_DIR/install-timeout.err"
+
+  test -x "$install_dir/codeinsight"
+  grep -q 'download command timed out after 1s' "$TEMP_DIR/install-timeout.err"
+  grep -q 'gh release download failed; falling back to curl' "$TEMP_DIR/install-timeout.err"
 
   echo "install fallback smoke passed"
 }

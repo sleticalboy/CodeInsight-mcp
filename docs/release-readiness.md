@@ -164,11 +164,12 @@ For a tagged release, verify artifacts after the `Release Build` and
 
 ```bash
 scripts/verify-release.sh vX.Y.Z
-scripts/installed-quickstart-smoke.sh
 ```
 
 Use `scripts/verify-release.sh --json vX.Y.Z` when the final pass/fail summary
 needs to be copied into CI logs, release notes, or the verification record.
+The consolidated script also runs the installed quickstart smoke against the
+binary installed by the public install script.
 
 If Docker or Homebrew cannot run on the local machine, skip those local checks
 explicitly:
@@ -176,6 +177,12 @@ explicitly:
 ```bash
 CODEINSIGHT_SKIP_DOCKER=1 CODEINSIGHT_SKIP_HOMEBREW=1 scripts/verify-release.sh vX.Y.Z
 ```
+
+If the local machine cannot run the installed quickstart smoke because of a
+temporary Python or shell environment issue, skip that gate explicitly with
+`CODEINSIGHT_SKIP_INSTALLED_QUICKSTART=1` and run
+`scripts/installed-quickstart-smoke.sh` on a suitable machine before
+announcing.
 
 When Docker verification is enabled, local Docker daemon and Buildx failures are
 environment blockers. If they cannot be fixed locally, skip Docker verification

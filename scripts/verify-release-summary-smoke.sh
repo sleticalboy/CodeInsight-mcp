@@ -31,12 +31,22 @@ main() {
     .gates.github_release == "passed" and
     .gates.github_asset_downloads == "passed" and
     .gates.install_script == "passed" and
+    .gates.installed_quickstart == "passed" and
     .gates.docker == "skipped" and
     .gates.homebrew_fetch == "skipped" and
     .docker.skipped == true and
     .homebrew.skipped == true and
+    .installed_quickstart.skipped == false and
     (.expected_assets | length) == 4
   ' "$SMOKE_TEMP_DIR/summary.json" >/dev/null
+
+  CODEINSIGHT_SKIP_INSTALLED_QUICKSTART=1 \
+    release_verification_summary_json v9.8.7 9.8.7 >"$SMOKE_TEMP_DIR/skipped-summary.json"
+
+  jq -e '
+    .gates.installed_quickstart == "skipped" and
+    .installed_quickstart.skipped == true
+  ' "$SMOKE_TEMP_DIR/skipped-summary.json" >/dev/null
 
   echo "verify-release summary smoke passed"
 }
