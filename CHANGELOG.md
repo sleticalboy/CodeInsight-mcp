@@ -6,6 +6,13 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ## [Unreleased]
 
+### Changed
+
+- `scripts/verify-release.sh` now reports a specific local network diagnostic
+  when GitHub Release assets exist in API metadata but
+  `github.com/releases/download` is unreachable, and supports an explicit
+  metadata-only override for that case.
+
 ## [0.1.12] - 2026-07-14
 
 ### Changed

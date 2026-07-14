@@ -89,6 +89,9 @@ release:
   `curl` for public release assets.
 - `scripts/verify-release.sh` checks direct HTTP downloadability for all four
   expected release archives.
+- Asset download failures now distinguish missing release assets from local
+  `github.com/releases/download` reachability problems, with an explicit
+  metadata-only override when the release API already confirms the assets.
 - GitHub CLI, Docker, and Homebrew verification failures now preserve the
   original tool error and add actionable diagnostics.
 - Docker verification checks daemon and Buildx availability before GHCR
@@ -98,8 +101,8 @@ release:
 - `scripts/verify-release.sh --json` prints a final machine-readable summary
   only after all release gates pass.
 - CI covers the installer fallback, GitHub CLI auth failure, asset-download
-  fallback, Docker failure, Homebrew failure, and JSON summary paths through
-  dedicated smoke scripts.
+  fallback, asset-unreachable diagnostic, Docker failure, Homebrew failure, and
+  JSON summary paths through dedicated smoke scripts.
 - `scripts/prepare-release.sh --dry-run v0.1.12` passed before the release and
   previewed the expected Cargo version, CHANGELOG section, and install example
   updates.

@@ -77,12 +77,14 @@ jobs:
       - run: bash -n scripts/install-fallback-smoke.sh
       - run: bash -n scripts/verify-release-gh-failure-smoke.sh
       - run: bash -n scripts/verify-release-asset-download-smoke.sh
+      - run: bash -n scripts/verify-release-asset-unreachable-smoke.sh
       - run: bash -n scripts/verify-release-docker-failure-smoke.sh
       - run: bash -n scripts/verify-release-homebrew-failure-smoke.sh
       - run: bash -n scripts/verify-release-summary-smoke.sh
       - run: scripts/install-fallback-smoke.sh
       - run: scripts/verify-release-gh-failure-smoke.sh
       - run: scripts/verify-release-asset-download-smoke.sh
+      - run: scripts/verify-release-asset-unreachable-smoke.sh
       - run: scripts/verify-release-docker-failure-smoke.sh
       - run: scripts/verify-release-homebrew-failure-smoke.sh
       - run: scripts/verify-release-summary-smoke.sh
@@ -91,6 +93,7 @@ jobs:
           set -euo pipefail
           grep -q 'usage: scripts/verify-release.sh \[--json\] <tag-or-version>' /tmp/codeinsight-verify-release-help.txt
           grep -q 'Homebrew tap update is still waiting in an open PR' /tmp/codeinsight-verify-release-help.txt
+          grep -q 'CODEINSIGHT_ALLOW_ASSET_DOWNLOAD_UNREACHABLE=1' /tmp/codeinsight-verify-release-help.txt
       - run: |
           set -euo pipefail
           tmp="$(mktemp -d)"

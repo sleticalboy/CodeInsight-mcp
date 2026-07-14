@@ -57,6 +57,9 @@ and the remote Homebrew formula were reachable.
   falling back to `curl`.
 - GitHub Release archive checks include direct URL reachability, with ranged
   `GET` fallback when `HEAD` is rejected.
+- GitHub Release archive failures explain the difference between missing assets
+  and a local `github.com/releases/download` connectivity problem, and expose a
+  metadata-only override for the latter.
 - GitHub CLI, Docker, and Homebrew failures include tool-specific recovery
   guidance.
 - Docker verification separates local daemon/Buildx problems from registry,

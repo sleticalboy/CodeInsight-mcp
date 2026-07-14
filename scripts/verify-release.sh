@@ -7,6 +7,7 @@ IMAGE="${CODEINSIGHT_DOCKER_IMAGE:-ghcr.io/sleticalboy/codeinsight-mcp}"
 HOMEBREW_TAP="${CODEINSIGHT_HOMEBREW_TAP:-sleticalboy/tap}"
 HOMEBREW_REPO="${CODEINSIGHT_HOMEBREW_REPO:-sleticalboy/homebrew-tap}"
 TEMP_DIR=""
+ASSET_DOWNLOADS_METADATA_ONLY=false
 
 EXPECTED_ASSETS=(
   codeinsight-aarch64-apple-darwin.tar.gz
@@ -39,6 +40,7 @@ Environment:
   CODEINSIGHT_DOCKER_IMAGE=ghcr.io/sleticalboy/codeinsight-mcp
   CODEINSIGHT_HOMEBREW_TAP=sleticalboy/tap
   CODEINSIGHT_HOMEBREW_REPO=sleticalboy/homebrew-tap
+  CODEINSIGHT_ALLOW_ASSET_DOWNLOAD_UNREACHABLE=1
   CODEINSIGHT_SKIP_DOCKER=1
   CODEINSIGHT_SKIP_HOMEBREW=1
 EOF
@@ -206,21 +208,54 @@ release_asset_url() {
 verify_release_asset_download_url() {
   local tag="$1"
   local asset="$2"
-  local url
+  local url head_err get_err status
 
   url="$(release_asset_url "$tag" "$asset")"
+  head_err="$(mktemp)"
+  get_err="$(mktemp)"
 
   if curl --fail --silent --show-error --location --head \
     --connect-timeout 20 --max-time 60 \
-    "$url" >/dev/null; then
+    "$url" >/dev/null 2>"$head_err"; then
+    rm -f "$head_err" "$get_err"
     return
   fi
+  cat "$head_err" >&2
 
   echo "asset HEAD check failed, retrying with ranged GET: ${asset}" >&2
+  set +e
   curl --fail --silent --show-error --location --range 0-0 \
     --connect-timeout 20 --max-time 60 \
     "$url" \
-    -o /dev/null
+    -o /dev/null 2>"$get_err"
+  status=$?
+  set -e
+  if [ "$status" -eq 0 ]; then
+    rm -f "$head_err" "$get_err"
+    return
+  fi
+
+  cat "$get_err" >&2
+  diagnose_release_asset_download_failure "$asset" "$url"
+  rm -f "$head_err" "$get_err"
+
+  if [ "${CODEINSIGHT_ALLOW_ASSET_DOWNLOAD_UNREACHABLE:-}" = "1" ]; then
+    ASSET_DOWNLOADS_METADATA_ONLY=true
+    echo "continuing with metadata-only asset verification because CODEINSIGHT_ALLOW_ASSET_DOWNLOAD_UNREACHABLE=1" >&2
+    return 0
+  fi
+
+  return "$status"
+}
+
+diagnose_release_asset_download_failure() {
+  local asset="$1"
+  local url="$2"
+
+  echo "release asset exists in GitHub Release metadata but the direct download URL is not reachable from this machine: ${asset}" >&2
+  echo "url: ${url}" >&2
+  echo "If GitHub API calls work but github.com/releases/download times out, treat this as a local network/proxy path issue rather than a missing release asset." >&2
+  echo "Rerun from a network with direct GitHub release download access, or set CODEINSIGHT_ALLOW_ASSET_DOWNLOAD_UNREACHABLE=1 to continue with metadata-only asset verification." >&2
 }
 
 verify_release_asset_downloads() {
@@ -231,7 +266,11 @@ verify_release_asset_downloads() {
     verify_release_asset_download_url "$tag" "$asset"
   done
 
-  printf 'asset downloads: verified\n'
+  if [ "$ASSET_DOWNLOADS_METADATA_ONLY" = true ]; then
+    printf 'asset downloads: metadata-only\n'
+  else
+    printf 'asset downloads: verified\n'
+  fi
 }
 
 cleanup() {
@@ -257,12 +296,16 @@ release_verification_summary_json() {
   local version="$2"
   local docker_skipped=false
   local homebrew_skipped=false
+  local asset_downloads_gate=passed
 
   if [ "${CODEINSIGHT_SKIP_DOCKER:-}" = "1" ]; then
     docker_skipped=true
   fi
   if [ "${CODEINSIGHT_SKIP_HOMEBREW:-}" = "1" ]; then
     homebrew_skipped=true
+  fi
+  if [ "$ASSET_DOWNLOADS_METADATA_ONLY" = true ]; then
+    asset_downloads_gate=metadata_only
   fi
 
   jq -n \
@@ -273,6 +316,7 @@ release_verification_summary_json() {
     --arg docker_image "$IMAGE" \
     --arg homebrew_tap "$HOMEBREW_TAP" \
     --arg homebrew_repo "$HOMEBREW_REPO" \
+    --arg asset_downloads_gate "$asset_downloads_gate" \
     --argjson expected_assets "$(printf '%s\n' "${EXPECTED_ASSETS[@]}" | jq -R . | jq -s .)" \
     --argjson docker_skipped "$docker_skipped" \
     --argjson homebrew_skipped "$homebrew_skipped" \
@@ -283,6 +327,7 @@ release_verification_summary_json() {
       repo: $repo,
       gates: {
         github_release: "passed",
+        github_asset_downloads: $asset_downloads_gate,
         release_notes: "passed",
         install_script: "passed",
         docker: (if $docker_skipped then "skipped" else "passed" end),

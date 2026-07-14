@@ -29,6 +29,7 @@ main() {
     .version == "9.8.7" and
     .repo == "sleticalboy/CodeInsight-mcp" and
     .gates.github_release == "passed" and
+    .gates.github_asset_downloads == "passed" and
     .gates.install_script == "passed" and
     .gates.docker == "skipped" and
     .gates.homebrew_fetch == "skipped" and

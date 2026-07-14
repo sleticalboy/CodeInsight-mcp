@@ -117,6 +117,19 @@ The GitHub Release step validates both metadata and direct downloadability for
 all four platform archives. It first tries HTTP `HEAD` for each release asset
 URL, then retries with a ranged `GET` if the server or proxy rejects `HEAD`.
 
+If GitHub API metadata is reachable but `github.com/releases/download/...`
+times out from the local machine, the script reports that as a local
+network/proxy path issue. Keep the default strict check for final release
+signoff when possible. To continue collecting the remaining Docker and Homebrew
+evidence from that machine, use the explicit metadata-only override:
+
+```bash
+CODEINSIGHT_ALLOW_ASSET_DOWNLOAD_UNREACHABLE=1 scripts/verify-release.sh vX.Y.Z
+```
+
+The JSON summary marks this as `github_asset_downloads: "metadata_only"` so it
+is not confused with a full direct-download pass.
+
 If the local machine cannot run Docker or Homebrew, skip those checks
 explicitly and rely on the successful GitHub Actions jobs plus the remaining
 remote checks:
