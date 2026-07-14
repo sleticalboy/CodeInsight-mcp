@@ -145,7 +145,8 @@ Before recording or presenting:
 - Confirm `indexed_files` is greater than zero.
 - Confirm `recommended_next_tools` is greater than zero.
 - Confirm `context_pack` reports selected files, `reading_plan_steps`, and
-  `line_reduction`.
+  `line_reduction`; the demo fails fast if selected files, reading-plan steps,
+  or the first next action are missing.
 - Confirm `impact_analysis` reports risk or suggested checks.
 - Keep [Known limitations](known-limitations.md) available if asked about
   static-analysis precision.

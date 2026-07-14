@@ -140,6 +140,12 @@ main() {
   require_pattern scripts/agent-router-demo.sh \
     'first_next_action' \
     "agent-router next action output"
+  require_pattern scripts/agent-router-demo.sh \
+    'require_json_number_gt_zero "\$context_json" '\''\.reading_plan \| length'\''' \
+    "agent-router reading plan assertion"
+  require_pattern scripts/agent-router-demo.sh \
+    'require_json_string "\$context_json" '\''\.reading_plan\[0\]\.next_action'\''' \
+    "agent-router next action assertion"
 
   echo "docs benchmark smoke passed"
 }

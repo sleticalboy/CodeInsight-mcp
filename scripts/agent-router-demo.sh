@@ -27,6 +27,30 @@ selected_context_lines() {
   jq -r '[.files[].ranges[] | (.end_line - .start_line + 1)] | add // 0' "$context_json"
 }
 
+require_json_number_gt_zero() {
+  local file="$1"
+  local query="$2"
+  local description="$3"
+
+  if ! jq -e "$query > 0" "$file" >/dev/null; then
+    echo "demo assertion failed: expected ${description} to be greater than zero" >&2
+    echo "query: $query" >&2
+    exit 1
+  fi
+}
+
+require_json_string() {
+  local file="$1"
+  local query="$2"
+  local description="$3"
+
+  if ! jq -e "$query != null and $query != \"\" and $query != \"-\"" "$file" >/dev/null; then
+    echo "demo assertion failed: expected ${description} to be present" >&2
+    echo "query: $query" >&2
+    exit 1
+  fi
+}
+
 line_reduction() {
   local total_lines="$1"
   local selected_lines="$2"
@@ -87,6 +111,10 @@ main() {
     --task "$DEMO_TASK" \
     --token-budget "$TOKEN_BUDGET" \
     >"$context_json"
+
+  require_json_number_gt_zero "$context_json" '.files | length' "context_pack selected files"
+  require_json_number_gt_zero "$context_json" '.reading_plan | length' "context_pack reading plan steps"
+  require_json_string "$context_json" '.reading_plan[0].next_action' "first reading-plan next action"
 
   if [ -z "$IMPACT_FILE" ]; then
     IMPACT_FILE="$(json_value "$context_json" '.files[0].file // empty')"
