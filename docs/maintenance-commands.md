@@ -32,7 +32,8 @@ scripts/release-tooling-smoke.sh
 The release-tooling smoke prints numbered stages and includes installer
 fallback, release verifier diagnostics, release help text, release summary
 JSON, release prep, Homebrew formula generation, post-release verification,
-and status update checks.
+status update checks, pretag artifact checks, and tagged release workflow guard
+checks.
 
 ## Agent And MCP Checks
 
