@@ -257,6 +257,25 @@ cutaway, and report `Key Results` should agree on `context_pack` first-tool
 routing, aggregate line reduction, and benchmark scope. Do not present the
 fixture benchmarks as controlled performance benchmarks.
 
+For CI evidence, open the latest `CI` run for the release commit and inspect
+the `benchmark-subset-smoke` job summary. The run summary should show:
+
+- `Key Results` for the lightweight `p-limit` subset.
+- A summary table with `context_pack` as the first recommended tool.
+- A workflow run link.
+- A `codeinsight-benchmark-subset` artifact link.
+
+Use the artifact when you need the full Markdown report rather than the summary
+excerpt:
+
+```bash
+gh run download <ci-run-id> --name codeinsight-benchmark-subset --dir /tmp/codeinsight-benchmark-subset
+scripts/benchmark-report-smoke.sh /tmp/codeinsight-benchmark-subset/codeinsight-benchmark-subset.md smoke p-limit
+```
+
+Treat the CI subset as a quick regression signal only. The checked-in smoke and
+large benchmark reports remain the release evidence for public-facing claims.
+
 ## Communication Gate
 
 Before publishing a release announcement, make sure the message says:

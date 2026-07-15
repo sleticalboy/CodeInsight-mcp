@@ -261,6 +261,15 @@ main() {
   require_pattern docs/release-readiness.md \
     'report `Key Results` should agree on `context_pack` first-tool' \
     "release readiness key results consistency"
+  require_pattern docs/release-readiness.md \
+    '`benchmark-subset-smoke` job summary' \
+    "release readiness CI benchmark summary guidance"
+  require_pattern docs/release-readiness.md \
+    'gh run download <ci-run-id> --name codeinsight-benchmark-subset' \
+    "release readiness benchmark artifact download"
+  require_pattern docs/maintenance-commands.md \
+    'gh run download <ci-run-id> --name codeinsight-benchmark-subset' \
+    "maintenance benchmark artifact download"
   require_pattern docs/maintainer-checklist.md \
     'README benchmark snapshot, \[Demo script\]\(demo-script\.md\)' \
     "maintainer benchmark evidence consistency"
@@ -270,6 +279,9 @@ main() {
   require_pattern docs/maintainer-checklist.md \
     '\[Release readiness\]\(release-readiness\.md\) benchmark gate' \
     "maintainer release readiness consistency"
+  require_pattern docs/maintainer-checklist.md \
+    '`benchmark-subset-smoke` job summary' \
+    "maintainer CI benchmark summary guidance"
   require_pattern scripts/agent-router-demo.sh \
     'reading_plan_steps' \
     "agent-router reading plan output"

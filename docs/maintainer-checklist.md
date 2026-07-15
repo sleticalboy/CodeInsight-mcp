@@ -75,6 +75,11 @@ optional external checks, see [Maintenance commands](maintenance-commands.md).
   scripts/benchmark-step-summary-smoke.sh
   ```
 
+  After CI runs, open the `benchmark-subset-smoke` job summary and confirm it
+  includes `Key Results`, the `context_pack` summary row, a workflow run link,
+  and the `codeinsight-benchmark-subset` artifact link. Download the artifact
+  only when you need the full guardrail tables.
+
 ## Before Tagging A Release
 
 - Use the short command index for the exact release commands:

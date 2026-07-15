@@ -73,6 +73,12 @@ the run summary with `scripts/benchmark-step-summary.sh`, so maintainers can
 inspect the routing evidence before downloading the full artifact. Benchmark
 reports include a `Key Results` section for stable README, release note, and
 demo evidence.
+To inspect the artifact locally, download it from a completed `CI` run:
+
+```bash
+gh run download <ci-run-id> --name codeinsight-benchmark-subset --dir /tmp/codeinsight-benchmark-subset
+scripts/benchmark-report-smoke.sh /tmp/codeinsight-benchmark-subset/codeinsight-benchmark-subset.md smoke p-limit
+```
 
 ## Optional External Checks
 

@@ -101,6 +101,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   table into the GitHub Actions run summary alongside the full artifact.
 - Benchmark run summaries now include direct workflow run and artifact links
   when the CI environment provides them.
+- Release readiness and maintenance docs now explain how to inspect the CI
+  benchmark summary and download the subset artifact for full guardrail detail.
 
 ## [0.1.12] - 2026-07-14
 
