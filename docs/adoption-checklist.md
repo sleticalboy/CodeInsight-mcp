@@ -180,8 +180,9 @@ Pass criteria:
 - The generated reports include `Entrypoints`, `Recommended tools`,
   `Line reduction`, `First context file`, and `Context pack guardrails`.
 - `context_pack` is the first recommended tool for benchmarked repositories.
-- Context pack guardrails pass for selected files, selected ranges,
-  `reading_plan_steps`, first next action, token budget, and line reduction.
+- Profile-specific context pack guardrails pass for selected files, selected
+  ranges, `reading_plan_steps`, first next action, token budget, and line
+  reduction.
 
 Generated reports:
 

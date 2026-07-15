@@ -91,7 +91,7 @@ main() {
     'Context pack guardrails:' \
     "smoke context guardrail section"
   require_pattern docs/benchmark-v0.1.md \
-    '\| `reading_plan_steps` \| > 0 \|' \
+    '\| `reading_plan_steps` \| >= [0-9]+' \
     "smoke reading plan guardrail"
 
   require_pattern docs/benchmark-large.md \
@@ -122,7 +122,7 @@ main() {
     'Context pack guardrails:' \
     "large context guardrail section"
   require_pattern docs/benchmark-large.md \
-    '\| `reading_plan_steps` \| > 0 \|' \
+    '\| `reading_plan_steps` \| >= [0-9]+' \
     "large reading plan guardrail"
 
   require_pattern docs/demo-script.md \

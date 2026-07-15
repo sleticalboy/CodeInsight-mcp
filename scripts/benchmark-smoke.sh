@@ -6,6 +6,7 @@ WORK_DIR="${CODEINSIGHT_BENCH_WORKDIR:-${TMPDIR:-/tmp}/codeinsight-benchmark}"
 CODEINSIGHT_BIN="${CODEINSIGHT_BIN:-}"
 BENCH_PROFILE="${CODEINSIGHT_BENCH_PROFILE:-smoke}"
 DISABLE_BUDGETS="${CODEINSIGHT_BENCH_DISABLE_BUDGETS:-0}"
+REUSE_REPOS="${CODEINSIGHT_BENCH_REUSE_REPOS:-0}"
 REPORT_FILE=""
 
 REPO_NAMES=()
@@ -13,6 +14,7 @@ REPO_URLS=()
 REPO_LANGUAGES=()
 REPO_CONTEXT_FILES=()
 REPO_CONTEXT_TASKS=()
+REPO_CONTEXT_GUARDRAILS=()
 REPO_MAX_INDEX_MS=()
 REPO_SYMBOL_TARGETS=()
 REPO_CALL_TARGETS=()
@@ -57,6 +59,12 @@ configure_profile() {
         "understand serializer signing behavior"
         "understand hello server behavior"
         "understand memchr finder API"
+      )
+      REPO_CONTEXT_GUARDRAILS=(
+        "selected_files:1|selected_ranges:3|reading_plan_steps:1|max_tokens:1200|min_line_reduction:80"
+        "selected_files:3|selected_ranges:6|reading_plan_steps:3|max_tokens:3000|min_line_reduction:80"
+        "selected_files:3|selected_ranges:4|reading_plan_steps:3|max_tokens:1000|min_line_reduction:90"
+        "selected_files:5|selected_ranges:5|reading_plan_steps:5|max_tokens:2500|min_line_reduction:95"
       )
       REPO_MAX_INDEX_MS=(
         5000
@@ -115,6 +123,12 @@ configure_profile() {
         "understand gin engine routing behavior"
         "understand tokio runtime public API"
       )
+      REPO_CONTEXT_GUARDRAILS=(
+        "selected_files:3|selected_ranges:10|reading_plan_steps:3|max_tokens:3000|min_line_reduction:95"
+        "selected_files:8|selected_ranges:10|reading_plan_steps:6|max_tokens:6000|min_line_reduction:90"
+        "selected_files:3|selected_ranges:10|reading_plan_steps:3|max_tokens:3500|min_line_reduction:95"
+        "selected_files:12|selected_ranges:18|reading_plan_steps:6|max_tokens:5500|min_line_reduction:95"
+      )
       REPO_MAX_INDEX_MS=(
         10000
         5000
@@ -161,10 +175,20 @@ clone_repo() {
   local repo_dir="$WORK_DIR/repos/$name"
   local attempts=3
 
+  if [ "$REUSE_REPOS" = "1" ] && [ -d "$repo_dir/.git" ]; then
+    echo "reusing existing checkout for $name"
+    rm -rf "$repo_dir/.codeinsight"
+    return
+  fi
+
   rm -rf "$repo_dir"
 
   for attempt in $(seq 1 "$attempts"); do
-    if git -c http.version=HTTP/1.1 clone --quiet --depth 1 "$url" "$repo_dir"; then
+    if git \
+      -c http.version=HTTP/1.1 \
+      -c http.lowSpeedLimit=1024 \
+      -c http.lowSpeedTime=30 \
+      clone --quiet --depth 1 "$url" "$repo_dir"; then
       break
     fi
 
@@ -270,12 +294,43 @@ write_context_guardrail() {
   echo "context guardrail $name $check: $observed ($status)"
 }
 
+context_guardrail_value() {
+  local specs="$1"
+  local key="$2"
+  local default="$3"
+  local checks check
+
+  IFS="|" read -r -a checks <<<"$specs"
+  for check in "${checks[@]}"; do
+    if [ "${check%%:*}" = "$key" ]; then
+      printf "%s" "${check#*:}"
+      return
+    fi
+  done
+
+  printf "%s" "$default"
+}
+
+percentage_at_least() {
+  local total="$1"
+  local selected="$2"
+  local minimum="$3"
+
+  awk -v total="$total" -v selected="$selected" -v minimum="$minimum" 'BEGIN {
+    if (total <= 0) exit 1
+    reduction = (1 - (selected / total)) * 100
+    if (reduction < 0) reduction = 0
+    exit(reduction >= minimum ? 0 : 1)
+  }'
+}
+
 validate_context_guardrails() {
   local name="$1"
   local overview_json="$2"
   local context_json="$3"
   local output="$4"
-  local total_lines selected_lines first_recommended_tool context_files ranges reading_plan_steps first_next_action estimated_tokens applied_budget status
+  local specs="$5"
+  local total_lines selected_lines first_recommended_tool context_files ranges reading_plan_steps first_next_action estimated_tokens applied_budget status min_files min_ranges min_reading_plan_steps max_tokens min_line_reduction
 
   : >"$output"
 
@@ -288,6 +343,11 @@ validate_context_guardrails() {
   first_next_action="$(json_value "$context_json" '.reading_plan[0].next_action // "-"')"
   estimated_tokens="$(json_value "$context_json" '.estimated_tokens')"
   applied_budget="$(json_value "$context_json" '.budget.applied_token_budget // 0')"
+  min_files="$(context_guardrail_value "$specs" "selected_files" "1")"
+  min_ranges="$(context_guardrail_value "$specs" "selected_ranges" "1")"
+  min_reading_plan_steps="$(context_guardrail_value "$specs" "reading_plan_steps" "1")"
+  max_tokens="$(context_guardrail_value "$specs" "max_tokens" "$applied_budget")"
+  min_line_reduction="$(context_guardrail_value "$specs" "min_line_reduction" "50")"
 
   status="pass"
   if [ "$first_recommended_tool" != "context_pack" ]; then
@@ -296,22 +356,22 @@ validate_context_guardrails() {
   write_context_guardrail "$output" "$name" "first_recommended_tool" "context_pack" "$first_recommended_tool" "$status"
 
   status="pass"
-  if [ "$context_files" -le 0 ]; then
+  if [ "$context_files" -lt "$min_files" ]; then
     status="fail"
   fi
-  write_context_guardrail "$output" "$name" "selected_files" "> 0" "$context_files" "$status"
+  write_context_guardrail "$output" "$name" "selected_files" ">= $min_files" "$context_files" "$status"
 
   status="pass"
-  if [ "$ranges" -le 0 ]; then
+  if [ "$ranges" -lt "$min_ranges" ]; then
     status="fail"
   fi
-  write_context_guardrail "$output" "$name" "selected_ranges" "> 0" "$ranges" "$status"
+  write_context_guardrail "$output" "$name" "selected_ranges" ">= $min_ranges" "$ranges" "$status"
 
   status="pass"
-  if [ "$reading_plan_steps" -le 0 ]; then
+  if [ "$reading_plan_steps" -lt "$min_reading_plan_steps" ]; then
     status="fail"
   fi
-  write_context_guardrail "$output" "$name" "reading_plan_steps" "> 0" "$reading_plan_steps" "$status"
+  write_context_guardrail "$output" "$name" "reading_plan_steps" ">= $min_reading_plan_steps" "$reading_plan_steps" "$status"
 
   status="pass"
   if [ -z "$first_next_action" ] || [ "$first_next_action" = "-" ]; then
@@ -320,16 +380,16 @@ validate_context_guardrails() {
   write_context_guardrail "$output" "$name" "first_next_action" "present" "$first_next_action" "$status"
 
   status="pass"
-  if [ "$applied_budget" -le 0 ] || [ "$estimated_tokens" -gt "$applied_budget" ]; then
+  if [ "$applied_budget" -le 0 ] || [ "$estimated_tokens" -gt "$applied_budget" ] || [ "$estimated_tokens" -gt "$max_tokens" ]; then
     status="fail"
   fi
-  write_context_guardrail "$output" "$name" "estimated_tokens" "<= applied budget" "$estimated_tokens / $applied_budget" "$status"
+  write_context_guardrail "$output" "$name" "estimated_tokens" "<= $max_tokens and applied budget" "$estimated_tokens / $applied_budget" "$status"
 
   status="pass"
-  if [ "$total_lines" -le 0 ] || [ "$selected_lines" -gt $((total_lines / 2)) ]; then
+  if ! percentage_at_least "$total_lines" "$selected_lines" "$min_line_reduction"; then
     status="fail"
   fi
-  write_context_guardrail "$output" "$name" "line_reduction" ">= 50%" "$(line_reduction "$total_lines" "$selected_lines")" "$status"
+  write_context_guardrail "$output" "$name" "line_reduction" ">= ${min_line_reduction}%" "$(line_reduction "$total_lines" "$selected_lines")" "$status"
 }
 
 validate_symbol_target_guardrails() {
@@ -678,6 +738,7 @@ main() {
     language="${REPO_LANGUAGES[$i]}"
     context_file="${REPO_CONTEXT_FILES[$i]}"
     context_task="${REPO_CONTEXT_TASKS[$i]}"
+    context_guardrails="${REPO_CONTEXT_GUARDRAILS[$i]}"
     max_index_ms="${REPO_MAX_INDEX_MS[$i]}"
     symbol_targets="${REPO_SYMBOL_TARGETS[$i]}"
     call_targets="${REPO_CALL_TARGETS[$i]}"
@@ -700,7 +761,7 @@ main() {
       --file "$context_file" \
       --token-budget 6000 \
       >"$context_json"
-    validate_context_guardrails "$name" "$overview_json" "$context_json" "$context_guardrails_file"
+    validate_context_guardrails "$name" "$overview_json" "$context_json" "$context_guardrails_file" "$context_guardrails"
     validate_symbol_target_guardrails "$name" "$repo_dir" "$symbol_targets" "$symbol_targets_file"
     validate_call_target_guardrails "$name" "$repo_dir" "$call_targets" "$call_targets_file"
     validate_call_edge_guardrails "$name" "$repo_dir" "$call_edges" "$call_edges_file"

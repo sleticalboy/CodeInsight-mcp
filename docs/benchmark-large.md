@@ -1,6 +1,6 @@
 # CodeInsight v0.1 Large Repository Benchmark
 
-Generated at: 2026-07-15 01:02:46 UTC
+Generated at: 2026-07-15 02:02:25 UTC
 
 This is a benchmark fixture report, not a controlled performance benchmark. It
 verifies that CodeInsight can index real public repositories across the MVP
@@ -20,10 +20,10 @@ Environment:
 
 | Repository | Focus | Commit | Files | Lines | Symbols | Skipped | Errors | Index ms | Index budget ms | Budget status | DB size | Entrypoints | First entrypoint | Recommended tools | First recommended tool | Context files | Ranges | Context lines | Line reduction | Tokens | Applied budget | Omitted files | Continuation | Truncated | First context file |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |
-| express | JavaScript | `ae6dd37` | 141 | 21478 | 2432 | 72 | 0 | 3466 | 10000 | pass | 6.1M | 12 | `examples/auth/index.js` | 4 | `context_pack` | 4 | 13 | 362 | 98.3% | 2360 | 6000 | 0 | complete | false | `lib/application.js` |
-| flask | Python | `36e4a82` | 83 | 18337 | 1620 | 153 | 0 | 386 | 5000 | pass | 1.2M | 6 | `src/flask/cli.py` | 4 | `context_pack` | 12 | 15 | 573 | 96.9% | 5851 | 6000 | 2 | omitted_candidates_available | true | `src/flask/app.py` |
-| gin | Go | `34dac20` | 99 | 24099 | 1857 | 31 | 0 | 420 | 5000 | pass | 1.8M | 3 | `gin.go` | 4 | `context_pack` | 4 | 12 | 305 | 98.7% | 2969 | 6000 | 0 | complete | false | `gin.go` |
-| tokio | Rust | `dac81bf` | 790 | 177641 | 8472 | 75 | 0 | 2882 | 20000 | pass | 7.0M | 12 | `examples/chat.rs` | 4 | `context_pack` | 18 | 23 | 508 | 99.7% | 5054 | 6000 | 0 | complete | false | `tokio/src/lib.rs` |
+| express | JavaScript | `ae6dd37` | 141 | 21478 | 2432 | 72 | 0 | 3101 | 10000 | pass | 6.2M | 12 | `examples/auth/index.js` | 4 | `context_pack` | 4 | 13 | 362 | 98.3% | 2360 | 6000 | 0 | complete | false | `lib/application.js` |
+| flask | Python | `36e4a82` | 83 | 18337 | 1620 | 153 | 0 | 356 | 5000 | pass | 1.2M | 6 | `src/flask/cli.py` | 4 | `context_pack` | 12 | 15 | 573 | 96.9% | 5851 | 6000 | 2 | omitted_candidates_available | true | `src/flask/app.py` |
+| gin | Go | `34dac20` | 99 | 24099 | 1857 | 31 | 0 | 418 | 5000 | pass | 1.8M | 3 | `gin.go` | 4 | `context_pack` | 4 | 12 | 305 | 98.7% | 2969 | 6000 | 0 | complete | false | `gin.go` |
+| tokio | Rust | `dac81bf` | 790 | 177641 | 8472 | 75 | 0 | 2855 | 20000 | pass | 6.9M | 12 | `examples/chat.rs` | 4 | `context_pack` | 18 | 23 | 508 | 99.7% | 5054 | 6000 | 0 | complete | false | `tokio/src/lib.rs` |
 
 ## Details
 
@@ -33,7 +33,7 @@ Environment:
 - Commit: `ae6dd37680e3a00618d6c8a3e522f0ee4eeba1a4`
 - Indexed files: 141
 - Symbols: 2432
-- Duration: 3466 ms
+- Duration: 3101 ms
 - Index budget: 10000 ms (pass)
 - Entrypoint candidates: 12
 - First entrypoint candidate: `examples/auth/index.js`
@@ -90,12 +90,12 @@ Context pack guardrails:
 | Check | Expectation | Observed | Status |
 | --- | --- | --- | --- |
 | `first_recommended_tool` | context_pack | context_pack | pass |
-| `selected_files` | > 0 | 4 | pass |
-| `selected_ranges` | > 0 | 13 | pass |
-| `reading_plan_steps` | > 0 | 4 | pass |
+| `selected_files` | >= 3 | 4 | pass |
+| `selected_ranges` | >= 10 | 13 | pass |
+| `reading_plan_steps` | >= 3 | 4 | pass |
 | `first_next_action` | present | inspect_seed_file | pass |
-| `estimated_tokens` | <= applied budget | 2360 / 6000 | pass |
-| `line_reduction` | >= 50% | 98.3% | pass |
+| `estimated_tokens` | <= 3000 and applied budget | 2360 / 6000 | pass |
+| `line_reduction` | >= 95% | 98.3% | pass |
 
 Symbol target guardrails:
 
@@ -133,7 +133,7 @@ Call edge guardrails:
 - Commit: `36e4a824f340fdee7ed50937ba8e7f6bc7d17f81`
 - Indexed files: 83
 - Symbols: 1620
-- Duration: 386 ms
+- Duration: 356 ms
 - Index budget: 5000 ms (pass)
 - Entrypoint candidates: 6
 - First entrypoint candidate: `src/flask/cli.py`
@@ -198,12 +198,12 @@ Context pack guardrails:
 | Check | Expectation | Observed | Status |
 | --- | --- | --- | --- |
 | `first_recommended_tool` | context_pack | context_pack | pass |
-| `selected_files` | > 0 | 12 | pass |
-| `selected_ranges` | > 0 | 15 | pass |
-| `reading_plan_steps` | > 0 | 8 | pass |
+| `selected_files` | >= 8 | 12 | pass |
+| `selected_ranges` | >= 10 | 15 | pass |
+| `reading_plan_steps` | >= 6 | 8 | pass |
 | `first_next_action` | present | inspect_seed_file | pass |
-| `estimated_tokens` | <= applied budget | 5851 / 6000 | pass |
-| `line_reduction` | >= 50% | 96.9% | pass |
+| `estimated_tokens` | <= 6000 and applied budget | 5851 / 6000 | pass |
+| `line_reduction` | >= 90% | 96.9% | pass |
 
 ## gin
 
@@ -211,7 +211,7 @@ Context pack guardrails:
 - Commit: `34dac209ffb6ef85cc78c5d217bbb7ad001d68fd`
 - Indexed files: 99
 - Symbols: 1857
-- Duration: 420 ms
+- Duration: 418 ms
 - Index budget: 5000 ms (pass)
 - Entrypoint candidates: 3
 - First entrypoint candidate: `gin.go`
@@ -266,12 +266,12 @@ Context pack guardrails:
 | Check | Expectation | Observed | Status |
 | --- | --- | --- | --- |
 | `first_recommended_tool` | context_pack | context_pack | pass |
-| `selected_files` | > 0 | 4 | pass |
-| `selected_ranges` | > 0 | 12 | pass |
-| `reading_plan_steps` | > 0 | 4 | pass |
+| `selected_files` | >= 3 | 4 | pass |
+| `selected_ranges` | >= 10 | 12 | pass |
+| `reading_plan_steps` | >= 3 | 4 | pass |
 | `first_next_action` | present | inspect_seed_file | pass |
-| `estimated_tokens` | <= applied budget | 2969 / 6000 | pass |
-| `line_reduction` | >= 50% | 98.7% | pass |
+| `estimated_tokens` | <= 3500 and applied budget | 2969 / 6000 | pass |
+| `line_reduction` | >= 95% | 98.7% | pass |
 
 ## tokio
 
@@ -279,7 +279,7 @@ Context pack guardrails:
 - Commit: `dac81bf8c8de0a3e35f1626643674ba9faf9569c`
 - Indexed files: 790
 - Symbols: 8472
-- Duration: 2882 ms
+- Duration: 2855 ms
 - Index budget: 20000 ms (pass)
 - Entrypoint candidates: 12
 - First entrypoint candidate: `examples/chat.rs`
@@ -350,9 +350,9 @@ Context pack guardrails:
 | Check | Expectation | Observed | Status |
 | --- | --- | --- | --- |
 | `first_recommended_tool` | context_pack | context_pack | pass |
-| `selected_files` | > 0 | 18 | pass |
-| `selected_ranges` | > 0 | 23 | pass |
-| `reading_plan_steps` | > 0 | 8 | pass |
+| `selected_files` | >= 12 | 18 | pass |
+| `selected_ranges` | >= 18 | 23 | pass |
+| `reading_plan_steps` | >= 6 | 8 | pass |
 | `first_next_action` | present | inspect_seed_file | pass |
-| `estimated_tokens` | <= applied budget | 5054 / 6000 | pass |
-| `line_reduction` | >= 50% | 99.7% | pass |
+| `estimated_tokens` | <= 5500 and applied budget | 5054 / 6000 | pass |
+| `line_reduction` | >= 95% | 99.7% | pass |

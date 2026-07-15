@@ -56,6 +56,8 @@ CODEINSIGHT_BENCH_PROFILE=large scripts/benchmark-smoke.sh
 
 Benchmark profiles enforce fixture guardrail budgets by default. To refresh
 reports without enforcing budgets, set `CODEINSIGHT_BENCH_DISABLE_BUDGETS=1`.
+When public GitHub cloning is unstable, set `CODEINSIGHT_BENCH_REUSE_REPOS=1`
+to reuse existing checkouts in the benchmark work directory.
 
 ## Optional External Checks
 

@@ -87,12 +87,12 @@ Context pack guardrails:
 | Check | Expectation | Observed | Status |
 | --- | --- | --- | --- |
 | `first_recommended_tool` | context_pack | context_pack | pass |
-| `selected_files` | > 0 | 1 | pass |
-| `selected_ranges` | > 0 | 5 | pass |
-| `reading_plan_steps` | > 0 | 1 | pass |
+| `selected_files` | >= 1 | 1 | pass |
+| `selected_ranges` | >= 3 | 5 | pass |
+| `reading_plan_steps` | >= 1 | 1 | pass |
 | `first_next_action` | present | inspect_seed_file | pass |
-| `estimated_tokens` | <= applied budget | 875 / 6000 | pass |
-| `line_reduction` | >= 50% | 90.9% | pass |
+| `estimated_tokens` | <= 1200 and applied budget | 875 / 6000 | pass |
+| `line_reduction` | >= 80% | 90.9% | pass |
 
 ## itsdangerous
 
@@ -153,12 +153,12 @@ Context pack guardrails:
 | Check | Expectation | Observed | Status |
 | --- | --- | --- | --- |
 | `first_recommended_tool` | context_pack | context_pack | pass |
-| `selected_files` | > 0 | 4 | pass |
-| `selected_ranges` | > 0 | 8 | pass |
-| `reading_plan_steps` | > 0 | 4 | pass |
+| `selected_files` | >= 3 | 4 | pass |
+| `selected_ranges` | >= 6 | 8 | pass |
+| `reading_plan_steps` | >= 3 | 4 | pass |
 | `first_next_action` | present | inspect_seed_file | pass |
-| `estimated_tokens` | <= applied budget | 2373 / 6000 | pass |
-| `line_reduction` | >= 50% | 85.9% | pass |
+| `estimated_tokens` | <= 3000 and applied budget | 2373 / 6000 | pass |
+| `line_reduction` | >= 80% | 85.9% | pass |
 
 ## go-example
 
@@ -224,12 +224,12 @@ Context pack guardrails:
 | Check | Expectation | Observed | Status |
 | --- | --- | --- | --- |
 | `first_recommended_tool` | context_pack | context_pack | pass |
-| `selected_files` | > 0 | 4 | pass |
-| `selected_ranges` | > 0 | 6 | pass |
-| `reading_plan_steps` | > 0 | 4 | pass |
+| `selected_files` | >= 3 | 4 | pass |
+| `selected_ranges` | >= 4 | 6 | pass |
+| `reading_plan_steps` | >= 3 | 4 | pass |
 | `first_next_action` | present | inspect_seed_file | pass |
-| `estimated_tokens` | <= applied budget | 600 / 6000 | pass |
-| `line_reduction` | >= 50% | 97.5% | pass |
+| `estimated_tokens` | <= 1000 and applied budget | 600 / 6000 | pass |
+| `line_reduction` | >= 90% | 97.5% | pass |
 
 ## memchr
 
@@ -297,9 +297,9 @@ Context pack guardrails:
 | Check | Expectation | Observed | Status |
 | --- | --- | --- | --- |
 | `first_recommended_tool` | context_pack | context_pack | pass |
-| `selected_files` | > 0 | 7 | pass |
-| `selected_ranges` | > 0 | 7 | pass |
-| `reading_plan_steps` | > 0 | 7 | pass |
+| `selected_files` | >= 5 | 7 | pass |
+| `selected_ranges` | >= 5 | 7 | pass |
+| `reading_plan_steps` | >= 5 | 7 | pass |
 | `first_next_action` | present | inspect_seed_file | pass |
-| `estimated_tokens` | <= applied budget | 1899 / 6000 | pass |
-| `line_reduction` | >= 50% | 99.7% | pass |
+| `estimated_tokens` | <= 2500 and applied budget | 1899 / 6000 | pass |
+| `line_reduction` | >= 95% | 99.7% | pass |
