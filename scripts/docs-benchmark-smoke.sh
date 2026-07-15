@@ -87,6 +87,12 @@ main() {
   require_pattern docs/benchmark-v0.1.md \
     '\| `context_pack` \|' \
     "context_pack recommended tool evidence"
+  require_pattern docs/benchmark-v0.1.md \
+    'Context pack guardrails:' \
+    "smoke context guardrail section"
+  require_pattern docs/benchmark-v0.1.md \
+    '\| `reading_plan_steps` \| > 0 \|' \
+    "smoke reading plan guardrail"
 
   require_pattern docs/benchmark-large.md \
     '^# CodeInsight v0\.1 Large Repository Benchmark$' \
@@ -112,6 +118,12 @@ main() {
   require_pattern docs/benchmark-large.md \
     '\| `context_pack` \|' \
     "context_pack recommended tool evidence"
+  require_pattern docs/benchmark-large.md \
+    'Context pack guardrails:' \
+    "large context guardrail section"
+  require_pattern docs/benchmark-large.md \
+    '\| `reading_plan_steps` \| > 0 \|' \
+    "large reading plan guardrail"
 
   require_pattern docs/demo-script.md \
     'scripts/agent-router-demo\.sh' \

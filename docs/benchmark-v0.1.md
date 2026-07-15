@@ -1,6 +1,6 @@
 # CodeInsight v0.1 Smoke Benchmark
 
-Generated at: 2026-07-13 14:58:00 UTC
+Generated at: 2026-07-15 01:02:14 UTC
 
 This is a benchmark fixture report, not a controlled performance benchmark. It
 verifies that CodeInsight can index real public repositories across the MVP
@@ -9,7 +9,7 @@ crashing.
 
 Environment:
 
-- Command: `target/release/codeinsight`
+- Command: `/Users/binlee/.cargo/target/release/codeinsight`
 - Profile: `smoke`
 - Work directory: temporary clone directory
 - Index mode: forced clean index per repository
@@ -20,10 +20,10 @@ Environment:
 
 | Repository | Focus | Commit | Files | Lines | Symbols | Skipped | Errors | Index ms | Index budget ms | Budget status | DB size | Entrypoints | First entrypoint | Recommended tools | First recommended tool | Context files | Ranges | Context lines | Line reduction | Tokens | Applied budget | Omitted files | Continuation | Truncated | First context file |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |
-| p-limit | TypeScript | `42599eb` | 6 | 1123 | 184 | 10 | 0 | 59 | 5000 | pass | 216K | 4 | `index.js` | 4 | `context_pack` | 1 | 5 | 102 | 90.9% | 875 | 6000 | 0 | lower_ranked_context_omitted | false | `index.js` |
-| itsdangerous | Python | `672971d` | 15 | 1712 | 144 | 35 | 0 | 45 | 5000 | pass | 248K | 0 | `-` | 4 | `context_pack` | 4 | 8 | 242 | 85.9% | 2373 | 6000 | 0 | complete | false | `src/itsdangerous/serializer.py` |
-| go-example | Go | `7f05d21` | 38 | 3537 | 189 | 33 | 0 | 85 | 5000 | pass | 264K | 12 | `gotypes/defsuses/main.go` | 4 | `context_pack` | 4 | 6 | 89 | 97.5% | 600 | 6000 | 0 | lower_ranked_context_omitted | false | `hello/hello.go` |
-| memchr | Rust | `bce7df7` | 64 | 69381 | 4046 | 110 | 0 | 785 | 10000 | pass | 2.3M | 12 | `benchmarks/engines/libc/main.rs` | 4 | `context_pack` | 7 | 7 | 196 | 99.7% | 1899 | 6000 | 0 | complete | false | `src/lib.rs` |
+| p-limit | TypeScript | `42599eb` | 6 | 1123 | 184 | 10 | 0 | 55 | 5000 | pass | 216K | 4 | `index.js` | 4 | `context_pack` | 1 | 5 | 102 | 90.9% | 875 | 6000 | 0 | lower_ranked_context_omitted | false | `index.js` |
+| itsdangerous | Python | `672971d` | 15 | 1712 | 144 | 35 | 0 | 46 | 5000 | pass | 248K | 0 | `-` | 4 | `context_pack` | 4 | 8 | 242 | 85.9% | 2373 | 6000 | 0 | complete | false | `src/itsdangerous/serializer.py` |
+| go-example | Go | `7f05d21` | 38 | 3537 | 189 | 33 | 0 | 91 | 5000 | pass | 264K | 12 | `gotypes/defsuses/main.go` | 4 | `context_pack` | 4 | 6 | 89 | 97.5% | 600 | 6000 | 0 | lower_ranked_context_omitted | false | `hello/hello.go` |
+| memchr | Rust | `bce7df7` | 64 | 69381 | 4046 | 110 | 0 | 692 | 10000 | pass | 2.3M | 12 | `benchmarks/engines/libc/main.rs` | 4 | `context_pack` | 7 | 7 | 196 | 99.7% | 1899 | 6000 | 0 | complete | false | `src/lib.rs` |
 
 ## Details
 
@@ -33,7 +33,7 @@ Environment:
 - Commit: `42599ebbbb1228a5bdab381fcf8f4ac20eb8d551`
 - Indexed files: 6
 - Symbols: 184
-- Duration: 59 ms
+- Duration: 55 ms
 - Index budget: 5000 ms (pass)
 - Entrypoint candidates: 4
 - First entrypoint candidate: `index.js`
@@ -82,13 +82,25 @@ Language breakdown:
 | javascript | 4 | 954 |
 | typescript | 2 | 169 |
 
+Context pack guardrails:
+
+| Check | Expectation | Observed | Status |
+| --- | --- | --- | --- |
+| `first_recommended_tool` | context_pack | context_pack | pass |
+| `selected_files` | > 0 | 1 | pass |
+| `selected_ranges` | > 0 | 5 | pass |
+| `reading_plan_steps` | > 0 | 1 | pass |
+| `first_next_action` | present | inspect_seed_file | pass |
+| `estimated_tokens` | <= applied budget | 875 / 6000 | pass |
+| `line_reduction` | >= 50% | 90.9% | pass |
+
 ## itsdangerous
 
 - URL: https://github.com/pallets/itsdangerous.git
 - Commit: `672971d66a2ef9f85151e53283113f33d642dabd`
 - Indexed files: 15
 - Symbols: 144
-- Duration: 45 ms
+- Duration: 46 ms
 - Index budget: 5000 ms (pass)
 - Entrypoint candidates: 0
 - First entrypoint candidate: `-`
@@ -136,13 +148,25 @@ Language breakdown:
 | --- | ---: | ---: |
 | python | 15 | 1712 |
 
+Context pack guardrails:
+
+| Check | Expectation | Observed | Status |
+| --- | --- | --- | --- |
+| `first_recommended_tool` | context_pack | context_pack | pass |
+| `selected_files` | > 0 | 4 | pass |
+| `selected_ranges` | > 0 | 8 | pass |
+| `reading_plan_steps` | > 0 | 4 | pass |
+| `first_next_action` | present | inspect_seed_file | pass |
+| `estimated_tokens` | <= applied budget | 2373 / 6000 | pass |
+| `line_reduction` | >= 50% | 85.9% | pass |
+
 ## go-example
 
 - URL: https://github.com/golang/example.git
 - Commit: `7f05d217867b2af52b0a28c6d1c91df97e1b5b39`
 - Indexed files: 38
 - Symbols: 189
-- Duration: 85 ms
+- Duration: 91 ms
 - Index budget: 5000 ms (pass)
 - Entrypoint candidates: 12
 - First entrypoint candidate: `gotypes/defsuses/main.go`
@@ -195,13 +219,25 @@ Language breakdown:
 | go | 37 | 3523 |
 | javascript | 1 | 14 |
 
+Context pack guardrails:
+
+| Check | Expectation | Observed | Status |
+| --- | --- | --- | --- |
+| `first_recommended_tool` | context_pack | context_pack | pass |
+| `selected_files` | > 0 | 4 | pass |
+| `selected_ranges` | > 0 | 6 | pass |
+| `reading_plan_steps` | > 0 | 4 | pass |
+| `first_next_action` | present | inspect_seed_file | pass |
+| `estimated_tokens` | <= applied budget | 600 / 6000 | pass |
+| `line_reduction` | >= 50% | 97.5% | pass |
+
 ## memchr
 
 - URL: https://github.com/BurntSushi/memchr.git
 - Commit: `bce7df7140acff420478a358cde5587904000cb1`
 - Indexed files: 64
 - Symbols: 4046
-- Duration: 785 ms
+- Duration: 692 ms
 - Index budget: 10000 ms (pass)
 - Entrypoint candidates: 12
 - First entrypoint candidate: `benchmarks/engines/libc/main.rs`
@@ -255,3 +291,15 @@ Language breakdown:
 | Language | Files | Lines |
 | --- | ---: | ---: |
 | rust | 64 | 69381 |
+
+Context pack guardrails:
+
+| Check | Expectation | Observed | Status |
+| --- | --- | --- | --- |
+| `first_recommended_tool` | context_pack | context_pack | pass |
+| `selected_files` | > 0 | 7 | pass |
+| `selected_ranges` | > 0 | 7 | pass |
+| `reading_plan_steps` | > 0 | 7 | pass |
+| `first_next_action` | present | inspect_seed_file | pass |
+| `estimated_tokens` | <= applied budget | 1899 / 6000 | pass |
+| `line_reduction` | >= 50% | 99.7% | pass |

@@ -72,6 +72,9 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   non-network checks cover the first-read product flow.
 - CI now runs `scripts/agent-router-demo.sh` as its own job so the first-read
   product flow is covered remotely.
+- `scripts/benchmark-smoke.sh` now enforces context-pack guardrails for first
+  recommended tool, selected context, reading plan, token budget, and line
+  reduction.
 
 ## [0.1.12] - 2026-07-14
 

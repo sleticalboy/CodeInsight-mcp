@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WORK_DIR="${CODEINSIGHT_BENCH_WORKDIR:-${TMPDIR:-/tmp}/codeinsight-benchmark}"
-CODEINSIGHT_BIN="${CODEINSIGHT_BIN:-$ROOT_DIR/target/release/codeinsight}"
+CODEINSIGHT_BIN="${CODEINSIGHT_BIN:-}"
 BENCH_PROFILE="${CODEINSIGHT_BENCH_PROFILE:-smoke}"
 DISABLE_BUDGETS="${CODEINSIGHT_BENCH_DISABLE_BUDGETS:-0}"
 REPORT_FILE=""
@@ -19,6 +19,7 @@ REPO_CALL_TARGETS=()
 REPO_CALL_EDGES=()
 OUTPUT=""
 BUDGET_FAILURES=0
+CONTEXT_GUARDRAIL_FAILURES=0
 SYMBOL_TARGET_FAILURES=0
 CALL_TARGET_FAILURES=0
 CALL_EDGE_FAILURES=0
@@ -253,6 +254,84 @@ context_lines() {
   jq -r '[.files[].ranges[] | (.end_line - .start_line + 1)] | add // 0' "$context_json"
 }
 
+write_context_guardrail() {
+  local output="$1"
+  local name="$2"
+  local check="$3"
+  local expectation="$4"
+  local observed="$5"
+  local status="$6"
+
+  if [ "$status" != "pass" ]; then
+    CONTEXT_GUARDRAIL_FAILURES=$((CONTEXT_GUARDRAIL_FAILURES + 1))
+  fi
+
+  printf "%s\t%s\t%s\t%s\n" "$check" "$expectation" "$observed" "$status" >>"$output"
+  echo "context guardrail $name $check: $observed ($status)"
+}
+
+validate_context_guardrails() {
+  local name="$1"
+  local overview_json="$2"
+  local context_json="$3"
+  local output="$4"
+  local total_lines selected_lines first_recommended_tool context_files ranges reading_plan_steps first_next_action estimated_tokens applied_budget status
+
+  : >"$output"
+
+  total_lines="$(json_value "$overview_json" '[.languages[].lines] | add // 0')"
+  selected_lines="$(context_lines "$context_json")"
+  first_recommended_tool="$(json_value "$overview_json" '.recommended_next_tools[0].tool // "-"')"
+  context_files="$(json_value "$context_json" '.files | length')"
+  ranges="$(json_value "$context_json" '[.files[].ranges | length] | add // 0')"
+  reading_plan_steps="$(json_value "$context_json" '.reading_plan | length')"
+  first_next_action="$(json_value "$context_json" '.reading_plan[0].next_action // "-"')"
+  estimated_tokens="$(json_value "$context_json" '.estimated_tokens')"
+  applied_budget="$(json_value "$context_json" '.budget.applied_token_budget // 0')"
+
+  status="pass"
+  if [ "$first_recommended_tool" != "context_pack" ]; then
+    status="fail"
+  fi
+  write_context_guardrail "$output" "$name" "first_recommended_tool" "context_pack" "$first_recommended_tool" "$status"
+
+  status="pass"
+  if [ "$context_files" -le 0 ]; then
+    status="fail"
+  fi
+  write_context_guardrail "$output" "$name" "selected_files" "> 0" "$context_files" "$status"
+
+  status="pass"
+  if [ "$ranges" -le 0 ]; then
+    status="fail"
+  fi
+  write_context_guardrail "$output" "$name" "selected_ranges" "> 0" "$ranges" "$status"
+
+  status="pass"
+  if [ "$reading_plan_steps" -le 0 ]; then
+    status="fail"
+  fi
+  write_context_guardrail "$output" "$name" "reading_plan_steps" "> 0" "$reading_plan_steps" "$status"
+
+  status="pass"
+  if [ -z "$first_next_action" ] || [ "$first_next_action" = "-" ]; then
+    status="fail"
+  fi
+  write_context_guardrail "$output" "$name" "first_next_action" "present" "$first_next_action" "$status"
+
+  status="pass"
+  if [ "$applied_budget" -le 0 ] || [ "$estimated_tokens" -gt "$applied_budget" ]; then
+    status="fail"
+  fi
+  write_context_guardrail "$output" "$name" "estimated_tokens" "<= applied budget" "$estimated_tokens / $applied_budget" "$status"
+
+  status="pass"
+  if [ "$total_lines" -le 0 ] || [ "$selected_lines" -gt $((total_lines / 2)) ]; then
+    status="fail"
+  fi
+  write_context_guardrail "$output" "$name" "line_reduction" ">= 50%" "$(line_reduction "$total_lines" "$selected_lines")" "$status"
+}
+
 validate_symbol_target_guardrails() {
   local name="$1"
   local repo_dir="$2"
@@ -412,6 +491,7 @@ append_detail_section() {
   local symbol_targets_file="${10}"
   local call_targets_file="${11}"
   local call_edges_file="${12}"
+  local context_guardrails_file="${13}"
   local duration total_lines selected_lines reduction status
   duration="$(json_value "$index_json" '.duration_ms')"
   total_lines="$(json_value "$overview_json" '[.languages[].lines] | add // 0')"
@@ -515,6 +595,20 @@ append_detail_section() {
     jq -r '.errors[:10][] | "- `\(.file)` during `\(.stage)`: \(.message)"' "$index_json" >>"$REPORT_FILE"
   fi
 
+  if [ -s "$context_guardrails_file" ]; then
+    {
+      echo
+      echo "Context pack guardrails:"
+      echo
+      echo "| Check | Expectation | Observed | Status |"
+      echo "| --- | --- | --- | --- |"
+    } >>"$REPORT_FILE"
+
+    while IFS=$'\t' read -r check expectation observed guardrail_status; do
+      printf "| \`%s\` | %s | %s | %s |\n" "$check" "$expectation" "$observed" "$guardrail_status" >>"$REPORT_FILE"
+    done <"$context_guardrails_file"
+  fi
+
   if [ -s "$symbol_targets_file" ]; then
     {
       echo
@@ -572,6 +666,9 @@ main() {
 
   echo "building release binary"
   cargo build --locked --release --manifest-path "$ROOT_DIR/Cargo.toml"
+  if [ -z "$CODEINSIGHT_BIN" ]; then
+    CODEINSIGHT_BIN="$(cargo metadata --no-deps --format-version 1 --manifest-path "$ROOT_DIR/Cargo.toml" | jq -r '.target_directory')/release/codeinsight"
+  fi
 
   write_report_header
 
@@ -592,6 +689,7 @@ main() {
     symbol_targets_file="$WORK_DIR/results/$name-symbol-targets.tsv"
     call_targets_file="$WORK_DIR/results/$name-call-targets.tsv"
     call_edges_file="$WORK_DIR/results/$name-call-edges.tsv"
+    context_guardrails_file="$WORK_DIR/results/$name-context-guardrails.tsv"
 
     echo "benchmarking $name"
     clone_repo "$name" "$url"
@@ -602,6 +700,7 @@ main() {
       --file "$context_file" \
       --token-budget 6000 \
       >"$context_json"
+    validate_context_guardrails "$name" "$overview_json" "$context_json" "$context_guardrails_file"
     validate_symbol_target_guardrails "$name" "$repo_dir" "$symbol_targets" "$symbol_targets_file"
     validate_call_target_guardrails "$name" "$repo_dir" "$call_targets" "$call_targets_file"
     validate_call_edge_guardrails "$name" "$repo_dir" "$call_edges" "$call_edges_file"
@@ -626,13 +725,18 @@ EOF
     symbol_targets_file="$WORK_DIR/results/$name-symbol-targets.tsv"
     call_targets_file="$WORK_DIR/results/$name-call-targets.tsv"
     call_edges_file="$WORK_DIR/results/$name-call-edges.tsv"
-    append_detail_section "$name" "$url" "$repo_dir" "$index_json" "$overview_json" "$context_json" "$context_file" "$context_task" "$max_index_ms" "$symbol_targets_file" "$call_targets_file" "$call_edges_file"
+    context_guardrails_file="$WORK_DIR/results/$name-context-guardrails.tsv"
+    append_detail_section "$name" "$url" "$repo_dir" "$index_json" "$overview_json" "$context_json" "$context_file" "$context_task" "$max_index_ms" "$symbol_targets_file" "$call_targets_file" "$call_edges_file" "$context_guardrails_file"
   done
 
   mv "$REPORT_FILE" "$OUTPUT"
   echo "wrote $OUTPUT"
   if [ "$BUDGET_FAILURES" -gt 0 ]; then
     echo "benchmark budget failures: $BUDGET_FAILURES" >&2
+    exit 1
+  fi
+  if [ "$CONTEXT_GUARDRAIL_FAILURES" -gt 0 ]; then
+    echo "context pack guardrail failures: $CONTEXT_GUARDRAIL_FAILURES" >&2
     exit 1
   fi
   if [ "$SYMBOL_TARGET_FAILURES" -gt 0 ]; then
