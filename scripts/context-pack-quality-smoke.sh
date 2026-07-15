@@ -103,6 +103,23 @@ export function spec() {
 EOF
 }
 
+write_dependency_continuation_fixture() {
+  local root="$1"
+
+  mkdir -p "$root/app"
+  cat >"$root/app/main.py" <<'EOF'
+from . import support
+
+class Entry:
+    def render(self):
+        return support.helper()
+EOF
+  cat >"$root/app/support.py" <<'EOF'
+def helper():
+    return "ok"
+EOF
+}
+
 require_file_before() {
   local file="$1"
   local earlier="$2"
@@ -156,6 +173,40 @@ run_reference_ranking_scenarios() {
   echo "  pass: test reference ranking"
 }
 
+run_dependency_continuation_scenario() {
+  local project="$TEMP_DIR/dependency-continuation"
+  local context_json="$TEMP_DIR/dependency-continuation-context.json"
+
+  write_dependency_continuation_fixture "$project"
+  "$CODEINSIGHT_BIN" index "$project" --force >"$TEMP_DIR/dependency-continuation-index.json"
+  require_jq "$TEMP_DIR/dependency-continuation-index.json" '.indexed_files == 2' \
+    "dependency continuation fixture should index two files"
+
+  "$CODEINSIGHT_BIN" context-pack "$project" \
+    --task "understand local support dependency" \
+    --file app/main.py \
+    --token-budget 1800 \
+    >"$context_json"
+
+  require_jq "$context_json" '.seed_strategy == "explicit"' \
+    "dependency continuation should use explicit seed strategy"
+  require_jq "$context_json" '.files[] | select(.file == "app/main.py" and .source == "seed_file")' \
+    "dependency continuation should include seeded entry file"
+  require_jq "$context_json" '.files[] | select(.file == "app/support.py" and .source == "dependency")' \
+    "dependency continuation should include resolved local dependency"
+  require_jq "$context_json" '.reading_plan[] | select(.file == "app/support.py" and .next_action == "inspect_dependency")' \
+    "dependency continuation should mark support file as dependency follow-up"
+  require_jq "$context_json" '.reading_plan[] | select(.file == "app/support.py" and .suggested_tool.tool == "dependency_graph" and .suggested_tool.suggested_arguments.files[0] == "app/support.py" and .suggested_tool.suggested_arguments.limit == 100)' \
+    "dependency continuation should suggest file-scoped dependency_graph"
+  require_jq "$context_json" '.budget.applied_token_budget <= 1800' \
+    "dependency continuation should respect token budget"
+  require_jq "$context_json" '.truncated == false' \
+    "dependency continuation should fit without truncation in fixture"
+
+  SCENARIOS_PASSED=$((SCENARIOS_PASSED + 1))
+  echo "  pass: dependency continuation"
+}
+
 main() {
   require_command jq
   build_binary_if_needed
@@ -180,6 +231,7 @@ main() {
     "src/PhpService.php" \
     "$TEMP_DIR/php-service-context.json"
   run_reference_ranking_scenarios
+  run_dependency_continuation_scenario
 
   echo "context-pack quality smoke passed"
   echo "scenarios: $SCENARIOS_PASSED"

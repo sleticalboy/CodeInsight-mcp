@@ -276,6 +276,9 @@ main() {
   require_pattern docs/maintenance-commands.md \
     'production-vs-test' \
     "maintenance context-pack quality scope"
+  require_pattern docs/maintenance-commands.md \
+    'dependency continuation' \
+    "maintenance context-pack dependency continuation scope"
   require_pattern docs/maintainer-checklist.md \
     'context-pack quality smoke' \
     "maintainer context-pack quality smoke"
