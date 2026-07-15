@@ -283,6 +283,9 @@ main() {
     '`Cargo\.toml`, `docs/install\.md`, and `CHANGELOG\.md` are prepared for the same' \
     "release commands metadata consistency gate"
   require_pattern docs/release-commands.md \
+    '`metadata_cargo`, `metadata_install`, and' \
+    "release commands metadata summary output"
+  require_pattern docs/release-commands.md \
     'scripts/release-pretag-check\.sh --repo sleticalboy/CodeInsight-mcp --head-sha <tag-target-sha> main' \
     "release commands tag SHA benchmark artifact gate"
   require_pattern docs/release-commands.md \
@@ -303,6 +306,9 @@ main() {
   require_pattern docs/release-runbook.md \
     'target tag must match' \
     "release runbook metadata consistency gate"
+  require_pattern docs/release-runbook.md \
+    '`metadata_cargo`, `metadata_install`, and `metadata_changelog`' \
+    "release runbook metadata summary output"
   require_pattern docs/release-runbook.md \
     'verify-pretag-ci' \
     "release runbook tag pretag workflow gate"

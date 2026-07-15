@@ -129,8 +129,12 @@ EOF
     fail "missing normalized tag output"
   grep -Fq 'head_sha: abc123' "$TEMP_DIR/output.log" ||
     fail "missing head SHA output"
-  grep -Fq 'metadata: ok' "$TEMP_DIR/output.log" ||
-    fail "missing metadata confirmation"
+  grep -Fq 'metadata_cargo: 99.88.77' "$TEMP_DIR/output.log" ||
+    fail "missing Cargo metadata confirmation"
+  grep -Fq 'metadata_install: v99.88.77' "$TEMP_DIR/output.log" ||
+    fail "missing install metadata confirmation"
+  grep -Fq 'metadata_changelog: 99.88.77 (2026-07-15)' "$TEMP_DIR/output.log" ||
+    fail "missing changelog metadata confirmation"
   grep -Fq 'git ls-remote --exit-code --tags https://github.com/sleticalboy/CodeInsight-mcp.git refs/tags/v99.88.77' "$TEMP_DIR/calls.log" ||
     fail "missing remote tag check"
   grep -Fq 'gh release view v99.88.77 --repo sleticalboy/CodeInsight-mcp --json tagName --jq .tagName' "$TEMP_DIR/calls.log" ||

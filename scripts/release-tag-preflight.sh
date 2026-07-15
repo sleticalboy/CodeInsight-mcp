@@ -10,6 +10,7 @@ REPO=""
 BRANCH="main"
 HEAD_SHA=""
 TAG_NAME=""
+METADATA_SUMMARY=""
 
 usage() {
   local status="${1:-2}"
@@ -73,15 +74,21 @@ fail!("Cargo.toml version #{cargo_version} does not match #{version}") unless ca
 
 install_path = File.join(root_dir, "docs", "install.md")
 install_doc = read_file(install_path)
-unless install_doc.include?("CODEINSIGHT_VERSION=#{tag}")
+install_version = install_doc[/CODEINSIGHT_VERSION=(v\d+\.\d+\.\d+)/, 1]
+unless install_version == tag
   fail!("docs/install.md CODEINSIGHT_VERSION does not match #{tag}")
 end
 
 changelog_path = File.join(root_dir, "CHANGELOG.md")
 changelog = read_file(changelog_path)
-unless changelog.match?(/^## \[#{Regexp.escape(version)}\] - \d{4}-\d{2}-\d{2}$/)
+changelog_match = changelog.match(/^## \[#{Regexp.escape(version)}\] - (?<date>\d{4}-\d{2}-\d{2})$/)
+unless changelog_match
   fail!("CHANGELOG.md release section not found for #{version}")
 end
+
+puts "metadata_cargo: #{cargo_version}"
+puts "metadata_install: #{install_version}"
+puts "metadata_changelog: #{version} (#{changelog_match[:date]})"
 RUBY
 }
 
@@ -217,7 +224,7 @@ main() {
   if git -C "$ROOT_DIR" rev-parse -q --verify "refs/tags/$TAG_NAME" >/dev/null; then
     fail "local tag already exists: $TAG_NAME"
   fi
-  check_release_metadata "$TAG_NAME"
+  METADATA_SUMMARY="$(check_release_metadata "$TAG_NAME")"
   if ! command -v gh >/dev/null 2>&1; then
     fail "missing required command: gh"
   fi
@@ -234,7 +241,7 @@ main() {
   echo "tag: $TAG_NAME"
   echo "branch: $BRANCH"
   echo "head_sha: $HEAD_SHA"
-  echo "metadata: ok"
+  printf "%s\n" "$METADATA_SUMMARY"
 
   "$RELEASE_WORKFLOW_GUARD_SCRIPT"
   "$RELEASE_PRETAG_CHECK_SCRIPT" "${REPO_ARG[@]}" --head-sha "$HEAD_SHA" "$BRANCH"

@@ -92,7 +92,9 @@ target commit by SHA against the successful `CI` run and benchmark artifact.
 It also fails fast when the tag already exists locally or remotely, or when a
 GitHub Release already exists for the tag. The target tag must match
 `Cargo.toml`, the pinned installer example in `docs/install.md`, and the
-prepared `CHANGELOG.md` release section.
+prepared `CHANGELOG.md` release section. The preflight output prints
+`metadata_cargo`, `metadata_install`, and `metadata_changelog` so the prepared
+versions are visible before tagging.
 
 ## Publish A Tagged Release
 
