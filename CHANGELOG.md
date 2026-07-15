@@ -79,6 +79,9 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   selected files, ranges, reading-plan steps, token usage, and line reduction.
 - `scripts/benchmark-smoke.sh` now supports `CODEINSIGHT_BENCH_REUSE_REPOS=1`
   and bounded low-speed Git clones for more reliable benchmark refreshes.
+- `scripts/benchmark-smoke.sh` now supports `CODEINSIGHT_BENCH_REPOS` for
+  running selected benchmark fixtures without overwriting the full reports by
+  default.
 
 ## [0.1.12] - 2026-07-14
 

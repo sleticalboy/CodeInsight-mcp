@@ -58,6 +58,9 @@ Benchmark profiles enforce fixture guardrail budgets by default. To refresh
 reports without enforcing budgets, set `CODEINSIGHT_BENCH_DISABLE_BUDGETS=1`.
 When public GitHub cloning is unstable, set `CODEINSIGHT_BENCH_REUSE_REPOS=1`
 to reuse existing checkouts in the benchmark work directory.
+To rerun only specific fixtures, set `CODEINSIGHT_BENCH_REPOS=p-limit,memchr`.
+Subset runs write to the benchmark work directory unless
+`CODEINSIGHT_BENCH_OUTPUT` is set explicitly.
 
 ## Optional External Checks
 

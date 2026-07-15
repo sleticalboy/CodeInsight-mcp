@@ -7,6 +7,8 @@ CODEINSIGHT_BIN="${CODEINSIGHT_BIN:-}"
 BENCH_PROFILE="${CODEINSIGHT_BENCH_PROFILE:-smoke}"
 DISABLE_BUDGETS="${CODEINSIGHT_BENCH_DISABLE_BUDGETS:-0}"
 REUSE_REPOS="${CODEINSIGHT_BENCH_REUSE_REPOS:-0}"
+BENCH_REPOS="${CODEINSIGHT_BENCH_REPOS:-}"
+OUTPUT_WAS_SET="${CODEINSIGHT_BENCH_OUTPUT+x}"
 REPORT_FILE=""
 
 REPO_NAMES=()
@@ -169,6 +171,59 @@ require_command() {
   fi
 }
 
+repo_selected() {
+  local name="$1"
+
+  if [ -z "$BENCH_REPOS" ]; then
+    return 0
+  fi
+
+  case ",$BENCH_REPOS," in
+    *",$name,"*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+validate_repo_subset() {
+  local requested known name found selected_count
+
+  if [ -z "$BENCH_REPOS" ]; then
+    return
+  fi
+
+  selected_count=0
+  IFS="," read -r -a requested <<<"$BENCH_REPOS"
+  for name in "${requested[@]}"; do
+    found=0
+    for known in "${REPO_NAMES[@]}"; do
+      if [ "$name" = "$known" ]; then
+        found=1
+        selected_count=$((selected_count + 1))
+        break
+      fi
+    done
+
+    if [ "$found" -eq 0 ]; then
+      echo "unknown benchmark repository in CODEINSIGHT_BENCH_REPOS: $name" >&2
+      echo "available repositories: ${REPO_NAMES[*]}" >&2
+      exit 1
+    fi
+  done
+
+  if [ "$selected_count" -eq 0 ]; then
+    echo "CODEINSIGHT_BENCH_REPOS did not select any repositories" >&2
+    exit 1
+  fi
+}
+
+repo_subset_label() {
+  if [ -z "$BENCH_REPOS" ]; then
+    printf "all"
+  else
+    printf "%s" "$BENCH_REPOS"
+  fi
+}
+
 clone_repo() {
   local name="$1"
   local url="$2"
@@ -239,6 +294,7 @@ Environment:
 - Command: \`$display_bin\`
 - Profile: \`$BENCH_PROFILE\`
 - Work directory: temporary clone directory
+- Repository subset: \`$(repo_subset_label)\`
 - Index mode: forced clean index per repository
 - Context pack mode: one stable file seed per repository, 6000 token budget
 - Index budget mode: $(budget_mode)
@@ -714,6 +770,11 @@ append_detail_section() {
 
 main() {
   configure_profile
+  validate_repo_subset
+
+  if [ -n "$BENCH_REPOS" ] && [ -z "$OUTPUT_WAS_SET" ]; then
+    OUTPUT="$WORK_DIR/results/benchmark-$BENCH_PROFILE-subset.md"
+  fi
 
   require_command git
   require_command jq
@@ -734,6 +795,10 @@ main() {
 
   for i in "${!REPO_NAMES[@]}"; do
     name="${REPO_NAMES[$i]}"
+    if ! repo_selected "$name"; then
+      continue
+    fi
+
     url="${REPO_URLS[$i]}"
     language="${REPO_LANGUAGES[$i]}"
     context_file="${REPO_CONTEXT_FILES[$i]}"
@@ -775,6 +840,10 @@ EOF
 
   for i in "${!REPO_NAMES[@]}"; do
     name="${REPO_NAMES[$i]}"
+    if ! repo_selected "$name"; then
+      continue
+    fi
+
     url="${REPO_URLS[$i]}"
     repo_dir="$WORK_DIR/repos/$name"
     index_json="$WORK_DIR/results/$name-index.json"
