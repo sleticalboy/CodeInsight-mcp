@@ -26,6 +26,16 @@ jobs:
           key: semantic-smoke
       - run: scripts/semantic-smoke.sh
 
+  agent-router-demo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: agent-router-demo
+      - run: scripts/agent-router-demo.sh
+
   release-install-smoke:
     name: release-install-smoke-${{ matrix.os }}
     runs-on: ${{ matrix.os }}

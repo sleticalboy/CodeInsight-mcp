@@ -70,6 +70,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   return selected files, reading-plan steps, or a first next action.
 - `scripts/local-ci-smoke.sh` now includes the agent-router demo so local
   non-network checks cover the first-read product flow.
+- CI now runs `scripts/agent-router-demo.sh` as its own job so the first-read
+  product flow is covered remotely.
 
 ## [0.1.12] - 2026-07-14
 

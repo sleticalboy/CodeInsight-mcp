@@ -32,16 +32,18 @@ optional external checks, see [Maintenance commands](maintenance-commands.md).
   scripts/local-ci-smoke.sh
   ```
 
-- For changes that affect first-read routing, context packing, MCP output, or
-  install behavior, also run the relevant smoke from
+- For changes that affect MCP output, semantic behavior, or install behavior,
+  also run the relevant smoke from
   [Maintenance commands](maintenance-commands.md):
 
   ```bash
-  scripts/agent-router-demo.sh
   scripts/mcp-stdio-smoke.sh
   scripts/semantic-smoke.sh
   scripts/installed-quickstart-smoke.sh
   ```
+
+  `scripts/local-ci-smoke.sh` already includes the agent-router demo for
+  first-read routing and context-packing changes.
 
 - For release-tooling changes, run the release script smokes:
 
