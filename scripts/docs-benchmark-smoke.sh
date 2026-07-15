@@ -109,6 +109,9 @@ main() {
   require_pattern README.md \
     'Generated reports include a `Key Results` section' \
     "benchmark key results claim"
+  require_pattern .github/workflows/ci.yml \
+    'actions/upload-artifact@v7' \
+    "Node.js 24 artifact upload action"
 
   require_pattern scripts/benchmark-smoke.sh \
     'OUTPUT="\$\{CODEINSIGHT_BENCH_OUTPUT:-\$ROOT_DIR/docs/benchmark-v0\.1\.md\}"' \
