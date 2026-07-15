@@ -105,6 +105,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   benchmark summary and download the subset artifact for full guardrail detail.
 - Added `scripts/benchmark-artifact-smoke.sh` to download a CI benchmark
   artifact by run id and validate the contained report.
+- Release command and runbook docs now include the benchmark artifact smoke as
+  a pre-tagging gate after release-prep CI completes.
 
 ## [0.1.12] - 2026-07-14
 

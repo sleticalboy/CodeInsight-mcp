@@ -270,6 +270,12 @@ main() {
   require_pattern docs/maintenance-commands.md \
     'scripts/benchmark-artifact-smoke\.sh <ci-run-id>' \
     "maintenance benchmark artifact download"
+  require_pattern docs/release-commands.md \
+    'scripts/benchmark-artifact-smoke\.sh <ci-run-id>' \
+    "release commands benchmark artifact gate"
+  require_pattern docs/release-runbook.md \
+    'scripts/benchmark-artifact-smoke\.sh <run-id>' \
+    "release runbook benchmark artifact gate"
   require_pattern docs/maintainer-checklist.md \
     'README benchmark snapshot, \[Demo script\]\(demo-script\.md\)' \
     "maintainer benchmark evidence consistency"

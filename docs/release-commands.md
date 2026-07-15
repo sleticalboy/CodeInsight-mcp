@@ -27,6 +27,13 @@ scripts/release-install-smoke.sh
 scripts/installed-quickstart-smoke.sh
 ```
 
+After the release prep commit CI completes, validate the uploaded benchmark
+subset artifact:
+
+```bash
+scripts/benchmark-artifact-smoke.sh <ci-run-id>
+```
+
 ## Publish
 
 Push the release prep commit, then create and push the tag:

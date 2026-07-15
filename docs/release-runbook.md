@@ -77,6 +77,16 @@ gh run list --branch main --limit 5
 gh run watch <run-id> --exit-status
 ```
 
+Validate the CI benchmark subset artifact from that run before tagging:
+
+```bash
+scripts/benchmark-artifact-smoke.sh <run-id>
+```
+
+This downloads `codeinsight-benchmark-subset`, validates the Markdown report,
+and confirms the lightweight `p-limit` benchmark evidence is readable outside
+the GitHub Actions UI.
+
 ## Publish A Tagged Release
 
 Create and push an annotated tag:
