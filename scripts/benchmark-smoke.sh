@@ -9,6 +9,7 @@ DISABLE_BUDGETS="${CODEINSIGHT_BENCH_DISABLE_BUDGETS:-0}"
 REUSE_REPOS="${CODEINSIGHT_BENCH_REUSE_REPOS:-0}"
 BENCH_REPOS="${CODEINSIGHT_BENCH_REPOS:-}"
 OUTPUT_WAS_SET="${CODEINSIGHT_BENCH_OUTPUT+x}"
+PRINT_CONFIG="${CODEINSIGHT_BENCH_PRINT_CONFIG:-0}"
 REPORT_FILE=""
 
 REPO_NAMES=()
@@ -222,6 +223,20 @@ repo_subset_label() {
   else
     printf "%s" "$BENCH_REPOS"
   fi
+}
+
+print_benchmark_config() {
+  local i name
+
+  printf "name\tcontext_guardrails\n"
+  for i in "${!REPO_NAMES[@]}"; do
+    name="${REPO_NAMES[$i]}"
+    if ! repo_selected "$name"; then
+      continue
+    fi
+
+    printf "%s\t%s\n" "$name" "${REPO_CONTEXT_GUARDRAILS[$i]}"
+  done
 }
 
 clone_repo() {
@@ -774,6 +789,11 @@ main() {
 
   if [ -n "$BENCH_REPOS" ] && [ -z "$OUTPUT_WAS_SET" ]; then
     OUTPUT="$WORK_DIR/results/benchmark-$BENCH_PROFILE-subset.md"
+  fi
+
+  if [ "$PRINT_CONFIG" = "1" ]; then
+    print_benchmark_config
+    exit 0
   fi
 
   require_command git

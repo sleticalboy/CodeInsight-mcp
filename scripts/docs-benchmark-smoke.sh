@@ -15,6 +15,81 @@ require_pattern() {
   fi
 }
 
+require_section_literal() {
+  local file="$1"
+  local section="$2"
+  local literal="$3"
+  local description="$4"
+
+  if ! awk -v section="## $section" -v literal="$literal" '
+    $0 == section { in_section = 1; next }
+    in_section && /^## / { exit }
+    in_section && index($0, literal) > 0 { found = 1; exit }
+    END { exit(found ? 0 : 1) }
+  ' "$ROOT_DIR/$file"; then
+    echo "$file section $section is missing ${description}" >&2
+    echo "literal: $literal" >&2
+    exit 1
+  fi
+}
+
+require_guardrail_row() {
+  local file="$1"
+  local repo="$2"
+  local check="$3"
+  local expectation="$4"
+
+  require_section_literal "$file" "$repo" \
+    "| \`$check\` | $expectation |" \
+    "$check guardrail expectation"
+}
+
+require_context_guardrail_report_sync() {
+  local profile="$1"
+  local report="$2"
+  local config line repo specs check key value
+
+  config="$(
+    CODEINSIGHT_BENCH_PROFILE="$profile" \
+    CODEINSIGHT_BENCH_PRINT_CONFIG=1 \
+    "$ROOT_DIR/scripts/benchmark-smoke.sh"
+  )"
+
+  while IFS=$'\t' read -r repo specs; do
+    if [ "$repo" = "name" ]; then
+      continue
+    fi
+
+    IFS="|" read -r -a checks <<<"$specs"
+    for check in "${checks[@]}"; do
+      key="${check%%:*}"
+      value="${check#*:}"
+
+      case "$key" in
+        selected_files)
+          require_guardrail_row "$report" "$repo" "selected_files" ">= $value"
+          ;;
+        selected_ranges)
+          require_guardrail_row "$report" "$repo" "selected_ranges" ">= $value"
+          ;;
+        reading_plan_steps)
+          require_guardrail_row "$report" "$repo" "reading_plan_steps" ">= $value"
+          ;;
+        max_tokens)
+          require_guardrail_row "$report" "$repo" "estimated_tokens" "<= $value and applied budget"
+          ;;
+        min_line_reduction)
+          require_guardrail_row "$report" "$repo" "line_reduction" ">= $value%"
+          ;;
+        *)
+          echo "unknown context guardrail key in $profile config: $key" >&2
+          exit 1
+          ;;
+      esac
+    done
+  done <<<"$config"
+}
+
 main() {
   require_pattern README.md \
     '\[two-minute demo script\]\(docs/demo-script\.md\)' \
@@ -93,6 +168,7 @@ main() {
   require_pattern docs/benchmark-v0.1.md \
     '\| `reading_plan_steps` \| >= [0-9]+' \
     "smoke reading plan guardrail"
+  require_context_guardrail_report_sync smoke docs/benchmark-v0.1.md
 
   require_pattern docs/benchmark-large.md \
     '^# CodeInsight v0\.1 Large Repository Benchmark$' \
@@ -124,6 +200,7 @@ main() {
   require_pattern docs/benchmark-large.md \
     '\| `reading_plan_steps` \| >= [0-9]+' \
     "large reading plan guardrail"
+  require_context_guardrail_report_sync large docs/benchmark-large.md
 
   require_pattern docs/demo-script.md \
     'scripts/agent-router-demo\.sh' \

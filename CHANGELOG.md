@@ -82,6 +82,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - `scripts/benchmark-smoke.sh` now supports `CODEINSIGHT_BENCH_REPOS` for
   running selected benchmark fixtures without overwriting the full reports by
   default.
+- Docs benchmark smoke now checks benchmark report guardrail expectations
+  against `scripts/benchmark-smoke.sh` exported profile configuration.
 
 ## [0.1.12] - 2026-07-14
 
