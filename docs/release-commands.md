@@ -56,6 +56,13 @@ subset artifact:
 scripts/release-pretag-check.sh main
 ```
 
+Tagged `Release Build` runs also execute this gate against the tag target SHA
+before building release artifacts:
+
+```bash
+scripts/release-pretag-check.sh --repo sleticalboy/CodeInsight-mcp --head-sha <tag-target-sha> main
+```
+
 ## Publish
 
 Push the release prep commit, then create and push the tag:

@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BENCHMARK_ARTIFACT_SMOKE_SCRIPT="${CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT:-$ROOT_DIR/scripts/benchmark-artifact-smoke.sh}"
 REPO_ARG=()
 RUN_ID=""
+HEAD_SHA=""
 BRANCH="main"
 
 usage() {
@@ -23,6 +24,7 @@ subset artifact for that exact run. Use before creating a release tag.
 Options:
   --repo OWNER/REPO  Pass an explicit GitHub repository to gh and artifact smoke.
   --run-id ID        Check this CI run instead of resolving the latest branch run.
+  --head-sha SHA     Resolve the CI run for this exact commit SHA on the branch.
   -h, --help         Show this help.
 
 Environment:
@@ -38,7 +40,15 @@ fail() {
 
 resolve_latest_run() {
   local branch="$1"
+  local head_sha="$2"
   local run_id
+  local jq_filter='.[0].databaseId // ""'
+  local limit=1
+
+  if [ -n "$head_sha" ]; then
+    jq_filter="map(select(.headSha == \"$head_sha\"))[0].databaseId // \"\""
+    limit=20
+  fi
 
   if [ "${#REPO_ARG[@]}" -gt 0 ]; then
     run_id="$(
@@ -46,22 +56,25 @@ resolve_latest_run() {
         "${REPO_ARG[@]}" \
         --workflow CI \
         --branch "$branch" \
-        --limit 1 \
-        --json databaseId \
-        --jq '.[0].databaseId // ""'
+        --limit "$limit" \
+        --json databaseId,headSha \
+        --jq "$jq_filter"
     )"
   else
     run_id="$(
       gh run list \
         --workflow CI \
         --branch "$branch" \
-        --limit 1 \
-        --json databaseId \
-        --jq '.[0].databaseId // ""'
+        --limit "$limit" \
+        --json databaseId,headSha \
+        --jq "$jq_filter"
     )"
   fi
 
   if [ -z "$run_id" ]; then
+    if [ -n "$head_sha" ]; then
+      fail "no CI run found for branch: $branch and head SHA: $head_sha"
+    fi
     fail "no CI run found for branch: $branch"
   fi
   printf "%s" "$run_id"
@@ -86,6 +99,13 @@ main() {
           usage
         fi
         RUN_ID="$1"
+        ;;
+      --head-sha)
+        shift
+        if [ "$#" -eq 0 ]; then
+          usage
+        fi
+        HEAD_SHA="$1"
         ;;
       --)
         shift
@@ -118,9 +138,12 @@ main() {
   if [ ! -x "$BENCHMARK_ARTIFACT_SMOKE_SCRIPT" ]; then
     fail "benchmark artifact smoke script is not executable: $BENCHMARK_ARTIFACT_SMOKE_SCRIPT"
   fi
+  if [ -n "$RUN_ID" ] && [ -n "$HEAD_SHA" ]; then
+    fail "--run-id and --head-sha cannot be used together"
+  fi
 
   if [ -z "$RUN_ID" ]; then
-    RUN_ID="$(resolve_latest_run "$BRANCH")"
+    RUN_ID="$(resolve_latest_run "$BRANCH" "$HEAD_SHA")"
   fi
 
   echo "watching CI run: $RUN_ID"

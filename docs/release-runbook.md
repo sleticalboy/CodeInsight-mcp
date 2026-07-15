@@ -95,6 +95,11 @@ The tag triggers:
 - `Release Build`: Linux and macOS release assets, GitHub Release notes, Homebrew tap sync.
 - `Docker Image`: GHCR image publish.
 
+The tagged `Release Build` workflow first runs `verify-pretag-ci`, which checks
+that the tag target SHA has a successful `CI` run on `main` and validates that
+same run's `codeinsight-benchmark-subset` artifact before any release assets
+are built.
+
 Watch the release workflows:
 
 ```bash

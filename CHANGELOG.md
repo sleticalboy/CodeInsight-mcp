@@ -114,6 +114,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   CI run for a branch with `--latest-success BRANCH`.
 - Added `scripts/release-pretag-check.sh` to wait for release-prep CI and
   validate the benchmark subset artifact before tagging.
+- Tagged `Release Build` runs now execute the pretag gate against the tag target
+  SHA before building release artifacts.
 
 ## [0.1.12] - 2026-07-14
 

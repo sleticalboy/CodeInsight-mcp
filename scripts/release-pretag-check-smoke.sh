@@ -62,8 +62,15 @@ EOF
     PATH="$TEMP_DIR/bin:$PATH" \
     "$ROOT_DIR/scripts/release-pretag-check.sh" --repo sleticalboy/CodeInsight-mcp main >/dev/null
 
-  grep -Fq 'gh run list --repo sleticalboy/CodeInsight-mcp --workflow CI --branch main --limit 1 --json databaseId --jq .[0].databaseId // ""' "$TEMP_DIR/calls.log" ||
+  CODEINSIGHT_PRETAG_SMOKE_LOG="$TEMP_DIR/calls.log" \
+    CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/benchmark-artifact-smoke" \
+    PATH="$TEMP_DIR/bin:$PATH" \
+    "$ROOT_DIR/scripts/release-pretag-check.sh" --repo sleticalboy/CodeInsight-mcp --head-sha abc123 main >/dev/null
+
+  grep -Fq 'gh run list --repo sleticalboy/CodeInsight-mcp --workflow CI --branch main --limit 1 --json databaseId,headSha --jq .[0].databaseId // ""' "$TEMP_DIR/calls.log" ||
     fail "missing latest CI run lookup"
+  grep -Fq 'gh run list --repo sleticalboy/CodeInsight-mcp --workflow CI --branch main --limit 20 --json databaseId,headSha --jq map(select(.headSha == "abc123"))[0].databaseId // ""' "$TEMP_DIR/calls.log" ||
+    fail "missing head SHA CI run lookup"
   grep -Fq 'gh run watch 123456 --repo sleticalboy/CodeInsight-mcp --exit-status' "$TEMP_DIR/calls.log" ||
     fail "missing CI watch"
   grep -Fq 'artifact --repo sleticalboy/CodeInsight-mcp 123456' "$TEMP_DIR/calls.log" ||

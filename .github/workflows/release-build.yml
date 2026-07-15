@@ -13,11 +13,29 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
+  pretag-gate:
+    name: verify-pretag-ci
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Verify tag target CI evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_SHA: ${{ github.sha }}
+        run: scripts/release-pretag-check.sh --repo "${{ github.repository }}" --head-sha "${TAG_SHA}" main
+
   build:
     name: build-${{ matrix.target }}
-    if: github.event_name != 'workflow_dispatch' || inputs.tag == ''
+    needs: pretag-gate
+    if: >-
+      always() &&
+      (github.event_name != 'workflow_dispatch' || inputs.tag == '') &&
+      (!startsWith(github.ref, 'refs/tags/v') || needs.pretag-gate.result == 'success')
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -90,6 +108,7 @@ jobs:
     needs: build
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:
+      actions: read
       contents: write
     steps:
       - uses: actions/checkout@v7

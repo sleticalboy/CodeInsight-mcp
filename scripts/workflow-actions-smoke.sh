@@ -38,6 +38,8 @@ main() {
   require_pattern ".github/workflows/release-build.yml" "Swatinem/rust-cache@v2" "release Rust cache action v2"
   require_pattern ".github/workflows/release-build.yml" "actions/upload-artifact@v7" "release artifact upload action v7"
   require_pattern ".github/workflows/release-build.yml" "actions/download-artifact@v8" "release artifact download action v8"
+  require_pattern ".github/workflows/release-build.yml" "verify-pretag-ci" "release pretag gate job"
+  require_pattern ".github/workflows/release-build.yml" "release-pretag-check\\.sh --repo .* --head-sha" "release pretag head SHA gate"
 
   require_pattern ".github/workflows/docker-image.yml" "actions/checkout@v7" "Docker checkout action v7"
   require_pattern ".github/workflows/docker-image.yml" "docker/setup-buildx-action@v4" "Docker Buildx setup action v4"

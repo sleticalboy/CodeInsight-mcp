@@ -274,6 +274,9 @@ main() {
     'scripts/release-pretag-check\.sh main' \
     "release commands benchmark artifact gate"
   require_pattern docs/release-commands.md \
+    'scripts/release-pretag-check\.sh --repo sleticalboy/CodeInsight-mcp --head-sha <tag-target-sha> main' \
+    "release commands tag SHA benchmark artifact gate"
+  require_pattern docs/release-commands.md \
     '^## Short Path$' \
     "release commands short path section"
   require_pattern docs/release-commands.md \
@@ -282,9 +285,15 @@ main() {
   require_pattern docs/release-runbook.md \
     'scripts/release-pretag-check\.sh main' \
     "release runbook benchmark artifact gate"
+  require_pattern docs/release-runbook.md \
+    'verify-pretag-ci' \
+    "release runbook tag pretag workflow gate"
   require_pattern scripts/release-pretag-check.sh \
     'gh run watch "\$RUN_ID".*--exit-status' \
     "release pretag CI watch"
+  require_pattern scripts/release-pretag-check.sh \
+    '\-\-head-sha SHA' \
+    "release pretag head SHA option"
   require_pattern scripts/release-pretag-check.sh \
     'BENCHMARK_ARTIFACT_SMOKE_SCRIPT' \
     "release pretag artifact smoke hook"
