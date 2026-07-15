@@ -13,6 +13,7 @@ scripts/prepare-release.sh vX.Y.Z
 git push origin main
 scripts/release-pretag-check.sh main
 scripts/release-tag-preflight.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
+scripts/release-evidence-summary.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
 git tag -a vX.Y.Z -m "vX.Y.Z"
 git push origin vX.Y.Z
 gh run list --workflow "Release Build" --limit 5
@@ -68,6 +69,17 @@ a GitHub Release already exists for the tag. It also verifies that
 `Cargo.toml`, `docs/install.md`, and `CHANGELOG.md` are prepared for the same
 version and prints `metadata_cargo`, `metadata_install`, and
 `metadata_changelog` summary lines.
+
+Generate a copyable evidence block for the release handoff:
+
+```bash
+scripts/release-evidence-summary.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
+```
+
+This resolves the successful `CI` run for the target commit, validates the
+`codeinsight-benchmark-subset` artifact, and prints a Markdown evidence block
+with the target SHA, CI run URL, benchmark artifact URL, benchmark report path,
+and release metadata summary.
 
 Tagged `Release Build` runs also execute this gate against the tag target SHA
 before building release artifacts:

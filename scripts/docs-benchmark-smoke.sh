@@ -277,6 +277,9 @@ main() {
     'scripts/release-tag-preflight\.sh --repo sleticalboy/CodeInsight-mcp vX\.Y\.Z main' \
     "release commands tag preflight gate"
   require_pattern docs/release-commands.md \
+    'scripts/release-evidence-summary\.sh --repo sleticalboy/CodeInsight-mcp vX\.Y\.Z main' \
+    "release commands evidence summary"
+  require_pattern docs/release-commands.md \
     'remote tag already exists' \
     "release commands remote tag conflict gate"
   require_pattern docs/release-commands.md \
@@ -309,6 +312,12 @@ main() {
   require_pattern docs/release-runbook.md \
     '`metadata_cargo`, `metadata_install`, and `metadata_changelog`' \
     "release runbook metadata summary output"
+  require_pattern docs/release-runbook.md \
+    'scripts/release-evidence-summary\.sh --repo sleticalboy/CodeInsight-mcp vX\.Y\.Z main' \
+    "release runbook evidence summary"
+  require_pattern docs/release-runbook.md \
+    'auditable pre-tag evidence trail' \
+    "release runbook evidence summary purpose"
   require_pattern docs/release-runbook.md \
     'verify-pretag-ci' \
     "release runbook tag pretag workflow gate"

@@ -96,6 +96,18 @@ prepared `CHANGELOG.md` release section. The preflight output prints
 `metadata_cargo`, `metadata_install`, and `metadata_changelog` so the prepared
 versions are visible before tagging.
 
+Generate the release evidence block:
+
+```bash
+scripts/release-evidence-summary.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
+```
+
+This resolves the successful `CI` run for the target SHA, validates the
+`codeinsight-benchmark-subset` artifact, and prints a Markdown block with the
+commit, workflow run, benchmark artifact, benchmark report path, and release
+metadata. Paste that block into the release handoff notes when a release needs
+an auditable pre-tag evidence trail.
+
 ## Publish A Tagged Release
 
 Create and push an annotated tag:

@@ -51,6 +51,9 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   the target tag before checking CI artifacts.
 - `scripts/release-tag-preflight.sh` now prints release metadata summary lines
   for Cargo, install docs, and changelog versions.
+- Added `scripts/release-evidence-summary.sh` to print a copyable pre-tag
+  release evidence block with target SHA, CI run, benchmark artifact, benchmark
+  report, and release metadata.
 - Added `scripts/local-ci-smoke.sh` as the single local entrypoint for the
   standard non-network CI gate.
 - Added `scripts/script-syntax-smoke.sh` as the single local entrypoint for
