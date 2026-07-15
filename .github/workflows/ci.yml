@@ -38,8 +38,6 @@ jobs:
 
   benchmark-subset-smoke:
     runs-on: ubuntu-latest
-    env:
-      CODEINSIGHT_BENCH_OUTPUT: ${{ runner.temp }}/codeinsight-benchmark-subset.md
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
@@ -49,10 +47,11 @@ jobs:
       - run: scripts/benchmark-smoke.sh
         env:
           CODEINSIGHT_BENCH_REPOS: p-limit
+          CODEINSIGHT_BENCH_OUTPUT: /tmp/codeinsight-benchmark-subset.md
       - uses: actions/upload-artifact@v4
         with:
           name: codeinsight-benchmark-subset
-          path: ${{ env.CODEINSIGHT_BENCH_OUTPUT }}
+          path: /tmp/codeinsight-benchmark-subset.md
           if-no-files-found: error
 
   release-install-smoke:
