@@ -5,6 +5,7 @@ SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ROOT_DIR="${CODEINSIGHT_ROOT_DIR:-$SCRIPT_ROOT}"
 RELEASE_WORKFLOW_GUARD_SCRIPT="${CODEINSIGHT_RELEASE_WORKFLOW_GUARD_SCRIPT:-$ROOT_DIR/scripts/release-workflow-guard-smoke.sh}"
 RELEASE_PRETAG_CHECK_SCRIPT="${CODEINSIGHT_RELEASE_PRETAG_CHECK_SCRIPT:-$ROOT_DIR/scripts/release-pretag-check.sh}"
+RELEASE_METADATA_SUMMARY_SCRIPT="${CODEINSIGHT_RELEASE_METADATA_SUMMARY_SCRIPT:-$SCRIPT_ROOT/scripts/release-metadata-summary.sh}"
 REPO_ARG=()
 REPO=""
 BRANCH="main"
@@ -34,6 +35,7 @@ Options:
 Environment:
   CODEINSIGHT_RELEASE_WORKFLOW_GUARD_SCRIPT=scripts/release-workflow-guard-smoke.sh
   CODEINSIGHT_RELEASE_PRETAG_CHECK_SCRIPT=scripts/release-pretag-check.sh
+  CODEINSIGHT_RELEASE_METADATA_SUMMARY_SCRIPT=scripts/release-metadata-summary.sh
   CODEINSIGHT_ROOT_DIR=/path/to/repo
 EOF
   exit "$status"
@@ -42,54 +44,6 @@ EOF
 fail() {
   echo "release tag preflight failed: $*" >&2
   exit 1
-}
-
-check_release_metadata() {
-  local tag="$1"
-  local version="${tag#v}"
-
-  ruby - "$ROOT_DIR" "$tag" "$version" <<'RUBY'
-root_dir = ARGV.fetch(0)
-tag = ARGV.fetch(1)
-version = ARGV.fetch(2)
-
-def fail!(message)
-  warn("release tag preflight failed: #{message}")
-  exit(1)
-end
-
-def read_file(path)
-  File.read(path)
-rescue Errno::ENOENT
-  fail!("missing required release metadata file: #{path}")
-end
-
-cargo_path = File.join(root_dir, "Cargo.toml")
-cargo = read_file(cargo_path)
-package = cargo.match(/^\[package\]\n(?<body>.*?)(?=^\[|\z)/m)
-fail!("Cargo.toml [package] section not found") unless package
-cargo_version = package[:body][/^version = "([^"]+)"/, 1]
-fail!("Cargo.toml package version not found") unless cargo_version
-fail!("Cargo.toml version #{cargo_version} does not match #{version}") unless cargo_version == version
-
-install_path = File.join(root_dir, "docs", "install.md")
-install_doc = read_file(install_path)
-install_version = install_doc[/CODEINSIGHT_VERSION=(v\d+\.\d+\.\d+)/, 1]
-unless install_version == tag
-  fail!("docs/install.md CODEINSIGHT_VERSION does not match #{tag}")
-end
-
-changelog_path = File.join(root_dir, "CHANGELOG.md")
-changelog = read_file(changelog_path)
-changelog_match = changelog.match(/^## \[#{Regexp.escape(version)}\] - (?<date>\d{4}-\d{2}-\d{2})$/)
-unless changelog_match
-  fail!("CHANGELOG.md release section not found for #{version}")
-end
-
-puts "metadata_cargo: #{cargo_version}"
-puts "metadata_install: #{install_version}"
-puts "metadata_changelog: #{version} (#{changelog_match[:date]})"
-RUBY
 }
 
 gh_checked_release_missing() {
@@ -224,7 +178,14 @@ main() {
   if git -C "$ROOT_DIR" rev-parse -q --verify "refs/tags/$TAG_NAME" >/dev/null; then
     fail "local tag already exists: $TAG_NAME"
   fi
-  METADATA_SUMMARY="$(check_release_metadata "$TAG_NAME")"
+  if [ ! -x "$RELEASE_METADATA_SUMMARY_SCRIPT" ]; then
+    fail "release metadata summary script is not executable: $RELEASE_METADATA_SUMMARY_SCRIPT"
+  fi
+  METADATA_SUMMARY="$(
+    CODEINSIGHT_ROOT_DIR="$ROOT_DIR" \
+      CODEINSIGHT_RELEASE_METADATA_CONTEXT="release tag preflight" \
+      "$RELEASE_METADATA_SUMMARY_SCRIPT" "$TAG_NAME"
+  )"
   if ! command -v gh >/dev/null 2>&1; then
     fail "missing required command: gh"
   fi

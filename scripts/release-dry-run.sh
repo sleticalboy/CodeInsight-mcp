@@ -6,6 +6,7 @@ ROOT_DIR="${CODEINSIGHT_ROOT_DIR:-$SCRIPT_ROOT}"
 PREPARE_RELEASE_SCRIPT="${CODEINSIGHT_PREPARE_RELEASE_SCRIPT:-$SCRIPT_ROOT/scripts/prepare-release.sh}"
 RELEASE_TAG_PREFLIGHT_SCRIPT="${CODEINSIGHT_RELEASE_TAG_PREFLIGHT_SCRIPT:-$SCRIPT_ROOT/scripts/release-tag-preflight.sh}"
 RELEASE_EVIDENCE_SUMMARY_SCRIPT="${CODEINSIGHT_RELEASE_EVIDENCE_SUMMARY_SCRIPT:-$SCRIPT_ROOT/scripts/release-evidence-summary.sh}"
+RELEASE_METADATA_SUMMARY_SCRIPT="${CODEINSIGHT_RELEASE_METADATA_SUMMARY_SCRIPT:-$SCRIPT_ROOT/scripts/release-metadata-summary.sh}"
 RELEASE_WORKFLOW_GUARD_SCRIPT="${CODEINSIGHT_RELEASE_WORKFLOW_GUARD_SCRIPT:-$SCRIPT_ROOT/scripts/release-workflow-guard-smoke.sh}"
 RELEASE_PRETAG_CHECK_SCRIPT="${CODEINSIGHT_RELEASE_PRETAG_CHECK_SCRIPT:-$SCRIPT_ROOT/scripts/release-pretag-check.sh}"
 BENCHMARK_ARTIFACT_SMOKE_SCRIPT="${CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT:-$SCRIPT_ROOT/scripts/benchmark-artifact-smoke.sh}"
@@ -45,6 +46,7 @@ Environment:
   CODEINSIGHT_PREPARE_RELEASE_SCRIPT=scripts/prepare-release.sh
   CODEINSIGHT_RELEASE_TAG_PREFLIGHT_SCRIPT=scripts/release-tag-preflight.sh
   CODEINSIGHT_RELEASE_EVIDENCE_SUMMARY_SCRIPT=scripts/release-evidence-summary.sh
+  CODEINSIGHT_RELEASE_METADATA_SUMMARY_SCRIPT=scripts/release-metadata-summary.sh
 EOF
   exit "$status"
 }
@@ -155,6 +157,7 @@ main() {
   require_executable "$PREPARE_RELEASE_SCRIPT" "prepare release script"
   require_executable "$RELEASE_TAG_PREFLIGHT_SCRIPT" "release tag preflight script"
   require_executable "$RELEASE_EVIDENCE_SUMMARY_SCRIPT" "release evidence summary script"
+  require_executable "$RELEASE_METADATA_SUMMARY_SCRIPT" "release metadata summary script"
   require_executable "$RELEASE_WORKFLOW_GUARD_SCRIPT" "release workflow guard script"
   require_executable "$RELEASE_PRETAG_CHECK_SCRIPT" "release pretag check script"
   require_executable "$BENCHMARK_ARTIFACT_SMOKE_SCRIPT" "benchmark artifact smoke script"
@@ -188,6 +191,7 @@ main() {
 
   echo "[3/4] release tag preflight"
   CODEINSIGHT_ROOT_DIR="$temp_repo" \
+    CODEINSIGHT_RELEASE_METADATA_SUMMARY_SCRIPT="$RELEASE_METADATA_SUMMARY_SCRIPT" \
     CODEINSIGHT_RELEASE_WORKFLOW_GUARD_SCRIPT="$RELEASE_WORKFLOW_GUARD_SCRIPT" \
     CODEINSIGHT_RELEASE_PRETAG_CHECK_SCRIPT="$RELEASE_PRETAG_CHECK_SCRIPT" \
     "$RELEASE_TAG_PREFLIGHT_SCRIPT" "${REPO_ARG[@]}" --head-sha "$HEAD_SHA" "$TAG_NAME" "$BRANCH"
@@ -196,6 +200,7 @@ main() {
   echo "[4/4] release evidence summary"
   CODEINSIGHT_ROOT_DIR="$temp_repo" \
     CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT="$BENCHMARK_ARTIFACT_SMOKE_SCRIPT" \
+    CODEINSIGHT_RELEASE_METADATA_SUMMARY_SCRIPT="$RELEASE_METADATA_SUMMARY_SCRIPT" \
     "$RELEASE_EVIDENCE_SUMMARY_SCRIPT" "${REPO_ARG[@]}" --head-sha "$HEAD_SHA" "$TAG_NAME" "$BRANCH"
   echo
 

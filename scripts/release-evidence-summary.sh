@@ -4,6 +4,7 @@ set -euo pipefail
 SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ROOT_DIR="${CODEINSIGHT_ROOT_DIR:-$SCRIPT_ROOT}"
 BENCHMARK_ARTIFACT_SMOKE_SCRIPT="${CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT:-$ROOT_DIR/scripts/benchmark-artifact-smoke.sh}"
+RELEASE_METADATA_SUMMARY_SCRIPT="${CODEINSIGHT_RELEASE_METADATA_SUMMARY_SCRIPT:-$SCRIPT_ROOT/scripts/release-metadata-summary.sh}"
 ARTIFACT_NAME="codeinsight-benchmark-subset"
 REPO_ARG=()
 REPO=""
@@ -36,6 +37,7 @@ Options:
 
 Environment:
   CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT=scripts/benchmark-artifact-smoke.sh
+  CODEINSIGHT_RELEASE_METADATA_SUMMARY_SCRIPT=scripts/release-metadata-summary.sh
   CODEINSIGHT_ROOT_DIR=/path/to/repo
 EOF
   exit "$status"
@@ -61,54 +63,6 @@ resolve_repo() {
   fi
 
   gh repo view --json nameWithOwner --jq '.nameWithOwner'
-}
-
-check_release_metadata() {
-  local tag="$1"
-  local version="${tag#v}"
-
-  ruby - "$ROOT_DIR" "$tag" "$version" <<'RUBY'
-root_dir = ARGV.fetch(0)
-tag = ARGV.fetch(1)
-version = ARGV.fetch(2)
-
-def fail!(message)
-  warn("release evidence summary failed: #{message}")
-  exit(1)
-end
-
-def read_file(path)
-  File.read(path)
-rescue Errno::ENOENT
-  fail!("missing required release metadata file: #{path}")
-end
-
-cargo_path = File.join(root_dir, "Cargo.toml")
-cargo = read_file(cargo_path)
-package = cargo.match(/^\[package\]\n(?<body>.*?)(?=^\[|\z)/m)
-fail!("Cargo.toml [package] section not found") unless package
-cargo_version = package[:body][/^version = "([^"]+)"/, 1]
-fail!("Cargo.toml package version not found") unless cargo_version
-fail!("Cargo.toml version #{cargo_version} does not match #{version}") unless cargo_version == version
-
-install_path = File.join(root_dir, "docs", "install.md")
-install_doc = read_file(install_path)
-install_version = install_doc[/CODEINSIGHT_VERSION=(v\d+\.\d+\.\d+)/, 1]
-unless install_version == tag
-  fail!("docs/install.md CODEINSIGHT_VERSION does not match #{tag}")
-end
-
-changelog_path = File.join(root_dir, "CHANGELOG.md")
-changelog = read_file(changelog_path)
-changelog_match = changelog.match(/^## \[#{Regexp.escape(version)}\] - (?<date>\d{4}-\d{2}-\d{2})$/)
-unless changelog_match
-  fail!("CHANGELOG.md release section not found for #{version}")
-end
-
-puts "metadata_cargo: #{cargo_version}"
-puts "metadata_install: #{install_version}"
-puts "metadata_changelog: #{version} (#{changelog_match[:date]})"
-RUBY
 }
 
 resolve_run_by_head_sha() {
@@ -295,12 +249,19 @@ main() {
   if ! command -v gh >/dev/null 2>&1; then
     fail "missing required command: gh"
   fi
+  if [ ! -x "$RELEASE_METADATA_SUMMARY_SCRIPT" ]; then
+    fail "release metadata summary script is not executable: $RELEASE_METADATA_SUMMARY_SCRIPT"
+  fi
 
   if [ -z "$HEAD_SHA" ]; then
     HEAD_SHA="$(git -C "$ROOT_DIR" rev-parse HEAD)"
   fi
 
-  metadata_summary="$(check_release_metadata "$TAG_NAME")"
+  metadata_summary="$(
+    CODEINSIGHT_ROOT_DIR="$ROOT_DIR" \
+      CODEINSIGHT_RELEASE_METADATA_CONTEXT="release evidence summary" \
+      "$RELEASE_METADATA_SUMMARY_SCRIPT" "$TAG_NAME"
+  )"
   if [ -z "$RUN_ID" ]; then
     RUN_ID="$(resolve_run_by_head_sha "$BRANCH" "$HEAD_SHA")"
   fi

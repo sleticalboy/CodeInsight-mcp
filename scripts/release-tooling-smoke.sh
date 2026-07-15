@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SMOKE_TOTAL=17
+SMOKE_TOTAL=18
 
 source "$ROOT_DIR/scripts/smoke-lib.sh"
 
@@ -20,10 +20,11 @@ main() {
   smoke_run_step "$SMOKE_TOTAL" 11 "post-release verify smoke" "$ROOT_DIR/scripts/post-release-verify-smoke.sh"
   smoke_run_step "$SMOKE_TOTAL" 12 "update release status smoke" "$ROOT_DIR/scripts/update-release-status-smoke.sh"
   smoke_run_step "$SMOKE_TOTAL" 13 "release pretag check smoke" "$ROOT_DIR/scripts/release-pretag-check-smoke.sh"
-  smoke_run_step "$SMOKE_TOTAL" 14 "release workflow guard smoke" "$ROOT_DIR/scripts/release-workflow-guard-smoke.sh"
-  smoke_run_step "$SMOKE_TOTAL" 15 "release tag preflight smoke" "$ROOT_DIR/scripts/release-tag-preflight-smoke.sh"
-  smoke_run_step "$SMOKE_TOTAL" 16 "release evidence summary smoke" "$ROOT_DIR/scripts/release-evidence-summary-smoke.sh"
-  smoke_run_step "$SMOKE_TOTAL" 17 "release dry run smoke" "$ROOT_DIR/scripts/release-dry-run-smoke.sh"
+  smoke_run_step "$SMOKE_TOTAL" 14 "release metadata summary smoke" "$ROOT_DIR/scripts/release-metadata-summary-smoke.sh"
+  smoke_run_step "$SMOKE_TOTAL" 15 "release workflow guard smoke" "$ROOT_DIR/scripts/release-workflow-guard-smoke.sh"
+  smoke_run_step "$SMOKE_TOTAL" 16 "release tag preflight smoke" "$ROOT_DIR/scripts/release-tag-preflight-smoke.sh"
+  smoke_run_step "$SMOKE_TOTAL" 17 "release evidence summary smoke" "$ROOT_DIR/scripts/release-evidence-summary-smoke.sh"
+  smoke_run_step "$SMOKE_TOTAL" 18 "release dry run smoke" "$ROOT_DIR/scripts/release-dry-run-smoke.sh"
 
   echo "release tooling smoke passed"
 }

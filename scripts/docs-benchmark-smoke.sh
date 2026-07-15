@@ -339,6 +339,12 @@ main() {
   require_pattern scripts/release-pretag-check.sh \
     'BENCHMARK_ARTIFACT_SMOKE_SCRIPT' \
     "release pretag artifact smoke hook"
+  require_pattern scripts/release-tag-preflight.sh \
+    'RELEASE_METADATA_SUMMARY_SCRIPT' \
+    "release tag preflight metadata summary hook"
+  require_pattern scripts/release-evidence-summary.sh \
+    'RELEASE_METADATA_SUMMARY_SCRIPT' \
+    "release evidence metadata summary hook"
   require_pattern docs/maintainer-checklist.md \
     'README benchmark snapshot, \[Demo script\]\(demo-script\.md\)' \
     "maintainer benchmark evidence consistency"
