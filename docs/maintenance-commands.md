@@ -54,7 +54,9 @@ check. It uses checked-in and temporary fixtures to verify explicit symbol
 seeds, reading-plan suggestions, token-budget metadata, and production-vs-test
 reference ranking. It also verifies dependency continuation: a seeded entry
 file should pull in its resolved local dependency and recommend a file-scoped
-`dependency_graph` follow-up without cloning external repositories.
+`dependency_graph` follow-up. Low-budget fixtures verify that
+`omitted_candidates` and `continuation_summary` expose a bounded follow-up
+`context_pack` call without cloning external repositories.
 
 ## Benchmark Checks
 

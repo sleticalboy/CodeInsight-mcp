@@ -120,6 +120,20 @@ def helper():
 EOF
 }
 
+write_budget_continuation_fixture() {
+  local root="$1"
+
+  mkdir -p "$root/src"
+  for index in $(seq 1 80); do
+    cat >"$root/src/feature$index.py" <<EOF
+def feature_$index():
+    value = "$index"
+    detail = "feature $index has enough text to consume some token budget for context selection"
+    return value + detail
+EOF
+  done
+}
+
 require_file_before() {
   local file="$1"
   local earlier="$2"
@@ -207,6 +221,53 @@ run_dependency_continuation_scenario() {
   echo "  pass: dependency continuation"
 }
 
+run_budget_continuation_scenario() {
+  local project="$TEMP_DIR/budget-continuation"
+  local context_json="$TEMP_DIR/budget-continuation-context.json"
+  local args=()
+
+  write_budget_continuation_fixture "$project"
+  "$CODEINSIGHT_BIN" index "$project" --force >"$TEMP_DIR/budget-continuation-index.json"
+  require_jq "$TEMP_DIR/budget-continuation-index.json" '.indexed_files == 80' \
+    "budget continuation fixture should index seed files"
+
+  args=(context-pack "$project" --task "understand feature modules" --token-budget 500)
+  for index in $(seq 1 80); do
+    args+=(--file "src/feature$index.py")
+  done
+  "$CODEINSIGHT_BIN" "${args[@]}" >"$context_json"
+
+  require_jq "$context_json" '.seed_strategy == "explicit"' \
+    "budget continuation should use explicit seed strategy"
+  require_jq "$context_json" '.budget.requested_token_budget == 500 and .budget.applied_token_budget == 500' \
+    "budget continuation should preserve the requested low budget"
+  require_jq "$context_json" '.budget.candidate_files == 80' \
+    "budget continuation should expose candidate file count"
+  require_jq "$context_json" '.budget.selected_files < .budget.candidate_files' \
+    "budget continuation should omit lower-ranked files"
+  require_jq "$context_json" '.budget.omitted_files == (.budget.candidate_files - .budget.selected_files)' \
+    "budget continuation omitted file count should match candidate minus selected"
+  require_jq "$context_json" '.continuation_summary.status == "omitted_candidates_available"' \
+    "budget continuation should expose omitted candidates"
+  require_jq "$context_json" '.continuation_summary.next_action == "run_omitted_candidate_context_pack"' \
+    "budget continuation should recommend an omitted-candidate follow-up"
+  require_jq "$context_json" '.omitted_candidates | length > 0 and length <= 8' \
+    "budget continuation should return bounded omitted candidates"
+  require_jq "$context_json" '.continuation_summary.omitted_candidate_count == (.omitted_candidates | length)' \
+    "budget continuation summary should match omitted candidate count"
+  require_jq "$context_json" '.continuation_summary.first_omitted_file == .omitted_candidates[0].file' \
+    "budget continuation summary should name first omitted file"
+  require_jq "$context_json" '.continuation_summary.suggested_tool.suggested_arguments.files[0] == .omitted_candidates[0].file' \
+    "budget continuation summary should point to first omitted file"
+  require_jq "$context_json" '.omitted_candidates[0].suggested_tool.tool == "context_pack" and .omitted_candidates[0].suggested_tool.suggested_arguments.token_budget == 4000' \
+    "budget continuation omitted candidate should suggest focused context_pack"
+  require_jq "$context_json" '.omitted_candidates[0].ranges[0].excerpt == null' \
+    "budget continuation omitted candidates should stay excerpt-free"
+
+  SCENARIOS_PASSED=$((SCENARIOS_PASSED + 1))
+  echo "  pass: budget continuation ($(json_value "$context_json" '.budget.selected_files')/$(json_value "$context_json" '.budget.candidate_files') files selected)"
+}
+
 main() {
   require_command jq
   build_binary_if_needed
@@ -232,6 +293,7 @@ main() {
     "$TEMP_DIR/php-service-context.json"
   run_reference_ranking_scenarios
   run_dependency_continuation_scenario
+  run_budget_continuation_scenario
 
   echo "context-pack quality smoke passed"
   echo "scenarios: $SCENARIOS_PASSED"
