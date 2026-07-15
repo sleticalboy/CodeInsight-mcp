@@ -116,7 +116,21 @@ focused continuation only when necessary.
 `impact_analysis` answers "what might I affect if I change this?" It gives a
 local risk preview and suggested checks before edits.
 
-### 1:35-1:55 - MCP Agent Flow
+### 1:35-1:50 - Evidence Cutaway
+
+For a README video or project introduction, briefly point to the benchmark
+reports after the live demo:
+
+```text
+Smoke benchmark: context_pack first for 4/4 repositories, 99.2% aggregate line reduction.
+Large benchmark: context_pack first for 4/4 repositories, 99.3% aggregate line reduction.
+```
+
+The `Key Results` section in each report is the stable evidence slide. It
+summarizes routing, context compression, token budget, indexing, guardrails,
+and truncation status without asking viewers to inspect the full details table.
+
+### 1:50-1:58 - MCP Agent Flow
 
 In a real MCP client, the agent policy is:
 
@@ -131,7 +145,7 @@ In a real MCP client, the agent policy is:
 
 This is the path that turns CodeInsight from a CLI demo into an agent workflow.
 
-### 1:55-2:00 - Close
+### 1:58-2:00 - Close
 
 The product promise is simple: keep code local, route the agent to the right
 context, and reduce blind reading before edits.
@@ -148,6 +162,8 @@ Before recording or presenting:
   `line_reduction`; the demo fails fast if selected files, reading-plan steps,
   or the first next action are missing.
 - Confirm `impact_analysis` reports risk or suggested checks.
+- Keep the benchmark `Key Results` available if the audience asks for evidence
+  beyond the live demo.
 - Keep [Known limitations](known-limitations.md) available if asked about
   static-analysis precision.
 
@@ -171,4 +187,5 @@ signal: `project_overview` still recommends a fallback tool path, often
 - [Adoption checklist](adoption-checklist.md)
 - [Client workflow](client-workflow.md)
 - [MCP client configuration](mcp-client-config.md)
-- [Benchmark reports](benchmark-v0.1.md)
+- [Smoke benchmark](benchmark-v0.1.md)
+- [Large repository benchmark](benchmark-large.md)

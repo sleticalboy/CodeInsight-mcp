@@ -177,9 +177,12 @@ CODEINSIGHT_BENCH_PROFILE=large scripts/benchmark-smoke.sh
 Pass criteria:
 
 - Both benchmark commands finish without budget or guardrail failures.
-- The generated reports include `Entrypoints`, `Recommended tools`,
-  `Line reduction`, `First context file`, and `Context pack guardrails`.
+- The generated reports include `Key Results`, `Entrypoints`,
+  `Recommended tools`, `Line reduction`, `First context file`, and
+  `Context pack guardrails`.
 - `context_pack` is the first recommended tool for benchmarked repositories.
+- `Key Results` summarizes routing, aggregate source-line compression, token
+  usage, indexing time, guardrail failures, and truncation status.
 - Profile-specific context pack guardrails pass for selected files, selected
   ranges, `reading_plan_steps`, first next action, token budget, and line
   reduction.

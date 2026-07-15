@@ -228,6 +228,21 @@ main() {
   require_pattern docs/demo-script.md \
     'impact_analysis' \
     "impact_analysis demo stage"
+  require_pattern docs/demo-script.md \
+    'Evidence Cutaway' \
+    "benchmark evidence demo cutaway"
+  require_pattern docs/demo-script.md \
+    'Smoke benchmark: context_pack first for 4/4 repositories, 99\.2% aggregate line reduction\.' \
+    "smoke benchmark evidence line"
+  require_pattern docs/demo-script.md \
+    'Large benchmark: context_pack first for 4/4 repositories, 99\.3% aggregate line reduction\.' \
+    "large benchmark evidence line"
+  require_pattern docs/demo-script.md \
+    'The `Key Results` section in each report is the stable evidence slide' \
+    "benchmark key results demo evidence"
+  require_pattern docs/adoption-checklist.md \
+    'The generated reports include `Key Results`' \
+    "adoption key results pass criterion"
   require_pattern scripts/agent-router-demo.sh \
     'reading_plan_steps' \
     "agent-router reading plan output"
