@@ -107,6 +107,9 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   artifact by run id and validate the contained report.
 - Release command and runbook docs now include the benchmark artifact smoke as
   a pre-tagging gate after release-prep CI completes.
+- Release commands now include a short normal-release path from prepare through
+  CI, benchmark artifact validation, tagging, workflow watch, and post-release
+  verification.
 
 ## [0.1.12] - 2026-07-14
 

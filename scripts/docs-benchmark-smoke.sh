@@ -273,6 +273,12 @@ main() {
   require_pattern docs/release-commands.md \
     'scripts/benchmark-artifact-smoke\.sh <ci-run-id>' \
     "release commands benchmark artifact gate"
+  require_pattern docs/release-commands.md \
+    '^## Short Path$' \
+    "release commands short path section"
+  require_pattern docs/release-commands.md \
+    'scripts/post-release-verify\.sh vX\.Y\.Z' \
+    "release commands short path post-release verification"
   require_pattern docs/release-runbook.md \
     'scripts/benchmark-artifact-smoke\.sh <run-id>' \
     "release runbook benchmark artifact gate"

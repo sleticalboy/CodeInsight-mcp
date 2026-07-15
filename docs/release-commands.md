@@ -3,6 +3,30 @@
 Use this as the short command index for release maintenance. For the full
 step-by-step process, see [Release runbook](release-runbook.md).
 
+## Short Path
+
+Use this path when release metadata is ready and you are cutting a normal tag:
+
+```bash
+scripts/prepare-release.sh --dry-run vX.Y.Z
+scripts/prepare-release.sh vX.Y.Z
+git push origin main
+gh run list --branch main --limit 5
+gh run watch <ci-run-id> --exit-status
+scripts/benchmark-artifact-smoke.sh <ci-run-id>
+git tag -a vX.Y.Z -m "vX.Y.Z"
+git push origin vX.Y.Z
+gh run list --workflow "Release Build" --limit 5
+gh run list --workflow "Docker Image" --limit 5
+gh run watch <release-build-run-id> --exit-status
+gh run watch <docker-run-id> --exit-status
+scripts/post-release-verify.sh vX.Y.Z
+```
+
+If Docker or Homebrew cannot run locally, use the explicit post-release skip
+flags documented below and verify those gates through GitHub Actions, GHCR, or
+the Homebrew tap.
+
 ## Before Tagging
 
 Preview release metadata changes:
