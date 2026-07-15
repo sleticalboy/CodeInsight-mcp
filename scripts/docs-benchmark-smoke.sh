@@ -271,7 +271,7 @@ main() {
     'scripts/benchmark-artifact-smoke\.sh <ci-run-id>' \
     "maintenance benchmark artifact download"
   require_pattern docs/release-commands.md \
-    'scripts/benchmark-artifact-smoke\.sh <ci-run-id>' \
+    'scripts/benchmark-artifact-smoke\.sh --latest-success main' \
     "release commands benchmark artifact gate"
   require_pattern docs/release-commands.md \
     '^## Short Path$' \
@@ -300,6 +300,9 @@ main() {
   require_pattern scripts/benchmark-artifact-smoke.sh \
     'gh run download "\$RUN_ID"' \
     "benchmark artifact gh download command"
+  require_pattern scripts/benchmark-artifact-smoke.sh \
+    '\-\-latest-success BRANCH' \
+    "benchmark artifact latest successful run option"
   require_pattern scripts/benchmark-artifact-smoke.sh \
     'benchmark-report-smoke\.sh' \
     "benchmark artifact report validation"

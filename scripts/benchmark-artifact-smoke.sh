@@ -9,6 +9,7 @@ OUTPUT_DIR=""
 OUTPUT_DIR_WAS_SET=0
 REPO_ARG=()
 RUN_ID=""
+LATEST_SUCCESS_BRANCH=""
 
 usage() {
   local status="${1:-2}"
@@ -19,12 +20,14 @@ usage() {
 
   cat >"$stream" <<'EOF'
 usage: scripts/benchmark-artifact-smoke.sh [options] <ci-run-id>
+       scripts/benchmark-artifact-smoke.sh [options] --latest-success BRANCH
 
 Downloads the CI benchmark subset artifact and validates the Markdown report
 with scripts/benchmark-report-smoke.sh.
 
 Options:
   --repo OWNER/REPO       Pass an explicit GitHub repository to gh.
+  --latest-success BRANCH Download from the latest successful CI run on BRANCH.
   --dir PATH             Download into PATH instead of /tmp/codeinsight-benchmark-artifact-<run-id>.
   --artifact-name NAME   Artifact name to download. Default: codeinsight-benchmark-subset.
   --profile PROFILE      Expected benchmark profile. Default: smoke.
@@ -37,6 +40,39 @@ EOF
 fail() {
   echo "benchmark artifact smoke failed: $*" >&2
   exit 1
+}
+
+resolve_latest_success_run() {
+  local branch="$1"
+  local run_id
+
+  if [ "${#REPO_ARG[@]}" -gt 0 ]; then
+    run_id="$(
+      gh run list \
+        "${REPO_ARG[@]}" \
+        --workflow CI \
+        --branch "$branch" \
+        --status success \
+        --limit 1 \
+        --json databaseId \
+        --jq '.[0].databaseId // ""'
+    )"
+  else
+    run_id="$(
+      gh run list \
+        --workflow CI \
+        --branch "$branch" \
+        --status success \
+        --limit 1 \
+        --json databaseId \
+        --jq '.[0].databaseId // ""'
+    )"
+  fi
+
+  if [ -z "$run_id" ]; then
+    fail "no successful CI run found for branch: $branch"
+  fi
+  printf "%s" "$run_id"
 }
 
 main() {
@@ -54,6 +90,13 @@ main() {
           usage
         fi
         REPO_ARG=(--repo "$1")
+        ;;
+      --latest-success)
+        shift
+        if [ "$#" -eq 0 ]; then
+          usage
+        fi
+        LATEST_SUCCESS_BRANCH="$1"
         ;;
       --dir)
         shift
@@ -109,11 +152,19 @@ main() {
     shift
   done
 
-  if [ -z "$RUN_ID" ]; then
-    usage
-  fi
   if ! command -v gh >/dev/null 2>&1; then
     fail "missing required command: gh"
+  fi
+  if [ -n "$LATEST_SUCCESS_BRANCH" ] && [ -n "$RUN_ID" ]; then
+    usage
+  fi
+  if [ -z "$RUN_ID" ]; then
+    if [ -n "$LATEST_SUCCESS_BRANCH" ]; then
+      RUN_ID="$(resolve_latest_success_run "$LATEST_SUCCESS_BRANCH")"
+      echo "using latest successful CI run on $LATEST_SUCCESS_BRANCH: $RUN_ID"
+    else
+      usage
+    fi
   fi
   if [ -z "$OUTPUT_DIR" ]; then
     OUTPUT_DIR="${TMPDIR:-/tmp}/codeinsight-benchmark-artifact-$RUN_ID"

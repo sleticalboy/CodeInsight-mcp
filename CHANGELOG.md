@@ -110,6 +110,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - Release commands now include a short normal-release path from prepare through
   CI, benchmark artifact validation, tagging, workflow watch, and post-release
   verification.
+- `scripts/benchmark-artifact-smoke.sh` can now select the latest successful
+  CI run for a branch with `--latest-success BRANCH`.
 
 ## [0.1.12] - 2026-07-14
 
