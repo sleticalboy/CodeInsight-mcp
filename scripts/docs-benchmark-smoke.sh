@@ -277,6 +277,9 @@ main() {
     'scripts/release-tag-preflight\.sh --repo sleticalboy/CodeInsight-mcp vX\.Y\.Z main' \
     "release commands tag preflight gate"
   require_pattern docs/release-commands.md \
+    'remote tag already exists' \
+    "release commands remote tag conflict gate"
+  require_pattern docs/release-commands.md \
     'scripts/release-pretag-check\.sh --repo sleticalboy/CodeInsight-mcp --head-sha <tag-target-sha> main' \
     "release commands tag SHA benchmark artifact gate"
   require_pattern docs/release-commands.md \
@@ -291,6 +294,9 @@ main() {
   require_pattern docs/release-runbook.md \
     'scripts/release-tag-preflight\.sh --repo sleticalboy/CodeInsight-mcp vX\.Y\.Z main' \
     "release runbook tag preflight gate"
+  require_pattern docs/release-runbook.md \
+    'GitHub Release already exists for the tag' \
+    "release runbook release conflict gate"
   require_pattern docs/release-runbook.md \
     'verify-pretag-ci' \
     "release runbook tag pretag workflow gate"

@@ -63,6 +63,9 @@ Dry-run the tag release path without creating or pushing a tag:
 scripts/release-tag-preflight.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
 ```
 
+This fails if the tag already exists locally, the remote tag already exists, or
+a GitHub Release already exists for the tag.
+
 Tagged `Release Build` runs also execute this gate against the tag target SHA
 before building release artifacts:
 

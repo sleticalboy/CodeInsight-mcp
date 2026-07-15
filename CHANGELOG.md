@@ -45,6 +45,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   workflow's pretag, build, and publish job chain.
 - Added `scripts/release-tag-preflight.sh` to dry-run tagged release readiness
   without creating or pushing a tag.
+- `scripts/release-tag-preflight.sh` now fails fast when the local tag, remote
+  tag, or GitHub Release already exists.
 - Added `scripts/local-ci-smoke.sh` as the single local entrypoint for the
   standard non-network CI gate.
 - Added `scripts/script-syntax-smoke.sh` as the single local entrypoint for

@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RELEASE_WORKFLOW_GUARD_SCRIPT="${CODEINSIGHT_RELEASE_WORKFLOW_GUARD_SCRIPT:-$ROOT_DIR/scripts/release-workflow-guard-smoke.sh}"
 RELEASE_PRETAG_CHECK_SCRIPT="${CODEINSIGHT_RELEASE_PRETAG_CHECK_SCRIPT:-$ROOT_DIR/scripts/release-pretag-check.sh}"
 REPO_ARG=()
+REPO=""
 BRANCH="main"
 HEAD_SHA=""
 TAG_NAME=""
@@ -40,6 +41,64 @@ fail() {
   exit 1
 }
 
+gh_checked_release_missing() {
+  local tag="$1"
+  local output status
+
+  if [ -n "$REPO" ]; then
+    set +e
+    output="$(gh release view "$tag" --repo "$REPO" --json tagName --jq '.tagName' 2>&1)"
+    status="$?"
+    set -e
+  else
+    set +e
+    output="$(gh release view "$tag" --json tagName --jq '.tagName' 2>&1)"
+    status="$?"
+    set -e
+  fi
+
+  if [ "$status" -eq 0 ]; then
+    fail "remote GitHub Release already exists: $tag"
+  fi
+
+  case "$output" in
+    *"release not found"* | *"Release not found"* | *"Not Found"* | *"HTTP 404"*)
+      return 0
+      ;;
+    *)
+      fail "could not check remote GitHub Release for $tag: $output"
+      ;;
+  esac
+}
+
+remote_tag_missing() {
+  local tag="$1"
+  local remote status
+
+  if [ -n "$REPO" ]; then
+    remote="https://github.com/${REPO}.git"
+  else
+    remote="$(git -C "$ROOT_DIR" remote get-url origin)"
+  fi
+
+  set +e
+  git ls-remote --exit-code --tags "$remote" "refs/tags/$tag" >/dev/null 2>&1
+  status="$?"
+  set -e
+
+  case "$status" in
+    0)
+      fail "remote tag already exists: $tag"
+      ;;
+    2)
+      return 0
+      ;;
+    *)
+      fail "could not check remote tag $tag from $remote"
+      ;;
+  esac
+}
+
 normalize_tag() {
   local tag="$1"
   case "$tag" in
@@ -59,6 +118,7 @@ main() {
         if [ "$#" -eq 0 ]; then
           usage
         fi
+        REPO="$1"
         REPO_ARG=(--repo "$1")
         ;;
       --head-sha)
@@ -113,6 +173,11 @@ main() {
   if git -C "$ROOT_DIR" rev-parse -q --verify "refs/tags/$TAG_NAME" >/dev/null; then
     fail "local tag already exists: $TAG_NAME"
   fi
+  if ! command -v gh >/dev/null 2>&1; then
+    fail "missing required command: gh"
+  fi
+  remote_tag_missing "$TAG_NAME"
+  gh_checked_release_missing "$TAG_NAME"
   if [ ! -x "$RELEASE_WORKFLOW_GUARD_SCRIPT" ]; then
     fail "release workflow guard script is not executable: $RELEASE_WORKFLOW_GUARD_SCRIPT"
   fi

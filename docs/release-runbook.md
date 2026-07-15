@@ -89,6 +89,8 @@ scripts/release-tag-preflight.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
 
 This validates the tagged `Release Build` workflow guard and re-checks the tag
 target commit by SHA against the successful `CI` run and benchmark artifact.
+It also fails fast when the tag already exists locally or remotely, or when a
+GitHub Release already exists for the tag.
 
 ## Publish A Tagged Release
 
