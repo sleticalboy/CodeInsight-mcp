@@ -12,9 +12,9 @@ scripts/local-ci-smoke.sh
 ```
 
 This prints numbered stages and runs formatting, Rust tests, shell syntax
-checks, release-tooling smokes, docs smokes, the agent-router demo, and
-whitespace diff checks. Nested smoke groups also print their own numbered
-stages.
+checks, workflow action version checks, release-tooling smokes, docs smokes,
+the agent-router demo, and whitespace diff checks. Nested smoke groups also
+print their own numbered stages.
 
 ## Maintenance Smoke Groups
 
@@ -22,6 +22,7 @@ Run focused smoke groups when changing the corresponding area:
 
 ```bash
 scripts/script-syntax-smoke.sh
+scripts/workflow-actions-smoke.sh
 scripts/docs-smoke.sh
 scripts/release-notes-smoke.sh
 scripts/release-tooling-smoke.sh

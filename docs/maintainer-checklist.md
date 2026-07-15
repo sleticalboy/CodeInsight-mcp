@@ -51,6 +51,12 @@ optional external checks, see [Maintenance commands](maintenance-commands.md).
   scripts/release-tooling-smoke.sh
   ```
 
+- For workflow action changes, run the workflow action version smoke:
+
+  ```bash
+  scripts/workflow-actions-smoke.sh
+  ```
+
 - For README, demo, benchmark, or release-readiness changes, keep the public
   evidence path consistent:
 

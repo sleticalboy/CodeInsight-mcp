@@ -95,6 +95,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   indexing time, guardrail failures, and truncation status.
 - CI benchmark artifact upload now uses `actions/upload-artifact@v7` to avoid
   Node.js 20 runtime deprecation warnings.
+- Added `scripts/workflow-actions-smoke.sh` to keep checkout, artifact, Rust,
+  and Docker workflow actions on the expected major versions.
 
 ## [0.1.12] - 2026-07-14
 
