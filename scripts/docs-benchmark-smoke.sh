@@ -270,6 +270,15 @@ main() {
   require_pattern docs/maintenance-commands.md \
     'scripts/benchmark-artifact-smoke\.sh <ci-run-id>' \
     "maintenance benchmark artifact download"
+  require_pattern docs/maintenance-commands.md \
+    'scripts/context-pack-quality-smoke\.sh' \
+    "maintenance context-pack quality smoke"
+  require_pattern docs/maintenance-commands.md \
+    'production-vs-test' \
+    "maintenance context-pack quality scope"
+  require_pattern docs/maintainer-checklist.md \
+    'context-pack quality smoke' \
+    "maintainer context-pack quality smoke"
   require_pattern docs/release-commands.md \
     'scripts/release-pretag-check\.sh main' \
     "release commands benchmark artifact gate"

@@ -13,8 +13,9 @@ scripts/local-ci-smoke.sh
 
 This prints numbered stages and runs formatting, Rust tests, shell syntax
 checks, workflow action version checks, benchmark step-summary checks,
-release-tooling smokes, docs smokes, the agent-router demo, and whitespace diff
-checks. Nested smoke groups also print their own numbered stages.
+release-tooling smokes, docs smokes, context-pack quality checks, the
+agent-router demo, and whitespace diff checks. Nested smoke groups also print
+their own numbered stages.
 
 ## Maintenance Smoke Groups
 
@@ -42,10 +43,16 @@ behavior:
 
 ```bash
 scripts/agent-router-demo.sh
+scripts/context-pack-quality-smoke.sh
 scripts/mcp-stdio-smoke.sh
 scripts/semantic-smoke.sh
 scripts/installed-quickstart-smoke.sh
 ```
+
+`context-pack-quality-smoke.sh` is a deterministic offline quality regression
+check. It uses checked-in and temporary fixtures to verify explicit symbol
+seeds, reading-plan suggestions, token-budget metadata, and production-vs-test
+reference ranking without cloning external repositories.
 
 ## Benchmark Checks
 

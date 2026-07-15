@@ -42,8 +42,8 @@ optional external checks, see [Maintenance commands](maintenance-commands.md).
   scripts/installed-quickstart-smoke.sh
   ```
 
-  `scripts/local-ci-smoke.sh` already includes the agent-router demo for
-  first-read routing and context-packing changes.
+  `scripts/local-ci-smoke.sh` already includes the context-pack quality smoke
+  and agent-router demo for first-read routing and context-packing changes.
 
 - For release-tooling changes, run the release script smokes:
 

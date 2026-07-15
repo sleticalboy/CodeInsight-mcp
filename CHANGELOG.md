@@ -8,6 +8,9 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 ### Changed
 
+- Added `scripts/context-pack-quality-smoke.sh` to run deterministic offline
+  quality checks for context-pack seed selection, reading-plan output, token
+  budget metadata, and production-vs-test reference ranking.
 - `scripts/verify-release.sh` now reports a specific local network diagnostic
   when GitHub Release assets exist in API metadata but
   `github.com/releases/download` is unreachable, and supports an explicit
