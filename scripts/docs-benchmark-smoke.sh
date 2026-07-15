@@ -274,6 +274,9 @@ main() {
     'scripts/release-pretag-check\.sh main' \
     "release commands benchmark artifact gate"
   require_pattern docs/release-commands.md \
+    'scripts/release-dry-run\.sh --repo sleticalboy/CodeInsight-mcp vX\.Y\.Z main' \
+    "release commands dry run orchestration"
+  require_pattern docs/release-commands.md \
     'scripts/release-tag-preflight\.sh --repo sleticalboy/CodeInsight-mcp vX\.Y\.Z main' \
     "release commands tag preflight gate"
   require_pattern docs/release-commands.md \
@@ -289,6 +292,9 @@ main() {
     '`metadata_cargo`, `metadata_install`, and' \
     "release commands metadata summary output"
   require_pattern docs/release-commands.md \
+    'prints the release evidence block without modifying' \
+    "release commands dry run checkout safety"
+  require_pattern docs/release-commands.md \
     'scripts/release-pretag-check\.sh --repo sleticalboy/CodeInsight-mcp --head-sha <tag-target-sha> main' \
     "release commands tag SHA benchmark artifact gate"
   require_pattern docs/release-commands.md \
@@ -300,6 +306,9 @@ main() {
   require_pattern docs/release-runbook.md \
     'scripts/release-pretag-check\.sh main' \
     "release runbook benchmark artifact gate"
+  require_pattern docs/release-runbook.md \
+    'scripts/release-dry-run\.sh --repo sleticalboy/CodeInsight-mcp vX\.Y\.Z main' \
+    "release runbook dry run orchestration"
   require_pattern docs/release-runbook.md \
     'scripts/release-tag-preflight\.sh --repo sleticalboy/CodeInsight-mcp vX\.Y\.Z main' \
     "release runbook tag preflight gate"

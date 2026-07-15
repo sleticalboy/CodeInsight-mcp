@@ -26,6 +26,16 @@ gh auth token | gh secret set HOMEBREW_TAP_TOKEN --repo sleticalboy/CodeInsight-
 
 ## Prepare A Release
 
+Run the full pre-release dry run:
+
+```bash
+scripts/release-dry-run.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
+```
+
+This command previews the release metadata diff, applies that metadata in a
+temporary copy, runs the tag preflight against the target commit, and prints the
+release evidence block. It does not modify the checkout.
+
 Prepare release metadata:
 
 ```bash

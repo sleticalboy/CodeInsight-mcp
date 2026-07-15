@@ -8,6 +8,7 @@ step-by-step process, see [Release runbook](release-runbook.md).
 Use this path when release metadata is ready and you are cutting a normal tag:
 
 ```bash
+scripts/release-dry-run.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
 scripts/prepare-release.sh --dry-run vX.Y.Z
 scripts/prepare-release.sh vX.Y.Z
 git push origin main
@@ -28,6 +29,16 @@ flags documented below and verify those gates through GitHub Actions, GHCR, or
 the Homebrew tap.
 
 ## Before Tagging
+
+Run the full pre-release dry run:
+
+```bash
+scripts/release-dry-run.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
+```
+
+This prints the release prep diff, validates tag preflight with temporary
+prepared metadata, and prints the release evidence block without modifying the
+checkout.
 
 Preview release metadata changes:
 

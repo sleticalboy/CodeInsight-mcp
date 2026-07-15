@@ -54,6 +54,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - Added `scripts/release-evidence-summary.sh` to print a copyable pre-tag
   release evidence block with target SHA, CI run, benchmark artifact, benchmark
   report, and release metadata.
+- Added `scripts/release-dry-run.sh` to preview release metadata, validate tag
+  preflight, and print the release evidence block from one non-mutating command.
 - Added `scripts/local-ci-smoke.sh` as the single local entrypoint for the
   standard non-network CI gate.
 - Added `scripts/script-syntax-smoke.sh` as the single local entrypoint for
