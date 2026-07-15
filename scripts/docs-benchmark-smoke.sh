@@ -282,6 +282,9 @@ main() {
   require_pattern docs/maintenance-commands.md \
     'omitted_candidates' \
     "maintenance context-pack omitted candidates scope"
+  require_pattern docs/maintenance-commands.md \
+    'minimum_budget_applied' \
+    "maintenance context-pack minimum budget scope"
   require_pattern docs/maintainer-checklist.md \
     'context-pack quality smoke' \
     "maintainer context-pack quality smoke"

@@ -56,7 +56,8 @@ reference ranking. It also verifies dependency continuation: a seeded entry
 file should pull in its resolved local dependency and recommend a file-scoped
 `dependency_graph` follow-up. Low-budget fixtures verify that
 `omitted_candidates` and `continuation_summary` expose a bounded follow-up
-`context_pack` call without cloning external repositories.
+`context_pack` call, and minimum-budget fixtures verify requests below 500
+tokens report `minimum_budget_applied` without cloning external repositories.
 
 ## Benchmark Checks
 

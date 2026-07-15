@@ -134,6 +134,16 @@ EOF
   done
 }
 
+write_minimum_budget_fixture() {
+  local root="$1"
+
+  mkdir -p "$root/app"
+  cat >"$root/app/tiny.py" <<'EOF'
+def tiny():
+    return "ok"
+EOF
+}
+
 require_file_before() {
   local file="$1"
   local earlier="$2"
@@ -268,6 +278,42 @@ run_budget_continuation_scenario() {
   echo "  pass: budget continuation ($(json_value "$context_json" '.budget.selected_files')/$(json_value "$context_json" '.budget.candidate_files') files selected)"
 }
 
+run_minimum_budget_scenario() {
+  local project="$TEMP_DIR/minimum-budget"
+  local context_json="$TEMP_DIR/minimum-budget-context.json"
+
+  write_minimum_budget_fixture "$project"
+  "$CODEINSIGHT_BIN" index "$project" --force >"$TEMP_DIR/minimum-budget-index.json"
+  require_jq "$TEMP_DIR/minimum-budget-index.json" '.indexed_files == 1' \
+    "minimum budget fixture should index one file"
+
+  "$CODEINSIGHT_BIN" context-pack "$project" \
+    --task "understand tiny helper" \
+    --file app/tiny.py \
+    --token-budget 20 \
+    >"$context_json"
+
+  require_jq "$context_json" '.seed_strategy == "explicit"' \
+    "minimum budget should use explicit seed strategy"
+  require_jq "$context_json" '.budget.requested_token_budget == 20 and .budget.applied_token_budget == 500' \
+    "minimum budget should report requested and applied budgets"
+  require_jq "$context_json" '.budget.truncation_reason == "minimum_budget_applied"' \
+    "minimum budget should report minimum budget truncation reason"
+  require_jq "$context_json" '.continuation_summary.status == "minimum_budget_applied"' \
+    "minimum budget should expose minimum-budget continuation status"
+  require_jq "$context_json" '.continuation_summary.next_action == "read_selected_context"' \
+    "minimum budget should recommend reading selected context"
+  require_jq "$context_json" '.continuation_summary.omitted_candidate_count == 0 and .continuation_summary.suggested_tool == null' \
+    "minimum budget should not suggest omitted follow-up"
+  require_jq "$context_json" '.files[0].file == "app/tiny.py" and .budget.selected_files == 1 and .budget.omitted_files == 0' \
+    "minimum budget should keep the tiny seed file selected"
+  require_jq "$context_json" '.truncated == false' \
+    "minimum budget fixture should not truncate after applying minimum budget"
+
+  SCENARIOS_PASSED=$((SCENARIOS_PASSED + 1))
+  echo "  pass: minimum budget ($(json_value "$context_json" '.budget.requested_token_budget')->$(json_value "$context_json" '.budget.applied_token_budget') tokens)"
+}
+
 main() {
   require_command jq
   build_binary_if_needed
@@ -294,6 +340,7 @@ main() {
   run_reference_ranking_scenarios
   run_dependency_continuation_scenario
   run_budget_continuation_scenario
+  run_minimum_budget_scenario
 
   echo "context-pack quality smoke passed"
   echo "scenarios: $SCENARIOS_PASSED"
