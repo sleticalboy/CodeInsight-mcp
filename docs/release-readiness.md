@@ -95,6 +95,8 @@ Before calling a build publicly ready, verify:
   first-read, change-preflight, continuation, and review-planning prompts.
 - [ ] [Demo script](demo-script.md) matches the real output shape of
   `scripts/agent-router-demo.sh`.
+- [ ] README benchmark snapshot, [Demo script](demo-script.md), and benchmark
+  `Key Results` tell the same routing and compression story.
 - [ ] [Known limitations](known-limitations.md) is linked from README and docs
   before any release announcement.
 
@@ -247,10 +249,13 @@ Update these docs if the output changes materially:
 - [Smoke benchmark](benchmark-v0.1.md)
 - [Large repository benchmark](benchmark-large.md)
 - README benchmark snapshot
+- [Demo script](demo-script.md) evidence cutaway
 
 The benchmark story should support the product claim that CodeInsight routes an
-agent to bounded local context. Do not present the fixture benchmarks as
-controlled performance benchmarks.
+agent to bounded local context. The README benchmark snapshot, demo evidence
+cutaway, and report `Key Results` should agree on `context_pack` first-tool
+routing, aggregate line reduction, and benchmark scope. Do not present the
+fixture benchmarks as controlled performance benchmarks.
 
 ## Communication Gate
 

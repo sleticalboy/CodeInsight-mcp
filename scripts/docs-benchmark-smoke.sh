@@ -243,6 +243,15 @@ main() {
   require_pattern docs/adoption-checklist.md \
     'The generated reports include `Key Results`' \
     "adoption key results pass criterion"
+  require_pattern docs/release-readiness.md \
+    'README benchmark snapshot, \[Demo script\]\(demo-script\.md\), and benchmark' \
+    "release readiness benchmark consistency gate"
+  require_pattern docs/release-readiness.md \
+    '\[Demo script\]\(demo-script\.md\) evidence cutaway' \
+    "release readiness demo evidence update target"
+  require_pattern docs/release-readiness.md \
+    'report `Key Results` should agree on `context_pack` first-tool' \
+    "release readiness key results consistency"
   require_pattern scripts/agent-router-demo.sh \
     'reading_plan_steps' \
     "agent-router reading plan output"
