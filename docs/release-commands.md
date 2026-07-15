@@ -64,7 +64,9 @@ scripts/release-tag-preflight.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
 ```
 
 This fails if the tag already exists locally, the remote tag already exists, or
-a GitHub Release already exists for the tag.
+a GitHub Release already exists for the tag. It also verifies that
+`Cargo.toml`, `docs/install.md`, and `CHANGELOG.md` are prepared for the same
+version.
 
 Tagged `Release Build` runs also execute this gate against the tag target SHA
 before building release artifacts:

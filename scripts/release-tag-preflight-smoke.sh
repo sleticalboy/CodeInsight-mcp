@@ -19,6 +19,30 @@ main() {
   TEMP_DIR="$(mktemp -d)"
   trap cleanup EXIT INT TERM
 
+  mkdir -p "$TEMP_DIR/repo/docs"
+  cat >"$TEMP_DIR/repo/Cargo.toml" <<'EOF'
+[package]
+name = "codeinsight"
+version = "99.88.77"
+edition = "2021"
+EOF
+  cat >"$TEMP_DIR/repo/docs/install.md" <<'EOF'
+Install a specific version:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/sleticalboy/CodeInsight-mcp/main/scripts/install.sh | CODEINSIGHT_VERSION=v99.88.77 sh
+```
+EOF
+  cat >"$TEMP_DIR/repo/CHANGELOG.md" <<'EOF'
+# Changelog
+
+## [Unreleased]
+
+## [99.88.77] - 2026-07-15
+
+- Smoke fixture release notes.
+EOF
+
   mkdir -p "$TEMP_DIR/bin"
 
   cat >"$TEMP_DIR/bin/git" <<'EOF'
@@ -91,6 +115,7 @@ EOF
   chmod +x "$TEMP_DIR/release-pretag-check"
 
     CODEINSIGHT_TAG_PREFLIGHT_SMOKE_LOG="$TEMP_DIR/calls.log" \
+    CODEINSIGHT_ROOT_DIR="$TEMP_DIR/repo" \
     CODEINSIGHT_RELEASE_WORKFLOW_GUARD_SCRIPT="$TEMP_DIR/release-workflow-guard" \
     CODEINSIGHT_RELEASE_PRETAG_CHECK_SCRIPT="$TEMP_DIR/release-pretag-check" \
     PATH="$TEMP_DIR/bin:$PATH" \
@@ -104,6 +129,8 @@ EOF
     fail "missing normalized tag output"
   grep -Fq 'head_sha: abc123' "$TEMP_DIR/output.log" ||
     fail "missing head SHA output"
+  grep -Fq 'metadata: ok' "$TEMP_DIR/output.log" ||
+    fail "missing metadata confirmation"
   grep -Fq 'git ls-remote --exit-code --tags https://github.com/sleticalboy/CodeInsight-mcp.git refs/tags/v99.88.77' "$TEMP_DIR/calls.log" ||
     fail "missing remote tag check"
   grep -Fq 'gh release view v99.88.77 --repo sleticalboy/CodeInsight-mcp --json tagName --jq .tagName' "$TEMP_DIR/calls.log" ||
@@ -117,6 +144,7 @@ EOF
 
   if CODEINSIGHT_TAG_PREFLIGHT_SMOKE_LOG="$TEMP_DIR/remote-tag-exists.log" \
     CODEINSIGHT_TAG_PREFLIGHT_REMOTE_TAG_EXISTS=1 \
+    CODEINSIGHT_ROOT_DIR="$TEMP_DIR/repo" \
     CODEINSIGHT_RELEASE_WORKFLOW_GUARD_SCRIPT="$TEMP_DIR/release-workflow-guard" \
     CODEINSIGHT_RELEASE_PRETAG_CHECK_SCRIPT="$TEMP_DIR/release-pretag-check" \
     PATH="$TEMP_DIR/bin:$PATH" \
@@ -132,6 +160,7 @@ EOF
 
   if CODEINSIGHT_TAG_PREFLIGHT_SMOKE_LOG="$TEMP_DIR/release-exists.log" \
     CODEINSIGHT_TAG_PREFLIGHT_RELEASE_EXISTS=1 \
+    CODEINSIGHT_ROOT_DIR="$TEMP_DIR/repo" \
     CODEINSIGHT_RELEASE_WORKFLOW_GUARD_SCRIPT="$TEMP_DIR/release-workflow-guard" \
     CODEINSIGHT_RELEASE_PRETAG_CHECK_SCRIPT="$TEMP_DIR/release-pretag-check" \
     PATH="$TEMP_DIR/bin:$PATH" \
@@ -144,6 +173,31 @@ EOF
   fi
   grep -Fq 'remote GitHub Release already exists: v99.88.77' "$TEMP_DIR/release-exists.err" ||
     fail "missing remote release conflict diagnostic"
+
+  mkdir -p "$TEMP_DIR/mismatch/docs"
+  cp "$TEMP_DIR/repo/CHANGELOG.md" "$TEMP_DIR/mismatch/CHANGELOG.md"
+  cp "$TEMP_DIR/repo/docs/install.md" "$TEMP_DIR/mismatch/docs/install.md"
+  cat >"$TEMP_DIR/mismatch/Cargo.toml" <<'EOF'
+[package]
+name = "codeinsight"
+version = "99.88.76"
+edition = "2021"
+EOF
+
+  if CODEINSIGHT_TAG_PREFLIGHT_SMOKE_LOG="$TEMP_DIR/mismatch.log" \
+    CODEINSIGHT_ROOT_DIR="$TEMP_DIR/mismatch" \
+    CODEINSIGHT_RELEASE_WORKFLOW_GUARD_SCRIPT="$TEMP_DIR/release-workflow-guard" \
+    CODEINSIGHT_RELEASE_PRETAG_CHECK_SCRIPT="$TEMP_DIR/release-pretag-check" \
+    PATH="$TEMP_DIR/bin:$PATH" \
+    "$ROOT_DIR/scripts/release-tag-preflight.sh" \
+      --repo sleticalboy/CodeInsight-mcp \
+      --head-sha abc123 \
+      v99.88.77 \
+      main >"$TEMP_DIR/mismatch.out" 2>"$TEMP_DIR/mismatch.err"; then
+    fail "version metadata mismatch should fail"
+  fi
+  grep -Fq 'Cargo.toml version 99.88.76 does not match 99.88.77' "$TEMP_DIR/mismatch.err" ||
+    fail "missing version mismatch diagnostic"
 
   echo "release tag preflight smoke passed"
 }

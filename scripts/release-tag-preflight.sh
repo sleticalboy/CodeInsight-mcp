@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="${CODEINSIGHT_ROOT_DIR:-$SCRIPT_ROOT}"
 RELEASE_WORKFLOW_GUARD_SCRIPT="${CODEINSIGHT_RELEASE_WORKFLOW_GUARD_SCRIPT:-$ROOT_DIR/scripts/release-workflow-guard-smoke.sh}"
 RELEASE_PRETAG_CHECK_SCRIPT="${CODEINSIGHT_RELEASE_PRETAG_CHECK_SCRIPT:-$ROOT_DIR/scripts/release-pretag-check.sh}"
 REPO_ARG=()
@@ -32,6 +33,7 @@ Options:
 Environment:
   CODEINSIGHT_RELEASE_WORKFLOW_GUARD_SCRIPT=scripts/release-workflow-guard-smoke.sh
   CODEINSIGHT_RELEASE_PRETAG_CHECK_SCRIPT=scripts/release-pretag-check.sh
+  CODEINSIGHT_ROOT_DIR=/path/to/repo
 EOF
   exit "$status"
 }
@@ -39,6 +41,48 @@ EOF
 fail() {
   echo "release tag preflight failed: $*" >&2
   exit 1
+}
+
+check_release_metadata() {
+  local tag="$1"
+  local version="${tag#v}"
+
+  ruby - "$ROOT_DIR" "$tag" "$version" <<'RUBY'
+root_dir = ARGV.fetch(0)
+tag = ARGV.fetch(1)
+version = ARGV.fetch(2)
+
+def fail!(message)
+  warn("release tag preflight failed: #{message}")
+  exit(1)
+end
+
+def read_file(path)
+  File.read(path)
+rescue Errno::ENOENT
+  fail!("missing required release metadata file: #{path}")
+end
+
+cargo_path = File.join(root_dir, "Cargo.toml")
+cargo = read_file(cargo_path)
+package = cargo.match(/^\[package\]\n(?<body>.*?)(?=^\[|\z)/m)
+fail!("Cargo.toml [package] section not found") unless package
+cargo_version = package[:body][/^version = "([^"]+)"/, 1]
+fail!("Cargo.toml package version not found") unless cargo_version
+fail!("Cargo.toml version #{cargo_version} does not match #{version}") unless cargo_version == version
+
+install_path = File.join(root_dir, "docs", "install.md")
+install_doc = read_file(install_path)
+unless install_doc.include?("CODEINSIGHT_VERSION=#{tag}")
+  fail!("docs/install.md CODEINSIGHT_VERSION does not match #{tag}")
+end
+
+changelog_path = File.join(root_dir, "CHANGELOG.md")
+changelog = read_file(changelog_path)
+unless changelog.match?(/^## \[#{Regexp.escape(version)}\] - \d{4}-\d{2}-\d{2}$/)
+  fail!("CHANGELOG.md release section not found for #{version}")
+end
+RUBY
 }
 
 gh_checked_release_missing() {
@@ -162,7 +206,7 @@ main() {
   if [ -z "$TAG_NAME" ]; then
     usage
   fi
-  if [[ ! "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$ ]]; then
+  if [[ ! "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     fail "tag must look like vX.Y.Z or X.Y.Z: $TAG_NAME"
   fi
 
@@ -173,6 +217,7 @@ main() {
   if git -C "$ROOT_DIR" rev-parse -q --verify "refs/tags/$TAG_NAME" >/dev/null; then
     fail "local tag already exists: $TAG_NAME"
   fi
+  check_release_metadata "$TAG_NAME"
   if ! command -v gh >/dev/null 2>&1; then
     fail "missing required command: gh"
   fi
@@ -189,6 +234,7 @@ main() {
   echo "tag: $TAG_NAME"
   echo "branch: $BRANCH"
   echo "head_sha: $HEAD_SHA"
+  echo "metadata: ok"
 
   "$RELEASE_WORKFLOW_GUARD_SCRIPT"
   "$RELEASE_PRETAG_CHECK_SCRIPT" "${REPO_ARG[@]}" --head-sha "$HEAD_SHA" "$BRANCH"

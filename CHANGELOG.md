@@ -47,6 +47,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   without creating or pushing a tag.
 - `scripts/release-tag-preflight.sh` now fails fast when the local tag, remote
   tag, or GitHub Release already exists.
+- `scripts/release-tag-preflight.sh` now verifies that release metadata matches
+  the target tag before checking CI artifacts.
 - Added `scripts/local-ci-smoke.sh` as the single local entrypoint for the
   standard non-network CI gate.
 - Added `scripts/script-syntax-smoke.sh` as the single local entrypoint for
