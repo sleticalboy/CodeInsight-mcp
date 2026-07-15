@@ -252,6 +252,15 @@ main() {
   require_pattern docs/release-readiness.md \
     'report `Key Results` should agree on `context_pack` first-tool' \
     "release readiness key results consistency"
+  require_pattern docs/maintainer-checklist.md \
+    'README benchmark snapshot, \[Demo script\]\(demo-script\.md\)' \
+    "maintainer benchmark evidence consistency"
+  require_pattern docs/maintainer-checklist.md \
+    'benchmark report `Key Results`, and' \
+    "maintainer key results consistency"
+  require_pattern docs/maintainer-checklist.md \
+    '\[Release readiness\]\(release-readiness\.md\) benchmark gate' \
+    "maintainer release readiness consistency"
   require_pattern scripts/agent-router-demo.sh \
     'reading_plan_steps' \
     "agent-router reading plan output"

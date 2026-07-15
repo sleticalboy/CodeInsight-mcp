@@ -51,6 +51,18 @@ optional external checks, see [Maintenance commands](maintenance-commands.md).
   scripts/release-tooling-smoke.sh
   ```
 
+- For README, demo, benchmark, or release-readiness changes, keep the public
+  evidence path consistent:
+
+  ```bash
+  scripts/docs-smoke.sh
+  ```
+
+  Check that the README benchmark snapshot, [Demo script](demo-script.md)
+  evidence cutaway, benchmark report `Key Results`, and
+  [Release readiness](release-readiness.md) benchmark gate all tell the same
+  routing and compression story.
+
 ## Before Tagging A Release
 
 - Use the short command index for the exact release commands:
@@ -123,6 +135,8 @@ optional external checks, see [Maintenance commands](maintenance-commands.md).
 
 - [Release commands](release-commands.md)
 - [Release runbook](release-runbook.md)
+- [Release readiness](release-readiness.md)
 - [Current status](status.md)
+- [Demo script](demo-script.md)
 - [MCP client smoke test](mcp-client-smoke.md)
 - [Known limitations](known-limitations.md)
