@@ -81,6 +81,15 @@ This waits for the latest `CI` run on `main`, downloads
 lightweight `p-limit` benchmark evidence is readable outside the GitHub Actions
 UI before tagging.
 
+Dry-run the tag preflight without creating or pushing a tag:
+
+```bash
+scripts/release-tag-preflight.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
+```
+
+This validates the tagged `Release Build` workflow guard and re-checks the tag
+target commit by SHA against the successful `CI` run and benchmark artifact.
+
 ## Publish A Tagged Release
 
 Create and push an annotated tag:

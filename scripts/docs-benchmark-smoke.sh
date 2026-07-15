@@ -274,6 +274,9 @@ main() {
     'scripts/release-pretag-check\.sh main' \
     "release commands benchmark artifact gate"
   require_pattern docs/release-commands.md \
+    'scripts/release-tag-preflight\.sh --repo sleticalboy/CodeInsight-mcp vX\.Y\.Z main' \
+    "release commands tag preflight gate"
+  require_pattern docs/release-commands.md \
     'scripts/release-pretag-check\.sh --repo sleticalboy/CodeInsight-mcp --head-sha <tag-target-sha> main' \
     "release commands tag SHA benchmark artifact gate"
   require_pattern docs/release-commands.md \
@@ -285,6 +288,9 @@ main() {
   require_pattern docs/release-runbook.md \
     'scripts/release-pretag-check\.sh main' \
     "release runbook benchmark artifact gate"
+  require_pattern docs/release-runbook.md \
+    'scripts/release-tag-preflight\.sh --repo sleticalboy/CodeInsight-mcp vX\.Y\.Z main' \
+    "release runbook tag preflight gate"
   require_pattern docs/release-runbook.md \
     'verify-pretag-ci' \
     "release runbook tag pretag workflow gate"

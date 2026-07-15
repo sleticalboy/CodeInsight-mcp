@@ -43,6 +43,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   release-tooling smoke checks.
 - Added `scripts/release-workflow-guard-smoke.sh` to guard the tagged release
   workflow's pretag, build, and publish job chain.
+- Added `scripts/release-tag-preflight.sh` to dry-run tagged release readiness
+  without creating or pushing a tag.
 - Added `scripts/local-ci-smoke.sh` as the single local entrypoint for the
   standard non-network CI gate.
 - Added `scripts/script-syntax-smoke.sh` as the single local entrypoint for

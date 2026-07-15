@@ -12,6 +12,7 @@ scripts/prepare-release.sh --dry-run vX.Y.Z
 scripts/prepare-release.sh vX.Y.Z
 git push origin main
 scripts/release-pretag-check.sh main
+scripts/release-tag-preflight.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
 git tag -a vX.Y.Z -m "vX.Y.Z"
 git push origin vX.Y.Z
 gh run list --workflow "Release Build" --limit 5
@@ -54,6 +55,12 @@ subset artifact:
 
 ```bash
 scripts/release-pretag-check.sh main
+```
+
+Dry-run the tag release path without creating or pushing a tag:
+
+```bash
+scripts/release-tag-preflight.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
 ```
 
 Tagged `Release Build` runs also execute this gate against the tag target SHA
