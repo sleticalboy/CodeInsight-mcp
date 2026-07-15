@@ -59,12 +59,12 @@ without external services.
 
 Current benchmark snapshot:
 
-- Smoke repositories select 89-242 context lines from 1,123-69,381 indexed
-  lines, a 85.9%-99.7% line reduction.
-- Large repositories select 305-573 context lines from 18,337-177,479 indexed
-  lines, a 96.9%-99.7% line reduction.
-- Every benchmarked repository returns four recommended next tools, with
-  `context_pack` as the first recommended action.
+- Smoke repositories route `context_pack` first for 4/4 repositories and
+  select 629 of 75,753 source lines, a 99.2% aggregate line reduction.
+- Large repositories route `context_pack` first for 4/4 repositories and
+  select 1,748 of 241,555 source lines, a 99.3% aggregate line reduction.
+- Generated reports include a `Key Results` section with routing,
+  compression, token-budget, indexing, guardrail, and truncation evidence.
 
 Refresh the reports locally:
 

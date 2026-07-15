@@ -25,6 +25,16 @@ Environment:
 | gin | Go | `34dac20` | 99 | 24099 | 1857 | 31 | 0 | 418 | 5000 | pass | 1.8M | 3 | `gin.go` | 4 | `context_pack` | 4 | 12 | 305 | 98.7% | 2969 | 6000 | 0 | complete | false | `gin.go` |
 | tokio | Rust | `dac81bf` | 790 | 177641 | 8472 | 75 | 0 | 2855 | 20000 | pass | 6.9M | 12 | `examples/chat.rs` | 4 | `context_pack` | 18 | 23 | 508 | 99.7% | 5054 | 6000 | 0 | complete | false | `tokio/src/lib.rs` |
 
+## Key Results
+
+- Repositories benchmarked: 4 (`all` subset).
+- Agent routing: `context_pack` was the first recommended tool for 4/4 repositories.
+- Context compression: selected 1748 of 241555 source lines (99.3% reduction) across 38 files and 63 ranges.
+- Token budget: 16234 estimated tokens total, 4059 average tokens per repository, with a 6000 token budget per context pack.
+- Indexing: 6730 ms total, 1683 ms average per repository, with 0 budget failures.
+- Guardrails: 0 context, 0 symbol, 0 call target, and 0 call edge failures.
+- Truncation: 1 context packs reported truncated output.
+
 ## Details
 
 ## express

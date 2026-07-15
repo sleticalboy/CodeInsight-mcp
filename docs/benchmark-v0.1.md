@@ -25,6 +25,16 @@ Environment:
 | go-example | Go | `7f05d21` | 38 | 3537 | 189 | 33 | 0 | 91 | 5000 | pass | 264K | 12 | `gotypes/defsuses/main.go` | 4 | `context_pack` | 4 | 6 | 89 | 97.5% | 600 | 6000 | 0 | lower_ranked_context_omitted | false | `hello/hello.go` |
 | memchr | Rust | `bce7df7` | 64 | 69381 | 4046 | 110 | 0 | 692 | 10000 | pass | 2.3M | 12 | `benchmarks/engines/libc/main.rs` | 4 | `context_pack` | 7 | 7 | 196 | 99.7% | 1899 | 6000 | 0 | complete | false | `src/lib.rs` |
 
+## Key Results
+
+- Repositories benchmarked: 4 (`all` subset).
+- Agent routing: `context_pack` was the first recommended tool for 4/4 repositories.
+- Context compression: selected 629 of 75753 source lines (99.2% reduction) across 16 files and 26 ranges.
+- Token budget: 5747 estimated tokens total, 1437 average tokens per repository, with a 6000 token budget per context pack.
+- Indexing: 884 ms total, 221 ms average per repository, with 0 budget failures.
+- Guardrails: 0 context, 0 symbol, 0 call target, and 0 call edge failures.
+- Truncation: 0 context packs reported truncated output.
+
 ## Details
 
 ## p-limit

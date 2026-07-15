@@ -28,6 +28,15 @@ CONTEXT_GUARDRAIL_FAILURES=0
 SYMBOL_TARGET_FAILURES=0
 CALL_TARGET_FAILURES=0
 CALL_EDGE_FAILURES=0
+BENCHMARKED_REPOS=0
+TOTAL_REPO_LINES=0
+TOTAL_CONTEXT_LINES=0
+TOTAL_CONTEXT_TOKENS=0
+TOTAL_CONTEXT_FILES=0
+TOTAL_CONTEXT_RANGES=0
+TOTAL_INDEX_MS=0
+CONTEXT_PACK_FIRST_RECOMMENDATIONS=0
+TRUNCATED_CONTEXT_PACKS=0
 
 configure_profile() {
   case "$BENCH_PROFILE" in
@@ -563,6 +572,39 @@ line_reduction() {
   }'
 }
 
+average_number() {
+  local total="$1"
+  local count="$2"
+  awk -v total="$total" -v count="$count" 'BEGIN {
+    if (count <= 0) {
+      printf "0"
+    } else {
+      printf "%.0f", total / count
+    }
+  }'
+}
+
+append_key_results_section() {
+  local context_reduction average_tokens average_index_ms
+
+  context_reduction="$(line_reduction "$TOTAL_REPO_LINES" "$TOTAL_CONTEXT_LINES")"
+  average_tokens="$(average_number "$TOTAL_CONTEXT_TOKENS" "$BENCHMARKED_REPOS")"
+  average_index_ms="$(average_number "$TOTAL_INDEX_MS" "$BENCHMARKED_REPOS")"
+
+  cat >>"$REPORT_FILE" <<EOF
+
+## Key Results
+
+- Repositories benchmarked: $BENCHMARKED_REPOS (\`$(repo_subset_label)\` subset).
+- Agent routing: \`context_pack\` was the first recommended tool for $CONTEXT_PACK_FIRST_RECOMMENDATIONS/$BENCHMARKED_REPOS repositories.
+- Context compression: selected $TOTAL_CONTEXT_LINES of $TOTAL_REPO_LINES source lines ($context_reduction reduction) across $TOTAL_CONTEXT_FILES files and $TOTAL_CONTEXT_RANGES ranges.
+- Token budget: $TOTAL_CONTEXT_TOKENS estimated tokens total, $average_tokens average tokens per repository, with a 6000 token budget per context pack.
+- Indexing: $TOTAL_INDEX_MS ms total, $average_index_ms ms average per repository, with $BUDGET_FAILURES budget failures.
+- Guardrails: $CONTEXT_GUARDRAIL_FAILURES context, $SYMBOL_TARGET_FAILURES symbol, $CALL_TARGET_FAILURES call target, and $CALL_EDGE_FAILURES call edge failures.
+- Truncation: $TRUNCATED_CONTEXT_PACKS context packs reported truncated output.
+EOF
+}
+
 append_summary_row() {
   local name="$1"
   local language="$2"
@@ -600,6 +642,19 @@ append_summary_row() {
 
   if [ "$status" = "fail" ]; then
     BUDGET_FAILURES=$((BUDGET_FAILURES + 1))
+  fi
+  BENCHMARKED_REPOS=$((BENCHMARKED_REPOS + 1))
+  TOTAL_REPO_LINES=$((TOTAL_REPO_LINES + lines))
+  TOTAL_CONTEXT_LINES=$((TOTAL_CONTEXT_LINES + selected_lines))
+  TOTAL_CONTEXT_TOKENS=$((TOTAL_CONTEXT_TOKENS + tokens))
+  TOTAL_CONTEXT_FILES=$((TOTAL_CONTEXT_FILES + context_files))
+  TOTAL_CONTEXT_RANGES=$((TOTAL_CONTEXT_RANGES + ranges))
+  TOTAL_INDEX_MS=$((TOTAL_INDEX_MS + duration))
+  if [ "$first_recommended_tool" = "context_pack" ]; then
+    CONTEXT_PACK_FIRST_RECOMMENDATIONS=$((CONTEXT_PACK_FIRST_RECOMMENDATIONS + 1))
+  fi
+  if [ "$truncated" = "true" ]; then
+    TRUNCATED_CONTEXT_PACKS=$((TRUNCATED_CONTEXT_PACKS + 1))
   fi
 
   printf "| %s | %s | \`%s\` | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | \`%s\` | %s | \`%s\` | %s | %s | %s | %s | %s | %s | %s | %s | %s | \`%s\` |\n" \
@@ -852,6 +907,8 @@ main() {
     validate_call_edge_guardrails "$name" "$repo_dir" "$call_edges" "$call_edges_file"
     append_summary_row "$name" "$language" "$repo_dir" "$index_json" "$overview_json" "$context_json" "$max_index_ms"
   done
+
+  append_key_results_section
 
   cat >>"$REPORT_FILE" <<EOF
 

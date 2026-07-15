@@ -104,8 +104,11 @@ main() {
     'CODEINSIGHT_BENCH_PROFILE=large scripts/benchmark-smoke\.sh' \
     "large benchmark refresh command"
   require_pattern README.md \
-    '`context_pack` as the first recommended action' \
+    'route `context_pack` first for 4/4 repositories' \
     "context_pack benchmark claim"
+  require_pattern README.md \
+    'Generated reports include a `Key Results` section' \
+    "benchmark key results claim"
 
   require_pattern scripts/benchmark-smoke.sh \
     'OUTPUT="\$\{CODEINSIGHT_BENCH_OUTPUT:-\$ROOT_DIR/docs/benchmark-v0\.1\.md\}"' \

@@ -90,6 +90,9 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - Added `scripts/benchmark-report-smoke.sh` so generated benchmark reports and
   CI subset artifacts fail fast when required summary, detail, or guardrail
   evidence is missing.
+- Benchmark reports now include a `Key Results` section that summarizes
+  context-pack routing, aggregate source-line compression, token usage,
+  indexing time, guardrail failures, and truncation status.
 
 ## [0.1.12] - 2026-07-14
 

@@ -65,7 +65,8 @@ Subset runs write to the benchmark work directory unless
 CI runs a lightweight benchmark subset for `p-limit`; full smoke and large
 benchmark reports remain local maintenance checks. The CI subset report is
 validated with `scripts/benchmark-report-smoke.sh` and uploaded as the
-`codeinsight-benchmark-subset` workflow artifact.
+`codeinsight-benchmark-subset` workflow artifact. Benchmark reports include a
+`Key Results` section for stable README, release note, and demo evidence.
 
 ## Optional External Checks
 
