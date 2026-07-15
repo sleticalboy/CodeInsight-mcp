@@ -304,8 +304,26 @@ main() {
     '^## Short Path$' \
     "release commands short path section"
   require_pattern docs/release-commands.md \
+    'three phases: dry-run evidence, prepare' \
+    "release commands three-phase SOP"
+  require_pattern docs/release-commands.md \
+    '# 1\. Dry-run and archive pre-tag evidence\.' \
+    "release commands dry-run phase"
+  require_pattern docs/release-commands.md \
+    '# 2\. Prepare and push the release metadata commit\.' \
+    "release commands prepare phase"
+  require_pattern docs/release-commands.md \
+    '# 3\. Wait for CI, tag, then verify published artifacts\.' \
+    "release commands tag phase"
+  require_pattern docs/release-commands.md \
     'scripts/post-release-verify\.sh vX\.Y\.Z' \
     "release commands short path post-release verification"
+  require_pattern docs/release-runbook.md \
+    '^## Recommended SOP$' \
+    "release runbook recommended SOP section"
+  require_pattern docs/release-runbook.md \
+    'Normal releases should follow this three-phase flow' \
+    "release runbook three-phase SOP"
   require_pattern docs/release-runbook.md \
     'scripts/release-pretag-check\.sh main' \
     "release runbook benchmark artifact gate"

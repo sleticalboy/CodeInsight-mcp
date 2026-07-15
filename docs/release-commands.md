@@ -5,16 +5,22 @@ step-by-step process, see [Release runbook](release-runbook.md).
 
 ## Short Path
 
-Use this path when release metadata is ready and you are cutting a normal tag:
+Use this path when release metadata is ready and you are cutting a normal tag.
+It keeps the operator-facing flow to three phases: dry-run evidence, prepare
+and push metadata, then tag and verify.
 
 ```bash
+# 1. Dry-run and archive pre-tag evidence.
 scripts/release-dry-run.sh --repo sleticalboy/CodeInsight-mcp --evidence-file release-evidence/vX.Y.Z.md vX.Y.Z main
+
+# 2. Prepare and push the release metadata commit.
 scripts/prepare-release.sh --dry-run vX.Y.Z
 scripts/prepare-release.sh vX.Y.Z
 git push origin main
+
+# 3. Wait for CI, tag, then verify published artifacts.
 scripts/release-pretag-check.sh main
 scripts/release-tag-preflight.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
-scripts/release-evidence-summary.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
 git tag -a vX.Y.Z -m "vX.Y.Z"
 git push origin vX.Y.Z
 gh run list --workflow "Release Build" --limit 5

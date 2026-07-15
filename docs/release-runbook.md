@@ -24,6 +24,30 @@ Set or rotate the Homebrew tap token:
 gh auth token | gh secret set HOMEBREW_TAP_TOKEN --repo sleticalboy/CodeInsight-mcp
 ```
 
+## Recommended SOP
+
+Normal releases should follow this three-phase flow:
+
+```bash
+# 1. Dry-run and archive pre-tag evidence.
+scripts/release-dry-run.sh --repo sleticalboy/CodeInsight-mcp --evidence-file release-evidence/vX.Y.Z.md vX.Y.Z main
+
+# 2. Prepare and push the release metadata commit.
+scripts/prepare-release.sh --dry-run vX.Y.Z
+scripts/prepare-release.sh vX.Y.Z
+git push origin main
+
+# 3. Wait for CI, tag, then verify published artifacts.
+scripts/release-pretag-check.sh main
+scripts/release-tag-preflight.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
+git tag -a vX.Y.Z -m "vX.Y.Z"
+git push origin vX.Y.Z
+scripts/post-release-verify.sh vX.Y.Z
+```
+
+The sections below document the same flow with troubleshooting details and
+optional verification commands.
+
 ## Prepare A Release
 
 Run the full pre-release dry run:

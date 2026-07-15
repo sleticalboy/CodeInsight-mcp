@@ -60,6 +60,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   generated pre-tag evidence summary while still printing it to the terminal.
 - Added `scripts/release-metadata-summary.sh` so release preflight and evidence
   summaries share one Cargo, install docs, and changelog metadata validator.
+- Release docs now lead with a three-phase SOP for dry-run evidence, release
+  metadata prep, and tag verification.
 - Added `scripts/local-ci-smoke.sh` as the single local entrypoint for the
   standard non-network CI gate.
 - Added `scripts/script-syntax-smoke.sh` as the single local entrypoint for
