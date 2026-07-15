@@ -84,6 +84,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   default.
 - Docs benchmark smoke now checks benchmark report guardrail expectations
   against `scripts/benchmark-smoke.sh` exported profile configuration.
+- CI now runs a lightweight `p-limit` benchmark subset smoke without
+  overwriting the full benchmark reports.
 
 ## [0.1.12] - 2026-07-14
 

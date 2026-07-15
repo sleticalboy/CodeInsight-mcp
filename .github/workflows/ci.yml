@@ -36,6 +36,19 @@ jobs:
           key: agent-router-demo
       - run: scripts/agent-router-demo.sh
 
+  benchmark-subset-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: benchmark-subset-smoke
+      - run: scripts/benchmark-smoke.sh
+        env:
+          CODEINSIGHT_BENCH_REPOS: p-limit
+          CODEINSIGHT_BENCH_OUTPUT: ${{ runner.temp }}/codeinsight-benchmark-subset.md
+
   release-install-smoke:
     name: release-install-smoke-${{ matrix.os }}
     runs-on: ${{ matrix.os }}
