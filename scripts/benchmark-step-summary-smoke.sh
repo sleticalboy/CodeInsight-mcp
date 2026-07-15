@@ -26,10 +26,15 @@ main() {
   trap "rm -f '$summary_file'" EXIT
 
   GITHUB_STEP_SUMMARY="$summary_file" \
-    "$ROOT_DIR/scripts/benchmark-step-summary.sh" "$REPORT_FILE" codeinsight-benchmark-subset >/dev/null
+    "$ROOT_DIR/scripts/benchmark-step-summary.sh" \
+    "$REPORT_FILE" \
+    codeinsight-benchmark-subset \
+    "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/1/artifacts/2" \
+    "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/1" >/dev/null
 
   require_literal "$summary_file" "## CodeInsight v0.1" "benchmark title"
-  require_literal "$summary_file" 'Workflow artifact: `codeinsight-benchmark-subset`' "artifact pointer"
+  require_literal "$summary_file" "Workflow run: [open run](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/1)" "run link"
+  require_literal "$summary_file" 'Workflow artifact: [`codeinsight-benchmark-subset`](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/1/artifacts/2)' "artifact link"
   require_literal "$summary_file" "Download the full Markdown report from the workflow artifact" "download guidance"
   require_literal "$summary_file" "### Key Results" "key results heading"
   require_literal "$summary_file" "Agent routing: \`context_pack\` was the first recommended tool" "routing key result"

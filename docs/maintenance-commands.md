@@ -68,10 +68,11 @@ CI runs a lightweight benchmark subset for `p-limit`; full smoke and large
 benchmark reports remain local maintenance checks. The CI subset report is
 validated with `scripts/benchmark-report-smoke.sh` and uploaded as the
 `codeinsight-benchmark-subset` workflow artifact. CI also writes the subset
-report `Key Results` and summary table into the run summary with
-`scripts/benchmark-step-summary.sh`, so maintainers can inspect the routing
-evidence before downloading the full artifact. Benchmark reports include a
-`Key Results` section for stable README, release note, and demo evidence.
+report `Key Results`, summary table, workflow run link, and artifact link into
+the run summary with `scripts/benchmark-step-summary.sh`, so maintainers can
+inspect the routing evidence before downloading the full artifact. Benchmark
+reports include a `Key Results` section for stable README, release note, and
+demo evidence.
 
 ## Optional External Checks
 

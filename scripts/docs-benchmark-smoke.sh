@@ -112,6 +112,12 @@ main() {
   require_pattern .github/workflows/ci.yml \
     'actions/upload-artifact@v7' \
     "Node.js 24 artifact upload action"
+  require_pattern .github/workflows/ci.yml \
+    'steps\.benchmark-artifact\.outputs\.artifact-url' \
+    "benchmark artifact URL summary input"
+  require_pattern .github/workflows/ci.yml \
+    'scripts/benchmark-step-summary\.sh /tmp/codeinsight-benchmark-subset\.md codeinsight-benchmark-subset' \
+    "benchmark step summary command"
 
   require_pattern scripts/benchmark-smoke.sh \
     'OUTPUT="\$\{CODEINSIGHT_BENCH_OUTPUT:-\$ROOT_DIR/docs/benchmark-v0\.1\.md\}"' \

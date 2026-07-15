@@ -3,14 +3,18 @@ set -euo pipefail
 
 REPORT_FILE="${1:-}"
 ARTIFACT_NAME="${2:-codeinsight-benchmark-subset}"
+ARTIFACT_URL="${3:-}"
+RUN_URL="${4:-}"
 SUMMARY_FILE="${GITHUB_STEP_SUMMARY:-/dev/stdout}"
 
 usage() {
   cat >&2 <<'EOF'
-usage: scripts/benchmark-step-summary.sh REPORT_FILE [ARTIFACT_NAME]
+usage: scripts/benchmark-step-summary.sh REPORT_FILE [ARTIFACT_NAME] [ARTIFACT_URL] [RUN_URL]
 
 Appends the benchmark report's Summary and Key Results sections to the GitHub
 Actions step summary. When GITHUB_STEP_SUMMARY is not set, writes to stdout.
+RUN_URL defaults to the current GitHub Actions run when standard GITHUB_*
+environment variables are available.
 EOF
 }
 
@@ -56,11 +60,24 @@ main() {
   if [ -z "$title" ]; then
     fail "$REPORT_FILE is missing a title"
   fi
+  if [ -z "$RUN_URL" ] &&
+    [ -n "${GITHUB_SERVER_URL:-}" ] &&
+    [ -n "${GITHUB_REPOSITORY:-}" ] &&
+    [ -n "${GITHUB_RUN_ID:-}" ]; then
+    RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+  fi
 
   {
     printf "## %s\n\n" "$title"
     printf 'Full report: `%s`\n\n' "$REPORT_FILE"
-    printf 'Workflow artifact: `%s`\n\n' "$ARTIFACT_NAME"
+    if [ -n "$RUN_URL" ]; then
+      printf 'Workflow run: [open run](%s)\n\n' "$RUN_URL"
+    fi
+    if [ -n "$ARTIFACT_URL" ]; then
+      printf 'Workflow artifact: [`%s`](%s)\n\n' "$ARTIFACT_NAME" "$ARTIFACT_URL"
+    else
+      printf 'Workflow artifact: `%s`\n\n' "$ARTIFACT_NAME"
+    fi
     printf "Download the full Markdown report from the workflow artifact when you need detail rows, guardrail tables, or context-pack file lists.\n\n"
     printf "### Key Results\n\n"
     extract_section "## Key Results"
