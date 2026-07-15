@@ -97,6 +97,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   Node.js 20 runtime deprecation warnings.
 - Added `scripts/workflow-actions-smoke.sh` to keep checkout, artifact, Rust,
   and Docker workflow actions on the expected major versions.
+- CI benchmark subset runs now publish the report `Key Results` and summary
+  table into the GitHub Actions run summary before uploading the full artifact.
 
 ## [0.1.12] - 2026-07-14
 

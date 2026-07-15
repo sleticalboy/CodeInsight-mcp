@@ -69,6 +69,12 @@ optional external checks, see [Maintenance commands](maintenance-commands.md).
   [Release readiness](release-readiness.md) benchmark gate all tell the same
   routing and compression story.
 
+- For benchmark CI visibility changes, verify the generated Actions summary:
+
+  ```bash
+  scripts/benchmark-step-summary-smoke.sh
+  ```
+
 ## Before Tagging A Release
 
 - Use the short command index for the exact release commands:
