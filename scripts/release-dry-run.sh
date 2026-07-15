@@ -17,6 +17,7 @@ HEAD_SHA=""
 TAG_NAME=""
 TEMP_DIR=""
 KEEP_TEMP=0
+EVIDENCE_FILE=""
 
 usage() {
   local status="${1:-2}"
@@ -36,6 +37,8 @@ before a release prep commit exists.
 Options:
   --repo OWNER/REPO  Pass an explicit GitHub repository to preflight/evidence.
   --head-sha SHA     Check this commit instead of the current HEAD.
+  --evidence-file PATH
+                     Write the release evidence summary output to PATH.
   --keep-temp        Keep the temporary prepared metadata copy for inspection.
   -h, --help         Show this help.
 
@@ -90,6 +93,7 @@ require_executable() {
 
 main() {
   local temp_repo
+  local evidence_output
 
   trap cleanup EXIT INT TERM
 
@@ -112,6 +116,13 @@ main() {
           usage
         fi
         HEAD_SHA="$1"
+        ;;
+      --evidence-file)
+        shift
+        if [ "$#" -eq 0 ]; then
+          usage
+        fi
+        EVIDENCE_FILE="$1"
         ;;
       --keep-temp)
         KEEP_TEMP=1
@@ -198,10 +209,18 @@ main() {
   echo
 
   echo "[4/4] release evidence summary"
-  CODEINSIGHT_ROOT_DIR="$temp_repo" \
-    CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT="$BENCHMARK_ARTIFACT_SMOKE_SCRIPT" \
-    CODEINSIGHT_RELEASE_METADATA_SUMMARY_SCRIPT="$RELEASE_METADATA_SUMMARY_SCRIPT" \
-    "$RELEASE_EVIDENCE_SUMMARY_SCRIPT" "${REPO_ARG[@]}" --head-sha "$HEAD_SHA" "$TAG_NAME" "$BRANCH"
+  evidence_output="$(
+    CODEINSIGHT_ROOT_DIR="$temp_repo" \
+      CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT="$BENCHMARK_ARTIFACT_SMOKE_SCRIPT" \
+      CODEINSIGHT_RELEASE_METADATA_SUMMARY_SCRIPT="$RELEASE_METADATA_SUMMARY_SCRIPT" \
+      "$RELEASE_EVIDENCE_SUMMARY_SCRIPT" "${REPO_ARG[@]}" --head-sha "$HEAD_SHA" "$TAG_NAME" "$BRANCH"
+  )"
+  printf "%s\n" "$evidence_output"
+  if [ -n "$EVIDENCE_FILE" ]; then
+    mkdir -p "$(dirname "$EVIDENCE_FILE")"
+    printf "%s\n" "$evidence_output" >"$EVIDENCE_FILE"
+    echo "release evidence written: $EVIDENCE_FILE"
+  fi
   echo
 
   echo "release dry run passed"

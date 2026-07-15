@@ -56,6 +56,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   report, and release metadata.
 - Added `scripts/release-dry-run.sh` to preview release metadata, validate tag
   preflight, and print the release evidence block from one non-mutating command.
+- `scripts/release-dry-run.sh` now supports `--evidence-file` to archive the
+  generated pre-tag evidence summary while still printing it to the terminal.
 - Added `scripts/release-metadata-summary.sh` so release preflight and evidence
   summaries share one Cargo, install docs, and changelog metadata validator.
 - Added `scripts/local-ci-smoke.sh` as the single local entrypoint for the

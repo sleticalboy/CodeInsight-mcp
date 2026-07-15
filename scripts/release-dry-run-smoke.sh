@@ -131,6 +131,7 @@ EOF
     "$ROOT_DIR/scripts/release-dry-run.sh" \
       --repo sleticalboy/CodeInsight-mcp \
       --head-sha abc123 \
+      --evidence-file "$TEMP_DIR/evidence/release-evidence.md" \
       v9.8.7 \
       main >"$TEMP_DIR/output.log"
 
@@ -148,8 +149,15 @@ EOF
     fail "missing evidence summary step"
   grep -Fq '## v9.8.7 release evidence' "$TEMP_DIR/output.log" ||
     fail "missing evidence block"
+  grep -Fq "release evidence written: $TEMP_DIR/evidence/release-evidence.md" "$TEMP_DIR/output.log" ||
+    fail "missing evidence file output"
   grep -Fq 'release dry run passed' "$TEMP_DIR/output.log" ||
     fail "missing success output"
+
+  grep -Fq 'release evidence summary' "$TEMP_DIR/evidence/release-evidence.md" ||
+    fail "missing evidence file summary"
+  grep -Fq '## v9.8.7 release evidence' "$TEMP_DIR/evidence/release-evidence.md" ||
+    fail "missing evidence file block"
 
   grep -Fq 'tag-preflight --repo sleticalboy/CodeInsight-mcp --head-sha abc123 v9.8.7 main' "$TEMP_DIR/calls.log" ||
     fail "missing tag preflight call"

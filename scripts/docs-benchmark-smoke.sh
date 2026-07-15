@@ -277,6 +277,9 @@ main() {
     'scripts/release-dry-run\.sh --repo sleticalboy/CodeInsight-mcp vX\.Y\.Z main' \
     "release commands dry run orchestration"
   require_pattern docs/release-commands.md \
+    'evidence-file release-evidence/vX\.Y\.Z\.md' \
+    "release commands dry run evidence archive"
+  require_pattern docs/release-commands.md \
     'scripts/release-tag-preflight\.sh --repo sleticalboy/CodeInsight-mcp vX\.Y\.Z main' \
     "release commands tag preflight gate"
   require_pattern docs/release-commands.md \
@@ -309,6 +312,9 @@ main() {
   require_pattern docs/release-runbook.md \
     'scripts/release-dry-run\.sh --repo sleticalboy/CodeInsight-mcp vX\.Y\.Z main' \
     "release runbook dry run orchestration"
+  require_pattern docs/release-runbook.md \
+    'evidence-file release-evidence/vX\.Y\.Z\.md' \
+    "release runbook dry run evidence archive"
   require_pattern docs/release-runbook.md \
     'scripts/release-tag-preflight\.sh --repo sleticalboy/CodeInsight-mcp vX\.Y\.Z main' \
     "release runbook tag preflight gate"

@@ -8,7 +8,7 @@ step-by-step process, see [Release runbook](release-runbook.md).
 Use this path when release metadata is ready and you are cutting a normal tag:
 
 ```bash
-scripts/release-dry-run.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
+scripts/release-dry-run.sh --repo sleticalboy/CodeInsight-mcp --evidence-file release-evidence/vX.Y.Z.md vX.Y.Z main
 scripts/prepare-release.sh --dry-run vX.Y.Z
 scripts/prepare-release.sh vX.Y.Z
 git push origin main
@@ -39,6 +39,12 @@ scripts/release-dry-run.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
 This prints the release prep diff, validates tag preflight with temporary
 prepared metadata, and prints the release evidence block without modifying the
 checkout.
+
+To archive that evidence locally while still printing it to the terminal:
+
+```bash
+scripts/release-dry-run.sh --repo sleticalboy/CodeInsight-mcp --evidence-file release-evidence/vX.Y.Z.md vX.Y.Z main
+```
 
 Preview release metadata changes:
 

@@ -36,6 +36,9 @@ This command previews the release metadata diff, applies that metadata in a
 temporary copy, runs the tag preflight against the target commit, and prints the
 release evidence block. It does not modify the checkout.
 
+Use `--evidence-file release-evidence/vX.Y.Z.md` when you want to archive the
+pre-tag evidence block for handoff or release review.
+
 Prepare release metadata:
 
 ```bash
