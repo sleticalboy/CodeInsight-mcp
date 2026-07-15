@@ -87,6 +87,9 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - CI now runs a lightweight `p-limit` benchmark subset smoke without
   overwriting the full benchmark reports and uploads the subset report as a
   workflow artifact.
+- Added `scripts/benchmark-report-smoke.sh` so generated benchmark reports and
+  CI subset artifacts fail fast when required summary, detail, or guardrail
+  evidence is missing.
 
 ## [0.1.12] - 2026-07-14
 

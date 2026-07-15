@@ -52,6 +52,7 @@ logic:
 ```bash
 scripts/benchmark-smoke.sh
 CODEINSIGHT_BENCH_PROFILE=large scripts/benchmark-smoke.sh
+scripts/benchmark-report-smoke.sh docs/benchmark-v0.1.md smoke
 ```
 
 Benchmark profiles enforce fixture guardrail budgets by default. To refresh
@@ -63,7 +64,8 @@ Subset runs write to the benchmark work directory unless
 `CODEINSIGHT_BENCH_OUTPUT` is set explicitly.
 CI runs a lightweight benchmark subset for `p-limit`; full smoke and large
 benchmark reports remain local maintenance checks. The CI subset report is
-uploaded as the `codeinsight-benchmark-subset` workflow artifact.
+validated with `scripts/benchmark-report-smoke.sh` and uploaded as the
+`codeinsight-benchmark-subset` workflow artifact.
 
 ## Optional External Checks
 

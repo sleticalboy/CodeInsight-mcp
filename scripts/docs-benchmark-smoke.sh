@@ -201,6 +201,8 @@ main() {
     '\| `reading_plan_steps` \| >= [0-9]+' \
     "large reading plan guardrail"
   require_context_guardrail_report_sync large docs/benchmark-large.md
+  "$ROOT_DIR/scripts/benchmark-report-smoke.sh" "$ROOT_DIR/docs/benchmark-v0.1.md" smoke
+  "$ROOT_DIR/scripts/benchmark-report-smoke.sh" "$ROOT_DIR/docs/benchmark-large.md" large
 
   require_pattern docs/demo-script.md \
     'scripts/agent-router-demo\.sh' \

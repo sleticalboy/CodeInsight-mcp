@@ -48,6 +48,7 @@ jobs:
         env:
           CODEINSIGHT_BENCH_REPOS: p-limit
           CODEINSIGHT_BENCH_OUTPUT: /tmp/codeinsight-benchmark-subset.md
+      - run: scripts/benchmark-report-smoke.sh /tmp/codeinsight-benchmark-subset.md smoke p-limit
       - uses: actions/upload-artifact@v4
         with:
           name: codeinsight-benchmark-subset
