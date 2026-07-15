@@ -271,7 +271,7 @@ main() {
     'scripts/benchmark-artifact-smoke\.sh <ci-run-id>' \
     "maintenance benchmark artifact download"
   require_pattern docs/release-commands.md \
-    'scripts/benchmark-artifact-smoke\.sh --latest-success main' \
+    'scripts/release-pretag-check\.sh main' \
     "release commands benchmark artifact gate"
   require_pattern docs/release-commands.md \
     '^## Short Path$' \
@@ -280,8 +280,14 @@ main() {
     'scripts/post-release-verify\.sh vX\.Y\.Z' \
     "release commands short path post-release verification"
   require_pattern docs/release-runbook.md \
-    'scripts/benchmark-artifact-smoke\.sh <run-id>' \
+    'scripts/release-pretag-check\.sh main' \
     "release runbook benchmark artifact gate"
+  require_pattern scripts/release-pretag-check.sh \
+    'gh run watch "\$RUN_ID".*--exit-status' \
+    "release pretag CI watch"
+  require_pattern scripts/release-pretag-check.sh \
+    'BENCHMARK_ARTIFACT_SMOKE_SCRIPT' \
+    "release pretag artifact smoke hook"
   require_pattern docs/maintainer-checklist.md \
     'README benchmark snapshot, \[Demo script\]\(demo-script\.md\)' \
     "maintainer benchmark evidence consistency"

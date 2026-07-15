@@ -11,9 +11,7 @@ Use this path when release metadata is ready and you are cutting a normal tag:
 scripts/prepare-release.sh --dry-run vX.Y.Z
 scripts/prepare-release.sh vX.Y.Z
 git push origin main
-gh run list --branch main --limit 5
-gh run watch <ci-run-id> --exit-status
-scripts/benchmark-artifact-smoke.sh --latest-success main
+scripts/release-pretag-check.sh main
 git tag -a vX.Y.Z -m "vX.Y.Z"
 git push origin vX.Y.Z
 gh run list --workflow "Release Build" --limit 5
@@ -55,7 +53,7 @@ After the release prep commit CI completes, validate the uploaded benchmark
 subset artifact:
 
 ```bash
-scripts/benchmark-artifact-smoke.sh --latest-success main
+scripts/release-pretag-check.sh main
 ```
 
 ## Publish

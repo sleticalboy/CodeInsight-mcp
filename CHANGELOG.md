@@ -112,6 +112,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   verification.
 - `scripts/benchmark-artifact-smoke.sh` can now select the latest successful
   CI run for a branch with `--latest-success BRANCH`.
+- Added `scripts/release-pretag-check.sh` to wait for release-prep CI and
+  validate the benchmark subset artifact before tagging.
 
 ## [0.1.12] - 2026-07-14
 
