@@ -62,7 +62,8 @@ To rerun only specific fixtures, set `CODEINSIGHT_BENCH_REPOS=p-limit,memchr`.
 Subset runs write to the benchmark work directory unless
 `CODEINSIGHT_BENCH_OUTPUT` is set explicitly.
 CI runs a lightweight benchmark subset for `p-limit`; full smoke and large
-benchmark reports remain local maintenance checks.
+benchmark reports remain local maintenance checks. The CI subset report is
+uploaded as the `codeinsight-benchmark-subset` workflow artifact.
 
 ## Optional External Checks
 
