@@ -269,8 +269,7 @@ Use the artifact when you need the full Markdown report rather than the summary
 excerpt:
 
 ```bash
-gh run download <ci-run-id> --name codeinsight-benchmark-subset --dir /tmp/codeinsight-benchmark-subset
-scripts/benchmark-report-smoke.sh /tmp/codeinsight-benchmark-subset/codeinsight-benchmark-subset.md smoke p-limit
+scripts/benchmark-artifact-smoke.sh <ci-run-id>
 ```
 
 Treat the CI subset as a quick regression signal only. The checked-in smoke and

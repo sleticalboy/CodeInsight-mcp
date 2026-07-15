@@ -265,10 +265,10 @@ main() {
     '`benchmark-subset-smoke` job summary' \
     "release readiness CI benchmark summary guidance"
   require_pattern docs/release-readiness.md \
-    'gh run download <ci-run-id> --name codeinsight-benchmark-subset' \
+    'scripts/benchmark-artifact-smoke\.sh <ci-run-id>' \
     "release readiness benchmark artifact download"
   require_pattern docs/maintenance-commands.md \
-    'gh run download <ci-run-id> --name codeinsight-benchmark-subset' \
+    'scripts/benchmark-artifact-smoke\.sh <ci-run-id>' \
     "maintenance benchmark artifact download"
   require_pattern docs/maintainer-checklist.md \
     'README benchmark snapshot, \[Demo script\]\(demo-script\.md\)' \
@@ -282,6 +282,15 @@ main() {
   require_pattern docs/maintainer-checklist.md \
     '`benchmark-subset-smoke` job summary' \
     "maintainer CI benchmark summary guidance"
+  require_pattern docs/maintainer-checklist.md \
+    'scripts/benchmark-artifact-smoke\.sh <ci-run-id>' \
+    "maintainer benchmark artifact smoke command"
+  require_pattern scripts/benchmark-artifact-smoke.sh \
+    'gh run download "\$RUN_ID"' \
+    "benchmark artifact gh download command"
+  require_pattern scripts/benchmark-artifact-smoke.sh \
+    'benchmark-report-smoke\.sh' \
+    "benchmark artifact report validation"
   require_pattern scripts/agent-router-demo.sh \
     'reading_plan_steps' \
     "agent-router reading plan output"

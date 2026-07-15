@@ -55,6 +55,7 @@ logic:
 scripts/benchmark-smoke.sh
 CODEINSIGHT_BENCH_PROFILE=large scripts/benchmark-smoke.sh
 scripts/benchmark-report-smoke.sh docs/benchmark-v0.1.md smoke
+scripts/benchmark-artifact-smoke.sh <ci-run-id>
 ```
 
 Benchmark profiles enforce fixture guardrail budgets by default. To refresh
@@ -73,11 +74,11 @@ the run summary with `scripts/benchmark-step-summary.sh`, so maintainers can
 inspect the routing evidence before downloading the full artifact. Benchmark
 reports include a `Key Results` section for stable README, release note, and
 demo evidence.
-To inspect the artifact locally, download it from a completed `CI` run:
+To inspect the artifact locally, download and validate it from a completed
+`CI` run:
 
 ```bash
-gh run download <ci-run-id> --name codeinsight-benchmark-subset --dir /tmp/codeinsight-benchmark-subset
-scripts/benchmark-report-smoke.sh /tmp/codeinsight-benchmark-subset/codeinsight-benchmark-subset.md smoke p-limit
+scripts/benchmark-artifact-smoke.sh <ci-run-id>
 ```
 
 ## Optional External Checks
