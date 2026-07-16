@@ -153,6 +153,7 @@ optional external checks, see [Maintenance commands](maintenance-commands.md).
   cargo test --locked
   scripts/mcp-stdio-smoke.sh
   scripts/two-minute-demo.sh
+  scripts/agent-route-smoke.sh
   scripts/agent-router-demo.sh
   scripts/demo-output-smoke.sh
   ```

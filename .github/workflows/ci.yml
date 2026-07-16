@@ -36,6 +36,16 @@ jobs:
           key: agent-router-demo
       - run: scripts/agent-router-demo.sh
 
+  agent-route-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: agent-route-smoke
+      - run: scripts/agent-route-smoke.sh
+
   context-pack-quality-smoke:
     runs-on: ubuntu-latest
     steps:

@@ -14,8 +14,8 @@ scripts/local-ci-smoke.sh
 This prints numbered stages and runs formatting, Rust tests, shell syntax
 checks, workflow action version checks, benchmark step-summary checks,
 release-tooling smokes, docs smokes, context-pack quality checks, the
-agent-router demo, and whitespace diff checks. Nested smoke groups also print
-their own numbered stages.
+`agent_route` contract smoke, the agent-router demo, and whitespace diff
+checks. Nested smoke groups also print their own numbered stages.
 
 ## Maintenance Smoke Groups
 
@@ -63,6 +63,7 @@ behavior:
 
 ```bash
 scripts/two-minute-demo.sh
+scripts/agent-route-smoke.sh
 scripts/agent-router-demo.sh
 scripts/demo-output-smoke.sh
 scripts/context-pack-quality-smoke.sh
@@ -71,7 +72,8 @@ scripts/semantic-smoke.sh
 scripts/installed-quickstart-smoke.sh
 ```
 
-Use `two-minute-demo.sh` for user-facing `agent_route` walkthroughs and
+Use `two-minute-demo.sh` for user-facing `agent_route` walkthroughs,
+`agent-route-smoke.sh` for the one-call JSON contract, and
 `agent-router-demo.sh` for lower-level raw metric output and CI-style
 assertions. Use `demo-output-smoke.sh` after refreshing
 [Demo output snapshot](demo-output.md).

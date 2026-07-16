@@ -46,8 +46,9 @@ MVP workflow is now implemented end to end.
   one-call `agent_route` first-read path.
 - MCP tool argument validation with stable JSON-RPC errors.
 - Fixture-based CLI and MCP stdio integration tests.
-- Local smoke scripts for the agent-router first-read demo, MCP stdio,
-  semantic search, Docker, release install, and benchmark fixtures.
+- Local smoke scripts for the one-call `agent_route` contract, the
+  agent-router first-read demo, MCP stdio, semantic search, Docker, release
+  install, and benchmark fixtures.
 - Release, Docker image, Homebrew tap sync, install, verify, and release-note
   helper scripts.
 - Published and verified `v0.1.12` with GitHub Release assets, Docker

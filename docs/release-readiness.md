@@ -107,6 +107,7 @@ Run from the release candidate commit:
 ```bash
 cargo fmt --check
 cargo test --locked
+scripts/agent-route-smoke.sh
 scripts/agent-router-demo.sh
 scripts/mcp-stdio-smoke.sh
 scripts/semantic-smoke.sh
@@ -119,6 +120,9 @@ Expected result:
 
 - Rust unit and CLI integration tests pass.
 - MCP stdio smoke reports `tools: 16` or the expected current tool count.
+- Agent-route smoke proves the one-call first-read route returns index,
+  overview, context-pack, and impact-analysis sections with stable JSON
+  parameters.
 - Agent-router demo reports non-zero indexed files, non-zero symbols, four
   recommended next tools, a `context_pack` line-reduction value, and an
   `impact_analysis` summary.

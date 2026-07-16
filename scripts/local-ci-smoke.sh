@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SMOKE_TOTAL=11
+SMOKE_TOTAL=12
 TEMP_FILES=()
 
 source "$ROOT_DIR/scripts/smoke-lib.sh"
@@ -46,8 +46,9 @@ main() {
   smoke_run_step "$SMOKE_TOTAL" 7 "release tooling smoke" scripts/release-tooling-smoke.sh
   smoke_run_step "$SMOKE_TOTAL" 8 "docs smoke" scripts/docs-smoke.sh
   smoke_run_step "$SMOKE_TOTAL" 9 "context pack quality smoke" context_pack_quality_smoke
-  smoke_run_step "$SMOKE_TOTAL" 10 "agent router demo" scripts/agent-router-demo.sh
-  smoke_run_step "$SMOKE_TOTAL" 11 "git diff whitespace check" git diff --check
+  smoke_run_step "$SMOKE_TOTAL" 10 "agent route smoke" scripts/agent-route-smoke.sh
+  smoke_run_step "$SMOKE_TOTAL" 11 "agent router demo" scripts/agent-router-demo.sh
+  smoke_run_step "$SMOKE_TOTAL" 12 "git diff whitespace check" git diff --check
 
   echo "local CI smoke passed"
 }

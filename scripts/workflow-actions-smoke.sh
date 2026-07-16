@@ -32,6 +32,8 @@ main() {
   require_pattern ".github/workflows/ci.yml" "dtolnay/rust-toolchain@stable" "CI Rust toolchain action"
   require_pattern ".github/workflows/ci.yml" "Swatinem/rust-cache@v2" "CI Rust cache action v2"
   require_pattern ".github/workflows/ci.yml" "actions/upload-artifact@v7" "CI artifact upload action v7"
+  require_pattern ".github/workflows/ci.yml" "agent-route-smoke:" "agent-route CI job"
+  require_pattern ".github/workflows/ci.yml" "scripts/agent-route-smoke\\.sh" "agent-route CI script"
   require_pattern ".github/workflows/ci.yml" "context-pack-quality-smoke:" "context-pack quality CI job"
   require_pattern ".github/workflows/ci.yml" "codeinsight-context-pack-quality" "context-pack quality artifact"
   require_pattern ".github/workflows/ci.yml" "context-pack-quality-step-summary\\.sh" "context-pack quality step summary"
