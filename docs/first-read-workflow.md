@@ -8,13 +8,13 @@ understand a repository before deeper navigation or edits.
 Run the local demo from the repository root:
 
 ```bash
-scripts/agent-router-demo.sh
+scripts/two-minute-demo.sh
 ```
 
 Run it against another repository:
 
 ```bash
-CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/agent-router-demo.sh
+CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/two-minute-demo.sh
 ```
 
 The script executes the product path that an MCP client should follow:

@@ -26,13 +26,13 @@ If this fails, revisit [Install](install.md).
 Run from a CodeInsight checkout:
 
 ```bash
-scripts/agent-router-demo.sh
+scripts/two-minute-demo.sh
 ```
 
 Or against your own repository:
 
 ```bash
-CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/agent-router-demo.sh
+CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/two-minute-demo.sh
 ```
 
 Pass criteria:
@@ -44,6 +44,8 @@ Pass criteria:
 - `line_reduction` is present and below 100%.
 - `impact_analysis` reports `risk_level`, `impacted_files`, `paths`, or
   `suggested_checks`.
+- The final talk track names `project_overview`, `context_pack`, and
+  `impact_analysis` as the intended agent path.
 
 ## 3. MCP Server Starts And Lists Tools
 

@@ -21,23 +21,23 @@ which file to open next.
 
 ## Two-Minute Demo
 
-Run the local agent-router demo against this repository:
+Run the user-facing two-minute demo against this repository:
 
 ```bash
-scripts/agent-router-demo.sh
+scripts/two-minute-demo.sh
 ```
 
 Run it against another repository:
 
 ```bash
-CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/agent-router-demo.sh
+CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/two-minute-demo.sh
 ```
 
 The demo executes the same product path an MCP client should follow:
 `index -> overview -> context-pack -> impact-analysis`. It prints index timing,
 entrypoint and recommendation counts, selected context size, reading-plan
-steps, line-reduction percentage, continuation status, and impact-analysis
-summary.
+steps, line-reduction percentage, continuation status, impact-analysis summary,
+and a short talk track for recordings or project introductions.
 
 For a recording or project introduction, use the
 [two-minute demo script](docs/demo-script.md).

@@ -40,7 +40,8 @@ release documents for CodeInsight.
 ## Validation
 
 - [Maintenance commands](maintenance-commands.md)
-- Agent-router demo: `scripts/agent-router-demo.sh`
+- Two-minute demo: `scripts/two-minute-demo.sh`
+- Agent-router raw metrics: `scripts/agent-router-demo.sh`
 - [Two-minute demo script](demo-script.md)
 - [MCP client smoke test](mcp-client-smoke.md)
 - [Semantic smoke test](semantic-smoke.md)

@@ -42,13 +42,13 @@ command -v codeinsight
 From the repository root:
 
 ```bash
-scripts/agent-router-demo.sh
+scripts/two-minute-demo.sh
 ```
 
 Against another repository:
 
 ```bash
-CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/agent-router-demo.sh
+CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/two-minute-demo.sh
 ```
 
 The demo runs the product loop:
@@ -59,7 +59,8 @@ The demo runs the product loop:
 4. `impact_analysis`
 
 It prints index timing, entrypoint count, recommended-tool count, selected
-context size, line reduction, continuation status, and impact summary.
+context size, line reduction, continuation status, impact summary, and a short
+talk track that explains why each step matters.
 
 ## 3. Configure Your MCP Client
 

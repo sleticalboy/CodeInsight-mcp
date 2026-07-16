@@ -62,12 +62,16 @@ Run these when changing code routing, context packing, MCP output, or semantic
 behavior:
 
 ```bash
+scripts/two-minute-demo.sh
 scripts/agent-router-demo.sh
 scripts/context-pack-quality-smoke.sh
 scripts/mcp-stdio-smoke.sh
 scripts/semantic-smoke.sh
 scripts/installed-quickstart-smoke.sh
 ```
+
+Use `two-minute-demo.sh` for user-facing walkthroughs and `agent-router-demo.sh`
+for raw metric output and CI-style assertions.
 
 `context-pack-quality-smoke.sh` is a deterministic offline quality regression
 check. It uses checked-in and temporary fixtures to verify explicit symbol

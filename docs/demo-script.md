@@ -21,14 +21,18 @@ From a CodeInsight checkout:
 
 ```bash
 cargo build --locked --release
-scripts/agent-router-demo.sh
+scripts/two-minute-demo.sh
 ```
 
 Against another repository:
 
 ```bash
-CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/agent-router-demo.sh
+CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/two-minute-demo.sh
 ```
+
+For machine-readable CI validation, `scripts/two-minute-demo.sh` wraps
+`scripts/agent-router-demo.sh`; use the lower-level script when you only need
+the raw metrics.
 
 Optional smoke validation:
 
@@ -62,7 +66,7 @@ blind guesses.
 Run:
 
 ```bash
-scripts/agent-router-demo.sh
+scripts/two-minute-demo.sh
 ```
 
 Point out the four stages:
@@ -75,6 +79,11 @@ Point out the four stages:
 Expected shape:
 
 ```text
+CodeInsight two-minute demo
+
+Problem: AI agents waste the first read by scanning broad files and guessing entrypoints.
+Promise: route the agent through project_overview, context_pack, and impact_analysis before edits.
+
 1. index_project
    indexed_files: 23
    symbols: 911
@@ -86,7 +95,7 @@ Expected shape:
 3. context_pack
    selected_files: 10
    selected_ranges: 11
-   reading_plan_steps: 10
+   reading_plan_steps: 8
    first_next_action: inspect_seed_file
    line_reduction: 98.4%
    continuation: complete
@@ -95,6 +104,11 @@ Expected shape:
    risk_level: high
    impacted_files: 11
    suggested_checks: 3
+
+[Talk track]
+1. project_overview found 7 entrypoints and 4 recommended next tools.
+2. context_pack selected 10 files and 11 ranges, then produced 8 reading-plan steps.
+3. The first action is inspect_seed_file; the selected context reduced source reading by 98.4%.
 ```
 
 Exact numbers vary by repository and current source state. The important point
@@ -155,7 +169,9 @@ context, and reduce blind reading before edits.
 Before recording or presenting:
 
 - Run `cargo build --locked --release`.
-- Run `scripts/agent-router-demo.sh`.
+- Run `scripts/two-minute-demo.sh`.
+- Run `scripts/agent-router-demo.sh` when you need the raw assertion-oriented
+  metrics.
 - Confirm `indexed_files` is greater than zero.
 - Confirm `recommended_next_tools` is greater than zero.
 - Confirm `context_pack` reports selected files, `reading_plan_steps`, and
@@ -174,7 +190,7 @@ Use:
 ```bash
 CODEINSIGHT_DEMO_ROOT=/path/to/repo \
 CODEINSIGHT_DEMO_TASK="understand the main application entrypoint" \
-scripts/agent-router-demo.sh
+scripts/two-minute-demo.sh
 ```
 
 If the repository has no obvious source entrypoint, explain that as product

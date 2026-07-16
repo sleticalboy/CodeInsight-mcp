@@ -226,8 +226,20 @@ main() {
   "$ROOT_DIR/scripts/benchmark-report-smoke.sh" "$ROOT_DIR/docs/benchmark-large.md" large
 
   require_pattern docs/demo-script.md \
+    'scripts/two-minute-demo\.sh' \
+    "two-minute demo command"
+  require_pattern docs/demo-script.md \
     'scripts/agent-router-demo\.sh' \
-    "agent-router demo command"
+    "agent-router raw metrics command"
+  require_pattern README.md \
+    'scripts/two-minute-demo\.sh' \
+    "README two-minute demo command"
+  require_pattern docs/quickstart.md \
+    'scripts/two-minute-demo\.sh' \
+    "quickstart two-minute demo command"
+  require_pattern docs/adoption-checklist.md \
+    'scripts/two-minute-demo\.sh' \
+    "adoption two-minute demo command"
   require_pattern docs/demo-script.md \
     'index_project' \
     "index_project demo stage"
@@ -507,6 +519,18 @@ main() {
   require_pattern scripts/agent-router-demo.sh \
     'require_json_string "\$context_json" '\''\.reading_plan\[0\]\.next_action'\''' \
     "agent-router next action assertion"
+  require_pattern scripts/two-minute-demo.sh \
+    'Problem: AI agents waste the first read' \
+    "two-minute demo problem statement"
+  require_pattern scripts/two-minute-demo.sh \
+    'project_overview found' \
+    "two-minute demo overview talk track"
+  require_pattern scripts/two-minute-demo.sh \
+    'context_pack selected' \
+    "two-minute demo context-pack talk track"
+  require_pattern scripts/two-minute-demo.sh \
+    'impact_analysis reports' \
+    "two-minute demo impact-analysis talk track"
 
   echo "docs benchmark smoke passed"
 }
