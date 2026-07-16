@@ -28,6 +28,7 @@ generated release verification block in docs/status.md.
 Options:
   --summary-file PATH       Write verify-release JSON to PATH.
   --status-doc PATH         Update PATH instead of docs/status.md.
+  --evidence-file PATH      Include archived pre-release evidence in status.
   --skip-docker             Set CODEINSIGHT_SKIP_DOCKER=1.
   --skip-homebrew           Set CODEINSIGHT_SKIP_HOMEBREW=1.
   --skip-installed-quickstart
@@ -117,6 +118,7 @@ main() {
   local tag_input=""
   local summary_file=""
   local status_doc="$ROOT_DIR/docs/status.md"
+  local evidence_file=""
   local skip_docker=0
   local skip_homebrew=0
   local skip_installed_quickstart=0
@@ -140,6 +142,13 @@ main() {
           usage
         fi
         status_doc="$1"
+        ;;
+      --evidence-file)
+        shift
+        if [ "$#" -eq 0 ]; then
+          usage
+        fi
+        evidence_file="$1"
         ;;
       --skip-docker)
         skip_docker=1
@@ -188,6 +197,9 @@ main() {
     summary_dir="${CODEINSIGHT_RELEASE_SUMMARY_DIR:-$ROOT_DIR/release-verification}"
     summary_file="$summary_dir/${tag}.json"
   fi
+  if [ -z "$evidence_file" ] && [ -f "$ROOT_DIR/release-evidence/${tag}.md" ]; then
+    evidence_file="$ROOT_DIR/release-evidence/${tag}.md"
+  fi
   mkdir -p "$(dirname "$summary_file")"
   RAW_OUTPUT_FILE="$(mktemp)"
   trap cleanup EXIT INT TERM
@@ -211,11 +223,19 @@ main() {
   extract_summary_json "$RAW_OUTPUT_FILE" "$summary_file"
 
   echo "updating status document"
-  "$UPDATE_RELEASE_STATUS_SCRIPT" "$summary_file" "$status_doc"
+  local -a update_args=()
+  if [ -n "$evidence_file" ]; then
+    update_args+=(--evidence-file "$evidence_file")
+  fi
+  update_args+=("$summary_file" "$status_doc")
+  "$UPDATE_RELEASE_STATUS_SCRIPT" "${update_args[@]}"
 
   echo "post-release verification passed"
   echo "summary: $summary_file"
   echo "status: $status_doc"
+  if [ -n "$evidence_file" ]; then
+    echo "evidence: $evidence_file"
+  fi
 }
 
 main "$@"

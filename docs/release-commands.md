@@ -160,7 +160,10 @@ scripts/post-release-verify.sh --allow-asset-download-unreachable vX.Y.Z
 
 The post-release verifier saves a JSON summary under
 `release-verification/<tag>.json` by default and refreshes the generated
-summary block in [Current status](status.md).
+summary block in [Current status](status.md). When
+`release-evidence/<tag>.md` exists, the status update also includes the
+archived pre-release evidence fields. Use `--evidence-file PATH` to pass a
+custom evidence archive.
 
 ## Targeted Checks
 
@@ -175,6 +178,7 @@ Refresh status from an existing summary:
 
 ```bash
 scripts/update-release-status.sh release-verification/vX.Y.Z.json
+scripts/update-release-status.sh --evidence-file release-evidence/vX.Y.Z.md release-verification/vX.Y.Z.json
 ```
 
 Verify a local installed binary can complete the quickstart flow:

@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BLOCK_FILE=""
+EVIDENCE_FILE=""
 
 cleanup() {
   if [ -n "$BLOCK_FILE" ]; then
@@ -12,9 +13,13 @@ cleanup() {
 
 usage() {
   cat >&2 <<'EOF'
-usage: scripts/update-release-status.sh <verify-release-summary.json> [status-doc]
+usage: scripts/update-release-status.sh [options] <verify-release-summary.json> [status-doc]
 
 Updates the generated release verification summary block in docs/status.md.
+
+Options:
+  --evidence-file PATH  Include archived pre-release evidence fields.
+  -h, --help            Show this help.
 
 Environment:
   CODEINSIGHT_STATUS_DATE=YYYY-MM-DD
@@ -38,17 +43,84 @@ status_label() {
   esac
 }
 
-main() {
-  if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
-    usage
-  fi
+evidence_field() {
+  local key="$1"
 
+  awk -v key="$key" '
+    index($0, key ": ") == 1 {
+      print substr($0, length(key) + 3)
+      exit
+    }
+  ' "$EVIDENCE_FILE"
+}
+
+require_evidence_field() {
+  local key="$1"
+  local description="$2"
+  local value
+
+  value="$(evidence_field "$key")"
+  if [ -z "$value" ]; then
+    echo "release evidence is missing ${description}: $key" >&2
+    exit 1
+  fi
+  printf '%s' "$value"
+}
+
+main() {
   require_command jq
   require_command ruby
 
-  local summary_file="$1"
-  local status_file="${2:-$ROOT_DIR/docs/status.md}"
+  local positional=()
+  local summary_file
+  local status_file
   local generated_date="${CODEINSIGHT_STATUS_DATE:-$(date +%F)}"
+  local evidence_head_sha=""
+  local evidence_ci_run=""
+  local evidence_metadata_cargo=""
+  local evidence_metadata_install=""
+  local evidence_metadata_changelog=""
+  local evidence_benchmark_url=""
+  local evidence_context_pack_quality_url=""
+  local evidence_agent_route_url=""
+
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      -h | --help)
+        usage
+        ;;
+      --evidence-file)
+        shift
+        if [ "$#" -eq 0 ]; then
+          usage
+        fi
+        EVIDENCE_FILE="$1"
+        ;;
+      --)
+        shift
+        break
+        ;;
+      -*)
+        usage
+        ;;
+      *)
+        positional+=("$1")
+        ;;
+    esac
+    shift
+  done
+
+  while [ "$#" -gt 0 ]; do
+    positional+=("$1")
+    shift
+  done
+
+  if [ "${#positional[@]}" -lt 1 ] || [ "${#positional[@]}" -gt 2 ]; then
+    usage
+  fi
+
+  summary_file="${positional[0]}"
+  status_file="${positional[1]:-$ROOT_DIR/docs/status.md}"
 
   if [ ! -f "$summary_file" ]; then
     echo "summary JSON not found: $summary_file" >&2
@@ -57,6 +129,20 @@ main() {
   if [ ! -f "$status_file" ]; then
     echo "status document not found: $status_file" >&2
     exit 1
+  fi
+  if [ -n "$EVIDENCE_FILE" ]; then
+    if [ ! -f "$EVIDENCE_FILE" ]; then
+      echo "release evidence file not found: $EVIDENCE_FILE" >&2
+      exit 1
+    fi
+    evidence_head_sha="$(require_evidence_field head_sha "head SHA")"
+    evidence_ci_run="$(require_evidence_field ci_run "CI run")"
+    evidence_metadata_cargo="$(require_evidence_field metadata_cargo "Cargo metadata")"
+    evidence_metadata_install="$(require_evidence_field metadata_install "install metadata")"
+    evidence_metadata_changelog="$(require_evidence_field metadata_changelog "changelog metadata")"
+    evidence_benchmark_url="$(require_evidence_field benchmark_artifact_url "benchmark artifact URL")"
+    evidence_context_pack_quality_url="$(require_evidence_field context_pack_quality_artifact_url "context-pack quality artifact URL")"
+    evidence_agent_route_url="$(require_evidence_field agent_route_artifact_url "agent-route artifact URL")"
   fi
 
   jq -e '
@@ -102,6 +188,19 @@ main() {
       "$(if [ "$(jq -r '.installed_quickstart.skipped // false' "$summary_file")" = "true" ]; then printf 'skipped locally'; else printf 'verified'; fi)"
     printf -- '- Installed quickstart coverage: `%s`\n' \
       "$(jq -r '(.installed_quickstart.coverage // []) | join("`, `")' "$summary_file")"
+    if [ -n "$EVIDENCE_FILE" ]; then
+      echo "- Pre-release evidence:"
+      printf '  - Evidence file: `%s`\n' "$EVIDENCE_FILE"
+      printf '  - Target commit: `%s`\n' "$evidence_head_sha"
+      printf '  - CI run: `%s`\n' "$evidence_ci_run"
+      printf '  - Metadata: `cargo=%s`, `install=%s`, `changelog=%s`\n' \
+        "$evidence_metadata_cargo" \
+        "$evidence_metadata_install" \
+        "$evidence_metadata_changelog"
+      printf '  - Benchmark artifact: [%s](%s)\n' "codeinsight-benchmark-subset" "$evidence_benchmark_url"
+      printf '  - Context-pack quality artifact: [%s](%s)\n' "codeinsight-context-pack-quality" "$evidence_context_pack_quality_url"
+      printf '  - Agent-route artifact: [%s](%s)\n' "codeinsight-agent-route-smoke" "$evidence_agent_route_url"
+    fi
     echo "<!-- release-verification-summary:end -->"
   } >"$BLOCK_FILE"
 

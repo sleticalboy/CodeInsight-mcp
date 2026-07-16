@@ -376,6 +376,12 @@ main() {
     'release-evidence/vX\.Y\.Z\.md' \
     "release commands evidence archive path"
   require_pattern docs/release-commands.md \
+    'scripts/update-release-status\.sh --evidence-file release-evidence/vX\.Y\.Z\.md release-verification/vX\.Y\.Z\.json' \
+    "release commands status evidence file"
+  require_pattern docs/release-commands.md \
+    'archived pre-release evidence fields' \
+    "release commands archived evidence fields"
+  require_pattern docs/release-commands.md \
     'remote tag already exists' \
     "release commands remote tag conflict gate"
   require_pattern docs/release-commands.md \

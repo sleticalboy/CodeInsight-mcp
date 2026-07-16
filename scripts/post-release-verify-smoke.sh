@@ -16,6 +16,7 @@ main() {
 
   local summary_file="$TEMP_DIR/summary.json"
   local status_doc="$TEMP_DIR/status.md"
+  local evidence_file="$TEMP_DIR/release-evidence/v9.8.7.md"
   local fake_verify="$TEMP_DIR/verify-release.sh"
   local fake_update="$TEMP_DIR/update-release-status.sh"
 
@@ -70,18 +71,25 @@ EOF
 #!/usr/bin/env bash
 set -euo pipefail
 
-test -s "$1"
-test "$2" = "$CODEINSIGHT_EXPECTED_STATUS_DOC"
-cp "$1" "$2"
+test "$1" = "--evidence-file"
+test "$2" = "$CODEINSIGHT_EXPECTED_EVIDENCE_FILE"
+test -s "$3"
+test "$4" = "$CODEINSIGHT_EXPECTED_STATUS_DOC"
+cp "$3" "$4"
 EOF
   chmod +x "$fake_update"
 
+  mkdir -p "$(dirname "$evidence_file")"
+  echo "release evidence summary" >"$evidence_file"
+
   CODEINSIGHT_EXPECTED_STATUS_DOC="$status_doc" \
+    CODEINSIGHT_EXPECTED_EVIDENCE_FILE="$evidence_file" \
     CODEINSIGHT_VERIFY_RELEASE_SCRIPT="$fake_verify" \
     CODEINSIGHT_UPDATE_RELEASE_STATUS_SCRIPT="$fake_update" \
     "$ROOT_DIR/scripts/post-release-verify.sh" \
     --summary-file "$summary_file" \
     --status-doc "$status_doc" \
+    --evidence-file "$evidence_file" \
     --skip-docker \
     --skip-homebrew \
     --skip-installed-quickstart \
@@ -97,6 +105,7 @@ EOF
   grep -q "post-release verification passed" "$TEMP_DIR/post.out"
   grep -q "summary: $summary_file" "$TEMP_DIR/post.out"
   grep -q "status: $status_doc" "$TEMP_DIR/post.out"
+  grep -q "evidence: $evidence_file" "$TEMP_DIR/post.out"
 
   echo "post-release verify smoke passed"
 }
