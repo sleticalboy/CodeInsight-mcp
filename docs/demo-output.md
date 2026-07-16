@@ -33,12 +33,12 @@ token_budget: 6000
 
 1. index_project
    indexed_files: 23
-   symbols: 926
+   symbols: 929
    duration_ms: <duration_ms>
    errors: 0
 
 2. project_overview
-   total_lines: 27996
+   total_lines: 28082
    entrypoints: 7
    first_entrypoint: src/main.rs
    recommended_next_tools: 4

@@ -114,9 +114,14 @@ show as navigation and routing metadata.
 
 For each `reading_plan[]` step:
 
-1. Show `file`, `focus`, `question`, and `ranges[]`.
+1. Show `file`, `focus`, `question`, `reason`, and `ranges[]`.
 2. Read the matching excerpts from `files[]`.
 3. Offer `suggested_tool` when the user or agent needs deeper evidence.
+
+Use `reading_plan[].reason` as the executable instruction for the agent. It
+combines the question to answer, the suggested follow-up tool, and the selection
+rationale. Use `reading_plan[].selection_reason` only when you need the raw
+ranking reason without the action guidance.
 
 Common suggested tools:
 

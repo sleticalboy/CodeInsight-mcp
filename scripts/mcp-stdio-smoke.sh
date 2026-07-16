@@ -403,6 +403,10 @@ try:
     assert explicit_reading_plan[0]["file"] == context_result["files"][0]["file"]
     assert explicit_reading_plan[0]["next_action"]
     assert explicit_reading_plan[0]["question"]
+    assert "Read this step to answer:" in explicit_reading_plan[0]["reason"]
+    assert "If deeper evidence is needed, call" in explicit_reading_plan[0]["reason"]
+    assert "Selection reason:" in explicit_reading_plan[0]["reason"]
+    assert explicit_reading_plan[0]["selection_reason"]
     assert explicit_reading_plan[0]["suggested_tool"]["tool"]
     assert explicit_reading_plan[0]["suggested_tool"]["priority"] >= 1
     assert explicit_reading_plan[0]["suggested_tool"]["suggested_arguments"]

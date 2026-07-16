@@ -1579,6 +1579,9 @@ fn context_reading_plan(root: &Path, files: &[ContextFile]) -> Vec<ContextReadin
         .take(8)
         .enumerate()
         .map(|(index, file)| {
+            let next_action = context_reading_next_action(file).to_string();
+            let question = context_reading_question(file);
+            let suggested_tool = context_reading_suggested_tool(root, file);
             let ranges = file
                 .ranges
                 .iter()
@@ -1594,16 +1597,28 @@ fn context_reading_plan(root: &Path, files: &[ContextFile]) -> Vec<ContextReadin
                 order: index + 1,
                 file: file.file.clone(),
                 focus: context_reading_focus(file),
-                next_action: context_reading_next_action(file).to_string(),
-                question: context_reading_question(file),
-                suggested_tool: context_reading_suggested_tool(root, file),
-                reason: file.reason.clone(),
+                next_action,
+                question: question.clone(),
+                reason: context_reading_reason(&question, &suggested_tool, file),
+                suggested_tool,
+                selection_reason: file.reason.clone(),
                 source: file.source.clone(),
                 score: file.score,
                 ranges,
             }
         })
         .collect()
+}
+
+fn context_reading_reason(
+    question: &str,
+    suggested_tool: &ContextSuggestedTool,
+    file: &ContextFile,
+) -> String {
+    format!(
+        "Read this step to answer: {question} If deeper evidence is needed, call {}. Selection reason: {}",
+        suggested_tool.tool, file.reason
+    )
 }
 
 fn context_reading_suggested_tool(root: &Path, file: &ContextFile) -> ContextSuggestedTool {

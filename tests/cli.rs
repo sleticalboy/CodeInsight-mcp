@@ -1072,6 +1072,30 @@ fn cli_indexes_and_queries_fixture_project() {
             .unwrap()
             .contains("definition")
     );
+    assert!(
+        context["reading_plan"][0]["reason"]
+            .as_str()
+            .unwrap()
+            .contains("Read this step to answer:")
+    );
+    assert!(
+        context["reading_plan"][0]["reason"]
+            .as_str()
+            .unwrap()
+            .contains("If deeper evidence is needed, call file_outline.")
+    );
+    assert!(
+        context["reading_plan"][0]["reason"]
+            .as_str()
+            .unwrap()
+            .contains("Selection reason:")
+    );
+    assert!(
+        context["reading_plan"][0]["selection_reason"]
+            .as_str()
+            .unwrap()
+            .contains("symbol")
+    );
     assert_eq!(
         context["reading_plan"][0]["suggested_tool"]["tool"],
         "file_outline"

@@ -396,6 +396,7 @@ pub struct ContextReadingStep {
     pub question: String,
     pub suggested_tool: ContextSuggestedTool,
     pub reason: String,
+    pub selection_reason: String,
     pub source: String,
     pub score: i32,
     pub ranges: Vec<ContextReadingRange>,

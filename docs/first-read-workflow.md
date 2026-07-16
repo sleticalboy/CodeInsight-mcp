@@ -165,7 +165,14 @@ Known source values include:
 
 `reading_plan` provides an ordered, excerpt-free read path over the selected
 files with focus text, machine-readable `next_action`, guiding `question`,
-prioritized `suggested_tool`, and structured line ranges.
+executable `reason`, raw `selection_reason`, prioritized `suggested_tool`, and
+structured line ranges.
+
+`reason` is written for the agent loop: it names the question to answer, the
+suggested follow-up tool to call when deeper evidence is needed, and the
+selection reason. `selection_reason` preserves the raw ranking rationale from
+the selected `files[]` entry for clients that want to display or audit only why
+the file was chosen.
 
 The plan is derived from the final selected `files[]` after token-budget
 selection. It is a client hint, not a separate ranking pass. Suggested tool
