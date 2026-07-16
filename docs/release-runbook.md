@@ -206,7 +206,8 @@ scripts/post-release-verify.sh --skip-docker --skip-homebrew vX.Y.Z
 The consolidated script installs the tagged binary with the public installer,
 then runs `scripts/installed-quickstart-smoke.sh` against that installed
 binary. This confirms a new user can complete the quickstart CLI flow and MCP
-stdio calls against a temporary project outside the source checkout.
+stdio calls against a temporary project outside the source checkout, including
+CLI `agent-route` and MCP `agent_route`.
 
 The GitHub Release step validates both metadata and direct downloadability for
 all four platform archives. It first tries HTTP `HEAD` for each release asset

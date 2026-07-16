@@ -100,6 +100,8 @@ main() {
     printf -- '- Installed quickstart binary: `%s` (%s)\n' \
       "$(jq -r '.installed_quickstart.binary // "-"' "$summary_file")" \
       "$(if [ "$(jq -r '.installed_quickstart.skipped // false' "$summary_file")" = "true" ]; then printf 'skipped locally'; else printf 'verified'; fi)"
+    printf -- '- Installed quickstart coverage: `%s`\n' \
+      "$(jq -r '(.installed_quickstart.coverage // []) | join("`, `")' "$summary_file")"
     echo "<!-- release-verification-summary:end -->"
   } >"$BLOCK_FILE"
 

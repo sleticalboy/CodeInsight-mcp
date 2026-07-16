@@ -25,6 +25,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   artifact gates.
 - `scripts/installed-quickstart-smoke.sh` now verifies CLI `agent-route` and
   MCP `agent_route` against the installed binary.
+- `scripts/verify-release.sh --json` now records installed quickstart coverage,
+  including CLI `agent-route` and MCP `agent_route`.
 - Added `docs/demo-output.md` and `scripts/demo-output-smoke.sh` so the
   user-facing two-minute demo has a checked-in output snapshot for recordings,
   project introductions, and release checks.

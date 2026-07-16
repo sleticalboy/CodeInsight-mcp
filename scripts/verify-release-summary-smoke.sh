@@ -37,6 +37,8 @@ main() {
     .docker.skipped == true and
     .homebrew.skipped == true and
     .installed_quickstart.skipped == false and
+    (.installed_quickstart.coverage | index("agent-route")) and
+    (.installed_quickstart.coverage | index("mcp_agent_route")) and
     (.expected_assets | length) == 4
   ' "$SMOKE_TEMP_DIR/summary.json" >/dev/null
 
@@ -45,7 +47,9 @@ main() {
 
   jq -e '
     .gates.installed_quickstart == "skipped" and
-    .installed_quickstart.skipped == true
+    .installed_quickstart.skipped == true and
+    (.installed_quickstart.coverage | index("agent-route")) and
+    (.installed_quickstart.coverage | index("mcp_agent_route"))
   ' "$SMOKE_TEMP_DIR/skipped-summary.json" >/dev/null
 
   echo "verify-release summary smoke passed"

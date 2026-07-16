@@ -325,6 +325,7 @@ release_verification_summary_json() {
     --arg installed_codeinsight_bin "$INSTALLED_CODEINSIGHT_BIN" \
     --arg asset_downloads_gate "$asset_downloads_gate" \
     --argjson expected_assets "$(printf '%s\n' "${EXPECTED_ASSETS[@]}" | jq -R . | jq -s .)" \
+    --argjson installed_quickstart_coverage '["version", "index", "overview", "context-pack", "agent-route", "mcp_stdio", "mcp_agent_route"]' \
     --argjson docker_skipped "$docker_skipped" \
     --argjson homebrew_skipped "$homebrew_skipped" \
     --argjson installed_quickstart_skipped "$installed_quickstart_skipped" \
@@ -355,7 +356,8 @@ release_verification_summary_json() {
       },
       installed_quickstart: {
         binary: $installed_codeinsight_bin,
-        skipped: $installed_quickstart_skipped
+        skipped: $installed_quickstart_skipped,
+        coverage: $installed_quickstart_coverage
       }
     }'
 }

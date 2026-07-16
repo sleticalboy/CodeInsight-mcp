@@ -56,7 +56,11 @@ cat <<'JSON'
   "expected_assets": ["codeinsight-x86_64-unknown-linux-gnu.tar.gz"],
   "docker": {"image": "ghcr.io/sleticalboy/codeinsight-mcp", "skipped": true},
   "homebrew": {"tap": "sleticalboy/tap", "repo": "sleticalboy/homebrew-tap", "skipped": true},
-  "installed_quickstart": {"binary": "-", "skipped": true}
+  "installed_quickstart": {
+    "binary": "-",
+    "skipped": true,
+    "coverage": ["version", "index", "overview", "context-pack", "agent-route", "mcp_stdio", "mcp_agent_route"]
+  }
 }
 JSON
 EOF

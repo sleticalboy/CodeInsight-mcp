@@ -148,7 +148,8 @@ release:
 - Homebrew verification distinguishes remote formula state, local tap state,
   stable version mismatches, and fetch/checksum failures.
 - `scripts/verify-release.sh` runs the installed quickstart smoke after public
-  install verification, and `--json` records the installed quickstart gate.
+  install verification, and `--json` records the installed quickstart gate plus
+  the checked coverage list, including CLI `agent-route` and MCP `agent_route`.
 - `scripts/post-release-verify.sh` wraps release verification, JSON summary
   persistence, and generated status-summary updates into one post-release
   command.

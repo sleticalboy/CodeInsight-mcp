@@ -60,7 +60,8 @@ EOF
   },
   "installed_quickstart": {
     "binary": "/tmp/codeinsight",
-    "skipped": true
+    "skipped": true,
+    "coverage": ["version", "index", "overview", "context-pack", "agent-route", "mcp_stdio", "mcp_agent_route"]
   }
 }
 EOF
@@ -81,6 +82,7 @@ EOF
   grep -q -- '- Docker image: `ghcr.io/sleticalboy/codeinsight-mcp` (skipped locally)' "$status_doc"
   grep -q -- '- Homebrew tap: `sleticalboy/tap` (skipped locally)' "$status_doc"
   grep -q -- '- Installed quickstart binary: `/tmp/codeinsight` (skipped locally)' "$status_doc"
+  grep -q -- '- Installed quickstart coverage: `version`, `index`, `overview`, `context-pack`, `agent-route`, `mcp_stdio`, `mcp_agent_route`' "$status_doc"
   grep -q '## Current Release Tooling State' "$status_doc"
 
   echo "update release status smoke passed"
