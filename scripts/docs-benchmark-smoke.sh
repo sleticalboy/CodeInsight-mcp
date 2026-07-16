@@ -285,6 +285,9 @@ main() {
   require_pattern docs/maintenance-commands.md \
     'minimum_budget_applied' \
     "maintenance context-pack minimum budget scope"
+  require_pattern docs/maintenance-commands.md \
+    'token_budget_exhausted' \
+    "maintenance context-pack token exhaustion scope"
   require_pattern docs/maintainer-checklist.md \
     'context-pack quality smoke' \
     "maintainer context-pack quality smoke"

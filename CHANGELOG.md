@@ -11,8 +11,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - Added `scripts/context-pack-quality-smoke.sh` to run deterministic offline
   quality checks for context-pack seed selection, reading-plan output, token
   budget metadata, production-vs-test reference ranking, and dependency
-  continuation routing, plus low-budget omitted-candidate and minimum-budget
-  follow-ups.
+  continuation routing, plus low-budget omitted-candidate, minimum-budget, and
+  token-exhaustion follow-ups.
 - `scripts/verify-release.sh` now reports a specific local network diagnostic
   when GitHub Release assets exist in API metadata but
   `github.com/releases/download` is unreachable, and supports an explicit

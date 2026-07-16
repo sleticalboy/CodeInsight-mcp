@@ -144,6 +144,20 @@ def tiny():
 EOF
 }
 
+write_token_exhaustion_fixture() {
+  local root="$1"
+
+  mkdir -p "$root/src"
+  for index in $(seq 1 12); do
+    cat >"$root/src/feature$index.py" <<EOF
+def feature_$index():
+    value = "$index"
+    detail = "feature $index has enough text to consume some token budget for context selection"
+    return value + detail
+EOF
+  done
+}
+
 require_file_before() {
   local file="$1"
   local earlier="$2"
@@ -314,6 +328,45 @@ run_minimum_budget_scenario() {
   echo "  pass: minimum budget ($(json_value "$context_json" '.budget.requested_token_budget')->$(json_value "$context_json" '.budget.applied_token_budget') tokens)"
 }
 
+run_token_exhaustion_scenario() {
+  local project="$TEMP_DIR/token-exhaustion"
+  local context_json="$TEMP_DIR/token-exhaustion-context.json"
+  local args=()
+
+  write_token_exhaustion_fixture "$project"
+  "$CODEINSIGHT_BIN" index "$project" --force >"$TEMP_DIR/token-exhaustion-index.json"
+  require_jq "$TEMP_DIR/token-exhaustion-index.json" '.indexed_files == 12' \
+    "token exhaustion fixture should index seed files"
+
+  args=(context-pack "$project" --task "understand feature modules" --token-budget 500)
+  for index in $(seq 1 12); do
+    args+=(--file "src/feature$index.py")
+  done
+  "$CODEINSIGHT_BIN" "${args[@]}" >"$context_json"
+
+  require_jq "$context_json" '.seed_strategy == "explicit"' \
+    "token exhaustion should use explicit seed strategy"
+  require_jq "$context_json" '.budget.requested_token_budget == 500 and .budget.applied_token_budget == 500' \
+    "token exhaustion should preserve requested budget"
+  require_jq "$context_json" '.budget.candidate_files == 12 and .budget.selected_files == 12 and .budget.omitted_files == 0' \
+    "token exhaustion should select every candidate file"
+  require_jq "$context_json" '.truncated == true and .budget.truncated == true' \
+    "token exhaustion should report truncated ranges"
+  require_jq "$context_json" '.budget.truncation_reason == "token_budget_exhausted"' \
+    "token exhaustion should report token budget exhausted"
+  require_jq "$context_json" '.continuation_summary.status == "token_budget_exhausted"' \
+    "token exhaustion should expose token-budget continuation status"
+  require_jq "$context_json" '.continuation_summary.next_action == "increase_token_budget_or_narrow_task"' \
+    "token exhaustion should recommend increasing budget or narrowing task"
+  require_jq "$context_json" '.continuation_summary.omitted_candidate_count == 0 and .continuation_summary.suggested_tool == null' \
+    "token exhaustion should not expose omitted-candidate follow-up"
+  require_jq "$context_json" '.omitted_candidates | length == 0' \
+    "token exhaustion omitted candidates should be empty"
+
+  SCENARIOS_PASSED=$((SCENARIOS_PASSED + 1))
+  echo "  pass: token exhaustion ($(json_value "$context_json" '.budget.selected_files') files truncated)"
+}
+
 main() {
   require_command jq
   build_binary_if_needed
@@ -341,6 +394,7 @@ main() {
   run_dependency_continuation_scenario
   run_budget_continuation_scenario
   run_minimum_budget_scenario
+  run_token_exhaustion_scenario
 
   echo "context-pack quality smoke passed"
   echo "scenarios: $SCENARIOS_PASSED"

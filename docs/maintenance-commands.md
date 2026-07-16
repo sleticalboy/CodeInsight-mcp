@@ -57,7 +57,9 @@ file should pull in its resolved local dependency and recommend a file-scoped
 `dependency_graph` follow-up. Low-budget fixtures verify that
 `omitted_candidates` and `continuation_summary` expose a bounded follow-up
 `context_pack` call, and minimum-budget fixtures verify requests below 500
-tokens report `minimum_budget_applied` without cloning external repositories.
+tokens report `minimum_budget_applied`. Token-exhaustion fixtures verify
+`token_budget_exhausted` when selected ranges are truncated without omitted
+candidates, all without cloning external repositories.
 
 ## Benchmark Checks
 
