@@ -28,7 +28,8 @@ generated release verification block in docs/status.md.
 Options:
   --summary-file PATH       Write verify-release JSON to PATH.
   --status-doc PATH         Update PATH instead of docs/status.md.
-  --evidence-file PATH      Include archived pre-release evidence in status.
+  --evidence-json-file PATH Include archived pre-release evidence JSON in status.
+  --evidence-file PATH      Include archived pre-release evidence Markdown in status.
   --skip-docker             Set CODEINSIGHT_SKIP_DOCKER=1.
   --skip-homebrew           Set CODEINSIGHT_SKIP_HOMEBREW=1.
   --skip-installed-quickstart
@@ -118,6 +119,7 @@ main() {
   local tag_input=""
   local summary_file=""
   local status_doc="$ROOT_DIR/docs/status.md"
+  local evidence_json_file=""
   local evidence_file=""
   local skip_docker=0
   local skip_homebrew=0
@@ -149,6 +151,13 @@ main() {
           usage
         fi
         evidence_file="$1"
+        ;;
+      --evidence-json-file)
+        shift
+        if [ "$#" -eq 0 ]; then
+          usage
+        fi
+        evidence_json_file="$1"
         ;;
       --skip-docker)
         skip_docker=1
@@ -197,7 +206,10 @@ main() {
     summary_dir="${CODEINSIGHT_RELEASE_SUMMARY_DIR:-$ROOT_DIR/release-verification}"
     summary_file="$summary_dir/${tag}.json"
   fi
-  if [ -z "$evidence_file" ] && [ -f "$ROOT_DIR/release-evidence/${tag}.md" ]; then
+  if [ -z "$evidence_json_file" ] && [ -z "$evidence_file" ] && [ -f "$ROOT_DIR/release-evidence/${tag}.json" ]; then
+    evidence_json_file="$ROOT_DIR/release-evidence/${tag}.json"
+  fi
+  if [ -z "$evidence_json_file" ] && [ -z "$evidence_file" ] && [ -f "$ROOT_DIR/release-evidence/${tag}.md" ]; then
     evidence_file="$ROOT_DIR/release-evidence/${tag}.md"
   fi
   mkdir -p "$(dirname "$summary_file")"
@@ -224,7 +236,9 @@ main() {
 
   echo "updating status document"
   local -a update_args=()
-  if [ -n "$evidence_file" ]; then
+  if [ -n "$evidence_json_file" ]; then
+    update_args+=(--evidence-json-file "$evidence_json_file")
+  elif [ -n "$evidence_file" ]; then
     update_args+=(--evidence-file "$evidence_file")
   fi
   update_args+=("$summary_file" "$status_doc")
@@ -233,7 +247,9 @@ main() {
   echo "post-release verification passed"
   echo "summary: $summary_file"
   echo "status: $status_doc"
-  if [ -n "$evidence_file" ]; then
+  if [ -n "$evidence_json_file" ]; then
+    echo "evidence_json: $evidence_json_file"
+  elif [ -n "$evidence_file" ]; then
     echo "evidence: $evidence_file"
   fi
 }

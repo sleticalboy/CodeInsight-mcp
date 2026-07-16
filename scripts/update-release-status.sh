@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BLOCK_FILE=""
 EVIDENCE_FILE=""
+EVIDENCE_JSON_FILE=""
 
 cleanup() {
   if [ -n "$BLOCK_FILE" ]; then
@@ -18,8 +19,9 @@ usage: scripts/update-release-status.sh [options] <verify-release-summary.json> 
 Updates the generated release verification summary block in docs/status.md.
 
 Options:
-  --evidence-file PATH  Include archived pre-release evidence fields.
-  -h, --help            Show this help.
+  --evidence-json-file PATH  Include archived pre-release evidence JSON fields.
+  --evidence-file PATH       Include archived pre-release evidence Markdown fields.
+  -h, --help                 Show this help.
 
 Environment:
   CODEINSIGHT_STATUS_DATE=YYYY-MM-DD
@@ -54,6 +56,12 @@ evidence_field() {
   ' "$EVIDENCE_FILE"
 }
 
+json_field() {
+  local query="$1"
+
+  jq -er "$query" "$EVIDENCE_JSON_FILE"
+}
+
 require_evidence_field() {
   local key="$1"
   local description="$2"
@@ -62,6 +70,22 @@ require_evidence_field() {
   value="$(evidence_field "$key")"
   if [ -z "$value" ]; then
     echo "release evidence is missing ${description}: $key" >&2
+    exit 1
+  fi
+  printf '%s' "$value"
+}
+
+require_evidence_json_field() {
+  local query="$1"
+  local description="$2"
+  local value
+
+  if ! value="$(json_field "$query")"; then
+    echo "release evidence JSON is missing ${description}: $query" >&2
+    exit 1
+  fi
+  if [ -z "$value" ] || [ "$value" = "null" ]; then
+    echo "release evidence JSON is missing ${description}: $query" >&2
     exit 1
   fi
   printf '%s' "$value"
@@ -80,9 +104,13 @@ main() {
   local evidence_metadata_cargo=""
   local evidence_metadata_install=""
   local evidence_metadata_changelog=""
+  local evidence_benchmark_name="codeinsight-benchmark-subset"
   local evidence_benchmark_url=""
+  local evidence_context_pack_quality_name="codeinsight-context-pack-quality"
   local evidence_context_pack_quality_url=""
+  local evidence_agent_route_name="codeinsight-agent-route-smoke"
   local evidence_agent_route_url=""
+  local evidence_display_file=""
 
   while [ "$#" -gt 0 ]; do
     case "$1" in
@@ -95,6 +123,13 @@ main() {
           usage
         fi
         EVIDENCE_FILE="$1"
+        ;;
+      --evidence-json-file)
+        shift
+        if [ "$#" -eq 0 ]; then
+          usage
+        fi
+        EVIDENCE_JSON_FILE="$1"
         ;;
       --)
         shift
@@ -130,11 +165,30 @@ main() {
     echo "status document not found: $status_file" >&2
     exit 1
   fi
-  if [ -n "$EVIDENCE_FILE" ]; then
+  if [ -n "$EVIDENCE_JSON_FILE" ]; then
+    if [ ! -f "$EVIDENCE_JSON_FILE" ]; then
+      echo "release evidence JSON file not found: $EVIDENCE_JSON_FILE" >&2
+      exit 1
+    fi
+    jq -e '.schema_version == 1' "$EVIDENCE_JSON_FILE" >/dev/null
+    evidence_display_file="$EVIDENCE_JSON_FILE"
+    evidence_head_sha="$(require_evidence_json_field '.head_sha' "head SHA")"
+    evidence_ci_run="$(require_evidence_json_field '.ci.run_id' "CI run")"
+    evidence_metadata_cargo="$(require_evidence_json_field '.metadata.cargo' "Cargo metadata")"
+    evidence_metadata_install="$(require_evidence_json_field '.metadata.install' "install metadata")"
+    evidence_metadata_changelog="$(require_evidence_json_field '.metadata.changelog' "changelog metadata")"
+    evidence_benchmark_name="$(require_evidence_json_field '.artifacts.benchmark.name' "benchmark artifact name")"
+    evidence_benchmark_url="$(require_evidence_json_field '.artifacts.benchmark.url' "benchmark artifact URL")"
+    evidence_context_pack_quality_name="$(require_evidence_json_field '.artifacts.context_pack_quality.name' "context-pack quality artifact name")"
+    evidence_context_pack_quality_url="$(require_evidence_json_field '.artifacts.context_pack_quality.url' "context-pack quality artifact URL")"
+    evidence_agent_route_name="$(require_evidence_json_field '.artifacts.agent_route.name' "agent-route artifact name")"
+    evidence_agent_route_url="$(require_evidence_json_field '.artifacts.agent_route.url' "agent-route artifact URL")"
+  elif [ -n "$EVIDENCE_FILE" ]; then
     if [ ! -f "$EVIDENCE_FILE" ]; then
       echo "release evidence file not found: $EVIDENCE_FILE" >&2
       exit 1
     fi
+    evidence_display_file="$EVIDENCE_FILE"
     evidence_head_sha="$(require_evidence_field head_sha "head SHA")"
     evidence_ci_run="$(require_evidence_field ci_run "CI run")"
     evidence_metadata_cargo="$(require_evidence_field metadata_cargo "Cargo metadata")"
@@ -188,18 +242,18 @@ main() {
       "$(if [ "$(jq -r '.installed_quickstart.skipped // false' "$summary_file")" = "true" ]; then printf 'skipped locally'; else printf 'verified'; fi)"
     printf -- '- Installed quickstart coverage: `%s`\n' \
       "$(jq -r '(.installed_quickstart.coverage // []) | join("`, `")' "$summary_file")"
-    if [ -n "$EVIDENCE_FILE" ]; then
+    if [ -n "$evidence_display_file" ]; then
       echo "- Pre-release evidence:"
-      printf '  - Evidence file: `%s`\n' "$EVIDENCE_FILE"
+      printf '  - Evidence file: `%s`\n' "$evidence_display_file"
       printf '  - Target commit: `%s`\n' "$evidence_head_sha"
       printf '  - CI run: `%s`\n' "$evidence_ci_run"
       printf '  - Metadata: `cargo=%s`, `install=%s`, `changelog=%s`\n' \
         "$evidence_metadata_cargo" \
         "$evidence_metadata_install" \
         "$evidence_metadata_changelog"
-      printf '  - Benchmark artifact: [%s](%s)\n' "codeinsight-benchmark-subset" "$evidence_benchmark_url"
-      printf '  - Context-pack quality artifact: [%s](%s)\n' "codeinsight-context-pack-quality" "$evidence_context_pack_quality_url"
-      printf '  - Agent-route artifact: [%s](%s)\n' "codeinsight-agent-route-smoke" "$evidence_agent_route_url"
+      printf '  - Benchmark artifact: [%s](%s)\n' "$evidence_benchmark_name" "$evidence_benchmark_url"
+      printf '  - Context-pack quality artifact: [%s](%s)\n' "$evidence_context_pack_quality_name" "$evidence_context_pack_quality_url"
+      printf '  - Agent-route artifact: [%s](%s)\n' "$evidence_agent_route_name" "$evidence_agent_route_url"
     fi
     echo "<!-- release-verification-summary:end -->"
   } >"$BLOCK_FILE"
