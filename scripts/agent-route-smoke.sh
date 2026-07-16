@@ -236,6 +236,8 @@ main() {
   require_jq "$route_json" '.context_pack.reading_plan[0].next_action != null and .context_pack.reading_plan[0].next_action != ""' "reading plan should include next action"
   require_jq "$route_json" '.context_pack.budget.requested_token_budget == 1600' "context_pack should preserve requested budget"
   require_jq "$route_json" '.context_pack.budget.applied_token_budget == 1600' "context_pack should apply requested budget"
+  require_jq "$route_json" '.route[2].reason as $reason | .context_pack.reading_plan[0] as $step | $reason | contains("read \($step.file) first") and contains($step.next_action) and contains($step.suggested_tool.tool) and contains("follow continuation")' "context route step should explain the first read path"
+  require_jq "$route_json" '.route[3].reason | contains("pre-edit impact check")' "impact route step should frame impact analysis as a pre-edit check"
   require_jq "$route_json" '.route[3].reason | contains("call-related files") and contains("dependency-related files") and contains("call paths") and contains("dependency paths")' "impact route step should summarize the impact breakdown"
   require_jq "$route_json" '.impact_status == "complete"' "impact_analysis should run when context has a seed"
   require_jq "$route_json" '.impact_seed_files | length >= 1' "impact seeds should include selected context files"

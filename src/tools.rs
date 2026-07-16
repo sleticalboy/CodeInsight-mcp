@@ -290,12 +290,7 @@ pub fn agent_route_value(
             order: 3,
             tool: "context_pack".to_string(),
             status: "complete".to_string(),
-            reason: format!(
-                "selected {} files, {} ranges, and {} reading-plan steps within the token budget",
-                context_pack.files.len(),
-                context_pack.budget.selected_ranges,
-                context_pack.reading_plan.len()
-            ),
+            reason: agent_route_context_reason(&context_pack),
         },
         AgentRouteStep {
             order: 4,
@@ -323,9 +318,33 @@ pub fn agent_route_value(
     })
 }
 
+fn agent_route_context_reason(context_pack: &ContextPack) -> String {
+    let summary = format!(
+        "selected {} files, {} ranges, and {} reading-plan steps within the token budget",
+        context_pack.files.len(),
+        context_pack.budget.selected_ranges,
+        context_pack.reading_plan.len()
+    );
+
+    match context_pack.reading_plan.first() {
+        Some(step) => format!(
+            "{summary}; read {} first via {}, use {} when deeper evidence is needed, then follow continuation {}",
+            step.file,
+            step.next_action,
+            step.suggested_tool.tool,
+            context_pack.continuation_summary.next_action
+        ),
+        None => {
+            format!(
+                "{summary}; no reading_plan step was produced, so narrow the task or seed files"
+            )
+        }
+    }
+}
+
 fn agent_route_impact_reason(report: &ImpactAnalysisReport) -> String {
     format!(
-        "estimated {} impacted files at {} risk, including {} call-related files, {} dependency-related files, {} call paths, and {} dependency paths",
+        "after selected context is read, pre-edit impact check estimated {} impacted files at {} risk, including {} call-related files, {} dependency-related files, {} call paths, and {} dependency paths",
         report.impact_counts.impacted_files,
         report.risk_level,
         report.impact_breakdown.call_related_files,

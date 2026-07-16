@@ -1936,7 +1936,13 @@ fn cli_agent_route_runs_first_read_pipeline() {
     assert_eq!(route["impact_analysis"]["format"], "summary");
     assert_eq!(route["impact_analysis"]["depth"].as_u64(), Some(2));
     assert_eq!(route["impact_analysis"]["evidence_limit"].as_u64(), Some(3));
+    let context_reason = route["route"][2]["reason"].as_str().unwrap();
+    assert!(context_reason.contains("read src/main.ts first"));
+    assert!(context_reason.contains("inspect_seed_file"));
+    assert!(context_reason.contains("file_outline"));
+    assert!(context_reason.contains("follow continuation"));
     let impact_reason = route["route"][3]["reason"].as_str().unwrap();
+    assert!(impact_reason.contains("pre-edit impact check"));
     assert!(impact_reason.contains("call-related files"));
     assert!(impact_reason.contains("dependency-related files"));
     assert!(impact_reason.contains("call paths"));
@@ -5995,7 +6001,11 @@ fn mcp_stdio_executes_agent_route() {
         route["route"][3]["tool"],
         serde_json::Value::String("impact_analysis".to_string())
     );
+    let context_reason = route["route"][2]["reason"].as_str().unwrap();
+    assert!(context_reason.contains("read src/main.ts first"));
+    assert!(context_reason.contains("file_outline"));
     let impact_reason = route["route"][3]["reason"].as_str().unwrap();
+    assert!(impact_reason.contains("pre-edit impact check"));
     assert!(impact_reason.contains("call-related files"));
     assert!(impact_reason.contains("dependency-related files"));
 }

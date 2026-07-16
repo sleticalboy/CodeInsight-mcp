@@ -47,7 +47,10 @@ semantic score. Treat them as coarse display buckets.
 `agent_route.route[]` reports the default first-read path that was executed in
 one call. It is route metadata rather than a recommendation list; clients should
 render it as provenance for `index_report`, `overview`, `context_pack`, and
-`impact_analysis`.
+`impact_analysis`. The `reason` field also summarizes why the next stage matters:
+the `context_pack` step points to the first `reading_plan` file/action, and the
+`impact_analysis` step frames the included preview as the pre-edit impact check
+after selected context is read.
 
 `project_overview.recommended_next_tools[]` recommends repository-level calls
 after indexing when a client chooses the lower-level path. It currently favors:

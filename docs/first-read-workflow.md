@@ -51,7 +51,8 @@ lower-level tools directly: `index_project`, `project_overview`,
 - `overview`
 - `context_pack`
 - `impact_analysis` when a file or symbol seed is available
-- `route[]` metadata describing the executed tool path
+- `route[]` metadata describing the executed tool path and why each stage
+  matters for the first read
 - `impact_seed_files` and `impact_seed_symbols`
 
 Use `agent_route` for broad repository understanding and first-pass planning.
