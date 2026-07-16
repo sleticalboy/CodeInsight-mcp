@@ -72,6 +72,45 @@ def run_json(args):
     return json.loads(output)
 
 
+def assert_actionable_reading_plan(payload, label):
+    if not payload.get("files") or not payload.get("reading_plan"):
+        raise AssertionError({label: payload})
+
+    first_file = payload["files"][0]["file"]
+    first_step = payload["reading_plan"][0]
+    if first_step.get("order") != 1:
+        raise AssertionError({label: first_step})
+    if first_step.get("file") != first_file:
+        raise AssertionError({label: first_step, "first_file": first_file})
+    if not first_step.get("next_action"):
+        raise AssertionError({label: first_step})
+    if not first_step.get("question"):
+        raise AssertionError({label: first_step})
+
+    reason = first_step.get("reason", "")
+    if "Read this step to answer:" not in reason:
+        raise AssertionError({label: reason})
+    if "If deeper evidence is needed, call" not in reason:
+        raise AssertionError({label: reason})
+    if "Selection reason:" not in reason:
+        raise AssertionError({label: reason})
+    if not first_step.get("selection_reason"):
+        raise AssertionError({label: first_step})
+
+    suggested_tool = first_step.get("suggested_tool", {})
+    if not suggested_tool.get("tool"):
+        raise AssertionError({label: first_step})
+    if suggested_tool.get("priority", 0) < 1:
+        raise AssertionError({label: first_step})
+    if not suggested_tool.get("suggested_arguments"):
+        raise AssertionError({label: first_step})
+    if not first_step.get("ranges"):
+        raise AssertionError({label: first_step})
+    if first_step["ranges"][0].get("start_line", 0) < 1:
+        raise AssertionError({label: first_step})
+    return first_step
+
+
 version = run_json(["version"])
 if version["name"] != "codeinsight":
     raise AssertionError(version)
@@ -96,6 +135,7 @@ if len(context["files"]) < 1 or len(context["reading_plan"]) < 1:
     raise AssertionError(context)
 if context["budget"]["applied_token_budget"] != 1200:
     raise AssertionError(context["budget"])
+context_reading_step = assert_actionable_reading_plan(context, "cli_context_pack")
 
 agent_route = run_json([
     "agent-route",
@@ -123,6 +163,10 @@ if not agent_route["context_pack"]["files"] or not agent_route["context_pack"]["
     raise AssertionError(agent_route["context_pack"])
 if agent_route["context_pack"]["budget"]["applied_token_budget"] != 1200:
     raise AssertionError(agent_route["context_pack"]["budget"])
+agent_route_reading_step = assert_actionable_reading_plan(
+    agent_route["context_pack"],
+    "cli_agent_route_context_pack",
+)
 if agent_route["impact_status"] != "complete":
     raise AssertionError(agent_route)
 if agent_route["impact_analysis"]["format"] != "summary":
@@ -212,6 +256,10 @@ try:
     )["result"]["structuredContent"]
     if not mcp_context["files"] or not mcp_context["reading_plan"]:
         raise AssertionError(mcp_context)
+    mcp_context_reading_step = assert_actionable_reading_plan(
+        mcp_context,
+        "mcp_context_pack",
+    )
 
     mcp_agent_route = request(
         {
@@ -241,6 +289,10 @@ try:
         raise AssertionError(mcp_agent_route["route"])
     if not mcp_agent_route["context_pack"]["reading_plan"]:
         raise AssertionError(mcp_agent_route["context_pack"])
+    mcp_agent_route_reading_step = assert_actionable_reading_plan(
+        mcp_agent_route["context_pack"],
+        "mcp_agent_route_context_pack",
+    )
     if mcp_agent_route["impact_status"] != "complete":
         raise AssertionError(mcp_agent_route)
     if mcp_agent_route["impact_analysis"]["depth"] != 2:
@@ -262,10 +314,18 @@ print(json.dumps({
     "overview_recommendations": len(overview["recommended_next_tools"]),
     "context_files": len(context["files"]),
     "context_reading_plan": len(context["reading_plan"]),
+    "context_reading_reason": context_reading_step["reason"],
+    "context_selection_reason": context_reading_step["selection_reason"],
     "agent_route_tools": [step["tool"] for step in agent_route["route"]],
     "agent_route_context_files": len(agent_route["context_pack"]["files"]),
+    "agent_route_reading_reason": agent_route_reading_step["reason"],
+    "agent_route_selection_reason": agent_route_reading_step["selection_reason"],
     "agent_route_impact_status": agent_route["impact_status"],
     "mcp_agent_route_impact_status": mcp_agent_route["impact_status"],
+    "mcp_context_reading_reason": mcp_context_reading_step["reason"],
+    "mcp_context_selection_reason": mcp_context_reading_step["selection_reason"],
+    "mcp_agent_route_reading_reason": mcp_agent_route_reading_step["reason"],
+    "mcp_agent_route_selection_reason": mcp_agent_route_reading_step["selection_reason"],
     "mcp_tools": len(tool_names),
 }, indent=2))
 PY
