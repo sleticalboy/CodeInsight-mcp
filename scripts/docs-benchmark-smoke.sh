@@ -280,6 +280,9 @@ main() {
     'scripts/benchmark-artifact-smoke\.sh <ci-run-id>' \
     "maintenance benchmark artifact download"
   require_pattern docs/maintenance-commands.md \
+    'scripts/context-pack-quality-artifact-smoke\.sh <ci-run-id>' \
+    "maintenance context-pack quality artifact download"
+  require_pattern docs/maintenance-commands.md \
     'scripts/context-pack-quality-smoke\.sh' \
     "maintenance context-pack quality smoke"
   require_pattern docs/maintenance-commands.md \
@@ -309,9 +312,21 @@ main() {
   require_pattern docs/maintainer-checklist.md \
     'context-pack-quality-smoke` job summary' \
     "maintainer context-pack quality CI summary guidance"
+  require_pattern docs/maintainer-checklist.md \
+    'scripts/context-pack-quality-artifact-smoke\.sh <ci-run-id>' \
+    "maintainer context-pack quality artifact smoke command"
   require_pattern scripts/context-pack-quality-step-summary-smoke.sh \
     'codeinsight-context-pack-quality' \
     "context-pack quality step summary smoke artifact"
+  require_pattern scripts/context-pack-quality-artifact-smoke.sh \
+    'gh run download "\$RUN_ID"' \
+    "context-pack quality artifact gh download command"
+  require_pattern scripts/context-pack-quality-artifact-smoke.sh \
+    '\-\-latest-success BRANCH' \
+    "context-pack quality artifact latest successful run option"
+  require_pattern scripts/context-pack-quality-artifact-smoke.sh \
+    'omitted_candidates_available' \
+    "context-pack quality artifact metric validation"
   require_pattern docs/release-commands.md \
     'scripts/release-pretag-check\.sh main' \
     "release commands benchmark artifact gate"

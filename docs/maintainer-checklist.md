@@ -86,6 +86,7 @@ optional external checks, see [Maintenance commands](maintenance-commands.md).
 
   ```bash
   scripts/benchmark-artifact-smoke.sh <ci-run-id>
+  scripts/context-pack-quality-artifact-smoke.sh <ci-run-id>
   ```
 
 ## Before Tagging A Release

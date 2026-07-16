@@ -102,6 +102,12 @@ To inspect the artifact locally, download and validate it from a completed
 scripts/benchmark-artifact-smoke.sh <ci-run-id>
 ```
 
+To validate the context-pack quality artifact from a completed `CI` run:
+
+```bash
+scripts/context-pack-quality-artifact-smoke.sh <ci-run-id>
+```
+
 ## Optional External Checks
 
 Run these only when the local environment supports the required service or

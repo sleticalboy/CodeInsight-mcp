@@ -14,7 +14,9 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   continuation routing, plus low-budget omitted-candidate, minimum-budget, and
   token-exhaustion follow-ups. The smoke can also write a `--summary-json`
   report, and CI uploads it as `codeinsight-context-pack-quality` while writing
-  the scenario table to the Actions summary.
+  the scenario table to the Actions summary. Added
+  `scripts/context-pack-quality-artifact-smoke.sh` to download and validate the
+  JSON artifact from a completed CI run.
 - `scripts/verify-release.sh` now reports a specific local network diagnostic
   when GitHub Release assets exist in API metadata but
   `github.com/releases/download` is unreachable, and supports an explicit
