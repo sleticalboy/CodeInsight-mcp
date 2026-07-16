@@ -188,6 +188,13 @@ scripts/update-release-status.sh --evidence-json-file release-evidence/vX.Y.Z.js
 scripts/update-release-status.sh --evidence-file release-evidence/vX.Y.Z.md release-verification/vX.Y.Z.json
 ```
 
+Build a release handoff summary from archived pre-release evidence and
+post-release verification:
+
+```bash
+scripts/release-handoff-summary.sh --json-output release-handoff/vX.Y.Z.json --output release-handoff/vX.Y.Z.md vX.Y.Z
+```
+
 Verify a local installed binary can complete the quickstart flow:
 
 ```bash

@@ -394,6 +394,12 @@ main() {
     'falls back to `release-evidence/<tag>\.md`' \
     "release commands evidence markdown fallback"
   require_pattern docs/release-commands.md \
+    'scripts/release-handoff-summary\.sh --json-output release-handoff/vX\.Y\.Z\.json --output release-handoff/vX\.Y\.Z\.md vX\.Y\.Z' \
+    "release commands handoff summary"
+  require_pattern docs/release-commands.md \
+    'post-release verification' \
+    "release commands handoff verification input"
+  require_pattern docs/release-commands.md \
     'remote tag already exists' \
     "release commands remote tag conflict gate"
   require_pattern docs/release-commands.md \
