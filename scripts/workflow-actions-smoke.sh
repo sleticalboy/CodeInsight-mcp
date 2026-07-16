@@ -28,6 +28,8 @@ forbid_pattern() {
 }
 
 main() {
+  require_pattern ".github/workflows/ci.yml" "concurrency:" "CI concurrency guard"
+  require_pattern ".github/workflows/ci.yml" "cancel-in-progress: true" "CI stale run cancellation"
   require_pattern ".github/workflows/ci.yml" "actions/checkout@v7" "CI checkout action v7"
   require_pattern ".github/workflows/ci.yml" "dtolnay/rust-toolchain@stable" "CI Rust toolchain action"
   require_pattern ".github/workflows/ci.yml" "Swatinem/rust-cache@v2" "CI Rust cache action v2"
