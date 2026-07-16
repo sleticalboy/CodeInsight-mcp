@@ -41,6 +41,8 @@ Pass criteria:
 - `entrypoints` or `recommended_next_tools` is greater than zero.
 - `context_pack` reports `selected_files`, `selected_ranges`, and
   `estimated_tokens`.
+- The demo prints `reading_plan_reason` and `selection_reason` for the first
+  selected context file.
 - `line_reduction` is present and below 100%.
 - `impact_analysis` reports `risk_level`, `impacted_files`, `paths`, or
   `suggested_checks`.
@@ -143,7 +145,14 @@ Pass criteria:
   broad file reads.
 - The agent uses `project_overview` and `context_pack` from the `agent_route`
   response instead of duplicating the first-read path manually.
-- The agent reads selected files in `reading_plan[]` order.
+- The agent reads selected files in `reading_plan[]` order and uses
+  `reading_plan[].reason` as the current-step instruction.
+- The agent can explain `reading_plan[].selection_reason` as the evidence for
+  why a file was selected, without treating it as a replacement for
+  `reading_plan[].reason`.
+- The agent does not execute `continuation_summary.suggested_tool` or
+  `omitted_candidates[].suggested_tool` until the selected `files[]` excerpts
+  have been read.
 - The agent does not immediately fall back to broad `rg` / `cat` exploration
   unless CodeInsight points to a file or the user asks for a specific location.
 
@@ -170,6 +179,10 @@ Pass criteria:
 - `budget.candidate_files` is greater than or equal to
   `budget.selected_files`.
 - `reading_plan[]` is present.
+- `reading_plan[0].reason` is present and explains the question, deeper
+  evidence tool, and selection rationale.
+- `reading_plan[0].selection_reason` is present and explains why the first file
+  was selected.
 - `continuation_summary.status` is present.
 
 When `continuation_summary.status` is `complete`, the agent should read the
@@ -235,6 +248,9 @@ CodeInsight is successfully adopted when:
   `agent_route`.
 - The agent follows the `agent_route` first-read policy.
 - `context_pack` returns a bounded reading plan.
+- The agent follows `reading_plan[].reason`, can surface
+  `reading_plan[].selection_reason`, and waits to use continuation tools until
+  selected context has been read.
 - `impact_analysis` is used before edits.
 - Local smoke or benchmark evidence can be reproduced on at least one real
   repository.

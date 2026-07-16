@@ -140,6 +140,21 @@ main() {
   require_pattern docs/adoption-checklist.md \
     'The agent calls `agent_route` with `root`, `task`, and `token_budget` before' \
     "adoption agent_route first-read policy"
+  require_pattern docs/adoption-checklist.md \
+    '`reading_plan\[\]\.reason` as the current-step instruction' \
+    "adoption reading reason policy"
+  require_pattern docs/adoption-checklist.md \
+    '`reading_plan\[\]\.selection_reason` as the evidence' \
+    "adoption selection reason evidence"
+  require_pattern docs/adoption-checklist.md \
+    'does not execute `continuation_summary\.suggested_tool`' \
+    "adoption continuation ordering"
+  require_pattern docs/adoption-checklist.md \
+    '`reading_plan\[0\]\.reason` is present' \
+    "adoption context-pack reason gate"
+  require_pattern docs/adoption-checklist.md \
+    '`reading_plan\[0\]\.selection_reason` is present' \
+    "adoption context-pack selection reason gate"
 
   require_pattern docs/maintainer-checklist.md \
     'local-first MCP code context routing' \
