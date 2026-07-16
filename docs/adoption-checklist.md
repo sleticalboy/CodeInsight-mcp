@@ -72,7 +72,29 @@ Pass criteria:
 If this passes locally but fails inside a GUI client, use an absolute binary
 path in the client config. GUI clients often do not inherit shell `PATH`.
 
-## 4. MCP Client Configuration Is Active
+## 4. Installed Quickstart Covers The First-Read Route
+
+Run from a CodeInsight checkout after installing `codeinsight`:
+
+```bash
+CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh
+```
+
+Pass criteria:
+
+- Output includes `installed quickstart smoke passed`.
+- The smoke covers `version`, `index`, `overview`, `context-pack`,
+  CLI `agent-route`, MCP stdio, and MCP `agent_route`.
+- `agent_route_tools` includes `index_project`, `project_overview`,
+  `context_pack`, and `impact_analysis`.
+- `agent_route_impact_status` and `mcp_agent_route_impact_status` are
+  `complete`.
+
+This is the user-side end-to-end adoption gate: it proves the installed binary
+can route a new agent through the default first-read path outside the source
+checkout.
+
+## 5. MCP Client Configuration Is Active
 
 Open your MCP client and verify that the `codeinsight` server appears in its
 tool list.
@@ -92,6 +114,9 @@ Expected tools include:
 Pass criteria:
 
 - The client can call `agent_route` for the default first-read path.
+- `agent_route.route[]` includes `index_project`, `project_overview`,
+  `context_pack`, and `impact_analysis`.
+- `agent_route.context_pack.reading_plan[]` is present.
 - The client can call `index_project` for a local repository.
 - The client can call `project_overview` after indexing when step-by-step
   routing is needed.
@@ -100,21 +125,23 @@ Pass criteria:
 See [MCP client configuration](mcp-client-config.md) for Codex, Claude Code,
 Cursor, and generic MCP JSON snippets.
 
-## 5. Agent Policy Is Being Followed
+## 6. Agent Policy Is Being Followed
 
 Ask your agent:
 
 ```text
 Use CodeInsight to understand this repository before reading files directly.
-Start with project_overview, then build a context_pack for:
+Start with agent_route for:
 "understand the main application entrypoint"
 Use a token budget of 6000.
 ```
 
 Pass criteria:
 
-- The agent calls `project_overview` before broad file reads.
-- The agent calls `context_pack` with `root`, `task`, and `token_budget`.
+- The agent calls `agent_route` with `root`, `task`, and `token_budget` before
+  broad file reads.
+- The agent uses `project_overview` and `context_pack` from the `agent_route`
+  response instead of duplicating the first-read path manually.
 - The agent reads selected files in `reading_plan[]` order.
 - The agent does not immediately fall back to broad `rg` / `cat` exploration
   unless CodeInsight points to a file or the user asks for a specific location.
@@ -123,7 +150,7 @@ If this fails, place the
 [Agent Policy Prompt](client-workflow.md#agent-policy-prompt) in the client's
 project instructions.
 
-## 6. Context Pack Demonstrates Token Discipline
+## 7. Context Pack Demonstrates Token Discipline
 
 Call `context_pack` through CLI or MCP with a realistic task:
 
@@ -148,7 +175,7 @@ When `continuation_summary.status` is `complete`, the agent should read the
 selected context before asking for more. When omitted candidates are available,
 use `continuation_summary.suggested_tool` only after selected context is read.
 
-## 7. Impact Analysis Runs Before Edits
+## 8. Impact Analysis Runs Before Edits
 
 Before changing a file or symbol, run:
 
@@ -170,7 +197,7 @@ Pass criteria:
 Treat this as edit-planning evidence. CodeInsight is a best-effort local
 navigation layer, not a compiler-grade proof engine.
 
-## 8. Benchmark Evidence Is Reproducible
+## 9. Benchmark Evidence Is Reproducible
 
 Run:
 
@@ -203,7 +230,9 @@ CodeInsight is successfully adopted when:
 
 - The binary works locally.
 - The MCP server starts in your client.
-- The agent follows the first-read policy.
+- The installed quickstart smoke covers CLI `agent-route` and MCP
+  `agent_route`.
+- The agent follows the `agent_route` first-read policy.
 - `context_pack` returns a bounded reading plan.
 - `impact_analysis` is used before edits.
 - Local smoke or benchmark evidence can be reproduced on at least one real

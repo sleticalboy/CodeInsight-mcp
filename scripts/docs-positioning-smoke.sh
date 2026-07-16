@@ -74,6 +74,15 @@ main() {
   require_pattern docs/mcp-client-config.md \
     'Call `agent_route` with `root`, `task`, and `token_budget`' \
     "MCP client config agent_route flow"
+  require_pattern docs/adoption-checklist.md \
+    'scripts/installed-quickstart-smoke\.sh' \
+    "adoption installed quickstart gate"
+  require_pattern docs/adoption-checklist.md \
+    'CLI `agent-route`, MCP stdio, and MCP `agent_route`' \
+    "adoption CLI and MCP agent_route coverage"
+  require_pattern docs/adoption-checklist.md \
+    'The agent calls `agent_route` with `root`, `task`, and `token_budget` before' \
+    "adoption agent_route first-read policy"
 
   require_pattern docs/maintainer-checklist.md \
     'local-first MCP code context routing' \
