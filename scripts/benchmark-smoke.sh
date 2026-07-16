@@ -410,7 +410,7 @@ validate_context_guardrails() {
   local context_json="$3"
   local output="$4"
   local specs="$5"
-  local total_lines selected_lines first_recommended_tool context_files ranges reading_plan_steps first_next_action estimated_tokens applied_budget status min_files min_ranges min_reading_plan_steps max_tokens min_line_reduction
+  local total_lines selected_lines first_recommended_tool context_files ranges reading_plan_steps first_next_action first_reading_reason first_selection_reason estimated_tokens applied_budget status min_files min_ranges min_reading_plan_steps max_tokens min_line_reduction
 
   : >"$output"
 
@@ -421,6 +421,8 @@ validate_context_guardrails() {
   ranges="$(json_value "$context_json" '[.files[].ranges | length] | add // 0')"
   reading_plan_steps="$(json_value "$context_json" '.reading_plan | length')"
   first_next_action="$(json_value "$context_json" '.reading_plan[0].next_action // "-"')"
+  first_reading_reason="$(json_value "$context_json" '.reading_plan[0].reason // "-"')"
+  first_selection_reason="$(json_value "$context_json" '.reading_plan[0].selection_reason // "-"')"
   estimated_tokens="$(json_value "$context_json" '.estimated_tokens')"
   applied_budget="$(json_value "$context_json" '.budget.applied_token_budget // 0')"
   min_files="$(context_guardrail_value "$specs" "selected_files" "1")"
@@ -458,6 +460,18 @@ validate_context_guardrails() {
     status="fail"
   fi
   write_context_guardrail "$output" "$name" "first_next_action" "present" "$first_next_action" "$status"
+
+  status="pass"
+  if [ -z "$first_reading_reason" ] || [ "$first_reading_reason" = "-" ]; then
+    status="fail"
+  fi
+  write_context_guardrail "$output" "$name" "first_reading_reason" "present" "$first_reading_reason" "$status"
+
+  status="pass"
+  if [ -z "$first_selection_reason" ] || [ "$first_selection_reason" = "-" ]; then
+    status="fail"
+  fi
+  write_context_guardrail "$output" "$name" "first_selection_reason" "present" "$first_selection_reason" "$status"
 
   status="pass"
   if [ "$applied_budget" -le 0 ] || [ "$estimated_tokens" -gt "$applied_budget" ] || [ "$estimated_tokens" -gt "$max_tokens" ]; then
@@ -758,6 +772,25 @@ append_detail_section() {
   jq -r '
     .files[]
     | "| `\(.file)` | \(.ranges | length) | \((.ranges[0].start_line | tostring) + "-" + (.ranges[0].end_line | tostring)) | \([.ranges[].importance] | unique | join(", ")) |"
+  ' "$context_json" >>"$REPORT_FILE"
+
+  {
+    echo
+    echo "Context reading plan:"
+    echo
+    echo "| File | Next action | Suggested tool | Reason | Selection reason |"
+    echo "| --- | --- | --- | --- | --- |"
+  } >>"$REPORT_FILE"
+
+  jq -r '
+    def clean: tostring | gsub("\\|"; "\\|") | gsub("\n"; " ");
+    (.reading_plan[:5] // [])
+    | if length == 0 then
+        ["| - | - | - | none | none |"]
+      else
+        map("| `" + (.file // "-" | clean) + "` | `" + (.next_action // "-" | clean) + "` | `" + (.suggested_tool.tool // "-" | clean) + "` | " + (.reason // "-" | clean) + " | " + (.selection_reason // "-" | clean) + " |")
+      end
+    | .[]
   ' "$context_json" >>"$REPORT_FILE"
 
   {

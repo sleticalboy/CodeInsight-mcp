@@ -75,10 +75,14 @@ main() {
   require_pattern '^## Details$' "details section"
   require_literal "Recommended next tools:" "recommended tools detail section"
   require_literal "Context pack files:" "context-pack files detail section"
+  require_literal "Context reading plan:" "context reading-plan detail section"
+  require_literal "Read this step to answer:" "actionable reading-plan reason"
   require_literal "Context pack guardrails:" "context-pack guardrail section"
   require_literal "| \`first_recommended_tool\` | context_pack | context_pack | pass |" "context_pack guardrail pass"
   require_pattern '^\| `selected_files` \| >= [0-9]+ \| [0-9]+ \| pass \|$' "selected files guardrail pass"
   require_pattern '^\| `reading_plan_steps` \| >= [0-9]+ \| [0-9]+ \| pass \|$' "reading plan guardrail pass"
+  require_pattern '^\| `first_reading_reason` \| present \| .+ \| pass \|$' "first reading reason guardrail pass"
+  require_pattern '^\| `first_selection_reason` \| present \| .+ \| pass \|$' "first selection reason guardrail pass"
   require_pattern '^\| `line_reduction` \| >= [0-9]+% \| [0-9.]+% \| pass \|$' "line reduction guardrail pass"
 
   if [ -n "$EXPECTED_PROFILE" ]; then

@@ -187,8 +187,14 @@ main() {
     'Context pack guardrails:' \
     "smoke context guardrail section"
   require_pattern docs/benchmark-v0.1.md \
+    'Context reading plan:' \
+    "smoke context reading plan section"
+  require_pattern docs/benchmark-v0.1.md \
     '\| `reading_plan_steps` \| >= [0-9]+' \
     "smoke reading plan guardrail"
+  require_pattern docs/benchmark-v0.1.md \
+    '\| `first_reading_reason` \| present \|' \
+    "smoke reading reason guardrail"
   require_context_guardrail_report_sync smoke docs/benchmark-v0.1.md
 
   require_pattern docs/benchmark-large.md \
@@ -219,8 +225,14 @@ main() {
     'Context pack guardrails:' \
     "large context guardrail section"
   require_pattern docs/benchmark-large.md \
+    'Context reading plan:' \
+    "large context reading plan section"
+  require_pattern docs/benchmark-large.md \
     '\| `reading_plan_steps` \| >= [0-9]+' \
     "large reading plan guardrail"
+  require_pattern docs/benchmark-large.md \
+    '\| `first_reading_reason` \| present \|' \
+    "large reading reason guardrail"
   require_context_guardrail_report_sync large docs/benchmark-large.md
   "$ROOT_DIR/scripts/benchmark-report-smoke.sh" "$ROOT_DIR/docs/benchmark-v0.1.md" smoke
   "$ROOT_DIR/scripts/benchmark-report-smoke.sh" "$ROOT_DIR/docs/benchmark-large.md" large
