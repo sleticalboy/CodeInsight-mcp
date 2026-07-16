@@ -23,6 +23,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - Added `scripts/agent-route-artifact-smoke.sh` and wired
   `codeinsight-agent-route-smoke` into release evidence summaries and pre-tag
   artifact gates.
+- `scripts/installed-quickstart-smoke.sh` now verifies CLI `agent-route` and
+  MCP `agent_route` against the installed binary.
 - Added `docs/demo-output.md` and `scripts/demo-output-smoke.sh` so the
   user-facing two-minute demo has a checked-in output snapshot for recordings,
   project introductions, and release checks.

@@ -131,8 +131,9 @@ Expected result:
 - Release install smoke proves the install script can install a packaged local
   artifact.
 - Installed quickstart smoke proves an installed `codeinsight` binary can
-  complete `version`, `index`, `overview`, `context-pack`, and MCP stdio calls
-  against a temporary project outside the source checkout.
+  complete `version`, `index`, `overview`, `context-pack`, `agent-route`, and
+  MCP stdio calls, including `agent_route`, against a temporary project outside
+  the source checkout.
 - `git diff --check` reports no whitespace errors.
 
 Optional local checks when the environment supports them:

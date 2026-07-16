@@ -90,7 +90,8 @@ MVP workflow is now implemented end to end.
 - Installed-binary quickstart regression on 2026-07-14 verified
   `/opt/homebrew/bin/codeinsight` can run `version`, `index`, `overview`,
   `context-pack`, and MCP stdio calls against a temporary project outside this
-  source checkout.
+  source checkout. Current installed quickstart checks also cover CLI
+  `agent-route` and MCP `agent_route`.
 - Consolidated release verification passed with
   `CODEINSIGHT_SKIP_DOCKER=1 scripts/verify-release.sh --json v0.1.12`:
   GitHub Release metadata, direct asset downloads, release notes, public

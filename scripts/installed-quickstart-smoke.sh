@@ -97,6 +97,41 @@ if len(context["files"]) < 1 or len(context["reading_plan"]) < 1:
 if context["budget"]["applied_token_budget"] != 1200:
     raise AssertionError(context["budget"])
 
+agent_route = run_json([
+    "agent-route",
+    smoke_root,
+    "--task",
+    "understand the main application entrypoint",
+    "--token-budget",
+    "1200",
+    "--force-index",
+    "--impact-limit",
+    "10",
+    "--impact-depth",
+    "2",
+    "--impact-evidence-limit",
+    "3",
+])
+if [step["tool"] for step in agent_route["route"]] != [
+    "index_project",
+    "project_overview",
+    "context_pack",
+    "impact_analysis",
+]:
+    raise AssertionError(agent_route["route"])
+if not agent_route["context_pack"]["files"] or not agent_route["context_pack"]["reading_plan"]:
+    raise AssertionError(agent_route["context_pack"])
+if agent_route["context_pack"]["budget"]["applied_token_budget"] != 1200:
+    raise AssertionError(agent_route["context_pack"]["budget"])
+if agent_route["impact_status"] != "complete":
+    raise AssertionError(agent_route)
+if agent_route["impact_analysis"]["format"] != "summary":
+    raise AssertionError(agent_route["impact_analysis"])
+if agent_route["impact_analysis"]["depth"] != 2:
+    raise AssertionError(agent_route["impact_analysis"])
+if agent_route["impact_analysis"]["evidence_limit"] != 3:
+    raise AssertionError(agent_route["impact_analysis"])
+
 proc = subprocess.Popen(
     [codeinsight_bin, "serve", "--transport", "stdio"],
     stdin=subprocess.PIPE,
@@ -128,7 +163,7 @@ try:
 
     tools = request({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
     tool_names = {tool["name"] for tool in tools["result"]["tools"]}
-    for expected in ("index_project", "project_overview", "context_pack", "impact_analysis", "version"):
+    for expected in ("index_project", "project_overview", "context_pack", "agent_route", "impact_analysis", "version"):
         if expected not in tool_names:
             raise AssertionError(expected)
 
@@ -177,6 +212,39 @@ try:
     )["result"]["structuredContent"]
     if not mcp_context["files"] or not mcp_context["reading_plan"]:
         raise AssertionError(mcp_context)
+
+    mcp_agent_route = request(
+        {
+            "jsonrpc": "2.0",
+            "id": 6,
+            "method": "tools/call",
+            "params": {
+                "name": "agent_route",
+                "arguments": {
+                    "root": smoke_root,
+                    "task": "understand the main application entrypoint",
+                    "token_budget": 1200,
+                    "force_index": True,
+                    "impact_limit": 10,
+                    "impact_depth": 2,
+                    "impact_evidence_limit": 3,
+                },
+            },
+        }
+    )["result"]["structuredContent"]
+    if [step["tool"] for step in mcp_agent_route["route"]] != [
+        "index_project",
+        "project_overview",
+        "context_pack",
+        "impact_analysis",
+    ]:
+        raise AssertionError(mcp_agent_route["route"])
+    if not mcp_agent_route["context_pack"]["reading_plan"]:
+        raise AssertionError(mcp_agent_route["context_pack"])
+    if mcp_agent_route["impact_status"] != "complete":
+        raise AssertionError(mcp_agent_route)
+    if mcp_agent_route["impact_analysis"]["depth"] != 2:
+        raise AssertionError(mcp_agent_route["impact_analysis"])
 finally:
     proc.terminate()
     try:
@@ -194,6 +262,10 @@ print(json.dumps({
     "overview_recommendations": len(overview["recommended_next_tools"]),
     "context_files": len(context["files"]),
     "context_reading_plan": len(context["reading_plan"]),
+    "agent_route_tools": [step["tool"] for step in agent_route["route"]],
+    "agent_route_context_files": len(agent_route["context_pack"]["files"]),
+    "agent_route_impact_status": agent_route["impact_status"],
+    "mcp_agent_route_impact_status": mcp_agent_route["impact_status"],
     "mcp_tools": len(tool_names),
 }, indent=2))
 PY

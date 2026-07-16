@@ -163,7 +163,9 @@ tools: 16
 
 The installed quickstart smoke prints `installed quickstart smoke passed` after
 the installed binary completes `version`, `index`, `overview`, `context-pack`,
-and MCP stdio calls against a temporary project.
+`agent-route`, and MCP stdio calls against a temporary project. The MCP portion
+also calls `agent_route` so installed clients exercise the default first-read
+route.
 
 ## 6. First Agent Task
 
