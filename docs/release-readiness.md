@@ -122,7 +122,8 @@ Expected result:
 - MCP stdio smoke reports `tools: 16` or the expected current tool count.
 - Agent-route smoke proves the one-call first-read route returns index,
   overview, context-pack, and impact-analysis sections with stable JSON
-  parameters.
+  parameters. The CI job also uploads `codeinsight-agent-route-smoke` and
+  writes the key route metrics to the Actions summary.
 - Agent-router demo reports non-zero indexed files, non-zero symbols, four
   recommended next tools, a `context_pack` line-reduction value, and an
   `impact_analysis` summary.

@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CODEINSIGHT_BIN="${CODEINSIGHT_BIN:-}"
 TEMP_DIR=""
+SUMMARY_JSON=""
 
 fail() {
   echo "agent-route smoke failed: $*" >&2
@@ -92,7 +93,81 @@ json_value() {
   jq -r "$query" "$file"
 }
 
+usage() {
+  cat <<'EOF'
+usage: scripts/agent-route-smoke.sh [--summary-json PATH]
+
+Options:
+  --summary-json PATH  Write a machine-readable agent-route evidence summary.
+  -h, --help           Show this help text.
+EOF
+}
+
+parse_args() {
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --summary-json)
+        if [ "$#" -lt 2 ]; then
+          fail "--summary-json requires a path"
+        fi
+        SUMMARY_JSON="$2"
+        shift 2
+        ;;
+      -h|--help)
+        usage
+        exit 0
+        ;;
+      *)
+        fail "unknown argument: $1"
+        ;;
+    esac
+  done
+}
+
+write_summary_json() {
+  local route_json="$1"
+
+  if [ -z "$SUMMARY_JSON" ]; then
+    return
+  fi
+
+  mkdir -p "$(dirname "$SUMMARY_JSON")"
+  jq '{
+    status: "pass",
+    task,
+    token_budget,
+    route_tools: [.route[].tool],
+    metrics: {
+      indexed_files: .index_report.indexed_files,
+      symbols: .index_report.symbols,
+      index_errors: (.index_report.errors | length),
+      entrypoints: (.overview.entrypoints | length),
+      selected_files: (.context_pack.files | length),
+      selected_ranges: .context_pack.budget.selected_ranges,
+      reading_plan_steps: (.context_pack.reading_plan | length),
+      requested_token_budget: .context_pack.budget.requested_token_budget,
+      applied_token_budget: .context_pack.budget.applied_token_budget,
+      first_context_file: (.context_pack.files[0].file // ""),
+      first_next_action: (.context_pack.reading_plan[0].next_action // ""),
+      impact_status,
+      impacted_files: (.impact_analysis.impact_counts.impacted_files // 0),
+      suggested_checks: (.impact_analysis.suggested_checks | length)
+    }
+  }' "$route_json" >"$SUMMARY_JSON"
+
+  require_jq "$SUMMARY_JSON" \
+    '.status == "pass"
+      and .route_tools == ["index_project", "project_overview", "context_pack", "impact_analysis"]
+      and .metrics.indexed_files >= 3
+      and .metrics.index_errors == 0
+      and .metrics.reading_plan_steps >= 1
+      and .metrics.impact_status == "complete"
+      and .metrics.impacted_files >= 1' \
+    "summary JSON should match the agent-route evidence contract"
+}
+
 main() {
+  parse_args "$@"
   require_command jq
   build_binary_if_needed
   create_fixture
@@ -130,6 +205,7 @@ main() {
   require_jq "$route_json" '.impact_analysis.evidence_limit == 3' "impact_analysis should preserve evidence limit"
   require_jq "$route_json" '.impact_analysis.impact_counts.impacted_files >= 1' "impact_analysis should report impacted files"
   require_jq "$route_json" '.impact_analysis.suggested_checks | length >= 1' "impact_analysis should suggest checks"
+  write_summary_json "$route_json"
 
   echo "agent-route smoke passed"
   echo "root: $repo_dir"

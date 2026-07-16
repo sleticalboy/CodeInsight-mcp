@@ -75,6 +75,7 @@ optional external checks, see [Maintenance commands](maintenance-commands.md).
   ```bash
   scripts/benchmark-step-summary-smoke.sh
   scripts/context-pack-quality-step-summary-smoke.sh
+  scripts/agent-route-step-summary-smoke.sh
   ```
 
   After CI runs, open the `benchmark-subset-smoke` job summary and confirm it
@@ -82,7 +83,10 @@ optional external checks, see [Maintenance commands](maintenance-commands.md).
   and the `codeinsight-benchmark-subset` artifact link. Download the artifact
   only when you need the full guardrail tables. Open the
   `context-pack-quality-smoke` job summary and confirm it includes the scenario
-  table plus the `codeinsight-context-pack-quality` artifact link.
+  table plus the `codeinsight-context-pack-quality` artifact link. Open the
+  `agent-route-smoke` job summary and confirm it includes the route line,
+  context-pack metrics, impact metrics, and the
+  `codeinsight-agent-route-smoke` artifact link.
 
   ```bash
   scripts/benchmark-artifact-smoke.sh <ci-run-id>

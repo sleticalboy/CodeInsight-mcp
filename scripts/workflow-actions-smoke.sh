@@ -34,6 +34,8 @@ main() {
   require_pattern ".github/workflows/ci.yml" "actions/upload-artifact@v7" "CI artifact upload action v7"
   require_pattern ".github/workflows/ci.yml" "agent-route-smoke:" "agent-route CI job"
   require_pattern ".github/workflows/ci.yml" "scripts/agent-route-smoke\\.sh" "agent-route CI script"
+  require_pattern ".github/workflows/ci.yml" "codeinsight-agent-route-smoke" "agent-route CI artifact"
+  require_pattern ".github/workflows/ci.yml" "agent-route-step-summary\\.sh" "agent-route CI step summary"
   require_pattern ".github/workflows/ci.yml" "context-pack-quality-smoke:" "context-pack quality CI job"
   require_pattern ".github/workflows/ci.yml" "codeinsight-context-pack-quality" "context-pack quality artifact"
   require_pattern ".github/workflows/ci.yml" "context-pack-quality-step-summary\\.sh" "context-pack quality step summary"

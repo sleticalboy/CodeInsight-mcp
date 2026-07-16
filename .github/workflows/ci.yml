@@ -44,7 +44,14 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: agent-route-smoke
-      - run: scripts/agent-route-smoke.sh
+      - run: scripts/agent-route-smoke.sh --summary-json /tmp/codeinsight-agent-route-smoke.json
+      - id: agent-route-artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: codeinsight-agent-route-smoke
+          path: /tmp/codeinsight-agent-route-smoke.json
+          if-no-files-found: error
+      - run: scripts/agent-route-step-summary.sh /tmp/codeinsight-agent-route-smoke.json codeinsight-agent-route-smoke "${{ steps.agent-route-artifact.outputs.artifact-url }}" "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
   context-pack-quality-smoke:
     runs-on: ubuntu-latest

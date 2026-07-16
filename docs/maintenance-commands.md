@@ -12,10 +12,11 @@ scripts/local-ci-smoke.sh
 ```
 
 This prints numbered stages and runs formatting, Rust tests, shell syntax
-checks, workflow action version checks, benchmark step-summary checks,
-release-tooling smokes, docs smokes, context-pack quality checks, the
-`agent_route` contract smoke, the agent-router demo, and whitespace diff
-checks. Nested smoke groups also print their own numbered stages.
+checks, workflow action version checks, benchmark, context-pack, and
+agent-route step-summary checks, release-tooling smokes, docs smokes,
+context-pack quality checks, the `agent_route` contract smoke, the
+agent-router demo, and whitespace diff checks. Nested smoke groups also print
+their own numbered stages.
 
 ## Maintenance Smoke Groups
 
@@ -26,6 +27,7 @@ scripts/script-syntax-smoke.sh
 scripts/workflow-actions-smoke.sh
 scripts/benchmark-step-summary-smoke.sh
 scripts/context-pack-quality-step-summary-smoke.sh
+scripts/agent-route-step-summary-smoke.sh
 scripts/docs-smoke.sh
 scripts/release-notes-smoke.sh
 scripts/release-tooling-smoke.sh
@@ -77,6 +79,12 @@ Use `two-minute-demo.sh` for user-facing `agent_route` walkthroughs,
 `agent-router-demo.sh` for lower-level raw metric output and CI-style
 assertions. Use `demo-output-smoke.sh` after refreshing
 [Demo output snapshot](demo-output.md).
+
+`agent-route-smoke.sh --summary-json <path>` writes a reusable JSON evidence
+summary for the one-call first-read route. The remote `agent-route-smoke` job
+uploads it as `codeinsight-agent-route-smoke` and writes the key route,
+context, token-budget, and impact metrics to the Actions summary with
+`scripts/agent-route-step-summary.sh`.
 
 `context-pack-quality-smoke.sh` is a deterministic offline quality regression
 check. It uses checked-in and temporary fixtures to verify explicit symbol

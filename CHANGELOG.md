@@ -17,7 +17,9 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - Client workflow, quickstart, MCP config, first-read workflow, and agent prompt
   docs now make `agent_route` the default first-read instruction.
 - Added `scripts/agent-route-smoke.sh` and a CI job to validate the one-call
-  `agent_route` first-read JSON contract directly.
+  `agent_route` first-read JSON contract directly. The smoke can now write
+  `--summary-json`, and CI uploads the `codeinsight-agent-route-smoke` artifact
+  while publishing the key metrics through `scripts/agent-route-step-summary.sh`.
 - Added `docs/demo-output.md` and `scripts/demo-output-smoke.sh` so the
   user-facing two-minute demo has a checked-in output snapshot for recordings,
   project introductions, and release checks.
