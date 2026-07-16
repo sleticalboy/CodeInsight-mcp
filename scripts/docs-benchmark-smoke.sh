@@ -523,6 +523,12 @@ main() {
     'Problem: AI agents waste the first read' \
     "two-minute demo problem statement"
   require_pattern scripts/two-minute-demo.sh \
+    'agent-route' \
+    "two-minute demo agent-route command"
+  require_pattern scripts/two-minute-demo.sh \
+    'CodeInsight agent_route demo' \
+    "two-minute demo agent_route heading"
+  require_pattern scripts/two-minute-demo.sh \
     'project_overview found' \
     "two-minute demo overview talk track"
   require_pattern scripts/two-minute-demo.sh \

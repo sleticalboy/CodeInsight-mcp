@@ -30,9 +30,10 @@ Against another repository:
 CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/two-minute-demo.sh
 ```
 
-For machine-readable CI validation, `scripts/two-minute-demo.sh` wraps
-`scripts/agent-router-demo.sh`; use the lower-level script when you only need
-the raw metrics.
+For machine-readable CI validation, `scripts/two-minute-demo.sh` runs the
+`agent-route` CLI command and renders the first-read metrics. Use
+`scripts/agent-router-demo.sh` when you only need the lower-level raw metrics
+and CI-style assertions.
 
 For a copyable example of the current repository output, see the
 [demo output snapshot](demo-output.md).
@@ -85,7 +86,7 @@ Expected shape:
 CodeInsight two-minute demo
 
 Problem: AI agents waste the first read by scanning broad files and guessing entrypoints.
-Promise: route the agent through project_overview, context_pack, and impact_analysis before edits.
+Promise: route the agent through agent_route before edits.
 
 1. index_project
    indexed_files: 23
@@ -109,9 +110,10 @@ Promise: route the agent through project_overview, context_pack, and impact_anal
    suggested_checks: 3
 
 [Talk track]
-1. project_overview found 7 entrypoints and 4 recommended next tools.
-2. context_pack selected 10 files and 11 ranges, then produced 8 reading-plan steps.
-3. The first action is inspect_seed_file; the selected context reduced source reading by 98.4%.
+1. agent_route ran index_project, project_overview, context_pack, and impact_analysis in one call.
+2. project_overview found 7 entrypoints and 4 recommended next tools.
+3. context_pack selected 10 files and 11 ranges, then produced 8 reading-plan steps.
+4. The first action is inspect_seed_file; the selected context reduced source reading by 98.4%.
 ```
 
 Exact numbers vary by repository and current source state. The important point
@@ -152,15 +154,15 @@ and truncation status without asking viewers to inspect the full details table.
 In a real MCP client, the agent policy is:
 
 ```text
-1. Call index_project.
-2. Call project_overview.
-3. Call context_pack with root, task, and token_budget.
-4. Read context_pack.files in reading_plan order.
-5. Use continuation_summary only after selected context is consumed.
-6. Call impact_analysis before edits.
+1. Call agent_route with root, task, and token_budget for the default first read.
+2. Read context_pack.files in reading_plan order.
+3. Use continuation_summary only after selected context is consumed.
+4. Run focused follow-up tools only when needed.
 ```
 
 This is the path that turns CodeInsight from a CLI demo into an agent workflow.
+Clients that need custom routing can still call `index_project`,
+`project_overview`, `context_pack`, and `impact_analysis` directly.
 
 ### 1:58-2:00 - Close
 

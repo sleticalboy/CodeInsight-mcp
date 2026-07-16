@@ -11,8 +11,9 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - Added `agent_route` as a CLI/MCP first-read route that refreshes the local
   index, returns `project_overview`, builds `context_pack`, and includes a
   summary `impact_analysis` preview when a seed is available.
-- Added `scripts/two-minute-demo.sh` as the user-facing walkthrough wrapper
-  around the raw agent-router demo, plus a smoke test for its talk-track output.
+- `scripts/two-minute-demo.sh` now uses `agent-route` as the user-facing
+  walkthrough path, while `scripts/agent-router-demo.sh` remains the lower-level
+  raw metric and CI assertion path.
 - Added `docs/demo-output.md` and `scripts/demo-output-smoke.sh` so the
   user-facing two-minute demo has a checked-in output snapshot for recordings,
   project introductions, and release checks.

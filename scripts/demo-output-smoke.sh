@@ -26,8 +26,11 @@ main() {
     'Problem: AI agents waste the first read' \
     "problem statement"
   require_pattern docs/demo-output.md \
-    'Promise: route the agent through project_overview, context_pack, and impact_analysis before edits\.' \
+    'Promise: route the agent through agent_route before edits\.' \
     "product promise"
+  require_pattern docs/demo-output.md \
+    'CodeInsight agent_route demo' \
+    "agent route live heading"
   require_pattern docs/demo-output.md \
     '1\. index_project' \
     "index stage"
@@ -56,6 +59,9 @@ main() {
     '\[Talk track\]' \
     "talk track section"
   require_pattern docs/demo-output.md \
+    'agent_route ran index_project, project_overview, context_pack, and impact_analysis in one call\.' \
+    "agent route talk track"
+  require_pattern docs/demo-output.md \
     'project_overview found' \
     "overview talk track"
   require_pattern docs/demo-output.md \
@@ -68,7 +74,7 @@ main() {
     '\[Agent policy\]' \
     "agent policy section"
   require_pattern docs/demo-output.md \
-    'Call index_project, then project_overview, then context_pack with a token budget\.' \
+    'Call agent_route with root, task, and token_budget for the default first read\.' \
     "agent policy path"
 
   echo "demo output smoke passed"

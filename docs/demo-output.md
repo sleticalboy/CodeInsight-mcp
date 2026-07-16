@@ -21,12 +21,12 @@ scripts/two-minute-demo.sh
 CodeInsight two-minute demo
 
 Problem: AI agents waste the first read by scanning broad files and guessing entrypoints.
-Promise: route the agent through project_overview, context_pack, and impact_analysis before edits.
+Promise: route the agent through agent_route before edits.
 
 [Live run]
 building release binary...
-    Finished `release` profile [optimized] target(s) in 0.07s
-CodeInsight agent context router demo
+    Finished `release` profile [optimized] target(s) in <build_time>
+CodeInsight agent_route demo
 root: <repo>/CodeInsight-mcp
 task: understand agent context routing
 token_budget: 6000
@@ -34,7 +34,7 @@ token_budget: 6000
 1. index_project
    indexed_files: 23
    symbols: 918
-   duration_ms: 295
+   duration_ms: <duration_ms>
    errors: 0
 
 2. project_overview
@@ -62,18 +62,19 @@ token_budget: 6000
    suggested_checks: 3
 
 Run against another repository:
-  CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/agent-router-demo.sh
+  CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/two-minute-demo.sh
 
 [Talk track]
-1. project_overview found 7 entrypoints and 4 recommended next tools.
-2. context_pack selected 10 files and 11 ranges, then produced 8 reading-plan steps.
-3. The first action is inspect_seed_file; the selected context reduced source reading by 98.4%.
-4. Continuation status is complete, so the agent knows whether to ask for a focused follow-up.
-5. impact_analysis reports high risk across 11 impacted files with 3 suggested checks.
+1. agent_route ran index_project, project_overview, context_pack, and impact_analysis in one call.
+2. project_overview found 7 entrypoints and 4 recommended next tools.
+3. context_pack selected 10 files and 11 ranges, then produced 8 reading-plan steps.
+4. The first action is inspect_seed_file; the selected context reduced source reading by 98.4%.
+5. Continuation status is complete, so the agent knows whether to ask for a focused follow-up.
+6. impact_analysis reports high risk across 11 impacted files with 3 suggested checks.
 
 [Agent policy]
-Call index_project, then project_overview, then context_pack with a token budget.
-Read context_pack.files in reading_plan order, use continuation_summary only after that, and run impact_analysis before edits.
+Call agent_route with root, task, and token_budget for the default first read.
+Read context_pack.files in reading_plan order, use continuation_summary only after that, and run focused follow-up tools only when needed.
 
 Run this walkthrough against another repository:
   CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/two-minute-demo.sh
@@ -81,8 +82,8 @@ Run this walkthrough against another repository:
 
 ## What To Check
 
-- The path starts with `index_project`, then `project_overview`, then
-  `context_pack`, then `impact_analysis`.
+- The path starts with `agent_route`, whose `route[]` includes
+  `index_project`, `project_overview`, `context_pack`, and `impact_analysis`.
 - `context_pack` includes selected files, selected ranges, reading-plan steps,
   first next action, token estimate, line reduction, and continuation status.
 - The talk track explains the same path a user should show in a recording.

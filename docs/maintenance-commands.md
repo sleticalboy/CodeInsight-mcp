@@ -71,9 +71,10 @@ scripts/semantic-smoke.sh
 scripts/installed-quickstart-smoke.sh
 ```
 
-Use `two-minute-demo.sh` for user-facing walkthroughs and `agent-router-demo.sh`
-for raw metric output and CI-style assertions. Use `demo-output-smoke.sh` after
-refreshing [Demo output snapshot](demo-output.md).
+Use `two-minute-demo.sh` for user-facing `agent_route` walkthroughs and
+`agent-router-demo.sh` for lower-level raw metric output and CI-style
+assertions. Use `demo-output-smoke.sh` after refreshing
+[Demo output snapshot](demo-output.md).
 
 `context-pack-quality-smoke.sh` is a deterministic offline quality regression
 check. It uses checked-in and temporary fixtures to verify explicit symbol
