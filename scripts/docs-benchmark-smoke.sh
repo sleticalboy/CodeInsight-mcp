@@ -397,6 +397,9 @@ main() {
     'scripts/release-handoff-summary\.sh --json-output release-handoff/vX\.Y\.Z\.json --output release-handoff/vX\.Y\.Z\.md vX\.Y\.Z' \
     "release commands handoff summary"
   require_pattern docs/release-commands.md \
+    'scripts/release-notes-draft\.sh --changelog-notes /tmp/codeinsight-release-notes\.md --output release-handoff/vX\.Y\.Z\.release-notes\.md vX\.Y\.Z' \
+    "release commands handoff release notes draft"
+  require_pattern docs/release-commands.md \
     'post-release verification' \
     "release commands handoff verification input"
   require_pattern docs/release-commands.md \

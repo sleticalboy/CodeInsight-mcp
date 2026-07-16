@@ -198,6 +198,13 @@ post-release verification:
 scripts/release-handoff-summary.sh --json-output release-handoff/vX.Y.Z.json --output release-handoff/vX.Y.Z.md vX.Y.Z
 ```
 
+Build a release notes/status-PR draft from the release handoff JSON:
+
+```bash
+scripts/extract-release-notes.sh --summary --max-items 12 CHANGELOG.md vX.Y.Z /tmp/codeinsight-release-notes.md
+scripts/release-notes-draft.sh --changelog-notes /tmp/codeinsight-release-notes.md --output release-handoff/vX.Y.Z.release-notes.md vX.Y.Z
+```
+
 Verify a local installed binary can complete the quickstart flow:
 
 ```bash

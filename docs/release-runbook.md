@@ -440,3 +440,10 @@ Update release notes only:
 scripts/extract-release-notes.sh --summary --max-items 12 CHANGELOG.md vX.Y.Z /tmp/codeinsight-release-notes.md
 gh release edit vX.Y.Z --notes-file /tmp/codeinsight-release-notes.md
 ```
+
+Generate a post-release notes/status-PR draft with verification evidence:
+
+```bash
+scripts/extract-release-notes.sh --summary --max-items 12 CHANGELOG.md vX.Y.Z /tmp/codeinsight-release-notes.md
+scripts/release-notes-draft.sh --changelog-notes /tmp/codeinsight-release-notes.md --output release-handoff/vX.Y.Z.release-notes.md vX.Y.Z
+```
