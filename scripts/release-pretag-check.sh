@@ -21,8 +21,10 @@ usage() {
 usage: scripts/release-pretag-check.sh [options] [branch]
 
 Waits for the latest CI run on a branch, then validates the uploaded benchmark
-subset, context-pack quality, and agent-route artifacts for that exact run. Use
-before creating a release tag.
+subset, context-pack quality, and agent-route artifacts for that exact run. With
+--head-sha, resolves a successful CI run for that exact commit so cancelled or
+failed stale runs cannot satisfy release evidence. Use before creating a release
+tag.
 
 Options:
   --repo OWNER/REPO  Pass an explicit GitHub repository to gh and artifact smoke.
@@ -49,36 +51,28 @@ resolve_latest_run() {
   local run_id
   local jq_filter='.[0].databaseId // ""'
   local limit=1
+  local gh_args=()
 
   if [ -n "$head_sha" ]; then
     jq_filter="map(select(.headSha == \"$head_sha\"))[0].databaseId // \"\""
     limit=20
   fi
 
+  gh_args=(run list)
   if [ "${#REPO_ARG[@]}" -gt 0 ]; then
-    run_id="$(
-      gh run list \
-        "${REPO_ARG[@]}" \
-        --workflow CI \
-        --branch "$branch" \
-        --limit "$limit" \
-        --json databaseId,headSha \
-        --jq "$jq_filter"
-    )"
-  else
-    run_id="$(
-      gh run list \
-        --workflow CI \
-        --branch "$branch" \
-        --limit "$limit" \
-        --json databaseId,headSha \
-        --jq "$jq_filter"
-    )"
+    gh_args+=("${REPO_ARG[@]}")
   fi
+  gh_args+=(--workflow CI --branch "$branch")
+  if [ -n "$head_sha" ]; then
+    gh_args+=(--status success)
+  fi
+  gh_args+=(--limit "$limit" --json databaseId,headSha --jq "$jq_filter")
+
+  run_id="$(gh "${gh_args[@]}")"
 
   if [ -z "$run_id" ]; then
     if [ -n "$head_sha" ]; then
-      fail "no CI run found for branch: $branch and head SHA: $head_sha"
+      fail "no successful CI run found for branch: $branch and head SHA: $head_sha"
     fi
     fail "no CI run found for branch: $branch"
   fi
