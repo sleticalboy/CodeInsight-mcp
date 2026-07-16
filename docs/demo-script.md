@@ -90,30 +90,30 @@ Promise: route the agent through agent_route before edits.
 
 1. index_project
    indexed_files: 23
-   symbols: 918
+   symbols: 922
 
 2. project_overview
    entrypoints: 7
    recommended_next_tools: 4
 
 3. context_pack
-   selected_files: 10
-   selected_ranges: 11
-   reading_plan_steps: 8
+   selected_files: 2
+   selected_ranges: 4
+   reading_plan_steps: 2
    first_next_action: inspect_seed_file
-   line_reduction: 98.4%
+   line_reduction: 99.6%
    continuation: complete
 
 4. impact_analysis
    risk_level: high
-   impacted_files: 11
-   suggested_checks: 3
+   impacted_files: 7
+   suggested_checks: 4
 
 [Talk track]
 1. agent_route ran index_project, project_overview, context_pack, and impact_analysis in one call.
 2. project_overview found 7 entrypoints and 4 recommended next tools.
-3. context_pack selected 10 files and 11 ranges, then produced 8 reading-plan steps.
-4. The first action is inspect_seed_file; the selected context reduced source reading by 98.4%.
+3. context_pack selected 2 files and 4 ranges, then produced 2 reading-plan steps.
+4. The first action is inspect_seed_file; the selected context reduced source reading by 99.6%.
 ```
 
 Exact numbers vary by repository and current source state. The important point

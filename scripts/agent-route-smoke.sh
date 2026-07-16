@@ -166,6 +166,44 @@ write_summary_json() {
     "summary JSON should match the agent-route evidence contract"
 }
 
+create_task_focused_fixture() {
+  local repo_dir="$1"
+
+  mkdir -p "$repo_dir/src"
+  cat >"$repo_dir/package.json" <<'EOF'
+{
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/main.ts"
+  }
+}
+EOF
+
+  cat >"$repo_dir/src/main.ts" <<'EOF'
+import { bootRouter } from "./router";
+
+export function main() {
+  return bootRouter();
+}
+
+main();
+EOF
+
+  cat >"$repo_dir/src/router.ts" <<'EOF'
+import { authenticate } from "./auth";
+
+export function bootRouter() {
+  return authenticate("demo-user");
+}
+EOF
+
+  cat >"$repo_dir/src/auth.ts" <<'EOF'
+export function authenticate(user: string) {
+  return { user, status: "accepted" };
+}
+EOF
+}
+
 main() {
   parse_args "$@"
   require_command jq
@@ -206,6 +244,24 @@ main() {
   require_jq "$route_json" '.impact_analysis.impact_counts.impacted_files >= 1' "impact_analysis should report impacted files"
   require_jq "$route_json" '.impact_analysis.suggested_checks | length >= 1' "impact_analysis should suggest checks"
   write_summary_json "$route_json"
+
+  local focused_repo="$TEMP_DIR/task-focused-repo"
+  local focused_route_json="$TEMP_DIR/task-focused-agent-route.json"
+  create_task_focused_fixture "$focused_repo"
+  "$CODEINSIGHT_BIN" agent-route "$focused_repo" \
+    --task "understand router auth flow" \
+    --token-budget 1600 \
+    --force-index \
+    >"$focused_route_json"
+
+  require_jq "$focused_route_json" '.context_pack.seed_strategy == "auto_task_match"' \
+    "task-focused route should report task-match seed strategy"
+  require_jq "$focused_route_json" '.context_pack.selected_seeds[0].value == "src/router.ts"' \
+    "task keywords should choose router seed before generic main entrypoint"
+  require_jq "$focused_route_json" '.context_pack.files[0].file == "src/router.ts"' \
+    "task-focused route should read router first"
+  require_jq "$focused_route_json" '.context_pack.reading_plan[0].file == "src/router.ts"' \
+    "task-focused reading plan should start with router"
 
   echo "agent-route smoke passed"
   echo "root: $repo_dir"

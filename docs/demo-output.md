@@ -33,33 +33,33 @@ token_budget: 6000
 
 1. index_project
    indexed_files: 23
-   symbols: 918
+   symbols: 922
    duration_ms: <duration_ms>
    errors: 0
 
 2. project_overview
-   total_lines: 27681
+   total_lines: 27792
    entrypoints: 7
    first_entrypoint: src/main.rs
    recommended_next_tools: 4
 
 3. context_pack
-   selected_files: 10
-   selected_ranges: 11
-   reading_plan_steps: 8
+   selected_files: 2
+   selected_ranges: 4
+   reading_plan_steps: 2
    first_next_action: inspect_seed_file
-   selected_lines: 439
-   line_reduction: 98.4%
-   estimated_tokens: 4372
+   selected_lines: 123
+   line_reduction: 99.6%
+   estimated_tokens: 1073
    continuation: complete
-   first_context_file: src/main.rs
+   first_context_file: src/tools.rs
 
 4. impact_analysis
-   seed_file: src/main.rs
+   seed_file: src/tools.rs
    risk_level: high
-   impacted_files: 11
-   paths: 0
-   suggested_checks: 3
+   impacted_files: 7
+   paths: 28
+   suggested_checks: 4
 
 Run against another repository:
   CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/two-minute-demo.sh
@@ -67,10 +67,10 @@ Run against another repository:
 [Talk track]
 1. agent_route ran index_project, project_overview, context_pack, and impact_analysis in one call.
 2. project_overview found 7 entrypoints and 4 recommended next tools.
-3. context_pack selected 10 files and 11 ranges, then produced 8 reading-plan steps.
-4. The first action is inspect_seed_file; the selected context reduced source reading by 98.4%.
+3. context_pack selected 2 files and 4 ranges, then produced 2 reading-plan steps.
+4. The first action is inspect_seed_file; the selected context reduced source reading by 99.6%.
 5. Continuation status is complete, so the agent knows whether to ask for a focused follow-up.
-6. impact_analysis reports high risk across 11 impacted files with 3 suggested checks.
+6. impact_analysis reports high risk across 7 impacted files with 4 suggested checks.
 
 [Agent policy]
 Call agent_route with root, task, and token_budget for the default first read.

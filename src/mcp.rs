@@ -959,11 +959,11 @@ def helper():
         .unwrap();
         assert_eq!(
             auto_context_result["structuredContent"]["seed_strategy"].as_str(),
-            Some("auto_source_fallback")
+            Some("auto_task_match")
         );
         assert_eq!(
             auto_context_result["structuredContent"]["selected_seeds"][0]["source"].as_str(),
-            Some("indexed_file_fallback")
+            Some("task_match")
         );
         assert_eq!(
             auto_context_result["structuredContent"]["files"][0]["file"].as_str(),

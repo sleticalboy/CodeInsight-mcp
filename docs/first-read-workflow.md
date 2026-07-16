@@ -98,15 +98,15 @@ graph hints, resolved local dependencies, semantic vector matches when the
 configured provider has indexed vectors, and local semantic chunk fallback
 matches into a token-budgeted context bundle for agents.
 
-If no `symbols` or `files` are provided, it uses `project_overview` entrypoint
-candidates to auto-select the highest-confidence `source` entrypoint. If no
-entrypoint exists, it falls back to indexed source files. Test, fixture, vendor,
-docs, and example files are not auto-selected unless the task explicitly asks
-for those roles.
+If no `symbols` or `files` are provided, it combines `project_overview`
+entrypoint candidates with task-matching indexed source files, then auto-selects
+the strongest seed. If no entrypoint or task match exists, it falls back to
+indexed source files. Test, fixture, vendor, docs, and example files are not
+auto-selected unless the task explicitly asks for those roles.
 
-The response includes `seed_strategy` (`explicit`, `auto_entrypoint`, or
-`auto_source_fallback`) and `selected_seeds` so clients can inspect seed
-decisions without parsing summary text.
+The response includes `seed_strategy` (`explicit`, `auto_entrypoint`,
+`auto_task_match`, or `auto_source_fallback`) and `selected_seeds` so clients
+can inspect seed decisions without parsing summary text.
 
 ## Context Ranking
 

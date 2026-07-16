@@ -2886,40 +2886,100 @@ struct AutoContextSeedSelection {
     seeds: Vec<ContextSeed>,
 }
 
+#[derive(Debug)]
+struct AutoSeedCandidate {
+    file: String,
+    role: String,
+    source: String,
+    score: i32,
+}
+
 fn auto_context_seed_files(
     store: &Store,
     root: &Path,
     task_keywords: &[String],
 ) -> Result<AutoContextSeedSelection> {
     let overview = store.overview(root)?;
-    let mut entrypoints = overview
+    let indexed_files = store.indexed_files()?;
+    let mut candidates = BTreeMap::<String, AutoSeedCandidate>::new();
+
+    for entrypoint in overview
         .entrypoints
         .iter()
         .filter(|entrypoint| auto_seed_role_allowed(&entrypoint.role, task_keywords))
-        .collect::<Vec<_>>();
-    entrypoints.sort_by(|left, right| {
+    {
+        let score = entrypoint.score as i32
+            + auto_seed_task_match_score(
+                &entrypoint.file,
+                entrypoint.symbol.as_deref(),
+                task_keywords,
+            );
+        upsert_auto_seed_candidate(
+            &mut candidates,
+            AutoSeedCandidate {
+                file: entrypoint.file.clone(),
+                role: entrypoint.role.clone(),
+                source: "overview_entrypoint".to_string(),
+                score,
+            },
+        );
+    }
+
+    for file in indexed_files
+        .iter()
+        .filter(|file| auto_seed_role_allowed(auto_seed_file_role(file), task_keywords))
+    {
+        let symbols = store.symbols_for_files(std::slice::from_ref(file), 12)?;
+        let task_score = symbols
+            .iter()
+            .map(|symbol| {
+                auto_seed_task_match_score(file, Some(&symbol.qualified_name), task_keywords)
+            })
+            .max()
+            .unwrap_or_else(|| auto_seed_task_match_score(file, None, task_keywords));
+        if task_score == 0 {
+            continue;
+        }
+        upsert_auto_seed_candidate(
+            &mut candidates,
+            AutoSeedCandidate {
+                file: file.clone(),
+                role: auto_seed_file_role(file).to_string(),
+                source: "task_match".to_string(),
+                score: 60 + task_score,
+            },
+        );
+    }
+
+    let mut candidates = candidates.into_values().collect::<Vec<_>>();
+    candidates.sort_by(|left, right| {
         right
             .score
             .cmp(&left.score)
             .then_with(|| left.file.cmp(&right.file))
     });
 
-    if let Some(entrypoint) = entrypoints.first() {
-        let file = entrypoint.file.clone();
+    if let Some(candidate) = candidates.first() {
+        let file = candidate.file.clone();
+        let source = candidate.source.clone();
+        let strategy = if source == "task_match" {
+            "auto_task_match"
+        } else {
+            "auto_entrypoint"
+        };
         return Ok(AutoContextSeedSelection {
-            strategy: "auto_entrypoint".to_string(),
+            strategy: strategy.to_string(),
             files: vec![file.clone()],
             seeds: vec![ContextSeed {
                 kind: "file".to_string(),
                 value: file,
-                source: "overview_entrypoint".to_string(),
-                role: Some(entrypoint.role.clone()),
+                source,
+                role: Some(candidate.role.clone()),
             }],
         });
     }
 
-    let files = store
-        .indexed_files()?
+    let files = indexed_files
         .into_iter()
         .filter(|file| auto_seed_role_allowed(auto_seed_file_role(file), task_keywords))
         .take(3)
@@ -2939,6 +2999,53 @@ fn auto_context_seed_files(
         files,
         seeds,
     })
+}
+
+fn upsert_auto_seed_candidate(
+    candidates: &mut BTreeMap<String, AutoSeedCandidate>,
+    candidate: AutoSeedCandidate,
+) {
+    let entry = candidates
+        .entry(candidate.file.clone())
+        .or_insert_with(|| AutoSeedCandidate {
+            file: candidate.file.clone(),
+            role: candidate.role.clone(),
+            source: candidate.source.clone(),
+            score: candidate.score,
+        });
+    if candidate.score > entry.score
+        || (candidate.score == entry.score && candidate.source == "task_match")
+    {
+        *entry = candidate;
+    }
+}
+
+fn auto_seed_task_match_score(file: &str, symbol: Option<&str>, task_keywords: &[String]) -> i32 {
+    if task_keywords.is_empty() {
+        return 0;
+    }
+
+    let mut score = 0;
+    for (index, keyword) in task_keywords.iter().enumerate() {
+        let boost = 70 + (task_keywords.len().saturating_sub(index) as i32 * 3);
+        if auto_seed_field_matches(file, keyword) {
+            score += boost;
+        }
+        if symbol
+            .map(|symbol| auto_seed_field_matches(symbol, keyword))
+            .unwrap_or(false)
+        {
+            score += boost;
+        }
+    }
+    score
+}
+
+fn auto_seed_field_matches(field: &str, keyword: &str) -> bool {
+    field
+        .split(|ch: char| !ch.is_ascii_alphanumeric())
+        .map(str::to_ascii_lowercase)
+        .any(|part| part == keyword || (keyword.len() >= 4 && part.contains(keyword)))
 }
 
 fn explicit_context_seeds(seed_symbols: &[String], seed_files: &[String]) -> Vec<ContextSeed> {
@@ -3384,7 +3491,11 @@ fn compare_reference_candidates(left: &ReferenceCandidate, right: &ReferenceCand
 
 fn is_low_value_reference_file(file: &str) -> bool {
     let normalized = file.replace('\\', "/").to_ascii_lowercase();
-    normalized.contains("/test/")
+    normalized == "test"
+        || normalized == "tests"
+        || normalized.starts_with("test/")
+        || normalized.starts_with("tests/")
+        || normalized.contains("/test/")
         || normalized.contains("/tests/")
         || normalized.contains("/__tests__/")
         || normalized.contains("/fixture/")
