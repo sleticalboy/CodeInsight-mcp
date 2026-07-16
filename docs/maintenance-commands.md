@@ -76,9 +76,9 @@ scripts/installed-quickstart-smoke.sh
 
 Use `two-minute-demo.sh` for user-facing `agent_route` walkthroughs,
 `agent-route-smoke.sh` for the one-call JSON contract, and
-`agent-router-demo.sh` for lower-level raw metric output and CI-style
-assertions. Use `demo-output-smoke.sh` after refreshing
-[Demo output snapshot](demo-output.md).
+`agent-router-demo.sh` for lower-level metrics, reading reasons, impact
+breakdown output, and CI-style assertions. Use `demo-output-smoke.sh` after
+refreshing [Demo output snapshot](demo-output.md).
 
 `agent-route-smoke.sh --summary-json <path>` writes a reusable JSON evidence
 summary for the one-call first-read route. The remote `agent-route-smoke` job

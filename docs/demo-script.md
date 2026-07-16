@@ -32,8 +32,8 @@ CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/two-minute-demo.sh
 
 For machine-readable CI validation, `scripts/two-minute-demo.sh` runs the
 `agent-route` CLI command and renders the first-read metrics. Use
-`scripts/agent-router-demo.sh` when you only need the lower-level raw metrics
-and CI-style assertions.
+`scripts/agent-router-demo.sh` when you need lower-level metrics, reading
+reasons, impact breakdown output, and CI-style assertions.
 
 For a copyable example of the current repository output, see the
 [demo output snapshot](demo-output.md).
@@ -181,8 +181,8 @@ Before recording or presenting:
 
 - Run `cargo build --locked --release`.
 - Run `scripts/two-minute-demo.sh`.
-- Run `scripts/agent-router-demo.sh` when you need the raw assertion-oriented
-  metrics.
+- Run `scripts/agent-router-demo.sh` when you need assertion-oriented metrics,
+  reading reasons, and impact breakdown output.
 - Compare with [Demo output snapshot](demo-output.md) when preparing README
   videos, release notes, or project introductions.
 - Confirm `indexed_files` is greater than zero.

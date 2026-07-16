@@ -115,6 +115,8 @@ main() {
   require_json_number_gt_zero "$context_json" '.files | length' "context_pack selected files"
   require_json_number_gt_zero "$context_json" '.reading_plan | length' "context_pack reading plan steps"
   require_json_string "$context_json" '.reading_plan[0].next_action' "first reading-plan next action"
+  require_json_string "$context_json" '.reading_plan[0].reason' "first reading-plan reason"
+  require_json_string "$context_json" '.reading_plan[0].selection_reason' "first reading-plan selection reason"
 
   if [ -z "$IMPACT_FILE" ]; then
     IMPACT_FILE="$(json_value "$context_json" '.files[0].file // empty')"
@@ -129,11 +131,15 @@ main() {
   fi
 
   local total_lines selected_lines reduction first_entrypoint first_context_file
+  local first_next_action first_reading_plan_reason first_selection_reason
   total_lines="$(json_value "$overview_json" '.total_lines // 0')"
   selected_lines="$(selected_context_lines "$context_json")"
   reduction="$(line_reduction "$total_lines" "$selected_lines")"
   first_entrypoint="$(json_value "$overview_json" '.entrypoints[0].file // "-"')"
   first_context_file="$(json_value "$context_json" '.files[0].file // "-"')"
+  first_next_action="$(json_value "$context_json" '.reading_plan[0].next_action // "-"')"
+  first_reading_plan_reason="$(json_value "$context_json" '.reading_plan[0].reason // "-"')"
+  first_selection_reason="$(json_value "$context_json" '.reading_plan[0].selection_reason // "-"')"
 
   echo "1. index_project"
   echo "   indexed_files: $(json_value "$index_json" '.indexed_files')"
@@ -153,12 +159,14 @@ main() {
   echo "   selected_files: $(json_value "$context_json" '.files | length')"
   echo "   selected_ranges: $(json_value "$context_json" '[.files[].ranges | length] | add // 0')"
   echo "   reading_plan_steps: $(json_value "$context_json" '.reading_plan | length')"
-  echo "   first_next_action: $(json_value "$context_json" '.reading_plan[0].next_action // "-"')"
+  echo "   first_next_action: $first_next_action"
   echo "   selected_lines: $selected_lines"
   echo "   line_reduction: $reduction"
   echo "   estimated_tokens: $(json_value "$context_json" '.estimated_tokens')"
   echo "   continuation: $(json_value "$context_json" '.continuation_summary.status // "-"')"
   echo "   first_context_file: $first_context_file"
+  echo "   reading_plan_reason: $first_reading_plan_reason"
+  echo "   selection_reason: $first_selection_reason"
   echo
 
   if [ -s "$impact_json" ]; then
@@ -168,6 +176,9 @@ main() {
     echo "   impacted_files: $(json_value "$impact_json" '.impact_counts.impacted_files // 0')"
     echo "   paths: $(json_value "$impact_json" '.impact_counts.paths // 0')"
     echo "   suggested_checks: $(json_value "$impact_json" '.suggested_checks | length')"
+    echo "   summary: $(json_value "$impact_json" '.summary // "-"')"
+    echo "   call_related_files: $(json_value "$impact_json" '.impact_breakdown.call_related_files // 0')"
+    echo "   dependency_related_files: $(json_value "$impact_json" '.impact_breakdown.dependency_related_files // 0')"
   else
     echo "4. impact_analysis"
     echo "   skipped: context_pack did not select a file seed"

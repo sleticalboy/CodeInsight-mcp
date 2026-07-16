@@ -571,11 +571,23 @@ main() {
     'first_next_action' \
     "agent-router next action output"
   require_pattern scripts/agent-router-demo.sh \
+    'reading_plan_reason' \
+    "agent-router reading-plan reason output"
+  require_pattern scripts/agent-router-demo.sh \
+    'selection_reason' \
+    "agent-router selection reason output"
+  require_pattern scripts/agent-router-demo.sh \
+    'impact_breakdown\.call_related_files' \
+    "agent-router impact breakdown output"
+  require_pattern scripts/agent-router-demo.sh \
     'require_json_number_gt_zero "\$context_json" '\''\.reading_plan \| length'\''' \
     "agent-router reading plan assertion"
   require_pattern scripts/agent-router-demo.sh \
     'require_json_string "\$context_json" '\''\.reading_plan\[0\]\.next_action'\''' \
     "agent-router next action assertion"
+  require_pattern scripts/agent-router-demo.sh \
+    'require_json_string "\$context_json" '\''\.reading_plan\[0\]\.reason'\''' \
+    "agent-router reading-plan reason assertion"
   require_pattern scripts/two-minute-demo.sh \
     'Problem: AI agents waste the first read' \
     "two-minute demo problem statement"

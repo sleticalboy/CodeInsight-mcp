@@ -50,7 +50,7 @@ Default adoption path:
 - [Maintenance commands](maintenance-commands.md)
 - Two-minute demo: `scripts/two-minute-demo.sh`
 - Installed first-read route: `scripts/installed-quickstart-smoke.sh`
-- Agent-router raw metrics: `scripts/agent-router-demo.sh`
+- Agent-router lower-level metrics and reasons: `scripts/agent-router-demo.sh`
 - [Two-minute demo script](demo-script.md)
 - [Two-minute demo output snapshot](demo-output.md)
 - [MCP client smoke test](mcp-client-smoke.md)
