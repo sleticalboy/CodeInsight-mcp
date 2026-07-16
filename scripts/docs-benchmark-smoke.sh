@@ -444,6 +444,15 @@ main() {
   require_pattern docs/release-runbook.md \
     'verify-pretag-ci' \
     "release runbook tag pretag workflow gate"
+  require_pattern docs/release-runbook.md \
+    'Cancelled, failed, or in-progress' \
+    "release runbook cancelled CI evidence guard"
+  require_pattern docs/release-runbook.md \
+    'runs cannot satisfy release evidence' \
+    "release runbook non-success CI evidence guard"
+  require_pattern docs/release-runbook.md \
+    'successful run for the tag target SHA' \
+    "release runbook tag SHA successful CI binding"
   require_pattern scripts/release-pretag-check.sh \
     'gh run watch "\$RUN_ID".*--exit-status' \
     "release pretag CI watch"

@@ -119,6 +119,9 @@ This waits for the latest `CI` run on `main`, downloads
 `codeinsight-agent-route-smoke`, validates those artifacts, and confirms the
 benchmark, context-pack quality, and agent-route evidence is readable outside
 the GitHub Actions UI before tagging.
+When a tag target is checked by `--head-sha`, the pretag gate resolves only a
+successful `CI` run for that exact commit. Cancelled, failed, or in-progress
+runs cannot satisfy release evidence, even if they share the branch.
 
 Dry-run the tag preflight without creating or pushing a tag:
 
@@ -169,7 +172,9 @@ The tagged `Release Build` workflow first runs `verify-pretag-ci`, which checks
 that the tag target SHA has a successful `CI` run on `main` and validates that
 same run's `codeinsight-benchmark-subset`,
 `codeinsight-context-pack-quality`, and `codeinsight-agent-route-smoke`
-artifacts before any release assets are built.
+artifacts before any release assets are built. If branch concurrency cancelled
+an older run, that cancelled run is ignored because the gate binds evidence to a
+successful run for the tag target SHA.
 
 Watch the release workflows:
 
