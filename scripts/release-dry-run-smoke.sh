@@ -143,6 +143,11 @@ test "$6" = "main"
 cat <<'SUMMARY'
 release evidence summary
 tag: v9.8.7
+branch: main
+head_sha: abc123
+metadata_cargo: 9.8.7
+metadata_install: v9.8.7
+metadata_changelog: 9.8.7 (2026-07-15)
 ci_run: 123456
 release_notes_block:
 ## v9.8.7 release evidence
@@ -191,6 +196,16 @@ EOF
     fail "missing evidence block"
   grep -Fq "release evidence written: $TEMP_DIR/evidence/release-evidence.md" "$TEMP_DIR/output.log" ||
     fail "missing evidence file output"
+  grep -Fq 'release dry run checklist' "$TEMP_DIR/output.log" ||
+    fail "missing final checklist"
+  grep -Fq 'metadata_cargo: 9.8.7' "$TEMP_DIR/output.log" ||
+    fail "missing checklist Cargo metadata"
+  grep -Fq 'metadata_install: v9.8.7' "$TEMP_DIR/output.log" ||
+    fail "missing checklist install metadata"
+  grep -Fq 'metadata_changelog: 9.8.7 (2026-07-15)' "$TEMP_DIR/output.log" ||
+    fail "missing checklist changelog metadata"
+  grep -Fq 'evidence_file: '"$TEMP_DIR/evidence/release-evidence.md" "$TEMP_DIR/output.log" ||
+    fail "missing checklist evidence file"
   grep -Fq 'release dry run passed' "$TEMP_DIR/output.log" ||
     fail "missing success output"
 

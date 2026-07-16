@@ -44,8 +44,9 @@ scripts/release-dry-run.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
 ```
 
 This prints the release prep diff, validates tag preflight with temporary
-prepared metadata, and prints the release evidence block without modifying the
-checkout.
+prepared metadata, prints the release evidence block, and ends with a
+`release dry run checklist` covering the tag, commit, CI run, metadata fields,
+and artifact gates without modifying the checkout.
 
 To archive that evidence locally while still printing it to the terminal:
 

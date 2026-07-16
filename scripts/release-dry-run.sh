@@ -96,9 +96,50 @@ require_executable() {
   fi
 }
 
+field_from_file() {
+  local file="$1"
+  local key="$2"
+
+  awk -v key="$key" '
+    index($0, key ": ") == 1 {
+      print substr($0, length(key) + 3)
+      exit
+    }
+  ' "$file"
+}
+
+require_field_from_file() {
+  local file="$1"
+  local key="$2"
+  local description="$3"
+  local value
+
+  value="$(field_from_file "$file" "$key")"
+  if [ -z "$value" ]; then
+    fail "missing ${description}: $key"
+  fi
+  printf "%s" "$value"
+}
+
+require_literal_in_file() {
+  local file="$1"
+  local literal="$2"
+  local description="$3"
+
+  if ! grep -Fq -- "$literal" "$file"; then
+    fail "missing ${description}: $literal"
+  fi
+}
+
 main() {
   local temp_repo
   local evidence_output
+  local preflight_output_file
+  local evidence_output_file
+  local ci_run
+  local metadata_cargo
+  local metadata_install
+  local metadata_changelog
 
   trap cleanup EXIT INT TERM
 
@@ -208,6 +249,7 @@ main() {
   echo
 
   echo "[3/4] release tag preflight"
+  preflight_output_file="$TEMP_DIR/release-tag-preflight.out"
   CODEINSIGHT_ROOT_DIR="$temp_repo" \
     CODEINSIGHT_RELEASE_METADATA_SUMMARY_SCRIPT="$RELEASE_METADATA_SUMMARY_SCRIPT" \
     CODEINSIGHT_RELEASE_WORKFLOW_GUARD_SCRIPT="$RELEASE_WORKFLOW_GUARD_SCRIPT" \
@@ -215,10 +257,12 @@ main() {
     CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT="$BENCHMARK_ARTIFACT_SMOKE_SCRIPT" \
     CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="$CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT" \
     CODEINSIGHT_AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT="$AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT" \
-    "$RELEASE_TAG_PREFLIGHT_SCRIPT" "${REPO_ARG[@]}" --head-sha "$HEAD_SHA" "$TAG_NAME" "$BRANCH"
+    "$RELEASE_TAG_PREFLIGHT_SCRIPT" "${REPO_ARG[@]}" --head-sha "$HEAD_SHA" "$TAG_NAME" "$BRANCH" |
+    tee "$preflight_output_file"
   echo
 
   echo "[4/4] release evidence summary"
+  evidence_output_file="$TEMP_DIR/release-evidence-summary.out"
   evidence_output="$(
     CODEINSIGHT_ROOT_DIR="$temp_repo" \
       CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT="$BENCHMARK_ARTIFACT_SMOKE_SCRIPT" \
@@ -228,10 +272,35 @@ main() {
       "$RELEASE_EVIDENCE_SUMMARY_SCRIPT" "${REPO_ARG[@]}" --head-sha "$HEAD_SHA" "$TAG_NAME" "$BRANCH"
   )"
   printf "%s\n" "$evidence_output"
+  printf "%s\n" "$evidence_output" >"$evidence_output_file"
   if [ -n "$EVIDENCE_FILE" ]; then
     mkdir -p "$(dirname "$EVIDENCE_FILE")"
     printf "%s\n" "$evidence_output" >"$EVIDENCE_FILE"
     echo "release evidence written: $EVIDENCE_FILE"
+  fi
+  echo
+
+  require_literal_in_file "$preflight_output_file" "artifact_gate_benchmark: passed" "pretag benchmark artifact gate"
+  require_literal_in_file "$preflight_output_file" "artifact_gate_context_pack_quality: passed" "pretag context-pack quality artifact gate"
+  require_literal_in_file "$preflight_output_file" "artifact_gate_agent_route: passed" "pretag agent-route artifact gate"
+  ci_run="$(require_field_from_file "$evidence_output_file" "ci_run" "release evidence CI run")"
+  metadata_cargo="$(require_field_from_file "$evidence_output_file" "metadata_cargo" "Cargo metadata")"
+  metadata_install="$(require_field_from_file "$evidence_output_file" "metadata_install" "install metadata")"
+  metadata_changelog="$(require_field_from_file "$evidence_output_file" "metadata_changelog" "changelog metadata")"
+
+  echo "release dry run checklist"
+  echo "tag: $TAG_NAME"
+  echo "branch: $BRANCH"
+  echo "head_sha: $HEAD_SHA"
+  echo "ci_run: $ci_run"
+  echo "metadata_cargo: $metadata_cargo"
+  echo "metadata_install: $metadata_install"
+  echo "metadata_changelog: $metadata_changelog"
+  echo "artifact_gate_benchmark: passed"
+  echo "artifact_gate_context_pack_quality: passed"
+  echo "artifact_gate_agent_route: passed"
+  if [ -n "$EVIDENCE_FILE" ]; then
+    echo "evidence_file: $EVIDENCE_FILE"
   fi
   echo
 

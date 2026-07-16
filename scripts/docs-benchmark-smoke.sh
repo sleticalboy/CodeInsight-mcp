@@ -385,8 +385,17 @@ main() {
     '`metadata_cargo`, `metadata_install`, and' \
     "release commands metadata summary output"
   require_pattern docs/release-commands.md \
-    'prints the release evidence block without modifying' \
+    'release dry run checklist' \
+    "release commands dry run checklist"
+  require_pattern docs/release-commands.md \
+    'artifact gates without modifying the checkout' \
     "release commands dry run checkout safety"
+  require_pattern docs/release-runbook.md \
+    'release dry run checklist' \
+    "release runbook dry run checklist"
+  require_pattern docs/release-runbook.md \
+    'optional evidence file path' \
+    "release runbook dry run checklist evidence file"
   require_pattern docs/release-commands.md \
     'scripts/release-pretag-check\.sh --repo sleticalboy/CodeInsight-mcp --head-sha <tag-target-sha> main' \
     "release commands tag SHA benchmark artifact gate"
