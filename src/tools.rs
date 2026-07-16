@@ -302,10 +302,7 @@ pub fn agent_route_value(
             tool: "impact_analysis".to_string(),
             status: impact_status.clone(),
             reason: match &impact_analysis {
-                Some(report) => format!(
-                    "estimated {} impacted files at {} risk",
-                    report.impact_counts.impacted_files, report.risk_level
-                ),
+                Some(report) => agent_route_impact_reason(report),
                 None => "skipped because no context file or symbol seed was available".to_string(),
             },
         },
@@ -324,6 +321,18 @@ pub fn agent_route_value(
         context_pack,
         impact_analysis,
     })
+}
+
+fn agent_route_impact_reason(report: &ImpactAnalysisReport) -> String {
+    format!(
+        "estimated {} impacted files at {} risk, including {} call-related files, {} dependency-related files, {} call paths, and {} dependency paths",
+        report.impact_counts.impacted_files,
+        report.risk_level,
+        report.impact_breakdown.call_related_files,
+        report.impact_breakdown.dependency_related_files,
+        report.impact_breakdown.call_paths,
+        report.impact_breakdown.dependency_paths
+    )
 }
 
 pub fn init_config_value(root: PathBuf, force: bool) -> Result<ConfigInitReport> {

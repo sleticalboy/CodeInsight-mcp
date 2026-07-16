@@ -1936,6 +1936,11 @@ fn cli_agent_route_runs_first_read_pipeline() {
     assert_eq!(route["impact_analysis"]["format"], "summary");
     assert_eq!(route["impact_analysis"]["depth"].as_u64(), Some(2));
     assert_eq!(route["impact_analysis"]["evidence_limit"].as_u64(), Some(3));
+    let impact_reason = route["route"][3]["reason"].as_str().unwrap();
+    assert!(impact_reason.contains("call-related files"));
+    assert!(impact_reason.contains("dependency-related files"));
+    assert!(impact_reason.contains("call paths"));
+    assert!(impact_reason.contains("dependency paths"));
     assert!(
         route["impact_seed_files"]
             .as_array()
@@ -5990,6 +5995,9 @@ fn mcp_stdio_executes_agent_route() {
         route["route"][3]["tool"],
         serde_json::Value::String("impact_analysis".to_string())
     );
+    let impact_reason = route["route"][3]["reason"].as_str().unwrap();
+    assert!(impact_reason.contains("call-related files"));
+    assert!(impact_reason.contains("dependency-related files"));
 }
 
 #[test]
