@@ -28,6 +28,15 @@ main() {
   require_pattern README.md \
     '\[Known limitations\]\(docs/known-limitations\.md\)' \
     "known limitations link"
+  require_pattern README.md \
+    'scripts/installed-quickstart-smoke\.sh' \
+    "README installed quickstart adoption gate"
+  require_pattern README.md \
+    'CLI `agent-route`, MCP stdio, and MCP `agent_route`' \
+    "README CLI and MCP agent_route coverage"
+  require_pattern README.md \
+    '`agent_route`, which runs `index_project -> project_overview -> context_pack ->' \
+    "README one-call agent_route demo path"
 
   require_pattern docs/README.md \
     '\[First-read workflow\]\(first-read-workflow\.md\)' \

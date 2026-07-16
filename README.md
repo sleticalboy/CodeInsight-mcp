@@ -33,10 +33,11 @@ CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/two-minute-demo.sh
 ```
 
 The demo executes the same product path an MCP client should follow:
-`index -> overview -> context-pack -> impact-analysis`. It prints index timing,
-entrypoint and recommendation counts, selected context size, reading-plan
-steps, line-reduction percentage, continuation status, impact-analysis summary,
-and a short talk track for recordings or project introductions.
+`agent_route`, which runs `index_project -> project_overview -> context_pack ->
+impact_analysis` in one first-read route. It prints index timing, entrypoint and
+recommendation counts, selected context size, reading-plan steps,
+line-reduction percentage, continuation status, impact-analysis summary, and a
+short talk track for recordings or project introductions.
 
 For a recording or project introduction, use the
 [two-minute demo script](docs/demo-script.md) and the checked-in
@@ -118,6 +119,21 @@ installer smoke tests, see [Install](docs/install.md).
 
 For the full install-to-agent path, see [Quickstart](docs/quickstart.md).
 
+## Verify Adoption
+
+After installing `codeinsight`, verify the user-side first-read route:
+
+```bash
+CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh
+```
+
+This smoke proves the installed binary can run `version`, `index`, `overview`,
+`context-pack`, CLI `agent-route`, MCP stdio, and MCP `agent_route` against a
+temporary project outside the source checkout.
+
+For the complete adoption checklist, see
+[Adoption checklist](docs/adoption-checklist.md).
+
 ## Install With Homebrew
 
 ```bash
@@ -143,7 +159,7 @@ For local image builds, platform details, and Docker smoke tests, see
 
 ## CLI Usage
 
-Index a repository, inspect the overview, then build an agent context pack:
+Run the default first-read route, or inspect each routing step manually:
 
 ```bash
 codeinsight agent-route /path/to/repo --task "understand app entrypoint" --token-budget 6000
