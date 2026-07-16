@@ -91,23 +91,24 @@ optional external checks, see [Maintenance commands](maintenance-commands.md).
 
 ## Before Tagging A Release
 
-- Use the short command index for the exact release commands:
-  [Release commands](release-commands.md).
-
-- Preview release metadata updates:
+- Use the recommended release path from [Maintenance commands](maintenance-commands.md)
+  for the normal tag flow:
 
   ```bash
+  scripts/release-dry-run.sh --repo sleticalboy/CodeInsight-mcp --evidence-file release-evidence/vX.Y.Z.md vX.Y.Z main
   scripts/prepare-release.sh --dry-run vX.Y.Z
-  ```
-
-- Prepare the release commit:
-
-  ```bash
   scripts/prepare-release.sh vX.Y.Z
+  git push origin main
+  scripts/release-pretag-check.sh main
+  scripts/archive-release-evidence.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
+  scripts/release-tag-preflight.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
+  git tag -a vX.Y.Z -m "vX.Y.Z"
+  git push origin vX.Y.Z
   ```
 
-- Run the local release gate from [Release commands](release-commands.md)
-  before pushing the release prep commit.
+- Use [Release commands](release-commands.md) for the exact command index and
+  [Release runbook](release-runbook.md) for troubleshooting, skip flags, and
+  manual rebuild paths.
 
 ## After Publishing A Tag
 

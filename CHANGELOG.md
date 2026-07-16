@@ -25,6 +25,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   plus context-pack quality report paths end to end.
 - Added `scripts/archive-release-evidence.sh` to write validated release
   evidence to `release-evidence/<tag>.md` without manual stdout copying.
+- README, maintenance commands, and maintainer checklist now share the same
+  short recommended release path.
 - `scripts/verify-release.sh` now reports a specific local network diagnostic
   when GitHub Release assets exist in API metadata but
   `github.com/releases/download` is unreachable, and supports an explicit

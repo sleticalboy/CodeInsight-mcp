@@ -37,6 +37,25 @@ JSON, release prep, Homebrew formula generation, post-release verification,
 status update checks, pretag artifact checks, tagged release workflow guard
 checks, and tag preflight smoke.
 
+## Recommended Release Path
+
+Use this as the shortest normal release path. The detailed checklist and
+troubleshooting notes live in [Release commands](release-commands.md) and
+[Release runbook](release-runbook.md).
+
+```bash
+scripts/release-dry-run.sh --repo sleticalboy/CodeInsight-mcp --evidence-file release-evidence/vX.Y.Z.md vX.Y.Z main
+scripts/prepare-release.sh --dry-run vX.Y.Z
+scripts/prepare-release.sh vX.Y.Z
+git push origin main
+scripts/release-pretag-check.sh main
+scripts/archive-release-evidence.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
+scripts/release-tag-preflight.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
+git tag -a vX.Y.Z -m "vX.Y.Z"
+git push origin vX.Y.Z
+scripts/post-release-verify.sh vX.Y.Z
+```
+
 ## Agent And MCP Checks
 
 Run these when changing code routing, context packing, MCP output, or semantic

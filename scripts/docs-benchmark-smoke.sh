@@ -289,6 +289,18 @@ main() {
     'scripts/archive-release-evidence\.sh --repo sleticalboy/CodeInsight-mcp vX\.Y\.Z main' \
     "maintenance archive release evidence command"
   require_pattern docs/maintenance-commands.md \
+    '^## Recommended Release Path$' \
+    "maintenance recommended release path section"
+  require_pattern README.md \
+    'Maintainer release path:' \
+    "README maintainer release path"
+  require_pattern README.md \
+    'scripts/archive-release-evidence\.sh --repo sleticalboy/CodeInsight-mcp vX\.Y\.Z main' \
+    "README archive release evidence command"
+  require_pattern docs/maintainer-checklist.md \
+    'scripts/archive-release-evidence\.sh --repo sleticalboy/CodeInsight-mcp vX\.Y\.Z main' \
+    "maintainer checklist archive release evidence command"
+  require_pattern docs/maintenance-commands.md \
     'scripts/context-pack-quality-smoke\.sh' \
     "maintenance context-pack quality smoke"
   require_pattern docs/maintenance-commands.md \
