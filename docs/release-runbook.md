@@ -122,6 +122,10 @@ the GitHub Actions UI before tagging.
 When a tag target is checked by `--head-sha`, the pretag gate resolves only a
 successful `CI` run for that exact commit. Cancelled, failed, or in-progress
 runs cannot satisfy release evidence, even if they share the branch.
+After the artifact checks pass, `release-pretag-check.sh` prints a
+`release pretag evidence` block with the resolved branch, CI run, head SHA, and
+`artifact_gate_benchmark`, `artifact_gate_context_pack_quality`, and
+`artifact_gate_agent_route` statuses.
 
 Dry-run the tag preflight without creating or pushing a tag:
 

@@ -79,6 +79,24 @@ resolve_latest_run() {
   printf "%s" "$run_id"
 }
 
+resolve_run_head_sha() {
+  local run_id="$1"
+  local head_sha
+  local gh_args=()
+
+  gh_args=(run view "$run_id")
+  if [ "${#REPO_ARG[@]}" -gt 0 ]; then
+    gh_args+=("${REPO_ARG[@]}")
+  fi
+  gh_args+=(--json headSha --jq '.headSha // ""')
+
+  head_sha="$(gh "${gh_args[@]}")"
+  if [ -z "$head_sha" ]; then
+    fail "could not resolve head SHA for CI run: $run_id"
+  fi
+  printf "%s" "$head_sha"
+}
+
 main() {
   while [ "$#" -gt 0 ]; do
     case "$1" in
@@ -150,6 +168,10 @@ main() {
   if [ -z "$RUN_ID" ]; then
     RUN_ID="$(resolve_latest_run "$BRANCH" "$HEAD_SHA")"
   fi
+  RESOLVED_HEAD_SHA="$HEAD_SHA"
+  if [ -z "$RESOLVED_HEAD_SHA" ]; then
+    RESOLVED_HEAD_SHA="$(resolve_run_head_sha "$RUN_ID")"
+  fi
 
   echo "watching CI run: $RUN_ID"
   if [ "${#REPO_ARG[@]}" -gt 0 ]; then
@@ -164,6 +186,13 @@ main() {
     "$AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT" "$RUN_ID"
   fi
 
+  echo "release pretag evidence"
+  echo "branch: $BRANCH"
+  echo "ci_run: $RUN_ID"
+  echo "head_sha: $RESOLVED_HEAD_SHA"
+  echo "artifact_gate_benchmark: passed"
+  echo "artifact_gate_context_pack_quality: passed"
+  echo "artifact_gate_agent_route: passed"
   echo "release pretag check passed"
 }
 

@@ -453,12 +453,24 @@ main() {
   require_pattern docs/release-runbook.md \
     'successful run for the tag target SHA' \
     "release runbook tag SHA successful CI binding"
+  require_pattern docs/release-runbook.md \
+    'release pretag evidence' \
+    "release runbook pretag evidence summary"
+  require_pattern docs/release-runbook.md \
+    'artifact_gate_benchmark' \
+    "release runbook pretag benchmark evidence summary"
   require_pattern scripts/release-pretag-check.sh \
     'gh run watch "\$RUN_ID".*--exit-status' \
     "release pretag CI watch"
   require_pattern scripts/release-pretag-check.sh \
     '\-\-head-sha SHA' \
     "release pretag head SHA option"
+  require_pattern scripts/release-pretag-check.sh \
+    'head_sha: \$RESOLVED_HEAD_SHA' \
+    "release pretag resolved head SHA output"
+  require_pattern scripts/release-pretag-check.sh \
+    'artifact_gate_agent_route: passed' \
+    "release pretag agent-route gate summary"
   require_pattern scripts/release-pretag-check.sh \
     'BENCHMARK_ARTIFACT_SMOKE_SCRIPT' \
     "release pretag artifact smoke hook"

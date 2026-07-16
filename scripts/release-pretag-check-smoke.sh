@@ -32,6 +32,20 @@ if [ "$1" = "run" ] && [ "$2" = "list" ]; then
   exit 0
 fi
 
+if [ "$1" = "run" ] && [ "$2" = "view" ]; then
+  test "$3" = "123456"
+  case " $* " in
+    *" --json headSha "*) ;;
+    *) exit 13 ;;
+  esac
+  case " $* " in
+    *" --jq .headSha // \"\" "*) ;;
+    *) exit 14 ;;
+  esac
+  printf 'def456\n'
+  exit 0
+fi
+
 if [ "$1" = "run" ] && [ "$2" = "watch" ]; then
   test "$3" = "123456"
   case " $* " in
@@ -86,19 +100,21 @@ EOF
     CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/context-pack-quality-artifact-smoke" \
     CODEINSIGHT_AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/agent-route-artifact-smoke" \
     PATH="$TEMP_DIR/bin:$PATH" \
-    "$ROOT_DIR/scripts/release-pretag-check.sh" --repo sleticalboy/CodeInsight-mcp main >/dev/null
+    "$ROOT_DIR/scripts/release-pretag-check.sh" --repo sleticalboy/CodeInsight-mcp main >"$TEMP_DIR/latest.out"
 
   CODEINSIGHT_PRETAG_SMOKE_LOG="$TEMP_DIR/calls.log" \
     CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/benchmark-artifact-smoke" \
     CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/context-pack-quality-artifact-smoke" \
     CODEINSIGHT_AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/agent-route-artifact-smoke" \
     PATH="$TEMP_DIR/bin:$PATH" \
-    "$ROOT_DIR/scripts/release-pretag-check.sh" --repo sleticalboy/CodeInsight-mcp --head-sha abc123 main >/dev/null
+    "$ROOT_DIR/scripts/release-pretag-check.sh" --repo sleticalboy/CodeInsight-mcp --head-sha abc123 main >"$TEMP_DIR/head-sha.out"
 
   grep -Fq 'gh run list --repo sleticalboy/CodeInsight-mcp --workflow CI --branch main --limit 1 --json databaseId,headSha --jq .[0].databaseId // ""' "$TEMP_DIR/calls.log" ||
     fail "missing latest CI run lookup"
   grep -Fq 'gh run list --repo sleticalboy/CodeInsight-mcp --workflow CI --branch main --status success --limit 20 --json databaseId,headSha --jq map(select(.headSha == "abc123"))[0].databaseId // ""' "$TEMP_DIR/calls.log" ||
     fail "missing successful head SHA CI run lookup"
+  grep -Fq 'gh run view 123456 --repo sleticalboy/CodeInsight-mcp --json headSha --jq .headSha // ""' "$TEMP_DIR/calls.log" ||
+    fail "missing resolved run head SHA lookup"
   grep -Fq 'gh run watch 123456 --repo sleticalboy/CodeInsight-mcp --exit-status' "$TEMP_DIR/calls.log" ||
     fail "missing CI watch"
   grep -Fq 'benchmark-artifact --repo sleticalboy/CodeInsight-mcp 123456' "$TEMP_DIR/calls.log" ||
@@ -107,6 +123,22 @@ EOF
     fail "missing context-pack quality artifact smoke"
   grep -Fq 'agent-route-artifact --repo sleticalboy/CodeInsight-mcp 123456' "$TEMP_DIR/calls.log" ||
     fail "missing agent-route artifact smoke"
+  grep -Fq 'release pretag evidence' "$TEMP_DIR/latest.out" ||
+    fail "missing latest evidence heading"
+  grep -Fq 'branch: main' "$TEMP_DIR/latest.out" ||
+    fail "missing latest branch"
+  grep -Fq 'ci_run: 123456' "$TEMP_DIR/latest.out" ||
+    fail "missing latest CI run"
+  grep -Fq 'head_sha: def456' "$TEMP_DIR/latest.out" ||
+    fail "missing latest resolved head SHA"
+  grep -Fq 'artifact_gate_benchmark: passed' "$TEMP_DIR/latest.out" ||
+    fail "missing benchmark gate summary"
+  grep -Fq 'artifact_gate_context_pack_quality: passed' "$TEMP_DIR/latest.out" ||
+    fail "missing context-pack quality gate summary"
+  grep -Fq 'artifact_gate_agent_route: passed' "$TEMP_DIR/latest.out" ||
+    fail "missing agent-route gate summary"
+  grep -Fq 'head_sha: abc123' "$TEMP_DIR/head-sha.out" ||
+    fail "missing supplied head SHA summary"
 
   echo "release pretag check smoke passed"
 }
