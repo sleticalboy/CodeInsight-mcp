@@ -20,6 +20,7 @@ git push origin main
 
 # 3. Wait for CI, tag, then verify published artifacts.
 scripts/release-pretag-check.sh main
+scripts/archive-release-evidence.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
 scripts/release-tag-preflight.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
 git tag -a vX.Y.Z -m "vX.Y.Z"
 git push origin vX.Y.Z
@@ -93,17 +94,18 @@ a GitHub Release already exists for the tag. It also verifies that
 version and prints `metadata_cargo`, `metadata_install`, and
 `metadata_changelog` summary lines.
 
-Generate a copyable evidence block for the release handoff:
+Archive the release evidence block for the release handoff:
 
 ```bash
-scripts/release-evidence-summary.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
+scripts/archive-release-evidence.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
 ```
 
 This resolves the successful `CI` run for the target commit, validates the
 `codeinsight-benchmark-subset` and `codeinsight-context-pack-quality`
-artifacts, and prints a Markdown evidence block with the target SHA, CI run
+artifacts, and writes `release-evidence/vX.Y.Z.md` with the target SHA, CI run
 URL, benchmark artifact URL, context-pack quality artifact URL, local report
-paths, and release metadata summary.
+paths, and release metadata summary. Use `--output PATH` for a custom archive
+path or `--force` to intentionally overwrite an existing evidence file.
 
 Tagged `Release Build` runs also execute this gate against the tag target SHA
 before building release artifacts:

@@ -39,6 +39,7 @@ git push origin main
 
 # 3. Wait for CI, tag, then verify published artifacts.
 scripts/release-pretag-check.sh main
+scripts/archive-release-evidence.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
 scripts/release-tag-preflight.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
 git tag -a vX.Y.Z -m "vX.Y.Z"
 git push origin vX.Y.Z
@@ -135,18 +136,19 @@ so the prepared versions are visible before tagging. It also prints
 `artifact_gate_benchmark: passed` and
 `artifact_gate_context_pack_quality: passed` after the CI artifact gates pass.
 
-Generate the release evidence block:
+Archive the release evidence block:
 
 ```bash
-scripts/release-evidence-summary.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
+scripts/archive-release-evidence.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
 ```
 
 This resolves the successful `CI` run for the target SHA, validates the
 `codeinsight-benchmark-subset` and `codeinsight-context-pack-quality`
 artifacts, and prints a Markdown block with the commit, workflow run,
 benchmark artifact, context-pack quality artifact, local report paths, and
-release metadata. Paste that block into the release handoff notes when a
-release needs an auditable pre-tag evidence trail.
+release metadata to `release-evidence/vX.Y.Z.md`. Use `--output PATH` for a
+custom archive path or `--force` to intentionally overwrite an existing
+evidence file.
 
 ## Publish A Tagged Release
 

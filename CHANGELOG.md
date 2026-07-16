@@ -23,6 +23,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - Added `scripts/release-evidence-summary-artifact-smoke.sh` to validate a real
   CI run's release evidence summary, artifact URLs, and downloaded benchmark
   plus context-pack quality report paths end to end.
+- Added `scripts/archive-release-evidence.sh` to write validated release
+  evidence to `release-evidence/<tag>.md` without manual stdout copying.
 - `scripts/verify-release.sh` now reports a specific local network diagnostic
   when GitHub Release assets exist in API metadata but
   `github.com/releases/download` is unreachable, and supports an explicit

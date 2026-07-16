@@ -286,6 +286,9 @@ main() {
     'scripts/release-evidence-summary-artifact-smoke\.sh --repo sleticalboy/CodeInsight-mcp <ci-run-id>' \
     "maintenance release evidence summary artifact smoke command"
   require_pattern docs/maintenance-commands.md \
+    'scripts/archive-release-evidence\.sh --repo sleticalboy/CodeInsight-mcp vX\.Y\.Z main' \
+    "maintenance archive release evidence command"
+  require_pattern docs/maintenance-commands.md \
     'scripts/context-pack-quality-smoke\.sh' \
     "maintenance context-pack quality smoke"
   require_pattern docs/maintenance-commands.md \
@@ -343,8 +346,11 @@ main() {
     'scripts/release-tag-preflight\.sh --repo sleticalboy/CodeInsight-mcp vX\.Y\.Z main' \
     "release commands tag preflight gate"
   require_pattern docs/release-commands.md \
-    'scripts/release-evidence-summary\.sh --repo sleticalboy/CodeInsight-mcp vX\.Y\.Z main' \
-    "release commands evidence summary"
+    'scripts/archive-release-evidence\.sh --repo sleticalboy/CodeInsight-mcp vX\.Y\.Z main' \
+    "release commands evidence archive"
+  require_pattern docs/release-commands.md \
+    'release-evidence/vX\.Y\.Z\.md' \
+    "release commands evidence archive path"
   require_pattern docs/release-commands.md \
     'remote tag already exists' \
     "release commands remote tag conflict gate"
@@ -406,11 +412,11 @@ main() {
     '`metadata_cargo`, `metadata_install`, and `metadata_changelog`' \
     "release runbook metadata summary output"
   require_pattern docs/release-runbook.md \
-    'scripts/release-evidence-summary\.sh --repo sleticalboy/CodeInsight-mcp vX\.Y\.Z main' \
-    "release runbook evidence summary"
+    'scripts/archive-release-evidence\.sh --repo sleticalboy/CodeInsight-mcp vX\.Y\.Z main' \
+    "release runbook evidence archive"
   require_pattern docs/release-runbook.md \
-    'auditable pre-tag evidence trail' \
-    "release runbook evidence summary purpose"
+    'release-evidence/vX\.Y\.Z\.md' \
+    "release runbook evidence archive path"
   require_pattern docs/release-runbook.md \
     'verify-pretag-ci' \
     "release runbook tag pretag workflow gate"
@@ -435,6 +441,12 @@ main() {
   require_pattern scripts/release-evidence-summary.sh \
     'context_pack_quality_artifact_url' \
     "release evidence context-pack quality artifact URL"
+  require_pattern scripts/archive-release-evidence.sh \
+    'release-evidence/\$TAG_NAME\.md' \
+    "archive release evidence default path"
+  require_pattern scripts/archive-release-evidence.sh \
+    'output file already exists' \
+    "archive release evidence overwrite guard"
   require_pattern scripts/release-evidence-summary-artifact-smoke.sh \
     'context_pack_quality_artifact_url' \
     "release evidence summary artifact smoke context-pack quality URL"

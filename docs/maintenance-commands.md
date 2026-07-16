@@ -115,6 +115,12 @@ including both artifact URLs and downloaded local report paths:
 scripts/release-evidence-summary-artifact-smoke.sh --repo sleticalboy/CodeInsight-mcp <ci-run-id>
 ```
 
+To archive release evidence for a tag after release-prep CI passes:
+
+```bash
+scripts/archive-release-evidence.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
+```
+
 ## Optional External Checks
 
 Run these only when the local environment supports the required service or

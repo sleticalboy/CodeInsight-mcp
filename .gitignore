@@ -1,6 +1,7 @@
 /target/
 /dist/
 /.codeinsight/
+/release-evidence/
 /.DS_Store
 *.db
 *.db-shm
