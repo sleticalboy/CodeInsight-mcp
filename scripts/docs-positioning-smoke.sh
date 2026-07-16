@@ -44,6 +44,15 @@ main() {
   require_pattern docs/README.md \
     '\[Known limitations\]\(known-limitations\.md\)' \
     "known limitations link"
+  require_pattern docs/README.md \
+    'Default adoption path:' \
+    "docs index default adoption path"
+  require_pattern docs/README.md \
+    'Use `agent_route` as the default first-read route' \
+    "docs index agent_route adoption path"
+  require_pattern docs/README.md \
+    'Installed first-read route: `scripts/installed-quickstart-smoke\.sh`' \
+    "docs index installed quickstart validation"
 
   require_pattern docs/quickstart.md \
     'local-first' \
@@ -57,6 +66,12 @@ main() {
   require_pattern docs/quickstart.md \
     '\[Adoption checklist\]\(adoption-checklist\.md\)' \
     "adoption checklist link"
+  require_pattern docs/quickstart.md \
+    'CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/installed-quickstart-smoke\.sh' \
+    "quickstart installed quickstart binary command"
+  require_pattern docs/quickstart.md \
+    'CLI `agent-route`, MCP stdio, and MCP `agent_route`' \
+    "quickstart installed agent_route coverage"
 
   require_pattern docs/cli-usage.md \
     '\[First-read workflow\]\(first-read-workflow\.md\)' \

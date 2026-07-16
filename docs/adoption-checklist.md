@@ -44,8 +44,9 @@ Pass criteria:
 - `line_reduction` is present and below 100%.
 - `impact_analysis` reports `risk_level`, `impacted_files`, `paths`, or
   `suggested_checks`.
-- The final talk track names `project_overview`, `context_pack`, and
-  `impact_analysis` as the intended agent path.
+- The final talk track names `agent_route` as the default first-read path and
+  includes `project_overview`, `context_pack`, and `impact_analysis` as the
+  route internals.
 
 ## 3. MCP Server Starts And Lists Tools
 

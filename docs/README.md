@@ -5,6 +5,13 @@ release documents for CodeInsight.
 
 ## Start Here
 
+Default adoption path:
+
+1. Follow [Quickstart](quickstart.md).
+2. Use `agent_route` as the default first-read route.
+3. Verify the installed binary with `scripts/installed-quickstart-smoke.sh`.
+4. Finish with the [Adoption checklist](adoption-checklist.md).
+
 - [Quickstart](quickstart.md)
 - [Adoption checklist](adoption-checklist.md)
 - [Demo script](demo-script.md)
@@ -42,6 +49,7 @@ release documents for CodeInsight.
 
 - [Maintenance commands](maintenance-commands.md)
 - Two-minute demo: `scripts/two-minute-demo.sh`
+- Installed first-read route: `scripts/installed-quickstart-smoke.sh`
 - Agent-router raw metrics: `scripts/agent-router-demo.sh`
 - [Two-minute demo script](demo-script.md)
 - [Two-minute demo output snapshot](demo-output.md)

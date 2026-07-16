@@ -151,7 +151,7 @@ To verify the installed binary without using this repository as the target
 project:
 
 ```bash
-scripts/installed-quickstart-smoke.sh
+CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh
 ```
 
 The MCP stdio smoke output starts with:
@@ -163,9 +163,9 @@ tools: 16
 
 The installed quickstart smoke prints `installed quickstart smoke passed` after
 the installed binary completes `version`, `index`, `overview`, `context-pack`,
-`agent-route`, and MCP stdio calls against a temporary project. The MCP portion
-also calls `agent_route` so installed clients exercise the default first-read
-route.
+CLI `agent-route`, MCP stdio, and MCP `agent_route` calls against a temporary
+project. This is the same installed-binary adoption gate referenced by the
+[Adoption checklist](adoption-checklist.md).
 
 ## 6. First Agent Task
 
