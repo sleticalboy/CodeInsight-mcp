@@ -53,6 +53,12 @@ main() {
     'route_reason: selected [0-9]+ files, [0-9]+ ranges, and [0-9]+ reading-plan steps within the token budget; read .* first via inspect_seed_file' \
     "context route reason metric"
   require_pattern docs/demo-output.md \
+    'reading_plan_reason: Read this step to answer:' \
+    "reading plan reason metric"
+  require_pattern docs/demo-output.md \
+    'selection_reason: Selected for high relevance' \
+    "selection reason metric"
+  require_pattern docs/demo-output.md \
     'line_reduction: [0-9]+\.[0-9]%' \
     "line reduction metric"
   require_pattern docs/demo-output.md \
@@ -70,6 +76,12 @@ main() {
   require_pattern docs/demo-output.md \
     'context_pack selected' \
     "context-pack talk track"
+  require_pattern docs/demo-output.md \
+    'The first action is inspect_seed_file; Read this step to answer:' \
+    "reading reason talk track"
+  require_pattern docs/demo-output.md \
+    'Selection evidence: Selected for high relevance' \
+    "selection evidence talk track"
   require_pattern docs/demo-output.md \
     'impact_analysis reports' \
     "impact-analysis talk track"
