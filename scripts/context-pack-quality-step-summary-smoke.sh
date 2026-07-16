@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+TEMP_DIR=""
+
+cleanup() {
+  if [ -n "$TEMP_DIR" ]; then
+    rm -rf "$TEMP_DIR"
+  fi
+}
+
+fail() {
+  echo "context-pack quality step summary smoke failed: $*" >&2
+  exit 1
+}
+
+require_literal() {
+  local file="$1"
+  local literal="$2"
+  local description="$3"
+
+  if ! grep -Fq -- "$literal" "$file"; then
+    fail "$file is missing $description"
+  fi
+}
+
+main() {
+  local summary_json
+  local step_summary
+
+  TEMP_DIR="$(mktemp -d)"
+  trap cleanup EXIT INT TERM
+
+  summary_json="$TEMP_DIR/summary.json"
+  step_summary="$TEMP_DIR/step-summary.md"
+
+  cat >"$summary_json" <<'EOF'
+{
+  "status": "pass",
+  "scenarios_passed": 3,
+  "scenarios": [
+    {
+      "name": "budget_continuation",
+      "status": "pass",
+      "metrics": {
+        "candidate_files": 80,
+        "selected_files": 12,
+        "omitted_candidates": 8,
+        "continuation_status": "omitted_candidates_available"
+      }
+    },
+    {
+      "name": "minimum_budget",
+      "status": "pass",
+      "metrics": {
+        "requested_token_budget": 20,
+        "applied_token_budget": 500,
+        "continuation_status": "minimum_budget_applied"
+      }
+    },
+    {
+      "name": "token_exhaustion",
+      "status": "pass",
+      "metrics": {
+        "selected_files": 12,
+        "truncated": true,
+        "continuation_status": "token_budget_exhausted"
+      }
+    }
+  ]
+}
+EOF
+
+  GITHUB_STEP_SUMMARY="$step_summary" \
+    "$ROOT_DIR/scripts/context-pack-quality-step-summary.sh" \
+    "$summary_json" \
+    codeinsight-context-pack-quality \
+    "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/1/artifacts/2" \
+    "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/1" >/dev/null
+
+  require_literal "$step_summary" "## Context Pack Quality Smoke" "summary title"
+  require_literal "$step_summary" "Scenarios passed: \`3\`" "scenario count"
+  require_literal "$step_summary" "Workflow run: [open run](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/1)" "run link"
+  require_literal "$step_summary" 'Workflow artifact: [`codeinsight-context-pack-quality`](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/1/artifacts/2)' "artifact link"
+  require_literal "$step_summary" "| Scenario | Status | Key Metrics |" "scenario table"
+  require_literal "$step_summary" '| `budget_continuation` | `pass` | `candidate_files=80`' "budget continuation row"
+  require_literal "$step_summary" '`continuation_status=token_budget_exhausted`' "token exhaustion metric"
+
+  echo "context-pack quality step summary smoke passed"
+}
+
+main "$@"

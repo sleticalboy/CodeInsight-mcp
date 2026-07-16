@@ -69,16 +69,20 @@ optional external checks, see [Maintenance commands](maintenance-commands.md).
   [Release readiness](release-readiness.md) benchmark gate all tell the same
   routing and compression story.
 
-- For benchmark CI visibility changes, verify the generated Actions summary:
+- For benchmark or context-pack quality CI visibility changes, verify the
+  generated Actions summary:
 
   ```bash
   scripts/benchmark-step-summary-smoke.sh
+  scripts/context-pack-quality-step-summary-smoke.sh
   ```
 
   After CI runs, open the `benchmark-subset-smoke` job summary and confirm it
   includes `Key Results`, the `context_pack` summary row, a workflow run link,
   and the `codeinsight-benchmark-subset` artifact link. Download the artifact
-  only when you need the full guardrail tables:
+  only when you need the full guardrail tables. Open the
+  `context-pack-quality-smoke` job summary and confirm it includes the scenario
+  table plus the `codeinsight-context-pack-quality` artifact link.
 
   ```bash
   scripts/benchmark-artifact-smoke.sh <ci-run-id>

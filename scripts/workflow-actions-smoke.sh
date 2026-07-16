@@ -31,7 +31,10 @@ main() {
   require_pattern ".github/workflows/ci.yml" "actions/checkout@v7" "CI checkout action v7"
   require_pattern ".github/workflows/ci.yml" "dtolnay/rust-toolchain@stable" "CI Rust toolchain action"
   require_pattern ".github/workflows/ci.yml" "Swatinem/rust-cache@v2" "CI Rust cache action v2"
-  require_pattern ".github/workflows/ci.yml" "actions/upload-artifact@v7" "benchmark artifact upload action v7"
+  require_pattern ".github/workflows/ci.yml" "actions/upload-artifact@v7" "CI artifact upload action v7"
+  require_pattern ".github/workflows/ci.yml" "context-pack-quality-smoke:" "context-pack quality CI job"
+  require_pattern ".github/workflows/ci.yml" "codeinsight-context-pack-quality" "context-pack quality artifact"
+  require_pattern ".github/workflows/ci.yml" "context-pack-quality-step-summary\\.sh" "context-pack quality step summary"
 
   require_pattern ".github/workflows/release-build.yml" "actions/checkout@v7" "release checkout action v7"
   require_pattern ".github/workflows/release-build.yml" "dtolnay/rust-toolchain@stable" "release Rust toolchain action"

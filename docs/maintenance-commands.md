@@ -25,6 +25,7 @@ Run focused smoke groups when changing the corresponding area:
 scripts/script-syntax-smoke.sh
 scripts/workflow-actions-smoke.sh
 scripts/benchmark-step-summary-smoke.sh
+scripts/context-pack-quality-step-summary-smoke.sh
 scripts/docs-smoke.sh
 scripts/release-notes-smoke.sh
 scripts/release-tooling-smoke.sh
@@ -60,9 +61,11 @@ file should pull in its resolved local dependency and recommend a file-scoped
 tokens report `minimum_budget_applied`. Token-exhaustion fixtures verify
 `token_budget_exhausted` when selected ranges are truncated without omitted
 candidates, all without cloning external repositories. Pass
-`--summary-json <path>` to write a machine-readable pass report; the standard
-local CI gate writes this summary to a temporary file and validates key
-scenario names.
+`--summary-json <path>` to write a machine-readable pass report. Local CI
+writes this summary to a temporary file and validates key scenario names; the
+remote `context-pack-quality-smoke` job uploads the
+`codeinsight-context-pack-quality` JSON artifact and writes the scenario table
+to the Actions summary with `scripts/context-pack-quality-step-summary.sh`.
 
 ## Benchmark Checks
 

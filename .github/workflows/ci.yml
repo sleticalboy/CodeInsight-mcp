@@ -36,6 +36,23 @@ jobs:
           key: agent-router-demo
       - run: scripts/agent-router-demo.sh
 
+  context-pack-quality-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: context-pack-quality-smoke
+      - run: scripts/context-pack-quality-smoke.sh --summary-json /tmp/codeinsight-context-pack-quality.json
+      - id: context-pack-quality-artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: codeinsight-context-pack-quality
+          path: /tmp/codeinsight-context-pack-quality.json
+          if-no-files-found: error
+      - run: scripts/context-pack-quality-step-summary.sh /tmp/codeinsight-context-pack-quality.json codeinsight-context-pack-quality "${{ steps.context-pack-quality-artifact.outputs.artifact-url }}" "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
   benchmark-subset-smoke:
     runs-on: ubuntu-latest
     steps:

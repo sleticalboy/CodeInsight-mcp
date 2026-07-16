@@ -118,6 +118,15 @@ main() {
   require_pattern .github/workflows/ci.yml \
     'scripts/benchmark-step-summary\.sh /tmp/codeinsight-benchmark-subset\.md codeinsight-benchmark-subset' \
     "benchmark step summary command"
+  require_pattern .github/workflows/ci.yml \
+    'context-pack-quality-smoke:' \
+    "context-pack quality CI job"
+  require_pattern .github/workflows/ci.yml \
+    'codeinsight-context-pack-quality' \
+    "context-pack quality artifact"
+  require_pattern .github/workflows/ci.yml \
+    'scripts/context-pack-quality-step-summary\.sh /tmp/codeinsight-context-pack-quality\.json codeinsight-context-pack-quality' \
+    "context-pack quality step summary command"
 
   require_pattern scripts/benchmark-smoke.sh \
     'OUTPUT="\$\{CODEINSIGHT_BENCH_OUTPUT:-\$ROOT_DIR/docs/benchmark-v0\.1\.md\}"' \
@@ -291,9 +300,18 @@ main() {
   require_pattern docs/maintenance-commands.md \
     '\-\-summary-json <path>' \
     "maintenance context-pack summary JSON scope"
+  require_pattern docs/maintenance-commands.md \
+    'codeinsight-context-pack-quality' \
+    "maintenance context-pack quality artifact scope"
   require_pattern docs/maintainer-checklist.md \
     'context-pack quality smoke' \
     "maintainer context-pack quality smoke"
+  require_pattern docs/maintainer-checklist.md \
+    'context-pack-quality-smoke` job summary' \
+    "maintainer context-pack quality CI summary guidance"
+  require_pattern scripts/context-pack-quality-step-summary-smoke.sh \
+    'codeinsight-context-pack-quality' \
+    "context-pack quality step summary smoke artifact"
   require_pattern docs/release-commands.md \
     'scripts/release-pretag-check\.sh main' \
     "release commands benchmark artifact gate"
