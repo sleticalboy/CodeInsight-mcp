@@ -145,6 +145,7 @@ EOF
     "$ROOT_DIR/scripts/release-evidence-summary.sh" \
       --repo sleticalboy/CodeInsight-mcp \
       --head-sha abc123 \
+      --json-output "$TEMP_DIR/evidence.json" \
       v99.88.77 \
       main >"$TEMP_DIR/output.log"
 
@@ -178,6 +179,30 @@ EOF
     fail "missing release notes context-pack quality artifact link"
   grep -Fq -- '- Agent-route artifact: [codeinsight-agent-route-smoke](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987656)' "$TEMP_DIR/output.log" ||
     fail "missing release notes agent-route artifact link"
+  jq -e '
+    .schema_version == 1 and
+    .tag == "v99.88.77" and
+    .branch == "main" and
+    .head_sha == "abc123" and
+    .repo == "sleticalboy/CodeInsight-mcp" and
+    .metadata.cargo == "99.88.77" and
+    .metadata.install == "v99.88.77" and
+    .metadata.changelog == "99.88.77 (2026-07-15)" and
+    .ci.run_id == "123456" and
+    .ci.url == "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456" and
+    .artifacts.benchmark.name == "codeinsight-benchmark-subset" and
+    .artifacts.benchmark.url == "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987654" and
+    .artifacts.benchmark.report == "/tmp/codeinsight-benchmark-artifact-123456/report.md" and
+    .artifacts.context_pack_quality.name == "codeinsight-context-pack-quality" and
+    .artifacts.context_pack_quality.url == "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987655" and
+    .artifacts.context_pack_quality.summary == "/tmp/codeinsight-context-pack-quality-artifact-123456/summary.json" and
+    .artifacts.agent_route.name == "codeinsight-agent-route-smoke" and
+    .artifacts.agent_route.url == "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987656" and
+    .artifacts.agent_route.summary == "/tmp/codeinsight-agent-route-artifact-123456/summary.json" and
+    (.release_notes_block | contains("## v99.88.77 release evidence")) and
+    (.release_notes_block | contains("- metadata_cargo: 99.88.77"))
+  ' "$TEMP_DIR/evidence.json" >/dev/null ||
+    fail "invalid evidence JSON output"
 
   grep -Fq 'gh run list --repo sleticalboy/CodeInsight-mcp --workflow CI --branch main --status success --limit 20 --json databaseId,headSha --jq map(select(.headSha == "abc123"))[0].databaseId // ""' "$TEMP_DIR/calls.log" ||
     fail "missing head SHA CI lookup"

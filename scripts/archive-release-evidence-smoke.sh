@@ -33,8 +33,16 @@ test "$3" = "--run-id"
 test "$4" = "123456"
 test "$5" = "--head-sha"
 test "$6" = "abc123"
-test "$7" = "v9.8.7"
-test "$8" = "main"
+tag_arg_index=7
+branch_arg_index=8
+if [ "${7:-}" = "--json-output" ]; then
+  mkdir -p "$(dirname "$8")"
+  printf '{"tag":"v9.8.7","ci":{"run_id":"123456"}}\n' >"$8"
+  tag_arg_index=9
+  branch_arg_index=10
+fi
+test "${!tag_arg_index}" = "v9.8.7"
+test "${!branch_arg_index}" = "main"
 cat <<'SUMMARY'
 release evidence summary
 tag: v9.8.7
@@ -102,6 +110,7 @@ EOF
     CODEINSIGHT_RELEASE_EVIDENCE_SUMMARY_SCRIPT="$TEMP_DIR/release-evidence-summary" \
     "$ROOT_DIR/scripts/archive-release-evidence.sh" \
       --output "$TEMP_DIR/custom/evidence.md" \
+      --json-output "$TEMP_DIR/custom/evidence.json" \
       --repo sleticalboy/CodeInsight-mcp \
       --run-id 123456 \
       --head-sha abc123 \
@@ -109,6 +118,12 @@ EOF
       main >"$TEMP_DIR/custom.out"
   grep -Fq 'ci_run: 123456' "$TEMP_DIR/custom/evidence.md" ||
     fail "missing custom output evidence"
+  grep -Fq '"run_id":"123456"' "$TEMP_DIR/custom/evidence.json" ||
+    fail "missing custom JSON output evidence"
+  grep -Fq "release evidence JSON written: $TEMP_DIR/custom/evidence.json" "$TEMP_DIR/custom.out" ||
+    fail "missing custom JSON output diagnostic"
+  grep -Fq "summary --repo sleticalboy/CodeInsight-mcp --run-id 123456 --head-sha abc123 --json-output $TEMP_DIR/custom/evidence.json v9.8.7 main" "$TEMP_DIR/custom.log" ||
+    fail "missing JSON evidence summary call"
 
   echo "archive release evidence smoke passed"
 }

@@ -20,6 +20,7 @@ TAG_NAME=""
 TEMP_DIR=""
 KEEP_TEMP=0
 EVIDENCE_FILE=""
+EVIDENCE_JSON_FILE=""
 
 usage() {
   local status="${1:-2}"
@@ -41,6 +42,8 @@ Options:
   --head-sha SHA     Check this commit instead of the current HEAD.
   --evidence-file PATH
                      Write the release evidence summary output to PATH.
+  --evidence-json-file PATH
+                     Write the release evidence summary JSON to PATH.
   --keep-temp        Keep the temporary prepared metadata copy for inspection.
   -h, --help         Show this help.
 
@@ -140,6 +143,7 @@ main() {
   local metadata_cargo
   local metadata_install
   local metadata_changelog
+  local -a evidence_summary_args
 
   trap cleanup EXIT INT TERM
 
@@ -169,6 +173,13 @@ main() {
           usage
         fi
         EVIDENCE_FILE="$1"
+        ;;
+      --evidence-json-file)
+        shift
+        if [ "$#" -eq 0 ]; then
+          usage
+        fi
+        EVIDENCE_JSON_FILE="$1"
         ;;
       --keep-temp)
         KEEP_TEMP=1
@@ -263,13 +274,18 @@ main() {
 
   echo "[4/4] release evidence summary"
   evidence_output_file="$TEMP_DIR/release-evidence-summary.out"
+  evidence_summary_args=("${REPO_ARG[@]}" --head-sha "$HEAD_SHA")
+  if [ -n "$EVIDENCE_JSON_FILE" ]; then
+    evidence_summary_args+=(--json-output "$EVIDENCE_JSON_FILE")
+  fi
+  evidence_summary_args+=("$TAG_NAME" "$BRANCH")
   evidence_output="$(
     CODEINSIGHT_ROOT_DIR="$temp_repo" \
       CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT="$BENCHMARK_ARTIFACT_SMOKE_SCRIPT" \
       CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="$CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT" \
       CODEINSIGHT_AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT="$AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT" \
       CODEINSIGHT_RELEASE_METADATA_SUMMARY_SCRIPT="$RELEASE_METADATA_SUMMARY_SCRIPT" \
-      "$RELEASE_EVIDENCE_SUMMARY_SCRIPT" "${REPO_ARG[@]}" --head-sha "$HEAD_SHA" "$TAG_NAME" "$BRANCH"
+      "$RELEASE_EVIDENCE_SUMMARY_SCRIPT" "${evidence_summary_args[@]}"
   )"
   printf "%s\n" "$evidence_output"
   printf "%s\n" "$evidence_output" >"$evidence_output_file"
@@ -277,6 +293,9 @@ main() {
     mkdir -p "$(dirname "$EVIDENCE_FILE")"
     printf "%s\n" "$evidence_output" >"$EVIDENCE_FILE"
     echo "release evidence written: $EVIDENCE_FILE"
+  fi
+  if [ -n "$EVIDENCE_JSON_FILE" ]; then
+    echo "release evidence JSON written: $EVIDENCE_JSON_FILE"
   fi
   echo
 
@@ -301,6 +320,9 @@ main() {
   echo "artifact_gate_agent_route: passed"
   if [ -n "$EVIDENCE_FILE" ]; then
     echo "evidence_file: $EVIDENCE_FILE"
+  fi
+  if [ -n "$EVIDENCE_JSON_FILE" ]; then
+    echo "evidence_json_file: $EVIDENCE_JSON_FILE"
   fi
   echo
 

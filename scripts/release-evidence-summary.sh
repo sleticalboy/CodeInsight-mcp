@@ -16,6 +16,7 @@ BRANCH="main"
 HEAD_SHA=""
 RUN_ID=""
 TAG_NAME=""
+JSON_OUTPUT_FILE=""
 
 usage() {
   local status="${1:-2}"
@@ -42,6 +43,7 @@ Options:
                           Context-pack quality artifact name. Default: codeinsight-context-pack-quality.
   --agent-route-artifact-name NAME
                           Agent-route artifact name. Default: codeinsight-agent-route-smoke.
+  --json-output PATH      Write a machine-readable evidence summary JSON.
   -h, --help              Show this help.
 
 Environment:
@@ -209,6 +211,96 @@ validate_agent_route_artifact() {
   printf "%s\n" "$output" | awk -F': ' '/^summary: / { print $2; exit }'
 }
 
+write_json_summary() {
+  local output_file="$1"
+  local metadata_summary="$2"
+  local repo_name="$3"
+  local ci_url="$4"
+  local benchmark_artifact_url="$5"
+  local benchmark_report_file="$6"
+  local context_pack_quality_artifact_url="$7"
+  local context_pack_quality_summary_file="$8"
+  local agent_route_artifact_url="$9"
+  local agent_route_summary_file="${10}"
+
+  mkdir -p "$(dirname "$output_file")"
+  TAG_NAME="$TAG_NAME" \
+    BRANCH="$BRANCH" \
+    HEAD_SHA="$HEAD_SHA" \
+    REPO_NAME="$repo_name" \
+    RUN_ID="$RUN_ID" \
+    CI_URL="$ci_url" \
+    ARTIFACT_NAME="$ARTIFACT_NAME" \
+    BENCHMARK_ARTIFACT_URL="$benchmark_artifact_url" \
+    BENCHMARK_REPORT_FILE="$benchmark_report_file" \
+    CONTEXT_PACK_QUALITY_ARTIFACT_NAME="$CONTEXT_PACK_QUALITY_ARTIFACT_NAME" \
+    CONTEXT_PACK_QUALITY_ARTIFACT_URL="$context_pack_quality_artifact_url" \
+    CONTEXT_PACK_QUALITY_SUMMARY_FILE="$context_pack_quality_summary_file" \
+    AGENT_ROUTE_ARTIFACT_NAME="$AGENT_ROUTE_ARTIFACT_NAME" \
+    AGENT_ROUTE_ARTIFACT_URL="$agent_route_artifact_url" \
+    AGENT_ROUTE_SUMMARY_FILE="$agent_route_summary_file" \
+    METADATA_SUMMARY="$metadata_summary" \
+    ruby -rjson - "$output_file" <<'RUBY'
+output_file = ARGV.fetch(0)
+metadata = ENV.fetch("METADATA_SUMMARY").lines(chomp: true).map do |line|
+  key, value = line.split(": ", 2)
+  next unless key && value
+  [key, value]
+end.compact.to_h
+
+release_notes = [
+  "## #{ENV.fetch("TAG_NAME")} release evidence",
+  "",
+  "- Target commit: `#{ENV.fetch("HEAD_SHA")}`",
+  "- CI: [run #{ENV.fetch("RUN_ID")}](#{ENV.fetch("CI_URL")})",
+  "- Benchmark artifact: [#{ENV.fetch("ARTIFACT_NAME")}](#{ENV.fetch("BENCHMARK_ARTIFACT_URL")})",
+  "- Benchmark report: `#{ENV.fetch("BENCHMARK_REPORT_FILE")}`",
+  "- Context-pack quality artifact: [#{ENV.fetch("CONTEXT_PACK_QUALITY_ARTIFACT_NAME")}](#{ENV.fetch("CONTEXT_PACK_QUALITY_ARTIFACT_URL")})",
+  "- Context-pack quality summary: `#{ENV.fetch("CONTEXT_PACK_QUALITY_SUMMARY_FILE")}`",
+  "- Agent-route artifact: [#{ENV.fetch("AGENT_ROUTE_ARTIFACT_NAME")}](#{ENV.fetch("AGENT_ROUTE_ARTIFACT_URL")})",
+  "- Agent-route summary: `#{ENV.fetch("AGENT_ROUTE_SUMMARY_FILE")}`",
+  *metadata.map { |key, value| "- #{key}: #{value}" }
+].join("\n")
+
+summary = {
+  "schema_version" => 1,
+  "tag" => ENV.fetch("TAG_NAME"),
+  "branch" => ENV.fetch("BRANCH"),
+  "head_sha" => ENV.fetch("HEAD_SHA"),
+  "repo" => ENV.fetch("REPO_NAME"),
+  "metadata" => {
+    "cargo" => metadata.fetch("metadata_cargo"),
+    "install" => metadata.fetch("metadata_install"),
+    "changelog" => metadata.fetch("metadata_changelog")
+  },
+  "ci" => {
+    "run_id" => ENV.fetch("RUN_ID"),
+    "url" => ENV.fetch("CI_URL")
+  },
+  "artifacts" => {
+    "benchmark" => {
+      "name" => ENV.fetch("ARTIFACT_NAME"),
+      "url" => ENV.fetch("BENCHMARK_ARTIFACT_URL"),
+      "report" => ENV.fetch("BENCHMARK_REPORT_FILE")
+    },
+    "context_pack_quality" => {
+      "name" => ENV.fetch("CONTEXT_PACK_QUALITY_ARTIFACT_NAME"),
+      "url" => ENV.fetch("CONTEXT_PACK_QUALITY_ARTIFACT_URL"),
+      "summary" => ENV.fetch("CONTEXT_PACK_QUALITY_SUMMARY_FILE")
+    },
+    "agent_route" => {
+      "name" => ENV.fetch("AGENT_ROUTE_ARTIFACT_NAME"),
+      "url" => ENV.fetch("AGENT_ROUTE_ARTIFACT_URL"),
+      "summary" => ENV.fetch("AGENT_ROUTE_SUMMARY_FILE")
+    }
+  },
+  "release_notes_block" => release_notes
+}
+
+File.write(output_file, "#{JSON.pretty_generate(summary)}\n")
+RUBY
+}
+
 main() {
   local metadata_summary
   local run_summary
@@ -268,6 +360,13 @@ main() {
           usage
         fi
         AGENT_ROUTE_ARTIFACT_NAME="$1"
+        ;;
+      --json-output)
+        shift
+        if [ "$#" -eq 0 ]; then
+          usage
+        fi
+        JSON_OUTPUT_FILE="$1"
         ;;
       --)
         shift
@@ -363,6 +462,20 @@ main() {
   echo "- Agent-route artifact: [$AGENT_ROUTE_ARTIFACT_NAME]($agent_route_artifact_url)"
   echo "- Agent-route summary: \`$agent_route_summary_file\`"
   printf "%s\n" "$metadata_summary" | sed 's/^/- /'
+
+  if [ -n "$JSON_OUTPUT_FILE" ]; then
+    write_json_summary \
+      "$JSON_OUTPUT_FILE" \
+      "$metadata_summary" \
+      "$repo_name" \
+      "$ci_url" \
+      "$benchmark_artifact_url" \
+      "$benchmark_report_file" \
+      "$context_pack_quality_artifact_url" \
+      "$context_pack_quality_summary_file" \
+      "$agent_route_artifact_url" \
+      "$agent_route_summary_file"
+  fi
 }
 
 main "$@"

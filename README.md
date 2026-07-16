@@ -207,12 +207,12 @@ releases. See [Release runbook](docs/release-runbook.md).
 Maintainer release path:
 
 ```bash
-scripts/release-dry-run.sh --repo sleticalboy/CodeInsight-mcp --evidence-file release-evidence/vX.Y.Z.md vX.Y.Z main
+scripts/release-dry-run.sh --repo sleticalboy/CodeInsight-mcp --evidence-file release-evidence/vX.Y.Z.md --evidence-json-file release-evidence/vX.Y.Z.json vX.Y.Z main
 scripts/prepare-release.sh --dry-run vX.Y.Z
 scripts/prepare-release.sh vX.Y.Z
 git push origin main
 scripts/release-pretag-check.sh main
-scripts/archive-release-evidence.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
+scripts/archive-release-evidence.sh --repo sleticalboy/CodeInsight-mcp --json-output release-evidence/vX.Y.Z.json vX.Y.Z main
 scripts/release-tag-preflight.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
 git tag -a vX.Y.Z -m "vX.Y.Z"
 git push origin vX.Y.Z

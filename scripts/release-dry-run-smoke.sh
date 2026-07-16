@@ -138,8 +138,16 @@ test "$1" = "--repo"
 test "$2" = "sleticalboy/CodeInsight-mcp"
 test "$3" = "--head-sha"
 test "$4" = "abc123"
-test "$5" = "v9.8.7"
-test "$6" = "main"
+tag_arg_index=5
+branch_arg_index=6
+if [ "${5:-}" = "--json-output" ]; then
+  mkdir -p "$(dirname "$6")"
+  printf '{"tag":"v9.8.7","ci":{"run_id":"123456"}}\n' >"$6"
+  tag_arg_index=7
+  branch_arg_index=8
+fi
+test "${!tag_arg_index}" = "v9.8.7"
+test "${!branch_arg_index}" = "main"
 cat <<'SUMMARY'
 release evidence summary
 tag: v9.8.7
@@ -173,6 +181,7 @@ EOF
       --repo sleticalboy/CodeInsight-mcp \
       --head-sha abc123 \
       --evidence-file "$TEMP_DIR/evidence/release-evidence.md" \
+      --evidence-json-file "$TEMP_DIR/evidence/release-evidence.json" \
       v9.8.7 \
       main >"$TEMP_DIR/output.log"
 
@@ -206,6 +215,8 @@ EOF
     fail "missing checklist changelog metadata"
   grep -Fq 'evidence_file: '"$TEMP_DIR/evidence/release-evidence.md" "$TEMP_DIR/output.log" ||
     fail "missing checklist evidence file"
+  grep -Fq 'evidence_json_file: '"$TEMP_DIR/evidence/release-evidence.json" "$TEMP_DIR/output.log" ||
+    fail "missing checklist evidence JSON file"
   grep -Fq 'release dry run passed' "$TEMP_DIR/output.log" ||
     fail "missing success output"
 
@@ -213,10 +224,12 @@ EOF
     fail "missing evidence file summary"
   grep -Fq '## v9.8.7 release evidence' "$TEMP_DIR/evidence/release-evidence.md" ||
     fail "missing evidence file block"
+  grep -Fq '"run_id":"123456"' "$TEMP_DIR/evidence/release-evidence.json" ||
+    fail "missing evidence JSON file"
 
   grep -Fq 'tag-preflight --repo sleticalboy/CodeInsight-mcp --head-sha abc123 v9.8.7 main' "$TEMP_DIR/calls.log" ||
     fail "missing tag preflight call"
-  grep -Fq 'evidence-summary --repo sleticalboy/CodeInsight-mcp --head-sha abc123 v9.8.7 main' "$TEMP_DIR/calls.log" ||
+  grep -Fq "evidence-summary --repo sleticalboy/CodeInsight-mcp --head-sha abc123 --json-output $TEMP_DIR/evidence/release-evidence.json v9.8.7 main" "$TEMP_DIR/calls.log" ||
     fail "missing evidence summary call"
 
   grep -q 'version = "1.2.3"' "$TEMP_DIR/repo/Cargo.toml" ||

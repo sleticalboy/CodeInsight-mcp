@@ -11,7 +11,7 @@ and push metadata, then tag and verify.
 
 ```bash
 # 1. Dry-run and archive pre-tag evidence.
-scripts/release-dry-run.sh --repo sleticalboy/CodeInsight-mcp --evidence-file release-evidence/vX.Y.Z.md vX.Y.Z main
+scripts/release-dry-run.sh --repo sleticalboy/CodeInsight-mcp --evidence-file release-evidence/vX.Y.Z.md --evidence-json-file release-evidence/vX.Y.Z.json vX.Y.Z main
 
 # 2. Prepare and push the release metadata commit.
 scripts/prepare-release.sh --dry-run vX.Y.Z
@@ -20,7 +20,7 @@ git push origin main
 
 # 3. Wait for CI, tag, then verify published artifacts.
 scripts/release-pretag-check.sh main
-scripts/archive-release-evidence.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
+scripts/archive-release-evidence.sh --repo sleticalboy/CodeInsight-mcp --json-output release-evidence/vX.Y.Z.json vX.Y.Z main
 scripts/release-tag-preflight.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
 git tag -a vX.Y.Z -m "vX.Y.Z"
 git push origin vX.Y.Z
@@ -51,8 +51,12 @@ and artifact gates without modifying the checkout.
 To archive that evidence locally while still printing it to the terminal:
 
 ```bash
-scripts/release-dry-run.sh --repo sleticalboy/CodeInsight-mcp --evidence-file release-evidence/vX.Y.Z.md vX.Y.Z main
+scripts/release-dry-run.sh --repo sleticalboy/CodeInsight-mcp --evidence-file release-evidence/vX.Y.Z.md --evidence-json-file release-evidence/vX.Y.Z.json vX.Y.Z main
 ```
+
+Add `--evidence-json-file release-evidence/vX.Y.Z.json` when another script or
+automation needs the same evidence as structured JSON instead of parsing the
+Markdown handoff block.
 
 Preview release metadata changes:
 
@@ -98,15 +102,16 @@ version and prints `metadata_cargo`, `metadata_install`, and
 Archive the release evidence block for the release handoff:
 
 ```bash
-scripts/archive-release-evidence.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
+scripts/archive-release-evidence.sh --repo sleticalboy/CodeInsight-mcp --json-output release-evidence/vX.Y.Z.json vX.Y.Z main
 ```
 
 This resolves the successful `CI` run for the target commit, validates the
 `codeinsight-benchmark-subset`, `codeinsight-context-pack-quality`, and
 `codeinsight-agent-route-smoke` artifacts, and writes
 `release-evidence/vX.Y.Z.md` with the target SHA, CI run URL, artifact URLs,
-local report paths, and release metadata summary. Use `--output PATH` for a
-custom archive path or `--force` to intentionally overwrite an existing
+local report paths, and release metadata summary. Use `--json-output PATH` to
+write the same evidence as machine-readable JSON, `--output PATH` for a custom
+Markdown archive path, or `--force` to intentionally overwrite an existing
 evidence file.
 
 Tagged `Release Build` runs also execute this gate against the tag target SHA

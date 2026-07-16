@@ -298,7 +298,7 @@ main() {
     'scripts/release-evidence-summary-artifact-smoke\.sh --repo sleticalboy/CodeInsight-mcp <ci-run-id>' \
     "maintenance release evidence summary artifact smoke command"
   require_pattern docs/maintenance-commands.md \
-    'scripts/archive-release-evidence\.sh --repo sleticalboy/CodeInsight-mcp vX\.Y\.Z main' \
+    'scripts/archive-release-evidence\.sh --repo sleticalboy/CodeInsight-mcp --json-output release-evidence/vX\.Y\.Z\.json vX\.Y\.Z main' \
     "maintenance archive release evidence command"
   require_pattern docs/maintenance-commands.md \
     '^## Recommended Release Path$' \
@@ -307,10 +307,10 @@ main() {
     'Maintainer release path:' \
     "README maintainer release path"
   require_pattern README.md \
-    'scripts/archive-release-evidence\.sh --repo sleticalboy/CodeInsight-mcp vX\.Y\.Z main' \
+    'scripts/archive-release-evidence\.sh --repo sleticalboy/CodeInsight-mcp --json-output release-evidence/vX\.Y\.Z\.json vX\.Y\.Z main' \
     "README archive release evidence command"
   require_pattern docs/maintainer-checklist.md \
-    'scripts/archive-release-evidence\.sh --repo sleticalboy/CodeInsight-mcp vX\.Y\.Z main' \
+    'scripts/archive-release-evidence\.sh --repo sleticalboy/CodeInsight-mcp --json-output release-evidence/vX\.Y\.Z\.json vX\.Y\.Z main' \
     "maintainer checklist archive release evidence command"
   require_pattern docs/maintenance-commands.md \
     'scripts/context-pack-quality-smoke\.sh' \
@@ -367,14 +367,20 @@ main() {
     'evidence-file release-evidence/vX\.Y\.Z\.md' \
     "release commands dry run evidence archive"
   require_pattern docs/release-commands.md \
+    'evidence-json-file release-evidence/vX\.Y\.Z\.json' \
+    "release commands dry run evidence JSON archive"
+  require_pattern docs/release-commands.md \
     'scripts/release-tag-preflight\.sh --repo sleticalboy/CodeInsight-mcp vX\.Y\.Z main' \
     "release commands tag preflight gate"
   require_pattern docs/release-commands.md \
-    'scripts/archive-release-evidence\.sh --repo sleticalboy/CodeInsight-mcp vX\.Y\.Z main' \
+    'scripts/archive-release-evidence\.sh --repo sleticalboy/CodeInsight-mcp --json-output release-evidence/vX\.Y\.Z\.json vX\.Y\.Z main' \
     "release commands evidence archive"
   require_pattern docs/release-commands.md \
     'release-evidence/vX\.Y\.Z\.md' \
     "release commands evidence archive path"
+  require_pattern docs/release-commands.md \
+    'machine-readable JSON' \
+    "release commands machine-readable evidence JSON"
   require_pattern docs/release-commands.md \
     'scripts/update-release-status\.sh --evidence-file release-evidence/vX\.Y\.Z\.md release-verification/vX\.Y\.Z\.json' \
     "release commands status evidence file"
@@ -451,7 +457,7 @@ main() {
     '`metadata_cargo`, `metadata_install`, and `metadata_changelog`' \
     "release runbook metadata summary output"
   require_pattern docs/release-runbook.md \
-    'scripts/archive-release-evidence\.sh --repo sleticalboy/CodeInsight-mcp vX\.Y\.Z main' \
+    'scripts/archive-release-evidence\.sh --repo sleticalboy/CodeInsight-mcp --json-output release-evidence/vX\.Y\.Z\.json vX\.Y\.Z main' \
     "release runbook evidence archive"
   require_pattern docs/release-runbook.md \
     'release-evidence/vX\.Y\.Z\.md' \

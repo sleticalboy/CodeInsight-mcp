@@ -30,7 +30,7 @@ Normal releases should follow this three-phase flow:
 
 ```bash
 # 1. Dry-run and archive pre-tag evidence.
-scripts/release-dry-run.sh --repo sleticalboy/CodeInsight-mcp --evidence-file release-evidence/vX.Y.Z.md vX.Y.Z main
+scripts/release-dry-run.sh --repo sleticalboy/CodeInsight-mcp --evidence-file release-evidence/vX.Y.Z.md --evidence-json-file release-evidence/vX.Y.Z.json vX.Y.Z main
 
 # 2. Prepare and push the release metadata commit.
 scripts/prepare-release.sh --dry-run vX.Y.Z
@@ -39,7 +39,7 @@ git push origin main
 
 # 3. Wait for CI, tag, then verify published artifacts.
 scripts/release-pretag-check.sh main
-scripts/archive-release-evidence.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
+scripts/archive-release-evidence.sh --repo sleticalboy/CodeInsight-mcp --json-output release-evidence/vX.Y.Z.json vX.Y.Z main
 scripts/release-tag-preflight.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
 git tag -a vX.Y.Z -m "vX.Y.Z"
 git push origin vX.Y.Z
@@ -61,10 +61,12 @@ This command previews the release metadata diff, applies that metadata in a
 temporary copy, runs the tag preflight against the target commit, and prints the
 release evidence block. It then prints a `release dry run checklist` with the
 tag, branch, head SHA, CI run, release metadata fields, artifact gate statuses,
-and optional evidence file path. It does not modify the checkout.
+and optional evidence file paths. It does not modify the checkout.
 
 Use `--evidence-file release-evidence/vX.Y.Z.md` when you want to archive the
-pre-tag evidence block for handoff or release review.
+pre-tag evidence block for handoff or release review. Add
+`--evidence-json-file release-evidence/vX.Y.Z.json` when automation needs the
+same evidence as structured JSON.
 
 Prepare release metadata:
 
@@ -150,7 +152,7 @@ including `ci_run`, `head_sha`, `artifact_gate_benchmark`,
 Archive the release evidence block:
 
 ```bash
-scripts/archive-release-evidence.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
+scripts/archive-release-evidence.sh --repo sleticalboy/CodeInsight-mcp --json-output release-evidence/vX.Y.Z.json vX.Y.Z main
 ```
 
 This resolves the successful `CI` run for the target SHA, validates the
@@ -158,7 +160,8 @@ This resolves the successful `CI` run for the target SHA, validates the
 `codeinsight-agent-route-smoke` artifacts, and prints a Markdown block with the
 commit, workflow run, artifact links, local report paths, and release metadata
 to `release-evidence/vX.Y.Z.md`. Use `--output PATH` for a custom archive path
-or `--force` to intentionally overwrite an existing evidence file.
+or `--force` to intentionally overwrite an existing evidence file. Use
+`--json-output PATH` to also write a machine-readable evidence summary.
 
 ## Publish A Tagged Release
 

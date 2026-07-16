@@ -9,6 +9,7 @@ HEAD_SHA=""
 RUN_ID=""
 TAG_NAME=""
 OUTPUT_FILE=""
+JSON_OUTPUT_FILE=""
 FORCE=0
 
 usage() {
@@ -31,6 +32,7 @@ Options:
   --head-sha SHA     Check this commit instead of the current HEAD.
   --run-id ID        Use this CI run instead of resolving by head SHA.
   --output PATH      Write to PATH instead of release-evidence/<tag>.md.
+  --json-output PATH Write machine-readable evidence JSON to PATH.
   --force            Overwrite an existing output file.
   -h, --help         Show this help.
 
@@ -89,6 +91,13 @@ main() {
           usage
         fi
         OUTPUT_FILE="$1"
+        ;;
+      --json-output)
+        shift
+        if [ "$#" -eq 0 ]; then
+          usage
+        fi
+        JSON_OUTPUT_FILE="$1"
         ;;
       --force)
         FORCE=1
@@ -151,6 +160,9 @@ main() {
   if [ -n "$HEAD_SHA" ]; then
     summary_args+=(--head-sha "$HEAD_SHA")
   fi
+  if [ -n "$JSON_OUTPUT_FILE" ]; then
+    summary_args+=(--json-output "$JSON_OUTPUT_FILE")
+  fi
   summary_args+=("$TAG_NAME" "$BRANCH")
 
   CODEINSIGHT_ROOT_DIR="$ROOT_DIR" \
@@ -160,6 +172,9 @@ main() {
   trap - EXIT INT TERM
 
   echo "release evidence written: $OUTPUT_FILE"
+  if [ -n "$JSON_OUTPUT_FILE" ]; then
+    echo "release evidence JSON written: $JSON_OUTPUT_FILE"
+  fi
   echo "next: review $OUTPUT_FILE before tagging $TAG_NAME"
 }
 
