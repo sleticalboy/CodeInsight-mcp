@@ -206,13 +206,13 @@ Example `context_pack` call arguments:
 
 Recommended first-read flow for agents:
 
-1. Call `index_project` with `force: false` for the repository.
-2. Call `project_overview` and inspect `summary`, `entrypoints`, and
-   `main_directories`. Use `recommended_next_tools` when you want CodeInsight
-   to propose the next MCP call and argument shape.
-3. Call `context_pack` with only `root`, `task`, and `token_budget` to let
-   CodeInsight auto-select the highest-confidence source entrypoint. Provide
-   explicit `symbols` or `files` when the user already named a target.
+1. Call `agent_route` with `root`, `task`, and `token_budget`.
+2. Read the returned `context_pack.files[]` in `reading_plan[]` order.
+3. Use `continuation_summary` only after selected context is consumed.
+
+Call `index_project`, `project_overview`, `context_pack`, and
+`impact_analysis` directly when the client needs custom routing, partial
+refresh control, or a user already named a specific file or symbol.
 
 See [First-read workflow](first-read-workflow.md) for the full overview and
 context-pack response contract.

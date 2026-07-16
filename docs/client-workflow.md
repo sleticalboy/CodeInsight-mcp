@@ -5,17 +5,20 @@ for a multi-step code-reading task.
 
 ## Standard Flow
 
-1. Call `index_project` for the repository.
-2. Call `project_overview`.
-3. Execute the first suitable `project_overview.recommended_next_tools[]`
-   entry, usually `context_pack`.
-4. Read `context_pack.files[]` by following `reading_plan[]` order.
-5. Execute `reading_plan[].suggested_tool` when a selected file needs deeper
+1. Call `agent_route` with `root`, `task`, and `token_budget` for the default
+   first read.
+2. Read `context_pack.files[]` by following `reading_plan[]` order in the
+   returned route payload.
+3. Execute `reading_plan[].suggested_tool` when a selected file needs deeper
    local navigation.
-6. Use `continuation_summary` and `omitted_candidates[]` when more context is
+4. Use `continuation_summary` and `omitted_candidates[]` when more context is
    needed after the first selected pack.
-7. Use `impact_analysis` before edits or refactors to estimate local change
-   radius and suggested checks.
+5. Use the included `impact_analysis` preview before edits or refactors, then
+   run focused `impact_analysis` calls when the target changes.
+
+When a client needs custom routing or partial refresh control, it can call the
+lower-level tools directly: `index_project`, `project_overview`,
+`context_pack`, then `impact_analysis`.
 
 ## Agent Policy Prompt
 
@@ -26,24 +29,22 @@ CodeInsight is available. For copy-paste task variants, see
 ```text
 When working in a repository with CodeInsight MCP available:
 
-1. Before broad code reading, call index_project for the repository root unless
-   the current index is known to be fresh.
-2. Call project_overview before using ad hoc file search. Use its entrypoints,
-   directory roles, and recommended_next_tools to choose the first read path.
-3. For initial understanding, call context_pack with root, task, and
-   token_budget. Do not pass files or symbols unless the user named a specific
-   target.
-4. Read context_pack.files in reading_plan order. Treat reading_plan questions
+1. Before broad code reading, call agent_route with root, task, and
+   token_budget for the default first read.
+2. Read context_pack.files in reading_plan order. Treat reading_plan questions
    as the local reading checklist.
-5. Prefer reading_plan[].suggested_tool for deeper evidence on the current
+3. Prefer reading_plan[].suggested_tool for deeper evidence on the current
    file. Prefer continuation_summary.suggested_tool only after the selected
    context has been consumed.
-6. If continuation_summary.status is complete, do not fetch more context unless
+4. If continuation_summary.status is complete, do not fetch more context unless
    the user asks a narrower follow-up or the selected context does not answer
    the task.
-7. Before editing, call impact_analysis with the selected files or symbols and
-   run or report the suggested_checks that apply to the change.
-8. Treat CodeInsight call graphs and references as best-effort navigation
+5. Before editing, review the included impact_analysis preview. If the edit
+   target differs from the first-read seed, call impact_analysis with the
+   selected files or symbols and run or report the suggested_checks that apply.
+6. Use index_project, project_overview, context_pack, and impact_analysis
+   directly only when custom routing or partial refresh control is needed.
+7. Treat CodeInsight call graphs and references as best-effort navigation
    evidence, not compiler-grade proof.
 ```
 
@@ -55,7 +56,7 @@ specific source location.
 
 | User intent | First CodeInsight call after indexing | Follow-up rule |
 | --- | --- | --- |
-| "Understand this repo" | `project_overview`, then top `context_pack` recommendation | Read `reading_plan[]`; continue only if `continuation_summary` suggests it. |
+| "Understand this repo" | `agent_route` | Read `reading_plan[]`; continue only if `continuation_summary` suggests it. |
 | "Where is the entrypoint?" | `project_overview` | Inspect `entrypoints[]`; call `context_pack` for the highest-confidence source entrypoint when needed. |
 | "Explain this module/file" | `context_pack` with `files[]` set to the named file | Use `file_outline` from `reading_plan[].suggested_tool` for local structure. |
 | "Explain this class/function" | `symbol_search`, then `context_pack` with the symbol | Use `callers` or `callees` only when the task asks about flow or dependencies. |
@@ -66,7 +67,12 @@ specific source location.
 
 ## Project Overview
 
-`project_overview` is the repository briefing. Clients should render:
+`agent_route` returns the default first-read bundle: `index_report`,
+`overview`, `context_pack`, route metadata, and an optional `impact_analysis`
+preview. Clients should use it when the user asks to understand a repository or
+begin a broad task.
+
+`project_overview` is the lower-level repository briefing. Clients should render:
 
 - `summary`
 - `main_directories`
@@ -157,14 +163,13 @@ Recommendation priority does not imply safety. Risk comes from
 
 A simple client can implement this policy:
 
-1. Run `index_project`.
-2. Run `project_overview`.
-3. Run the top `context_pack` recommendation.
-4. Present selected `files[]` in `reading_plan[]` order.
-5. Execute the current step's `suggested_tool` when the user asks for detail.
-6. If the selected context is insufficient, execute
+1. Run `agent_route`.
+2. Present selected `files[]` in `reading_plan[]` order.
+3. Execute the current step's `suggested_tool` when the user asks for detail.
+4. If the selected context is insufficient, execute
    `continuation_summary.suggested_tool` when present.
-7. Run `impact_analysis` before edits.
+5. Use the included `impact_analysis` preview before edits, and rerun
+   `impact_analysis` for changed targets.
 
 For field-level contracts, see [First-read workflow](first-read-workflow.md)
 and [Recommendation contract](recommendation-contract.md).

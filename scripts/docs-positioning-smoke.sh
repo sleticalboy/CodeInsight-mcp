@@ -43,6 +43,9 @@ main() {
     '\[Client workflow\]\(client-workflow\.md#agent-policy-prompt\)' \
     "agent policy prompt link"
   require_pattern docs/quickstart.md \
+    'Call agent_route with root, task, and token_budget' \
+    "quickstart agent_route policy"
+  require_pattern docs/quickstart.md \
     '\[Adoption checklist\]\(adoption-checklist\.md\)' \
     "adoption checklist link"
 
@@ -59,6 +62,18 @@ main() {
   require_pattern docs/mcp-tools.md \
     '\[Known limitations\]\(known-limitations\.md\)' \
     "known limitations link"
+  require_pattern docs/client-workflow.md \
+    'Call `agent_route` with `root`, `task`, and `token_budget`' \
+    "client workflow agent_route path"
+  require_pattern docs/agent-prompt-template.md \
+    'call agent_route with root, task, and' \
+    "agent prompt agent_route path"
+  require_pattern docs/first-read-workflow.md \
+    '`agent_route` is the default first-read contract' \
+    "first-read workflow agent_route contract"
+  require_pattern docs/mcp-client-config.md \
+    'Call `agent_route` with `root`, `task`, and `token_budget`' \
+    "MCP client config agent_route flow"
 
   require_pattern docs/maintainer-checklist.md \
     'local-first MCP code context routing' \

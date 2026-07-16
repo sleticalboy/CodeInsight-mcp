@@ -14,22 +14,20 @@ Use this as a persistent instruction when CodeInsight MCP is available:
 ```text
 When CodeInsight MCP is available for a repository:
 
-1. Before broad code reading, call index_project for the repository root unless
-   the current index is known to be fresh.
-2. Call project_overview before ad hoc file search. Use entrypoints,
-   directory roles, and recommended_next_tools to choose the first read path.
-3. For first understanding, call context_pack with root, task, and
-   token_budget. Do not pass files or symbols unless the user named a specific
-   file, symbol, module, or entrypoint.
-4. Read context_pack.files in reading_plan order. Treat reading_plan questions
+1. Before broad code reading, call agent_route with root, task, and
+   token_budget for the default first read.
+2. Read context_pack.files in reading_plan order. Treat reading_plan questions
    as the local reading checklist.
-5. Prefer reading_plan[].suggested_tool for deeper evidence on the current
+3. Prefer reading_plan[].suggested_tool for deeper evidence on the current
    selected file.
-6. Use continuation_summary.suggested_tool only after the selected context has
+4. Use continuation_summary.suggested_tool only after the selected context has
    been consumed and the task still needs more evidence.
-7. Before editing, call impact_analysis with the selected files or symbols and
-   run or report the suggested_checks that apply to the change.
-8. Treat CodeInsight call graphs and references as best-effort navigation
+5. Before editing, review the included impact_analysis preview. If the edit
+   target differs from the first-read seed, call impact_analysis with the
+   selected files or symbols and run or report the suggested_checks that apply.
+6. Use index_project, project_overview, context_pack, and impact_analysis
+   directly only when custom routing or partial refresh control is needed.
+7. Treat CodeInsight call graphs and references as best-effort navigation
    evidence, not compiler-grade proof.
 ```
 
@@ -41,17 +39,13 @@ Use this when the user asks to understand an unfamiliar repository:
 Understand this repository with CodeInsight first.
 
 Workflow:
-1. Call index_project on the repository root.
-2. Call project_overview.
-3. Use the top project_overview.recommended_next_tools item, usually
-   context_pack.
-4. Call context_pack with:
+1. Call agent_route with:
    - root: repository root
    - task: "understand the repository structure, primary entrypoints, and main
      execution flow"
    - token_budget: 6000
-5. Read selected files in reading_plan order.
-6. Summarize:
+2. Read selected files in reading_plan order.
+3. Summarize:
    - primary purpose
    - likely entrypoints
    - important directories
@@ -70,7 +64,7 @@ Use this before making a code change:
 Before editing, use CodeInsight to estimate the local change radius.
 
 Workflow:
-1. If the repository index may be stale, call index_project.
+1. If the task starts from a broad repository question, call agent_route first.
 2. Identify the target file, symbol, or module from the user's request.
 3. Call context_pack for the target if more local context is needed.
 4. Call impact_analysis with the target files or symbols.
@@ -115,10 +109,9 @@ Use this when preparing a review, PR risk summary, or refactor plan:
 Use CodeInsight to turn review planning into a bounded evidence pass.
 
 Workflow:
-1. Call index_project if the index is stale.
-2. Call context_pack with the review task and a bounded token_budget.
-3. Read selected files in reading_plan order.
-4. Call impact_analysis for each changed or planned target.
+1. Call agent_route with the review task and a bounded token_budget.
+2. Read selected files in reading_plan order.
+3. Call impact_analysis for each changed or planned target.
 5. Use callers, callees, find_references, or dependency_graph only when the
    review question requires flow or dependency evidence.
 6. Report:
@@ -137,11 +130,11 @@ Use this compact prompt when the agent only supports a short custom
 instruction:
 
 ```text
-Use CodeInsight before broad repository reading: index_project, then
-project_overview, then context_pack with root/task/token_budget. Read selected
-files in reading_plan order. Use continuation only after selected context is
-consumed. Call impact_analysis before edits. Treat call graphs and references
-as best-effort navigation evidence, not compiler-grade proof.
+Use CodeInsight before broad repository reading: call agent_route with
+root/task/token_budget. Read selected files in reading_plan order. Use
+continuation only after selected context is consumed. Review impact_analysis
+before edits. Treat call graphs and references as best-effort navigation
+evidence, not compiler-grade proof.
 ```
 
 ## Recommended Defaults

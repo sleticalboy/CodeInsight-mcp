@@ -53,10 +53,11 @@ CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/two-minute-demo.sh
 
 The demo runs the product loop:
 
-1. `index_project`
-2. `project_overview`
-3. `context_pack`
-4. `impact_analysis`
+1. `agent_route`
+2. `index_project`
+3. `project_overview`
+4. `context_pack`
+5. `impact_analysis`
 
 It prints index timing, entrypoint count, recommended-tool count, selected
 context size, line reduction, continuation status, impact summary, and a short
@@ -118,12 +119,12 @@ Minimum policy:
 
 ```text
 Before broad repository reading, use CodeInsight:
-1. Call index_project.
-2. Call project_overview.
-3. Call context_pack with root, task, and token_budget.
-4. Read context_pack.files in reading_plan order.
-5. Use continuation_summary only after selected context is consumed.
-6. Call impact_analysis before edits.
+1. Call agent_route with root, task, and token_budget for the default first read.
+2. Read context_pack.files in reading_plan order.
+3. Use continuation_summary only after selected context is consumed.
+4. Use focused follow-up tools only when the selected context is insufficient.
+5. For custom routing, call index_project, project_overview, context_pack, and
+   impact_analysis directly.
 ```
 
 ## 5. Smoke Test MCP
@@ -170,7 +171,7 @@ Ask your MCP-enabled agent:
 
 ```text
 Use CodeInsight to understand this repository before reading files directly.
-Start with project_overview, then build a context_pack for:
+Start with agent_route for:
 "understand the main application entrypoint"
 Use a token budget of 6000.
 ```

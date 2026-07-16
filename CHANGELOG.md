@@ -14,6 +14,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - `scripts/two-minute-demo.sh` now uses `agent-route` as the user-facing
   walkthrough path, while `scripts/agent-router-demo.sh` remains the lower-level
   raw metric and CI assertion path.
+- Client workflow, quickstart, MCP config, first-read workflow, and agent prompt
+  docs now make `agent_route` the default first-read instruction.
 - Added `docs/demo-output.md` and `scripts/demo-output-smoke.sh` so the
   user-facing two-minute demo has a checked-in output snapshot for recordings,
   project introductions, and release checks.

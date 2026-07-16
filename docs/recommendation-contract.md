@@ -2,6 +2,7 @@
 
 CodeInsight exposes local next-step suggestions in two places:
 
+- `agent_route.route[]`
 - `project_overview.recommended_next_tools[]`
 - `context_pack.reading_plan[].suggested_tool`
 - `context_pack.omitted_candidates[].suggested_tool`
@@ -43,8 +44,13 @@ semantic score. Treat them as coarse display buckets.
 
 ## Overview Recommendations
 
+`agent_route.route[]` reports the default first-read path that was executed in
+one call. It is route metadata rather than a recommendation list; clients should
+render it as provenance for `index_report`, `overview`, `context_pack`, and
+`impact_analysis`.
+
 `project_overview.recommended_next_tools[]` recommends repository-level calls
-after indexing. It currently favors:
+after indexing when a client chooses the lower-level path. It currently favors:
 
 - `context_pack` first, to build the initial reading context.
 - `dependency_graph` when dependency edges exist, scoped to the detected source

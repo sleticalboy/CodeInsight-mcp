@@ -18,7 +18,8 @@ CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/two-minute-demo.sh
 ```
 
 The script executes the product path that an MCP client should follow:
-`index -> overview -> context-pack -> impact-analysis`.
+`agent_route`, which internally runs index, overview, context-pack, and
+impact-analysis.
 
 It reports:
 
@@ -33,12 +34,29 @@ It reports:
 
 Recommended MCP first-read flow:
 
-1. Call `index_project` for the repository.
-2. Call `project_overview` to inspect summary, roles, entrypoint candidates,
-   and recommended next tools.
-3. Call `context_pack` with `root`, `task`, and `token_budget`. Omit `symbols`
-   and `files` to let CodeInsight auto-select the highest-confidence source
-   entrypoint.
+1. Call `agent_route` with `root`, `task`, and `token_budget`.
+2. Read `context_pack.files[]` in `reading_plan[]` order from the returned
+   route payload.
+3. Use `continuation_summary` only after selected context is consumed.
+
+When the client needs custom routing or partial refresh control, call the
+lower-level tools directly: `index_project`, `project_overview`,
+`context_pack`, then `impact_analysis`.
+
+## Agent Route
+
+`agent_route` is the default first-read contract. It returns:
+
+- `index_report`
+- `overview`
+- `context_pack`
+- `impact_analysis` when a file or symbol seed is available
+- `route[]` metadata describing the executed tool path
+- `impact_seed_files` and `impact_seed_symbols`
+
+Use `agent_route` for broad repository understanding and first-pass planning.
+Use the lower-level tools when the user named a specific file, symbol, module,
+or when the client needs to refresh only part of the route.
 
 For client setup snippets, see [MCP client configuration](mcp-client-config.md).
 For a full client-side read, continue, and edit-preflight sequence, see
