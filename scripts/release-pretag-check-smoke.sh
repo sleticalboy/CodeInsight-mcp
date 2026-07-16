@@ -50,20 +50,34 @@ EOF
 set -euo pipefail
 
 log="${CODEINSIGHT_PRETAG_SMOKE_LOG:?}"
-printf 'artifact %s\n' "$*" >>"$log"
+printf 'benchmark-artifact %s\n' "$*" >>"$log"
 test "$1" = "--repo"
 test "$2" = "sleticalboy/CodeInsight-mcp"
 test "$3" = "123456"
 EOF
   chmod +x "$TEMP_DIR/benchmark-artifact-smoke"
 
+  cat >"$TEMP_DIR/context-pack-quality-artifact-smoke" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+log="${CODEINSIGHT_PRETAG_SMOKE_LOG:?}"
+printf 'context-pack-quality-artifact %s\n' "$*" >>"$log"
+test "$1" = "--repo"
+test "$2" = "sleticalboy/CodeInsight-mcp"
+test "$3" = "123456"
+EOF
+  chmod +x "$TEMP_DIR/context-pack-quality-artifact-smoke"
+
   CODEINSIGHT_PRETAG_SMOKE_LOG="$TEMP_DIR/calls.log" \
     CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/benchmark-artifact-smoke" \
+    CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/context-pack-quality-artifact-smoke" \
     PATH="$TEMP_DIR/bin:$PATH" \
     "$ROOT_DIR/scripts/release-pretag-check.sh" --repo sleticalboy/CodeInsight-mcp main >/dev/null
 
   CODEINSIGHT_PRETAG_SMOKE_LOG="$TEMP_DIR/calls.log" \
     CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/benchmark-artifact-smoke" \
+    CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/context-pack-quality-artifact-smoke" \
     PATH="$TEMP_DIR/bin:$PATH" \
     "$ROOT_DIR/scripts/release-pretag-check.sh" --repo sleticalboy/CodeInsight-mcp --head-sha abc123 main >/dev/null
 
@@ -73,8 +87,10 @@ EOF
     fail "missing head SHA CI run lookup"
   grep -Fq 'gh run watch 123456 --repo sleticalboy/CodeInsight-mcp --exit-status' "$TEMP_DIR/calls.log" ||
     fail "missing CI watch"
-  grep -Fq 'artifact --repo sleticalboy/CodeInsight-mcp 123456' "$TEMP_DIR/calls.log" ||
-    fail "missing artifact smoke"
+  grep -Fq 'benchmark-artifact --repo sleticalboy/CodeInsight-mcp 123456' "$TEMP_DIR/calls.log" ||
+    fail "missing benchmark artifact smoke"
+  grep -Fq 'context-pack-quality-artifact --repo sleticalboy/CodeInsight-mcp 123456' "$TEMP_DIR/calls.log" ||
+    fail "missing context-pack quality artifact smoke"
 
   echo "release pretag check smoke passed"
 }

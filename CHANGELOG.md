@@ -17,6 +17,9 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   the scenario table to the Actions summary. Added
   `scripts/context-pack-quality-artifact-smoke.sh` to download and validate the
   JSON artifact from a completed CI run.
+- Release pretag, dry-run, and evidence-summary flows now validate the
+  `codeinsight-context-pack-quality` artifact alongside the benchmark subset
+  artifact before a tag is cut.
 - `scripts/verify-release.sh` now reports a specific local network diagnostic
   when GitHub Release assets exist in API metadata but
   `github.com/releases/download` is unreachable, and supports an explicit

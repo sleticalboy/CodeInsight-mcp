@@ -75,7 +75,7 @@ scripts/installed-quickstart-smoke.sh
 ```
 
 After the release prep commit CI completes, validate the uploaded benchmark
-subset artifact:
+subset and context-pack quality artifacts:
 
 ```bash
 scripts/release-pretag-check.sh main
@@ -100,9 +100,10 @@ scripts/release-evidence-summary.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z ma
 ```
 
 This resolves the successful `CI` run for the target commit, validates the
-`codeinsight-benchmark-subset` artifact, and prints a Markdown evidence block
-with the target SHA, CI run URL, benchmark artifact URL, benchmark report path,
-and release metadata summary.
+`codeinsight-benchmark-subset` and `codeinsight-context-pack-quality`
+artifacts, and prints a Markdown evidence block with the target SHA, CI run
+URL, benchmark artifact URL, context-pack quality artifact URL, local report
+paths, and release metadata summary.
 
 Tagged `Release Build` runs also execute this gate against the tag target SHA
 before building release artifacts:

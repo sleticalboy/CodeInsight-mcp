@@ -75,12 +75,22 @@ printf 'benchmark-artifact %s\n' "$*" >>"$log"
 EOF
   chmod +x "$TEMP_DIR/benchmark-artifact-smoke"
 
+  cat >"$TEMP_DIR/context-pack-quality-artifact-smoke" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+log="${CODEINSIGHT_DRY_RUN_SMOKE_LOG:?}"
+printf 'context-pack-quality-artifact %s\n' "$*" >>"$log"
+EOF
+  chmod +x "$TEMP_DIR/context-pack-quality-artifact-smoke"
+
   cat >"$TEMP_DIR/release-tag-preflight" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 
 log="${CODEINSIGHT_DRY_RUN_SMOKE_LOG:?}"
 printf 'tag-preflight %s\n' "$*" >>"$log"
+test "$CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT" = "${CODEINSIGHT_DRY_RUN_BENCHMARK_ARTIFACT_SMOKE_SCRIPT:?}"
+test "$CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT" = "${CODEINSIGHT_DRY_RUN_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT:?}"
 test "$CODEINSIGHT_ROOT_DIR" != "${CODEINSIGHT_DRY_RUN_SOURCE_ROOT:?}"
 grep -q 'version = "9.8.7"' "$CODEINSIGHT_ROOT_DIR/Cargo.toml"
 grep -q 'CODEINSIGHT_VERSION=v9.8.7' "$CODEINSIGHT_ROOT_DIR/docs/install.md"
@@ -101,6 +111,8 @@ set -euo pipefail
 
 log="${CODEINSIGHT_DRY_RUN_SMOKE_LOG:?}"
 printf 'evidence-summary %s\n' "$*" >>"$log"
+test "$CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT" = "${CODEINSIGHT_DRY_RUN_BENCHMARK_ARTIFACT_SMOKE_SCRIPT:?}"
+test "$CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT" = "${CODEINSIGHT_DRY_RUN_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT:?}"
 test "$CODEINSIGHT_ROOT_DIR" != "${CODEINSIGHT_DRY_RUN_SOURCE_ROOT:?}"
 grep -q 'version = "9.8.7"' "$CODEINSIGHT_ROOT_DIR/Cargo.toml"
 test "$1" = "--repo"
@@ -119,7 +131,9 @@ SUMMARY
 EOF
   chmod +x "$TEMP_DIR/release-evidence-summary"
 
-  CODEINSIGHT_DRY_RUN_SMOKE_LOG="$TEMP_DIR/calls.log" \
+    CODEINSIGHT_DRY_RUN_SMOKE_LOG="$TEMP_DIR/calls.log" \
+    CODEINSIGHT_DRY_RUN_BENCHMARK_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/benchmark-artifact-smoke" \
+    CODEINSIGHT_DRY_RUN_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/context-pack-quality-artifact-smoke" \
     CODEINSIGHT_DRY_RUN_SOURCE_ROOT="$TEMP_DIR/repo" \
     CODEINSIGHT_ROOT_DIR="$TEMP_DIR/repo" \
     CODEINSIGHT_RELEASE_DATE=2026-07-15 \
@@ -128,6 +142,7 @@ EOF
     CODEINSIGHT_RELEASE_WORKFLOW_GUARD_SCRIPT="$TEMP_DIR/release-workflow-guard" \
     CODEINSIGHT_RELEASE_PRETAG_CHECK_SCRIPT="$TEMP_DIR/release-pretag-check" \
     CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/benchmark-artifact-smoke" \
+    CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/context-pack-quality-artifact-smoke" \
     "$ROOT_DIR/scripts/release-dry-run.sh" \
       --repo sleticalboy/CodeInsight-mcp \
       --head-sha abc123 \

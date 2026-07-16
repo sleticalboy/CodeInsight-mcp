@@ -114,9 +114,9 @@ scripts/release-pretag-check.sh main
 ```
 
 This waits for the latest `CI` run on `main`, downloads
-`codeinsight-benchmark-subset`, validates the Markdown report, and confirms the
-lightweight `p-limit` benchmark evidence is readable outside the GitHub Actions
-UI before tagging.
+`codeinsight-benchmark-subset` and `codeinsight-context-pack-quality`,
+validates both artifacts, and confirms the benchmark plus context-pack quality
+evidence is readable outside the GitHub Actions UI before tagging.
 
 Dry-run the tag preflight without creating or pushing a tag:
 
@@ -125,13 +125,13 @@ scripts/release-tag-preflight.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
 ```
 
 This validates the tagged `Release Build` workflow guard and re-checks the tag
-target commit by SHA against the successful `CI` run and benchmark artifact.
-It also fails fast when the tag already exists locally or remotely, or when a
-GitHub Release already exists for the tag. The target tag must match
-`Cargo.toml`, the pinned installer example in `docs/install.md`, and the
-prepared `CHANGELOG.md` release section. The preflight output prints
-`metadata_cargo`, `metadata_install`, and `metadata_changelog` so the prepared
-versions are visible before tagging.
+target commit by SHA against the successful `CI` run, benchmark artifact, and
+context-pack quality artifact. It also fails fast when the tag already exists
+locally or remotely, or when a GitHub Release already exists for the tag. The
+target tag must match `Cargo.toml`, the pinned installer example in
+`docs/install.md`, and the prepared `CHANGELOG.md` release section. The
+preflight output prints `metadata_cargo`, `metadata_install`, and `metadata_changelog`
+so the prepared versions are visible before tagging.
 
 Generate the release evidence block:
 
@@ -140,10 +140,11 @@ scripts/release-evidence-summary.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z ma
 ```
 
 This resolves the successful `CI` run for the target SHA, validates the
-`codeinsight-benchmark-subset` artifact, and prints a Markdown block with the
-commit, workflow run, benchmark artifact, benchmark report path, and release
-metadata. Paste that block into the release handoff notes when a release needs
-an auditable pre-tag evidence trail.
+`codeinsight-benchmark-subset` and `codeinsight-context-pack-quality`
+artifacts, and prints a Markdown block with the commit, workflow run,
+benchmark artifact, context-pack quality artifact, local report paths, and
+release metadata. Paste that block into the release handoff notes when a
+release needs an auditable pre-tag evidence trail.
 
 ## Publish A Tagged Release
 
@@ -161,8 +162,9 @@ The tag triggers:
 
 The tagged `Release Build` workflow first runs `verify-pretag-ci`, which checks
 that the tag target SHA has a successful `CI` run on `main` and validates that
-same run's `codeinsight-benchmark-subset` artifact before any release assets
-are built.
+same run's `codeinsight-benchmark-subset` and
+`codeinsight-context-pack-quality` artifacts before any release assets are
+built.
 
 Watch the release workflows:
 

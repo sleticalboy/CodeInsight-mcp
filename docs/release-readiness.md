@@ -258,18 +258,24 @@ routing, aggregate line reduction, and benchmark scope. Do not present the
 fixture benchmarks as controlled performance benchmarks.
 
 For CI evidence, open the latest `CI` run for the release commit and inspect
-the `benchmark-subset-smoke` job summary. The run summary should show:
+the `benchmark-subset-smoke` job summary plus the
+`context-pack-quality-smoke` job summary. The benchmark run summary should
+show:
 
 - `Key Results` for the lightweight `p-limit` subset.
 - A summary table with `context_pack` as the first recommended tool.
 - A workflow run link.
 - A `codeinsight-benchmark-subset` artifact link.
 
-Use the artifact when you need the full Markdown report rather than the summary
-excerpt:
+The context-pack quality summary should show the scenario table and a
+`codeinsight-context-pack-quality` artifact link.
+
+Use the artifacts when you need the full Markdown report or JSON summary rather
+than the summary excerpt:
 
 ```bash
 scripts/benchmark-artifact-smoke.sh <ci-run-id>
+scripts/context-pack-quality-artifact-smoke.sh <ci-run-id>
 ```
 
 Treat the CI subset as a quick regression signal only. The checked-in smoke and

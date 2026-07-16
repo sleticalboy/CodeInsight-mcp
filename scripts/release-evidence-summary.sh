@@ -4,8 +4,10 @@ set -euo pipefail
 SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ROOT_DIR="${CODEINSIGHT_ROOT_DIR:-$SCRIPT_ROOT}"
 BENCHMARK_ARTIFACT_SMOKE_SCRIPT="${CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT:-$ROOT_DIR/scripts/benchmark-artifact-smoke.sh}"
+CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="${CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT:-$ROOT_DIR/scripts/context-pack-quality-artifact-smoke.sh}"
 RELEASE_METADATA_SUMMARY_SCRIPT="${CODEINSIGHT_RELEASE_METADATA_SUMMARY_SCRIPT:-$SCRIPT_ROOT/scripts/release-metadata-summary.sh}"
 ARTIFACT_NAME="codeinsight-benchmark-subset"
+CONTEXT_PACK_QUALITY_ARTIFACT_NAME="codeinsight-context-pack-quality"
 REPO_ARG=()
 REPO=""
 BRANCH="main"
@@ -25,18 +27,21 @@ usage: scripts/release-evidence-summary.sh [options] <tag> [branch]
 
 Build a copyable pre-release evidence summary for the target tag. The script
 verifies release metadata, resolves the successful CI run for the tag target
-SHA, validates the benchmark subset artifact, and prints a Markdown block for
-release notes or handoff checklists.
+SHA, validates the benchmark subset and context-pack quality artifacts, and
+prints a Markdown block for release notes or handoff checklists.
 
 Options:
   --repo OWNER/REPO       Pass an explicit GitHub repository to gh.
   --head-sha SHA          Check this commit instead of the current HEAD.
   --run-id ID             Use this CI run instead of resolving by head SHA.
   --artifact-name NAME    Benchmark artifact name. Default: codeinsight-benchmark-subset.
+  --quality-artifact-name NAME
+                          Context-pack quality artifact name. Default: codeinsight-context-pack-quality.
   -h, --help              Show this help.
 
 Environment:
   CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT=scripts/benchmark-artifact-smoke.sh
+  CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT=scripts/context-pack-quality-artifact-smoke.sh
   CODEINSIGHT_RELEASE_METADATA_SUMMARY_SCRIPT=scripts/release-metadata-summary.sh
   CODEINSIGHT_ROOT_DIR=/path/to/repo
 EOF
@@ -164,13 +169,32 @@ validate_benchmark_artifact() {
   printf "%s\n" "$output" | awk -F': ' '/^report: / { print $2; exit }'
 }
 
+validate_context_pack_quality_artifact() {
+  local run_id="$1"
+  local output
+
+  if [ ! -x "$CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT" ]; then
+    fail "context-pack quality artifact smoke script is not executable: $CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT"
+  fi
+
+  if [ "${#REPO_ARG[@]}" -gt 0 ]; then
+    output="$("$CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT" "${REPO_ARG[@]}" --artifact-name "$CONTEXT_PACK_QUALITY_ARTIFACT_NAME" "$run_id")"
+  else
+    output="$("$CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT" --artifact-name "$CONTEXT_PACK_QUALITY_ARTIFACT_NAME" "$run_id")"
+  fi
+
+  printf "%s\n" "$output" | awk -F': ' '/^summary: / { print $2; exit }'
+}
+
 main() {
   local metadata_summary
   local run_summary
   local repo_name
   local ci_url
-  local artifact_url
-  local report_file
+  local benchmark_artifact_url
+  local benchmark_report_file
+  local context_pack_quality_artifact_url
+  local context_pack_quality_summary_file
 
   while [ "$#" -gt 0 ]; do
     case "$1" in
@@ -205,6 +229,13 @@ main() {
           usage
         fi
         ARTIFACT_NAME="$1"
+        ;;
+      --quality-artifact-name)
+        shift
+        if [ "$#" -eq 0 ]; then
+          usage
+        fi
+        CONTEXT_PACK_QUALITY_ARTIFACT_NAME="$1"
         ;;
       --)
         shift
@@ -268,8 +299,10 @@ main() {
   repo_name="$(resolve_repo)"
   run_summary="$(validate_run "$RUN_ID" "$HEAD_SHA")"
   ci_url="$(printf "%s\n" "$run_summary" | awk -F': ' '/^ci_url: / { print $2; exit }')"
-  artifact_url="$(resolve_artifact_url "$repo_name" "$RUN_ID" "$ARTIFACT_NAME")"
-  report_file="$(validate_benchmark_artifact "$RUN_ID")"
+  benchmark_artifact_url="$(resolve_artifact_url "$repo_name" "$RUN_ID" "$ARTIFACT_NAME")"
+  context_pack_quality_artifact_url="$(resolve_artifact_url "$repo_name" "$RUN_ID" "$CONTEXT_PACK_QUALITY_ARTIFACT_NAME")"
+  benchmark_report_file="$(validate_benchmark_artifact "$RUN_ID")"
+  context_pack_quality_summary_file="$(validate_context_pack_quality_artifact "$RUN_ID")"
 
   echo "release evidence summary"
   echo "tag: $TAG_NAME"
@@ -278,16 +311,21 @@ main() {
   printf "%s\n" "$metadata_summary"
   printf "%s\n" "$run_summary"
   echo "benchmark_artifact: $ARTIFACT_NAME"
-  echo "benchmark_artifact_url: $artifact_url"
-  echo "benchmark_report: $report_file"
+  echo "benchmark_artifact_url: $benchmark_artifact_url"
+  echo "benchmark_report: $benchmark_report_file"
+  echo "context_pack_quality_artifact: $CONTEXT_PACK_QUALITY_ARTIFACT_NAME"
+  echo "context_pack_quality_artifact_url: $context_pack_quality_artifact_url"
+  echo "context_pack_quality_summary: $context_pack_quality_summary_file"
   echo
   echo "release_notes_block:"
   echo "## $TAG_NAME release evidence"
   echo
   echo "- Target commit: \`$HEAD_SHA\`"
   echo "- CI: [run $RUN_ID]($ci_url)"
-  echo "- Benchmark artifact: [$ARTIFACT_NAME]($artifact_url)"
-  echo "- Benchmark report: \`$report_file\`"
+  echo "- Benchmark artifact: [$ARTIFACT_NAME]($benchmark_artifact_url)"
+  echo "- Benchmark report: \`$benchmark_report_file\`"
+  echo "- Context-pack quality artifact: [$CONTEXT_PACK_QUALITY_ARTIFACT_NAME]($context_pack_quality_artifact_url)"
+  echo "- Context-pack quality summary: \`$context_pack_quality_summary_file\`"
   printf "%s\n" "$metadata_summary" | sed 's/^/- /'
 }
 

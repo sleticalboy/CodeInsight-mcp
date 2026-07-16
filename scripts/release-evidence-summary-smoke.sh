@@ -67,7 +67,17 @@ fi
 
 if [ "$1" = "api" ]; then
   test "$2" = "repos/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts"
-  printf '987654\n'
+  case " $* " in
+    *'codeinsight-benchmark-subset'*)
+      printf '987654\n'
+      ;;
+    *'codeinsight-context-pack-quality'*)
+      printf '987655\n'
+      ;;
+    *)
+      exit 13
+      ;;
+  esac
   exit 0
 fi
 
@@ -91,9 +101,26 @@ echo "report: /tmp/codeinsight-benchmark-artifact-123456/report.md"
 EOF
   chmod +x "$TEMP_DIR/benchmark-artifact-smoke"
 
+  cat >"$TEMP_DIR/context-pack-quality-artifact-smoke" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+log="${CODEINSIGHT_EVIDENCE_SMOKE_LOG:?}"
+printf 'quality-artifact %s\n' "$*" >>"$log"
+test "$1" = "--repo"
+test "$2" = "sleticalboy/CodeInsight-mcp"
+test "$3" = "--artifact-name"
+test "$4" = "codeinsight-context-pack-quality"
+test "$5" = "123456"
+echo "context-pack quality artifact smoke passed"
+echo "summary: /tmp/codeinsight-context-pack-quality-artifact-123456/summary.json"
+EOF
+  chmod +x "$TEMP_DIR/context-pack-quality-artifact-smoke"
+
   CODEINSIGHT_EVIDENCE_SMOKE_LOG="$TEMP_DIR/calls.log" \
     CODEINSIGHT_ROOT_DIR="$TEMP_DIR/repo" \
     CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/benchmark-artifact-smoke" \
+    CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/context-pack-quality-artifact-smoke" \
     PATH="$TEMP_DIR/bin:$PATH" \
     "$ROOT_DIR/scripts/release-evidence-summary.sh" \
       --repo sleticalboy/CodeInsight-mcp \
@@ -115,19 +142,29 @@ EOF
     fail "missing CI run output"
   grep -Fq 'benchmark_artifact_url: https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987654' "$TEMP_DIR/output.log" ||
     fail "missing benchmark artifact URL"
+  grep -Fq 'context_pack_quality_artifact_url: https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987655' "$TEMP_DIR/output.log" ||
+    fail "missing context-pack quality artifact URL"
+  grep -Fq 'context_pack_quality_summary: /tmp/codeinsight-context-pack-quality-artifact-123456/summary.json' "$TEMP_DIR/output.log" ||
+    fail "missing context-pack quality summary output"
   grep -Fq '## v99.88.77 release evidence' "$TEMP_DIR/output.log" ||
     fail "missing release notes block"
   grep -Fq -- '- CI: [run 123456](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456)' "$TEMP_DIR/output.log" ||
     fail "missing release notes CI link"
+  grep -Fq -- '- Context-pack quality artifact: [codeinsight-context-pack-quality](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987655)' "$TEMP_DIR/output.log" ||
+    fail "missing release notes context-pack quality artifact link"
 
   grep -Fq 'gh run list --repo sleticalboy/CodeInsight-mcp --workflow CI --branch main --status success --limit 20 --json databaseId,headSha --jq map(select(.headSha == "abc123"))[0].databaseId // ""' "$TEMP_DIR/calls.log" ||
     fail "missing head SHA CI lookup"
   grep -Fq 'gh run view 123456 --repo sleticalboy/CodeInsight-mcp --json conclusion,databaseId,headSha,status,url' "$TEMP_DIR/calls.log" ||
     fail "missing CI run validation"
   grep -Fq 'gh api repos/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts --jq .artifacts[] | select(.name == "codeinsight-benchmark-subset") | .id' "$TEMP_DIR/calls.log" ||
-    fail "missing artifact lookup"
+    fail "missing benchmark artifact lookup"
+  grep -Fq 'gh api repos/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts --jq .artifacts[] | select(.name == "codeinsight-context-pack-quality") | .id' "$TEMP_DIR/calls.log" ||
+    fail "missing context-pack quality artifact lookup"
   grep -Fq 'artifact --repo sleticalboy/CodeInsight-mcp --artifact-name codeinsight-benchmark-subset 123456' "$TEMP_DIR/calls.log" ||
     fail "missing benchmark artifact validation"
+  grep -Fq 'quality-artifact --repo sleticalboy/CodeInsight-mcp --artifact-name codeinsight-context-pack-quality 123456' "$TEMP_DIR/calls.log" ||
+    fail "missing context-pack quality artifact validation"
 
   mkdir -p "$TEMP_DIR/mismatch/docs"
   cp "$TEMP_DIR/repo/CHANGELOG.md" "$TEMP_DIR/mismatch/CHANGELOG.md"
@@ -142,6 +179,7 @@ EOF
   if CODEINSIGHT_EVIDENCE_SMOKE_LOG="$TEMP_DIR/mismatch.log" \
     CODEINSIGHT_ROOT_DIR="$TEMP_DIR/mismatch" \
     CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/benchmark-artifact-smoke" \
+    CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/context-pack-quality-artifact-smoke" \
     PATH="$TEMP_DIR/bin:$PATH" \
     "$ROOT_DIR/scripts/release-evidence-summary.sh" \
       --repo sleticalboy/CodeInsight-mcp \
