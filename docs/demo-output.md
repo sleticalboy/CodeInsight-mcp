@@ -53,6 +53,7 @@ token_budget: 6000
    estimated_tokens: 1073
    continuation: complete
    first_context_file: src/tools.rs
+   route_reason: selected 2 files, 4 ranges, and 2 reading-plan steps within the token budget; read src/tools.rs first via inspect_seed_file, use file_outline when deeper evidence is needed, then follow continuation read_selected_context
 
 4. impact_analysis
    seed_file: src/tools.rs
@@ -60,6 +61,7 @@ token_budget: 6000
    impacted_files: 7
    paths: 28
    suggested_checks: 4
+   route_reason: after selected context is read, pre-edit impact check estimated 7 impacted files at high risk, including 5 call-related files, 1 dependency-related files, 27 call paths, and 1 dependency paths
 
 Run against another repository:
   CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/two-minute-demo.sh
@@ -68,9 +70,9 @@ Run against another repository:
 1. agent_route ran index_project, project_overview, context_pack, and impact_analysis in one call.
 2. project_overview found 7 entrypoints and 4 recommended next tools.
 3. context_pack selected 2 files and 4 ranges, then produced 2 reading-plan steps.
-4. The first action is inspect_seed_file; the selected context reduced source reading by 99.6%.
+4. The first action is inspect_seed_file; the selected context reduced source reading by 99.6%; selected 2 files, 4 ranges, and 2 reading-plan steps within the token budget; read src/tools.rs first via inspect_seed_file, use file_outline when deeper evidence is needed, then follow continuation read_selected_context
 5. Continuation status is complete, so the agent knows whether to ask for a focused follow-up.
-6. impact_analysis reports high risk across 7 impacted files with 4 suggested checks.
+6. impact_analysis reports high risk across 7 impacted files with 4 suggested checks; after selected context is read, pre-edit impact check estimated 7 impacted files at high risk, including 5 call-related files, 1 dependency-related files, 27 call paths, and 1 dependency paths
 
 [Agent policy]
 Call agent_route with root, task, and token_budget for the default first read.
@@ -85,7 +87,10 @@ Run this walkthrough against another repository:
 - The path starts with `agent_route`, whose `route[]` includes
   `index_project`, `project_overview`, `context_pack`, and `impact_analysis`.
 - `context_pack` includes selected files, selected ranges, reading-plan steps,
-  first next action, token estimate, line reduction, and continuation status.
+  first next action, token estimate, line reduction, route reason, and
+  continuation status.
+- `impact_analysis` includes its route reason so the demo frames it as the
+  pre-edit impact check after selected context is read.
 - The talk track explains the same path a user should show in a recording.
 - The agent policy matches the MCP client workflow.
 

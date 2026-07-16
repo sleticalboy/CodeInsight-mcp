@@ -50,6 +50,9 @@ main() {
     'first_next_action: inspect_seed_file' \
     "first next action metric"
   require_pattern docs/demo-output.md \
+    'route_reason: selected [0-9]+ files, [0-9]+ ranges, and [0-9]+ reading-plan steps within the token budget; read .* first via inspect_seed_file' \
+    "context route reason metric"
+  require_pattern docs/demo-output.md \
     'line_reduction: [0-9]+\.[0-9]%' \
     "line reduction metric"
   require_pattern docs/demo-output.md \
@@ -70,6 +73,9 @@ main() {
   require_pattern docs/demo-output.md \
     'impact_analysis reports' \
     "impact-analysis talk track"
+  require_pattern docs/demo-output.md \
+    'pre-edit impact check estimated [0-9]+ impacted files' \
+    "impact route reason talk track"
   require_pattern docs/demo-output.md \
     '\[Agent policy\]' \
     "agent policy section"

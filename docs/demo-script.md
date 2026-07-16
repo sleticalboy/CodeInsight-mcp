@@ -103,17 +103,19 @@ Promise: route the agent through agent_route before edits.
    first_next_action: inspect_seed_file
    line_reduction: 99.6%
    continuation: complete
+   route_reason: selected 2 files, 4 ranges, and 2 reading-plan steps within the token budget; read src/tools.rs first via inspect_seed_file, use file_outline when deeper evidence is needed, then follow continuation read_selected_context
 
 4. impact_analysis
    risk_level: high
    impacted_files: 7
    suggested_checks: 4
+   route_reason: after selected context is read, pre-edit impact check estimated 7 impacted files at high risk, including 5 call-related files, 1 dependency-related files, 27 call paths, and 1 dependency paths
 
 [Talk track]
 1. agent_route ran index_project, project_overview, context_pack, and impact_analysis in one call.
 2. project_overview found 7 entrypoints and 4 recommended next tools.
 3. context_pack selected 2 files and 4 ranges, then produced 2 reading-plan steps.
-4. The first action is inspect_seed_file; the selected context reduced source reading by 99.6%.
+4. The first action is inspect_seed_file; the selected context reduced source reading by 99.6%; selected 2 files, 4 ranges, and 2 reading-plan steps within the token budget; read src/tools.rs first via inspect_seed_file, use file_outline when deeper evidence is needed, then follow continuation read_selected_context
 ```
 
 Exact numbers vary by repository and current source state. The important point
@@ -127,6 +129,10 @@ entrypoint candidates, directory roles, summaries, and recommended next tools.
 `context_pack` answers "what should fit into the model context now?" It returns
 selected files, line ranges, excerpts, a reading plan, budget metadata, and a
 continuation strategy if more context is needed.
+
+`route_reason` turns the route into an executable explanation: it says which
+file to read first, which action to take, which tool to use for deeper evidence,
+and why `impact_analysis` is the pre-edit check after selected context is read.
 
 `line_reduction` shows the routing value. The agent does not need to read the
 whole repository to start. It can begin with a bounded context pack and ask for

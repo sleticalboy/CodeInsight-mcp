@@ -50,6 +50,8 @@ main() {
     "applied_token_budget": 1600,
     "first_context_file": "src/main.ts",
     "first_next_action": "inspect_seed_file",
+    "context_route_reason": "selected 2 files, 2 ranges, and 2 reading-plan steps within the token budget; read src/main.ts first via inspect_seed_file, use file_outline when deeper evidence is needed, then follow continuation read_selected_context",
+    "impact_route_reason": "after selected context is read, pre-edit impact check estimated 2 impacted files at medium risk, including 1 call-related files, 1 dependency-related files, 1 call paths, and 1 dependency paths",
     "impact_status": "complete",
     "impacted_files": 2,
     "suggested_checks": 3
@@ -69,6 +71,8 @@ EOF
   require_literal "$summary_md" 'Workflow artifact: [`codeinsight-agent-route-smoke`](https://example.com/artifact)' "artifact link"
   require_literal "$summary_md" '| Indexed files | `3` |' "indexed files metric"
   require_literal "$summary_md" '| First next action | `inspect_seed_file` |' "next action metric"
+  require_literal "$summary_md" '| Context route reason | selected 2 files, 2 ranges, and 2 reading-plan steps within the token budget; read src/main.ts first via inspect_seed_file, use file_outline when deeper evidence is needed, then follow continuation read_selected_context |' "context route reason metric"
+  require_literal "$summary_md" '| Impact route reason | after selected context is read, pre-edit impact check estimated 2 impacted files at medium risk, including 1 call-related files, 1 dependency-related files, 1 call paths, and 1 dependency paths |' "impact route reason metric"
   require_literal "$summary_md" '| Impacted files | `2` |' "impacted files metric"
 
   echo "agent-route step summary smoke passed"

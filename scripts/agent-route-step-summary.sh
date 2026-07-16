@@ -39,6 +39,8 @@ require_summary_contract() {
       and (.metrics.applied_token_budget | type == "number")
       and (.metrics.first_context_file | type == "string")
       and (.metrics.first_next_action | type == "string")
+      and (.metrics.context_route_reason | type == "string")
+      and (.metrics.impact_route_reason | type == "string")
       and (.metrics.impact_status | type == "string")
       and (.metrics.impacted_files | type == "number")
       and (.metrics.suggested_checks | type == "number")' \
@@ -99,6 +101,8 @@ main() {
     printf '| Token budget | `%s/%s` |\n' "$(metric '.metrics.applied_token_budget')" "$(metric '.metrics.requested_token_budget')"
     printf '| First context file | `%s` |\n' "$(metric '.metrics.first_context_file')"
     printf '| First next action | `%s` |\n' "$(metric '.metrics.first_next_action')"
+    printf '| Context route reason | %s |\n' "$(metric '.metrics.context_route_reason')"
+    printf '| Impact route reason | %s |\n' "$(metric '.metrics.impact_route_reason')"
     printf '| Impact status | `%s` |\n' "$(metric '.metrics.impact_status')"
     printf '| Impacted files | `%s` |\n' "$(metric '.metrics.impacted_files')"
     printf '| Suggested checks | `%s` |\n' "$(metric '.metrics.suggested_checks')"

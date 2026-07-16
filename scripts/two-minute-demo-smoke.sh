@@ -36,8 +36,8 @@ cat <<'JSON'
   "route": [
     {"order": 1, "tool": "index_project", "status": "complete", "reason": "indexed"},
     {"order": 2, "tool": "project_overview", "status": "complete", "reason": "overview"},
-    {"order": 3, "tool": "context_pack", "status": "complete", "reason": "context"},
-    {"order": 4, "tool": "impact_analysis", "status": "complete", "reason": "impact"}
+    {"order": 3, "tool": "context_pack", "status": "complete", "reason": "selected 1 files, 11 ranges, and 1 reading-plan steps within the token budget; read src/main.rs first via inspect_seed_file, use file_outline when deeper evidence is needed, then follow continuation read_selected_context"},
+    {"order": 4, "tool": "impact_analysis", "status": "complete", "reason": "after selected context is read, pre-edit impact check estimated 11 impacted files at high risk, including 3 call-related files, 2 dependency-related files, 4 call paths, and 5 dependency paths"}
   ],
   "impact_seed_files": ["src/main.rs"],
   "impact_seed_symbols": [],
@@ -139,9 +139,13 @@ EOF
     fail "missing overview talk track"
   grep -Fq 'context_pack selected 1 files and 11 ranges, then produced 1 reading-plan steps.' "$TEMP_DIR/output.log" ||
     fail "missing context_pack talk track"
-  grep -Fq 'selected context reduced source reading by 98.4%.' "$TEMP_DIR/output.log" ||
+  grep -Fq 'route_reason: selected 1 files, 11 ranges, and 1 reading-plan steps within the token budget; read src/main.rs first via inspect_seed_file, use file_outline when deeper evidence is needed, then follow continuation read_selected_context' "$TEMP_DIR/output.log" ||
+    fail "missing context route reason"
+  grep -Fq 'selected context reduced source reading by' "$TEMP_DIR/output.log" ||
     fail "missing line reduction talk track"
-  grep -Fq 'impact_analysis reports high risk across 11 impacted files with 3 suggested checks.' "$TEMP_DIR/output.log" ||
+  grep -Fq 'pre-edit impact check estimated 11 impacted files at high risk' "$TEMP_DIR/output.log" ||
+    fail "missing impact route reason"
+  grep -Fq 'impact_analysis reports high risk across 11 impacted files with 3 suggested checks' "$TEMP_DIR/output.log" ||
     fail "missing impact_analysis talk track"
   grep -Fq 'Call agent_route with root, task, and token_budget for the default first read.' "$TEMP_DIR/output.log" ||
     fail "missing agent policy"

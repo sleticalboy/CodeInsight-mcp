@@ -149,6 +149,8 @@ write_summary_json() {
       applied_token_budget: .context_pack.budget.applied_token_budget,
       first_context_file: (.context_pack.files[0].file // ""),
       first_next_action: (.context_pack.reading_plan[0].next_action // ""),
+      context_route_reason: (.route[] | select(.tool == "context_pack") | .reason),
+      impact_route_reason: (.route[] | select(.tool == "impact_analysis") | .reason),
       impact_status,
       impacted_files: (.impact_analysis.impact_counts.impacted_files // 0),
       suggested_checks: (.impact_analysis.suggested_checks | length)

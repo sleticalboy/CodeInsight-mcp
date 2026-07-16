@@ -147,7 +147,9 @@ main() {
   selected_ranges="$(json_value "$route_json" '.context_pack.budget.selected_ranges')"
   reading_plan_steps="$(json_value "$route_json" '.context_pack.reading_plan | length')"
   first_next_action="$(json_value "$route_json" '.context_pack.reading_plan[0].next_action // "-"')"
+  context_route_reason="$(json_value "$route_json" '.route[] | select(.tool == "context_pack") | .reason')"
   continuation="$(json_value "$route_json" '.context_pack.continuation_summary.status // "-"')"
+  impact_route_reason="$(json_value "$route_json" '.route[] | select(.tool == "impact_analysis") | .reason')"
   risk_level="$(json_value "$route_json" '.impact_analysis.risk_level // empty')"
   impacted_files="$(json_value "$route_json" '.impact_analysis.impact_counts.impacted_files // 0')"
   suggested_checks="$(json_value "$route_json" '.impact_analysis.suggested_checks | length')"
@@ -177,6 +179,7 @@ main() {
   echo "   estimated_tokens: $(json_value "$route_json" '.context_pack.estimated_tokens')"
   echo "   continuation: $continuation"
   echo "   first_context_file: $first_context_file"
+  echo "   route_reason: $context_route_reason"
   echo
 
   echo "4. impact_analysis"
@@ -186,6 +189,7 @@ main() {
     echo "   impacted_files: $impacted_files"
     echo "   paths: $(json_value "$route_json" '.impact_analysis.impact_counts.paths // 0')"
     echo "   suggested_checks: $suggested_checks"
+    echo "   route_reason: $impact_route_reason"
   else
     echo "   skipped: agent_route did not produce an impact seed"
   fi
@@ -198,10 +202,10 @@ main() {
   echo "1. agent_route ran index_project, project_overview, context_pack, and impact_analysis in one call."
   echo "2. project_overview found ${entrypoints} entrypoints and ${recommended_tools} recommended next tools."
   echo "3. context_pack selected ${selected_files} files and ${selected_ranges} ranges, then produced ${reading_plan_steps} reading-plan steps."
-  echo "4. The first action is ${first_next_action}; the selected context reduced source reading by ${reduction}."
+  echo "4. The first action is ${first_next_action}; the selected context reduced source reading by ${reduction}; ${context_route_reason}"
   echo "5. Continuation status is ${continuation}, so the agent knows whether to ask for a focused follow-up."
   if [ -n "$risk_level" ]; then
-    echo "6. impact_analysis reports ${risk_level} risk across ${impacted_files} impacted files with ${suggested_checks} suggested checks."
+    echo "6. impact_analysis reports ${risk_level} risk across ${impacted_files} impacted files with ${suggested_checks} suggested checks; ${impact_route_reason}"
   else
     echo "6. impact_analysis is the pre-edit step when context_pack selects a file seed."
   fi
