@@ -154,6 +154,7 @@ optional external checks, see [Maintenance commands](maintenance-commands.md).
   scripts/mcp-stdio-smoke.sh
   scripts/two-minute-demo.sh
   scripts/agent-router-demo.sh
+  scripts/demo-output-smoke.sh
   ```
 
 - Keep bug fixes scoped to the failing contract and add the smallest smoke or
@@ -166,5 +167,6 @@ optional external checks, see [Maintenance commands](maintenance-commands.md).
 - [Release readiness](release-readiness.md)
 - [Current status](status.md)
 - [Demo script](demo-script.md)
+- [Demo output snapshot](demo-output.md)
 - [MCP client smoke test](mcp-client-smoke.md)
 - [Known limitations](known-limitations.md)

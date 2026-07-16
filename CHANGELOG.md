@@ -10,6 +10,9 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 
 - Added `scripts/two-minute-demo.sh` as the user-facing walkthrough wrapper
   around the raw agent-router demo, plus a smoke test for its talk-track output.
+- Added `docs/demo-output.md` and `scripts/demo-output-smoke.sh` so the
+  user-facing two-minute demo has a checked-in output snapshot for recordings,
+  project introductions, and release checks.
 - Added `scripts/context-pack-quality-smoke.sh` to run deterministic offline
   quality checks for context-pack seed selection, reading-plan output, token
   budget metadata, production-vs-test reference ranking, and dependency

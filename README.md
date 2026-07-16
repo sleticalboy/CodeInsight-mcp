@@ -40,7 +40,8 @@ steps, line-reduction percentage, continuation status, impact-analysis summary,
 and a short talk track for recordings or project introductions.
 
 For a recording or project introduction, use the
-[two-minute demo script](docs/demo-script.md).
+[two-minute demo script](docs/demo-script.md) and the checked-in
+[demo output snapshot](docs/demo-output.md).
 
 ## Current Evidence
 
@@ -78,6 +79,7 @@ Key docs:
 - [Quickstart](docs/quickstart.md)
 - [Adoption checklist](docs/adoption-checklist.md)
 - [Demo script](docs/demo-script.md)
+- [Demo output snapshot](docs/demo-output.md)
 - [Agent prompt templates](docs/agent-prompt-template.md)
 - [Current status](docs/status.md)
 - [Maintainer checklist](docs/maintainer-checklist.md)

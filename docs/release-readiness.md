@@ -93,8 +93,8 @@ Before calling a build publicly ready, verify:
   Claude Code, Cursor, and generic JSON examples.
 - [ ] [Agent prompt templates](agent-prompt-template.md) include copy-paste
   first-read, change-preflight, continuation, and review-planning prompts.
-- [ ] [Demo script](demo-script.md) matches the real output shape of
-  `scripts/agent-router-demo.sh`.
+- [ ] [Demo script](demo-script.md) and [Demo output snapshot](demo-output.md)
+  match the real output shape of `scripts/two-minute-demo.sh`.
 - [ ] README benchmark snapshot, [Demo script](demo-script.md), and benchmark
   `Key Results` tell the same routing and compression story.
 - [ ] [Known limitations](known-limitations.md) is linked from README and docs
@@ -250,6 +250,7 @@ Update these docs if the output changes materially:
 - [Large repository benchmark](benchmark-large.md)
 - README benchmark snapshot
 - [Demo script](demo-script.md) evidence cutaway
+- [Demo output snapshot](demo-output.md)
 
 The benchmark story should support the product claim that CodeInsight routes an
 agent to bounded local context. The README benchmark snapshot, demo evidence

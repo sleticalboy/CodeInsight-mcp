@@ -8,6 +8,7 @@ release documents for CodeInsight.
 - [Quickstart](quickstart.md)
 - [Adoption checklist](adoption-checklist.md)
 - [Demo script](demo-script.md)
+- [Demo output snapshot](demo-output.md)
 - [Agent prompt templates](agent-prompt-template.md)
 - [Current status](status.md)
 - [Maintainer checklist](maintainer-checklist.md)
@@ -43,6 +44,7 @@ release documents for CodeInsight.
 - Two-minute demo: `scripts/two-minute-demo.sh`
 - Agent-router raw metrics: `scripts/agent-router-demo.sh`
 - [Two-minute demo script](demo-script.md)
+- [Two-minute demo output snapshot](demo-output.md)
 - [MCP client smoke test](mcp-client-smoke.md)
 - [Semantic smoke test](semantic-smoke.md)
 - [Smoke benchmark](benchmark-v0.1.md)

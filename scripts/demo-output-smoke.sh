@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+require_pattern() {
+  local file="$1"
+  local pattern="$2"
+  local description="$3"
+
+  if ! grep -Eq "$pattern" "$ROOT_DIR/$file"; then
+    echo "$file is missing ${description}" >&2
+    echo "pattern: $pattern" >&2
+    exit 1
+  fi
+}
+
+main() {
+  require_pattern docs/demo-output.md \
+    '^# Two-Minute Demo Output Snapshot$' \
+    "demo output title"
+  require_pattern docs/demo-output.md \
+    'scripts/two-minute-demo\.sh' \
+    "two-minute demo command"
+  require_pattern docs/demo-output.md \
+    'Problem: AI agents waste the first read' \
+    "problem statement"
+  require_pattern docs/demo-output.md \
+    'Promise: route the agent through project_overview, context_pack, and impact_analysis before edits\.' \
+    "product promise"
+  require_pattern docs/demo-output.md \
+    '1\. index_project' \
+    "index stage"
+  require_pattern docs/demo-output.md \
+    '2\. project_overview' \
+    "overview stage"
+  require_pattern docs/demo-output.md \
+    '3\. context_pack' \
+    "context-pack stage"
+  require_pattern docs/demo-output.md \
+    '4\. impact_analysis' \
+    "impact-analysis stage"
+  require_pattern docs/demo-output.md \
+    'reading_plan_steps: [0-9]+' \
+    "reading-plan metric"
+  require_pattern docs/demo-output.md \
+    'first_next_action: inspect_seed_file' \
+    "first next action metric"
+  require_pattern docs/demo-output.md \
+    'line_reduction: [0-9]+\.[0-9]%' \
+    "line reduction metric"
+  require_pattern docs/demo-output.md \
+    'continuation: complete' \
+    "continuation status"
+  require_pattern docs/demo-output.md \
+    '\[Talk track\]' \
+    "talk track section"
+  require_pattern docs/demo-output.md \
+    'project_overview found' \
+    "overview talk track"
+  require_pattern docs/demo-output.md \
+    'context_pack selected' \
+    "context-pack talk track"
+  require_pattern docs/demo-output.md \
+    'impact_analysis reports' \
+    "impact-analysis talk track"
+  require_pattern docs/demo-output.md \
+    '\[Agent policy\]' \
+    "agent policy section"
+  require_pattern docs/demo-output.md \
+    'Call index_project, then project_overview, then context_pack with a token budget\.' \
+    "agent policy path"
+
+  echo "demo output smoke passed"
+}
+
+main "$@"

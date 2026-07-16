@@ -34,6 +34,9 @@ For machine-readable CI validation, `scripts/two-minute-demo.sh` wraps
 `scripts/agent-router-demo.sh`; use the lower-level script when you only need
 the raw metrics.
 
+For a copyable example of the current repository output, see the
+[demo output snapshot](demo-output.md).
+
 Optional smoke validation:
 
 ```bash
@@ -172,6 +175,8 @@ Before recording or presenting:
 - Run `scripts/two-minute-demo.sh`.
 - Run `scripts/agent-router-demo.sh` when you need the raw assertion-oriented
   metrics.
+- Compare with [Demo output snapshot](demo-output.md) when preparing README
+  videos, release notes, or project introductions.
 - Confirm `indexed_files` is greater than zero.
 - Confirm `recommended_next_tools` is greater than zero.
 - Confirm `context_pack` reports selected files, `reading_plan_steps`, and
