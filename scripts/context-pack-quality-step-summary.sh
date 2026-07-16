@@ -37,9 +37,13 @@ require_summary_contract() {
 
 scenario_rows() {
   jq -r '
+    def metric_value:
+      tostring
+      | gsub("\\|"; "\\\\|")
+      | gsub("\n"; " ");
     .scenarios[]
     | .metrics as $metrics
-    | "| `\(.name)` | `\(.status)` | \($metrics | to_entries | map("`\(.key)=\(.value | tostring)`") | join("<br>")) |"
+    | "| `\(.name)` | `\(.status)` | \($metrics | to_entries | map("`\(.key)=\(.value | metric_value)`") | join("<br>")) |"
   ' "$SUMMARY_JSON"
 }
 

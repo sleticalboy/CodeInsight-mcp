@@ -108,7 +108,20 @@ record_scenario() {
 
   jq -c \
     --arg name "$name" \
-    "{name: \$name, status: \"pass\", metrics: ($metrics_query)}" \
+    "{
+      name: \$name,
+      status: \"pass\",
+      metrics: (($metrics_query) + (
+        if (.reading_plan | length) > 0 then
+          {
+            first_reading_reason: .reading_plan[0].reason,
+            first_selection_reason: .reading_plan[0].selection_reason
+          }
+        else
+          {}
+        end
+      ))
+    }" \
     "$file" >>"$SCENARIO_RESULTS_FILE"
 }
 
