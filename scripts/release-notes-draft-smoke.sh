@@ -86,7 +86,7 @@ main() {
     "installed_quickstart": {
       "binary": "/tmp/codeinsight",
       "skipped": true,
-      "coverage": ["version", "index", "overview", "context-pack"]
+      "coverage": ["version", "index", "overview", "context-pack", "reading_plan_reason", "selection_reason"]
     }
   },
   "handoff_markdown": "## v9.8.7 release handoff"

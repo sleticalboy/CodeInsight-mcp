@@ -39,6 +39,8 @@ main() {
     .installed_quickstart.skipped == false and
     (.installed_quickstart.coverage | index("agent-route")) and
     (.installed_quickstart.coverage | index("mcp_agent_route")) and
+    (.installed_quickstart.coverage | index("reading_plan_reason")) and
+    (.installed_quickstart.coverage | index("selection_reason")) and
     (.expected_assets | length) == 4
   ' "$SMOKE_TEMP_DIR/summary.json" >/dev/null
 
@@ -49,7 +51,9 @@ main() {
     .gates.installed_quickstart == "skipped" and
     .installed_quickstart.skipped == true and
     (.installed_quickstart.coverage | index("agent-route")) and
-    (.installed_quickstart.coverage | index("mcp_agent_route"))
+    (.installed_quickstart.coverage | index("mcp_agent_route")) and
+    (.installed_quickstart.coverage | index("reading_plan_reason")) and
+    (.installed_quickstart.coverage | index("selection_reason"))
   ' "$SMOKE_TEMP_DIR/skipped-summary.json" >/dev/null
 
   echo "verify-release summary smoke passed"

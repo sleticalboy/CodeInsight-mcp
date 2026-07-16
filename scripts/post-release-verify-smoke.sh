@@ -63,7 +63,7 @@ cat <<'JSON'
   "installed_quickstart": {
     "binary": "-",
     "skipped": true,
-    "coverage": ["version", "index", "overview", "context-pack", "agent-route", "mcp_stdio", "mcp_agent_route"]
+    "coverage": ["version", "index", "overview", "context-pack", "agent-route", "mcp_stdio", "mcp_agent_route", "reading_plan_reason", "selection_reason"]
   }
 }
 JSON

@@ -164,8 +164,9 @@ tools: 16
 The installed quickstart smoke prints `installed quickstart smoke passed` after
 the installed binary completes `version`, `index`, `overview`, `context-pack`,
 CLI `agent-route`, MCP stdio, and MCP `agent_route` calls against a temporary
-project. This is the same installed-binary adoption gate referenced by the
-[Adoption checklist](adoption-checklist.md).
+project. It also checks `reading_plan.reason` and `selection_reason` in both
+CLI and MCP first-read paths. This is the same installed-binary adoption gate
+referenced by the [Adoption checklist](adoption-checklist.md).
 
 ## 6. First Agent Task
 

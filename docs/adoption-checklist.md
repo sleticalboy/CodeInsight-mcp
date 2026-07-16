@@ -88,6 +88,9 @@ Pass criteria:
 - Output includes `installed quickstart smoke passed`.
 - The smoke covers `version`, `index`, `overview`, `context-pack`,
   CLI `agent-route`, MCP stdio, and MCP `agent_route`.
+- The smoke output includes `context_reading_reason`,
+  `context_selection_reason`, `agent_route_reading_reason`, and
+  `mcp_agent_route_selection_reason`.
 - `agent_route_tools` includes `index_project`, `project_overview`,
   `context_pack`, and `impact_analysis`.
 - `agent_route_impact_status` and `mcp_agent_route_impact_status` are
