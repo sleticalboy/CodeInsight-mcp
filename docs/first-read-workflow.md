@@ -27,6 +27,8 @@ It reports:
 - overview entrypoint and recommendation counts
 - context-pack selected files, selected ranges, estimated tokens, and
   line-reduction percentage
+- first reading-plan reason and raw selection reason for the first selected
+  context file
 - continuation status for follow-up context calls
 - impact-analysis risk, impacted file count, path count, and suggested checks
 
@@ -36,7 +38,9 @@ Recommended MCP first-read flow:
 
 1. Call `agent_route` with `root`, `task`, and `token_budget`.
 2. Read `context_pack.files[]` in `reading_plan[]` order from the returned
-   route payload.
+   route payload. Treat `reading_plan[].reason` as the executable instruction
+   for the current step, and `reading_plan[].selection_reason` as audit
+   evidence for why the file was selected.
 3. Use `continuation_summary` only after selected context is consumed.
 
 When the client needs custom routing or partial refresh control, call the
@@ -173,6 +177,18 @@ suggested follow-up tool to call when deeper evidence is needed, and the
 selection reason. `selection_reason` preserves the raw ranking rationale from
 the selected `files[]` entry for clients that want to display or audit only why
 the file was chosen.
+
+Client behavior should be strict:
+
+- Read the matching `files[]` excerpts for the current `reading_plan[]` step
+  before executing continuation tools.
+- Use `reason` as the agent-facing instruction because it combines the
+  question, deeper-evidence tool, and selection rationale.
+- Use `selection_reason` for compact UI labels, benchmark tables, or audit
+  displays where the action guidance would be too verbose.
+- Execute `suggested_tool` only when the current step needs deeper local
+  evidence; do not run omitted-candidate continuation before reading the
+  selected context.
 
 The plan is derived from the final selected `files[]` after token-budget
 selection. It is a client hint, not a separate ranking pass. Suggested tool

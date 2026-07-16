@@ -16,8 +16,9 @@ When CodeInsight MCP is available for a repository:
 
 1. Before broad code reading, call agent_route with root, task, and
    token_budget for the default first read.
-2. Read context_pack.files in reading_plan order. Treat reading_plan questions
-   as the local reading checklist.
+2. Read context_pack.files in reading_plan order. Treat reading_plan.reason as
+   the current-step instruction, reading_plan.question as the local reading
+   checklist, and reading_plan.selection_reason as the selection evidence.
 3. Prefer reading_plan[].suggested_tool for deeper evidence on the current
    selected file.
 4. Use continuation_summary.suggested_tool only after the selected context has
@@ -45,7 +46,9 @@ Workflow:
      execution flow"
    - token_budget: 6000
 2. Read selected files in reading_plan order.
-3. Summarize:
+3. Use each reading_plan.reason to decide what the current file should answer;
+   use selection_reason only to explain why the file was selected.
+4. Summarize:
    - primary purpose
    - likely entrypoints
    - important directories

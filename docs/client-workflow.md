@@ -8,7 +8,9 @@ for a multi-step code-reading task.
 1. Call `agent_route` with `root`, `task`, and `token_budget` for the default
    first read.
 2. Read `context_pack.files[]` by following `reading_plan[]` order in the
-   returned route payload.
+   returned route payload. Treat `reading_plan[].reason` as the instruction for
+   the current step and `reading_plan[].selection_reason` as the compact
+   evidence for why that file was selected.
 3. Execute `reading_plan[].suggested_tool` when a selected file needs deeper
    local navigation.
 4. Use `continuation_summary` and `omitted_candidates[]` when more context is
@@ -31,8 +33,9 @@ When working in a repository with CodeInsight MCP available:
 
 1. Before broad code reading, call agent_route with root, task, and
    token_budget for the default first read.
-2. Read context_pack.files in reading_plan order. Treat reading_plan questions
-   as the local reading checklist.
+2. Read context_pack.files in reading_plan order. Treat reading_plan.reason as
+   the current-step instruction, reading_plan.question as the local reading
+   checklist, and reading_plan.selection_reason as the selection evidence.
 3. Prefer reading_plan[].suggested_tool for deeper evidence on the current
    file. Prefer continuation_summary.suggested_tool only after the selected
    context has been consumed.
@@ -114,7 +117,8 @@ show as navigation and routing metadata.
 
 For each `reading_plan[]` step:
 
-1. Show `file`, `focus`, `question`, `reason`, and `ranges[]`.
+1. Show `file`, `focus`, `question`, `reason`, `selection_reason`, and
+   `ranges[]`.
 2. Read the matching excerpts from `files[]`.
 3. Offer `suggested_tool` when the user or agent needs deeper evidence.
 
@@ -122,6 +126,11 @@ Use `reading_plan[].reason` as the executable instruction for the agent. It
 combines the question to answer, the suggested follow-up tool, and the selection
 rationale. Use `reading_plan[].selection_reason` only when you need the raw
 ranking reason without the action guidance.
+
+Do not treat `selection_reason` as a replacement for `reason`: it explains why
+the file made the budgeted pack, while `reason` explains what to do with that
+file now. Continuation actions should wait until the selected `files[]` excerpts
+have been read in this order.
 
 Common suggested tools:
 
@@ -173,7 +182,8 @@ Recommendation priority does not imply safety. Risk comes from
 A simple client can implement this policy:
 
 1. Run `agent_route`.
-2. Present selected `files[]` in `reading_plan[]` order.
+2. Present selected `files[]` in `reading_plan[]` order, using
+   `reading_plan[].reason` as the current-step instruction.
 3. Execute the current step's `suggested_tool` when the user asks for detail.
 4. If the selected context is insufficient, execute
    `continuation_summary.suggested_tool` when present.

@@ -98,15 +98,39 @@ main() {
   require_pattern docs/client-workflow.md \
     'Call `agent_route` with `root`, `task`, and `token_budget`' \
     "client workflow agent_route path"
+  require_pattern docs/client-workflow.md \
+    'Treat `reading_plan\[\]\.reason` as the instruction for' \
+    "client workflow reading reason instruction"
+  require_pattern docs/client-workflow.md \
+    '`reading_plan\[\]\.selection_reason` as the compact' \
+    "client workflow selection reason evidence"
+  require_pattern docs/client-workflow.md \
+    'Continuation actions should wait until the selected `files\[\]` excerpts' \
+    "client workflow continuation ordering"
   require_pattern docs/agent-prompt-template.md \
     'call agent_route with root, task, and' \
     "agent prompt agent_route path"
+  require_pattern docs/agent-prompt-template.md \
+    'Treat reading_plan\.reason as' \
+    "agent prompt reading reason policy"
   require_pattern docs/first-read-workflow.md \
     '`agent_route` is the default first-read contract' \
     "first-read workflow agent_route contract"
+  require_pattern docs/first-read-workflow.md \
+    'Use `reason` as the agent-facing instruction' \
+    "first-read workflow reason instruction"
+  require_pattern docs/first-read-workflow.md \
+    'Use `selection_reason` for compact UI labels' \
+    "first-read workflow selection reason UI guidance"
   require_pattern docs/mcp-client-config.md \
     'Call `agent_route` with `root`, `task`, and `token_budget`' \
     "MCP client config agent_route flow"
+  require_pattern docs/mcp-client-config.md \
+    '`reason` is the executable instruction for' \
+    "MCP client config reason contract"
+  require_pattern docs/mcp-client-config.md \
+    '`selection_reason` is the compact raw ranking reason' \
+    "MCP client config selection reason contract"
   require_pattern docs/adoption-checklist.md \
     'scripts/installed-quickstart-smoke\.sh' \
     "adoption installed quickstart gate"

@@ -208,7 +208,9 @@ Recommended first-read flow for agents:
 
 1. Call `agent_route` with `root`, `task`, and `token_budget`.
 2. Read the returned `context_pack.files[]` in `reading_plan[]` order.
-3. Use `continuation_summary` only after selected context is consumed.
+3. Treat `reading_plan[].reason` as the current-step instruction and
+   `reading_plan[].selection_reason` as display or audit evidence.
+4. Use `continuation_summary` only after selected context is consumed.
 
 Call `index_project`, `project_overview`, `context_pack`, and
 `impact_analysis` directly when the client needs custom routing, partial
@@ -273,6 +275,8 @@ Example `context_pack` response shape:
       "focus": "Follow static call graph evidence around the seed flow.",
       "next_action": "follow_call_graph",
       "question": "Which callers or callees explain how control moves through this flow?",
+      "reason": "Read this step to answer: Which callers or callees explain how control moves through this flow? If deeper evidence is needed, call impact_analysis. Selection reason: Selected for medium relevance via call_graph",
+      "selection_reason": "Selected for medium relevance via call_graph",
       "suggested_tool": {
         "tool": "impact_analysis",
         "priority": 30,
@@ -286,7 +290,6 @@ Example `context_pack` response shape:
           "evidence_limit": 5
         }
       },
-      "reason": "Selected for medium relevance via call_graph",
       "source": "call_graph",
       "score": 83,
       "ranges": [
@@ -383,9 +386,12 @@ Example `context_pack` response shape:
 selection. Use it when a client needs an ordered read path without carrying the
 full code excerpts. `next_action` is a stable snake_case hint for client
 controls or follow-up tool routing, and `question` is a short prompt that can be
-shown directly to an agent or user. `suggested_tool` contains an MCP-ready
-`tool`, `priority`, `reason`, and `suggested_arguments` object for the next
-local analysis call after reading that step.
+shown directly to an agent or user. `reason` is the executable instruction for
+the current step: it combines the question, deeper-evidence tool, and selection
+rationale. `selection_reason` is the compact raw ranking reason for UI or audit
+display. `suggested_tool` contains an MCP-ready `tool`, `priority`, `reason`,
+and `suggested_arguments` object for the next local analysis call after reading
+that step.
 Dependency follow-ups are scoped with the current file in
 `suggested_arguments.files` when the suggested tool is `dependency_graph`.
 
