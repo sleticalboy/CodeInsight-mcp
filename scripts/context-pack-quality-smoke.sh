@@ -48,6 +48,22 @@ require_jq() {
   fi
 }
 
+require_actionable_reading_plan() {
+  local file="$1"
+  local step_query="$2"
+  local description="$3"
+
+  require_jq "$file" \
+    "$step_query as \$step
+      | (\$step.reason | contains(\"Read this step to answer:\"))
+      and (\$step.reason | contains(\$step.question))
+      and (\$step.reason | contains(\"If deeper evidence is needed, call \"))
+      and (\$step.reason | contains(\$step.suggested_tool.tool))
+      and (\$step.reason | contains(\"Selection reason:\"))
+      and (\$step.selection_reason | type == \"string\" and length > 0)" \
+    "$description"
+}
+
 json_value() {
   local file="$1"
   local query="$2"
@@ -141,6 +157,8 @@ run_polyglot_symbol_scenario() {
   require_jq "$output" ".reading_plan[0].file == \"$expected_file\"" "$symbol reading plan should start with $expected_file"
   require_jq "$output" '.reading_plan[0].next_action == "inspect_symbol_definition"' "$symbol should inspect the definition first"
   require_jq "$output" '.reading_plan[0].suggested_tool.tool == "file_outline"' "$symbol should suggest file_outline"
+  require_actionable_reading_plan "$output" '.reading_plan[0]' \
+    "$symbol reading-plan reason should be actionable"
   require_jq "$output" '.budget.applied_token_budget <= 1600' "$symbol should respect token budget"
   require_jq "$output" '.budget.selected_files >= 1' "$symbol should select files"
   require_jq "$output" '.budget.selected_ranges >= 1' "$symbol should select ranges"
@@ -148,7 +166,7 @@ run_polyglot_symbol_scenario() {
 
   SCENARIOS_PASSED=$((SCENARIOS_PASSED + 1))
   record_scenario "$name" "$output" \
-    '{first_file: .files[0].file, estimated_tokens, selected_files: .budget.selected_files, selected_ranges: .budget.selected_ranges}'
+    '{first_file: .files[0].file, estimated_tokens, selected_files: .budget.selected_files, selected_ranges: .budget.selected_ranges, first_next_action: .reading_plan[0].next_action, first_suggested_tool: .reading_plan[0].suggested_tool.tool, first_reason_actionable: true, first_selection_reason: .reading_plan[0].selection_reason}'
   echo "  pass: $symbol -> $expected_file ($(json_value "$output" '.estimated_tokens') tokens)"
 }
 
@@ -263,10 +281,13 @@ run_reference_ranking_scenarios() {
     "production caller should be selected via call_graph"
   require_jq "$production_json" '.reading_plan[] | select(.file == "src/route.ts")' \
     "production caller should appear in reading plan"
+  require_actionable_reading_plan "$production_json" \
+    '.reading_plan[] | select(.file == "src/route.ts")' \
+    "production caller reading-plan reason should be actionable"
 
   SCENARIOS_PASSED=$((SCENARIOS_PASSED + 1))
   record_scenario "production_reference_ranking" "$production_json" \
-    '{first_file: .files[0].file, selected_files: .budget.selected_files, continuation_status: .continuation_summary.status}'
+    '{first_file: .files[0].file, selected_files: .budget.selected_files, continuation_status: .continuation_summary.status, first_next_action: .reading_plan[0].next_action, first_suggested_tool: .reading_plan[0].suggested_tool.tool, first_reason_actionable: true, first_selection_reason: .reading_plan[0].selection_reason}'
   echo "  pass: production reference ranking"
 
   "$CODEINSIGHT_BIN" context-pack "$project" \
@@ -281,10 +302,13 @@ run_reference_ranking_scenarios() {
     "test caller should be selected via call_graph"
   require_jq "$test_json" '.budget.applied_token_budget <= 1600' \
     "test ranking scenario should respect token budget"
+  require_actionable_reading_plan "$test_json" \
+    '.reading_plan[] | select(.file == "src/core.test.ts")' \
+    "test caller reading-plan reason should be actionable"
 
   SCENARIOS_PASSED=$((SCENARIOS_PASSED + 1))
   record_scenario "test_reference_ranking" "$test_json" \
-    '{first_file: .files[0].file, selected_files: .budget.selected_files, continuation_status: .continuation_summary.status}'
+    '{first_file: .files[0].file, selected_files: .budget.selected_files, continuation_status: .continuation_summary.status, first_next_action: .reading_plan[0].next_action, first_suggested_tool: .reading_plan[0].suggested_tool.tool, first_reason_actionable: true, first_selection_reason: .reading_plan[0].selection_reason}'
   echo "  pass: test reference ranking"
 }
 
@@ -313,6 +337,9 @@ run_dependency_continuation_scenario() {
     "dependency continuation should mark support file as dependency follow-up"
   require_jq "$context_json" '.reading_plan[] | select(.file == "app/support.py" and .suggested_tool.tool == "dependency_graph" and .suggested_tool.suggested_arguments.files[0] == "app/support.py" and .suggested_tool.suggested_arguments.limit == 100)' \
     "dependency continuation should suggest file-scoped dependency_graph"
+  require_actionable_reading_plan "$context_json" \
+    '.reading_plan[] | select(.file == "app/support.py")' \
+    "dependency reading-plan reason should be actionable"
   require_jq "$context_json" '.budget.applied_token_budget <= 1800' \
     "dependency continuation should respect token budget"
   require_jq "$context_json" '.truncated == false' \
@@ -320,7 +347,7 @@ run_dependency_continuation_scenario() {
 
   SCENARIOS_PASSED=$((SCENARIOS_PASSED + 1))
   record_scenario "dependency_continuation" "$context_json" \
-    '{selected_files: .budget.selected_files, dependency_file: "app/support.py", continuation_status: .continuation_summary.status}'
+    '{selected_files: .budget.selected_files, dependency_file: "app/support.py", dependency_next_action: (.reading_plan[] | select(.file == "app/support.py") | .next_action), dependency_suggested_tool: (.reading_plan[] | select(.file == "app/support.py") | .suggested_tool.tool), dependency_reason_actionable: true, dependency_selection_reason: (.reading_plan[] | select(.file == "app/support.py") | .selection_reason), continuation_status: .continuation_summary.status}'
   echo "  pass: dependency continuation"
 }
 
@@ -366,10 +393,12 @@ run_budget_continuation_scenario() {
     "budget continuation omitted candidate should suggest focused context_pack"
   require_jq "$context_json" '.omitted_candidates[0].ranges[0].excerpt == null' \
     "budget continuation omitted candidates should stay excerpt-free"
+  require_actionable_reading_plan "$context_json" '.reading_plan[0]' \
+    "budget continuation first reading-plan reason should be actionable"
 
   SCENARIOS_PASSED=$((SCENARIOS_PASSED + 1))
   record_scenario "budget_continuation" "$context_json" \
-    '{candidate_files: .budget.candidate_files, selected_files: .budget.selected_files, omitted_files: .budget.omitted_files, omitted_candidates: (.omitted_candidates | length), continuation_status: .continuation_summary.status}'
+    '{candidate_files: .budget.candidate_files, selected_files: .budget.selected_files, omitted_files: .budget.omitted_files, omitted_candidates: (.omitted_candidates | length), first_next_action: .reading_plan[0].next_action, first_suggested_tool: .reading_plan[0].suggested_tool.tool, first_reason_actionable: true, continuation_status: .continuation_summary.status}'
   echo "  pass: budget continuation ($(json_value "$context_json" '.budget.selected_files')/$(json_value "$context_json" '.budget.candidate_files') files selected)"
 }
 
@@ -404,10 +433,12 @@ run_minimum_budget_scenario() {
     "minimum budget should keep the tiny seed file selected"
   require_jq "$context_json" '.truncated == false' \
     "minimum budget fixture should not truncate after applying minimum budget"
+  require_actionable_reading_plan "$context_json" '.reading_plan[0]' \
+    "minimum budget reading-plan reason should be actionable"
 
   SCENARIOS_PASSED=$((SCENARIOS_PASSED + 1))
   record_scenario "minimum_budget" "$context_json" \
-    '{requested_token_budget: .budget.requested_token_budget, applied_token_budget: .budget.applied_token_budget, continuation_status: .continuation_summary.status}'
+    '{requested_token_budget: .budget.requested_token_budget, applied_token_budget: .budget.applied_token_budget, first_next_action: .reading_plan[0].next_action, first_suggested_tool: .reading_plan[0].suggested_tool.tool, first_reason_actionable: true, continuation_status: .continuation_summary.status}'
   echo "  pass: minimum budget ($(json_value "$context_json" '.budget.requested_token_budget')->$(json_value "$context_json" '.budget.applied_token_budget') tokens)"
 }
 
@@ -445,10 +476,12 @@ run_token_exhaustion_scenario() {
     "token exhaustion should not expose omitted-candidate follow-up"
   require_jq "$context_json" '.omitted_candidates | length == 0' \
     "token exhaustion omitted candidates should be empty"
+  require_actionable_reading_plan "$context_json" '.reading_plan[0]' \
+    "token exhaustion first reading-plan reason should be actionable"
 
   SCENARIOS_PASSED=$((SCENARIOS_PASSED + 1))
   record_scenario "token_exhaustion" "$context_json" \
-    '{selected_files: .budget.selected_files, truncated: .truncated, truncation_reason: .budget.truncation_reason, continuation_status: .continuation_summary.status}'
+    '{selected_files: .budget.selected_files, truncated: .truncated, truncation_reason: .budget.truncation_reason, first_next_action: .reading_plan[0].next_action, first_suggested_tool: .reading_plan[0].suggested_tool.tool, first_reason_actionable: true, continuation_status: .continuation_summary.status}'
   echo "  pass: token exhaustion ($(json_value "$context_json" '.budget.selected_files') files truncated)"
 }
 
