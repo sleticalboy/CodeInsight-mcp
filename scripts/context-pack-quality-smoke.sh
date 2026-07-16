@@ -123,15 +123,7 @@ EOF
 write_budget_continuation_fixture() {
   local root="$1"
 
-  mkdir -p "$root/src"
-  for index in $(seq 1 80); do
-    cat >"$root/src/feature$index.py" <<EOF
-def feature_$index():
-    value = "$index"
-    detail = "feature $index has enough text to consume some token budget for context selection"
-    return value + detail
-EOF
-  done
+  write_feature_budget_fixture "$root" 80
 }
 
 write_minimum_budget_fixture() {
@@ -147,8 +139,15 @@ EOF
 write_token_exhaustion_fixture() {
   local root="$1"
 
+  write_feature_budget_fixture "$root" 12
+}
+
+write_feature_budget_fixture() {
+  local root="$1"
+  local count="$2"
+
   mkdir -p "$root/src"
-  for index in $(seq 1 12); do
+  for index in $(seq 1 "$count"); do
     cat >"$root/src/feature$index.py" <<EOF
 def feature_$index():
     value = "$index"
