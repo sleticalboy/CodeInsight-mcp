@@ -37,6 +37,15 @@ main() {
   require_pattern README.md \
     '`agent_route`, which runs `index_project -> project_overview -> context_pack ->' \
     "README one-call agent_route demo path"
+  require_pattern README.md \
+    'reading-plan reasons, selection evidence' \
+    "README demo reading reason evidence"
+  require_pattern README.md \
+    'why the agent should read it first' \
+    "README first-read reason positioning"
+  require_pattern README.md \
+    'Context reading plan' \
+    "README benchmark reading plan evidence"
 
   require_pattern docs/README.md \
     '\[First-read workflow\]\(first-read-workflow\.md\)' \

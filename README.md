@@ -36,8 +36,11 @@ The demo executes the same product path an MCP client should follow:
 `agent_route`, which runs `index_project -> project_overview -> context_pack ->
 impact_analysis` in one first-read route. It prints index timing, entrypoint and
 recommendation counts, selected context size, reading-plan steps,
-line-reduction percentage, continuation status, impact-analysis summary, and a
-short talk track for recordings or project introductions.
+reading-plan reasons, selection evidence, line-reduction percentage,
+continuation status, impact-analysis summary, and a short talk track for
+recordings or project introductions. The important demo signal is not just
+which file was selected, but why the agent should read it first and which local
+tool it should call for deeper evidence.
 
 For a recording or project introduction, use the
 [two-minute demo script](docs/demo-script.md) and the checked-in
@@ -66,6 +69,9 @@ Current benchmark snapshot:
   select 1,748 of 241,555 source lines, a 99.3% aggregate line reduction.
 - Generated reports include a `Key Results` section with routing,
   compression, token-budget, indexing, guardrail, and truncation evidence.
+- Per-repository details include a `Context reading plan` table with the
+  first-read reason and raw selection reason, so the benchmark shows why the
+  context router chose each file instead of only reporting compression numbers.
 
 Refresh the reports locally:
 
