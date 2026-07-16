@@ -3,10 +3,38 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SMOKE_TOTAL=10
+TEMP_FILES=()
 
 source "$ROOT_DIR/scripts/smoke-lib.sh"
 
+cleanup() {
+  local file
+
+  for file in "${TEMP_FILES[@]}"; do
+    rm -f "$file"
+  done
+}
+
+context_pack_quality_smoke() {
+  local summary_json
+
+  summary_json="$(mktemp "${TMPDIR:-/tmp}/codeinsight-context-pack-quality.XXXXXX")"
+  TEMP_FILES+=("$summary_json")
+
+  scripts/context-pack-quality-smoke.sh --summary-json "$summary_json"
+  jq -e \
+    '.status == "pass"
+      and .scenarios_passed == 8
+      and (.scenarios | length) == 8
+      and all(.scenarios[]; .status == "pass")
+      and (.scenarios[] | select(.name == "budget_continuation"))
+      and (.scenarios[] | select(.name == "minimum_budget"))
+      and (.scenarios[] | select(.name == "token_exhaustion"))' \
+    "$summary_json" >/dev/null
+}
+
 main() {
+  trap cleanup EXIT INT TERM
   cd "$ROOT_DIR"
 
   smoke_run_step "$SMOKE_TOTAL" 1 "cargo fmt" cargo fmt --check
@@ -16,7 +44,7 @@ main() {
   smoke_run_step "$SMOKE_TOTAL" 5 "benchmark step summary smoke" scripts/benchmark-step-summary-smoke.sh
   smoke_run_step "$SMOKE_TOTAL" 6 "release tooling smoke" scripts/release-tooling-smoke.sh
   smoke_run_step "$SMOKE_TOTAL" 7 "docs smoke" scripts/docs-smoke.sh
-  smoke_run_step "$SMOKE_TOTAL" 8 "context pack quality smoke" scripts/context-pack-quality-smoke.sh
+  smoke_run_step "$SMOKE_TOTAL" 8 "context pack quality smoke" context_pack_quality_smoke
   smoke_run_step "$SMOKE_TOTAL" 9 "agent router demo" scripts/agent-router-demo.sh
   smoke_run_step "$SMOKE_TOTAL" 10 "git diff whitespace check" git diff --check
 

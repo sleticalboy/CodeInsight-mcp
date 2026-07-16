@@ -288,6 +288,9 @@ main() {
   require_pattern docs/maintenance-commands.md \
     'token_budget_exhausted' \
     "maintenance context-pack token exhaustion scope"
+  require_pattern docs/maintenance-commands.md \
+    '\-\-summary-json <path>' \
+    "maintenance context-pack summary JSON scope"
   require_pattern docs/maintainer-checklist.md \
     'context-pack quality smoke' \
     "maintainer context-pack quality smoke"

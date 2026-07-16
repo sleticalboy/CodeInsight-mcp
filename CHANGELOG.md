@@ -12,7 +12,8 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   quality checks for context-pack seed selection, reading-plan output, token
   budget metadata, production-vs-test reference ranking, and dependency
   continuation routing, plus low-budget omitted-candidate, minimum-budget, and
-  token-exhaustion follow-ups.
+  token-exhaustion follow-ups. The smoke can also write a `--summary-json`
+  report, and local CI validates that machine-readable contract.
 - `scripts/verify-release.sh` now reports a specific local network diagnostic
   when GitHub Release assets exist in API metadata but
   `github.com/releases/download` is unreachable, and supports an explicit

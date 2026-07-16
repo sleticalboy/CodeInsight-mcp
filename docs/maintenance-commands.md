@@ -59,7 +59,10 @@ file should pull in its resolved local dependency and recommend a file-scoped
 `context_pack` call, and minimum-budget fixtures verify requests below 500
 tokens report `minimum_budget_applied`. Token-exhaustion fixtures verify
 `token_budget_exhausted` when selected ranges are truncated without omitted
-candidates, all without cloning external repositories.
+candidates, all without cloning external repositories. Pass
+`--summary-json <path>` to write a machine-readable pass report; the standard
+local CI gate writes this summary to a temporary file and validates key
+scenario names.
 
 ## Benchmark Checks
 

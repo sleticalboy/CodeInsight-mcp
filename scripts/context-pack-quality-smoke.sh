@@ -5,6 +5,8 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CODEINSIGHT_BIN="${CODEINSIGHT_BIN:-}"
 TEMP_DIR=""
 SCENARIOS_PASSED=0
+SCENARIO_RESULTS_FILE=""
+SUMMARY_JSON=""
 
 cleanup() {
   if [ -n "$TEMP_DIR" ]; then
@@ -52,11 +54,81 @@ json_value() {
   jq -r "$query" "$file"
 }
 
+usage() {
+  cat <<'EOF'
+usage: scripts/context-pack-quality-smoke.sh [--summary-json PATH]
+
+Options:
+  --summary-json PATH  Write a machine-readable quality summary JSON.
+  -h, --help           Show this help text.
+EOF
+}
+
+parse_args() {
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --summary-json)
+        if [ "$#" -lt 2 ]; then
+          fail "--summary-json requires a path"
+        fi
+        SUMMARY_JSON="$2"
+        shift 2
+        ;;
+      -h|--help)
+        usage
+        exit 0
+        ;;
+      *)
+        fail "unknown argument: $1"
+        ;;
+    esac
+  done
+}
+
+record_scenario() {
+  local name="$1"
+  local file="$2"
+  local metrics_query="$3"
+
+  jq -c \
+    --arg name "$name" \
+    "{name: \$name, status: \"pass\", metrics: ($metrics_query)}" \
+    "$file" >>"$SCENARIO_RESULTS_FILE"
+}
+
+write_summary_json() {
+  if [ -z "$SUMMARY_JSON" ]; then
+    return
+  fi
+
+  mkdir -p "$(dirname "$SUMMARY_JSON")"
+  jq -s \
+    --arg status "pass" \
+    --argjson scenarios_passed "$SCENARIOS_PASSED" \
+    '{
+      status: $status,
+      scenarios_passed: $scenarios_passed,
+      scenarios: .
+    }' \
+    "$SCENARIO_RESULTS_FILE" >"$SUMMARY_JSON"
+
+  if ! jq -e \
+    --argjson expected "$SCENARIOS_PASSED" \
+    '.status == "pass"
+      and .scenarios_passed == $expected
+      and (.scenarios | length) == $expected
+      and all(.scenarios[]; .status == "pass")' \
+    "$SUMMARY_JSON" >/dev/null; then
+    fail "summary JSON failed contract validation: $SUMMARY_JSON"
+  fi
+}
+
 run_polyglot_symbol_scenario() {
-  local symbol="$1"
-  local task="$2"
-  local expected_file="$3"
-  local output="$4"
+  local name="$1"
+  local symbol="$2"
+  local task="$3"
+  local expected_file="$4"
+  local output="$5"
 
   "$CODEINSIGHT_BIN" context-pack "$ROOT_DIR/tests/fixtures/polyglot" \
     --task "$task" \
@@ -75,6 +147,8 @@ run_polyglot_symbol_scenario() {
   require_jq "$output" '.truncated == false' "$symbol should fit without truncation in fixture"
 
   SCENARIOS_PASSED=$((SCENARIOS_PASSED + 1))
+  record_scenario "$name" "$output" \
+    '{first_file: .files[0].file, estimated_tokens, selected_files: .budget.selected_files, selected_ranges: .budget.selected_ranges}'
   echo "  pass: $symbol -> $expected_file ($(json_value "$output" '.estimated_tokens') tokens)"
 }
 
@@ -191,6 +265,8 @@ run_reference_ranking_scenarios() {
     "production caller should appear in reading plan"
 
   SCENARIOS_PASSED=$((SCENARIOS_PASSED + 1))
+  record_scenario "production_reference_ranking" "$production_json" \
+    '{first_file: .files[0].file, selected_files: .budget.selected_files, continuation_status: .continuation_summary.status}'
   echo "  pass: production reference ranking"
 
   "$CODEINSIGHT_BIN" context-pack "$project" \
@@ -207,6 +283,8 @@ run_reference_ranking_scenarios() {
     "test ranking scenario should respect token budget"
 
   SCENARIOS_PASSED=$((SCENARIOS_PASSED + 1))
+  record_scenario "test_reference_ranking" "$test_json" \
+    '{first_file: .files[0].file, selected_files: .budget.selected_files, continuation_status: .continuation_summary.status}'
   echo "  pass: test reference ranking"
 }
 
@@ -241,6 +319,8 @@ run_dependency_continuation_scenario() {
     "dependency continuation should fit without truncation in fixture"
 
   SCENARIOS_PASSED=$((SCENARIOS_PASSED + 1))
+  record_scenario "dependency_continuation" "$context_json" \
+    '{selected_files: .budget.selected_files, dependency_file: "app/support.py", continuation_status: .continuation_summary.status}'
   echo "  pass: dependency continuation"
 }
 
@@ -288,6 +368,8 @@ run_budget_continuation_scenario() {
     "budget continuation omitted candidates should stay excerpt-free"
 
   SCENARIOS_PASSED=$((SCENARIOS_PASSED + 1))
+  record_scenario "budget_continuation" "$context_json" \
+    '{candidate_files: .budget.candidate_files, selected_files: .budget.selected_files, omitted_files: .budget.omitted_files, omitted_candidates: (.omitted_candidates | length), continuation_status: .continuation_summary.status}'
   echo "  pass: budget continuation ($(json_value "$context_json" '.budget.selected_files')/$(json_value "$context_json" '.budget.candidate_files') files selected)"
 }
 
@@ -324,6 +406,8 @@ run_minimum_budget_scenario() {
     "minimum budget fixture should not truncate after applying minimum budget"
 
   SCENARIOS_PASSED=$((SCENARIOS_PASSED + 1))
+  record_scenario "minimum_budget" "$context_json" \
+    '{requested_token_budget: .budget.requested_token_budget, applied_token_budget: .budget.applied_token_budget, continuation_status: .continuation_summary.status}'
   echo "  pass: minimum budget ($(json_value "$context_json" '.budget.requested_token_budget')->$(json_value "$context_json" '.budget.applied_token_budget') tokens)"
 }
 
@@ -363,14 +447,18 @@ run_token_exhaustion_scenario() {
     "token exhaustion omitted candidates should be empty"
 
   SCENARIOS_PASSED=$((SCENARIOS_PASSED + 1))
+  record_scenario "token_exhaustion" "$context_json" \
+    '{selected_files: .budget.selected_files, truncated: .truncated, truncation_reason: .budget.truncation_reason, continuation_status: .continuation_summary.status}'
   echo "  pass: token exhaustion ($(json_value "$context_json" '.budget.selected_files') files truncated)"
 }
 
 main() {
+  parse_args "$@"
   require_command jq
   build_binary_if_needed
 
   TEMP_DIR="$(mktemp -d)"
+  SCENARIO_RESULTS_FILE="$TEMP_DIR/scenarios.jsonl"
   trap cleanup EXIT INT TERM
 
   echo "context_pack quality smoke"
@@ -380,11 +468,13 @@ main() {
   require_jq "$TEMP_DIR/polyglot-index.json" '.indexed_files >= 10' "polyglot fixture should index source files"
 
   run_polyglot_symbol_scenario \
+    polyglot_symbol_web_controller \
     WebController \
     "understand dashboard rendering behavior" \
     "src/app.ts" \
     "$TEMP_DIR/web-controller-context.json"
   run_polyglot_symbol_scenario \
+    polyglot_symbol_php_service_render \
     PhpService.render \
     "understand PHP render behavior" \
     "src/PhpService.php" \
@@ -397,6 +487,7 @@ main() {
 
   echo "context-pack quality smoke passed"
   echo "scenarios: $SCENARIOS_PASSED"
+  write_summary_json
 }
 
 main "$@"
