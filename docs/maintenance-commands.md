@@ -55,7 +55,7 @@ scripts/archive-release-evidence.sh --repo sleticalboy/CodeInsight-mcp --json-ou
 scripts/release-tag-preflight.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
 git tag -a vX.Y.Z -m "vX.Y.Z"
 git push origin vX.Y.Z
-scripts/post-release-verify.sh vX.Y.Z
+scripts/post-release-verify.sh --handoff vX.Y.Z
 ```
 
 ## Agent And MCP Checks

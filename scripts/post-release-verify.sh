@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VERIFY_RELEASE_SCRIPT="${CODEINSIGHT_VERIFY_RELEASE_SCRIPT:-$ROOT_DIR/scripts/verify-release.sh}"
 UPDATE_RELEASE_STATUS_SCRIPT="${CODEINSIGHT_UPDATE_RELEASE_STATUS_SCRIPT:-$ROOT_DIR/scripts/update-release-status.sh}"
+RELEASE_HANDOFF_SUMMARY_SCRIPT="${CODEINSIGHT_RELEASE_HANDOFF_SUMMARY_SCRIPT:-$ROOT_DIR/scripts/release-handoff-summary.sh}"
 RAW_OUTPUT_FILE=""
 
 cleanup() {
@@ -30,6 +31,10 @@ Options:
   --status-doc PATH         Update PATH instead of docs/status.md.
   --evidence-json-file PATH Include archived pre-release evidence JSON in status.
   --evidence-file PATH      Include archived pre-release evidence Markdown in status.
+  --handoff                 Write release handoff Markdown and JSON.
+  --handoff-output PATH     Write release handoff Markdown to PATH.
+  --handoff-json-output PATH
+                            Write release handoff JSON to PATH.
   --skip-docker             Set CODEINSIGHT_SKIP_DOCKER=1.
   --skip-homebrew           Set CODEINSIGHT_SKIP_HOMEBREW=1.
   --skip-installed-quickstart
@@ -41,8 +46,10 @@ Options:
 Environment:
   CODEINSIGHT_STATUS_DATE=YYYY-MM-DD
   CODEINSIGHT_RELEASE_SUMMARY_DIR=release-verification
+  CODEINSIGHT_RELEASE_HANDOFF_DIR=release-handoff
   CODEINSIGHT_VERIFY_RELEASE_SCRIPT=scripts/verify-release.sh
   CODEINSIGHT_UPDATE_RELEASE_STATUS_SCRIPT=scripts/update-release-status.sh
+  CODEINSIGHT_RELEASE_HANDOFF_SUMMARY_SCRIPT=scripts/release-handoff-summary.sh
 EOF
   exit "$status"
 }
@@ -121,6 +128,9 @@ main() {
   local status_doc="$ROOT_DIR/docs/status.md"
   local evidence_json_file=""
   local evidence_file=""
+  local handoff_enabled=0
+  local handoff_output_file=""
+  local handoff_json_output_file=""
   local skip_docker=0
   local skip_homebrew=0
   local skip_installed_quickstart=0
@@ -158,6 +168,25 @@ main() {
           usage
         fi
         evidence_json_file="$1"
+        ;;
+      --handoff)
+        handoff_enabled=1
+        ;;
+      --handoff-output)
+        shift
+        if [ "$#" -eq 0 ]; then
+          usage
+        fi
+        handoff_enabled=1
+        handoff_output_file="$1"
+        ;;
+      --handoff-json-output)
+        shift
+        if [ "$#" -eq 0 ]; then
+          usage
+        fi
+        handoff_enabled=1
+        handoff_json_output_file="$1"
         ;;
       --skip-docker)
         skip_docker=1
@@ -212,6 +241,20 @@ main() {
   if [ -z "$evidence_json_file" ] && [ -z "$evidence_file" ] && [ -f "$ROOT_DIR/release-evidence/${tag}.md" ]; then
     evidence_file="$ROOT_DIR/release-evidence/${tag}.md"
   fi
+  if [ "$handoff_enabled" -eq 1 ] && [ -z "$evidence_json_file" ]; then
+    echo "post-release verification failed: release handoff requires --evidence-json-file or release-evidence/${tag}.json" >&2
+    exit 1
+  fi
+  if [ "$handoff_enabled" -eq 1 ]; then
+    local handoff_dir
+    handoff_dir="${CODEINSIGHT_RELEASE_HANDOFF_DIR:-$ROOT_DIR/release-handoff}"
+    if [ -z "$handoff_output_file" ]; then
+      handoff_output_file="$handoff_dir/${tag}.md"
+    fi
+    if [ -z "$handoff_json_output_file" ]; then
+      handoff_json_output_file="$handoff_dir/${tag}.json"
+    fi
+  fi
   mkdir -p "$(dirname "$summary_file")"
   RAW_OUTPUT_FILE="$(mktemp)"
   trap cleanup EXIT INT TERM
@@ -244,6 +287,16 @@ main() {
   update_args+=("$summary_file" "$status_doc")
   "$UPDATE_RELEASE_STATUS_SCRIPT" "${update_args[@]}"
 
+  if [ "$handoff_enabled" -eq 1 ]; then
+    echo "writing release handoff"
+    "$RELEASE_HANDOFF_SUMMARY_SCRIPT" \
+      --evidence-json "$evidence_json_file" \
+      --verification-json "$summary_file" \
+      --json-output "$handoff_json_output_file" \
+      --output "$handoff_output_file" \
+      "$tag"
+  fi
+
   echo "post-release verification passed"
   echo "summary: $summary_file"
   echo "status: $status_doc"
@@ -251,6 +304,10 @@ main() {
     echo "evidence_json: $evidence_json_file"
   elif [ -n "$evidence_file" ]; then
     echo "evidence: $evidence_file"
+  fi
+  if [ "$handoff_enabled" -eq 1 ]; then
+    echo "handoff_json: $handoff_json_output_file"
+    echo "handoff: $handoff_output_file"
   fi
 }
 

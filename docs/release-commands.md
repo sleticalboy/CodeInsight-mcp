@@ -28,7 +28,7 @@ gh run list --workflow "Release Build" --limit 5
 gh run list --workflow "Docker Image" --limit 5
 gh run watch <release-build-run-id> --exit-status
 gh run watch <docker-run-id> --exit-status
-scripts/post-release-verify.sh vX.Y.Z
+scripts/post-release-verify.sh --handoff vX.Y.Z
 ```
 
 If Docker or Homebrew cannot run locally, use the explicit post-release skip
@@ -145,7 +145,7 @@ gh run watch <docker-run-id> --exit-status
 Run the recommended post-release verification command:
 
 ```bash
-scripts/post-release-verify.sh vX.Y.Z
+scripts/post-release-verify.sh --handoff vX.Y.Z
 ```
 
 If Docker or Homebrew is not usable on the local machine, skip only those local
@@ -164,12 +164,15 @@ scripts/post-release-verify.sh --allow-asset-download-unreachable vX.Y.Z
 ```
 
 The post-release verifier saves a JSON summary under
-`release-verification/<tag>.json` by default and refreshes the generated
-summary block in [Current status](status.md). When
+`release-verification/<tag>.json` by default, refreshes the generated
+summary block in [Current status](status.md), and with `--handoff` also writes
+`release-handoff/<tag>.json` and `release-handoff/<tag>.md`. When
 `release-evidence/<tag>.json` exists, the status update also includes the
 archived pre-release evidence fields from that machine-readable archive. If the
 JSON archive is missing, it falls back to `release-evidence/<tag>.md`. Use
 `--evidence-json-file PATH` or `--evidence-file PATH` to pass a custom archive.
+Use `--handoff-output PATH` or `--handoff-json-output PATH` to override the
+handoff destinations.
 
 ## Targeted Checks
 

@@ -129,7 +129,7 @@ optional external checks, see [Maintenance commands](maintenance-commands.md).
 - Run the post-release verifier:
 
   ```bash
-  scripts/post-release-verify.sh vX.Y.Z
+  scripts/post-release-verify.sh --handoff vX.Y.Z
   ```
 
 - If Docker or Homebrew is unavailable on the local machine, skip only those

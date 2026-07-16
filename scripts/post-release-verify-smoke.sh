@@ -17,8 +17,11 @@ main() {
   local summary_file="$TEMP_DIR/summary.json"
   local status_doc="$TEMP_DIR/status.md"
   local evidence_json_file="$TEMP_DIR/release-evidence/v9.8.7.json"
+  local handoff_file="$TEMP_DIR/release-handoff/v9.8.7.md"
+  local handoff_json_file="$TEMP_DIR/release-handoff/v9.8.7.json"
   local fake_verify="$TEMP_DIR/verify-release.sh"
   local fake_update="$TEMP_DIR/update-release-status.sh"
+  local fake_handoff="$TEMP_DIR/release-handoff-summary.sh"
 
   cat >"$fake_verify" <<'EOF'
 #!/usr/bin/env bash
@@ -79,17 +82,44 @@ cp "$3" "$4"
 EOF
   chmod +x "$fake_update"
 
+  cat >"$fake_handoff" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+test "$1" = "--evidence-json"
+test "$2" = "$CODEINSIGHT_EXPECTED_EVIDENCE_JSON_FILE"
+test "$3" = "--verification-json"
+test -s "$4"
+test "$5" = "--json-output"
+test "$6" = "$CODEINSIGHT_EXPECTED_HANDOFF_JSON_FILE"
+test "$7" = "--output"
+test "$8" = "$CODEINSIGHT_EXPECTED_HANDOFF_FILE"
+test "$9" = "v9.8.7"
+
+mkdir -p "$(dirname "$6")" "$(dirname "$8")"
+printf '{"schema_version":1,"tag":"v9.8.7"}\n' >"$6"
+printf '## v9.8.7 release handoff\n' >"$8"
+echo "release handoff summary written: $8"
+echo "release handoff JSON written: $6"
+EOF
+  chmod +x "$fake_handoff"
+
   mkdir -p "$(dirname "$evidence_json_file")"
   echo '{"schema_version":1}' >"$evidence_json_file"
 
   CODEINSIGHT_EXPECTED_STATUS_DOC="$status_doc" \
     CODEINSIGHT_EXPECTED_EVIDENCE_JSON_FILE="$evidence_json_file" \
+    CODEINSIGHT_EXPECTED_HANDOFF_FILE="$handoff_file" \
+    CODEINSIGHT_EXPECTED_HANDOFF_JSON_FILE="$handoff_json_file" \
     CODEINSIGHT_VERIFY_RELEASE_SCRIPT="$fake_verify" \
     CODEINSIGHT_UPDATE_RELEASE_STATUS_SCRIPT="$fake_update" \
+    CODEINSIGHT_RELEASE_HANDOFF_SUMMARY_SCRIPT="$fake_handoff" \
+    CODEINSIGHT_RELEASE_HANDOFF_DIR="$TEMP_DIR/release-handoff" \
     "$ROOT_DIR/scripts/post-release-verify.sh" \
     --summary-file "$summary_file" \
     --status-doc "$status_doc" \
     --evidence-json-file "$evidence_json_file" \
+    --handoff \
     --skip-docker \
     --skip-homebrew \
     --skip-installed-quickstart \
@@ -101,11 +131,17 @@ EOF
     .gates.github_asset_downloads == "metadata_only" and
     .gates.docker == "skipped"
   ' "$summary_file" >/dev/null
+  jq -e '.schema_version == 1 and .tag == "v9.8.7"' "$handoff_json_file" >/dev/null
   cmp "$summary_file" "$status_doc"
+  grep -q "## v9.8.7 release handoff" "$handoff_file"
+  grep -q "release handoff summary written: $handoff_file" "$TEMP_DIR/post.out"
+  grep -q "release handoff JSON written: $handoff_json_file" "$TEMP_DIR/post.out"
   grep -q "post-release verification passed" "$TEMP_DIR/post.out"
   grep -q "summary: $summary_file" "$TEMP_DIR/post.out"
   grep -q "status: $status_doc" "$TEMP_DIR/post.out"
   grep -q "evidence_json: $evidence_json_file" "$TEMP_DIR/post.out"
+  grep -q "handoff_json: $handoff_json_file" "$TEMP_DIR/post.out"
+  grep -q "handoff: $handoff_file" "$TEMP_DIR/post.out"
 
   echo "post-release verify smoke passed"
 }

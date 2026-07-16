@@ -43,7 +43,7 @@ scripts/archive-release-evidence.sh --repo sleticalboy/CodeInsight-mcp --json-ou
 scripts/release-tag-preflight.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z main
 git tag -a vX.Y.Z -m "vX.Y.Z"
 git push origin vX.Y.Z
-scripts/post-release-verify.sh vX.Y.Z
+scripts/post-release-verify.sh --handoff vX.Y.Z
 ```
 
 The sections below document the same flow with troubleshooting details and
@@ -204,10 +204,10 @@ scripts/verify-release.sh vX.Y.Z
 ```
 
 Run the post-release verifier to save a machine-readable summary and refresh
-the generated status summary:
+the generated status summary and release handoff:
 
 ```bash
-scripts/post-release-verify.sh vX.Y.Z
+scripts/post-release-verify.sh --handoff vX.Y.Z
 ```
 
 If the local machine cannot run Docker or Homebrew, pass the same explicit

@@ -179,9 +179,10 @@ Use `scripts/verify-release.sh --json vX.Y.Z` when the final pass/fail summary
 needs to be copied into CI logs, release notes, or the verification record.
 The consolidated script also runs the installed quickstart smoke against the
 binary installed by the public install script.
-Use `scripts/post-release-verify.sh vX.Y.Z` after release workflows finish to
-run verification, save the JSON summary, and refresh the generated verification
-summary in [Current status](status.md).
+Use `scripts/post-release-verify.sh --handoff vX.Y.Z` after release workflows
+finish to run verification, save the JSON summary, refresh the generated
+verification summary in [Current status](status.md), and write the release
+handoff JSON/Markdown.
 
 If Docker or Homebrew cannot run on the local machine, skip those local checks
 explicitly:

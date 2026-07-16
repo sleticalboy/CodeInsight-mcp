@@ -439,8 +439,8 @@ main() {
     '# 3\. Wait for CI, tag, then verify published artifacts\.' \
     "release commands tag phase"
   require_pattern docs/release-commands.md \
-    'scripts/post-release-verify\.sh vX\.Y\.Z' \
-    "release commands short path post-release verification"
+    'scripts/post-release-verify\.sh --handoff vX\.Y\.Z' \
+    "release commands short path post-release verification handoff"
   require_pattern docs/release-runbook.md \
     '^## Recommended SOP$' \
     "release runbook recommended SOP section"
