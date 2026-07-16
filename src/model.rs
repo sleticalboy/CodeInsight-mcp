@@ -468,6 +468,18 @@ pub struct ImpactCounts {
 }
 
 #[derive(Debug, Clone, Serialize)]
+pub struct ImpactBreakdown {
+    pub seed_files: usize,
+    pub symbol_definition_files: usize,
+    pub reference_files: usize,
+    pub call_related_files: usize,
+    pub dependency_related_files: usize,
+    pub call_paths: usize,
+    pub dependency_paths: usize,
+    pub errors: usize,
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct SuggestedCheck {
     pub kind: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -483,6 +495,7 @@ pub struct ImpactAnalysisReport {
     pub summary: String,
     pub risk_level: String,
     pub impact_counts: ImpactCounts,
+    pub impact_breakdown: ImpactBreakdown,
     pub top_reasons: Vec<String>,
     pub suggested_checks: Vec<SuggestedCheck>,
     pub depth: usize,

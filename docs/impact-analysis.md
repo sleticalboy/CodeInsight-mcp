@@ -19,11 +19,21 @@ The report includes:
 - `paths`: explanatory multi-hop call/dependency paths, limited by `limit`.
 - `risk_level`: one of `low`, `medium`, or `high`.
 - `impact_counts`: counts from the full analysis before summary evidence truncation.
+- `impact_breakdown`: summary counts grouped by seed, symbol, reference, call, dependency, call-path, dependency-path, and error signals.
 - `top_reasons`: up to 8 globally high-signal reasons, ranked by impacted file score.
 - `suggested_checks`: command or review checks inferred from impacted languages, repository metadata, risk, paths, and errors.
 - evidence arrays: `symbols`, `references`, `callers`, `callees`, `dependencies`, and `errors`.
 
-`format=summary` keeps `impacted_files`, `paths`, `risk_level`, `impact_counts`, `top_reasons`, and `suggested_checks` intact, while truncating evidence arrays to `evidence_limit`. `format=full` returns full evidence arrays up to `limit`.
+`format=summary` keeps `impacted_files`, `paths`, `risk_level`, `impact_counts`,
+`impact_breakdown`, `top_reasons`, and `suggested_checks` intact, while
+truncating evidence arrays to `evidence_limit`. `format=full` returns full
+evidence arrays up to `limit`.
+
+Use `impact_breakdown` when an agent needs a compact explanation before
+opening detailed evidence. For example, non-zero `call_related_files` and
+`call_paths` mean control-flow callers/callees contributed to the impact.
+Non-zero `dependency_related_files` and `dependency_paths` mean local imports or
+importers contributed to the impact.
 
 ## Score Weights
 

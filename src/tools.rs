@@ -21,11 +21,11 @@ use crate::{
         ContextBudget, ContextContinuationSummary, ContextFile, ContextOmittedCandidate,
         ContextPack, ContextRange, ContextReadingRange, ContextReadingStep, ContextSeed,
         ContextSemanticStatus, ContextSuggestedTool, Dependency, DependencyGraph,
-        EmbeddingProviderStatus, ImpactAnalysisReport, ImpactCounts, ImpactFile, ImpactPath,
-        IndexError, Language, OllamaEmbeddingStatus, OpenAiEmbeddingStatus, ProjectIndexReport,
-        ProjectOverview, ReferenceMatch, SemanticChunk, SemanticChunkInput, SemanticEmbeddingInput,
-        SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus, SemanticSearchResult,
-        SuggestedCheck, Symbol, SymbolKind, VersionInfo,
+        EmbeddingProviderStatus, ImpactAnalysisReport, ImpactBreakdown, ImpactCounts, ImpactFile,
+        ImpactPath, IndexError, Language, OllamaEmbeddingStatus, OpenAiEmbeddingStatus,
+        ProjectIndexReport, ProjectOverview, ReferenceMatch, SemanticChunk, SemanticChunkInput,
+        SemanticEmbeddingInput, SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus,
+        SemanticSearchResult, SuggestedCheck, Symbol, SymbolKind, VersionInfo,
     },
     storage::Store,
 };
@@ -608,12 +608,6 @@ pub fn impact_analysis_value(
     });
     impacted_files.truncate(limit);
 
-    let summary = format!(
-        "Impact analysis found {} impacted files from {} symbol seeds and {} file seeds.",
-        impacted_files.len(),
-        seed_symbols.len(),
-        normalized_seed_files.len()
-    );
     let risk_level = impact_risk_level(&impacted_files, &paths);
     let impact_counts = ImpactCounts {
         impacted_files: impacted_files.len(),
@@ -625,6 +619,17 @@ pub fn impact_analysis_value(
         dependencies: dependencies.len(),
         errors: errors.len(),
     };
+    let impact_breakdown = impact_breakdown(&impacted_files, &paths, errors.len());
+    let summary = format!(
+        "Impact analysis found {} impacted files from {} symbol seeds and {} file seeds, including {} call-related files, {} dependency-related files, {} call paths, and {} dependency paths.",
+        impacted_files.len(),
+        seed_symbols.len(),
+        normalized_seed_files.len(),
+        impact_breakdown.call_related_files,
+        impact_breakdown.dependency_related_files,
+        impact_breakdown.call_paths,
+        impact_breakdown.dependency_paths
+    );
     let top_reasons = impact_top_reasons(&impacted_files, 8);
     let suggested_checks =
         impact_suggested_checks(&root, &risk_level, &impacted_files, &paths, &errors)?;
@@ -642,6 +647,7 @@ pub fn impact_analysis_value(
         summary,
         risk_level,
         impact_counts,
+        impact_breakdown,
         top_reasons,
         suggested_checks,
         depth,
@@ -1957,6 +1963,67 @@ fn impact_top_reasons(impacted_files: &[ImpactFile], limit: usize) -> Vec<String
         .take(limit)
         .map(|(reason, _score)| reason)
         .collect()
+}
+
+fn impact_breakdown(
+    impacted_files: &[ImpactFile],
+    paths: &[ImpactPath],
+    errors: usize,
+) -> ImpactBreakdown {
+    let mut seed_files = 0;
+    let mut symbol_definition_files = 0;
+    let mut reference_files = 0;
+    let mut call_related_files = 0;
+    let mut dependency_related_files = 0;
+
+    for file in impacted_files {
+        if file.reasons.iter().any(|reason| reason == "seed_file") {
+            seed_files += 1;
+        }
+        if file
+            .reasons
+            .iter()
+            .any(|reason| reason.starts_with("symbol_definition:"))
+        {
+            symbol_definition_files += 1;
+        }
+        if file
+            .reasons
+            .iter()
+            .any(|reason| reason.starts_with("reference:"))
+        {
+            reference_files += 1;
+        }
+        if file.reasons.iter().any(|reason| {
+            reason.starts_with("caller:")
+                || reason.starts_with("caller_depth_")
+                || reason.starts_with("callee_source:")
+                || reason.starts_with("callee_target:")
+        }) {
+            call_related_files += 1;
+        }
+        if file.reasons.iter().any(|reason| {
+            reason.starts_with("dependency_source:")
+                || reason.starts_with("dependency_target:")
+                || reason.starts_with("dependency_importer_depth_")
+        }) {
+            dependency_related_files += 1;
+        }
+    }
+
+    ImpactBreakdown {
+        seed_files,
+        symbol_definition_files,
+        reference_files,
+        call_related_files,
+        dependency_related_files,
+        call_paths: paths.iter().filter(|path| path.kind == "call").count(),
+        dependency_paths: paths
+            .iter()
+            .filter(|path| path.kind == "dependency")
+            .count(),
+        errors,
+    }
 }
 
 fn impact_suggested_checks(

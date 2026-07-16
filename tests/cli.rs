@@ -5267,8 +5267,40 @@ export function route() {
     assert_eq!(impact["evidence_limit"].as_u64(), Some(1));
     assert_eq!(impact["risk_level"], "high");
     assert!(
+        impact["summary"]
+            .as_str()
+            .is_some_and(|summary| summary.contains("call-related files")
+                && summary.contains("dependency-related files"))
+    );
+    assert!(
         impact["impact_counts"]["paths"].as_u64().unwrap()
             >= impact["paths"].as_array().unwrap().len() as u64
+    );
+    assert!(impact["impact_breakdown"]["seed_files"].as_u64().unwrap() >= 1);
+    assert!(
+        impact["impact_breakdown"]["symbol_definition_files"]
+            .as_u64()
+            .unwrap()
+            >= 1
+    );
+    assert!(
+        impact["impact_breakdown"]["call_related_files"]
+            .as_u64()
+            .unwrap()
+            >= 2
+    );
+    assert!(
+        impact["impact_breakdown"]["dependency_related_files"]
+            .as_u64()
+            .unwrap()
+            >= 2
+    );
+    assert!(impact["impact_breakdown"]["call_paths"].as_u64().unwrap() >= 1);
+    assert!(
+        impact["impact_breakdown"]["dependency_paths"]
+            .as_u64()
+            .unwrap()
+            >= 1
     );
     assert!(impact["symbols"].as_array().unwrap().len() <= 1);
     assert!(impact["references"].as_array().unwrap().len() <= 1);

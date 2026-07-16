@@ -721,6 +721,17 @@ def helper():
                 >= 1
         );
         assert!(
+            impact_result["structuredContent"]["impact_breakdown"]["call_related_files"]
+                .as_u64()
+                .unwrap()
+                >= 1
+        );
+        assert!(
+            impact_result["structuredContent"]["summary"]
+                .as_str()
+                .is_some_and(|summary| summary.contains("call-related files"))
+        );
+        assert!(
             !impact_result["structuredContent"]["top_reasons"]
                 .as_array()
                 .unwrap()
