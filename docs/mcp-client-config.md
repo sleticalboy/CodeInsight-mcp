@@ -247,20 +247,23 @@ configured commands will take precedence over built-in inference.
 `start_line`, `end_line`, `importance`, `reason`, and `excerpt`, so clients can
 sort or filter snippets without parsing explanation text.
 It also returns `seed_strategy` and `selected_seeds`; use these fields to show
-whether context came from explicit seeds, an overview entrypoint, or indexed
-source-file fallback.
+whether context came from explicit seeds, an overview entrypoint, task-matched
+source, or indexed source-file fallback. For task-matched seeds,
+`selected_seeds[].matched_keywords` names the task terms that matched file paths
+or symbol names.
 
 Example `context_pack` response shape:
 
 ```json
 {
-  "seed_strategy": "auto_entrypoint",
+  "seed_strategy": "auto_task_match",
   "selected_seeds": [
     {
       "kind": "file",
-      "value": "src/main.ts",
-      "source": "overview_entrypoint",
-      "role": "source"
+      "value": "src/router.ts",
+      "source": "task_match",
+      "role": "source",
+      "matched_keywords": ["router"]
     }
   ],
   "reading_plan": [

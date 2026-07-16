@@ -90,7 +90,7 @@ Promise: route the agent through agent_route before edits.
 
 1. index_project
    indexed_files: 23
-   symbols: 922
+   symbols: 924
 
 2. project_overview
    entrypoints: 7

@@ -102,6 +102,10 @@ Clients should render these fields:
 - `reading_plan`
 - `files`
 
+When `seed_strategy` is `auto_task_match`, show
+`selected_seeds[].matched_keywords` before broad file reading so the user can
+see why CodeInsight chose that first-read seed.
+
 Treat `files[]` as the selected context payload. Treat `reading_plan[]` as the
 ordered path for reading that payload. It contains no excerpts, so it is safe to
 show as navigation and routing metadata.

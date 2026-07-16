@@ -1236,6 +1236,7 @@ pub fn context_pack_value(
         let mut selected_line_ranges = Vec::new();
         let mut selected_max_score = 0;
         let mut selected_source: Option<String> = None;
+        let mut selected_reason: Option<String> = None;
 
         for range in &candidate.ranges {
             let uncovered_segments = uncovered_segments(
@@ -1272,6 +1273,7 @@ pub fn context_pack_value(
                 estimated_tokens += range_tokens;
                 if selected_source.is_none() || range.score > selected_max_score {
                     selected_source = Some(range.source.clone());
+                    selected_reason = Some(range.reason.clone());
                 }
                 selected_max_score = selected_max_score.max(range.score);
                 selected_line_ranges.push((start_line, end_line));
@@ -1295,9 +1297,11 @@ pub fn context_pack_value(
                 source: source.clone(),
                 score: selected_max_score,
                 reason: format!(
-                    "Selected for {} relevance via {}",
+                    "Selected for {} relevance via {}: {}",
                     importance_for_score(selected_max_score),
-                    source
+                    source,
+                    selected_reason
+                        .unwrap_or_else(|| "selected range matched the task".to_string())
                 ),
                 ranges: context_ranges,
             });
@@ -2449,10 +2453,14 @@ fn seed_file_ranges(
     let mut ranges = Vec::new();
 
     if let Some(end_line) = header_range_end(&lines) {
+        let matched_keywords = auto_seed_matched_keywords(file, None, task_keywords);
         ranges.push(ContextCandidateRange {
             start_line: 1,
             end_line,
-            reason: format!("Seed file header and imports for task: {file}"),
+            reason: seed_range_reason(
+                &format!("Seed file header and imports for task: {file}"),
+                &matched_keywords,
+            ),
             source: "seed_file".to_string(),
             score: CONTEXT_SCORE_SEED_HEADER,
         });
@@ -2465,26 +2473,46 @@ fn seed_file_ranges(
     primary_symbols.sort_by_key(|symbol| (symbol.start_line, symbol.end_line));
 
     for symbol in primary_symbols.into_iter().take(12) {
+        let matched_keywords =
+            auto_seed_matched_keywords(file, Some(&symbol.qualified_name), task_keywords);
         ranges.push(ContextCandidateRange {
             start_line: symbol.start_line.saturating_sub(2).max(1),
             end_line: (capped_symbol_end_line(symbol) + 2).min(line_count),
-            reason: format!("Seed file defines symbol {}", symbol.qualified_name),
+            reason: seed_range_reason(
+                &format!("Seed file defines symbol {}", symbol.qualified_name),
+                &matched_keywords,
+            ),
             source: "seed_file".to_string(),
             score: CONTEXT_SCORE_SEED_FILE + seed_symbol_task_boost(symbol, task_keywords),
         });
     }
 
     if ranges.is_empty() {
+        let matched_keywords = auto_seed_matched_keywords(file, None, task_keywords);
         ranges.push(ContextCandidateRange {
             start_line: 1,
             end_line: line_count.min(80),
-            reason: format!("Seed file requested for task: {file}"),
+            reason: seed_range_reason(
+                &format!("Seed file requested for task: {file}"),
+                &matched_keywords,
+            ),
             source: "seed_file".to_string(),
             score: CONTEXT_SCORE_SEED_FILE,
         });
     }
 
     ranges
+}
+
+fn seed_range_reason(base: &str, matched_keywords: &[String]) -> String {
+    if matched_keywords.is_empty() {
+        base.to_string()
+    } else {
+        format!(
+            "{base}; matched task keywords: {}",
+            matched_keywords.join(", ")
+        )
+    }
 }
 
 fn header_range_end(lines: &[&str]) -> Option<usize> {
@@ -2892,6 +2920,7 @@ struct AutoSeedCandidate {
     role: String,
     source: String,
     score: i32,
+    matched_keywords: Vec<String>,
 }
 
 fn auto_context_seed_files(
@@ -2908,6 +2937,11 @@ fn auto_context_seed_files(
         .iter()
         .filter(|entrypoint| auto_seed_role_allowed(&entrypoint.role, task_keywords))
     {
+        let matched_keywords = auto_seed_matched_keywords(
+            &entrypoint.file,
+            entrypoint.symbol.as_deref(),
+            task_keywords,
+        );
         let score = entrypoint.score as i32
             + auto_seed_task_match_score(
                 &entrypoint.file,
@@ -2921,6 +2955,7 @@ fn auto_context_seed_files(
                 role: entrypoint.role.clone(),
                 source: "overview_entrypoint".to_string(),
                 score,
+                matched_keywords,
             },
         );
     }
@@ -2940,6 +2975,15 @@ fn auto_context_seed_files(
         if task_score == 0 {
             continue;
         }
+        let matched_keywords = symbols
+            .iter()
+            .flat_map(|symbol| {
+                auto_seed_matched_keywords(file, Some(&symbol.qualified_name), task_keywords)
+            })
+            .chain(auto_seed_matched_keywords(file, None, task_keywords))
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect::<Vec<_>>();
         upsert_auto_seed_candidate(
             &mut candidates,
             AutoSeedCandidate {
@@ -2947,6 +2991,7 @@ fn auto_context_seed_files(
                 role: auto_seed_file_role(file).to_string(),
                 source: "task_match".to_string(),
                 score: 60 + task_score,
+                matched_keywords,
             },
         );
     }
@@ -2975,6 +3020,7 @@ fn auto_context_seed_files(
                 value: file,
                 source,
                 role: Some(candidate.role.clone()),
+                matched_keywords: candidate.matched_keywords.clone(),
             }],
         });
     }
@@ -2991,6 +3037,7 @@ fn auto_context_seed_files(
             value: file.clone(),
             source: "indexed_file_fallback".to_string(),
             role: Some(auto_seed_file_role(file).to_string()),
+            matched_keywords: Vec::new(),
         })
         .collect::<Vec<_>>();
 
@@ -3012,12 +3059,32 @@ fn upsert_auto_seed_candidate(
             role: candidate.role.clone(),
             source: candidate.source.clone(),
             score: candidate.score,
+            matched_keywords: candidate.matched_keywords.clone(),
         });
     if candidate.score > entry.score
         || (candidate.score == entry.score && candidate.source == "task_match")
     {
         *entry = candidate;
     }
+}
+
+fn auto_seed_matched_keywords(
+    file: &str,
+    symbol: Option<&str>,
+    task_keywords: &[String],
+) -> Vec<String> {
+    task_keywords
+        .iter()
+        .filter(|keyword| {
+            auto_seed_field_matches(file, keyword)
+                || symbol
+                    .map(|symbol| auto_seed_field_matches(symbol, keyword))
+                    .unwrap_or(false)
+        })
+        .cloned()
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect()
 }
 
 fn auto_seed_task_match_score(file: &str, symbol: Option<&str>, task_keywords: &[String]) -> i32 {
@@ -3056,6 +3123,7 @@ fn explicit_context_seeds(seed_symbols: &[String], seed_files: &[String]) -> Vec
             value: symbol.clone(),
             source: "explicit".to_string(),
             role: None,
+            matched_keywords: Vec::new(),
         })
         .collect::<Vec<_>>();
     seeds.extend(seed_files.iter().map(|file| ContextSeed {
@@ -3063,6 +3131,7 @@ fn explicit_context_seeds(seed_symbols: &[String], seed_files: &[String]) -> Vec
         value: file.clone(),
         source: "explicit".to_string(),
         role: Some(auto_seed_file_role(file).to_string()),
+        matched_keywords: Vec::new(),
     }));
     seeds
 }

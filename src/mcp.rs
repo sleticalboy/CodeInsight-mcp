@@ -966,8 +966,18 @@ def helper():
             Some("task_match")
         );
         assert_eq!(
+            auto_context_result["structuredContent"]["selected_seeds"][0]["matched_keywords"][0]
+                .as_str(),
+            Some("auth")
+        );
+        assert_eq!(
             auto_context_result["structuredContent"]["files"][0]["file"].as_str(),
             Some("auth.py")
+        );
+        assert!(
+            auto_context_result["structuredContent"]["files"][0]["reason"]
+                .as_str()
+                .is_some_and(|reason| reason.contains("matched task keywords: auth"))
         );
         assert!(
             auto_context_result["structuredContent"]["summary"]
