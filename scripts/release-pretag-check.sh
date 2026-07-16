@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BENCHMARK_ARTIFACT_SMOKE_SCRIPT="${CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT:-$ROOT_DIR/scripts/benchmark-artifact-smoke.sh}"
 CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="${CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT:-$ROOT_DIR/scripts/context-pack-quality-artifact-smoke.sh}"
+AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT="${CODEINSIGHT_AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT:-$ROOT_DIR/scripts/agent-route-artifact-smoke.sh}"
 REPO_ARG=()
 RUN_ID=""
 HEAD_SHA=""
@@ -20,8 +21,8 @@ usage() {
 usage: scripts/release-pretag-check.sh [options] [branch]
 
 Waits for the latest CI run on a branch, then validates the uploaded benchmark
-subset and context-pack quality artifacts for that exact run. Use before
-creating a release tag.
+subset, context-pack quality, and agent-route artifacts for that exact run. Use
+before creating a release tag.
 
 Options:
   --repo OWNER/REPO  Pass an explicit GitHub repository to gh and artifact smoke.
@@ -32,6 +33,7 @@ Options:
 Environment:
   CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT=scripts/benchmark-artifact-smoke.sh
   CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT=scripts/context-pack-quality-artifact-smoke.sh
+  CODEINSIGHT_AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT=scripts/agent-route-artifact-smoke.sh
 EOF
   exit "$status"
 }
@@ -144,6 +146,9 @@ main() {
   if [ ! -x "$CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT" ]; then
     fail "context-pack quality artifact smoke script is not executable: $CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT"
   fi
+  if [ ! -x "$AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT" ]; then
+    fail "agent-route artifact smoke script is not executable: $AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT"
+  fi
   if [ -n "$RUN_ID" ] && [ -n "$HEAD_SHA" ]; then
     fail "--run-id and --head-sha cannot be used together"
   fi
@@ -157,10 +162,12 @@ main() {
     gh run watch "$RUN_ID" "${REPO_ARG[@]}" --exit-status
     "$BENCHMARK_ARTIFACT_SMOKE_SCRIPT" "${REPO_ARG[@]}" "$RUN_ID"
     "$CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT" "${REPO_ARG[@]}" "$RUN_ID"
+    "$AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT" "${REPO_ARG[@]}" "$RUN_ID"
   else
     gh run watch "$RUN_ID" --exit-status
     "$BENCHMARK_ARTIFACT_SMOKE_SCRIPT" "$RUN_ID"
     "$CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT" "$RUN_ID"
+    "$AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT" "$RUN_ID"
   fi
 
   echo "release pretag check passed"

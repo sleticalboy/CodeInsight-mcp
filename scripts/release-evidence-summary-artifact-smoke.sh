@@ -22,8 +22,8 @@ usage: scripts/release-evidence-summary-artifact-smoke.sh [options] <ci-run-id>
        scripts/release-evidence-summary-artifact-smoke.sh [options] --latest-success BRANCH
 
 Runs release-evidence-summary against a real completed CI run, validates that
-the run head SHA is bound explicitly, and checks both release evidence artifact
-links plus downloaded report paths.
+the run head SHA is bound explicitly, and checks release evidence artifact links
+plus downloaded report paths.
 
 Options:
   --repo OWNER/REPO       Pass an explicit GitHub repository to gh.
@@ -213,9 +213,12 @@ main() {
   require_output "$output_file" "head_sha: $head_sha" "head SHA line"
   require_output "$output_file" "benchmark_artifact_url: https://github.com/$repo_name/actions/runs/$RUN_ID/artifacts/" "benchmark artifact URL"
   require_output "$output_file" "context_pack_quality_artifact_url: https://github.com/$repo_name/actions/runs/$RUN_ID/artifacts/" "context-pack quality artifact URL"
+  require_output "$output_file" "agent_route_artifact_url: https://github.com/$repo_name/actions/runs/$RUN_ID/artifacts/" "agent-route artifact URL"
   require_output "$output_file" "benchmark_report: " "benchmark report path"
   require_output "$output_file" "context_pack_quality_summary: " "context-pack quality summary path"
+  require_output "$output_file" "agent_route_summary: " "agent-route summary path"
   require_output "$output_file" "- Context-pack quality artifact: [codeinsight-context-pack-quality]" "release notes context-pack quality link"
+  require_output "$output_file" "- Agent-route artifact: [codeinsight-agent-route-smoke]" "release notes agent-route link"
 
   cat "$output_file"
   rm -f "$output_file"

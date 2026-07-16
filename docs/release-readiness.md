@@ -276,12 +276,16 @@ show:
 The context-pack quality summary should show the scenario table and a
 `codeinsight-context-pack-quality` artifact link.
 
+The agent-route summary should show the route line, context-pack metrics,
+impact metrics, and a `codeinsight-agent-route-smoke` artifact link.
+
 Use the artifacts when you need the full Markdown report or JSON summary rather
 than the summary excerpt:
 
 ```bash
 scripts/benchmark-artifact-smoke.sh <ci-run-id>
 scripts/context-pack-quality-artifact-smoke.sh <ci-run-id>
+scripts/agent-route-artifact-smoke.sh <ci-run-id>
 ```
 
 Treat the CI subset as a quick regression signal only. The checked-in smoke and

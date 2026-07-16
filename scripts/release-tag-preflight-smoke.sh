@@ -147,6 +147,8 @@ EOF
     fail "missing benchmark artifact gate status"
   grep -Fq 'artifact_gate_context_pack_quality: passed' "$TEMP_DIR/output.log" ||
     fail "missing context-pack quality artifact gate status"
+  grep -Fq 'artifact_gate_agent_route: passed' "$TEMP_DIR/output.log" ||
+    fail "missing agent-route artifact gate status"
   grep -Fq 'next: git tag -a v99.88.77 -m "v99.88.77" && git push origin v99.88.77' "$TEMP_DIR/output.log" ||
     fail "missing next tag command"
 

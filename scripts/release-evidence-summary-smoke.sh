@@ -74,6 +74,9 @@ if [ "$1" = "api" ]; then
     *'codeinsight-context-pack-quality'*)
       printf '987655\n'
       ;;
+    *'codeinsight-agent-route-smoke'*)
+      printf '987656\n'
+      ;;
     *)
       exit 13
       ;;
@@ -117,10 +120,27 @@ echo "summary: /tmp/codeinsight-context-pack-quality-artifact-123456/summary.jso
 EOF
   chmod +x "$TEMP_DIR/context-pack-quality-artifact-smoke"
 
+  cat >"$TEMP_DIR/agent-route-artifact-smoke" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+log="${CODEINSIGHT_EVIDENCE_SMOKE_LOG:?}"
+printf 'agent-route-artifact %s\n' "$*" >>"$log"
+test "$1" = "--repo"
+test "$2" = "sleticalboy/CodeInsight-mcp"
+test "$3" = "--artifact-name"
+test "$4" = "codeinsight-agent-route-smoke"
+test "$5" = "123456"
+echo "agent-route artifact smoke passed"
+echo "summary: /tmp/codeinsight-agent-route-artifact-123456/summary.json"
+EOF
+  chmod +x "$TEMP_DIR/agent-route-artifact-smoke"
+
   CODEINSIGHT_EVIDENCE_SMOKE_LOG="$TEMP_DIR/calls.log" \
     CODEINSIGHT_ROOT_DIR="$TEMP_DIR/repo" \
     CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/benchmark-artifact-smoke" \
     CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/context-pack-quality-artifact-smoke" \
+    CODEINSIGHT_AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/agent-route-artifact-smoke" \
     PATH="$TEMP_DIR/bin:$PATH" \
     "$ROOT_DIR/scripts/release-evidence-summary.sh" \
       --repo sleticalboy/CodeInsight-mcp \
@@ -146,12 +166,18 @@ EOF
     fail "missing context-pack quality artifact URL"
   grep -Fq 'context_pack_quality_summary: /tmp/codeinsight-context-pack-quality-artifact-123456/summary.json' "$TEMP_DIR/output.log" ||
     fail "missing context-pack quality summary output"
+  grep -Fq 'agent_route_artifact_url: https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987656' "$TEMP_DIR/output.log" ||
+    fail "missing agent-route artifact URL"
+  grep -Fq 'agent_route_summary: /tmp/codeinsight-agent-route-artifact-123456/summary.json' "$TEMP_DIR/output.log" ||
+    fail "missing agent-route summary output"
   grep -Fq '## v99.88.77 release evidence' "$TEMP_DIR/output.log" ||
     fail "missing release notes block"
   grep -Fq -- '- CI: [run 123456](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456)' "$TEMP_DIR/output.log" ||
     fail "missing release notes CI link"
   grep -Fq -- '- Context-pack quality artifact: [codeinsight-context-pack-quality](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987655)' "$TEMP_DIR/output.log" ||
     fail "missing release notes context-pack quality artifact link"
+  grep -Fq -- '- Agent-route artifact: [codeinsight-agent-route-smoke](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987656)' "$TEMP_DIR/output.log" ||
+    fail "missing release notes agent-route artifact link"
 
   grep -Fq 'gh run list --repo sleticalboy/CodeInsight-mcp --workflow CI --branch main --status success --limit 20 --json databaseId,headSha --jq map(select(.headSha == "abc123"))[0].databaseId // ""' "$TEMP_DIR/calls.log" ||
     fail "missing head SHA CI lookup"
@@ -161,15 +187,20 @@ EOF
     fail "missing benchmark artifact lookup"
   grep -Fq 'gh api repos/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts --jq .artifacts[] | select(.name == "codeinsight-context-pack-quality") | .id' "$TEMP_DIR/calls.log" ||
     fail "missing context-pack quality artifact lookup"
+  grep -Fq 'gh api repos/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts --jq .artifacts[] | select(.name == "codeinsight-agent-route-smoke") | .id' "$TEMP_DIR/calls.log" ||
+    fail "missing agent-route artifact lookup"
   grep -Fq 'artifact --repo sleticalboy/CodeInsight-mcp --artifact-name codeinsight-benchmark-subset 123456' "$TEMP_DIR/calls.log" ||
     fail "missing benchmark artifact validation"
   grep -Fq 'quality-artifact --repo sleticalboy/CodeInsight-mcp --artifact-name codeinsight-context-pack-quality 123456' "$TEMP_DIR/calls.log" ||
     fail "missing context-pack quality artifact validation"
+  grep -Fq 'agent-route-artifact --repo sleticalboy/CodeInsight-mcp --artifact-name codeinsight-agent-route-smoke 123456' "$TEMP_DIR/calls.log" ||
+    fail "missing agent-route artifact validation"
 
   CODEINSIGHT_EVIDENCE_SMOKE_LOG="$TEMP_DIR/run-id-calls.log" \
     CODEINSIGHT_ROOT_DIR="$TEMP_DIR/repo" \
     CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/benchmark-artifact-smoke" \
     CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/context-pack-quality-artifact-smoke" \
+    CODEINSIGHT_AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/agent-route-artifact-smoke" \
     PATH="$TEMP_DIR/bin:$PATH" \
     "$ROOT_DIR/scripts/release-evidence-summary.sh" \
       --repo sleticalboy/CodeInsight-mcp \
@@ -199,6 +230,7 @@ EOF
     CODEINSIGHT_ROOT_DIR="$TEMP_DIR/mismatch" \
     CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/benchmark-artifact-smoke" \
     CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/context-pack-quality-artifact-smoke" \
+    CODEINSIGHT_AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/agent-route-artifact-smoke" \
     PATH="$TEMP_DIR/bin:$PATH" \
     "$ROOT_DIR/scripts/release-evidence-summary.sh" \
       --repo sleticalboy/CodeInsight-mcp \

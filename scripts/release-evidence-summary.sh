@@ -5,9 +5,11 @@ SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ROOT_DIR="${CODEINSIGHT_ROOT_DIR:-$SCRIPT_ROOT}"
 BENCHMARK_ARTIFACT_SMOKE_SCRIPT="${CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT:-$ROOT_DIR/scripts/benchmark-artifact-smoke.sh}"
 CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="${CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT:-$ROOT_DIR/scripts/context-pack-quality-artifact-smoke.sh}"
+AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT="${CODEINSIGHT_AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT:-$ROOT_DIR/scripts/agent-route-artifact-smoke.sh}"
 RELEASE_METADATA_SUMMARY_SCRIPT="${CODEINSIGHT_RELEASE_METADATA_SUMMARY_SCRIPT:-$SCRIPT_ROOT/scripts/release-metadata-summary.sh}"
 ARTIFACT_NAME="codeinsight-benchmark-subset"
 CONTEXT_PACK_QUALITY_ARTIFACT_NAME="codeinsight-context-pack-quality"
+AGENT_ROUTE_ARTIFACT_NAME="codeinsight-agent-route-smoke"
 REPO_ARG=()
 REPO=""
 BRANCH="main"
@@ -27,8 +29,8 @@ usage: scripts/release-evidence-summary.sh [options] <tag> [branch]
 
 Build a copyable pre-release evidence summary for the target tag. The script
 verifies release metadata, resolves the successful CI run for the tag target
-SHA, validates the benchmark subset and context-pack quality artifacts, and
-prints a Markdown block for release notes or handoff checklists.
+SHA, validates the benchmark subset, context-pack quality, and agent-route
+artifacts, and prints a Markdown block for release notes or handoff checklists.
 
 Options:
   --repo OWNER/REPO       Pass an explicit GitHub repository to gh.
@@ -38,11 +40,14 @@ Options:
   --artifact-name NAME    Benchmark artifact name. Default: codeinsight-benchmark-subset.
   --quality-artifact-name NAME
                           Context-pack quality artifact name. Default: codeinsight-context-pack-quality.
+  --agent-route-artifact-name NAME
+                          Agent-route artifact name. Default: codeinsight-agent-route-smoke.
   -h, --help              Show this help.
 
 Environment:
   CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT=scripts/benchmark-artifact-smoke.sh
   CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT=scripts/context-pack-quality-artifact-smoke.sh
+  CODEINSIGHT_AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT=scripts/agent-route-artifact-smoke.sh
   CODEINSIGHT_RELEASE_METADATA_SUMMARY_SCRIPT=scripts/release-metadata-summary.sh
   CODEINSIGHT_ROOT_DIR=/path/to/repo
 EOF
@@ -187,6 +192,23 @@ validate_context_pack_quality_artifact() {
   printf "%s\n" "$output" | awk -F': ' '/^summary: / { print $2; exit }'
 }
 
+validate_agent_route_artifact() {
+  local run_id="$1"
+  local output
+
+  if [ ! -x "$AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT" ]; then
+    fail "agent-route artifact smoke script is not executable: $AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT"
+  fi
+
+  if [ "${#REPO_ARG[@]}" -gt 0 ]; then
+    output="$("$AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT" "${REPO_ARG[@]}" --artifact-name "$AGENT_ROUTE_ARTIFACT_NAME" "$run_id")"
+  else
+    output="$("$AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT" --artifact-name "$AGENT_ROUTE_ARTIFACT_NAME" "$run_id")"
+  fi
+
+  printf "%s\n" "$output" | awk -F': ' '/^summary: / { print $2; exit }'
+}
+
 main() {
   local metadata_summary
   local run_summary
@@ -196,6 +218,8 @@ main() {
   local benchmark_report_file
   local context_pack_quality_artifact_url
   local context_pack_quality_summary_file
+  local agent_route_artifact_url
+  local agent_route_summary_file
 
   while [ "$#" -gt 0 ]; do
     case "$1" in
@@ -237,6 +261,13 @@ main() {
           usage
         fi
         CONTEXT_PACK_QUALITY_ARTIFACT_NAME="$1"
+        ;;
+      --agent-route-artifact-name)
+        shift
+        if [ "$#" -eq 0 ]; then
+          usage
+        fi
+        AGENT_ROUTE_ARTIFACT_NAME="$1"
         ;;
       --)
         shift
@@ -299,8 +330,10 @@ main() {
   ci_url="$(printf "%s\n" "$run_summary" | awk -F': ' '/^ci_url: / { print $2; exit }')"
   benchmark_artifact_url="$(resolve_artifact_url "$repo_name" "$RUN_ID" "$ARTIFACT_NAME")"
   context_pack_quality_artifact_url="$(resolve_artifact_url "$repo_name" "$RUN_ID" "$CONTEXT_PACK_QUALITY_ARTIFACT_NAME")"
+  agent_route_artifact_url="$(resolve_artifact_url "$repo_name" "$RUN_ID" "$AGENT_ROUTE_ARTIFACT_NAME")"
   benchmark_report_file="$(validate_benchmark_artifact "$RUN_ID")"
   context_pack_quality_summary_file="$(validate_context_pack_quality_artifact "$RUN_ID")"
+  agent_route_summary_file="$(validate_agent_route_artifact "$RUN_ID")"
 
   echo "release evidence summary"
   echo "tag: $TAG_NAME"
@@ -314,6 +347,9 @@ main() {
   echo "context_pack_quality_artifact: $CONTEXT_PACK_QUALITY_ARTIFACT_NAME"
   echo "context_pack_quality_artifact_url: $context_pack_quality_artifact_url"
   echo "context_pack_quality_summary: $context_pack_quality_summary_file"
+  echo "agent_route_artifact: $AGENT_ROUTE_ARTIFACT_NAME"
+  echo "agent_route_artifact_url: $agent_route_artifact_url"
+  echo "agent_route_summary: $agent_route_summary_file"
   echo
   echo "release_notes_block:"
   echo "## $TAG_NAME release evidence"
@@ -324,6 +360,8 @@ main() {
   echo "- Benchmark report: \`$benchmark_report_file\`"
   echo "- Context-pack quality artifact: [$CONTEXT_PACK_QUALITY_ARTIFACT_NAME]($context_pack_quality_artifact_url)"
   echo "- Context-pack quality summary: \`$context_pack_quality_summary_file\`"
+  echo "- Agent-route artifact: [$AGENT_ROUTE_ARTIFACT_NAME]($agent_route_artifact_url)"
+  echo "- Agent-route summary: \`$agent_route_summary_file\`"
   printf "%s\n" "$metadata_summary" | sed 's/^/- /'
 }
 

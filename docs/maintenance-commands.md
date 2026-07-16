@@ -144,8 +144,14 @@ To validate the context-pack quality artifact from a completed `CI` run:
 scripts/context-pack-quality-artifact-smoke.sh <ci-run-id>
 ```
 
+To validate the one-call agent-route artifact from a completed `CI` run:
+
+```bash
+scripts/agent-route-artifact-smoke.sh <ci-run-id>
+```
+
 To validate the full release evidence summary against a completed `CI` run,
-including both artifact URLs and downloaded local report paths:
+including artifact URLs and downloaded local report paths:
 
 ```bash
 scripts/release-evidence-summary-artifact-smoke.sh --repo sleticalboy/CodeInsight-mcp <ci-run-id>

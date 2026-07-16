@@ -50,7 +50,8 @@ MVP workflow is now implemented end to end.
   agent-router first-read demo, MCP stdio, semantic search, Docker, release
   install, and benchmark fixtures.
 - CI evidence artifacts for benchmark, context-pack quality, and the one-call
-  `agent_route` contract, each with an Actions summary for quick inspection.
+  `agent_route` contract, each with an Actions summary and release evidence
+  validation path for quick inspection.
 - Release, Docker image, Homebrew tap sync, install, verify, and release-note
   helper scripts.
 - Published and verified `v0.1.12` with GitHub Release assets, Docker

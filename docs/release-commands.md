@@ -76,7 +76,7 @@ scripts/installed-quickstart-smoke.sh
 ```
 
 After the release prep commit CI completes, validate the uploaded benchmark
-subset and context-pack quality artifacts:
+subset, context-pack quality, and agent-route artifacts:
 
 ```bash
 scripts/release-pretag-check.sh main
@@ -101,11 +101,12 @@ scripts/archive-release-evidence.sh --repo sleticalboy/CodeInsight-mcp vX.Y.Z ma
 ```
 
 This resolves the successful `CI` run for the target commit, validates the
-`codeinsight-benchmark-subset` and `codeinsight-context-pack-quality`
-artifacts, and writes `release-evidence/vX.Y.Z.md` with the target SHA, CI run
-URL, benchmark artifact URL, context-pack quality artifact URL, local report
-paths, and release metadata summary. Use `--output PATH` for a custom archive
-path or `--force` to intentionally overwrite an existing evidence file.
+`codeinsight-benchmark-subset`, `codeinsight-context-pack-quality`, and
+`codeinsight-agent-route-smoke` artifacts, and writes
+`release-evidence/vX.Y.Z.md` with the target SHA, CI run URL, artifact URLs,
+local report paths, and release metadata summary. Use `--output PATH` for a
+custom archive path or `--force` to intentionally overwrite an existing
+evidence file.
 
 Tagged `Release Build` runs also execute this gate against the tag target SHA
 before building release artifacts:
