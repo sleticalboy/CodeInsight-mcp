@@ -70,6 +70,16 @@ For reference and call-graph response fields, see
 
 ## Agent Context
 
+Run the default first-read route in one command:
+
+```bash
+codeinsight agent-route /path/to/repo --task "understand app entrypoint" --token-budget 6000
+```
+
+This refreshes the local index, returns `project_overview`, builds
+`context_pack`, and includes a summary `impact_analysis` preview when a file or
+symbol seed is available.
+
 Build an agent context pack from inferred entrypoints:
 
 ```bash

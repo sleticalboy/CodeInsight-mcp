@@ -48,14 +48,17 @@ sequence:
 4. `tools/call` for `project_overview`
 5. `tools/call` for `symbol_search`
 6. `tools/call` for `embedding_status`
-7. `tools/call` for explicit-seed `context_pack`
-8. `tools/call` for auto-entrypoint `context_pack`
+7. `tools/call` for `agent_route`
+8. `tools/call` for explicit-seed `context_pack`
+9. `tools/call` for auto-entrypoint `context_pack`
 
 It also asserts the MCP-facing structured fields that clients commonly render:
 
 - `project_overview.recommended_next_tools`
 - `project_overview.recommended_next_tools` calls for `context_pack` and
   `config_status` execute
+- `agent_route.route[]` includes `index_project`, `project_overview`,
+  `context_pack`, and `impact_analysis`
 - explicit and auto `context_pack.reading_plan`
 - `context_pack.reading_plan[].next_action` and `question`
 - `context_pack.reading_plan[].suggested_tool`
@@ -92,7 +95,7 @@ CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/mcp-stdio-smoke.sh
 MCP stdio smoke passed
 root: /path/to/repo
 symbol: AuthService
-tools: 15
+tools: 16
 indexed_files: 33
 overview_entrypoints: 1
 overview_recommendations: 4

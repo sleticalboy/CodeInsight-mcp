@@ -41,8 +41,9 @@ MVP workflow is now implemented end to end.
 - CLI commands: `index`, `init-config`, `config-status`, `overview`,
   `symbols`, `outline`, `dependency-graph`, `impact-analysis`,
   `find-references`, `semantic-search`, `semantic-index`, `embedding-status`,
-  `context-pack`, `callers`, and `callees`.
-- MCP stdio `initialize`, `tools/list`, and `tools/call`.
+  `context-pack`, `agent-route`, `callers`, and `callees`.
+- MCP stdio `initialize`, `tools/list`, and `tools/call`, including the
+  one-call `agent_route` first-read path.
 - MCP tool argument validation with stable JSON-RPC errors.
 - Fixture-based CLI and MCP stdio integration tests.
 - Local smoke scripts for the agent-router first-read demo, MCP stdio,

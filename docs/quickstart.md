@@ -157,7 +157,7 @@ The MCP stdio smoke output starts with:
 
 ```text
 MCP stdio smoke passed
-tools: 15
+tools: 16
 ```
 
 The installed quickstart smoke prints `installed quickstart smoke passed` after

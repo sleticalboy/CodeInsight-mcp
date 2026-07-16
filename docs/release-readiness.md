@@ -118,7 +118,7 @@ git diff --check
 Expected result:
 
 - Rust unit and CLI integration tests pass.
-- MCP stdio smoke reports `tools: 15` or the expected current tool count.
+- MCP stdio smoke reports `tools: 16` or the expected current tool count.
 - Agent-router demo reports non-zero indexed files, non-zero symbols, four
   recommended next tools, a `context_pack` line-reduction value, and an
   `impact_analysis` summary.

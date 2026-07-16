@@ -29,7 +29,7 @@ results without parsing text.
 
 ## Tool List
 
-The stdio server currently exposes 15 tools:
+The stdio server currently exposes 16 tools:
 
 | Tool | Purpose |
 | --- | --- |
@@ -46,6 +46,7 @@ The stdio server currently exposes 15 tools:
 | `embedding_status` | Report provider, batch size, and optional local semantic-index state without network calls. |
 | `version` | Return package version and target platform information. |
 | `context_pack` | Build token-budgeted agent context from explicit seeds or inferred entrypoints, including selected files/ranges, seed strategy, selected seeds, budget metadata, continuation summary, omitted candidate follow-ups, reading plan, semantic status, and follow-up suggestions. |
+| `agent_route` | Run the default first-read path in one call: refresh the local index, return `project_overview`, build `context_pack`, and include an `impact_analysis` preview when a seed is available. |
 | `callers` | Return static call sites that call a function or method, including imported target hints when available. |
 | `callees` | Return static callees for a function or method, including imported target hints when available. |
 
@@ -53,12 +54,11 @@ The stdio server currently exposes 15 tools:
 
 Recommended MCP first-read flow:
 
-1. Call `index_project` for the repository.
-2. Call `project_overview` to inspect summary, roles, entrypoint candidates,
-   and `recommended_next_tools`.
-3. Call `context_pack` with `root`, `task`, and `token_budget`. Omit `symbols`
-   and `files` to let CodeInsight auto-select the highest-confidence source
-   entrypoint.
+1. Call `agent_route` with `root`, `task`, and `token_budget` for the default
+   first-read path.
+2. Use the lower-level tools directly when the client needs step-by-step
+   control: `index_project`, `project_overview`, `context_pack`, then
+   `impact_analysis`.
 
 For the full response contract, see [First-read workflow](first-read-workflow.md).
 For an end-to-end client consumption flow, see

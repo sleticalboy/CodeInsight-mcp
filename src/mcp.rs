@@ -172,6 +172,29 @@ fn handle_tool_call(params: Value) -> Result<Value> {
                 token_budget,
             )?)?
         }
+        "agent_route" => {
+            let root = required_path(&arguments, "root")?;
+            let task = required_str(&arguments, "task")?.to_string();
+            let symbols = optional_string_array(&arguments, "symbols")?;
+            let files = optional_string_array(&arguments, "files")?;
+            let token_budget = optional_min_usize(&arguments, "token_budget", 6000, 500)?;
+            let force_index = optional_bool(&arguments, "force_index", false)?;
+            let impact_limit = optional_positive_usize(&arguments, "impact_limit", 50)?;
+            let impact_depth = optional_positive_usize(&arguments, "impact_depth", 1)?;
+            let impact_evidence_limit =
+                optional_positive_usize(&arguments, "impact_evidence_limit", 20)?;
+            serde_json::to_value(tools::agent_route_value(
+                root,
+                task,
+                symbols,
+                files,
+                token_budget,
+                force_index,
+                impact_limit,
+                impact_depth,
+                impact_evidence_limit,
+            )?)?
+        }
         "callers" => {
             let root = required_path(&arguments, "root")?;
             let symbol = required_str(&arguments, "symbol")?;
@@ -377,6 +400,31 @@ fn tool_definitions() -> Value {
                         "items": {"type": "string"}
                     },
                     "token_budget": {"type": "integer", "minimum": 500}
+                },
+                "required": ["root", "task"]
+            }
+        },
+        {
+            "name": "agent_route",
+            "description": "Run the first-read agent route in one call: refresh the local index, return project_overview, build context_pack, and include an impact_analysis preview when a seed is available.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "root": {"type": "string"},
+                    "task": {"type": "string"},
+                    "symbols": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    },
+                    "files": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    },
+                    "token_budget": {"type": "integer", "minimum": 500},
+                    "force_index": {"type": "boolean"},
+                    "impact_limit": {"type": "integer", "minimum": 1},
+                    "impact_depth": {"type": "integer", "minimum": 1},
+                    "impact_evidence_limit": {"type": "integer", "minimum": 1}
                 },
                 "required": ["root", "task"]
             }

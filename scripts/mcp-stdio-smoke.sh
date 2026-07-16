@@ -146,7 +146,7 @@ try:
 
     tools = request({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
     tool_names = {tool["name"] for tool in tools["result"]["tools"]}
-    for expected in ("index_project", "project_overview", "config_status", "symbol_search", "impact_analysis", "embedding_status", "context_pack", "version"):
+    for expected in ("index_project", "project_overview", "config_status", "symbol_search", "impact_analysis", "embedding_status", "context_pack", "agent_route", "version"):
         assert expected in tool_names, expected
 
     config_status = request(
@@ -245,6 +245,37 @@ try:
     overview_config_result = call_suggested_tool(overview_config_tool, 15)
     assert overview_config_result["exists"] is False
     assert "detected_test_commands" in overview_config_result
+
+    agent_route = request(
+        {
+            "jsonrpc": "2.0",
+            "id": 16,
+            "method": "tools/call",
+            "params": {
+                "name": "agent_route",
+                "arguments": {
+                    "root": smoke_root,
+                    "task": "understand app entrypoint flow",
+                    "token_budget": 1600,
+                    "impact_limit": 10,
+                    "impact_depth": 2,
+                    "impact_evidence_limit": 3,
+                },
+            },
+        }
+    )
+    agent_route_result = agent_route["result"]["structuredContent"]
+    assert [step["tool"] for step in agent_route_result["route"]] == [
+        "index_project",
+        "project_overview",
+        "context_pack",
+        "impact_analysis",
+    ]
+    assert agent_route_result["context_pack"]["reading_plan"], "agent_route produced no reading plan"
+    assert agent_route_result["impact_status"] == "complete"
+    assert agent_route_result["impact_analysis"]["format"] == "summary"
+    assert agent_route_result["impact_analysis"]["depth"] == 2
+    assert agent_route_result["impact_analysis"]["evidence_limit"] == 3
 
     symbols = request(
         {

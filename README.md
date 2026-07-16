@@ -10,10 +10,9 @@ loop local and exposes it through CLI and MCP tools.
 
 The primary agent loop is:
 
-1. `index_project` to build a local SQLite index.
-2. `project_overview` to identify entrypoints, directory roles, and next tools.
-3. `context_pack` to select a token-budgeted reading set.
-4. `impact_analysis` to estimate change radius before edits.
+1. `agent_route` for the default first-read path.
+2. Or, when the client needs step-by-step control:
+   `index_project -> project_overview -> context_pack -> impact_analysis`.
 
 CodeInsight is not trying to replace an IDE, LSP, compiler, or Sourcegraph. Its
 job is to help AI agents read less code, pick better context, and stop guessing
@@ -147,6 +146,7 @@ For local image builds, platform details, and Docker smoke tests, see
 Index a repository, inspect the overview, then build an agent context pack:
 
 ```bash
+codeinsight agent-route /path/to/repo --task "understand app entrypoint" --token-budget 6000
 cargo run -- index /path/to/repo --force
 cargo run -- overview /path/to/repo
 cargo run -- context-pack /path/to/repo --task "understand app entrypoint" --token-budget 6000
@@ -164,11 +164,11 @@ For all commands and common workflows, see [CLI usage](docs/cli-usage.md).
 
 Recommended MCP first-read flow:
 
-1. `index_project` for the repository.
-2. `project_overview` to inspect summary, roles, and entrypoint candidates.
-3. `context_pack` with `root`, `task`, and `token_budget`; omit `symbols` and
-   `files` to let CodeInsight auto-select the highest-confidence source
-   entrypoint.
+1. Call `agent_route` with `root`, `task`, and `token_budget` for the default
+   first-read path.
+2. Use `index_project`, `project_overview`, `context_pack`, and
+   `impact_analysis` directly when the client needs custom routing or partial
+   refresh control.
 
 For the full tool list, `tools/call` examples, topic contracts, and accuracy
 boundaries, see [MCP tools](docs/mcp-tools.md). For client setup snippets, see

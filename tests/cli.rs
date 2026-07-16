@@ -1901,6 +1901,66 @@ fn cli_indexes_and_queries_fixture_project() {
 }
 
 #[test]
+fn cli_agent_route_runs_first_read_pipeline() {
+    let fixture = fixture_project();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand app entrypoint flow",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--impact-limit",
+        "10",
+        "--impact-depth",
+        "2",
+        "--impact-evidence-limit",
+        "3",
+    ]);
+
+    assert_eq!(route["task"], "understand app entrypoint flow");
+    assert_eq!(route["token_budget"].as_u64(), Some(1600));
+    assert_eq!(route["index_report"]["indexed_files"].as_u64(), Some(31));
+    assert_eq!(route["overview"]["indexed_files"].as_u64(), Some(31));
+    assert_eq!(route["context_pack"]["seed_strategy"], "auto_entrypoint");
+    assert!(
+        route["context_pack"]["reading_plan"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|step| step["file"] == "src/main.ts")
+    );
+    assert_eq!(route["impact_status"], "complete");
+    assert_eq!(route["impact_analysis"]["format"], "summary");
+    assert_eq!(route["impact_analysis"]["depth"].as_u64(), Some(2));
+    assert_eq!(route["impact_analysis"]["evidence_limit"].as_u64(), Some(3));
+    assert!(
+        route["impact_seed_files"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|file| file == "src/main.ts")
+    );
+    let tools = route["route"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|step| step["tool"].as_str().unwrap())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        tools,
+        vec![
+            "index_project",
+            "project_overview",
+            "context_pack",
+            "impact_analysis"
+        ]
+    );
+}
+
+#[test]
 fn cli_resolves_pnpm_workspace_package_exports() {
     let fixture = pnpm_workspace_fixture_project();
 
@@ -5855,6 +5915,48 @@ fn mcp_stdio_executes_symbol_search() {
     assert_eq!(
         response["result"]["structuredContent"][0]["name"],
         "AuthService"
+    );
+}
+
+#[test]
+fn mcp_stdio_executes_agent_route() {
+    let fixture = fixture_project();
+    let request = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 3,
+        "method": "tools/call",
+        "params": {
+            "name": "agent_route",
+            "arguments": {
+                "root": fixture.path(),
+                "task": "understand app entrypoint flow",
+                "token_budget": 1600,
+                "force_index": true,
+                "impact_limit": 10,
+                "impact_depth": 2,
+                "impact_evidence_limit": 3
+            }
+        }
+    });
+
+    let mut command = Command::cargo_bin("codeinsight").unwrap();
+    command.args(["serve", "--transport", "stdio"]);
+    command.write_stdin(format!("{request}\n"));
+    let output = command.assert().success().get_output().stdout.clone();
+    let response: Value = serde_json::from_slice(&output).unwrap();
+    let route = &response["result"]["structuredContent"];
+
+    assert_eq!(response["id"], 3);
+    assert_eq!(route["context_pack"]["seed_strategy"], "auto_entrypoint");
+    assert_eq!(route["impact_status"], "complete");
+    assert_eq!(route["impact_analysis"]["depth"].as_u64(), Some(2));
+    assert_eq!(
+        route["route"][0]["tool"],
+        serde_json::Value::String("index_project".to_string())
+    );
+    assert_eq!(
+        route["route"][3]["tool"],
+        serde_json::Value::String("impact_analysis".to_string())
     );
 }
 

@@ -39,6 +39,8 @@ pub enum Command {
     EmbeddingStatus(EmbeddingStatusArgs),
     /// Build an agent-ready context pack from seed symbols, seed files, or inferred entrypoints.
     ContextPack(ContextPackArgs),
+    /// Run the first-read agent route: index, overview, context pack, and impact preview.
+    AgentRoute(AgentRouteArgs),
     /// Find callers for a function or method.
     Callers(CallQueryArgs),
     /// Find callees for a function or method.
@@ -154,6 +156,27 @@ pub struct ContextPackArgs {
     pub files: Vec<String>,
     #[arg(long, default_value_t = 6000)]
     pub token_budget: usize,
+}
+
+#[derive(Debug, Args)]
+pub struct AgentRouteArgs {
+    pub root: PathBuf,
+    #[arg(long)]
+    pub task: String,
+    #[arg(long = "symbol")]
+    pub symbols: Vec<String>,
+    #[arg(long = "file")]
+    pub files: Vec<String>,
+    #[arg(long, default_value_t = 6000)]
+    pub token_budget: usize,
+    #[arg(long)]
+    pub force_index: bool,
+    #[arg(long, default_value_t = 50)]
+    pub impact_limit: usize,
+    #[arg(long, default_value_t = 1)]
+    pub impact_depth: usize,
+    #[arg(long, default_value_t = 20)]
+    pub impact_evidence_limit: usize,
 }
 
 #[derive(Debug, Args)]

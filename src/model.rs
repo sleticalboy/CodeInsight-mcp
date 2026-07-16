@@ -240,6 +240,30 @@ pub struct ConfigStatusReport {
     pub commands_override_builtin: bool,
 }
 
+#[derive(Debug, Serialize)]
+pub struct AgentRouteReport {
+    pub root: String,
+    pub task: String,
+    pub token_budget: usize,
+    pub route: Vec<AgentRouteStep>,
+    pub impact_seed_files: Vec<String>,
+    pub impact_seed_symbols: Vec<String>,
+    pub impact_status: String,
+    pub index_report: ProjectIndexReport,
+    pub overview: ProjectOverview,
+    pub context_pack: ContextPack,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub impact_analysis: Option<ImpactAnalysisReport>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct AgentRouteStep {
+    pub order: usize,
+    pub tool: String,
+    pub status: String,
+    pub reason: String,
+}
+
 #[derive(Debug, Clone)]
 pub struct SemanticChunkInput {
     pub file: String,

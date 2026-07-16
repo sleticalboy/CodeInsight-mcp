@@ -64,7 +64,7 @@ CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/mcp-stdio-smoke.sh
 Pass criteria:
 
 - Output starts with `MCP stdio smoke passed`.
-- `tools` is `15`.
+- `tools` is `16`.
 - `indexed_files` is greater than zero.
 - `overview_recommendations` is greater than zero.
 - `auto_reading_plan_steps` is greater than zero.
@@ -79,6 +79,7 @@ tool list.
 
 Expected tools include:
 
+- `agent_route`
 - `index_project`
 - `project_overview`
 - `context_pack`
@@ -90,8 +91,10 @@ Expected tools include:
 
 Pass criteria:
 
+- The client can call `agent_route` for the default first-read path.
 - The client can call `index_project` for a local repository.
-- The client can call `project_overview` after indexing.
+- The client can call `project_overview` after indexing when step-by-step
+  routing is needed.
 - `project_overview.recommended_next_tools[]` includes `context_pack`.
 
 See [MCP client configuration](mcp-client-config.md) for Codex, Claude Code,

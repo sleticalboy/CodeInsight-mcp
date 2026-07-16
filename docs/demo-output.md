@@ -25,7 +25,7 @@ Promise: route the agent through project_overview, context_pack, and impact_anal
 
 [Live run]
 building release binary...
-    Finished `release` profile [optimized] target(s) in 0.33s
+    Finished `release` profile [optimized] target(s) in 0.07s
 CodeInsight agent context router demo
 root: <repo>/CodeInsight-mcp
 task: understand agent context routing
@@ -33,12 +33,12 @@ token_budget: 6000
 
 1. index_project
    indexed_files: 23
-   symbols: 911
-   duration_ms: 309
+   symbols: 918
+   duration_ms: 295
    errors: 0
 
 2. project_overview
-   total_lines: 27331
+   total_lines: 27681
    entrypoints: 7
    first_entrypoint: src/main.rs
    recommended_next_tools: 4
@@ -48,9 +48,9 @@ token_budget: 6000
    selected_ranges: 11
    reading_plan_steps: 8
    first_next_action: inspect_seed_file
-   selected_lines: 428
+   selected_lines: 439
    line_reduction: 98.4%
-   estimated_tokens: 4276
+   estimated_tokens: 4372
    continuation: complete
    first_context_file: src/main.rs
 

@@ -89,7 +89,7 @@ Promise: route the agent through project_overview, context_pack, and impact_anal
 
 1. index_project
    indexed_files: 23
-   symbols: 911
+   symbols: 918
 
 2. project_overview
    entrypoints: 7

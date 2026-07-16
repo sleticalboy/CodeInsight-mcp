@@ -17,14 +17,15 @@ use crate::{
     embedding, index,
     language::detect_language,
     model::{
-        CallEdge, ConfigInitReport, ConfigStatusReport, ContextBudget, ContextContinuationSummary,
-        ContextFile, ContextOmittedCandidate, ContextPack, ContextRange, ContextReadingRange,
-        ContextReadingStep, ContextSeed, ContextSemanticStatus, ContextSuggestedTool, Dependency,
-        DependencyGraph, EmbeddingProviderStatus, ImpactAnalysisReport, ImpactCounts, ImpactFile,
-        ImpactPath, IndexError, Language, OllamaEmbeddingStatus, OpenAiEmbeddingStatus,
-        ProjectIndexReport, ProjectOverview, ReferenceMatch, SemanticChunk, SemanticChunkInput,
-        SemanticEmbeddingInput, SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus,
-        SemanticSearchResult, SuggestedCheck, Symbol, SymbolKind, VersionInfo,
+        AgentRouteReport, AgentRouteStep, CallEdge, ConfigInitReport, ConfigStatusReport,
+        ContextBudget, ContextContinuationSummary, ContextFile, ContextOmittedCandidate,
+        ContextPack, ContextRange, ContextReadingRange, ContextReadingStep, ContextSeed,
+        ContextSemanticStatus, ContextSuggestedTool, Dependency, DependencyGraph,
+        EmbeddingProviderStatus, ImpactAnalysisReport, ImpactCounts, ImpactFile, ImpactPath,
+        IndexError, Language, OllamaEmbeddingStatus, OpenAiEmbeddingStatus, ProjectIndexReport,
+        ProjectOverview, ReferenceMatch, SemanticChunk, SemanticChunkInput, SemanticEmbeddingInput,
+        SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus, SemanticSearchResult,
+        SuggestedCheck, Symbol, SymbolKind, VersionInfo,
     },
     storage::Store,
 };
@@ -157,6 +158,31 @@ pub fn context_pack(
     print_json(&pack)
 }
 
+pub fn agent_route(
+    root: PathBuf,
+    task: String,
+    symbols: Vec<String>,
+    files: Vec<String>,
+    token_budget: usize,
+    force_index: bool,
+    impact_limit: usize,
+    impact_depth: usize,
+    impact_evidence_limit: usize,
+) -> Result<()> {
+    let report = agent_route_value(
+        root,
+        task,
+        symbols,
+        files,
+        token_budget,
+        force_index,
+        impact_limit,
+        impact_depth,
+        impact_evidence_limit,
+    )?;
+    print_json(&report)
+}
+
 pub fn callers(root: PathBuf, symbol: String, limit: usize) -> Result<()> {
     let calls = callers_value(root, &symbol, limit)?;
     print_json(&calls)
@@ -182,6 +208,122 @@ pub fn version_value() -> VersionInfo {
 
 pub fn index_project_value(root: PathBuf, force: bool) -> Result<ProjectIndexReport> {
     index::index_project(&root, force)
+}
+
+pub fn agent_route_value(
+    root: PathBuf,
+    task: String,
+    symbols: Vec<String>,
+    files: Vec<String>,
+    token_budget: usize,
+    force_index: bool,
+    impact_limit: usize,
+    impact_depth: usize,
+    impact_evidence_limit: usize,
+) -> Result<AgentRouteReport> {
+    let root = root.canonicalize()?;
+    let token_budget = token_budget.max(500);
+    let index_report = index_project_value(root.clone(), force_index)?;
+    let overview = project_overview_value(root.clone())?;
+    let context_pack = context_pack_value(
+        root.clone(),
+        task.clone(),
+        symbols.clone(),
+        files.clone(),
+        token_budget,
+    )?;
+
+    let mut impact_seed_files = files
+        .iter()
+        .map(|file| normalize_seed_file(&root, file))
+        .collect::<Result<Vec<_>>>()?;
+    if impact_seed_files.is_empty() {
+        if let Some(first_file) = context_pack.files.first() {
+            impact_seed_files.push(first_file.file.clone());
+        }
+    }
+    impact_seed_files.sort();
+    impact_seed_files.dedup();
+
+    let mut impact_seed_symbols = symbols;
+    impact_seed_symbols.sort();
+    impact_seed_symbols.dedup();
+
+    let (impact_status, impact_analysis) =
+        if impact_seed_files.is_empty() && impact_seed_symbols.is_empty() {
+            ("skipped_no_seed".to_string(), None)
+        } else {
+            let report = impact_analysis_value(
+                root.clone(),
+                impact_seed_symbols.clone(),
+                impact_seed_files.clone(),
+                impact_limit,
+                impact_depth,
+                "summary".to_string(),
+                impact_evidence_limit,
+            )?;
+            ("complete".to_string(), Some(report))
+        };
+
+    let route = vec![
+        AgentRouteStep {
+            order: 1,
+            tool: "index_project".to_string(),
+            status: "complete".to_string(),
+            reason: if force_index {
+                "refreshed local repository index with force_index enabled".to_string()
+            } else {
+                "refreshed local repository index and reused unchanged files".to_string()
+            },
+        },
+        AgentRouteStep {
+            order: 2,
+            tool: "project_overview".to_string(),
+            status: "complete".to_string(),
+            reason: format!(
+                "found {} entrypoints and {} recommended next tools",
+                overview.entrypoints.len(),
+                overview.recommended_next_tools.len()
+            ),
+        },
+        AgentRouteStep {
+            order: 3,
+            tool: "context_pack".to_string(),
+            status: "complete".to_string(),
+            reason: format!(
+                "selected {} files, {} ranges, and {} reading-plan steps within the token budget",
+                context_pack.files.len(),
+                context_pack.budget.selected_ranges,
+                context_pack.reading_plan.len()
+            ),
+        },
+        AgentRouteStep {
+            order: 4,
+            tool: "impact_analysis".to_string(),
+            status: impact_status.clone(),
+            reason: match &impact_analysis {
+                Some(report) => format!(
+                    "estimated {} impacted files at {} risk",
+                    report.impact_counts.impacted_files, report.risk_level
+                ),
+                None => "skipped because no context file or symbol seed was available".to_string(),
+            },
+        },
+    ];
+
+    Ok(AgentRouteReport {
+        root: root.display().to_string(),
+        task,
+        token_budget,
+        route,
+        impact_seed_files,
+        impact_seed_symbols,
+        impact_status,
+        index_report,
+        overview,
+        context_pack,
+        impact_analysis,
+    })
 }
 
 pub fn init_config_value(root: PathBuf, force: bool) -> Result<ConfigInitReport> {
