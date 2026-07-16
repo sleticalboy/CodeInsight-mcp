@@ -283,6 +283,9 @@ main() {
     'scripts/context-pack-quality-artifact-smoke\.sh <ci-run-id>' \
     "maintenance context-pack quality artifact download"
   require_pattern docs/maintenance-commands.md \
+    'scripts/release-evidence-summary-artifact-smoke\.sh --repo sleticalboy/CodeInsight-mcp <ci-run-id>' \
+    "maintenance release evidence summary artifact smoke command"
+  require_pattern docs/maintenance-commands.md \
     'scripts/context-pack-quality-smoke\.sh' \
     "maintenance context-pack quality smoke"
   require_pattern docs/maintenance-commands.md \
@@ -432,6 +435,15 @@ main() {
   require_pattern scripts/release-evidence-summary.sh \
     'context_pack_quality_artifact_url' \
     "release evidence context-pack quality artifact URL"
+  require_pattern scripts/release-evidence-summary-artifact-smoke.sh \
+    'context_pack_quality_artifact_url' \
+    "release evidence summary artifact smoke context-pack quality URL"
+  require_pattern scripts/release-evidence-summary-artifact-smoke.sh \
+    '\-\-run-id "\$RUN_ID"' \
+    "release evidence summary artifact smoke fixed run ID validation"
+  require_pattern scripts/release-evidence-summary-artifact-smoke.sh \
+    '\-\-head-sha "\$head_sha"' \
+    "release evidence summary artifact smoke fixed run SHA validation"
   require_pattern scripts/release-dry-run.sh \
     'CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT' \
     "release dry run context-pack quality artifact hook"

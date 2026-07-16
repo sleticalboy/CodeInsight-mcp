@@ -108,6 +108,13 @@ To validate the context-pack quality artifact from a completed `CI` run:
 scripts/context-pack-quality-artifact-smoke.sh <ci-run-id>
 ```
 
+To validate the full release evidence summary against a completed `CI` run,
+including both artifact URLs and downloaded local report paths:
+
+```bash
+scripts/release-evidence-summary-artifact-smoke.sh --repo sleticalboy/CodeInsight-mcp <ci-run-id>
+```
+
 ## Optional External Checks
 
 Run these only when the local environment supports the required service or

@@ -34,6 +34,7 @@ Options:
   --repo OWNER/REPO       Pass an explicit GitHub repository to gh.
   --head-sha SHA          Check this commit instead of the current HEAD.
   --run-id ID             Use this CI run instead of resolving by head SHA.
+                          When both are set, the run must match the SHA.
   --artifact-name NAME    Benchmark artifact name. Default: codeinsight-benchmark-subset.
   --quality-artifact-name NAME
                           Context-pack quality artifact name. Default: codeinsight-context-pack-quality.
@@ -273,9 +274,6 @@ main() {
   fi
   if [[ ! "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     fail "tag must look like vX.Y.Z or X.Y.Z: $TAG_NAME"
-  fi
-  if [ -n "$RUN_ID" ] && [ -n "$HEAD_SHA" ]; then
-    fail "--run-id and --head-sha cannot be used together"
   fi
   if ! command -v gh >/dev/null 2>&1; then
     fail "missing required command: gh"

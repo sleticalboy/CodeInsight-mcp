@@ -143,6 +143,10 @@ EOF
     fail "missing workflow guard call"
   grep -Fq 'pretag --repo sleticalboy/CodeInsight-mcp --head-sha abc123 main' "$TEMP_DIR/calls.log" ||
     fail "missing pretag check call"
+  grep -Fq 'artifact_gate_benchmark: passed' "$TEMP_DIR/output.log" ||
+    fail "missing benchmark artifact gate status"
+  grep -Fq 'artifact_gate_context_pack_quality: passed' "$TEMP_DIR/output.log" ||
+    fail "missing context-pack quality artifact gate status"
   grep -Fq 'next: git tag -a v99.88.77 -m "v99.88.77" && git push origin v99.88.77' "$TEMP_DIR/output.log" ||
     fail "missing next tag command"
 

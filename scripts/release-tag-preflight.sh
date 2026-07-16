@@ -25,7 +25,8 @@ usage: scripts/release-tag-preflight.sh [options] <tag> [branch]
 
 Dry-run the release tag preflight without creating or pushing a tag. This checks
 that the tagged Release Build workflow is guarded correctly and that the tag
-target commit already has successful CI plus a valid benchmark subset artifact.
+target commit already has successful CI plus valid benchmark subset and
+context-pack quality artifacts.
 
 Options:
   --repo OWNER/REPO  Pass an explicit GitHub repository to pretag validation.
@@ -207,6 +208,8 @@ main() {
   "$RELEASE_WORKFLOW_GUARD_SCRIPT"
   "$RELEASE_PRETAG_CHECK_SCRIPT" "${REPO_ARG[@]}" --head-sha "$HEAD_SHA" "$BRANCH"
 
+  echo "artifact_gate_benchmark: passed"
+  echo "artifact_gate_context_pack_quality: passed"
   echo "release tag preflight passed"
   echo "next: git tag -a $TAG_NAME -m \"$TAG_NAME\" && git push origin $TAG_NAME"
 }

@@ -166,6 +166,25 @@ EOF
   grep -Fq 'quality-artifact --repo sleticalboy/CodeInsight-mcp --artifact-name codeinsight-context-pack-quality 123456' "$TEMP_DIR/calls.log" ||
     fail "missing context-pack quality artifact validation"
 
+  CODEINSIGHT_EVIDENCE_SMOKE_LOG="$TEMP_DIR/run-id-calls.log" \
+    CODEINSIGHT_ROOT_DIR="$TEMP_DIR/repo" \
+    CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/benchmark-artifact-smoke" \
+    CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/context-pack-quality-artifact-smoke" \
+    PATH="$TEMP_DIR/bin:$PATH" \
+    "$ROOT_DIR/scripts/release-evidence-summary.sh" \
+      --repo sleticalboy/CodeInsight-mcp \
+      --run-id 123456 \
+      --head-sha abc123 \
+      v99.88.77 \
+      main >"$TEMP_DIR/run-id-output.log"
+  grep -Fq 'ci_run: 123456' "$TEMP_DIR/run-id-output.log" ||
+    fail "missing explicit run ID output"
+  grep -Fq 'gh run view 123456 --repo sleticalboy/CodeInsight-mcp --json conclusion,databaseId,headSha,status,url' "$TEMP_DIR/run-id-calls.log" ||
+    fail "missing explicit run ID validation"
+  if grep -Fq 'gh run list' "$TEMP_DIR/run-id-calls.log"; then
+    fail "explicit run ID should not resolve CI run by head SHA"
+  fi
+
   mkdir -p "$TEMP_DIR/mismatch/docs"
   cp "$TEMP_DIR/repo/CHANGELOG.md" "$TEMP_DIR/mismatch/CHANGELOG.md"
   cp "$TEMP_DIR/repo/docs/install.md" "$TEMP_DIR/mismatch/docs/install.md"
