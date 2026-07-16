@@ -12,6 +12,7 @@ BRANCH="main"
 HEAD_SHA=""
 TAG_NAME=""
 METADATA_SUMMARY=""
+PRETAG_OUTPUT_FILE=""
 
 usage() {
   local status="${1:-2}"
@@ -45,6 +46,22 @@ EOF
 fail() {
   echo "release tag preflight failed: $*" >&2
   exit 1
+}
+
+cleanup() {
+  if [ -n "$PRETAG_OUTPUT_FILE" ]; then
+    rm -f "$PRETAG_OUTPUT_FILE"
+  fi
+}
+
+require_pretag_evidence() {
+  local output="$1"
+  local literal="$2"
+  local description="$3"
+
+  if ! grep -Fq -- "$literal" <<<"$output"; then
+    fail "release pretag evidence is missing ${description}: $literal"
+  fi
 }
 
 gh_checked_release_missing() {
@@ -114,6 +131,8 @@ normalize_tag() {
 }
 
 main() {
+  trap cleanup EXIT INT TERM
+
   while [ "$#" -gt 0 ]; do
     case "$1" in
       -h | --help)
@@ -206,11 +225,17 @@ main() {
   printf "%s\n" "$METADATA_SUMMARY"
 
   "$RELEASE_WORKFLOW_GUARD_SCRIPT"
-  "$RELEASE_PRETAG_CHECK_SCRIPT" "${REPO_ARG[@]}" --head-sha "$HEAD_SHA" "$BRANCH"
+  PRETAG_OUTPUT_FILE="$(mktemp "${TMPDIR:-/tmp}/codeinsight-pretag-output.XXXXXX")"
+  "$RELEASE_PRETAG_CHECK_SCRIPT" "${REPO_ARG[@]}" --head-sha "$HEAD_SHA" "$BRANCH" | tee "$PRETAG_OUTPUT_FILE"
+  PRETAG_OUTPUT="$(cat "$PRETAG_OUTPUT_FILE")"
+  require_pretag_evidence "$PRETAG_OUTPUT" "release pretag evidence" "evidence heading"
+  require_pretag_evidence "$PRETAG_OUTPUT" "branch: $BRANCH" "branch"
+  require_pretag_evidence "$PRETAG_OUTPUT" "ci_run:" "CI run"
+  require_pretag_evidence "$PRETAG_OUTPUT" "head_sha: $HEAD_SHA" "head SHA"
+  require_pretag_evidence "$PRETAG_OUTPUT" "artifact_gate_benchmark: passed" "benchmark artifact gate"
+  require_pretag_evidence "$PRETAG_OUTPUT" "artifact_gate_context_pack_quality: passed" "context-pack quality artifact gate"
+  require_pretag_evidence "$PRETAG_OUTPUT" "artifact_gate_agent_route: passed" "agent-route artifact gate"
 
-  echo "artifact_gate_benchmark: passed"
-  echo "artifact_gate_context_pack_quality: passed"
-  echo "artifact_gate_agent_route: passed"
   echo "release tag preflight passed"
   echo "next: git tag -a $TAG_NAME -m \"$TAG_NAME\" && git push origin $TAG_NAME"
 }

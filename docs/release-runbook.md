@@ -140,10 +140,10 @@ locally or remotely, or when a GitHub Release already exists for the tag. The
 target tag must match `Cargo.toml`, the pinned installer example in
 `docs/install.md`, and the prepared `CHANGELOG.md` release section. The
 preflight output prints `metadata_cargo`, `metadata_install`, and `metadata_changelog`
-so the prepared versions are visible before tagging. It also prints
-`artifact_gate_benchmark: passed` and
-`artifact_gate_context_pack_quality: passed` and
-`artifact_gate_agent_route: passed` after the CI artifact gates pass.
+so the prepared versions are visible before tagging. It also includes and
+validates the `release pretag evidence` block from `release-pretag-check.sh`,
+including `ci_run`, `head_sha`, `artifact_gate_benchmark`,
+`artifact_gate_context_pack_quality`, and `artifact_gate_agent_route`.
 
 Archive the release evidence block:
 

@@ -110,6 +110,15 @@ test "$3" = "--head-sha"
 test "$4" = "abc123"
 test "$5" = "v9.8.7"
 test "$6" = "main"
+cat <<'SUMMARY'
+release pretag evidence
+branch: main
+ci_run: 123456
+head_sha: abc123
+artifact_gate_benchmark: passed
+artifact_gate_context_pack_quality: passed
+artifact_gate_agent_route: passed
+SUMMARY
 echo "release tag preflight passed"
 EOF
   chmod +x "$TEMP_DIR/release-tag-preflight"
@@ -172,6 +181,10 @@ EOF
     fail "missing tag preflight step"
   grep -Fq 'release tag preflight passed' "$TEMP_DIR/output.log" ||
     fail "missing tag preflight output"
+  grep -Fq 'release pretag evidence' "$TEMP_DIR/output.log" ||
+    fail "missing pretag evidence summary"
+  grep -Fq 'artifact_gate_agent_route: passed' "$TEMP_DIR/output.log" ||
+    fail "missing pretag agent-route gate summary"
   grep -Fq '[4/4] release evidence summary' "$TEMP_DIR/output.log" ||
     fail "missing evidence summary step"
   grep -Fq '## v9.8.7 release evidence' "$TEMP_DIR/output.log" ||

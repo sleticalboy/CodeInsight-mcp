@@ -111,6 +111,20 @@ test "$2" = "sleticalboy/CodeInsight-mcp"
 test "$3" = "--head-sha"
 test "$4" = "abc123"
 test "$5" = "main"
+if [ "${CODEINSIGHT_TAG_PREFLIGHT_PRETAG_MISSING_EVIDENCE:-0}" = "1" ]; then
+  echo "release pretag check passed"
+  exit 0
+fi
+cat <<'SUMMARY'
+release pretag evidence
+branch: main
+ci_run: 123456
+head_sha: abc123
+artifact_gate_benchmark: passed
+artifact_gate_context_pack_quality: passed
+artifact_gate_agent_route: passed
+release pretag check passed
+SUMMARY
 EOF
   chmod +x "$TEMP_DIR/release-pretag-check"
 
@@ -143,6 +157,10 @@ EOF
     fail "missing workflow guard call"
   grep -Fq 'pretag --repo sleticalboy/CodeInsight-mcp --head-sha abc123 main' "$TEMP_DIR/calls.log" ||
     fail "missing pretag check call"
+  grep -Fq 'release pretag evidence' "$TEMP_DIR/output.log" ||
+    fail "missing pretag evidence heading"
+  grep -Fq 'ci_run: 123456' "$TEMP_DIR/output.log" ||
+    fail "missing pretag CI run"
   grep -Fq 'artifact_gate_benchmark: passed' "$TEMP_DIR/output.log" ||
     fail "missing benchmark artifact gate status"
   grep -Fq 'artifact_gate_context_pack_quality: passed' "$TEMP_DIR/output.log" ||
@@ -151,6 +169,22 @@ EOF
     fail "missing agent-route artifact gate status"
   grep -Fq 'next: git tag -a v99.88.77 -m "v99.88.77" && git push origin v99.88.77' "$TEMP_DIR/output.log" ||
     fail "missing next tag command"
+
+  if CODEINSIGHT_TAG_PREFLIGHT_SMOKE_LOG="$TEMP_DIR/missing-evidence.log" \
+    CODEINSIGHT_TAG_PREFLIGHT_PRETAG_MISSING_EVIDENCE=1 \
+    CODEINSIGHT_ROOT_DIR="$TEMP_DIR/repo" \
+    CODEINSIGHT_RELEASE_WORKFLOW_GUARD_SCRIPT="$TEMP_DIR/release-workflow-guard" \
+    CODEINSIGHT_RELEASE_PRETAG_CHECK_SCRIPT="$TEMP_DIR/release-pretag-check" \
+    PATH="$TEMP_DIR/bin:$PATH" \
+    "$ROOT_DIR/scripts/release-tag-preflight.sh" \
+      --repo sleticalboy/CodeInsight-mcp \
+      --head-sha abc123 \
+      v99.88.77 \
+      main >"$TEMP_DIR/missing-evidence.out" 2>"$TEMP_DIR/missing-evidence.err"; then
+    fail "missing pretag evidence should fail"
+  fi
+  grep -Fq 'release pretag evidence is missing evidence heading' "$TEMP_DIR/missing-evidence.err" ||
+    fail "missing pretag evidence diagnostic"
 
   if CODEINSIGHT_TAG_PREFLIGHT_SMOKE_LOG="$TEMP_DIR/remote-tag-exists.log" \
     CODEINSIGHT_TAG_PREFLIGHT_REMOTE_TAG_EXISTS=1 \
