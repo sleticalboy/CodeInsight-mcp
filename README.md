@@ -112,6 +112,8 @@ entrypoint and recommended-tool routing decisions from `project_overview`:
   and memchr.
 - [Large repository benchmark](docs/benchmark-large.md): express, Flask, Gin,
   and Tokio.
+- [Benchmark methodology](docs/benchmark-methodology.md): what the reports
+  prove, refresh commands, profile knobs, and guardrails.
 
 These are fixture reports, not controlled performance claims, but they verify
 that CodeInsight can index real repositories and return bounded context packs
@@ -142,6 +144,9 @@ Refresh the reports locally:
 scripts/benchmark-smoke.sh
 CODEINSIGHT_BENCH_PROFILE=large scripts/benchmark-smoke.sh
 ```
+
+For subset runs and guardrail details, see
+[Benchmark methodology](docs/benchmark-methodology.md).
 
 Key docs:
 

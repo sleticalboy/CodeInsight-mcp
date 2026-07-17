@@ -101,6 +101,9 @@ main() {
     '\[Large repository benchmark\]\(docs/benchmark-large\.md\).*express, Flask, Gin,' \
     "large benchmark link and repository list"
   require_pattern README.md \
+    '\[Benchmark methodology\]\(docs/benchmark-methodology\.md\)' \
+    "benchmark methodology README link"
+  require_pattern README.md \
     'CODEINSIGHT_BENCH_PROFILE=large scripts/benchmark-smoke\.sh' \
     "large benchmark refresh command"
   require_pattern README.md \
@@ -109,6 +112,18 @@ main() {
   require_pattern README.md \
     'Generated reports include a `Key Results` section' \
     "benchmark key results claim"
+  require_pattern docs/README.md \
+    '\[Benchmark methodology\]\(benchmark-methodology\.md\)' \
+    "docs index benchmark methodology link"
+  require_pattern docs/benchmark-methodology.md \
+    'CodeInsight benchmark reports are reproducible evidence for the AI-agent' \
+    "benchmark methodology purpose"
+  require_pattern docs/benchmark-methodology.md \
+    'CODEINSIGHT_BENCH_REPOS=p-limit scripts/benchmark-smoke\.sh' \
+    "benchmark methodology subset command"
+  require_pattern docs/benchmark-methodology.md \
+    'Every report also checks that:' \
+    "benchmark methodology guardrails"
   require_pattern .github/workflows/ci.yml \
     'actions/upload-artifact@v7' \
     "Node.js 24 artifact upload action"

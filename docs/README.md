@@ -69,6 +69,7 @@ Choose the check by adoption stage:
 - [Two-minute demo output snapshot](demo-output.md)
 - [MCP client smoke test](mcp-client-smoke.md)
 - [Semantic smoke test](semantic-smoke.md)
+- [Benchmark methodology](benchmark-methodology.md)
 - [Smoke benchmark](benchmark-v0.1.md)
 - [Large repository benchmark](benchmark-large.md)
 
