@@ -346,6 +346,9 @@ main() {
     '\| First MCP call onboarding changed \| `scripts/mcp-first-call-smoke\.sh` \|' \
     "maintenance MCP first-call smoke chooser"
   require_pattern docs/maintenance-commands.md \
+    '\| First MCP call failure messaging changed \| `scripts/mcp-first-call-failure-smoke\.sh` \|' \
+    "maintenance MCP first-call failure smoke chooser"
+  require_pattern docs/maintenance-commands.md \
     '\| MCP protocol or tool payload changed \| `scripts/mcp-stdio-smoke\.sh` \|' \
     "maintenance MCP smoke chooser"
   require_pattern docs/maintenance-commands.md \

@@ -9,7 +9,7 @@ FIRST_CALL_TOKEN_BUDGET="${CODEINSIGHT_FIRST_CALL_TOKEN_BUDGET:-1600}"
 TEMP_DIR=""
 
 fail() {
-  echo "mcp first-call smoke failed: $*" >&2
+  echo "mcp first-call smoke failed [binary]: $*" >&2
   exit 1
 }
 
@@ -105,36 +105,47 @@ root = os.environ["FIRST_CALL_ROOT"]
 task = os.environ["FIRST_CALL_TASK"]
 token_budget = int(os.environ["FIRST_CALL_TOKEN_BUDGET"])
 
-proc = subprocess.Popen(
-    [codeinsight_bin, "serve", "--transport", "stdio"],
-    stdin=subprocess.PIPE,
-    stdout=subprocess.PIPE,
-    stderr=subprocess.PIPE,
-    text=True,
-)
+
+class SmokeFailure(Exception):
+    def __init__(self, category, message):
+        super().__init__(message)
+        self.category = category
+        self.message = message
 
 
-def fail(message):
-    raise AssertionError(message)
+def fail(category, message):
+    raise SmokeFailure(category, message)
 
 
-def request(payload):
+def expect(condition, category, message):
+    if not condition:
+        fail(category, message)
+
+
+def request(payload, category):
     assert proc.stdin is not None
     assert proc.stdout is not None
-    proc.stdin.write(json.dumps(payload, separators=(",", ":")) + "\n")
-    proc.stdin.flush()
+    try:
+        proc.stdin.write(json.dumps(payload, separators=(",", ":")) + "\n")
+        proc.stdin.flush()
+    except BrokenPipeError as exc:
+        stderr = proc.stderr.read() if proc.stderr is not None else ""
+        fail(category, f"server closed stdin before response: {stderr or exc}")
     line = proc.stdout.readline()
     if not line:
         stderr = proc.stderr.read() if proc.stderr is not None else ""
-        raise RuntimeError(f"server exited before response: {stderr}")
-    response = json.loads(line)
+        fail(category, f"server exited before response: {stderr or 'empty stderr'}")
+    try:
+        response = json.loads(line)
+    except json.JSONDecodeError as exc:
+        fail(category, f"server returned invalid JSON: {exc}: {line.strip()}")
     if "error" in response:
-        raise RuntimeError(json.dumps(response["error"], indent=2))
+        fail(category, f"JSON-RPC error: {json.dumps(response['error'], sort_keys=True)}")
     return response
 
 
-def call_tool(request_id, name, arguments):
-    return request(
+def call_tool(request_id, name, arguments, category):
+    response = request(
         {
             "jsonrpc": "2.0",
             "id": request_id,
@@ -143,21 +154,42 @@ def call_tool(request_id, name, arguments):
                 "name": name,
                 "arguments": arguments,
             },
-        }
-    )["result"]["structuredContent"]
+        },
+        category,
+    )
+    structured = response.get("result", {}).get("structuredContent")
+    if structured is None:
+        fail(category, f"{name} returned no structuredContent")
+    return structured
 
 
+proc = None
 try:
-    initialize = request({"jsonrpc": "2.0", "id": 1, "method": "initialize"})
-    server_name = initialize["result"]["serverInfo"]["name"]
-    if server_name != "codeinsight":
-        fail(f"unexpected server name: {server_name}")
+    proc = subprocess.Popen(
+        [codeinsight_bin, "serve", "--transport", "stdio"],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    initialize = request(
+        {"jsonrpc": "2.0", "id": 1, "method": "initialize"},
+        "mcp_server",
+    )
+    server_name = initialize.get("result", {}).get("serverInfo", {}).get("name")
+    expect(
+        server_name == "codeinsight",
+        "mcp_server",
+        f"initialize returned unexpected server name: {server_name!r}",
+    )
 
-    tools = request({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
-    tool_names = {tool["name"] for tool in tools["result"]["tools"]}
+    tools = request(
+        {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
+        "mcp_server",
+    )
+    tool_names = {tool.get("name") for tool in tools.get("result", {}).get("tools", [])}
     for expected in ("agent_route", "context_pack", "impact_analysis", "version"):
-        if expected not in tool_names:
-            fail(f"missing MCP tool: {expected}")
+        expect(expected in tool_names, "mcp_server", f"tools/list is missing {expected}")
 
     route = call_tool(
         3,
@@ -170,66 +202,92 @@ try:
             "impact_depth": 2,
             "impact_evidence_limit": 3,
         },
+        "agent_route_contract",
     )
 
-    route_tools = [step["tool"] for step in route["route"]]
+    route_steps = route.get("route", [])
+    route_tools = [step.get("tool") for step in route_steps]
     expected_route_tools = [
         "index_project",
         "project_overview",
         "context_pack",
         "impact_analysis",
     ]
-    if route_tools != expected_route_tools:
-        fail(f"unexpected route tools: {route_tools}")
+    expect(
+        route_tools == expected_route_tools,
+        "agent_route_contract",
+        f"unexpected route_tools: expected {expected_route_tools}, got {route_tools}",
+    )
 
-    execution_plan_actions = [step["action"] for step in route["execution_plan"]]
+    execution_plan = route.get("execution_plan", [])
+    execution_plan_actions = [step.get("action") for step in execution_plan]
     expected_execution_plan_actions = [
         "read_selected_context",
         "use_current_reading_step_suggested_tool",
         "use_continuation_if_needed",
         "review_impact_before_edits",
     ]
-    if execution_plan_actions != expected_execution_plan_actions:
-        fail(f"unexpected execution plan actions: {execution_plan_actions}")
+    expect(
+        execution_plan_actions == expected_execution_plan_actions,
+        "agent_route_contract",
+        "unexpected execution_plan_actions: "
+        f"expected {expected_execution_plan_actions}, got {execution_plan_actions}",
+    )
 
-    context_pack = route["context_pack"]
-    reading_plan = context_pack["reading_plan"]
-    if not context_pack["files"]:
-        fail("agent_route selected no context files")
-    if not reading_plan:
-        fail("agent_route returned no reading plan")
-    if not reading_plan[0].get("reason"):
-        fail("reading_plan[0].reason is missing")
-    if not reading_plan[0].get("selection_reason"):
-        fail("reading_plan[0].selection_reason is missing")
+    context_pack = route.get("context_pack", {})
+    reading_plan = context_pack.get("reading_plan", [])
+    expect(context_pack.get("files"), "agent_route_contract", "agent_route selected no context files")
+    expect(reading_plan, "agent_route_contract", "agent_route returned no reading plan")
+    expect(reading_plan[0].get("reason"), "agent_route_contract", "reading_plan[0].reason is missing")
+    expect(
+        reading_plan[0].get("selection_reason"),
+        "agent_route_contract",
+        "reading_plan[0].selection_reason is missing",
+    )
 
-    first_execution = route["execution_plan"][0]
-    if first_execution["action"] != "read_selected_context":
-        fail("execution_plan[0] should read selected context")
-    if first_execution["status"] != "ready":
-        fail("execution_plan[0] should be ready")
-    if not first_execution.get("files"):
-        fail("execution_plan[0].files is missing")
+    first_execution = execution_plan[0]
+    expect(
+        first_execution.get("action") == "read_selected_context",
+        "agent_route_contract",
+        "execution_plan[0].action should be read_selected_context",
+    )
+    expect(
+        first_execution.get("status") == "ready",
+        "agent_route_contract",
+        f"execution_plan[0].status should be ready, got {first_execution.get('status')!r}",
+    )
+    expect(first_execution.get("files"), "agent_route_contract", "execution_plan[0].files is missing")
 
-    suggested_tool = route["execution_plan"][1]["suggested_tool"]
-    if not suggested_tool.get("tool"):
-        fail("execution_plan suggested_tool.tool is missing")
-    if not suggested_tool.get("suggested_arguments"):
-        fail("execution_plan suggested_tool.suggested_arguments is missing")
+    suggested_tool = execution_plan[1].get("suggested_tool", {})
+    expect(suggested_tool.get("tool"), "suggested_tool", "execution_plan suggested_tool.tool is missing")
+    expect(
+        suggested_tool.get("suggested_arguments"),
+        "suggested_tool",
+        "execution_plan suggested_tool.suggested_arguments is missing",
+    )
 
     suggested_result = call_tool(
         4,
         suggested_tool["tool"],
         suggested_tool["suggested_arguments"],
+        "suggested_tool",
     )
     suggested_tool_executed = True
     if suggested_tool["tool"] == "file_outline":
         names = [symbol.get("name") for symbol in suggested_result]
-        if "main" not in names:
-            fail("file_outline suggested tool did not return main")
+        expect(
+            "main" in names,
+            "suggested_tool",
+            f"file_outline suggested tool did not return main; names={names}",
+        )
 
-    if route["impact_status"] != "complete":
-        fail(f"impact_status should be complete, got {route['impact_status']}")
+    expect(
+        route.get("impact_status") == "complete",
+        "agent_route_contract",
+        f"impact_status should be complete, got {route.get('impact_status')!r}",
+    )
+    impact_counts = route.get("impact_analysis", {}).get("impact_counts")
+    expect(impact_counts is not None, "agent_route_contract", "impact_analysis.impact_counts is missing")
 
     summary = {
         "status": "pass",
@@ -256,16 +314,23 @@ try:
         },
         "suggested_tool_executed": suggested_tool_executed,
         "impact_status": route["impact_status"],
-        "impact_counts": route["impact_analysis"]["impact_counts"],
+        "impact_counts": impact_counts,
     }
     print(json.dumps(summary, indent=2, sort_keys=True))
+except SmokeFailure as exc:
+    print(f"mcp first-call smoke failed [{exc.category}]: {exc.message}", file=sys.stderr)
+    sys.exit(1)
+except Exception as exc:
+    print(f"mcp first-call smoke failed [unexpected]: {type(exc).__name__}: {exc}", file=sys.stderr)
+    sys.exit(1)
 finally:
-    proc.terminate()
-    try:
-        proc.wait(timeout=5)
-    except subprocess.TimeoutExpired:
-        proc.kill()
-        proc.wait(timeout=5)
+    if proc is not None:
+        proc.terminate()
+        try:
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait(timeout=5)
 PY
 }
 
