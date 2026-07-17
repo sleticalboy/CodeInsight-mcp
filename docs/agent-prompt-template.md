@@ -46,8 +46,9 @@ Workflow:
      execution flow"
    - token_budget: 6000
 2. Read selected files in reading_plan order.
-3. Use each reading_plan.reason to decide what the current file should answer;
-   use selection_reason only to explain why the file was selected.
+3. Use each reading_plan.question as the local checklist for the selected file,
+   reading_plan.reason as the current-step instruction, and selection_reason
+   only to explain why the file was selected.
 4. Summarize:
    - primary purpose
    - likely entrypoints

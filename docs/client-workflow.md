@@ -8,8 +8,9 @@ for a multi-step code-reading task.
 1. Call `agent_route` with `root`, `task`, and `token_budget` for the default
    first read.
 2. Read `context_pack.files[]` by following `reading_plan[]` order in the
-   returned route payload. Treat `reading_plan[].reason` as the instruction for
-   the current step and `reading_plan[].selection_reason` as the compact
+   returned route payload. Treat `reading_plan[].question` as the local
+   checklist for the selected file, `reading_plan[].reason` as the instruction
+   for the current step, and `reading_plan[].selection_reason` as the compact
    evidence for why that file was selected.
 3. Execute `reading_plan[].suggested_tool` when a selected file needs deeper
    local navigation.
@@ -41,15 +42,18 @@ root, the user's task, and a bounded token budget:
 Then apply the returned payload in this order:
 
 1. Read `context_pack.files[]` using `context_pack.reading_plan[]`.
-2. Use `agent_route.execution_plan[]` as the client checklist.
-3. Run the current step's `suggested_tool` only after selected context is read.
-4. Use the included `impact_analysis` preview before edits.
+2. Use `context_pack.reading_plan[].question` as the local checklist for the
+   selected file.
+3. Use `agent_route.execution_plan[]` as the client checklist.
+4. Run the current step's `suggested_tool` only after selected context is read.
+5. Use the included `impact_analysis` preview before edits.
 
 The first call is healthy when the response has:
 
 - `route[]` with `index_project`, `project_overview`, `context_pack`, and
   `impact_analysis`
 - at least one `context_pack.files[]` entry
+- `context_pack.reading_plan[].question` for the local reading checklist
 - `context_pack.reading_plan[].reason` for the current reading instruction
 - `context_pack.reading_plan[].selection_reason` for selection evidence
 - `execution_plan[0].action` set to `read_selected_context`
@@ -169,15 +173,17 @@ For each `reading_plan[]` step:
 2. Read the matching excerpts from `files[]`.
 3. Offer `suggested_tool` when the user or agent needs deeper evidence.
 
-Use `reading_plan[].reason` as the executable instruction for the agent. It
-combines the question to answer, the suggested follow-up tool, and the selection
-rationale. Use `reading_plan[].selection_reason` only when you need the raw
-ranking reason without the action guidance.
+Use `reading_plan[].question` as the local checklist for what the selected file
+must answer. Use `reading_plan[].reason` as the executable instruction for the
+agent: it combines that question, the suggested follow-up tool, and the
+selection rationale. Use `reading_plan[].selection_reason` only when you need
+the raw ranking reason without the action guidance.
 
-Do not treat `selection_reason` as a replacement for `reason`: it explains why
-the file made the budgeted pack, while `reason` explains what to do with that
-file now. Continuation actions should wait until the selected `files[]` excerpts
-have been read in this order.
+Do not treat `selection_reason` as a replacement for `question` or `reason`: it
+explains why the file made the budgeted pack, while `question` says what the
+file must answer and `reason` explains what to do with that file now.
+Continuation actions should wait until the selected `files[]` excerpts have
+been read in this order.
 
 Common suggested tools:
 
@@ -230,6 +236,7 @@ A simple client can implement this policy:
 
 1. Run `agent_route`.
 2. Present selected `files[]` in `reading_plan[]` order, using
+   `reading_plan[].question` as the local checklist and
    `reading_plan[].reason` as the current-step instruction.
 3. Execute the current step's `suggested_tool` when the user asks for detail.
 4. If the selected context is insufficient, execute

@@ -270,7 +270,10 @@ main() {
     '\[Client integration examples\]\(client-integration-examples\.md\)' \
     "client workflow integration examples link"
   require_pattern docs/client-workflow.md \
-    'Treat `reading_plan\[\]\.reason` as the instruction for' \
+    'Treat `reading_plan\[\]\.question` as the local' \
+    "client workflow reading question checklist"
+  require_pattern docs/client-workflow.md \
+    '`reading_plan\[\]\.reason` as the instruction' \
     "client workflow reading reason instruction"
   require_pattern docs/client-workflow.md \
     '`reading_plan\[\]\.selection_reason` as the compact' \
@@ -287,9 +290,15 @@ main() {
   require_pattern docs/agent-prompt-template.md \
     'Treat reading_plan\.reason as' \
     "agent prompt reading reason policy"
+  require_pattern docs/agent-prompt-template.md \
+    'Use each reading_plan\.question as the local checklist' \
+    "agent prompt first read question policy"
   require_pattern docs/first-read-workflow.md \
     '`agent_route` is the default first-read contract' \
     "first-read workflow agent_route contract"
+  require_pattern docs/first-read-workflow.md \
+    'Use `question` as the local checklist' \
+    "first-read workflow question checklist"
   require_pattern docs/first-read-workflow.md \
     'Use `reason` as the agent-facing instruction' \
     "first-read workflow reason instruction"
