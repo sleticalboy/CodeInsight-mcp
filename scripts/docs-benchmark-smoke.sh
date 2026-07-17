@@ -417,9 +417,15 @@ main() {
   require_pattern docs/maintenance-commands.md \
     'codeinsight-context-pack-quality' \
     "maintenance context-pack quality artifact scope"
+  require_pattern docs/maintenance-commands.md \
+    'first reading question metrics for selected context' \
+    "maintenance context-pack quality first reading question scope"
   require_pattern docs/maintainer-checklist.md \
     'context-pack quality smoke' \
     "maintainer context-pack quality smoke"
+  require_pattern docs/maintainer-checklist.md \
+    'first reading question metrics' \
+    "maintainer context-pack quality first reading question summary"
   require_pattern docs/maintainer-checklist.md \
     'context-pack-quality-smoke` job summary' \
     "maintainer context-pack quality CI summary guidance"
@@ -441,6 +447,9 @@ main() {
   require_pattern scripts/context-pack-quality-artifact-smoke.sh \
     'omitted_candidates_available' \
     "context-pack quality artifact metric validation"
+  require_pattern scripts/context-pack-quality-artifact-smoke.sh \
+    'first_reading_question' \
+    "context-pack quality artifact first reading question output"
   require_pattern scripts/mcp-first-call-artifact-smoke.sh \
     'gh run download "\$RUN_ID"' \
     "MCP first-call artifact gh download command"

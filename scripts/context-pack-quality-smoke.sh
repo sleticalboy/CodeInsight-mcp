@@ -114,6 +114,7 @@ record_scenario() {
       metrics: (($metrics_query) + (
         if (.reading_plan | length) > 0 then
           {
+            first_reading_question: .reading_plan[0].question,
             first_reading_reason: .reading_plan[0].reason,
             first_selection_reason: .reading_plan[0].selection_reason
           }

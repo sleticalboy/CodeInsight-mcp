@@ -117,7 +117,8 @@ candidates, all without cloning external repositories. Pass
 writes this summary to a temporary file and validates key scenario names; the
 remote `context-pack-quality-smoke` job uploads the
 `codeinsight-context-pack-quality` JSON artifact and writes the scenario table
-to the Actions summary with `scripts/context-pack-quality-step-summary.sh`.
+to the Actions summary with `scripts/context-pack-quality-step-summary.sh`,
+including first reading question metrics for selected context.
 
 ## Benchmark Checks
 

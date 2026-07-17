@@ -78,6 +78,7 @@ validate_summary_json() {
       and (.scenarios | length) == 8
       and all(.scenarios[]; .status == "pass")
       and (.scenarios[] | select(.name == "polyglot_symbol_web_controller" and .metrics.first_file == "src/app.ts"))
+      and (.scenarios[] | select(.name == "polyglot_symbol_web_controller" and (.metrics.first_reading_question | type == "string" and length > 0)))
       and (.scenarios[] | select(.name == "polyglot_symbol_php_service_render" and .metrics.first_file == "src/PhpService.php"))
       and (.scenarios[] | select(.name == "dependency_continuation" and .metrics.dependency_file == "app/support.py"))
       and (.scenarios[] | select(.name == "budget_continuation" and .metrics.omitted_candidates > 0 and .metrics.continuation_status == "omitted_candidates_available"))
@@ -208,6 +209,7 @@ main() {
 
   echo "context-pack quality artifact smoke passed"
   echo "summary: $summary_file"
+  echo "first_reading_question: $(jq -r '.scenarios[] | select(.name == "polyglot_symbol_web_controller") | .metrics.first_reading_question' "$summary_file")"
 }
 
 main "$@"
