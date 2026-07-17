@@ -281,11 +281,21 @@ try:
     assert agent_route_result["execution_plan"][0]["files"]
     assert "reading_plan[] order" in agent_route_result["execution_plan"][0]["instruction"]
     assert agent_route_result["execution_plan"][1]["suggested_tool"]["tool"]
+    assert agent_route_result["execution_plan"][1]["suggested_tool"]["suggested_arguments"]
     assert agent_route_result["context_pack"]["reading_plan"], "agent_route produced no reading plan"
     assert agent_route_result["impact_status"] == "complete"
     assert agent_route_result["impact_analysis"]["format"] == "summary"
     assert agent_route_result["impact_analysis"]["depth"] == 2
     assert agent_route_result["impact_analysis"]["evidence_limit"] == 3
+    agent_route_suggested_result = call_suggested_tool(
+        agent_route_result["execution_plan"][1]["suggested_tool"],
+        17,
+    )
+    if agent_route_result["execution_plan"][1]["suggested_tool"]["tool"] == "file_outline":
+        assert any(
+            symbol["name"] == "main"
+            for symbol in agent_route_suggested_result
+        ), "agent_route execution_plan suggested file_outline did not return entrypoint symbol"
 
     symbols = request(
         {
@@ -517,6 +527,8 @@ try:
     print(f"auto_reading_plan_steps: {len(auto_context_result['reading_plan'])}")
     print(f"agent_route_execution_plan_steps: {len(agent_route_result['execution_plan'])}")
     print(f"agent_route_first_execution_action: {agent_route_result['execution_plan'][0]['action']}")
+    print(f"agent_route_suggested_tool: {agent_route_result['execution_plan'][1]['suggested_tool']['tool']}")
+    print(f"agent_route_suggested_tool_executed: true")
     print(f"explicit_suggested_tool: {explicit_reading_plan[0]['suggested_tool']['tool']}")
     print(f"auto_suggested_tool: {auto_context_result['reading_plan'][0]['suggested_tool']['tool']}")
     print(f"explicit_omitted_candidates: {len(context_result['omitted_candidates'])}")

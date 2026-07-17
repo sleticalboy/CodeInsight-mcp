@@ -606,6 +606,12 @@ main() {
   require_pattern scripts/mcp-stdio-smoke.sh \
     'agent_route_first_execution_action' \
     "MCP stdio first execution action output"
+  require_pattern scripts/mcp-stdio-smoke.sh \
+    'agent_route_suggested_tool_executed' \
+    "MCP stdio execution-plan suggested tool execution output"
+  require_pattern scripts/mcp-stdio-smoke.sh \
+    'agent_route execution_plan suggested file_outline did not return entrypoint symbol' \
+    "MCP stdio execution-plan suggested tool assertion"
   require_pattern docs/mcp-client-smoke.md \
     '`agent_route\.execution_plan\[\]` includes `read_selected_context`' \
     "MCP client smoke execution plan start"
@@ -618,6 +624,12 @@ main() {
   require_pattern docs/mcp-client-smoke.md \
     'agent_route_execution_plan_steps: 4' \
     "MCP client smoke execution plan output"
+  require_pattern docs/mcp-client-smoke.md \
+    'agent_route_suggested_tool_executed: true' \
+    "MCP client smoke execution-plan suggested tool output"
+  require_pattern docs/mcp-client-smoke.md \
+    'suggested tool is a usable MCP call' \
+    "MCP client smoke execution-plan suggested tool contract"
   require_pattern scripts/two-minute-demo.sh \
     'Problem: AI agents waste the first read' \
     "two-minute demo problem statement"

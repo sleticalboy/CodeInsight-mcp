@@ -65,6 +65,8 @@ It also asserts the MCP-facing structured fields that clients commonly render:
 - first `agent_route.execution_plan[]` step is ready and names selected files
 - second `agent_route.execution_plan[]` step exposes the current-step
   `suggested_tool`
+- second `agent_route.execution_plan[]` suggested tool executes through
+  MCP `tools/call`
 - explicit and auto `context_pack.reading_plan`
 - `context_pack.reading_plan[].next_action` and `question`
 - `context_pack.reading_plan[].suggested_tool`
@@ -110,6 +112,8 @@ auto_seed_strategy: auto_entrypoint
 auto_reading_plan_steps: 2
 agent_route_execution_plan_steps: 4
 agent_route_first_execution_action: read_selected_context
+agent_route_suggested_tool: file_outline
+agent_route_suggested_tool_executed: true
 explicit_suggested_tool: file_outline
 auto_suggested_tool: file_outline
 explicit_omitted_candidates: 8
@@ -121,6 +125,8 @@ and `explicit_omitted_candidates` also vary with the selected first reading
 step, seed symbol, and token budget.
 `agent_route_execution_plan_steps` should remain `4` for the default first-read
 route unless the contract changes deliberately.
+`agent_route_suggested_tool_executed` should remain `true`; it verifies the
+execution-plan suggested tool is a usable MCP call, not only display metadata.
 
 ## Troubleshooting
 
