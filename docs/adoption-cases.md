@@ -29,6 +29,19 @@ Aggregate snapshot:
 - Estimated tokens: `11,943`
 - Impacted files reported before edits: `51`
 
+## How To Read These Numbers
+
+The baseline is the number of indexed source lines an agent could read if it
+opened the repository broadly before forming a plan. The routed first-read
+count is the source text selected by CodeInsight for the same task under the
+token budget before broad file reading starts. The reduction and read-less
+ratio describe first-read context routing, not runtime performance, parser
+accuracy, or a claim that unselected code is irrelevant.
+
+Use these cases as adoption evidence for agent workflow cost and focus. Final
+code conclusions still need normal local verification with the IDE, LSP,
+compiler, test runner, and language-specific tools.
+
 ## Route Evidence
 
 | Case | Commit | Seed strategy | First selected file | Companion entrypoint | First suggested tool | Impact risk |

@@ -177,9 +177,11 @@ entrypoint and recommended-tool routing decisions from `project_overview`:
 - [Benchmark methodology](docs/benchmark-methodology.md): what the reports
   prove, refresh commands, profile knobs, and guardrails.
 
-These are fixture reports, not controlled performance claims, but they verify
-that CodeInsight can index real repositories and return bounded context packs
-without external services.
+These are first-read routing reports, not controlled performance claims. They
+verify that CodeInsight can index real repositories and return bounded context
+packs without external services. Treat the reduction numbers as evidence of
+agent workflow focus and token discipline, not as runtime performance, parser
+accuracy, or proof that unselected code is irrelevant.
 
 Current benchmark snapshot:
 

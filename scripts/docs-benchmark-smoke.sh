@@ -140,6 +140,15 @@ main() {
     '\[Benchmark methodology\]\(docs/benchmark-methodology\.md\)' \
     "benchmark methodology README link"
   require_pattern README.md \
+    'These are first-read routing reports, not controlled performance claims' \
+    "README first-read routing evidence caveat"
+  require_pattern README.md \
+    'agent workflow focus and token discipline' \
+    "README adoption evidence interpretation"
+  require_pattern README.md \
+    'not as runtime performance, parser' \
+    "README adoption non-performance caveat"
+  require_pattern README.md \
     'CODEINSIGHT_BENCH_PROFILE=large scripts/benchmark-smoke\.sh' \
     "large benchmark refresh command"
   require_pattern README.md \
@@ -301,6 +310,18 @@ main() {
   require_pattern docs/adoption-cases.md \
     'Aggregate read-less ratio: `42\.5x`' \
     "adoption cases aggregate read-less ratio"
+  require_pattern docs/adoption-cases.md \
+    '^## How To Read These Numbers$' \
+    "adoption cases interpretation section"
+  require_pattern docs/adoption-cases.md \
+    'The baseline is the number of indexed source lines an agent could read' \
+    "adoption cases baseline definition"
+  require_pattern docs/adoption-cases.md \
+    'describe first-read context routing, not runtime performance' \
+    "adoption cases routing caveat"
+  require_pattern docs/adoption-cases.md \
+    'code conclusions still need normal local verification' \
+    "adoption cases verification caveat"
   require_pattern docs/adoption-cases.md \
     '\[case\]\(adoption-case-express\.md\)' \
     "adoption cases Express detail link"
