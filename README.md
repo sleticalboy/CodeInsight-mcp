@@ -17,7 +17,8 @@ agent_route -> selected context -> executable suggested_tool -> impact check
 That route gives the agent:
 
 - selected files and line ranges instead of a broad repository scan
-- `reading_plan[]` instructions that explain what to read first and why
+- `reading_plan[].question` as the local checklist for the current file
+- `reading_plan[].reason` instructions that explain what to read first and why
 - `execution_plan[]` actions that keep focused follow-up tools behind the
   selected-context read
 - an executable `suggested_tool` such as `file_outline` for deeper local
@@ -56,6 +57,7 @@ which file to open next.
 
    ```text
    Call agent_route with root, task, and token_budget 6000 before reading files directly.
+   Treat reading_plan.question as the local checklist for the selected file.
    Follow agent_route.execution_plan[] in order.
    ```
 
@@ -88,12 +90,13 @@ The demo executes the same product path an MCP client should follow:
 `agent_route`, which runs `index_project -> project_overview -> context_pack ->
 impact_analysis` in one first-read route. It prints index timing, entrypoint and
 recommendation counts, selected context size, reading-plan steps,
-reading-plan reasons, selection evidence, line-reduction percentage,
-execution-plan actions, the first executable suggested tool, continuation
-status, impact-analysis summary, and a short talk track for recordings or
-project introductions. The important demo signal is not just which file was
-selected, but why the agent should read it first, when a local tool is safe to
-offer, and what impact check should happen before edits.
+reading-plan questions, reading-plan reasons, selection evidence,
+line-reduction percentage, execution-plan actions, the first executable suggested
+tool, continuation status, impact-analysis summary, and a short talk track for
+recordings or project introductions. The important demo signal is not just which
+file was selected, but what question it should answer, why the agent should read
+it first, when a local tool is safe to offer, and what impact check should happen
+before edits.
 
 For a recording or project introduction, use the
 [two-minute demo script](docs/demo-script.md) and the checked-in
@@ -125,9 +128,10 @@ Current benchmark snapshot:
   select 1,748 of 241,555 source lines, a 99.3% aggregate line reduction.
 - Generated reports include a `Key Results` section with routing,
   compression, token-budget, indexing, guardrail, and truncation evidence.
-- Per-repository details include a `Context reading plan` table with the
-  first-read reason and raw selection reason, so the benchmark shows why the
-  context router chose each file instead of only reporting compression numbers.
+- Per-repository details include a `Context reading plan` table with the local
+  reading question, first-read reason, and raw selection reason, so the
+  benchmark shows why the context router chose each file instead of only
+  reporting compression numbers.
 - The MCP stdio smoke executes `agent_route.execution_plan[].suggested_tool`
   through `tools/call`, proving the follow-up is usable by clients instead of
   only display metadata.

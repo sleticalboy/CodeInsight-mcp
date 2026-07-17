@@ -44,6 +44,9 @@ main() {
     'Call agent_route with root, task, and token_budget 6000 before reading files directly' \
     "README fast path agent_route prompt"
   require_pattern README.md \
+    'Treat reading_plan\.question as the local checklist for the selected file' \
+    "README fast path reading question prompt"
+  require_pattern README.md \
     'Follow agent_route\.execution_plan\[\] in order' \
     "README fast path execution plan policy"
   require_pattern README.md \
@@ -89,13 +92,16 @@ main() {
     '`agent_route`, which runs `index_project -> project_overview -> context_pack ->' \
     "README one-call agent_route demo path"
   require_pattern README.md \
-    'reading-plan reasons, selection evidence' \
+    'reading-plan questions, reading-plan reasons, selection evidence' \
     "README demo reading reason evidence"
   require_pattern README.md \
-    'the first executable suggested tool' \
+    'what question it should answer' \
+    "README demo reading question positioning"
+  require_pattern README.md \
+    'the first executable suggested' \
     "README demo executable suggested tool evidence"
   require_pattern README.md \
-    'why the agent should read it first' \
+    'why the agent should read' \
     "README first-read reason positioning"
   require_pattern README.md \
     'when a local tool is safe to' \
@@ -103,6 +109,9 @@ main() {
   require_pattern README.md \
     'Context reading plan' \
     "README benchmark reading plan evidence"
+  require_pattern README.md \
+    'reading question, first-read reason' \
+    "README benchmark reading question evidence"
   require_pattern README.md \
     'two-minute demo for this repository shows the agent route selecting' \
     "README demo evidence summary"
