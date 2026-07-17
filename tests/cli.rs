@@ -1949,12 +1949,10 @@ fn cli_agent_route_runs_first_read_pipeline() {
     assert_eq!(route["index_report"]["indexed_files"].as_u64(), Some(31));
     assert_eq!(route["overview"]["indexed_files"].as_u64(), Some(31));
     assert_eq!(route["context_pack"]["seed_strategy"], "auto_entrypoint");
-    assert!(
-        route["context_pack"]["reading_plan"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .any(|step| step["file"] == "src/main.ts")
+    assert_eq!(route["context_pack"]["files"][0]["file"], "src/main.ts");
+    assert_eq!(
+        route["context_pack"]["reading_plan"][0]["file"],
+        "src/main.ts"
     );
     assert_eq!(route["impact_status"], "complete");
     assert_eq!(route["impact_analysis"]["format"], "summary");

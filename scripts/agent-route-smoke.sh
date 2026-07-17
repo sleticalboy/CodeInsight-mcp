@@ -150,6 +150,7 @@ write_summary_json() {
       requested_token_budget: .context_pack.budget.requested_token_budget,
       applied_token_budget: .context_pack.budget.applied_token_budget,
       first_context_file: (.context_pack.files[0].file // ""),
+      first_reading_file: (.context_pack.reading_plan[0].file // ""),
       first_execution_action: (.execution_plan[0].action // ""),
       second_execution_action: (.execution_plan[1].action // ""),
       first_execution_suggested_tool: (.execution_plan[1].suggested_tool.tool // ""),
@@ -191,6 +192,52 @@ create_task_focused_fixture() {
     "start": "tsx src/main.ts"
   }
 }
+EOF
+
+  cat >"$repo_dir/src/main.ts" <<'EOF'
+import { bootRouter } from "./router";
+
+export function main() {
+  return bootRouter();
+}
+
+main();
+EOF
+
+  cat >"$repo_dir/src/router.ts" <<'EOF'
+import { authenticate } from "./auth";
+
+export function bootRouter() {
+  return authenticate("demo-user");
+}
+EOF
+
+  cat >"$repo_dir/src/auth.ts" <<'EOF'
+export function authenticate(user: string) {
+  return { user, status: "accepted" };
+}
+EOF
+}
+
+create_noisy_entrypoint_fixture() {
+  local repo_dir="$1"
+
+  mkdir -p "$repo_dir/src"
+  cat >"$repo_dir/package.json" <<'EOF'
+{
+  "type": "module",
+  "description": "auth entrypoint router bootstrap",
+  "scripts": {
+    "start": "tsx src/main.ts"
+  }
+}
+EOF
+
+  cat >"$repo_dir/README.md" <<'EOF'
+# Auth entrypoint router bootstrap
+
+This document repeatedly mentions auth entrypoint router bootstrap main server
+start flow, but it is not executable source and should not be the first read.
 EOF
 
   cat >"$repo_dir/src/main.ts" <<'EOF'
@@ -288,6 +335,32 @@ main() {
   require_jq "$focused_route_json" '.context_pack.reading_plan[0].file == "src/router.ts"' \
     "task-focused reading plan should start with router"
 
+  local noisy_repo="$TEMP_DIR/noisy-entrypoint-repo"
+  local noisy_route_json="$TEMP_DIR/noisy-entrypoint-agent-route.json"
+  create_noisy_entrypoint_fixture "$noisy_repo"
+  "$CODEINSIGHT_BIN" agent-route "$noisy_repo" \
+    --task "understand main application entrypoint" \
+    --token-budget 1600 \
+    --force-index \
+    >"$noisy_route_json"
+
+  require_jq "$noisy_route_json" '.overview.entrypoints[0].file == "src/main.ts"' \
+    "noisy entrypoint route should detect src/main.ts as the top entrypoint"
+  require_jq "$noisy_route_json" '.context_pack.seed_strategy == "auto_entrypoint"' \
+    "noisy entrypoint route should use auto_entrypoint strategy"
+  require_jq "$noisy_route_json" '.context_pack.selected_seeds[0].value == "src/main.ts"' \
+    "noisy entrypoint route should seed from src/main.ts"
+  require_jq "$noisy_route_json" '.context_pack.selected_seeds[0].source == "overview_entrypoint"' \
+    "noisy entrypoint route should seed from overview entrypoint"
+  require_jq "$noisy_route_json" '.context_pack.files[0].file == "src/main.ts"' \
+    "noisy entrypoint route should read src/main.ts first"
+  require_jq "$noisy_route_json" '.context_pack.reading_plan[0].file == "src/main.ts"' \
+    "noisy entrypoint reading plan should start with src/main.ts"
+  require_jq "$noisy_route_json" '.execution_plan[0].files[0] == "src/main.ts"' \
+    "noisy entrypoint execution plan should start with src/main.ts"
+  require_jq "$noisy_route_json" '[.context_pack.files[].file] | index("README.md") | not' \
+    "noisy entrypoint route should not select README as first-read context"
+
   echo "agent-route smoke passed"
   echo "root: $repo_dir"
   echo "indexed_files: $(json_value "$route_json" '.index_report.indexed_files')"
@@ -297,7 +370,10 @@ main() {
   echo "reading_plan_steps: $(json_value "$route_json" '.context_pack.reading_plan | length')"
   echo "execution_plan_steps: $(json_value "$route_json" '.execution_plan | length')"
   echo "first_execution_action: $(json_value "$route_json" '.execution_plan[0].action')"
+  echo "first_context_file: $(json_value "$route_json" '.context_pack.files[0].file')"
+  echo "first_reading_file: $(json_value "$route_json" '.context_pack.reading_plan[0].file')"
   echo "first_reading_question: $(json_value "$route_json" '.context_pack.reading_plan[0].question')"
+  echo "noisy_entrypoint_first_file: $(json_value "$noisy_route_json" '.context_pack.files[0].file')"
   echo "impact_status: $(json_value "$route_json" '.impact_status')"
   echo "impacted_files: $(json_value "$route_json" '.impact_analysis.impact_counts.impacted_files')"
 }
