@@ -17,8 +17,17 @@ require_pattern() {
 
 main() {
   require_pattern README.md \
-    'local-first code context router|local-first MCP code context routing' \
+    'local-first code context router|local-first MCP code context router|local-first MCP code context routing' \
     "local-first AI-agent positioning"
+  require_pattern README.md \
+    'agent_route -> selected context -> executable suggested_tool -> impact check' \
+    "README first-read route loop"
+  require_pattern README.md \
+    '`execution_plan\[\]` actions that keep focused follow-up tools behind the' \
+    "README execution-plan gating"
+  require_pattern README.md \
+    'an executable `suggested_tool` such as `file_outline`' \
+    "README executable suggested tool positioning"
   require_pattern README.md \
     'CodeInsight is not trying to replace an IDE, LSP, compiler, or Sourcegraph' \
     "explicit non-goal positioning"
@@ -44,11 +53,20 @@ main() {
     'reading-plan reasons, selection evidence' \
     "README demo reading reason evidence"
   require_pattern README.md \
+    'the first executable suggested tool' \
+    "README demo executable suggested tool evidence"
+  require_pattern README.md \
     'why the agent should read it first' \
     "README first-read reason positioning"
   require_pattern README.md \
+    'when a local tool is safe to' \
+    "README suggested tool timing"
+  require_pattern README.md \
     'Context reading plan' \
     "README benchmark reading plan evidence"
+  require_pattern README.md \
+    'executes `agent_route\.execution_plan\[\]\.suggested_tool`' \
+    "README MCP suggested tool execution evidence"
 
   require_pattern docs/README.md \
     '\[First-read workflow\]\(first-read-workflow\.md\)' \

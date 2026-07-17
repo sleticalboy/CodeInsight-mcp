@@ -1,6 +1,6 @@
 # CodeInsight MCP Server
 
-CodeInsight MCP Server is a local-first code context router for AI coding
+CodeInsight MCP Server is a local-first MCP code context router for AI coding
 agents.
 
 It is built for the first-read problem: before an agent edits a repository, it
@@ -8,11 +8,21 @@ needs to know which files matter, what entrypoints to inspect, what context fits
 the token budget, and what may be impacted by a change. CodeInsight keeps that
 loop local and exposes it through CLI and MCP tools.
 
-The primary agent loop is:
+The primary agent loop is one call:
 
-1. `agent_route` for the default first-read path.
-2. Or, when the client needs step-by-step control:
-   `index_project -> project_overview -> context_pack -> impact_analysis`.
+```text
+agent_route -> selected context -> executable suggested_tool -> impact check
+```
+
+That route gives the agent:
+
+- selected files and line ranges instead of a broad repository scan
+- `reading_plan[]` instructions that explain what to read first and why
+- `execution_plan[]` actions that keep focused follow-up tools behind the
+  selected-context read
+- an executable `suggested_tool` such as `file_outline` for deeper local
+  evidence when needed
+- an `impact_analysis` preview before edits
 
 CodeInsight is not trying to replace an IDE, LSP, compiler, or Sourcegraph. Its
 job is to help AI agents read less code, pick better context, and stop guessing
@@ -37,10 +47,11 @@ The demo executes the same product path an MCP client should follow:
 impact_analysis` in one first-read route. It prints index timing, entrypoint and
 recommendation counts, selected context size, reading-plan steps,
 reading-plan reasons, selection evidence, line-reduction percentage,
-continuation status, impact-analysis summary, and a short talk track for
-recordings or project introductions. The important demo signal is not just
-which file was selected, but why the agent should read it first and which local
-tool it should call for deeper evidence.
+execution-plan actions, the first executable suggested tool, continuation
+status, impact-analysis summary, and a short talk track for recordings or
+project introductions. The important demo signal is not just which file was
+selected, but why the agent should read it first, when a local tool is safe to
+offer, and what impact check should happen before edits.
 
 For a recording or project introduction, use the
 [two-minute demo script](docs/demo-script.md) and the checked-in
@@ -72,6 +83,9 @@ Current benchmark snapshot:
 - Per-repository details include a `Context reading plan` table with the
   first-read reason and raw selection reason, so the benchmark shows why the
   context router chose each file instead of only reporting compression numbers.
+- The MCP stdio smoke executes `agent_route.execution_plan[].suggested_tool`
+  through `tools/call`, proving the follow-up is usable by clients instead of
+  only display metadata.
 
 Refresh the reports locally:
 
@@ -109,8 +123,8 @@ analysis, and optionally use configured semantic embeddings.
 
 Latest verified release: `v0.1.12`.
 
-Next focus: tighten the README/demo/benchmark path around the AI-agent
-first-read workflow.
+Next focus: strengthen real-repository demos and README evidence around the
+AI-agent first-read workflow.
 See [Current status](docs/status.md) for the full implemented capability list.
 
 ## Install From Release
