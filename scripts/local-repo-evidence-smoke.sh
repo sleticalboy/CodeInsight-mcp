@@ -107,7 +107,11 @@ EOF
     "$ROOT_DIR/scripts/local-repo-evidence.sh" \
     "$TEMP_DIR/repo" \
     --output "$TEMP_DIR/evidence.md" \
-    --json "$TEMP_DIR/agent-route.json"
+    --json "$TEMP_DIR/agent-route.json" \
+    --summary-json "$TEMP_DIR/summary.json" >"$TEMP_DIR/output.log"
+
+  grep -Fq "local repo evidence summary JSON written to $TEMP_DIR/summary.json" "$TEMP_DIR/output.log" ||
+    fail "missing summary JSON output path"
 
   grep -Fq '# CodeInsight Local Repository Evidence' "$TEMP_DIR/evidence.md" ||
     fail "missing evidence title"
@@ -129,6 +133,21 @@ EOF
   jq -e '.route[0].tool == "index_project" and .context_pack.files[0].file == "src/main.ts"' \
     "$TEMP_DIR/agent-route.json" >/dev/null ||
     fail "raw JSON file does not contain the expected route payload"
+  jq -e \
+    '.status == "pass"
+      and .route_tools == ["index_project", "project_overview", "context_pack", "impact_analysis"]
+      and .metrics.total_lines == 120
+      and .metrics.selected_lines == 12
+      and .metrics.line_reduction == "90.0%"
+      and .metrics.first_file == "src/main.ts"
+      and .metrics.first_reading_question == "What setup code defines the main application flow?"
+      and .metrics.first_suggested_tool == "file_outline"
+      and .metrics.risk_level == "medium"
+      and .metrics.impacted_files == 2
+      and .artifacts.markdown == "'"$TEMP_DIR"'/evidence.md"
+      and .artifacts.raw_agent_route_json == "'"$TEMP_DIR"'/agent-route.json"' \
+    "$TEMP_DIR/summary.json" >/dev/null ||
+    fail "summary JSON file does not contain the expected evidence metrics"
 
   echo "local repo evidence smoke passed"
 }

@@ -98,7 +98,8 @@ Generate a copyable Markdown evidence summary for your own repository:
 ```bash
 scripts/local-repo-evidence.sh /path/to/repo \
   --output /tmp/codeinsight-local-evidence.md \
-  --json /tmp/codeinsight-agent-route.json
+  --json /tmp/codeinsight-agent-route.json \
+  --summary-json /tmp/codeinsight-local-evidence.json
 ```
 
 The demo executes the same product path an MCP client should follow:

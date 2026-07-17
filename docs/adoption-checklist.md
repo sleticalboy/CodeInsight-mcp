@@ -40,7 +40,8 @@ When you need a copyable Markdown evidence artifact for your own repository:
 ```bash
 scripts/local-repo-evidence.sh /path/to/repo \
   --output /tmp/codeinsight-local-evidence.md \
-  --json /tmp/codeinsight-agent-route.json
+  --json /tmp/codeinsight-agent-route.json \
+  --summary-json /tmp/codeinsight-local-evidence.json
 ```
 
 Pass criteria:
@@ -60,6 +61,8 @@ Pass criteria:
 - `local-repo-evidence.sh` writes a Markdown summary with selected lines,
   line reduction, first reading question, first selected file, first suggested
   tool, impact risk, and the raw `agent_route` JSON path when `--json` is used.
+- `--summary-json` writes the same core metrics in a compact machine-readable
+  contract for CI artifacts, README evidence snippets, or benchmark aggregation.
 
 ## 3. MCP Server Starts And Lists Tools
 

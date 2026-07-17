@@ -7,6 +7,7 @@ TASK="${CODEINSIGHT_EVIDENCE_TASK:-understand the main application entrypoint}"
 TOKEN_BUDGET="${CODEINSIGHT_EVIDENCE_TOKEN_BUDGET:-6000}"
 OUTPUT_FILE="${CODEINSIGHT_EVIDENCE_OUTPUT:-}"
 JSON_FILE="${CODEINSIGHT_EVIDENCE_JSON:-}"
+SUMMARY_JSON="${CODEINSIGHT_EVIDENCE_SUMMARY_JSON:-}"
 FORCE_INDEX="${CODEINSIGHT_EVIDENCE_FORCE_INDEX:-1}"
 CODEINSIGHT_BIN="${CODEINSIGHT_BIN:-}"
 TEMP_DIR=""
@@ -24,6 +25,7 @@ Options:
   --token-budget N      Token budget for context_pack. Default: 6000.
   --output PATH         Write Markdown evidence to PATH instead of stdout.
   --json PATH           Save the raw agent_route JSON to PATH.
+  --summary-json PATH   Write a compact machine-readable evidence summary.
   --bin PATH            Use a specific codeinsight binary.
   --no-force-index      Reuse the existing index when available.
   -h, --help            Show this help text.
@@ -34,6 +36,7 @@ Environment:
   CODEINSIGHT_EVIDENCE_TOKEN_BUDGET
   CODEINSIGHT_EVIDENCE_OUTPUT
   CODEINSIGHT_EVIDENCE_JSON
+  CODEINSIGHT_EVIDENCE_SUMMARY_JSON
   CODEINSIGHT_EVIDENCE_FORCE_INDEX
   CODEINSIGHT_BIN
 EOF
@@ -82,6 +85,11 @@ parse_args() {
       --json)
         [ "$#" -ge 2 ] || fail "--json requires a path"
         JSON_FILE="$2"
+        shift 2
+        ;;
+      --summary-json)
+        [ "$#" -ge 2 ] || fail "--summary-json requires a path"
+        SUMMARY_JSON="$2"
         shift 2
         ;;
       --bin)
@@ -204,6 +212,71 @@ write_markdown() {
   } >"$target"
 }
 
+write_summary_json() {
+  local route_json="$1"
+  local target="$2"
+  local total_lines selected_lines reduction
+
+  total_lines="$(json_value "$route_json" '.overview.total_lines // 0')"
+  selected_lines="$(selected_context_lines "$route_json")"
+  reduction="$(line_reduction "$total_lines" "$selected_lines")"
+
+  mkdir -p "$(dirname "$target")"
+  jq \
+    --arg repository "$REPO_ROOT" \
+    --arg markdown "$OUTPUT_FILE" \
+    --arg raw_agent_route_json "$JSON_FILE" \
+    --argjson selected_lines "$selected_lines" \
+    --arg line_reduction "$reduction" \
+    '{
+      status: "pass",
+      repository: $repository,
+      task,
+      token_budget,
+      route_tools: [.route[].tool],
+      execution_plan_actions: [.execution_plan[].action],
+      metrics: {
+        indexed_files: .index_report.indexed_files,
+        symbols: .index_report.symbols,
+        index_errors: (.index_report.errors | length),
+        entrypoints: (.overview.entrypoints | length),
+        recommended_next_tools: (.overview.recommended_next_tools | length),
+        total_lines: (.overview.total_lines // 0),
+        selected_lines: $selected_lines,
+        line_reduction: $line_reduction,
+        selected_files: (.context_pack.files | length),
+        selected_ranges: .context_pack.budget.selected_ranges,
+        estimated_tokens: .context_pack.estimated_tokens,
+        reading_plan_steps: (.context_pack.reading_plan | length),
+        execution_plan_steps: (.execution_plan | length),
+        first_file: (.context_pack.files[0].file // ""),
+        first_reading_question: (.context_pack.reading_plan[0].question // ""),
+        first_next_action: (.context_pack.reading_plan[0].next_action // ""),
+        first_suggested_tool: (.execution_plan[1].suggested_tool.tool // ""),
+        continuation_status: (.context_pack.continuation_summary.status // ""),
+        risk_level: (.impact_analysis.risk_level // "not_available"),
+        impacted_files: (.impact_analysis.impact_counts.impacted_files // 0),
+        suggested_checks: (.impact_analysis.suggested_checks | length)
+      },
+      artifacts: {
+        markdown: $markdown,
+        raw_agent_route_json: $raw_agent_route_json
+      }
+    }' "$route_json" >"$target"
+
+  jq -e \
+    '.status == "pass"
+      and .route_tools == ["index_project", "project_overview", "context_pack", "impact_analysis"]
+      and (.metrics.total_lines | type == "number")
+      and (.metrics.selected_lines | type == "number")
+      and (.metrics.line_reduction | type == "string" and length > 0)
+      and (.metrics.first_file | type == "string" and length > 0)
+      and (.metrics.first_reading_question | type == "string" and length > 0)
+      and (.metrics.risk_level | type == "string" and length > 0)' \
+    "$target" >/dev/null ||
+    fail "summary JSON does not match the local evidence contract"
+}
+
 main() {
   parse_args "$@"
   require_command jq
@@ -268,13 +341,24 @@ main() {
   fi
   write_markdown "$route_json" "$markdown_file"
 
+  if [ -n "$SUMMARY_JSON" ]; then
+    write_summary_json "$route_json" "$SUMMARY_JSON"
+  fi
+
   if [ -n "$OUTPUT_FILE" ]; then
     echo "local repo evidence written to $OUTPUT_FILE"
     if [ -n "$JSON_FILE" ]; then
       echo "raw agent_route JSON written to $JSON_FILE"
     fi
+    if [ -n "$SUMMARY_JSON" ]; then
+      echo "local repo evidence summary JSON written to $SUMMARY_JSON"
+    fi
   else
     cat "$markdown_file"
+    if [ -n "$SUMMARY_JSON" ]; then
+      echo
+      echo "local repo evidence summary JSON written to $SUMMARY_JSON"
+    fi
   fi
 }
 
