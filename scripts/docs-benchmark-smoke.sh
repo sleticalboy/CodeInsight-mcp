@@ -673,6 +673,9 @@ main() {
     'first_next_action' \
     "agent-router next action output"
   require_pattern scripts/agent-router-demo.sh \
+    'first_reading_question' \
+    "agent-router first reading question output"
+  require_pattern scripts/agent-router-demo.sh \
     'reading_plan_reason' \
     "agent-router reading-plan reason output"
   require_pattern scripts/agent-router-demo.sh \
@@ -687,6 +690,9 @@ main() {
   require_pattern scripts/agent-router-demo.sh \
     'require_json_string "\$context_json" '\''\.reading_plan\[0\]\.next_action'\''' \
     "agent-router next action assertion"
+  require_pattern scripts/agent-router-demo.sh \
+    'require_json_string "\$context_json" '\''\.reading_plan\[0\]\.question'\''' \
+    "agent-router first reading question assertion"
   require_pattern scripts/agent-router-demo.sh \
     'require_json_string "\$context_json" '\''\.reading_plan\[0\]\.reason'\''' \
     "agent-router reading-plan reason assertion"
