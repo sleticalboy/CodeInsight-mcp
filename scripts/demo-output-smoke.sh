@@ -56,6 +56,9 @@ main() {
     'second_execution_action: use_current_reading_step_suggested_tool' \
     "second execution action metric"
   require_pattern docs/demo-output.md \
+    'first_execution_suggested_tool: file_outline' \
+    "first execution suggested tool metric"
+  require_pattern docs/demo-output.md \
     'first_next_action: inspect_seed_file' \
     "first next action metric"
   require_pattern docs/demo-output.md \
@@ -88,6 +91,9 @@ main() {
   require_pattern docs/demo-output.md \
     'execution_plan starts with read_selected_context, then use_current_reading_step_suggested_tool' \
     "execution plan talk track"
+  require_pattern docs/demo-output.md \
+    'The first execution-plan suggested tool is file_outline; offer it only after the selected file has been read\.' \
+    "execution suggested tool talk track"
   require_pattern docs/demo-output.md \
     'The first reading-plan action is inspect_seed_file; Read this step to answer:' \
     "reading reason talk track"
