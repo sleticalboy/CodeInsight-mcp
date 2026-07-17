@@ -164,6 +164,36 @@ scripts/mcp-stdio-smoke.sh
 files, execution plan, suggested tool, and impact preview without reading the
 full protocol smoke log.
 
+Expected output shape:
+
+```json
+{
+  "status": "pass",
+  "server": "codeinsight",
+  "route_tools": [
+    "index_project",
+    "project_overview",
+    "context_pack",
+    "impact_analysis"
+  ],
+  "selected_files": ["src/main.ts", "src/auth.ts"],
+  "execution_plan_actions": [
+    "read_selected_context",
+    "use_current_reading_step_suggested_tool",
+    "use_continuation_if_needed",
+    "review_impact_before_edits"
+  ],
+  "suggested_tool": {
+    "tool": "file_outline",
+    "arguments": {
+      "path": "/absolute/path/to/repo/src/main.ts"
+    }
+  },
+  "suggested_tool_executed": true,
+  "impact_status": "complete"
+}
+```
+
 Against a real repository:
 
 ```bash

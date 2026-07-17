@@ -160,6 +160,18 @@ main() {
     '\| You want a copyable first MCP call summary \| `scripts/mcp-first-call-smoke\.sh` \|' \
     "quickstart MCP first-call chooser"
   require_pattern docs/quickstart.md \
+    'Expected output shape:' \
+    "quickstart MCP first-call output shape"
+  require_pattern docs/quickstart.md \
+    '"route_tools": \[' \
+    "quickstart MCP first-call route tools"
+  require_pattern docs/quickstart.md \
+    '"suggested_tool_executed": true' \
+    "quickstart MCP first-call suggested tool execution"
+  require_pattern docs/quickstart.md \
+    '"impact_status": "complete"' \
+    "quickstart MCP first-call impact status"
+  require_pattern docs/quickstart.md \
     '\| You are wiring an MCP client from this checkout \| `scripts/mcp-stdio-smoke\.sh` \|' \
     "quickstart MCP smoke chooser"
   require_pattern docs/quickstart.md \
@@ -257,6 +269,9 @@ main() {
   require_pattern docs/mcp-client-config.md \
     'For a shorter copyable check, run `scripts/mcp-first-call-smoke\.sh`' \
     "MCP client config first-call smoke"
+  require_pattern docs/mcp-client-config.md \
+    'Expected summary shape:' \
+    "MCP client config first-call summary shape"
   require_pattern docs/mcp-client-config.md \
     '\[Client integration examples\]\(client-integration-examples\.md\)' \
     "MCP client config integration examples link"

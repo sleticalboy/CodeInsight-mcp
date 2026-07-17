@@ -221,6 +221,36 @@ For a shorter copyable check, run `scripts/mcp-first-call-smoke.sh`. It prints
 a JSON summary with `route_tools`, `selected_files`, `execution_plan_actions`,
 `suggested_tool`, `suggested_tool_executed`, and `impact_status`.
 
+Expected summary shape:
+
+```json
+{
+  "status": "pass",
+  "server": "codeinsight",
+  "route_tools": [
+    "index_project",
+    "project_overview",
+    "context_pack",
+    "impact_analysis"
+  ],
+  "selected_files": ["src/main.ts", "src/auth.ts"],
+  "execution_plan_actions": [
+    "read_selected_context",
+    "use_current_reading_step_suggested_tool",
+    "use_continuation_if_needed",
+    "review_impact_before_edits"
+  ],
+  "suggested_tool": {
+    "tool": "file_outline",
+    "arguments": {
+      "path": "/absolute/path/to/repo/src/main.ts"
+    }
+  },
+  "suggested_tool_executed": true,
+  "impact_status": "complete"
+}
+```
+
 ## Tool Inputs
 
 CodeInsight tools accept explicit repository or file paths. The server does not

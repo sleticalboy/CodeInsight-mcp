@@ -670,6 +670,18 @@ main() {
     '`route_tools`, `selected_files`, `execution_plan_actions`' \
     "MCP client config first-call JSON fields"
   require_pattern docs/mcp-client-config.md \
+    'Expected summary shape:' \
+    "MCP client config first-call summary example"
+  require_pattern docs/mcp-client-config.md \
+    '"selected_files": \["src/main\.ts", "src/auth\.ts"\]' \
+    "MCP client config first-call selected files example"
+  require_pattern docs/mcp-client-config.md \
+    '"use_current_reading_step_suggested_tool"' \
+    "MCP client config first-call execution action example"
+  require_pattern docs/mcp-client-config.md \
+    '"tool": "file_outline"' \
+    "MCP client config first-call suggested tool example"
+  require_pattern docs/mcp-client-config.md \
     'Expected first-call signals:' \
     "MCP client config first-call signals"
   require_pattern docs/mcp-client-config.md \
