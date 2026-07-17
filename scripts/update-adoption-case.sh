@@ -227,9 +227,11 @@ write_case_doc() {
   first_tool="$(json_value "$summary_json" '.metrics.first_suggested_tool')"
   risk="$(json_value "$summary_json" '.metrics.risk_level')"
   impacted="$(json_value "$summary_json" '.metrics.impacted_files')"
-  wrapper_note_section=""
+  wrapper_note_section="Generate a fresh comparison against the current $CASE_SUBJECT default branch:"
   if [ -n "$CASE_WRAPPER_NOTE" ]; then
-    wrapper_note_section="$CASE_WRAPPER_NOTE"
+    wrapper_note_section="$CASE_WRAPPER_NOTE
+
+$wrapper_note_section"
   fi
 
   mkdir -p "$(dirname "$target")"
@@ -301,8 +303,6 @@ scripts/update-adoption-case.sh $CASE_NAME --commit $commit_full
 \`\`\`
 
 $wrapper_note_section
-
-Generate a fresh comparison against the current $CASE_SUBJECT default branch:
 
 \`\`\`bash
 rm -rf /tmp/codeinsight-case-$CASE_NAME

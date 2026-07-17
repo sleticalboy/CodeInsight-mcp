@@ -64,8 +64,6 @@ Recreate this exact snapshot:
 scripts/update-adoption-case.sh gin --commit 34dac209ffb6ef85cc78c5d217bbb7ad001d68fd
 ```
 
-
-
 Generate a fresh comparison against the current Gin default branch:
 
 ```bash
@@ -85,4 +83,3 @@ Artifacts written by the command:
 - `/tmp/codeinsight-adoption-case-gin/evidence/summary.json`
 - `/tmp/codeinsight-adoption-case-gin/evidence/local-repo-evidence.json`
 - `/tmp/codeinsight-adoption-case-gin/evidence/agent-route.json`
-

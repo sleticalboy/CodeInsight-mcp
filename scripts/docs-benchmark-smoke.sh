@@ -101,6 +101,9 @@ main() {
     '\[Large repository benchmark\]\(docs/benchmark-large\.md\).*express, Flask, Gin,' \
     "large benchmark link and repository list"
   require_pattern README.md \
+    '\[Adoption cases\]\(docs/adoption-cases\.md\)' \
+    "README adoption cases summary link"
+  require_pattern README.md \
     '\[Express adoption case\]\(docs/adoption-case-express\.md\)' \
     "README Express adoption case link"
   require_pattern README.md \
@@ -112,6 +115,12 @@ main() {
   require_pattern README.md \
     '472 of 24,099 source lines' \
     "README Gin adoption case snapshot"
+  require_pattern README.md \
+    '704 of 45,577 source lines' \
+    "README adoption cases aggregate snapshot"
+  require_pattern README.md \
+    '64\.7x aggregate read-less ratio' \
+    "README adoption cases aggregate read-less ratio"
   require_pattern README.md \
     'scripts/update-adoption-case\.sh express' \
     "README Express adoption case refresh command"
@@ -179,6 +188,9 @@ main() {
     'source lines avoided, read-less ratio' \
     "adoption checklist comparison metrics"
   require_pattern docs/adoption-checklist.md \
+    '\[Adoption cases\]\(adoption-cases\.md\)' \
+    "adoption checklist adoption cases summary link"
+  require_pattern docs/adoption-checklist.md \
     '\[Express adoption case\]\(adoption-case-express\.md\)' \
     "adoption checklist Express case link"
   require_pattern docs/adoption-checklist.md \
@@ -202,6 +214,9 @@ main() {
   require_pattern docs/README.md \
     'Adoption comparison evidence' \
     "docs index adoption comparison validation row"
+  require_pattern docs/README.md \
+    '\[Adoption cases\]\(adoption-cases\.md\)' \
+    "docs index adoption cases summary link"
   require_pattern docs/README.md \
     '\[Express adoption case\]\(adoption-case-express\.md\)' \
     "docs index Express adoption case link"
@@ -244,6 +259,21 @@ main() {
   require_pattern docs/adoption-case-gin.md \
     'scripts/adoption-comparison\.sh /tmp/codeinsight-case-gin' \
     "Gin adoption case reproduce command"
+  require_pattern docs/adoption-cases.md \
+    'Blind first-read baseline: `45,577` source lines' \
+    "adoption cases aggregate baseline"
+  require_pattern docs/adoption-cases.md \
+    'Aggregate first-read reduction: `98\.5%`' \
+    "adoption cases aggregate reduction"
+  require_pattern docs/adoption-cases.md \
+    'Aggregate read-less ratio: `64\.7x`' \
+    "adoption cases aggregate read-less ratio"
+  require_pattern docs/adoption-cases.md \
+    '\[case\]\(adoption-case-express\.md\)' \
+    "adoption cases Express detail link"
+  require_pattern docs/adoption-cases.md \
+    '\[case\]\(adoption-case-gin\.md\)' \
+    "adoption cases Gin detail link"
   require_pattern scripts/update-adoption-case.sh \
     'Refreshes a checked-in adoption case from a live adoption-comparison run' \
     "Express adoption case update script purpose"

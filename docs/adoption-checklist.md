@@ -90,7 +90,8 @@ Pass criteria:
 - `adoption-comparison.sh` writes a blind-read vs routed-first-read Markdown
   report and `summary.json` with source lines avoided, read-less ratio, seed
   strategy, first selected file, first reading question, and artifact paths.
-- Use the [Express adoption case](adoption-case-express.md) and
+- Use the [Adoption cases](adoption-cases.md) summary plus the
+  [Express adoption case](adoption-case-express.md) and
   [Gin adoption case](adoption-case-gin.md) as reference shapes for public
   repository comparison snapshots.
 - Run `scripts/update-adoption-case.sh express` to refresh that checked-in case
