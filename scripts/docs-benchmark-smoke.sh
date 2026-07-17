@@ -158,6 +158,12 @@ main() {
   require_pattern scripts/benchmark-smoke.sh \
     '"tokio"' \
     "tokio fixture"
+  require_pattern scripts/benchmark-smoke.sh \
+    'first_reading_question' \
+    "benchmark first reading question guardrail"
+  require_pattern scripts/benchmark-smoke.sh \
+    '\| File \| Question \| Next action \| Suggested tool \| Reason \| Selection reason \|' \
+    "benchmark reading-plan question column"
 
   require_pattern docs/benchmark-v0.1.md \
     '^# CodeInsight v0\.1 Smoke Benchmark$' \
@@ -190,8 +196,14 @@ main() {
     'Context reading plan:' \
     "smoke context reading plan section"
   require_pattern docs/benchmark-v0.1.md \
+    '\| File \| Question \| Next action \| Suggested tool \| Reason \| Selection reason \|' \
+    "smoke context reading plan question column"
+  require_pattern docs/benchmark-v0.1.md \
     '\| `reading_plan_steps` \| >= [0-9]+' \
     "smoke reading plan guardrail"
+  require_pattern docs/benchmark-v0.1.md \
+    '\| `first_reading_question` \| present \|' \
+    "smoke reading question guardrail"
   require_pattern docs/benchmark-v0.1.md \
     '\| `first_reading_reason` \| present \|' \
     "smoke reading reason guardrail"
@@ -228,8 +240,14 @@ main() {
     'Context reading plan:' \
     "large context reading plan section"
   require_pattern docs/benchmark-large.md \
+    '\| File \| Question \| Next action \| Suggested tool \| Reason \| Selection reason \|' \
+    "large context reading plan question column"
+  require_pattern docs/benchmark-large.md \
     '\| `reading_plan_steps` \| >= [0-9]+' \
     "large reading plan guardrail"
+  require_pattern docs/benchmark-large.md \
+    '\| `first_reading_question` \| present \|' \
+    "large reading question guardrail"
   require_pattern docs/benchmark-large.md \
     '\| `first_reading_reason` \| present \|' \
     "large reading reason guardrail"

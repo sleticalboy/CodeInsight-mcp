@@ -1,6 +1,6 @@
 # CodeInsight v0.1 Smoke Benchmark
 
-Generated at: 2026-07-16 16:37:45 UTC
+Generated at: 2026-07-17 07:15:22 UTC
 
 This is a benchmark fixture report, not a controlled performance benchmark. It
 verifies that CodeInsight can index real public repositories across the MVP
@@ -21,10 +21,10 @@ Environment:
 
 | Repository | Focus | Commit | Files | Lines | Symbols | Skipped | Errors | Index ms | Index budget ms | Budget status | DB size | Entrypoints | First entrypoint | Recommended tools | First recommended tool | Context files | Ranges | Context lines | Line reduction | Tokens | Applied budget | Omitted files | Continuation | Truncated | First context file |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |
-| p-limit | TypeScript | `42599eb` | 6 | 1123 | 184 | 10 | 0 | 68 | 5000 | pass | 216K | 4 | `index.js` | 4 | `context_pack` | 1 | 5 | 102 | 90.9% | 875 | 6000 | 0 | lower_ranked_context_omitted | false | `index.js` |
-| itsdangerous | Python | `672971d` | 15 | 1712 | 144 | 35 | 0 | 48 | 5000 | pass | 248K | 0 | `-` | 4 | `context_pack` | 4 | 8 | 242 | 85.9% | 2373 | 6000 | 0 | complete | false | `src/itsdangerous/serializer.py` |
-| go-example | Go | `7f05d21` | 38 | 3537 | 189 | 33 | 0 | 78 | 5000 | pass | 264K | 12 | `gotypes/defsuses/main.go` | 4 | `context_pack` | 4 | 6 | 89 | 97.5% | 600 | 6000 | 0 | lower_ranked_context_omitted | false | `hello/hello.go` |
-| memchr | Rust | `bce7df7` | 64 | 69381 | 4046 | 110 | 0 | 719 | 10000 | pass | 2.3M | 12 | `benchmarks/engines/libc/main.rs` | 4 | `context_pack` | 7 | 7 | 196 | 99.7% | 1899 | 6000 | 0 | complete | false | `src/lib.rs` |
+| p-limit | TypeScript | `42599eb` | 6 | 1123 | 184 | 10 | 0 | 59 | 5000 | pass | 216K | 4 | `index.js` | 4 | `context_pack` | 1 | 5 | 102 | 90.9% | 875 | 6000 | 0 | lower_ranked_context_omitted | false | `index.js` |
+| itsdangerous | Python | `672971d` | 15 | 1712 | 144 | 35 | 0 | 46 | 5000 | pass | 248K | 0 | `-` | 4 | `context_pack` | 4 | 8 | 242 | 85.9% | 2373 | 6000 | 0 | complete | false | `src/itsdangerous/serializer.py` |
+| go-example | Go | `7f05d21` | 38 | 3537 | 189 | 33 | 0 | 81 | 5000 | pass | 264K | 12 | `gotypes/defsuses/main.go` | 4 | `context_pack` | 4 | 6 | 89 | 97.5% | 600 | 6000 | 0 | lower_ranked_context_omitted | false | `hello/hello.go` |
+| memchr | Rust | `bce7df7` | 64 | 69381 | 4046 | 110 | 0 | 708 | 10000 | pass | 2.3M | 12 | `benchmarks/engines/libc/main.rs` | 4 | `context_pack` | 7 | 7 | 196 | 99.7% | 1899 | 6000 | 0 | complete | false | `src/lib.rs` |
 
 ## Key Results
 
@@ -32,7 +32,7 @@ Environment:
 - Agent routing: `context_pack` was the first recommended tool for 4/4 repositories.
 - Context compression: selected 629 of 75753 source lines (99.2% reduction) across 16 files and 26 ranges.
 - Token budget: 5747 estimated tokens total, 1437 average tokens per repository, with a 6000 token budget per context pack.
-- Indexing: 913 ms total, 228 ms average per repository, with 0 budget failures.
+- Indexing: 894 ms total, 224 ms average per repository, with 0 budget failures.
 - Guardrails: 0 context, 0 symbol, 0 call target, and 0 call edge failures.
 - Truncation: 0 context packs reported truncated output.
 
@@ -44,7 +44,7 @@ Environment:
 - Commit: `42599ebbbb1228a5bdab381fcf8f4ac20eb8d551`
 - Indexed files: 6
 - Symbols: 184
-- Duration: 68 ms
+- Duration: 59 ms
 - Index budget: 5000 ms (pass)
 - Entrypoint candidates: 4
 - First entrypoint candidate: `index.js`
@@ -88,9 +88,9 @@ Context pack files:
 
 Context reading plan:
 
-| File | Next action | Suggested tool | Reason | Selection reason |
-| --- | --- | --- | --- | --- |
-| `index.js` | `inspect_seed_file` | `file_outline` | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: index.js | Selected for high relevance via seed_file: Seed file header and imports for task: index.js |
+| File | Question | Next action | Suggested tool | Reason | Selection reason |
+| --- | --- | --- | --- | --- | --- |
+| `index.js` | What entrypoints, exported symbols, or setup code define the main flow here? | `inspect_seed_file` | `file_outline` | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: index.js | Selected for high relevance via seed_file: Seed file header and imports for task: index.js |
 
 Language breakdown:
 
@@ -108,6 +108,7 @@ Context pack guardrails:
 | `selected_ranges` | >= 3 | 5 | pass |
 | `reading_plan_steps` | >= 1 | 1 | pass |
 | `first_next_action` | present | inspect_seed_file | pass |
+| `first_reading_question` | present | What entrypoints, exported symbols, or setup code define the main flow here? | pass |
 | `first_reading_reason` | present | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: index.js | pass |
 | `first_selection_reason` | present | Selected for high relevance via seed_file: Seed file header and imports for task: index.js | pass |
 | `estimated_tokens` | <= 1200 and applied budget | 875 / 6000 | pass |
@@ -119,7 +120,7 @@ Context pack guardrails:
 - Commit: `672971d66a2ef9f85151e53283113f33d642dabd`
 - Indexed files: 15
 - Symbols: 144
-- Duration: 48 ms
+- Duration: 46 ms
 - Index budget: 5000 ms (pass)
 - Entrypoint candidates: 0
 - First entrypoint candidate: `-`
@@ -163,12 +164,12 @@ Context pack files:
 
 Context reading plan:
 
-| File | Next action | Suggested tool | Reason | Selection reason |
-| --- | --- | --- | --- | --- |
-| `src/itsdangerous/serializer.py` | `inspect_seed_file` | `file_outline` | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: src/itsdangerous/serializer.py; matched task keywords: serializer | Selected for high relevance via seed_file: Seed file header and imports for task: src/itsdangerous/serializer.py; matched task keywords: serializer |
-| `src/itsdangerous/encoding.py` | `inspect_dependency` | `dependency_graph` | Read this step to answer: What imported local dependency behavior is required to understand this file? If deeper evidence is needed, call dependency_graph. Selection reason: Selected for medium relevance via dependency: Local dependency of src/itsdangerous/serializer.py via .encoding; Local dependency of src/itsdangerous/serializer.py via .encoding.want_bytes | Selected for medium relevance via dependency: Local dependency of src/itsdangerous/serializer.py via .encoding; Local dependency of src/itsdangerous/serializer.py via .encoding.want_bytes |
-| `src/itsdangerous/exc.py` | `inspect_dependency` | `dependency_graph` | Read this step to answer: What imported local dependency behavior is required to understand this file? If deeper evidence is needed, call dependency_graph. Selection reason: Selected for medium relevance via dependency: Local dependency of src/itsdangerous/serializer.py via .exc; Local dependency of src/itsdangerous/serializer.py via .exc.BadPayload; Local dependency of src/itsdangerous/serializer.py via .exc.BadSignature | Selected for medium relevance via dependency: Local dependency of src/itsdangerous/serializer.py via .exc; Local dependency of src/itsdangerous/serializer.py via .exc.BadPayload; Local dependency of src/itsdangerous/serializer.py via .exc.BadSignature |
-| `src/itsdangerous/signer.py` | `inspect_dependency` | `dependency_graph` | Read this step to answer: What imported local dependency behavior is required to understand this file? If deeper evidence is needed, call dependency_graph. Selection reason: Selected for medium relevance via dependency: Local dependency of src/itsdangerous/serializer.py via .signer; Local dependency of src/itsdangerous/serializer.py via .signer._make_keys_list; Local dependency of src/itsdangerous/serializer.py via .signer.Signer | Selected for medium relevance via dependency: Local dependency of src/itsdangerous/serializer.py via .signer; Local dependency of src/itsdangerous/serializer.py via .signer._make_keys_list; Local dependency of src/itsdangerous/serializer.py via .signer.Signer |
+| File | Question | Next action | Suggested tool | Reason | Selection reason |
+| --- | --- | --- | --- | --- | --- |
+| `src/itsdangerous/serializer.py` | What entrypoints, exported symbols, or setup code define the main flow here? | `inspect_seed_file` | `file_outline` | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: src/itsdangerous/serializer.py; matched task keywords: serializer | Selected for high relevance via seed_file: Seed file header and imports for task: src/itsdangerous/serializer.py; matched task keywords: serializer |
+| `src/itsdangerous/encoding.py` | What imported local dependency behavior is required to understand this file? | `inspect_dependency` | `dependency_graph` | Read this step to answer: What imported local dependency behavior is required to understand this file? If deeper evidence is needed, call dependency_graph. Selection reason: Selected for medium relevance via dependency: Local dependency of src/itsdangerous/serializer.py via .encoding; Local dependency of src/itsdangerous/serializer.py via .encoding.want_bytes | Selected for medium relevance via dependency: Local dependency of src/itsdangerous/serializer.py via .encoding; Local dependency of src/itsdangerous/serializer.py via .encoding.want_bytes |
+| `src/itsdangerous/exc.py` | What imported local dependency behavior is required to understand this file? | `inspect_dependency` | `dependency_graph` | Read this step to answer: What imported local dependency behavior is required to understand this file? If deeper evidence is needed, call dependency_graph. Selection reason: Selected for medium relevance via dependency: Local dependency of src/itsdangerous/serializer.py via .exc; Local dependency of src/itsdangerous/serializer.py via .exc.BadPayload; Local dependency of src/itsdangerous/serializer.py via .exc.BadSignature | Selected for medium relevance via dependency: Local dependency of src/itsdangerous/serializer.py via .exc; Local dependency of src/itsdangerous/serializer.py via .exc.BadPayload; Local dependency of src/itsdangerous/serializer.py via .exc.BadSignature |
+| `src/itsdangerous/signer.py` | What imported local dependency behavior is required to understand this file? | `inspect_dependency` | `dependency_graph` | Read this step to answer: What imported local dependency behavior is required to understand this file? If deeper evidence is needed, call dependency_graph. Selection reason: Selected for medium relevance via dependency: Local dependency of src/itsdangerous/serializer.py via .signer; Local dependency of src/itsdangerous/serializer.py via .signer._make_keys_list; Local dependency of src/itsdangerous/serializer.py via .signer.Signer | Selected for medium relevance via dependency: Local dependency of src/itsdangerous/serializer.py via .signer; Local dependency of src/itsdangerous/serializer.py via .signer._make_keys_list; Local dependency of src/itsdangerous/serializer.py via .signer.Signer |
 
 Language breakdown:
 
@@ -185,6 +186,7 @@ Context pack guardrails:
 | `selected_ranges` | >= 6 | 8 | pass |
 | `reading_plan_steps` | >= 3 | 4 | pass |
 | `first_next_action` | present | inspect_seed_file | pass |
+| `first_reading_question` | present | What entrypoints, exported symbols, or setup code define the main flow here? | pass |
 | `first_reading_reason` | present | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: src/itsdangerous/serializer.py; matched task keywords: serializer | pass |
 | `first_selection_reason` | present | Selected for high relevance via seed_file: Seed file header and imports for task: src/itsdangerous/serializer.py; matched task keywords: serializer | pass |
 | `estimated_tokens` | <= 3000 and applied budget | 2373 / 6000 | pass |
@@ -196,7 +198,7 @@ Context pack guardrails:
 - Commit: `7f05d217867b2af52b0a28c6d1c91df97e1b5b39`
 - Indexed files: 38
 - Symbols: 189
-- Duration: 78 ms
+- Duration: 81 ms
 - Index budget: 5000 ms (pass)
 - Entrypoint candidates: 12
 - First entrypoint candidate: `gotypes/defsuses/main.go`
@@ -244,12 +246,12 @@ Context pack files:
 
 Context reading plan:
 
-| File | Next action | Suggested tool | Reason | Selection reason |
-| --- | --- | --- | --- | --- |
-| `hello/hello.go` | `inspect_seed_file` | `file_outline` | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: hello/hello.go; matched task keywords: hello | Selected for high relevance via seed_file: Seed file header and imports for task: hello/hello.go; matched task keywords: hello |
-| `helloserver/server.go` | `follow_call_graph` | `impact_analysis` | Read this step to answer: Which callers or callees explain how control moves through this flow? If deeper evidence is needed, call impact_analysis. Selection reason: Selected for high relevance via call_graph: Call graph caller of usage via main | Selected for high relevance via call_graph: Call graph caller of usage via main |
-| `internal/cmd/weave/weave.go` | `follow_call_graph` | `impact_analysis` | Read this step to answer: Which callers or callees explain how control moves through this flow? If deeper evidence is needed, call impact_analysis. Selection reason: Selected for medium relevance via call_graph: Call graph caller of flag.Usage via main | Selected for medium relevance via call_graph: Call graph caller of flag.Usage via main |
-| `hello/reverse/reverse.go` | `inspect_dependency` | `dependency_graph` | Read this step to answer: What imported local dependency behavior is required to understand this file? If deeper evidence is needed, call dependency_graph. Selection reason: Selected for medium relevance via dependency: Local dependency of hello/hello.go via golang.org/x/example/hello/reverse | Selected for medium relevance via dependency: Local dependency of hello/hello.go via golang.org/x/example/hello/reverse |
+| File | Question | Next action | Suggested tool | Reason | Selection reason |
+| --- | --- | --- | --- | --- | --- |
+| `hello/hello.go` | What entrypoints, exported symbols, or setup code define the main flow here? | `inspect_seed_file` | `file_outline` | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: hello/hello.go; matched task keywords: hello | Selected for high relevance via seed_file: Seed file header and imports for task: hello/hello.go; matched task keywords: hello |
+| `helloserver/server.go` | Which callers or callees explain how control moves through this flow? | `follow_call_graph` | `impact_analysis` | Read this step to answer: Which callers or callees explain how control moves through this flow? If deeper evidence is needed, call impact_analysis. Selection reason: Selected for high relevance via call_graph: Call graph caller of usage via main | Selected for high relevance via call_graph: Call graph caller of usage via main |
+| `internal/cmd/weave/weave.go` | Which callers or callees explain how control moves through this flow? | `follow_call_graph` | `impact_analysis` | Read this step to answer: Which callers or callees explain how control moves through this flow? If deeper evidence is needed, call impact_analysis. Selection reason: Selected for medium relevance via call_graph: Call graph caller of flag.Usage via main | Selected for medium relevance via call_graph: Call graph caller of flag.Usage via main |
+| `hello/reverse/reverse.go` | What imported local dependency behavior is required to understand this file? | `inspect_dependency` | `dependency_graph` | Read this step to answer: What imported local dependency behavior is required to understand this file? If deeper evidence is needed, call dependency_graph. Selection reason: Selected for medium relevance via dependency: Local dependency of hello/hello.go via golang.org/x/example/hello/reverse | Selected for medium relevance via dependency: Local dependency of hello/hello.go via golang.org/x/example/hello/reverse |
 
 Language breakdown:
 
@@ -267,6 +269,7 @@ Context pack guardrails:
 | `selected_ranges` | >= 4 | 6 | pass |
 | `reading_plan_steps` | >= 3 | 4 | pass |
 | `first_next_action` | present | inspect_seed_file | pass |
+| `first_reading_question` | present | What entrypoints, exported symbols, or setup code define the main flow here? | pass |
 | `first_reading_reason` | present | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: hello/hello.go; matched task keywords: hello | pass |
 | `first_selection_reason` | present | Selected for high relevance via seed_file: Seed file header and imports for task: hello/hello.go; matched task keywords: hello | pass |
 | `estimated_tokens` | <= 1000 and applied budget | 600 / 6000 | pass |
@@ -278,7 +281,7 @@ Context pack guardrails:
 - Commit: `bce7df7140acff420478a358cde5587904000cb1`
 - Indexed files: 64
 - Symbols: 4046
-- Duration: 719 ms
+- Duration: 708 ms
 - Index budget: 10000 ms (pass)
 - Entrypoint candidates: 12
 - First entrypoint candidate: `benchmarks/engines/libc/main.rs`
@@ -329,13 +332,13 @@ Context pack files:
 
 Context reading plan:
 
-| File | Next action | Suggested tool | Reason | Selection reason |
-| --- | --- | --- | --- | --- |
-| `src/lib.rs` | `inspect_seed_file` | `file_outline` | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: src/lib.rs | Selected for high relevance via seed_file: Seed file header and imports for task: src/lib.rs |
-| `src/memchr.rs` | `inspect_dependency` | `dependency_graph` | Read this step to answer: What imported local dependency behavior is required to understand this file? If deeper evidence is needed, call dependency_graph. Selection reason: Selected for medium relevance via dependency: Local dependency of src/lib.rs via memchr | Selected for medium relevance via dependency: Local dependency of src/lib.rs via memchr |
-| `src/cow.rs` | `inspect_dependency` | `dependency_graph` | Read this step to answer: What imported local dependency behavior is required to understand this file? If deeper evidence is needed, call dependency_graph. Selection reason: Selected for medium relevance via dependency: Local dependency of src/lib.rs via cow | Selected for medium relevance via dependency: Local dependency of src/lib.rs via cow |
-| `src/ext.rs` | `inspect_dependency` | `dependency_graph` | Read this step to answer: What imported local dependency behavior is required to understand this file? If deeper evidence is needed, call dependency_graph. Selection reason: Selected for medium relevance via dependency: Local dependency of src/lib.rs via ext | Selected for medium relevance via dependency: Local dependency of src/lib.rs via ext |
-| `src/macros.rs` | `inspect_dependency` | `dependency_graph` | Read this step to answer: What imported local dependency behavior is required to understand this file? If deeper evidence is needed, call dependency_graph. Selection reason: Selected for medium relevance via dependency: Local dependency of src/lib.rs via macros | Selected for medium relevance via dependency: Local dependency of src/lib.rs via macros |
+| File | Question | Next action | Suggested tool | Reason | Selection reason |
+| --- | --- | --- | --- | --- | --- |
+| `src/lib.rs` | What entrypoints, exported symbols, or setup code define the main flow here? | `inspect_seed_file` | `file_outline` | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: src/lib.rs | Selected for high relevance via seed_file: Seed file header and imports for task: src/lib.rs |
+| `src/memchr.rs` | What imported local dependency behavior is required to understand this file? | `inspect_dependency` | `dependency_graph` | Read this step to answer: What imported local dependency behavior is required to understand this file? If deeper evidence is needed, call dependency_graph. Selection reason: Selected for medium relevance via dependency: Local dependency of src/lib.rs via memchr | Selected for medium relevance via dependency: Local dependency of src/lib.rs via memchr |
+| `src/cow.rs` | What imported local dependency behavior is required to understand this file? | `inspect_dependency` | `dependency_graph` | Read this step to answer: What imported local dependency behavior is required to understand this file? If deeper evidence is needed, call dependency_graph. Selection reason: Selected for medium relevance via dependency: Local dependency of src/lib.rs via cow | Selected for medium relevance via dependency: Local dependency of src/lib.rs via cow |
+| `src/ext.rs` | What imported local dependency behavior is required to understand this file? | `inspect_dependency` | `dependency_graph` | Read this step to answer: What imported local dependency behavior is required to understand this file? If deeper evidence is needed, call dependency_graph. Selection reason: Selected for medium relevance via dependency: Local dependency of src/lib.rs via ext | Selected for medium relevance via dependency: Local dependency of src/lib.rs via ext |
+| `src/macros.rs` | What imported local dependency behavior is required to understand this file? | `inspect_dependency` | `dependency_graph` | Read this step to answer: What imported local dependency behavior is required to understand this file? If deeper evidence is needed, call dependency_graph. Selection reason: Selected for medium relevance via dependency: Local dependency of src/lib.rs via macros | Selected for medium relevance via dependency: Local dependency of src/lib.rs via macros |
 
 Language breakdown:
 
@@ -352,6 +355,7 @@ Context pack guardrails:
 | `selected_ranges` | >= 5 | 7 | pass |
 | `reading_plan_steps` | >= 5 | 7 | pass |
 | `first_next_action` | present | inspect_seed_file | pass |
+| `first_reading_question` | present | What entrypoints, exported symbols, or setup code define the main flow here? | pass |
 | `first_reading_reason` | present | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: src/lib.rs | pass |
 | `first_selection_reason` | present | Selected for high relevance via seed_file: Seed file header and imports for task: src/lib.rs | pass |
 | `estimated_tokens` | <= 2500 and applied budget | 1899 / 6000 | pass |
