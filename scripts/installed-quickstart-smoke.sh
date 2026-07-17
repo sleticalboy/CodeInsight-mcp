@@ -159,6 +159,21 @@ if [step["tool"] for step in agent_route["route"]] != [
     "impact_analysis",
 ]:
     raise AssertionError(agent_route["route"])
+if [step["action"] for step in agent_route["execution_plan"]] != [
+    "read_selected_context",
+    "use_current_reading_step_suggested_tool",
+    "use_continuation_if_needed",
+    "review_impact_before_edits",
+]:
+    raise AssertionError(agent_route["execution_plan"])
+if agent_route["execution_plan"][0]["status"] != "ready":
+    raise AssertionError(agent_route["execution_plan"])
+if not agent_route["execution_plan"][0]["files"]:
+    raise AssertionError(agent_route["execution_plan"])
+if "reading_plan[] order" not in agent_route["execution_plan"][0]["instruction"]:
+    raise AssertionError(agent_route["execution_plan"])
+if not agent_route["execution_plan"][1]["suggested_tool"]["tool"]:
+    raise AssertionError(agent_route["execution_plan"])
 if not agent_route["context_pack"]["files"] or not agent_route["context_pack"]["reading_plan"]:
     raise AssertionError(agent_route["context_pack"])
 if agent_route["context_pack"]["budget"]["applied_token_budget"] != 1200:
@@ -287,6 +302,17 @@ try:
         "impact_analysis",
     ]:
         raise AssertionError(mcp_agent_route["route"])
+    if [step["action"] for step in mcp_agent_route["execution_plan"]] != [
+        "read_selected_context",
+        "use_current_reading_step_suggested_tool",
+        "use_continuation_if_needed",
+        "review_impact_before_edits",
+    ]:
+        raise AssertionError(mcp_agent_route["execution_plan"])
+    if mcp_agent_route["execution_plan"][0]["status"] != "ready":
+        raise AssertionError(mcp_agent_route["execution_plan"])
+    if not mcp_agent_route["execution_plan"][1]["suggested_tool"]["tool"]:
+        raise AssertionError(mcp_agent_route["execution_plan"])
     if not mcp_agent_route["context_pack"]["reading_plan"]:
         raise AssertionError(mcp_agent_route["context_pack"])
     mcp_agent_route_reading_step = assert_actionable_reading_plan(
@@ -317,11 +343,13 @@ print(json.dumps({
     "context_reading_reason": context_reading_step["reason"],
     "context_selection_reason": context_reading_step["selection_reason"],
     "agent_route_tools": [step["tool"] for step in agent_route["route"]],
+    "agent_route_execution_plan": [step["action"] for step in agent_route["execution_plan"]],
     "agent_route_context_files": len(agent_route["context_pack"]["files"]),
     "agent_route_reading_reason": agent_route_reading_step["reason"],
     "agent_route_selection_reason": agent_route_reading_step["selection_reason"],
     "agent_route_impact_status": agent_route["impact_status"],
     "mcp_agent_route_impact_status": mcp_agent_route["impact_status"],
+    "mcp_agent_route_execution_plan": [step["action"] for step in mcp_agent_route["execution_plan"]],
     "mcp_context_reading_reason": mcp_context_reading_step["reason"],
     "mcp_context_selection_reason": mcp_context_reading_step["selection_reason"],
     "mcp_agent_route_reading_reason": mcp_agent_route_reading_step["reason"],

@@ -122,6 +122,9 @@ Pass criteria:
 - The client can call `agent_route` for the default first-read path.
 - `agent_route.route[]` includes `index_project`, `project_overview`,
   `context_pack`, and `impact_analysis`.
+- `agent_route.execution_plan[]` includes `read_selected_context`,
+  `use_current_reading_step_suggested_tool`, `use_continuation_if_needed`, and
+  `review_impact_before_edits`.
 - `agent_route.context_pack.reading_plan[]` is present.
 - The client can call `index_project` for a local repository.
 - The client can call `project_overview` after indexing when step-by-step

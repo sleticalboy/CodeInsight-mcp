@@ -246,6 +246,7 @@ pub struct AgentRouteReport {
     pub task: String,
     pub token_budget: usize,
     pub route: Vec<AgentRouteStep>,
+    pub execution_plan: Vec<AgentRouteExecutionStep>,
     pub impact_seed_files: Vec<String>,
     pub impact_seed_symbols: Vec<String>,
     pub impact_status: String,
@@ -262,6 +263,18 @@ pub struct AgentRouteStep {
     pub tool: String,
     pub status: String,
     pub reason: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct AgentRouteExecutionStep {
+    pub order: usize,
+    pub action: String,
+    pub status: String,
+    pub instruction: String,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub files: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub suggested_tool: Option<ContextSuggestedTool>,
 }
 
 #[derive(Debug, Clone)]

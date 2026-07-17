@@ -271,6 +271,16 @@ try:
         "context_pack",
         "impact_analysis",
     ]
+    assert [step["action"] for step in agent_route_result["execution_plan"]] == [
+        "read_selected_context",
+        "use_current_reading_step_suggested_tool",
+        "use_continuation_if_needed",
+        "review_impact_before_edits",
+    ]
+    assert agent_route_result["execution_plan"][0]["status"] == "ready"
+    assert agent_route_result["execution_plan"][0]["files"]
+    assert "reading_plan[] order" in agent_route_result["execution_plan"][0]["instruction"]
+    assert agent_route_result["execution_plan"][1]["suggested_tool"]["tool"]
     assert agent_route_result["context_pack"]["reading_plan"], "agent_route produced no reading plan"
     assert agent_route_result["impact_status"] == "complete"
     assert agent_route_result["impact_analysis"]["format"] == "summary"

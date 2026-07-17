@@ -17,15 +17,15 @@ use crate::{
     embedding, index,
     language::detect_language,
     model::{
-        AgentRouteReport, AgentRouteStep, CallEdge, ConfigInitReport, ConfigStatusReport,
-        ContextBudget, ContextContinuationSummary, ContextFile, ContextOmittedCandidate,
-        ContextPack, ContextRange, ContextReadingRange, ContextReadingStep, ContextSeed,
-        ContextSemanticStatus, ContextSuggestedTool, Dependency, DependencyGraph,
-        EmbeddingProviderStatus, ImpactAnalysisReport, ImpactBreakdown, ImpactCounts, ImpactFile,
-        ImpactPath, IndexError, Language, OllamaEmbeddingStatus, OpenAiEmbeddingStatus,
-        ProjectIndexReport, ProjectOverview, ReferenceMatch, SemanticChunk, SemanticChunkInput,
-        SemanticEmbeddingInput, SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus,
-        SemanticSearchResult, SuggestedCheck, Symbol, SymbolKind, VersionInfo,
+        AgentRouteExecutionStep, AgentRouteReport, AgentRouteStep, CallEdge, ConfigInitReport,
+        ConfigStatusReport, ContextBudget, ContextContinuationSummary, ContextFile,
+        ContextOmittedCandidate, ContextPack, ContextRange, ContextReadingRange,
+        ContextReadingStep, ContextSeed, ContextSemanticStatus, ContextSuggestedTool, Dependency,
+        DependencyGraph, EmbeddingProviderStatus, ImpactAnalysisReport, ImpactBreakdown,
+        ImpactCounts, ImpactFile, ImpactPath, IndexError, Language, OllamaEmbeddingStatus,
+        OpenAiEmbeddingStatus, ProjectIndexReport, ProjectOverview, ReferenceMatch, SemanticChunk,
+        SemanticChunkInput, SemanticEmbeddingInput, SemanticEmbeddingMatch, SemanticIndexReport,
+        SemanticIndexStatus, SemanticSearchResult, SuggestedCheck, Symbol, SymbolKind, VersionInfo,
     },
     storage::Store,
 };
@@ -302,12 +302,15 @@ pub fn agent_route_value(
             },
         },
     ];
+    let execution_plan =
+        agent_route_execution_plan(&context_pack, &impact_status, impact_analysis.as_ref());
 
     Ok(AgentRouteReport {
         root: root.display().to_string(),
         task,
         token_budget,
         route,
+        execution_plan,
         impact_seed_files,
         impact_seed_symbols,
         impact_status,
@@ -316,6 +319,94 @@ pub fn agent_route_value(
         context_pack,
         impact_analysis,
     })
+}
+
+fn agent_route_execution_plan(
+    context_pack: &ContextPack,
+    impact_status: &str,
+    impact_analysis: Option<&ImpactAnalysisReport>,
+) -> Vec<AgentRouteExecutionStep> {
+    let reading_files = context_pack
+        .reading_plan
+        .iter()
+        .map(|step| step.file.clone())
+        .collect::<Vec<_>>();
+    let first_step = context_pack.reading_plan.first();
+
+    let mut plan = vec![AgentRouteExecutionStep {
+        order: 1,
+        action: "read_selected_context".to_string(),
+        status: if reading_files.is_empty() {
+            "blocked_no_reading_plan".to_string()
+        } else {
+            "ready".to_string()
+        },
+        instruction: match first_step {
+            Some(step) => format!(
+                "Read context_pack.files[] in reading_plan[] order, starting with {}. Treat reading_plan[].reason as the current-step instruction and selection_reason as evidence for why each file was selected.",
+                step.file
+            ),
+            None => {
+                "No reading_plan was produced; narrow the task or provide seed files before broad reading."
+                    .to_string()
+            }
+        },
+        files: reading_files,
+        suggested_tool: None,
+    }];
+
+    if let Some(step) = first_step {
+        plan.push(AgentRouteExecutionStep {
+            order: 2,
+            action: "use_current_reading_step_suggested_tool".to_string(),
+            status: "available_after_current_file".to_string(),
+            instruction: format!(
+                "After reading {}, call {} only if deeper evidence is needed for the current reading step.",
+                step.file, step.suggested_tool.tool
+            ),
+            files: vec![step.file.clone()],
+            suggested_tool: Some(step.suggested_tool.clone()),
+        });
+    }
+
+    let continuation = &context_pack.continuation_summary;
+    plan.push(AgentRouteExecutionStep {
+        order: plan.len() + 1,
+        action: "use_continuation_if_needed".to_string(),
+        status: match continuation.suggested_tool {
+            Some(_) => "available_after_selected_context".to_string(),
+            None if continuation.status == "complete" => "complete".to_string(),
+            None => "manual_after_selected_context".to_string(),
+        },
+        instruction: format!(
+            "Use continuation_summary only after selected context has been read. Current continuation status is {} with next_action {}.",
+            continuation.status, continuation.next_action
+        ),
+        files: continuation
+            .first_omitted_file
+            .iter()
+            .cloned()
+            .collect::<Vec<_>>(),
+        suggested_tool: continuation.suggested_tool.clone(),
+    });
+
+    plan.push(AgentRouteExecutionStep {
+        order: plan.len() + 1,
+        action: "review_impact_before_edits".to_string(),
+        status: impact_status.to_string(),
+        instruction: match impact_analysis {
+            Some(report) => format!(
+                "Before editing, review impact_analysis: {} impacted files at {} risk.",
+                report.impact_counts.impacted_files, report.risk_level
+            ),
+            None => "Impact analysis was skipped because no file or symbol seed was available."
+                .to_string(),
+        },
+        files: Vec::new(),
+        suggested_tool: None,
+    });
+
+    plan
 }
 
 fn agent_route_context_reason(context_pack: &ContextPack) -> String {

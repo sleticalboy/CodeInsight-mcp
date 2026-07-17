@@ -1965,6 +1965,35 @@ fn cli_agent_route_runs_first_read_pipeline() {
     assert!(context_reason.contains("inspect_seed_file"));
     assert!(context_reason.contains("file_outline"));
     assert!(context_reason.contains("follow continuation"));
+    let execution_actions = route["execution_plan"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|step| step["action"].as_str().unwrap())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        execution_actions,
+        vec![
+            "read_selected_context",
+            "use_current_reading_step_suggested_tool",
+            "use_continuation_if_needed",
+            "review_impact_before_edits"
+        ]
+    );
+    assert_eq!(route["execution_plan"][0]["status"], "ready");
+    assert_eq!(route["execution_plan"][0]["files"][0], "src/main.ts");
+    assert!(
+        route["execution_plan"][0]["instruction"]
+            .as_str()
+            .unwrap()
+            .contains("reading_plan[] order")
+    );
+    assert_eq!(
+        route["execution_plan"][1]["suggested_tool"]["tool"],
+        "file_outline"
+    );
+    assert_eq!(route["execution_plan"][2]["status"], "complete");
+    assert_eq!(route["execution_plan"][3]["status"], "complete");
     let impact_reason = route["route"][3]["reason"].as_str().unwrap();
     assert!(impact_reason.contains("pre-edit impact check"));
     assert!(impact_reason.contains("call-related files"));
@@ -6028,6 +6057,26 @@ fn mcp_stdio_executes_agent_route() {
     let context_reason = route["route"][2]["reason"].as_str().unwrap();
     assert!(context_reason.contains("read src/main.ts first"));
     assert!(context_reason.contains("file_outline"));
+    assert_eq!(
+        route["execution_plan"][0]["action"],
+        "read_selected_context"
+    );
+    assert_eq!(
+        route["execution_plan"][1]["action"],
+        "use_current_reading_step_suggested_tool"
+    );
+    assert_eq!(
+        route["execution_plan"][1]["suggested_tool"]["tool"],
+        "file_outline"
+    );
+    assert_eq!(
+        route["execution_plan"][2]["action"],
+        "use_continuation_if_needed"
+    );
+    assert_eq!(
+        route["execution_plan"][3]["action"],
+        "review_impact_before_edits"
+    );
     let impact_reason = route["route"][3]["reason"].as_str().unwrap();
     assert!(impact_reason.contains("pre-edit impact check"));
     assert!(impact_reason.contains("call-related files"));

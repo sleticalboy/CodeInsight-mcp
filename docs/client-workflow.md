@@ -75,6 +75,19 @@ specific source location.
 preview. Clients should use it when the user asks to understand a repository or
 begin a broad task.
 
+Use `agent_route.execution_plan[]` as the machine-readable client sequence:
+
+1. `read_selected_context`: read `context_pack.files[]` in `reading_plan[]`
+   order.
+2. `use_current_reading_step_suggested_tool`: call the current reading step's
+   `suggested_tool` only when deeper evidence is needed for that file.
+3. `use_continuation_if_needed`: inspect `continuation_summary` after selected
+   context is consumed.
+4. `review_impact_before_edits`: review `impact_analysis` before editing.
+
+`route[]` describes the tools CodeInsight already ran. `execution_plan[]`
+describes what the client or agent should do next.
+
 `project_overview` is the lower-level repository briefing. Clients should render:
 
 - `summary`

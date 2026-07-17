@@ -207,10 +207,14 @@ Example `context_pack` call arguments:
 Recommended first-read flow for agents:
 
 1. Call `agent_route` with `root`, `task`, and `token_budget`.
-2. Read the returned `context_pack.files[]` in `reading_plan[]` order.
-3. Treat `reading_plan[].reason` as the current-step instruction and
+2. Follow `agent_route.execution_plan[]`: read selected context first, use the
+   current reading step's `suggested_tool` only when needed, inspect
+   `continuation_summary` after selected context, then review impact before
+   edits.
+3. Read the returned `context_pack.files[]` in `reading_plan[]` order.
+4. Treat `reading_plan[].reason` as the current-step instruction and
    `reading_plan[].selection_reason` as display or audit evidence.
-4. Use `continuation_summary` only after selected context is consumed.
+5. Use `continuation_summary` only after selected context is consumed.
 
 Call `index_project`, `project_overview`, `context_pack`, and
 `impact_analysis` directly when the client needs custom routing, partial
