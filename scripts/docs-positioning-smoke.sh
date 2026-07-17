@@ -101,6 +101,12 @@ main() {
   require_pattern docs/mcp-tools.md \
     '\[Known limitations\]\(known-limitations\.md\)' \
     "known limitations link"
+  require_pattern docs/mcp-tools.md \
+    '`agent_route` \| Run the default first-read path.*include `execution_plan\[\]`' \
+    "MCP tools agent_route execution plan"
+  require_pattern docs/mcp-tools.md \
+    'Follow `agent_route\.execution_plan\[\]`' \
+    "MCP tools execution plan first-read guidance"
   require_pattern docs/client-workflow.md \
     'Call `agent_route` with `root`, `task`, and `token_budget`' \
     "client workflow agent_route path"
@@ -146,6 +152,18 @@ main() {
   require_pattern docs/mcp-client-config.md \
     '`selection_reason` is the compact raw ranking reason' \
     "MCP client config selection reason contract"
+  require_pattern docs/recommendation-contract.md \
+    '## Agent Route Execution Plan' \
+    "recommendation contract execution plan section"
+  require_pattern docs/recommendation-contract.md \
+    '`agent_route\.execution_plan\[\]` is the machine-readable action sequence' \
+    "recommendation contract execution plan definition"
+  require_pattern docs/recommendation-contract.md \
+    'The default action order is:' \
+    "recommendation contract execution plan order"
+  require_pattern docs/recommendation-contract.md \
+    '`review_impact_before_edits`' \
+    "recommendation contract impact checkpoint"
   require_pattern docs/adoption-checklist.md \
     'scripts/installed-quickstart-smoke\.sh' \
     "adoption installed quickstart gate"

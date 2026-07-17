@@ -3,6 +3,7 @@
 CodeInsight exposes local next-step suggestions in two places:
 
 - `agent_route.route[]`
+- `agent_route.execution_plan[]`
 - `project_overview.recommended_next_tools[]`
 - `context_pack.reading_plan[].suggested_tool`
 - `context_pack.omitted_candidates[].suggested_tool`
@@ -51,6 +52,36 @@ render it as provenance for `index_report`, `overview`, `context_pack`, and
 the `context_pack` step points to the first `reading_plan` file/action, and the
 `impact_analysis` step frames the included preview as the pre-edit impact check
 after selected context is read.
+
+## Agent Route Execution Plan
+
+`agent_route.execution_plan[]` is the machine-readable action sequence for the
+client or agent after `agent_route` returns. It is different from `route[]`:
+
+- `route[]` explains what CodeInsight already ran.
+- `execution_plan[]` explains what the client or agent should do next.
+
+Each execution step includes:
+
+- `order`: stable one-based order.
+- `action`: stable snake_case action name.
+- `status`: readiness state for the action.
+- `instruction`: client-facing instruction text.
+- `files[]`: optional selected files related to the action.
+- `suggested_tool`: optional MCP-ready tool call for the action.
+
+The default action order is:
+
+1. `read_selected_context`
+2. `use_current_reading_step_suggested_tool`
+3. `use_continuation_if_needed`
+4. `review_impact_before_edits`
+
+Clients should read selected `context_pack.files[]` before enabling or
+executing `use_current_reading_step_suggested_tool`, and should not use
+`continuation_summary.suggested_tool` until selected context has been consumed.
+Use `review_impact_before_edits` as a pre-edit checkpoint, not as proof of
+compiler-grade safety.
 
 `project_overview.recommended_next_tools[]` recommends repository-level calls
 after indexing when a client chooses the lower-level path. It currently favors:
@@ -123,6 +154,7 @@ Recommended client behavior:
 - Validate or adjust `suggested_arguments` when the user asks a narrower task.
 - Execute suggested calls through MCP `tools/call`.
 - Keep original response order for equal priority values.
+- Follow `agent_route.execution_plan[]` for one-call first-read clients.
 - Prefer `reading_plan[].suggested_tool` while reading selected context, then
   use `omitted_candidates[].suggested_tool` when more context is needed.
 

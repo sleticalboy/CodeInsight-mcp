@@ -515,6 +515,8 @@ try:
     print(f"overview_context_seed_strategy: {overview_context_result['seed_strategy']}")
     print(f"auto_seed_strategy: {auto_context_result['seed_strategy']}")
     print(f"auto_reading_plan_steps: {len(auto_context_result['reading_plan'])}")
+    print(f"agent_route_execution_plan_steps: {len(agent_route_result['execution_plan'])}")
+    print(f"agent_route_first_execution_action: {agent_route_result['execution_plan'][0]['action']}")
     print(f"explicit_suggested_tool: {explicit_reading_plan[0]['suggested_tool']['tool']}")
     print(f"auto_suggested_tool: {auto_context_result['reading_plan'][0]['suggested_tool']['tool']}")
     print(f"explicit_omitted_candidates: {len(context_result['omitted_candidates'])}")

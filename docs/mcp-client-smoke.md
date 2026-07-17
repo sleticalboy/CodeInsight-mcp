@@ -59,6 +59,12 @@ It also asserts the MCP-facing structured fields that clients commonly render:
   `config_status` execute
 - `agent_route.route[]` includes `index_project`, `project_overview`,
   `context_pack`, and `impact_analysis`
+- `agent_route.execution_plan[]` includes `read_selected_context`,
+  `use_current_reading_step_suggested_tool`, `use_continuation_if_needed`, and
+  `review_impact_before_edits`
+- first `agent_route.execution_plan[]` step is ready and names selected files
+- second `agent_route.execution_plan[]` step exposes the current-step
+  `suggested_tool`
 - explicit and auto `context_pack.reading_plan`
 - `context_pack.reading_plan[].next_action` and `question`
 - `context_pack.reading_plan[].suggested_tool`
@@ -102,6 +108,8 @@ overview_recommendations: 4
 overview_context_seed_strategy: auto_entrypoint
 auto_seed_strategy: auto_entrypoint
 auto_reading_plan_steps: 2
+agent_route_execution_plan_steps: 4
+agent_route_first_execution_action: read_selected_context
 explicit_suggested_tool: file_outline
 auto_suggested_tool: file_outline
 explicit_omitted_candidates: 8
@@ -111,6 +119,8 @@ explicit_omitted_candidates: 8
 `auto_reading_plan_steps` vary with the tested repository. Suggested tool names
 and `explicit_omitted_candidates` also vary with the selected first reading
 step, seed symbol, and token budget.
+`agent_route_execution_plan_steps` should remain `4` for the default first-read
+route unless the contract changes deliberately.
 
 ## Troubleshooting
 

@@ -600,6 +600,24 @@ main() {
   require_pattern scripts/agent-router-demo.sh \
     'require_json_string "\$context_json" '\''\.reading_plan\[0\]\.reason'\''' \
     "agent-router reading-plan reason assertion"
+  require_pattern scripts/mcp-stdio-smoke.sh \
+    'agent_route_execution_plan_steps' \
+    "MCP stdio execution plan steps output"
+  require_pattern scripts/mcp-stdio-smoke.sh \
+    'agent_route_first_execution_action' \
+    "MCP stdio first execution action output"
+  require_pattern docs/mcp-client-smoke.md \
+    '`agent_route\.execution_plan\[\]` includes `read_selected_context`' \
+    "MCP client smoke execution plan start"
+  require_pattern docs/mcp-client-smoke.md \
+    '`use_current_reading_step_suggested_tool`, `use_continuation_if_needed`, and' \
+    "MCP client smoke execution plan middle"
+  require_pattern docs/mcp-client-smoke.md \
+    '`review_impact_before_edits`' \
+    "MCP client smoke execution plan impact checkpoint"
+  require_pattern docs/mcp-client-smoke.md \
+    'agent_route_execution_plan_steps: 4' \
+    "MCP client smoke execution plan output"
   require_pattern scripts/two-minute-demo.sh \
     'Problem: AI agents waste the first read' \
     "two-minute demo problem statement"
