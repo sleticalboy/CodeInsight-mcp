@@ -56,11 +56,13 @@ Choose the check by adoption stage:
 | Stage | Command |
 | --- | --- |
 | Product walkthrough | `scripts/two-minute-demo.sh` |
+| Copyable MCP first-call JSON | `scripts/mcp-first-call-smoke.sh` |
 | MCP client wiring | `scripts/mcp-stdio-smoke.sh` |
 | Installed-binary adoption gate | `scripts/installed-quickstart-smoke.sh` |
 
 - [Maintenance commands](maintenance-commands.md)
 - Two-minute demo: `scripts/two-minute-demo.sh`
+- MCP first-call JSON summary: `scripts/mcp-first-call-smoke.sh`
 - Installed first-read route: `scripts/installed-quickstart-smoke.sh`
 - Agent-router lower-level metrics and reasons: `scripts/agent-router-demo.sh`
 - [Two-minute demo script](demo-script.md)

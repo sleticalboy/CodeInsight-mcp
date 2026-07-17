@@ -57,6 +57,23 @@ jobs:
           if-no-files-found: error
       - run: scripts/agent-route-step-summary.sh /tmp/codeinsight-agent-route-smoke.json codeinsight-agent-route-smoke "${{ steps.agent-route-artifact.outputs.artifact-url }}" "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
+  mcp-first-call-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: mcp-first-call-smoke
+      - run: |
+          scripts/mcp-first-call-smoke.sh > /tmp/codeinsight-mcp-first-call.json
+          cat /tmp/codeinsight-mcp-first-call.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: codeinsight-mcp-first-call
+          path: /tmp/codeinsight-mcp-first-call.json
+          if-no-files-found: error
+
   context-pack-quality-smoke:
     runs-on: ubuntu-latest
     steps:

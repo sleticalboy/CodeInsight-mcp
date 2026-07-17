@@ -334,6 +334,9 @@ main() {
     '\| README/demo positioning changed \| `scripts/two-minute-demo\.sh` and `scripts/demo-output-smoke\.sh` \|' \
     "maintenance README demo smoke chooser"
   require_pattern docs/maintenance-commands.md \
+    '\| First MCP call onboarding changed \| `scripts/mcp-first-call-smoke\.sh` \|' \
+    "maintenance MCP first-call smoke chooser"
+  require_pattern docs/maintenance-commands.md \
     '\| MCP protocol or tool payload changed \| `scripts/mcp-stdio-smoke\.sh` \|' \
     "maintenance MCP smoke chooser"
   require_pattern docs/maintenance-commands.md \
@@ -660,6 +663,12 @@ main() {
   require_pattern docs/mcp-client-config.md \
     'checks that `agent_route\.execution_plan\[\]\.suggested_tool` executes through MCP' \
     "MCP client config suggested tool execution smoke"
+  require_pattern docs/mcp-client-config.md \
+    'scripts/mcp-first-call-smoke\.sh' \
+    "MCP client config first-call smoke command"
+  require_pattern docs/mcp-client-config.md \
+    '`route_tools`, `selected_files`, `execution_plan_actions`' \
+    "MCP client config first-call JSON fields"
   require_pattern docs/mcp-client-config.md \
     'Expected first-call signals:' \
     "MCP client config first-call signals"

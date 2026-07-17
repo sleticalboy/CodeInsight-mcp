@@ -11,6 +11,8 @@ index is required.
    `codeinsight serve --transport stdio`.
 3. Add the agent policy so broad repository tasks start with `agent_route`.
 4. Run `scripts/two-minute-demo.sh` for a visible evidence summary, or
+   `scripts/mcp-first-call-smoke.sh` for a copyable MCP first-call JSON
+   summary, or
    `scripts/installed-quickstart-smoke.sh` for the installed-binary adoption
    gate.
 
@@ -144,6 +146,7 @@ Use the narrowest check that matches where you are in adoption:
 | Situation | Command | What It Proves |
 | --- | --- | --- |
 | You want a visible product walkthrough | `scripts/two-minute-demo.sh` | `agent_route` selects bounded context, prints `[Evidence summary]`, and frames the pre-edit impact check. |
+| You want a copyable first MCP call summary | `scripts/mcp-first-call-smoke.sh` | The stdio server accepts `agent_route` and returns `route_tools`, `selected_files`, `execution_plan_actions`, `suggested_tool`, and `impact_status` as JSON. |
 | You are wiring an MCP client from this checkout | `scripts/mcp-stdio-smoke.sh` | The stdio server lists tools, runs `agent_route`, and executes `agent_route.execution_plan[].suggested_tool` through MCP. |
 | You installed `codeinsight` and want an adoption gate | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh` | The installed binary can run CLI and MCP first-read routes against a temporary project outside this checkout. |
 
@@ -152,18 +155,26 @@ Use the narrowest check that matches where you are in adoption:
 From a development checkout:
 
 ```bash
+scripts/mcp-first-call-smoke.sh
 scripts/mcp-stdio-smoke.sh
 ```
+
+`mcp-first-call-smoke.sh` prints a compact JSON summary for the first MCP
+`agent_route` call. Use it when you want to confirm the server, route, selected
+files, execution plan, suggested tool, and impact preview without reading the
+full protocol smoke log.
 
 Against a real repository:
 
 ```bash
+CODEINSIGHT_FIRST_CALL_ROOT=/path/to/repo scripts/mcp-first-call-smoke.sh
 CODEINSIGHT_SMOKE_ROOT=/path/to/repo scripts/mcp-stdio-smoke.sh
 ```
 
 With an installed binary:
 
 ```bash
+CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/mcp-first-call-smoke.sh
 CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/mcp-stdio-smoke.sh
 ```
 

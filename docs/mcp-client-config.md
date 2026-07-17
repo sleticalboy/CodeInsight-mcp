@@ -217,6 +217,10 @@ Use `scripts/mcp-stdio-smoke.sh` to verify this path end to end. The smoke
 checks that `agent_route.execution_plan[].suggested_tool` executes through MCP
 `tools/call`.
 
+For a shorter copyable check, run `scripts/mcp-first-call-smoke.sh`. It prints
+a JSON summary with `route_tools`, `selected_files`, `execution_plan_actions`,
+`suggested_tool`, `suggested_tool_executed`, and `impact_status`.
+
 ## Tool Inputs
 
 CodeInsight tools accept explicit repository or file paths. The server does not

@@ -126,6 +126,9 @@ main() {
     '\| Product walkthrough \| `scripts/two-minute-demo\.sh` \|' \
     "docs index product walkthrough validation"
   require_pattern docs/README.md \
+    '\| Copyable MCP first-call JSON \| `scripts/mcp-first-call-smoke\.sh` \|' \
+    "docs index MCP first-call validation"
+  require_pattern docs/README.md \
     '\| MCP client wiring \| `scripts/mcp-stdio-smoke\.sh` \|' \
     "docs index MCP wiring validation"
   require_pattern docs/README.md \
@@ -153,6 +156,9 @@ main() {
   require_pattern docs/quickstart.md \
     '\| You want a visible product walkthrough \| `scripts/two-minute-demo\.sh` \|' \
     "quickstart product walkthrough chooser"
+  require_pattern docs/quickstart.md \
+    '\| You want a copyable first MCP call summary \| `scripts/mcp-first-call-smoke\.sh` \|' \
+    "quickstart MCP first-call chooser"
   require_pattern docs/quickstart.md \
     '\| You are wiring an MCP client from this checkout \| `scripts/mcp-stdio-smoke\.sh` \|' \
     "quickstart MCP smoke chooser"
@@ -248,6 +254,9 @@ main() {
   require_pattern docs/mcp-client-config.md \
     'Use `scripts/mcp-stdio-smoke\.sh` to verify this path end to end' \
     "MCP client config smoke verification"
+  require_pattern docs/mcp-client-config.md \
+    'For a shorter copyable check, run `scripts/mcp-first-call-smoke\.sh`' \
+    "MCP client config first-call smoke"
   require_pattern docs/mcp-client-config.md \
     '\[Client integration examples\]\(client-integration-examples\.md\)' \
     "MCP client config integration examples link"
