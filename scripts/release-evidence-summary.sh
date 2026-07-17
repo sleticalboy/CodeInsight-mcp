@@ -182,6 +182,19 @@ validate_benchmark_artifact() {
   printf "%s\n" "$output" | awk -F': ' '/^report: / { print "report: " $2 } /^summary: / { print "summary: " $2 }'
 }
 
+benchmark_metric() {
+  local summary_file="$1"
+  local query="$2"
+  local description="$3"
+  local value
+
+  value="$(jq -r "$query" "$summary_file")"
+  if [ -z "$value" ] || [ "$value" = "null" ]; then
+    fail "benchmark summary is missing $description: $summary_file"
+  fi
+  printf "%s" "$value"
+}
+
 validate_context_pack_quality_artifact() {
   local run_id="$1"
   local output
@@ -241,12 +254,17 @@ write_json_summary() {
   local benchmark_artifact_url="$5"
   local benchmark_report_file="$6"
   local benchmark_summary_file="$7"
-  local context_pack_quality_artifact_url="$8"
-  local context_pack_quality_summary_file="$9"
-  local agent_route_artifact_url="${10}"
-  local agent_route_summary_file="${11}"
-  local mcp_first_call_artifact_url="${12}"
-  local mcp_first_call_summary_file="${13}"
+  local benchmark_context_pack_first="${8}"
+  local benchmark_routing_total="${9}"
+  local benchmark_line_reduction="${10}"
+  local benchmark_guardrail_failures="${11}"
+  local benchmark_truncated_packs="${12}"
+  local context_pack_quality_artifact_url="${13}"
+  local context_pack_quality_summary_file="${14}"
+  local agent_route_artifact_url="${15}"
+  local agent_route_summary_file="${16}"
+  local mcp_first_call_artifact_url="${17}"
+  local mcp_first_call_summary_file="${18}"
 
   mkdir -p "$(dirname "$output_file")"
   TAG_NAME="$TAG_NAME" \
@@ -259,6 +277,11 @@ write_json_summary() {
     BENCHMARK_ARTIFACT_URL="$benchmark_artifact_url" \
     BENCHMARK_REPORT_FILE="$benchmark_report_file" \
     BENCHMARK_SUMMARY_FILE="$benchmark_summary_file" \
+    BENCHMARK_CONTEXT_PACK_FIRST="$benchmark_context_pack_first" \
+    BENCHMARK_ROUTING_TOTAL="$benchmark_routing_total" \
+    BENCHMARK_LINE_REDUCTION="$benchmark_line_reduction" \
+    BENCHMARK_GUARDRAIL_FAILURES="$benchmark_guardrail_failures" \
+    BENCHMARK_TRUNCATED_PACKS="$benchmark_truncated_packs" \
     CONTEXT_PACK_QUALITY_ARTIFACT_NAME="$CONTEXT_PACK_QUALITY_ARTIFACT_NAME" \
     CONTEXT_PACK_QUALITY_ARTIFACT_URL="$context_pack_quality_artifact_url" \
     CONTEXT_PACK_QUALITY_SUMMARY_FILE="$context_pack_quality_summary_file" \
@@ -285,6 +308,10 @@ release_notes = [
   "- Benchmark artifact: [#{ENV.fetch("ARTIFACT_NAME")}](#{ENV.fetch("BENCHMARK_ARTIFACT_URL")})",
   "- Benchmark report: `#{ENV.fetch("BENCHMARK_REPORT_FILE")}`",
   "- Benchmark summary: `#{ENV.fetch("BENCHMARK_SUMMARY_FILE")}`",
+  "- Benchmark routing: `context_pack` first for #{ENV.fetch("BENCHMARK_CONTEXT_PACK_FIRST")}/#{ENV.fetch("BENCHMARK_ROUTING_TOTAL")} repositories",
+  "- Benchmark line reduction: `#{ENV.fetch("BENCHMARK_LINE_REDUCTION")}`",
+  "- Benchmark guardrail failures: `#{ENV.fetch("BENCHMARK_GUARDRAIL_FAILURES")}`",
+  "- Benchmark truncated context packs: `#{ENV.fetch("BENCHMARK_TRUNCATED_PACKS")}`",
   "- Context-pack quality artifact: [#{ENV.fetch("CONTEXT_PACK_QUALITY_ARTIFACT_NAME")}](#{ENV.fetch("CONTEXT_PACK_QUALITY_ARTIFACT_URL")})",
   "- Context-pack quality summary: `#{ENV.fetch("CONTEXT_PACK_QUALITY_SUMMARY_FILE")}`",
   "- Agent-route artifact: [#{ENV.fetch("AGENT_ROUTE_ARTIFACT_NAME")}](#{ENV.fetch("AGENT_ROUTE_ARTIFACT_URL")})",
@@ -314,7 +341,14 @@ summary = {
       "name" => ENV.fetch("ARTIFACT_NAME"),
       "url" => ENV.fetch("BENCHMARK_ARTIFACT_URL"),
       "report" => ENV.fetch("BENCHMARK_REPORT_FILE"),
-      "summary" => ENV.fetch("BENCHMARK_SUMMARY_FILE")
+      "summary" => ENV.fetch("BENCHMARK_SUMMARY_FILE"),
+      "metrics" => {
+        "context_pack_first" => ENV.fetch("BENCHMARK_CONTEXT_PACK_FIRST").to_i,
+        "routing_total" => ENV.fetch("BENCHMARK_ROUTING_TOTAL").to_i,
+        "line_reduction" => ENV.fetch("BENCHMARK_LINE_REDUCTION"),
+        "guardrail_failures" => ENV.fetch("BENCHMARK_GUARDRAIL_FAILURES").to_i,
+        "truncated_packs" => ENV.fetch("BENCHMARK_TRUNCATED_PACKS").to_i
+      }
     },
     "context_pack_quality" => {
       "name" => ENV.fetch("CONTEXT_PACK_QUALITY_ARTIFACT_NAME"),
@@ -348,6 +382,11 @@ main() {
   local benchmark_artifact_validation
   local benchmark_report_file
   local benchmark_summary_file
+  local benchmark_context_pack_first
+  local benchmark_routing_total
+  local benchmark_line_reduction
+  local benchmark_guardrail_failures
+  local benchmark_truncated_packs
   local context_pack_quality_artifact_url
   local context_pack_quality_summary_file
   local agent_route_artifact_url
@@ -457,6 +496,9 @@ main() {
   if ! command -v gh >/dev/null 2>&1; then
     fail "missing required command: gh"
   fi
+  if ! command -v jq >/dev/null 2>&1; then
+    fail "missing required command: jq"
+  fi
   if [ ! -x "$RELEASE_METADATA_SUMMARY_SCRIPT" ]; then
     fail "release metadata summary script is not executable: $RELEASE_METADATA_SUMMARY_SCRIPT"
   fi
@@ -489,6 +531,11 @@ main() {
   if [ -z "$benchmark_summary_file" ]; then
     fail "benchmark artifact smoke did not report a JSON summary path"
   fi
+  benchmark_context_pack_first="$(benchmark_metric "$benchmark_summary_file" '(.routing.context_pack_first // 0) | tostring' "context_pack routing count")"
+  benchmark_routing_total="$(benchmark_metric "$benchmark_summary_file" '(.routing.total // 0) | tostring' "routing total")"
+  benchmark_line_reduction="$(benchmark_metric "$benchmark_summary_file" '.context.line_reduction // empty' "line reduction")"
+  benchmark_guardrail_failures="$(benchmark_metric "$benchmark_summary_file" '(.failures.total // 0) | tostring' "guardrail failures")"
+  benchmark_truncated_packs="$(benchmark_metric "$benchmark_summary_file" '(.context.truncated_packs // 0) | tostring' "truncated context packs")"
   context_pack_quality_summary_file="$(validate_context_pack_quality_artifact "$RUN_ID")"
   agent_route_summary_file="$(validate_agent_route_artifact "$RUN_ID")"
   mcp_first_call_summary_file="$(validate_mcp_first_call_artifact "$RUN_ID")"
@@ -503,6 +550,10 @@ main() {
   echo "benchmark_artifact_url: $benchmark_artifact_url"
   echo "benchmark_report: $benchmark_report_file"
   echo "benchmark_summary: $benchmark_summary_file"
+  echo "benchmark_context_pack_first: $benchmark_context_pack_first/$benchmark_routing_total"
+  echo "benchmark_line_reduction: $benchmark_line_reduction"
+  echo "benchmark_guardrail_failures: $benchmark_guardrail_failures"
+  echo "benchmark_truncated_packs: $benchmark_truncated_packs"
   echo "context_pack_quality_artifact: $CONTEXT_PACK_QUALITY_ARTIFACT_NAME"
   echo "context_pack_quality_artifact_url: $context_pack_quality_artifact_url"
   echo "context_pack_quality_summary: $context_pack_quality_summary_file"
@@ -521,6 +572,10 @@ main() {
   echo "- Benchmark artifact: [$ARTIFACT_NAME]($benchmark_artifact_url)"
   echo "- Benchmark report: \`$benchmark_report_file\`"
   echo "- Benchmark summary: \`$benchmark_summary_file\`"
+  echo "- Benchmark routing: \`context_pack\` first for $benchmark_context_pack_first/$benchmark_routing_total repositories"
+  echo "- Benchmark line reduction: \`$benchmark_line_reduction\`"
+  echo "- Benchmark guardrail failures: \`$benchmark_guardrail_failures\`"
+  echo "- Benchmark truncated context packs: \`$benchmark_truncated_packs\`"
   echo "- Context-pack quality artifact: [$CONTEXT_PACK_QUALITY_ARTIFACT_NAME]($context_pack_quality_artifact_url)"
   echo "- Context-pack quality summary: \`$context_pack_quality_summary_file\`"
   echo "- Agent-route artifact: [$AGENT_ROUTE_ARTIFACT_NAME]($agent_route_artifact_url)"
@@ -538,6 +593,11 @@ main() {
       "$benchmark_artifact_url" \
       "$benchmark_report_file" \
       "$benchmark_summary_file" \
+      "$benchmark_context_pack_first" \
+      "$benchmark_routing_total" \
+      "$benchmark_line_reduction" \
+      "$benchmark_guardrail_failures" \
+      "$benchmark_truncated_packs" \
       "$context_pack_quality_artifact_url" \
       "$context_pack_quality_summary_file" \
       "$agent_route_artifact_url" \

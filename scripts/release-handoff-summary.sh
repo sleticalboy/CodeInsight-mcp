@@ -160,6 +160,7 @@ metadata = evidence.fetch("metadata")
 ci = evidence.fetch("ci")
 artifacts = evidence.fetch("artifacts")
 benchmark = artifacts.fetch("benchmark")
+benchmark_metrics = benchmark["metrics"] || {}
 quality = artifacts.fetch("context_pack_quality")
 agent_route = artifacts.fetch("agent_route")
 mcp_first_call = artifacts.fetch("mcp_first_call")
@@ -189,10 +190,14 @@ markdown_lines = [
   "### Pre-release Artifacts",
   "",
   "- Benchmark artifact: [#{benchmark.fetch("name")}](#{benchmark.fetch("url")})",
+  ("- Benchmark routing: `context_pack` first for #{benchmark_metrics.fetch("context_pack_first")}/#{benchmark_metrics.fetch("routing_total")} repositories" if benchmark_metrics.key?("context_pack_first") && benchmark_metrics.key?("routing_total")),
+  ("- Benchmark line reduction: `#{benchmark_metrics.fetch("line_reduction")}`" if benchmark_metrics.key?("line_reduction")),
+  ("- Benchmark guardrail failures: `#{benchmark_metrics.fetch("guardrail_failures")}`" if benchmark_metrics.key?("guardrail_failures")),
+  ("- Benchmark truncated context packs: `#{benchmark_metrics.fetch("truncated_packs")}`" if benchmark_metrics.key?("truncated_packs")),
   "- Context-pack quality artifact: [#{quality.fetch("name")}](#{quality.fetch("url")})",
   "- Agent-route artifact: [#{agent_route.fetch("name")}](#{agent_route.fetch("url")})",
   "- MCP first-call artifact: [#{mcp_first_call.fetch("name")}](#{mcp_first_call.fetch("url")})"
-]
+].compact
 
 markdown = markdown_lines.join("\n")
 File.write(markdown_path, "#{markdown}\n")

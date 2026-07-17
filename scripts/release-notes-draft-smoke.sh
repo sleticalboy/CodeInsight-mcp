@@ -48,7 +48,14 @@ main() {
     "artifacts": {
       "benchmark": {
         "name": "codeinsight-benchmark-subset",
-        "url": "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/1"
+        "url": "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/1",
+        "metrics": {
+          "context_pack_first": 1,
+          "routing_total": 1,
+          "line_reduction": "99.0%",
+          "guardrail_failures": 0,
+          "truncated_packs": 0
+        }
       },
       "context_pack_quality": {
         "name": "codeinsight-context-pack-quality",
@@ -120,6 +127,12 @@ EOF
     fail "missing Docker distribution check"
   grep -Fq -- '- Benchmark: [codeinsight-benchmark-subset](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/1)' "$draft_md" ||
     fail "missing benchmark artifact"
+  grep -Fq '### Benchmark Evidence' "$draft_md" ||
+    fail "missing benchmark evidence section"
+  grep -Fq -- '- Routing: `context_pack` first for 1/1 repositories' "$draft_md" ||
+    fail "missing benchmark routing"
+  grep -Fq -- '- Line reduction: `99.0%`' "$draft_md" ||
+    fail "missing benchmark line reduction"
 
   CODEINSIGHT_ROOT_DIR="$TEMP_DIR" \
     "$ROOT_DIR/scripts/release-notes-draft.sh" v9.8.7 >"$TEMP_DIR/stdout.md"

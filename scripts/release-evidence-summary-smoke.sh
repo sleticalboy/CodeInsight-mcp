@@ -91,6 +91,22 @@ exit 12
 EOF
   chmod +x "$TEMP_DIR/bin/gh"
 
+  cat >"$TEMP_DIR/benchmark-summary.json" <<'JSON'
+{
+  "routing": {
+    "context_pack_first": 1,
+    "total": 1
+  },
+  "context": {
+    "line_reduction": "99.0%",
+    "truncated_packs": 0
+  },
+  "failures": {
+    "total": 0
+  }
+}
+JSON
+
   cat >"$TEMP_DIR/benchmark-artifact-smoke" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -104,7 +120,7 @@ test "$4" = "codeinsight-benchmark-subset"
 test "$5" = "123456"
 echo "benchmark artifact smoke passed"
 echo "report: /tmp/codeinsight-benchmark-artifact-123456/report.md"
-echo "summary: /tmp/codeinsight-benchmark-artifact-123456/summary.json"
+echo "summary: ${CODEINSIGHT_EVIDENCE_BENCHMARK_SUMMARY:?}"
 EOF
   chmod +x "$TEMP_DIR/benchmark-artifact-smoke"
 
@@ -156,7 +172,8 @@ echo "summary: /tmp/codeinsight-mcp-first-call-artifact-123456/summary.json"
 EOF
   chmod +x "$TEMP_DIR/mcp-first-call-artifact-smoke"
 
-  CODEINSIGHT_EVIDENCE_SMOKE_LOG="$TEMP_DIR/calls.log" \
+    CODEINSIGHT_EVIDENCE_SMOKE_LOG="$TEMP_DIR/calls.log" \
+    CODEINSIGHT_EVIDENCE_BENCHMARK_SUMMARY="$TEMP_DIR/benchmark-summary.json" \
     CODEINSIGHT_ROOT_DIR="$TEMP_DIR/repo" \
     CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/benchmark-artifact-smoke" \
     CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/context-pack-quality-artifact-smoke" \
@@ -184,8 +201,12 @@ EOF
     fail "missing CI run output"
   grep -Fq 'benchmark_artifact_url: https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987654' "$TEMP_DIR/output.log" ||
     fail "missing benchmark artifact URL"
-  grep -Fq 'benchmark_summary: /tmp/codeinsight-benchmark-artifact-123456/summary.json' "$TEMP_DIR/output.log" ||
+  grep -Fq "benchmark_summary: $TEMP_DIR/benchmark-summary.json" "$TEMP_DIR/output.log" ||
     fail "missing benchmark summary output"
+  grep -Fq 'benchmark_context_pack_first: 1/1' "$TEMP_DIR/output.log" ||
+    fail "missing benchmark routing output"
+  grep -Fq 'benchmark_line_reduction: 99.0%' "$TEMP_DIR/output.log" ||
+    fail "missing benchmark line reduction output"
   grep -Fq 'context_pack_quality_artifact_url: https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987655' "$TEMP_DIR/output.log" ||
     fail "missing context-pack quality artifact URL"
   grep -Fq 'context_pack_quality_summary: /tmp/codeinsight-context-pack-quality-artifact-123456/summary.json' "$TEMP_DIR/output.log" ||
@@ -204,13 +225,15 @@ EOF
     fail "missing release notes CI link"
   grep -Fq -- '- Context-pack quality artifact: [codeinsight-context-pack-quality](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987655)' "$TEMP_DIR/output.log" ||
     fail "missing release notes context-pack quality artifact link"
-  grep -Fq -- '- Benchmark summary: `/tmp/codeinsight-benchmark-artifact-123456/summary.json`' "$TEMP_DIR/output.log" ||
+  grep -Fq -- "- Benchmark summary: \`$TEMP_DIR/benchmark-summary.json\`" "$TEMP_DIR/output.log" ||
     fail "missing release notes benchmark summary"
+  grep -Fq -- '- Benchmark routing: `context_pack` first for 1/1 repositories' "$TEMP_DIR/output.log" ||
+    fail "missing release notes benchmark routing"
   grep -Fq -- '- Agent-route artifact: [codeinsight-agent-route-smoke](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987656)' "$TEMP_DIR/output.log" ||
     fail "missing release notes agent-route artifact link"
   grep -Fq -- '- MCP first-call artifact: [codeinsight-mcp-first-call](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987657)' "$TEMP_DIR/output.log" ||
     fail "missing release notes MCP first-call artifact link"
-  jq -e '
+  jq -e --arg summary_path "$TEMP_DIR/benchmark-summary.json" '
     .schema_version == 1 and
     .tag == "v99.88.77" and
     .branch == "main" and
@@ -224,7 +247,12 @@ EOF
     .artifacts.benchmark.name == "codeinsight-benchmark-subset" and
     .artifacts.benchmark.url == "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987654" and
     .artifacts.benchmark.report == "/tmp/codeinsight-benchmark-artifact-123456/report.md" and
-    .artifacts.benchmark.summary == "/tmp/codeinsight-benchmark-artifact-123456/summary.json" and
+    .artifacts.benchmark.summary == $summary_path and
+    .artifacts.benchmark.metrics.context_pack_first == 1 and
+    .artifacts.benchmark.metrics.routing_total == 1 and
+    .artifacts.benchmark.metrics.line_reduction == "99.0%" and
+    .artifacts.benchmark.metrics.guardrail_failures == 0 and
+    .artifacts.benchmark.metrics.truncated_packs == 0 and
     .artifacts.context_pack_quality.name == "codeinsight-context-pack-quality" and
     .artifacts.context_pack_quality.url == "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987655" and
     .artifacts.context_pack_quality.summary == "/tmp/codeinsight-context-pack-quality-artifact-123456/summary.json" and
@@ -261,6 +289,7 @@ EOF
     fail "missing MCP first-call artifact validation"
 
   CODEINSIGHT_EVIDENCE_SMOKE_LOG="$TEMP_DIR/run-id-calls.log" \
+    CODEINSIGHT_EVIDENCE_BENCHMARK_SUMMARY="$TEMP_DIR/benchmark-summary.json" \
     CODEINSIGHT_ROOT_DIR="$TEMP_DIR/repo" \
     CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/benchmark-artifact-smoke" \
     CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/context-pack-quality-artifact-smoke" \

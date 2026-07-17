@@ -45,7 +45,15 @@ main() {
     "benchmark": {
       "name": "codeinsight-benchmark-subset",
       "url": "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/1",
-      "report": "/tmp/benchmark.md"
+      "report": "/tmp/benchmark.md",
+      "summary": "/tmp/benchmark-summary.json",
+      "metrics": {
+        "context_pack_first": 1,
+        "routing_total": 1,
+        "line_reduction": "99.0%",
+        "guardrail_failures": 0,
+        "truncated_packs": 0
+      }
     },
     "context_pack_quality": {
       "name": "codeinsight-context-pack-quality",
@@ -117,6 +125,10 @@ EOF
     fail "missing target commit"
   grep -Fq -- '- Pre-release CI: [run 123456](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456)' "$TEMP_DIR/stdout.md" ||
     fail "missing pre-release CI"
+  grep -Fq -- '- Benchmark routing: `context_pack` first for 1/1 repositories' "$TEMP_DIR/stdout.md" ||
+    fail "missing benchmark routing"
+  grep -Fq -- '- Benchmark line reduction: `99.0%`' "$TEMP_DIR/stdout.md" ||
+    fail "missing benchmark line reduction"
   grep -Fq -- '- `github_asset_downloads`: `metadata_only`' "$TEMP_DIR/stdout.md" ||
     fail "missing release gate"
   grep -Fq -- '- Agent-route artifact: [codeinsight-agent-route-smoke](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/3)' "$TEMP_DIR/stdout.md" ||
@@ -143,6 +155,7 @@ EOF
     .status == "passed" and
     .target_commit == "abc123" and
     .pre_release.ci.run_id == "123456" and
+    .pre_release.artifacts.benchmark.metrics.line_reduction == "99.0%" and
     .post_release.gates.github_asset_downloads == "metadata_only" and
     (.post_release.expected_assets | length) == 2 and
     (.handoff_markdown | contains("## v9.8.7 release handoff"))

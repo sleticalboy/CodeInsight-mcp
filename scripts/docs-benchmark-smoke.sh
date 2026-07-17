@@ -708,6 +708,15 @@ main() {
   require_pattern scripts/release-dry-run.sh \
     'benchmark_summary:' \
     "release dry run benchmark summary checklist"
+  require_pattern scripts/release-evidence-summary.sh \
+    'metrics' \
+    "release evidence benchmark metrics JSON"
+  require_pattern scripts/release-handoff-summary.sh \
+    'Benchmark routing:' \
+    "release handoff benchmark routing"
+  require_pattern scripts/release-notes-draft.sh \
+    'Benchmark Evidence' \
+    "release notes benchmark evidence section"
   require_pattern scripts/release-pretag-check.sh \
     'BENCHMARK_ARTIFACT_SMOKE_SCRIPT' \
     "release pretag artifact smoke hook"

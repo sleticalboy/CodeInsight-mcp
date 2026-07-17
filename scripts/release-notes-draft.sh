@@ -150,6 +150,8 @@ post_release = handoff.fetch("post_release")
 ci = pre_release.fetch("ci")
 metadata = pre_release.fetch("metadata")
 artifacts = pre_release.fetch("artifacts")
+benchmark = artifacts.fetch("benchmark")
+benchmark_metrics = benchmark["metrics"] || {}
 gates = post_release.fetch("gates")
 expected_assets = post_release.fetch("expected_assets")
 docker = post_release["docker"] || {}
@@ -204,11 +206,23 @@ lines << ""
 lines << "### Pre-release Artifacts"
 lines << ""
 [
-  ["Benchmark", artifacts.fetch("benchmark")],
+  ["Benchmark", benchmark],
   ["Context-pack quality", artifacts.fetch("context_pack_quality")],
   ["Agent-route", artifacts.fetch("agent_route")]
 ].each do |label, artifact|
   lines << "- #{label}: [#{artifact.fetch("name")}](#{artifact.fetch("url")})"
+end
+
+unless benchmark_metrics.empty?
+  lines << ""
+  lines << "### Benchmark Evidence"
+  lines << ""
+  if benchmark_metrics.key?("context_pack_first") && benchmark_metrics.key?("routing_total")
+    lines << "- Routing: `context_pack` first for #{benchmark_metrics.fetch("context_pack_first")}/#{benchmark_metrics.fetch("routing_total")} repositories"
+  end
+  lines << "- Line reduction: `#{benchmark_metrics.fetch("line_reduction")}`" if benchmark_metrics.key?("line_reduction")
+  lines << "- Guardrail failures: `#{benchmark_metrics.fetch("guardrail_failures")}`" if benchmark_metrics.key?("guardrail_failures")
+  lines << "- Truncated context packs: `#{benchmark_metrics.fetch("truncated_packs")}`" if benchmark_metrics.key?("truncated_packs")
 end
 
 File.write(output_path, "#{lines.join("\n")}\n")
