@@ -1,7 +1,7 @@
 # Express Adoption Comparison
 
 This is a reproducible adoption case for CodeInsight as a local-first AI-agent
-code context router. It uses Express as a public JavaScript repository and
+code context router. It uses Express as a public repository and
 compares a blind first read of all indexed source lines with CodeInsight's
 routed first-read context.
 
@@ -16,7 +16,7 @@ to show what an AI coding agent can read first before opening files broadly.
 - Task: `understand express application routing behavior`
 - Token budget: `6000`
 - Route: `index_project -> project_overview -> context_pack -> impact_analysis`
-- Generated with: `scripts/update-adoption-case-express.sh`
+- Generated with: `scripts/update-adoption-case.sh express`
 
 ## Result
 
@@ -55,14 +55,16 @@ What entrypoints, exported symbols, or setup code define the main flow here?
 Refresh this checked-in snapshot:
 
 ```bash
-scripts/update-adoption-case-express.sh
+scripts/update-adoption-case.sh express
 ```
 
 Recreate this exact snapshot:
 
 ```bash
-scripts/update-adoption-case-express.sh --commit ae6dd37680e3a00618d6c8a3e522f0ee4eeba1a4
+scripts/update-adoption-case.sh express --commit ae6dd37680e3a00618d6c8a3e522f0ee4eeba1a4
 ```
+
+The legacy wrapper `scripts/update-adoption-case-express.sh` delegates to the same command.
 
 Generate a fresh comparison against the current Express default branch:
 

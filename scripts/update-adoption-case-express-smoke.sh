@@ -93,7 +93,8 @@ echo "stub comparison written to $output_dir"
 EOF
   chmod +x "$TEMP_DIR/adoption-comparison"
 
-  "$ROOT_DIR/scripts/update-adoption-case-express.sh" \
+  "$ROOT_DIR/scripts/update-adoption-case.sh" \
+    express \
     --root "$TEMP_DIR/repo" \
     --repo-url "https://github.com/expressjs/express.git" \
     --comparison-script "$TEMP_DIR/adoption-comparison" \
@@ -107,16 +108,27 @@ EOF
     fail "missing commit output"
   grep -Fq -- "- Commit: \`$commit\`" "$TEMP_DIR/adoption-case-express.md" ||
     fail "missing commit in generated doc"
-  grep -Fq -- "- Generated with: \`scripts/update-adoption-case-express.sh\`" "$TEMP_DIR/adoption-case-express.md" ||
+  grep -Fq -- "- Generated with: \`scripts/update-adoption-case.sh express\`" "$TEMP_DIR/adoption-case-express.md" ||
     fail "missing generator line"
   grep -Fq '| Blind first-read baseline | `21478` source lines |' "$TEMP_DIR/adoption-case-express.md" ||
     fail "missing baseline metric"
   grep -Fq '| Read less | `92.6x` |' "$TEMP_DIR/adoption-case-express.md" ||
     fail "missing read-less metric"
-  grep -Fq 'scripts/update-adoption-case-express.sh' "$TEMP_DIR/adoption-case-express.md" ||
+  grep -Fq 'scripts/update-adoption-case.sh express' "$TEMP_DIR/adoption-case-express.md" ||
     fail "missing refresh command"
-  grep -Fq "scripts/update-adoption-case-express.sh --commit $commit" "$TEMP_DIR/adoption-case-express.md" ||
+  grep -Fq "scripts/update-adoption-case.sh express --commit $commit" "$TEMP_DIR/adoption-case-express.md" ||
     fail "missing exact snapshot command"
+
+  "$ROOT_DIR/scripts/update-adoption-case-express.sh" \
+    --root "$TEMP_DIR/repo" \
+    --repo-url "https://github.com/expressjs/express.git" \
+    --comparison-script "$TEMP_DIR/adoption-comparison" \
+    --output "$TEMP_DIR/adoption-case-express-wrapper.md" \
+    --work-dir "$TEMP_DIR/wrapper-work" \
+    >"$TEMP_DIR/wrapper-output.log"
+
+  grep -Fq "updated adoption case: $TEMP_DIR/adoption-case-express-wrapper.md" "$TEMP_DIR/wrapper-output.log" ||
+    fail "wrapper did not delegate to generic updater"
 
   echo "update adoption case smoke passed"
 }

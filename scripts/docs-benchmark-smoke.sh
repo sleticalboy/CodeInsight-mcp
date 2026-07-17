@@ -107,7 +107,7 @@ main() {
     '232 of 21,478 source lines' \
     "README Express adoption case snapshot"
   require_pattern README.md \
-    'scripts/update-adoption-case-express\.sh' \
+    'scripts/update-adoption-case\.sh express' \
     "README Express adoption case refresh command"
   require_pattern README.md \
     '\[Benchmark methodology\]\(docs/benchmark-methodology\.md\)' \
@@ -173,7 +173,7 @@ main() {
     '\[Express adoption case\]\(adoption-case-express\.md\)' \
     "adoption checklist Express case link"
   require_pattern docs/adoption-checklist.md \
-    'scripts/update-adoption-case-express\.sh' \
+    'scripts/update-adoption-case\.sh express' \
     "adoption checklist Express refresh command"
   require_pattern docs/adoption-checklist.md \
     'codeinsight-adoption-report\.tar\.gz' \
@@ -200,19 +200,19 @@ main() {
     'Read less | `92\.6x`' \
     "Express adoption case read-less metric"
   require_pattern docs/adoption-case-express.md \
-    'Generated with: `scripts/update-adoption-case-express\.sh`' \
+    'Generated with: `scripts/update-adoption-case\.sh express`' \
     "Express adoption case generator"
   require_pattern docs/adoption-case-express.md \
     'Refresh this checked-in snapshot:' \
     "Express adoption case refresh section"
   require_pattern docs/adoption-case-express.md \
-    'scripts/update-adoption-case-express\.sh --commit ae6dd37680e3a00618d6c8a3e522f0ee4eeba1a4' \
+    'scripts/update-adoption-case\.sh express --commit ae6dd37680e3a00618d6c8a3e522f0ee4eeba1a4' \
     "Express adoption case exact refresh command"
   require_pattern docs/adoption-case-express.md \
     'scripts/adoption-comparison\.sh /tmp/codeinsight-case-express' \
     "Express adoption case reproduce command"
-  require_pattern scripts/update-adoption-case-express.sh \
-    'Refreshes docs/adoption-case-express\.md from a live adoption-comparison run' \
+  require_pattern scripts/update-adoption-case.sh \
+    'Refreshes a checked-in adoption case from a live adoption-comparison run' \
     "Express adoption case update script purpose"
   require_pattern README.md \
     'route `context_pack` first for 4/4 repositories' \
