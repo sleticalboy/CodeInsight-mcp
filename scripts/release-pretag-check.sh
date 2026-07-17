@@ -47,6 +47,26 @@ fail() {
   exit 1
 }
 
+field_from_output() {
+  local output="$1"
+  local key="$2"
+
+  printf "%s\n" "$output" | awk -F': ' -v key="$key" '$1 == key { print $2; exit }'
+}
+
+require_benchmark_metric() {
+  local summary_file="$1"
+  local query="$2"
+  local description="$3"
+  local value
+
+  value="$(jq -r "$query" "$summary_file")"
+  if [ -z "$value" ] || [ "$value" = "null" ]; then
+    fail "benchmark summary is missing $description: $summary_file"
+  fi
+  printf "%s" "$value"
+}
+
 resolve_latest_run() {
   local branch="$1"
   local head_sha="$2"
@@ -100,6 +120,13 @@ resolve_run_head_sha() {
 }
 
 main() {
+  local benchmark_output
+  local benchmark_summary_file
+  local benchmark_context_pack_first
+  local benchmark_line_reduction
+  local benchmark_guardrail_failures
+  local benchmark_truncated_packs
+
   while [ "$#" -gt 0 ]; do
     case "$1" in
       -h | --help)
@@ -154,6 +181,9 @@ main() {
   if ! command -v gh >/dev/null 2>&1; then
     fail "missing required command: gh"
   fi
+  if ! command -v jq >/dev/null 2>&1; then
+    fail "missing required command: jq"
+  fi
   if [ ! -x "$BENCHMARK_ARTIFACT_SMOKE_SCRIPT" ]; then
     fail "benchmark artifact smoke script is not executable: $BENCHMARK_ARTIFACT_SMOKE_SCRIPT"
   fi
@@ -181,23 +211,38 @@ main() {
   echo "watching CI run: $RUN_ID"
   if [ "${#REPO_ARG[@]}" -gt 0 ]; then
     gh run watch "$RUN_ID" "${REPO_ARG[@]}" --exit-status
-    "$BENCHMARK_ARTIFACT_SMOKE_SCRIPT" "${REPO_ARG[@]}" "$RUN_ID"
+    benchmark_output="$("$BENCHMARK_ARTIFACT_SMOKE_SCRIPT" "${REPO_ARG[@]}" "$RUN_ID")"
+    printf "%s\n" "$benchmark_output"
     "$CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT" "${REPO_ARG[@]}" "$RUN_ID"
     "$AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT" "${REPO_ARG[@]}" "$RUN_ID"
     "$MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT" "${REPO_ARG[@]}" "$RUN_ID"
   else
     gh run watch "$RUN_ID" --exit-status
-    "$BENCHMARK_ARTIFACT_SMOKE_SCRIPT" "$RUN_ID"
+    benchmark_output="$("$BENCHMARK_ARTIFACT_SMOKE_SCRIPT" "$RUN_ID")"
+    printf "%s\n" "$benchmark_output"
     "$CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT" "$RUN_ID"
     "$AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT" "$RUN_ID"
     "$MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT" "$RUN_ID"
   fi
+  benchmark_summary_file="$(field_from_output "$benchmark_output" "summary")"
+  if [ -z "$benchmark_summary_file" ]; then
+    fail "benchmark artifact smoke did not report a JSON summary path"
+  fi
+  benchmark_context_pack_first="$(require_benchmark_metric "$benchmark_summary_file" '((.routing.context_pack_first // 0) | tostring) + "/" + ((.routing.total // 0) | tostring)' "context_pack routing count")"
+  benchmark_line_reduction="$(require_benchmark_metric "$benchmark_summary_file" '.context.line_reduction // empty' "line reduction")"
+  benchmark_guardrail_failures="$(require_benchmark_metric "$benchmark_summary_file" '(.failures.total // 0) | tostring' "guardrail failure count")"
+  benchmark_truncated_packs="$(require_benchmark_metric "$benchmark_summary_file" '(.context.truncated_packs // 0) | tostring' "truncated context pack count")"
 
   echo "release pretag evidence"
   echo "branch: $BRANCH"
   echo "ci_run: $RUN_ID"
   echo "head_sha: $RESOLVED_HEAD_SHA"
   echo "artifact_gate_benchmark: passed"
+  echo "benchmark_summary: $benchmark_summary_file"
+  echo "benchmark_context_pack_first: $benchmark_context_pack_first"
+  echo "benchmark_line_reduction: $benchmark_line_reduction"
+  echo "benchmark_guardrail_failures: $benchmark_guardrail_failures"
+  echo "benchmark_truncated_packs: $benchmark_truncated_packs"
   echo "artifact_gate_context_pack_quality: passed"
   echo "artifact_gate_agent_route: passed"
   echo "artifact_gate_mcp_first_call: passed"

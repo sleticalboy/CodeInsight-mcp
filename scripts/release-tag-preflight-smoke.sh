@@ -121,6 +121,10 @@ branch: main
 ci_run: 123456
 head_sha: abc123
 artifact_gate_benchmark: passed
+benchmark_context_pack_first: 1/1
+benchmark_line_reduction: 99.0%
+benchmark_guardrail_failures: 0
+benchmark_truncated_packs: 0
 artifact_gate_context_pack_quality: passed
 artifact_gate_agent_route: passed
 artifact_gate_mcp_first_call: passed
@@ -164,6 +168,12 @@ EOF
     fail "missing pretag CI run"
   grep -Fq 'artifact_gate_benchmark: passed' "$TEMP_DIR/output.log" ||
     fail "missing benchmark artifact gate status"
+  grep -Fq 'benchmark_context_pack_first: 1/1' "$TEMP_DIR/output.log" ||
+    fail "missing benchmark routing summary"
+  grep -Fq 'benchmark_line_reduction: 99.0%' "$TEMP_DIR/output.log" ||
+    fail "missing benchmark line reduction summary"
+  grep -Fq 'benchmark_guardrail_failures: 0' "$TEMP_DIR/output.log" ||
+    fail "missing benchmark guardrail summary"
   grep -Fq 'artifact_gate_context_pack_quality: passed' "$TEMP_DIR/output.log" ||
     fail "missing context-pack quality artifact gate status"
   grep -Fq 'artifact_gate_agent_route: passed' "$TEMP_DIR/output.log" ||

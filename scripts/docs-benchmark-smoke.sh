@@ -694,8 +694,20 @@ main() {
     'artifact_gate_agent_route: passed' \
     "release pretag agent-route gate summary"
   require_pattern scripts/release-pretag-check.sh \
+    'benchmark_context_pack_first:' \
+    "release pretag benchmark routing metric"
+  require_pattern scripts/release-pretag-check.sh \
+    'benchmark_line_reduction:' \
+    "release pretag benchmark line reduction metric"
+  require_pattern scripts/release-pretag-check.sh \
+    'benchmark_guardrail_failures:' \
+    "release pretag benchmark guardrail metric"
+  require_pattern scripts/release-pretag-check.sh \
     'artifact_gate_mcp_first_call: passed' \
     "release pretag MCP first-call gate summary"
+  require_pattern scripts/release-dry-run.sh \
+    'benchmark_summary:' \
+    "release dry run benchmark summary checklist"
   require_pattern scripts/release-pretag-check.sh \
     'BENCHMARK_ARTIFACT_SMOKE_SCRIPT' \
     "release pretag artifact smoke hook"

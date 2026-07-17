@@ -142,6 +142,7 @@ main() {
   local preflight_output_file
   local evidence_output_file
   local ci_run
+  local benchmark_summary
   local metadata_cargo
   local metadata_install
   local metadata_changelog
@@ -309,6 +310,7 @@ main() {
   require_literal_in_file "$preflight_output_file" "artifact_gate_agent_route: passed" "pretag agent-route artifact gate"
   require_literal_in_file "$preflight_output_file" "artifact_gate_mcp_first_call: passed" "pretag MCP first-call artifact gate"
   ci_run="$(require_field_from_file "$evidence_output_file" "ci_run" "release evidence CI run")"
+  benchmark_summary="$(require_field_from_file "$evidence_output_file" "benchmark_summary" "benchmark summary")"
   metadata_cargo="$(require_field_from_file "$evidence_output_file" "metadata_cargo" "Cargo metadata")"
   metadata_install="$(require_field_from_file "$evidence_output_file" "metadata_install" "install metadata")"
   metadata_changelog="$(require_field_from_file "$evidence_output_file" "metadata_changelog" "changelog metadata")"
@@ -318,6 +320,7 @@ main() {
   echo "branch: $BRANCH"
   echo "head_sha: $HEAD_SHA"
   echo "ci_run: $ci_run"
+  echo "benchmark_summary: $benchmark_summary"
   echo "metadata_cargo: $metadata_cargo"
   echo "metadata_install: $metadata_install"
   echo "metadata_changelog: $metadata_changelog"

@@ -125,6 +125,10 @@ branch: main
 ci_run: 123456
 head_sha: abc123
 artifact_gate_benchmark: passed
+benchmark_context_pack_first: 1/1
+benchmark_line_reduction: 99.0%
+benchmark_guardrail_failures: 0
+benchmark_truncated_packs: 0
 artifact_gate_context_pack_quality: passed
 artifact_gate_agent_route: passed
 artifact_gate_mcp_first_call: passed
@@ -168,6 +172,7 @@ metadata_cargo: 9.8.7
 metadata_install: v9.8.7
 metadata_changelog: 9.8.7 (2026-07-15)
 ci_run: 123456
+benchmark_summary: /tmp/codeinsight-benchmark-artifact-123456/summary.json
 release_notes_block:
 ## v9.8.7 release evidence
 SUMMARY
@@ -212,6 +217,10 @@ EOF
     fail "missing pretag evidence summary"
   grep -Fq 'artifact_gate_agent_route: passed' "$TEMP_DIR/output.log" ||
     fail "missing pretag agent-route gate summary"
+  grep -Fq 'benchmark_context_pack_first: 1/1' "$TEMP_DIR/output.log" ||
+    fail "missing pretag benchmark routing summary"
+  grep -Fq 'benchmark_line_reduction: 99.0%' "$TEMP_DIR/output.log" ||
+    fail "missing pretag benchmark line reduction summary"
   grep -Fq 'artifact_gate_mcp_first_call: passed' "$TEMP_DIR/output.log" ||
     fail "missing pretag MCP first-call gate summary"
   grep -Fq '[4/4] release evidence summary' "$TEMP_DIR/output.log" ||
@@ -224,6 +233,8 @@ EOF
     fail "missing final checklist"
   grep -Fq 'metadata_cargo: 9.8.7' "$TEMP_DIR/output.log" ||
     fail "missing checklist Cargo metadata"
+  grep -Fq 'benchmark_summary: /tmp/codeinsight-benchmark-artifact-123456/summary.json' "$TEMP_DIR/output.log" ||
+    fail "missing checklist benchmark summary"
   grep -Fq 'metadata_install: v9.8.7' "$TEMP_DIR/output.log" ||
     fail "missing checklist install metadata"
   grep -Fq 'metadata_changelog: 9.8.7 (2026-07-15)' "$TEMP_DIR/output.log" ||
