@@ -1,12 +1,15 @@
 # CodeInsight MCP Server
 
-CodeInsight MCP Server is a local-first MCP code context router for AI coding
-agents.
+CodeInsight MCP Server is a local-first first-read router for AI coding agents.
+It turns "scan the repository and guess what matters" into a bounded local route:
+index the project, choose the first context pack, offer the next focused tool,
+and preview impact before edits.
 
-It is built for the first-read problem: before an agent edits a repository, it
-needs to know which files matter, what entrypoints to inspect, what context fits
-the token budget, and what may be impacted by a change. CodeInsight keeps that
-loop local and exposes it through CLI and MCP tools.
+The product is intentionally narrow. It is built for the first-read problem:
+before an agent edits a repository, it needs to know which files matter, what
+entrypoints to inspect, what context fits the token budget, and what may be
+impacted by a change. CodeInsight keeps that loop local and exposes it through
+CLI and MCP tools.
 
 The primary agent loop is one call:
 
@@ -28,6 +31,10 @@ That route gives the agent:
 CodeInsight is not trying to replace an IDE, LSP, compiler, or Sourcegraph. Its
 job is to help AI agents read less code, pick better context, and stop guessing
 which file to open next.
+
+Use CodeInsight when the agent needs a local reading route. Keep using the IDE,
+LSP, compiler, test runner, and language-specific tools for precise diagnostics,
+type checks, and final verification.
 
 ## Fast Path
 

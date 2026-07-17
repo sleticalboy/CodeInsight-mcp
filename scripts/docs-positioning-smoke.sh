@@ -17,8 +17,17 @@ require_pattern() {
 
 main() {
   require_pattern README.md \
-    'local-first code context router|local-first MCP code context router|local-first MCP code context routing' \
+    'local-first first-read router|local-first code context router|local-first MCP code context router|local-first MCP code context routing' \
     "local-first AI-agent positioning"
+  require_pattern README.md \
+    'local-first first-read router for AI coding agents' \
+    "README first-read router positioning"
+  require_pattern README.md \
+    'turns "scan the repository and guess what matters" into a bounded local route' \
+    "README bounded local route positioning"
+  require_pattern README.md \
+    'The product is intentionally narrow' \
+    "README intentionally narrow scope"
   require_pattern README.md \
     'agent_route -> selected context -> executable suggested_tool -> impact check' \
     "README first-read route loop"
@@ -31,6 +40,9 @@ main() {
   require_pattern README.md \
     'CodeInsight is not trying to replace an IDE, LSP, compiler, or Sourcegraph' \
     "explicit non-goal positioning"
+  require_pattern README.md \
+    'LSP, compiler, test runner, and language-specific tools' \
+    "README keep using precise local tools"
   require_pattern README.md \
     '^## Fast Path$' \
     "README fast path section"
