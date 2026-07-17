@@ -159,6 +159,8 @@ entrypoint and recommended-tool routing decisions from `project_overview`:
   and memchr.
 - [Large repository benchmark](docs/benchmark-large.md): express, Flask, Gin,
   and Tokio.
+- [Express adoption case](docs/adoption-case-express.md): blind-read vs
+  routed-first-read evidence for a public JavaScript repository.
 - [Benchmark methodology](docs/benchmark-methodology.md): what the reports
   prove, refresh commands, profile knobs, and guardrails.
 
@@ -175,6 +177,9 @@ Current benchmark snapshot:
   select 629 of 75,753 source lines, a 99.2% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and
   select 1,748 of 241,555 source lines, a 99.3% aggregate line reduction.
+- The Express adoption case routes a first read to 232 of 21,478 source lines,
+  avoiding 21,246 lines before broad file reading, a 98.9% reduction and 92.6x
+  read-less ratio.
 - Generated reports include a `Key Results` section with routing,
   compression, token-budget, indexing, guardrail, and truncation evidence.
 - Per-repository details include a `Context reading plan` table with the local
@@ -252,6 +257,7 @@ Key docs:
 - [Adoption checklist](docs/adoption-checklist.md)
 - [Demo script](docs/demo-script.md)
 - [Demo output snapshot](docs/demo-output.md)
+- [Express adoption case](docs/adoption-case-express.md)
 - [Agent prompt templates](docs/agent-prompt-template.md)
 - [Client integration examples](docs/client-integration-examples.md)
 - [Current status](docs/status.md)

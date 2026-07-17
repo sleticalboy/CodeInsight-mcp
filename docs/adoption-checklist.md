@@ -90,6 +90,8 @@ Pass criteria:
 - `adoption-comparison.sh` writes a blind-read vs routed-first-read Markdown
   report and `summary.json` with source lines avoided, read-less ratio, seed
   strategy, first selected file, first reading question, and artifact paths.
+- Use the [Express adoption case](adoption-case-express.md) as the reference
+  shape for a public repository comparison snapshot.
 - `adoption-evidence.sh` writes one folder containing local first-read evidence,
   raw `agent_route` JSON, MCP first-call JSON, and aggregate Markdown/JSON
   summaries that prove the CLI route and MCP route both work.

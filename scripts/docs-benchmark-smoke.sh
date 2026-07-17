@@ -101,6 +101,12 @@ main() {
     '\[Large repository benchmark\]\(docs/benchmark-large\.md\).*express, Flask, Gin,' \
     "large benchmark link and repository list"
   require_pattern README.md \
+    '\[Express adoption case\]\(docs/adoption-case-express\.md\)' \
+    "README Express adoption case link"
+  require_pattern README.md \
+    '232 of 21,478 source lines' \
+    "README Express adoption case snapshot"
+  require_pattern README.md \
     '\[Benchmark methodology\]\(docs/benchmark-methodology\.md\)' \
     "benchmark methodology README link"
   require_pattern README.md \
@@ -161,6 +167,9 @@ main() {
     'source lines avoided, read-less ratio' \
     "adoption checklist comparison metrics"
   require_pattern docs/adoption-checklist.md \
+    '\[Express adoption case\]\(adoption-case-express\.md\)' \
+    "adoption checklist Express case link"
+  require_pattern docs/adoption-checklist.md \
     'codeinsight-adoption-report\.tar\.gz' \
     "adoption checklist report archive artifact"
   require_pattern docs/quickstart.md \
@@ -173,8 +182,20 @@ main() {
     'Adoption comparison evidence' \
     "docs index adoption comparison validation row"
   require_pattern docs/README.md \
+    '\[Express adoption case\]\(adoption-case-express\.md\)' \
+    "docs index Express adoption case link"
+  require_pattern docs/README.md \
     'Local repository benchmark' \
     "docs index local benchmark validation row"
+  require_pattern docs/adoption-case-express.md \
+    'Commit: `ae6dd37680e3a00618d6c8a3e522f0ee4eeba1a4`' \
+    "Express adoption case commit"
+  require_pattern docs/adoption-case-express.md \
+    'Read less | `92\.6x`' \
+    "Express adoption case read-less metric"
+  require_pattern docs/adoption-case-express.md \
+    'scripts/adoption-comparison\.sh /tmp/codeinsight-case-express' \
+    "Express adoption case reproduce command"
   require_pattern README.md \
     'route `context_pack` first for 4/4 repositories' \
     "context_pack benchmark claim"

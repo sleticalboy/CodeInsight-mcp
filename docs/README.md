@@ -18,6 +18,7 @@ Default adoption path:
 - [Adoption checklist](adoption-checklist.md)
 - [Demo script](demo-script.md)
 - [Demo output snapshot](demo-output.md)
+- [Express adoption case](adoption-case-express.md)
 - [Agent prompt templates](agent-prompt-template.md)
 - [Client integration examples](client-integration-examples.md)
 - [Current status](status.md)
@@ -73,6 +74,7 @@ Choose the check by adoption stage:
 - [MCP client smoke test](mcp-client-smoke.md)
 - [Semantic smoke test](semantic-smoke.md)
 - [Benchmark methodology](benchmark-methodology.md)
+- [Express adoption case](adoption-case-express.md)
 - [Smoke benchmark](benchmark-v0.1.md)
 - [Large repository benchmark](benchmark-large.md)
 
