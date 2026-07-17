@@ -19,6 +19,7 @@ Default adoption path:
 - [Demo script](demo-script.md)
 - [Demo output snapshot](demo-output.md)
 - [Express adoption case](adoption-case-express.md)
+- [Gin adoption case](adoption-case-gin.md)
 - [Agent prompt templates](agent-prompt-template.md)
 - [Client integration examples](client-integration-examples.md)
 - [Current status](status.md)
@@ -75,6 +76,7 @@ Choose the check by adoption stage:
 - [Semantic smoke test](semantic-smoke.md)
 - [Benchmark methodology](benchmark-methodology.md)
 - [Express adoption case](adoption-case-express.md)
+- [Gin adoption case](adoption-case-gin.md)
 - [Smoke benchmark](benchmark-v0.1.md)
 - [Large repository benchmark](benchmark-large.md)
 

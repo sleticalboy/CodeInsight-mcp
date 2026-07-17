@@ -90,11 +90,13 @@ Pass criteria:
 - `adoption-comparison.sh` writes a blind-read vs routed-first-read Markdown
   report and `summary.json` with source lines avoided, read-less ratio, seed
   strategy, first selected file, first reading question, and artifact paths.
-- Use the [Express adoption case](adoption-case-express.md) as the reference
-  shape for a public repository comparison snapshot.
+- Use the [Express adoption case](adoption-case-express.md) and
+  [Gin adoption case](adoption-case-gin.md) as reference shapes for public
+  repository comparison snapshots.
 - Run `scripts/update-adoption-case.sh express` to refresh that checked-in case
   from a live `adoption-comparison` run. The older
   `scripts/update-adoption-case-express.sh` wrapper delegates to the same path.
+- Run `scripts/update-adoption-case.sh gin` to refresh the Go adoption case.
 - `adoption-evidence.sh` writes one folder containing local first-read evidence,
   raw `agent_route` JSON, MCP first-call JSON, and aggregate Markdown/JSON
   summaries that prove the CLI route and MCP route both work.

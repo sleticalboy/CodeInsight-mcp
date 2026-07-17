@@ -24,6 +24,7 @@ Refreshes a checked-in adoption case from a live adoption-comparison run.
 
 Supported cases:
   express
+  gin
 
 Options:
   --root PATH           Existing repository checkout. Skips clone.
@@ -67,7 +68,7 @@ require_command() {
 parse_args() {
   while [ "$#" -gt 0 ]; do
     case "$1" in
-      express)
+      express|gin)
         if [ -n "$CASE_NAME" ] && [ "$CASE_NAME" != "$1" ]; then
           fail "case specified more than once"
         fi
@@ -148,6 +149,14 @@ configure_case() {
       TASK="${TASK:-understand express application routing behavior}"
       CASE_WRAPPER_NOTE='The legacy wrapper `scripts/update-adoption-case-express.sh` delegates to the same command.'
       ;;
+    gin)
+      CASE_TITLE="Gin Adoption Comparison"
+      CASE_SUBJECT="Gin"
+      REPO_URL="${REPO_URL:-https://github.com/gin-gonic/gin.git}"
+      WORK_DIR="${WORK_DIR:-/tmp/codeinsight-adoption-case-gin}"
+      OUTPUT_FILE="${OUTPUT_FILE:-$ROOT_DIR/docs/adoption-case-gin.md}"
+      TASK="${TASK:-understand gin engine routing behavior}"
+      ;;
     *)
       fail "unsupported adoption case: $CASE_NAME"
       ;;
@@ -197,6 +206,7 @@ write_case_doc() {
   local commit_full commit_short
   local blind_lines routed_lines avoided reduction read_less selected_files selected_ranges tokens
   local seed_strategy first_seed_source first_seed_value companion first_file first_question first_tool risk impacted
+  local wrapper_note_section
 
   commit_full="$(git_value "rev-parse HEAD" "local")"
   commit_short="$(git_value "rev-parse --short HEAD" "local")"
@@ -217,6 +227,10 @@ write_case_doc() {
   first_tool="$(json_value "$summary_json" '.metrics.first_suggested_tool')"
   risk="$(json_value "$summary_json" '.metrics.risk_level')"
   impacted="$(json_value "$summary_json" '.metrics.impacted_files')"
+  wrapper_note_section=""
+  if [ -n "$CASE_WRAPPER_NOTE" ]; then
+    wrapper_note_section="$CASE_WRAPPER_NOTE"
+  fi
 
   mkdir -p "$(dirname "$target")"
   cat >"$target" <<EOF
@@ -286,7 +300,7 @@ Recreate this exact snapshot:
 scripts/update-adoption-case.sh $CASE_NAME --commit $commit_full
 \`\`\`
 
-$CASE_WRAPPER_NOTE
+$wrapper_note_section
 
 Generate a fresh comparison against the current $CASE_SUBJECT default branch:
 

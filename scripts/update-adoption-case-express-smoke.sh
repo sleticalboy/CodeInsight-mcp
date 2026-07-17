@@ -130,6 +130,24 @@ EOF
   grep -Fq "updated adoption case: $TEMP_DIR/adoption-case-express-wrapper.md" "$TEMP_DIR/wrapper-output.log" ||
     fail "wrapper did not delegate to generic updater"
 
+  "$ROOT_DIR/scripts/update-adoption-case.sh" \
+    gin \
+    --root "$TEMP_DIR/repo" \
+    --repo-url "https://github.com/gin-gonic/gin.git" \
+    --comparison-script "$TEMP_DIR/adoption-comparison" \
+    --output "$TEMP_DIR/adoption-case-gin.md" \
+    --work-dir "$TEMP_DIR/gin-work" \
+    >"$TEMP_DIR/gin-output.log"
+
+  grep -Fq "updated adoption case: $TEMP_DIR/adoption-case-gin.md" "$TEMP_DIR/gin-output.log" ||
+    fail "gin case did not use generic updater"
+  grep -Fq '# Gin Adoption Comparison' "$TEMP_DIR/adoption-case-gin.md" ||
+    fail "missing gin case title"
+  grep -Fq -- "- Repository: \`https://github.com/gin-gonic/gin.git\`" "$TEMP_DIR/adoption-case-gin.md" ||
+    fail "missing gin repository"
+  grep -Fq -- "- Generated with: \`scripts/update-adoption-case.sh gin\`" "$TEMP_DIR/adoption-case-gin.md" ||
+    fail "missing gin generator line"
+
   echo "update adoption case smoke passed"
 }
 

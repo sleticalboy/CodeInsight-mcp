@@ -104,11 +104,20 @@ main() {
     '\[Express adoption case\]\(docs/adoption-case-express\.md\)' \
     "README Express adoption case link"
   require_pattern README.md \
+    '\[Gin adoption case\]\(docs/adoption-case-gin\.md\)' \
+    "README Gin adoption case link"
+  require_pattern README.md \
     '232 of 21,478 source lines' \
     "README Express adoption case snapshot"
   require_pattern README.md \
+    '472 of 24,099 source lines' \
+    "README Gin adoption case snapshot"
+  require_pattern README.md \
     'scripts/update-adoption-case\.sh express' \
     "README Express adoption case refresh command"
+  require_pattern README.md \
+    'scripts/update-adoption-case\.sh gin' \
+    "README Gin adoption case refresh command"
   require_pattern README.md \
     '\[Benchmark methodology\]\(docs/benchmark-methodology\.md\)' \
     "benchmark methodology README link"
@@ -173,8 +182,14 @@ main() {
     '\[Express adoption case\]\(adoption-case-express\.md\)' \
     "adoption checklist Express case link"
   require_pattern docs/adoption-checklist.md \
+    '\[Gin adoption case\]\(adoption-case-gin\.md\)' \
+    "adoption checklist Gin case link"
+  require_pattern docs/adoption-checklist.md \
     'scripts/update-adoption-case\.sh express' \
     "adoption checklist Express refresh command"
+  require_pattern docs/adoption-checklist.md \
+    'scripts/update-adoption-case\.sh gin' \
+    "adoption checklist Gin refresh command"
   require_pattern docs/adoption-checklist.md \
     'codeinsight-adoption-report\.tar\.gz' \
     "adoption checklist report archive artifact"
@@ -190,6 +205,9 @@ main() {
   require_pattern docs/README.md \
     '\[Express adoption case\]\(adoption-case-express\.md\)' \
     "docs index Express adoption case link"
+  require_pattern docs/README.md \
+    '\[Gin adoption case\]\(adoption-case-gin\.md\)' \
+    "docs index Gin adoption case link"
   require_pattern docs/README.md \
     'Local repository benchmark' \
     "docs index local benchmark validation row"
@@ -211,9 +229,27 @@ main() {
   require_pattern docs/adoption-case-express.md \
     'scripts/adoption-comparison\.sh /tmp/codeinsight-case-express' \
     "Express adoption case reproduce command"
+  require_pattern docs/adoption-case-gin.md \
+    'Commit: `34dac209ffb6ef85cc78c5d217bbb7ad001d68fd`' \
+    "Gin adoption case commit"
+  require_pattern docs/adoption-case-gin.md \
+    'Read less | `51\.1x`' \
+    "Gin adoption case read-less metric"
+  require_pattern docs/adoption-case-gin.md \
+    'Generated with: `scripts/update-adoption-case\.sh gin`' \
+    "Gin adoption case generator"
+  require_pattern docs/adoption-case-gin.md \
+    'scripts/update-adoption-case\.sh gin --commit 34dac209ffb6ef85cc78c5d217bbb7ad001d68fd' \
+    "Gin adoption case exact refresh command"
+  require_pattern docs/adoption-case-gin.md \
+    'scripts/adoption-comparison\.sh /tmp/codeinsight-case-gin' \
+    "Gin adoption case reproduce command"
   require_pattern scripts/update-adoption-case.sh \
     'Refreshes a checked-in adoption case from a live adoption-comparison run' \
     "Express adoption case update script purpose"
+  require_pattern scripts/update-adoption-case.sh \
+    'gin\)' \
+    "Gin adoption case update script branch"
   require_pattern README.md \
     'route `context_pack` first for 4/4 repositories' \
     "context_pack benchmark claim"
