@@ -180,6 +180,8 @@ Current benchmark snapshot:
 - The Express adoption case routes a first read to 232 of 21,478 source lines,
   avoiding 21,246 lines before broad file reading, a 98.9% reduction and 92.6x
   read-less ratio.
+- Refresh the Express adoption case with
+  `scripts/update-adoption-case-express.sh`.
 - Generated reports include a `Key Results` section with routing,
   compression, token-budget, indexing, guardrail, and truncation evidence.
 - Per-repository details include a `Context reading plan` table with the local
