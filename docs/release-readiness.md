@@ -270,6 +270,8 @@ the `benchmark-subset-smoke` job summary plus the
 `context-pack-quality-smoke` job summary. The benchmark run summary should
 show:
 
+- The compact benchmark summary with `context_pack` routing, line reduction,
+  guardrail failures, and truncated context-pack counts.
 - `Key Results` for the lightweight `p-limit` subset.
 - A summary table with `context_pack` as the first recommended tool.
 - A workflow run link.
@@ -297,6 +299,9 @@ scripts/mcp-first-call-artifact-smoke.sh <ci-run-id>
 
 Treat the CI subset as a quick regression signal only. The checked-in smoke and
 large benchmark reports remain the release evidence for public-facing claims.
+When preparing a release handoff or release notes draft, confirm the archived
+evidence JSON includes benchmark metrics and that the generated handoff/notes
+show the benchmark routing and line-reduction lines.
 
 ## Communication Gate
 

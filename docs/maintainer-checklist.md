@@ -80,9 +80,9 @@ optional external checks, see [Maintenance commands](maintenance-commands.md).
 
   After CI runs, open the `benchmark-subset-smoke` job summary and confirm it
   includes the compact benchmark summary, `Key Results`, the `context_pack`
-  summary row, a workflow run link, and the `codeinsight-benchmark-subset`
-  artifact link. Download the artifact only when you need the full guardrail
-  tables. Open the
+  summary row, benchmark line reduction, guardrail failure count, a workflow
+  run link, and the `codeinsight-benchmark-subset` artifact link. Download the
+  artifact only when you need the full guardrail tables or JSON metrics. Open the
   `context-pack-quality-smoke` job summary and confirm it includes the scenario
   table, first reading question metrics, and the
   `codeinsight-context-pack-quality` artifact link. Open the
@@ -99,6 +99,10 @@ optional external checks, see [Maintenance commands](maintenance-commands.md).
   scripts/agent-route-artifact-smoke.sh <ci-run-id>
   scripts/mcp-first-call-artifact-smoke.sh <ci-run-id>
   ```
+
+  For release handoff or release-note work, confirm the generated evidence JSON
+  carries benchmark metrics and that `release-handoff-summary.sh` /
+  `release-notes-draft.sh` show the benchmark routing and line-reduction lines.
 
 ## Before Tagging A Release
 

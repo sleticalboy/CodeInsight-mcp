@@ -130,7 +130,10 @@ runs cannot satisfy release evidence, even if they share the branch.
 After the artifact checks pass, `release-pretag-check.sh` prints a
 `release pretag evidence` block with the resolved branch, CI run, head SHA, and
 `artifact_gate_benchmark`, `artifact_gate_context_pack_quality`, and
-`artifact_gate_agent_route`, and `artifact_gate_mcp_first_call` statuses.
+`artifact_gate_agent_route`, and `artifact_gate_mcp_first_call` statuses. The
+same block also exposes benchmark metrics from the uploaded JSON summary:
+`benchmark_context_pack_first`, `benchmark_line_reduction`,
+`benchmark_guardrail_failures`, and `benchmark_truncated_packs`.
 
 Dry-run the tag preflight without creating or pushing a tag:
 
@@ -148,8 +151,9 @@ preflight output prints `metadata_cargo`, `metadata_install`, and `metadata_chan
 so the prepared versions are visible before tagging. It also includes and
 validates the `release pretag evidence` block from `release-pretag-check.sh`,
 including `ci_run`, `head_sha`, `artifact_gate_benchmark`,
-`artifact_gate_context_pack_quality`, `artifact_gate_agent_route`, and
-`artifact_gate_mcp_first_call`.
+`benchmark_context_pack_first`, `benchmark_line_reduction`,
+`benchmark_guardrail_failures`, `artifact_gate_context_pack_quality`,
+`artifact_gate_agent_route`, and `artifact_gate_mcp_first_call`.
 
 Archive the release evidence block:
 
@@ -161,10 +165,11 @@ This resolves the successful `CI` run for the target SHA, validates the
 `codeinsight-benchmark-subset`, `codeinsight-context-pack-quality`,
 `codeinsight-agent-route-smoke`, and `codeinsight-mcp-first-call` artifacts,
 and prints a Markdown block with the commit, workflow run, artifact links,
-local report paths, and release metadata to `release-evidence/vX.Y.Z.md`. Use
-`--output PATH` for a custom archive path or `--force` to intentionally
-overwrite an existing evidence file. Use `--json-output PATH` to also write a
-machine-readable evidence summary.
+local report paths, benchmark routing/line-reduction metrics, and release
+metadata to `release-evidence/vX.Y.Z.md`. Use `--output PATH` for a custom
+archive path or `--force` to intentionally overwrite an existing evidence file.
+Use `--json-output PATH` to also write a machine-readable evidence summary; the
+handoff summary and release notes draft read benchmark metrics from that JSON.
 
 ## Publish A Tagged Release
 

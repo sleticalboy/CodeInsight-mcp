@@ -679,6 +679,15 @@ main() {
     'artifact_gate_benchmark' \
     "release runbook pretag benchmark evidence summary"
   require_pattern docs/release-runbook.md \
+    'benchmark_context_pack_first' \
+    "release runbook pretag benchmark routing metric"
+  require_pattern docs/release-runbook.md \
+    'benchmark_line_reduction' \
+    "release runbook pretag benchmark line reduction metric"
+  require_pattern docs/release-runbook.md \
+    'handoff summary and release notes draft read benchmark metrics' \
+    "release runbook handoff benchmark metrics flow"
+  require_pattern docs/release-runbook.md \
     'artifact_gate_mcp_first_call' \
     "release runbook pretag MCP first-call evidence summary"
   require_pattern scripts/release-pretag-check.sh \
@@ -777,6 +786,12 @@ main() {
   require_pattern docs/maintainer-checklist.md \
     'compact benchmark summary' \
     "maintainer compact benchmark summary guidance"
+  require_pattern docs/maintainer-checklist.md \
+    'release-handoff-summary\.sh' \
+    "maintainer release handoff benchmark metrics guidance"
+  require_pattern docs/release-readiness.md \
+    'benchmark routing and line-reduction lines' \
+    "release readiness handoff benchmark metrics guidance"
   require_pattern docs/maintainer-checklist.md \
     'scripts/benchmark-artifact-smoke\.sh <ci-run-id>' \
     "maintainer benchmark artifact smoke command"
