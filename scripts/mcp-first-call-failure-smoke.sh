@@ -49,14 +49,15 @@ expect_help() {
     fail "--help should not write stderr"
   fi
   for expected in \
-    'usage: scripts/mcp-first-call-smoke.sh [--help]' \
+    'usage: scripts/mcp-first-call-smoke.sh [--summary-json PATH] [--help]' \
+    '--summary-json PATH' \
     'CODEINSIGHT_BIN' \
     'CODEINSIGHT_FIRST_CALL_ROOT' \
     'CODEINSIGHT_FIRST_CALL_TASK' \
     'CODEINSIGHT_FIRST_CALL_TOKEN_BUDGET' \
     '[agent_route_contract]' \
     '[suggested_tool]'; do
-    if ! grep -Fq "$expected" "$stdout_file"; then
+    if ! grep -Fq -- "$expected" "$stdout_file"; then
       echo "stdout:" >&2
       cat "$stdout_file" >&2
       fail "--help is missing: $expected"
@@ -79,6 +80,11 @@ main() {
     unknown-argument \
     'mcp first-call smoke failed [usage]: unknown argument: --bad-option' \
     "$ROOT_DIR/scripts/mcp-first-call-smoke.sh" --bad-option
+
+  expect_failure \
+    summary-json-missing-path \
+    'mcp first-call smoke failed [usage]: --summary-json requires a path' \
+    "$ROOT_DIR/scripts/mcp-first-call-smoke.sh" --summary-json
 
   if [ ! -x /usr/bin/true ]; then
     fail "/usr/bin/true is unavailable for MCP server failure coverage"

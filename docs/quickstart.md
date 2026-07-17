@@ -166,6 +166,9 @@ full protocol smoke log.
 
 Run `scripts/mcp-first-call-smoke.sh --help` to see the supported environment
 variables for binary path, target repository, task, and token budget.
+Use `scripts/mcp-first-call-smoke.sh --summary-json /tmp/codeinsight-mcp-first-call.json`
+when you want to keep the summary as an artifact while still printing it to
+stdout.
 
 Expected output shape:
 

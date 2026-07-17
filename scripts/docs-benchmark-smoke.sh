@@ -343,8 +343,11 @@ main() {
     '\| README/demo positioning changed \| `scripts/two-minute-demo\.sh` and `scripts/demo-output-smoke\.sh` \|' \
     "maintenance README demo smoke chooser"
   require_pattern docs/maintenance-commands.md \
-    '\| First MCP call onboarding changed \| `scripts/mcp-first-call-smoke\.sh` \|' \
+    '\| First MCP call onboarding changed \| `scripts/mcp-first-call-smoke\.sh --summary-json /tmp/codeinsight-mcp-first-call\.json` \|' \
     "maintenance MCP first-call smoke chooser"
+  require_pattern docs/maintenance-commands.md \
+    'selected files, execution plan, suggested tool, impact status, and saved artifacts' \
+    "maintenance MCP first-call artifact scope"
   require_pattern docs/maintenance-commands.md \
     '\| First MCP call help or failure messaging changed \| `scripts/mcp-first-call-failure-smoke\.sh` \|' \
     "maintenance MCP first-call failure smoke chooser"

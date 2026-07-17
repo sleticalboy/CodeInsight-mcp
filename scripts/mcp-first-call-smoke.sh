@@ -6,6 +6,7 @@ CODEINSIGHT_BIN="${CODEINSIGHT_BIN:-}"
 FIRST_CALL_ROOT="${CODEINSIGHT_FIRST_CALL_ROOT:-}"
 FIRST_CALL_TASK="${CODEINSIGHT_FIRST_CALL_TASK:-understand app entrypoint flow}"
 FIRST_CALL_TOKEN_BUDGET="${CODEINSIGHT_FIRST_CALL_TOKEN_BUDGET:-1600}"
+SUMMARY_JSON=""
 TEMP_DIR=""
 
 fail_with() {
@@ -27,7 +28,7 @@ require_command() {
 
 usage() {
   cat <<'EOF'
-usage: scripts/mcp-first-call-smoke.sh [--help]
+usage: scripts/mcp-first-call-smoke.sh [--summary-json PATH] [--help]
 
 Runs a compact MCP stdio first-call check and prints a JSON summary.
 
@@ -45,12 +46,23 @@ Output:
   stdout  JSON summary when the first MCP agent_route call succeeds.
   stderr  Categorized failures such as [binary], [mcp_server],
           [agent_route_contract], [suggested_tool], or [unexpected].
+
+Options:
+  --summary-json PATH  Also write the JSON summary to PATH.
+  -h, --help           Show this help.
 EOF
 }
 
 parse_args() {
   while [ "$#" -gt 0 ]; do
     case "$1" in
+      --summary-json)
+        if [ "$#" -lt 2 ]; then
+          fail_with usage "--summary-json requires a path"
+        fi
+        SUMMARY_JSON="$2"
+        shift 2
+        ;;
       -h|--help)
         usage
         exit 0
@@ -138,6 +150,7 @@ main() {
     FIRST_CALL_ROOT="$FIRST_CALL_ROOT" \
     FIRST_CALL_TASK="$FIRST_CALL_TASK" \
     FIRST_CALL_TOKEN_BUDGET="$FIRST_CALL_TOKEN_BUDGET" \
+    SUMMARY_JSON="$SUMMARY_JSON" \
     python3 <<'PY'
 import json
 import os
@@ -148,6 +161,7 @@ codeinsight_bin = os.environ["CODEINSIGHT_BIN"]
 root = os.environ["FIRST_CALL_ROOT"]
 task = os.environ["FIRST_CALL_TASK"]
 token_budget = int(os.environ["FIRST_CALL_TOKEN_BUDGET"])
+summary_json_path = os.environ.get("SUMMARY_JSON", "")
 
 
 class SmokeFailure(Exception):
@@ -360,7 +374,15 @@ try:
         "impact_status": route["impact_status"],
         "impact_counts": impact_counts,
     }
-    print(json.dumps(summary, indent=2, sort_keys=True))
+    summary_json = json.dumps(summary, indent=2, sort_keys=True)
+    print(summary_json)
+    if summary_json_path:
+        parent = os.path.dirname(summary_json_path)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+        with open(summary_json_path, "w", encoding="utf-8") as summary_file:
+            summary_file.write(summary_json)
+            summary_file.write("\n")
 except SmokeFailure as exc:
     print(f"mcp first-call smoke failed [{exc.category}]: {exc.message}", file=sys.stderr)
     sys.exit(1)

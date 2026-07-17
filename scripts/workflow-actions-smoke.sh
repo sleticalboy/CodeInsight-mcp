@@ -40,6 +40,7 @@ main() {
   require_pattern ".github/workflows/ci.yml" "agent-route-step-summary\\.sh" "agent-route CI step summary"
   require_pattern ".github/workflows/ci.yml" "mcp-first-call-smoke:" "MCP first-call CI job"
   require_pattern ".github/workflows/ci.yml" "scripts/mcp-first-call-smoke\\.sh" "MCP first-call CI script"
+  require_pattern ".github/workflows/ci.yml" "scripts/mcp-first-call-smoke\\.sh --summary-json /tmp/codeinsight-mcp-first-call\\.json" "MCP first-call CI summary JSON"
   require_pattern ".github/workflows/ci.yml" "scripts/mcp-first-call-failure-smoke\\.sh" "MCP first-call failure CI script"
   require_pattern ".github/workflows/ci.yml" "codeinsight-mcp-first-call" "MCP first-call CI artifact"
   require_pattern ".github/workflows/ci.yml" "context-pack-quality-smoke:" "context-pack quality CI job"

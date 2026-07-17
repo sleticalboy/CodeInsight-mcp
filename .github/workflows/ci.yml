@@ -66,7 +66,7 @@ jobs:
         with:
           key: mcp-first-call-smoke
       - run: |
-          scripts/mcp-first-call-smoke.sh > /tmp/codeinsight-mcp-first-call.json
+          scripts/mcp-first-call-smoke.sh --summary-json /tmp/codeinsight-mcp-first-call.json
           cat /tmp/codeinsight-mcp-first-call.json
       - uses: actions/upload-artifact@v7
         with:
