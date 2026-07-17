@@ -116,6 +116,12 @@ main() {
     'scripts/adoption-evidence\.sh /path/to/repo' \
     "README adoption evidence command"
   require_pattern README.md \
+    'scripts/adoption-comparison\.sh /path/to/repo' \
+    "README adoption comparison command"
+  require_pattern README.md \
+    'blind-read vs routed-first-read comparison' \
+    "README adoption comparison description"
+  require_pattern README.md \
     '\-\-print-snippet' \
     "README adoption evidence print snippet option"
   require_pattern README.md \
@@ -149,11 +155,23 @@ main() {
     'scripts/adoption-report\.sh /path/to/repo' \
     "adoption checklist report command"
   require_pattern docs/adoption-checklist.md \
+    'scripts/adoption-comparison\.sh /path/to/repo' \
+    "adoption checklist comparison command"
+  require_pattern docs/adoption-checklist.md \
+    'source lines avoided, read-less ratio' \
+    "adoption checklist comparison metrics"
+  require_pattern docs/adoption-checklist.md \
     'codeinsight-adoption-report\.tar\.gz' \
     "adoption checklist report archive artifact"
   require_pattern docs/quickstart.md \
+    'You need adoption comparison evidence' \
+    "quickstart adoption comparison row"
+  require_pattern docs/quickstart.md \
     'You want evidence for your own repository' \
     "quickstart local benchmark row"
+  require_pattern docs/README.md \
+    'Adoption comparison evidence' \
+    "docs index adoption comparison validation row"
   require_pattern docs/README.md \
     'Local repository benchmark' \
     "docs index local benchmark validation row"

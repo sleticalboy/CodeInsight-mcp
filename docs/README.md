@@ -59,12 +59,14 @@ Choose the check by adoption stage:
 | Copyable MCP first-call JSON | `scripts/mcp-first-call-smoke.sh` |
 | MCP client wiring | `scripts/mcp-stdio-smoke.sh` |
 | Installed-binary adoption gate | `scripts/installed-quickstart-smoke.sh` |
+| Adoption comparison evidence | `scripts/adoption-comparison.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-comparison` |
 | Local repository benchmark | `CODEINSIGHT_BENCH_PROFILE=local ... scripts/benchmark-smoke.sh` |
 
 - [Maintenance commands](maintenance-commands.md)
 - Two-minute demo: `scripts/two-minute-demo.sh`
 - MCP first-call JSON summary: `scripts/mcp-first-call-smoke.sh`
 - Installed first-read route: `scripts/installed-quickstart-smoke.sh`
+- Adoption comparison evidence: `scripts/adoption-comparison.sh`
 - Agent-router lower-level metrics and reasons: `scripts/agent-router-demo.sh`
 - [Two-minute demo script](demo-script.md)
 - [Two-minute demo output snapshot](demo-output.md)

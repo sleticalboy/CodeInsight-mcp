@@ -61,6 +61,13 @@ scripts/local-repo-evidence.sh /path/to/repo \
   --summary-json /tmp/codeinsight-local-evidence.json
 ```
 
+When you need a short comparison for adoption notes:
+
+```bash
+scripts/adoption-comparison.sh /path/to/repo \
+  --output-dir /tmp/codeinsight-adoption-comparison
+```
+
 Pass criteria:
 
 - `indexed_files` is greater than zero.
@@ -80,6 +87,9 @@ Pass criteria:
   tool, impact risk, and the raw `agent_route` JSON path when `--json` is used.
 - `--summary-json` writes the same core metrics in a compact machine-readable
   contract for CI artifacts, README evidence snippets, or benchmark aggregation.
+- `adoption-comparison.sh` writes a blind-read vs routed-first-read Markdown
+  report and `summary.json` with source lines avoided, read-less ratio, seed
+  strategy, first selected file, first reading question, and artifact paths.
 - `adoption-evidence.sh` writes one folder containing local first-read evidence,
   raw `agent_route` JSON, MCP first-call JSON, and aggregate Markdown/JSON
   summaries that prove the CLI route and MCP route both work.

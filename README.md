@@ -69,6 +69,7 @@ which file to open next.
    | Goal | Command | Use When |
    | --- | --- | --- |
    | See the product loop | `scripts/two-minute-demo.sh` | You want a visible `agent_route -> context_pack -> impact_analysis` walkthrough with an `[Evidence summary]`. |
+   | Compare adoption impact | `scripts/adoption-comparison.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-comparison` | You want a shareable blind-read vs routed-first-read comparison showing source lines avoided, read-less ratio, seed strategy, and first reading question. |
    | Build adoption evidence | `scripts/adoption-evidence.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-evidence --print-snippet --issue-template` | You want one folder with local first-read evidence, raw route JSON, MCP first-call JSON, aggregate Markdown/JSON summaries, a copyable terminal snippet, and a ready-to-file issue template. |
    | Package adoption report | `scripts/adoption-report.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-report --print-snippet` | You want a tar.gz report containing the evidence summaries, issue template, raw JSON, and diagnostic logs for upload or handoff. |
    | Check the first MCP call | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/mcp-first-call-smoke.sh` | You want a compact JSON proof that stdio MCP accepts `agent_route`, returns selected files, exposes an execution plan, runs a suggested tool, and includes `impact_status`. |
@@ -120,6 +121,17 @@ scripts/local-repo-evidence.sh /path/to/repo \
   --json /tmp/codeinsight-agent-route.json \
   --summary-json /tmp/codeinsight-local-evidence.json
 ```
+
+Generate a blind-read vs routed-first-read comparison for adoption notes:
+
+```bash
+scripts/adoption-comparison.sh /path/to/repo \
+  --output-dir /tmp/codeinsight-adoption-comparison
+```
+
+It writes `adoption-comparison.md`, `summary.json`, the local evidence summary,
+and the raw `agent_route` JSON. Use it when you need to show how many source
+lines CodeInsight avoided before the agent starts opening files.
 
 The demo executes the same product path an MCP client should follow:
 `agent_route`, which runs `index_project -> project_overview -> context_pack ->
