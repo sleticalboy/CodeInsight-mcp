@@ -21,6 +21,7 @@ Default adoption path:
 - [Adoption cases](adoption-cases.md)
 - [Express adoption case](adoption-case-express.md)
 - [Gin adoption case](adoption-case-gin.md)
+- [Requests adoption case](adoption-case-requests.md)
 - [Agent prompt templates](agent-prompt-template.md)
 - [Client integration examples](client-integration-examples.md)
 - [Current status](status.md)
@@ -79,6 +80,7 @@ Choose the check by adoption stage:
 - [Adoption cases](adoption-cases.md)
 - [Express adoption case](adoption-case-express.md)
 - [Gin adoption case](adoption-case-gin.md)
+- [Requests adoption case](adoption-case-requests.md)
 - [Smoke benchmark](benchmark-v0.1.md)
 - [Large repository benchmark](benchmark-large.md)
 

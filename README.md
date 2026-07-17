@@ -165,6 +165,8 @@ entrypoint and recommended-tool routing decisions from `project_overview`:
   routed-first-read evidence for a public JavaScript repository.
 - [Gin adoption case](docs/adoption-case-gin.md): blind-read vs
   routed-first-read evidence for a public Go repository.
+- [Requests adoption case](docs/adoption-case-requests.md): blind-read vs
+  routed-first-read evidence for a public Python library.
 - [Benchmark methodology](docs/benchmark-methodology.md): what the reports
   prove, refresh commands, profile knobs, and guardrails.
 
@@ -181,18 +183,22 @@ Current benchmark snapshot:
   select 629 of 75,753 source lines, a 99.2% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and
   select 1,748 of 241,555 source lines, a 99.3% aggregate line reduction.
-- The adoption case summary covers 2 public repositories and routes a first read
-  to 704 of 45,577 source lines, avoiding 44,873 lines before broad file
-  reading, a 98.5% aggregate reduction and 64.7x aggregate read-less ratio.
+- The adoption case summary covers 3 public repositories and routes a first read
+  to 1,355 of 57,609 source lines, avoiding 56,254 lines before broad file
+  reading, a 97.6% aggregate reduction and 42.5x aggregate read-less ratio.
 - The Express adoption case routes a first read to 232 of 21,478 source lines,
   avoiding 21,246 lines before broad file reading, a 98.9% reduction and 92.6x
   read-less ratio.
 - The Gin adoption case routes a first read to 472 of 24,099 source lines,
   avoiding 23,627 lines before broad file reading, a 98.0% reduction and 51.1x
   read-less ratio.
+- The Requests adoption case routes a first read to 651 of 12,032 source lines,
+  avoiding 11,381 lines before broad file reading, a 94.6% reduction and 18.5x
+  read-less ratio.
 - Refresh the Express adoption case with `scripts/update-adoption-case.sh express`
   or the compatibility wrapper `scripts/update-adoption-case-express.sh`.
   Refresh the Gin case with `scripts/update-adoption-case.sh gin`.
+  Refresh the Requests case with `scripts/update-adoption-case.sh requests`.
 - Generated reports include a `Key Results` section with routing,
   compression, token-budget, indexing, guardrail, and truncation evidence.
 - Per-repository details include a `Context reading plan` table with the local
@@ -273,6 +279,7 @@ Key docs:
 - [Adoption cases](docs/adoption-cases.md)
 - [Express adoption case](docs/adoption-case-express.md)
 - [Gin adoption case](docs/adoption-case-gin.md)
+- [Requests adoption case](docs/adoption-case-requests.md)
 - [Agent prompt templates](docs/agent-prompt-template.md)
 - [Client integration examples](docs/client-integration-examples.md)
 - [Current status](docs/status.md)

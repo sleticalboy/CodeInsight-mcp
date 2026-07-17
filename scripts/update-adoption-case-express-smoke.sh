@@ -148,15 +148,34 @@ EOF
   grep -Fq -- "- Generated with: \`scripts/update-adoption-case.sh gin\`" "$TEMP_DIR/adoption-case-gin.md" ||
     fail "missing gin generator line"
 
+  "$ROOT_DIR/scripts/update-adoption-case.sh" \
+    requests \
+    --root "$TEMP_DIR/repo" \
+    --repo-url "https://github.com/psf/requests.git" \
+    --comparison-script "$TEMP_DIR/adoption-comparison" \
+    --output "$TEMP_DIR/adoption-case-requests.md" \
+    --work-dir "$TEMP_DIR/requests-work" \
+    >"$TEMP_DIR/requests-output.log"
+
+  grep -Fq "updated adoption case: $TEMP_DIR/adoption-case-requests.md" "$TEMP_DIR/requests-output.log" ||
+    fail "requests case did not use generic updater"
+  grep -Fq '# Requests Adoption Comparison' "$TEMP_DIR/adoption-case-requests.md" ||
+    fail "missing requests case title"
+  grep -Fq -- "- Repository: \`https://github.com/psf/requests.git\`" "$TEMP_DIR/adoption-case-requests.md" ||
+    fail "missing requests repository"
+  grep -Fq -- "- Generated with: \`scripts/update-adoption-case.sh requests\`" "$TEMP_DIR/adoption-case-requests.md" ||
+    fail "missing requests generator line"
+
   "$ROOT_DIR/scripts/update-adoption-cases.sh" \
     --output "$TEMP_DIR/adoption-cases.md" \
     "$TEMP_DIR/adoption-case-express.md" \
     "$TEMP_DIR/adoption-case-gin.md" \
+    "$TEMP_DIR/adoption-case-requests.md" \
     >"$TEMP_DIR/summary-output.log"
 
   grep -Fq "updated adoption cases summary: $TEMP_DIR/adoption-cases.md" "$TEMP_DIR/summary-output.log" ||
     fail "summary updater did not report output path"
-  grep -Fq 'Blind first-read baseline: `42,956` source lines' "$TEMP_DIR/adoption-cases.md" ||
+  grep -Fq 'Blind first-read baseline: `64,434` source lines' "$TEMP_DIR/adoption-cases.md" ||
     fail "summary updater did not aggregate baselines"
   grep -Fq 'Aggregate read-less ratio: `92.6x`' "$TEMP_DIR/adoption-cases.md" ||
     fail "summary updater did not aggregate read-less ratio"
@@ -165,6 +184,7 @@ EOF
     --output "$TEMP_DIR/adoption-cases.md" \
     "$TEMP_DIR/adoption-case-express.md" \
     "$TEMP_DIR/adoption-case-gin.md" \
+    "$TEMP_DIR/adoption-case-requests.md" \
     >"$TEMP_DIR/summary-check-output.log"
   grep -Fq "adoption cases summary is up to date" "$TEMP_DIR/summary-check-output.log" ||
     fail "summary updater check mode did not pass"

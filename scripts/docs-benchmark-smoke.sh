@@ -110,16 +110,22 @@ main() {
     '\[Gin adoption case\]\(docs/adoption-case-gin\.md\)' \
     "README Gin adoption case link"
   require_pattern README.md \
+    '\[Requests adoption case\]\(docs/adoption-case-requests\.md\)' \
+    "README Requests adoption case link"
+  require_pattern README.md \
     '232 of 21,478 source lines' \
     "README Express adoption case snapshot"
   require_pattern README.md \
     '472 of 24,099 source lines' \
     "README Gin adoption case snapshot"
   require_pattern README.md \
-    '704 of 45,577 source lines' \
+    '651 of 12,032 source lines' \
+    "README Requests adoption case snapshot"
+  require_pattern README.md \
+    '1,355 of 57,609 source lines' \
     "README adoption cases aggregate snapshot"
   require_pattern README.md \
-    '64\.7x aggregate read-less ratio' \
+    '42\.5x aggregate read-less ratio' \
     "README adoption cases aggregate read-less ratio"
   require_pattern README.md \
     'scripts/update-adoption-case\.sh express' \
@@ -127,6 +133,9 @@ main() {
   require_pattern README.md \
     'scripts/update-adoption-case\.sh gin' \
     "README Gin adoption case refresh command"
+  require_pattern README.md \
+    'scripts/update-adoption-case\.sh requests' \
+    "README Requests adoption case refresh command"
   require_pattern README.md \
     '\[Benchmark methodology\]\(docs/benchmark-methodology\.md\)' \
     "benchmark methodology README link"
@@ -197,11 +206,17 @@ main() {
     '\[Gin adoption case\]\(adoption-case-gin\.md\)' \
     "adoption checklist Gin case link"
   require_pattern docs/adoption-checklist.md \
+    '\[Requests adoption case\]\(adoption-case-requests\.md\)' \
+    "adoption checklist Requests case link"
+  require_pattern docs/adoption-checklist.md \
     'scripts/update-adoption-case\.sh express' \
     "adoption checklist Express refresh command"
   require_pattern docs/adoption-checklist.md \
     'scripts/update-adoption-case\.sh gin' \
     "adoption checklist Gin refresh command"
+  require_pattern docs/adoption-checklist.md \
+    'scripts/update-adoption-case\.sh requests' \
+    "adoption checklist Requests refresh command"
   require_pattern docs/adoption-checklist.md \
     'codeinsight-adoption-report\.tar\.gz' \
     "adoption checklist report archive artifact"
@@ -223,6 +238,9 @@ main() {
   require_pattern docs/README.md \
     '\[Gin adoption case\]\(adoption-case-gin\.md\)' \
     "docs index Gin adoption case link"
+  require_pattern docs/README.md \
+    '\[Requests adoption case\]\(adoption-case-requests\.md\)' \
+    "docs index Requests adoption case link"
   require_pattern docs/README.md \
     'Local repository benchmark' \
     "docs index local benchmark validation row"
@@ -259,14 +277,29 @@ main() {
   require_pattern docs/adoption-case-gin.md \
     'scripts/adoption-comparison\.sh /tmp/codeinsight-case-gin' \
     "Gin adoption case reproduce command"
+  require_pattern docs/adoption-case-requests.md \
+    'Commit: `f361ead047be5cb873174218582f7d8b9fcd9f49`' \
+    "Requests adoption case commit"
+  require_pattern docs/adoption-case-requests.md \
+    'Read less | `18\.5x`' \
+    "Requests adoption case read-less metric"
+  require_pattern docs/adoption-case-requests.md \
+    'Generated with: `scripts/update-adoption-case\.sh requests`' \
+    "Requests adoption case generator"
+  require_pattern docs/adoption-case-requests.md \
+    'scripts/update-adoption-case\.sh requests --commit f361ead047be5cb873174218582f7d8b9fcd9f49' \
+    "Requests adoption case exact refresh command"
+  require_pattern docs/adoption-case-requests.md \
+    'scripts/adoption-comparison\.sh /tmp/codeinsight-case-requests' \
+    "Requests adoption case reproduce command"
   require_pattern docs/adoption-cases.md \
-    'Blind first-read baseline: `45,577` source lines' \
+    'Blind first-read baseline: `57,609` source lines' \
     "adoption cases aggregate baseline"
   require_pattern docs/adoption-cases.md \
-    'Aggregate first-read reduction: `98\.5%`' \
+    'Aggregate first-read reduction: `97\.6%`' \
     "adoption cases aggregate reduction"
   require_pattern docs/adoption-cases.md \
-    'Aggregate read-less ratio: `64\.7x`' \
+    'Aggregate read-less ratio: `42\.5x`' \
     "adoption cases aggregate read-less ratio"
   require_pattern docs/adoption-cases.md \
     '\[case\]\(adoption-case-express\.md\)' \
@@ -274,6 +307,9 @@ main() {
   require_pattern docs/adoption-cases.md \
     '\[case\]\(adoption-case-gin\.md\)' \
     "adoption cases Gin detail link"
+  require_pattern docs/adoption-cases.md \
+    '\[case\]\(adoption-case-requests\.md\)' \
+    "adoption cases Requests detail link"
   "$ROOT_DIR/scripts/update-adoption-cases.sh" --check >/dev/null
   require_pattern scripts/update-adoption-case.sh \
     'Refreshes a checked-in adoption case from a live adoption-comparison run' \
@@ -281,6 +317,9 @@ main() {
   require_pattern scripts/update-adoption-case.sh \
     'gin\)' \
     "Gin adoption case update script branch"
+  require_pattern scripts/update-adoption-case.sh \
+    'requests\)' \
+    "Requests adoption case update script branch"
   require_pattern README.md \
     'route `context_pack` first for 4/4 repositories' \
     "context_pack benchmark claim"

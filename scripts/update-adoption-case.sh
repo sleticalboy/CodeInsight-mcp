@@ -25,6 +25,7 @@ Refreshes a checked-in adoption case from a live adoption-comparison run.
 Supported cases:
   express
   gin
+  requests
 
 Options:
   --root PATH           Existing repository checkout. Skips clone.
@@ -68,7 +69,7 @@ require_command() {
 parse_args() {
   while [ "$#" -gt 0 ]; do
     case "$1" in
-      express|gin)
+      express|gin|requests)
         if [ -n "$CASE_NAME" ] && [ "$CASE_NAME" != "$1" ]; then
           fail "case specified more than once"
         fi
@@ -156,6 +157,14 @@ configure_case() {
       WORK_DIR="${WORK_DIR:-/tmp/codeinsight-adoption-case-gin}"
       OUTPUT_FILE="${OUTPUT_FILE:-$ROOT_DIR/docs/adoption-case-gin.md}"
       TASK="${TASK:-understand gin engine routing behavior}"
+      ;;
+    requests)
+      CASE_TITLE="Requests Adoption Comparison"
+      CASE_SUBJECT="Requests"
+      REPO_URL="${REPO_URL:-https://github.com/psf/requests.git}"
+      WORK_DIR="${WORK_DIR:-/tmp/codeinsight-adoption-case-requests}"
+      OUTPUT_FILE="${OUTPUT_FILE:-$ROOT_DIR/docs/adoption-case-requests.md}"
+      TASK="${TASK:-understand requests session request flow}"
       ;;
     *)
       fail "unsupported adoption case: $CASE_NAME"
