@@ -119,6 +119,12 @@ main() {
     '\-\-print-snippet' \
     "README adoption evidence print snippet option"
   require_pattern README.md \
+    '\-\-issue-template' \
+    "README adoption evidence issue template option"
+  require_pattern README.md \
+    'issue-template\.md' \
+    "README adoption issue template artifact"
+  require_pattern README.md \
     'prints this copyable shape' \
     "README adoption printed snippet guidance"
   require_pattern README.md \
@@ -127,6 +133,12 @@ main() {
   require_pattern README.md \
     'Use `summary\.json` from the same folder' \
     "README adoption summary JSON guidance"
+  require_pattern docs/adoption-checklist.md \
+    '\-\-issue-template' \
+    "adoption checklist issue template option"
+  require_pattern docs/adoption-checklist.md \
+    'failure category placeholder' \
+    "adoption checklist issue template contents"
   require_pattern docs/quickstart.md \
     'You want evidence for your own repository' \
     "quickstart local benchmark row"

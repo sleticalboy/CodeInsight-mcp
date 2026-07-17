@@ -160,10 +160,13 @@ EOF
   CODEINSIGHT_MCP_FIRST_CALL_SMOKE_SCRIPT="$TEMP_DIR/mcp-first-call-smoke" \
     "$ROOT_DIR/scripts/adoption-evidence.sh" \
     "$TEMP_DIR/repo" \
-    --output-dir "$TEMP_DIR/evidence" >"$TEMP_DIR/output.log"
+    --output-dir "$TEMP_DIR/evidence" \
+    --issue-template >"$TEMP_DIR/output.log"
 
   grep -Fq "adoption evidence written to $TEMP_DIR/evidence" "$TEMP_DIR/output.log" ||
     fail "missing output directory message"
+  grep -Fq "issue_template: $TEMP_DIR/evidence/issue-template.md" "$TEMP_DIR/output.log" ||
+    fail "missing issue template output path"
   if grep -Fq '# CodeInsight Adoption Evidence' "$TEMP_DIR/output.log"; then
     fail "default run should not print the copyable snippet"
   fi
@@ -177,6 +180,8 @@ EOF
     fail "missing local evidence stdout artifact"
   grep -Fq -- "- MCP first-call stderr: \`$TEMP_DIR/evidence/mcp-first-call.err\`" "$TEMP_DIR/evidence/adoption-evidence.md" ||
     fail "missing MCP stderr artifact"
+  grep -Fq -- "- Issue template: \`$TEMP_DIR/evidence/issue-template.md\`" "$TEMP_DIR/evidence/adoption-evidence.md" ||
+    fail "missing issue template artifact"
 
   jq -e \
     '.status == "pass"
@@ -190,7 +195,8 @@ EOF
       and .artifacts.local_stderr == "'"$TEMP_DIR"'/evidence/local-repo-evidence.err"
       and .artifacts.mcp_stdout == "'"$TEMP_DIR"'/evidence/mcp-first-call.out"
       and .artifacts.mcp_stderr == "'"$TEMP_DIR"'/evidence/mcp-first-call.err"
-      and .artifacts.artifact_stderr == "'"$TEMP_DIR"'/evidence/artifact-write.err"' \
+      and .artifacts.artifact_stderr == "'"$TEMP_DIR"'/evidence/artifact-write.err"
+      and .artifacts.issue_template == "'"$TEMP_DIR"'/evidence/issue-template.md"' \
     "$TEMP_DIR/evidence/summary.json" >/dev/null ||
     fail "aggregate summary JSON does not match expected contract"
   test -f "$TEMP_DIR/evidence/local-repo-evidence.out" ||
@@ -199,6 +205,22 @@ EOF
     fail "MCP first-call stderr file is missing"
   test -f "$TEMP_DIR/evidence/artifact-write.err" ||
     fail "artifact write stderr file is missing"
+  test -f "$TEMP_DIR/evidence/issue-template.md" ||
+    fail "issue template file is missing"
+  grep -Fq '# CodeInsight Adoption Evidence Issue' "$TEMP_DIR/evidence/issue-template.md" ||
+    fail "missing issue template title"
+  grep -Fq '## Failure Category' "$TEMP_DIR/evidence/issue-template.md" ||
+    fail "missing issue template failure category section"
+  grep -Fq 'adoption evidence failed [usage|prerequisite|local_cli_route|mcp_first_call|artifact_write]: ...' "$TEMP_DIR/evidence/issue-template.md" ||
+    fail "missing issue template failure category placeholder"
+  grep -Fq '## Artifacts' "$TEMP_DIR/evidence/issue-template.md" ||
+    fail "missing issue template artifacts section"
+  grep -Fq -- "- MCP first-call stderr: \`$TEMP_DIR/evidence/mcp-first-call.err\`" "$TEMP_DIR/evidence/issue-template.md" ||
+    fail "missing issue template MCP stderr artifact"
+  grep -Fq '## Environment' "$TEMP_DIR/evidence/issue-template.md" ||
+    fail "missing issue template environment section"
+  grep -Fq -- '- CodeInsight version:' "$TEMP_DIR/evidence/issue-template.md" ||
+    fail "missing issue template CodeInsight version placeholder"
 
   CODEINSIGHT_LOCAL_REPO_EVIDENCE_SCRIPT="$TEMP_DIR/local-repo-evidence" \
   CODEINSIGHT_MCP_FIRST_CALL_SMOKE_SCRIPT="$TEMP_DIR/mcp-first-call-smoke" \

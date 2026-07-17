@@ -9,6 +9,7 @@ OUTPUT_DIR="${CODEINSIGHT_ADOPTION_OUTPUT_DIR:-}"
 CODEINSIGHT_BIN="${CODEINSIGHT_BIN:-}"
 FORCE_INDEX="${CODEINSIGHT_ADOPTION_FORCE_INDEX:-1}"
 PRINT_SNIPPET="${CODEINSIGHT_ADOPTION_PRINT_SNIPPET:-0}"
+ISSUE_TEMPLATE="${CODEINSIGHT_ADOPTION_ISSUE_TEMPLATE:-0}"
 LOCAL_REPO_EVIDENCE_SCRIPT="${CODEINSIGHT_LOCAL_REPO_EVIDENCE_SCRIPT:-$ROOT_DIR/scripts/local-repo-evidence.sh}"
 MCP_FIRST_CALL_SMOKE_SCRIPT="${CODEINSIGHT_MCP_FIRST_CALL_SMOKE_SCRIPT:-$ROOT_DIR/scripts/mcp-first-call-smoke.sh}"
 
@@ -27,6 +28,7 @@ Options:
   --output-dir PATH     Evidence output directory. Default: /tmp/codeinsight-adoption-evidence.
   --bin PATH            Use a specific codeinsight binary.
   --print-snippet       Print a copyable terminal summary after writing files.
+  --issue-template      Write a copyable issue-template.md into the output directory.
   --no-force-index      Reuse the existing index when available.
   -h, --help            Show this help text.
 
@@ -37,6 +39,7 @@ Environment:
   CODEINSIGHT_ADOPTION_OUTPUT_DIR
   CODEINSIGHT_ADOPTION_FORCE_INDEX
   CODEINSIGHT_ADOPTION_PRINT_SNIPPET
+  CODEINSIGHT_ADOPTION_ISSUE_TEMPLATE
   CODEINSIGHT_BIN
 EOF
 }
@@ -104,6 +107,10 @@ parse_args() {
         PRINT_SNIPPET="1"
         shift
         ;;
+      --issue-template)
+        ISSUE_TEMPLATE="1"
+        shift
+        ;;
       --no-force-index)
         FORCE_INDEX="0"
         shift
@@ -136,6 +143,7 @@ write_markdown_summary() {
   local target="$1"
   local local_summary="$2"
   local mcp_summary="$3"
+  local issue_template_path="${4:-}"
 
   {
     echo "# CodeInsight Adoption Evidence"
@@ -170,6 +178,9 @@ write_markdown_summary() {
     echo "- MCP first-call stdout: \`$OUTPUT_DIR/mcp-first-call.out\`"
     echo "- MCP first-call stderr: \`$OUTPUT_DIR/mcp-first-call.err\`"
     echo "- Artifact write stderr: \`$OUTPUT_DIR/artifact-write.err\`"
+    if [ -n "$issue_template_path" ]; then
+      echo "- Issue template: \`$issue_template_path\`"
+    fi
     echo
     echo "## Adoption Policy"
     echo
@@ -184,11 +195,13 @@ write_summary_json() {
   local target="$1"
   local local_summary="$2"
   local mcp_summary="$3"
+  local issue_template_path="${4:-}"
 
   jq -n \
     --arg repository "$REPO_ROOT" \
     --arg task "$TASK" \
     --arg output_dir "$OUTPUT_DIR" \
+    --arg issue_template "$issue_template_path" \
     --slurpfile local "$local_summary" \
     --slurpfile mcp "$mcp_summary" \
     '{
@@ -210,7 +223,12 @@ write_summary_json() {
         mcp_stderr: ($output_dir + "/mcp-first-call.err"),
         artifact_stderr: ($output_dir + "/artifact-write.err")
       }
-    }' >"$target"
+    }
+    | if $issue_template != "" then
+        .artifacts.issue_template = $issue_template
+      else
+        .
+      end' >"$target"
 
   jq -e \
     '.status == "pass"
@@ -238,6 +256,59 @@ print_snippet() {
 - MCP suggested tool executed: \`$(json_value "$summary_json" '.mcp_first_call.suggested_tool_executed')\`
 - MCP impact status: \`$(json_value "$summary_json" '.mcp_first_call.impact_status')\`
 EOF
+}
+
+write_issue_template() {
+  local target="$1"
+  local summary_json="$2"
+
+  {
+    echo "# CodeInsight Adoption Evidence Issue"
+    echo
+    echo "## Summary"
+    echo
+    echo '```text'
+    print_snippet "$summary_json"
+    echo '```'
+    echo
+    echo "## Failure Category"
+    echo
+    echo "If the command failed, paste the exact category line here:"
+    echo
+    echo '```text'
+    echo "adoption evidence failed [usage|prerequisite|local_cli_route|mcp_first_call|artifact_write]: ..."
+    echo '```'
+    echo
+    echo "## Command"
+    echo
+    echo '```bash'
+    echo "scripts/adoption-evidence.sh \"$REPO_ROOT\" --output-dir \"$OUTPUT_DIR\" --print-snippet --issue-template"
+    echo '```'
+    echo
+    echo "## Artifacts"
+    echo
+    echo "- Adoption evidence: \`$(json_value "$summary_json" '.artifacts.markdown')\`"
+    echo "- Aggregate summary JSON: \`$summary_json\`"
+    echo "- Raw agent_route JSON: \`$(json_value "$summary_json" '.artifacts.raw_agent_route_json')\`"
+    echo "- Local evidence stdout: \`$(json_value "$summary_json" '.artifacts.local_stdout')\`"
+    echo "- Local evidence stderr: \`$(json_value "$summary_json" '.artifacts.local_stderr')\`"
+    echo "- MCP first-call stdout: \`$(json_value "$summary_json" '.artifacts.mcp_stdout')\`"
+    echo "- MCP first-call stderr: \`$(json_value "$summary_json" '.artifacts.mcp_stderr')\`"
+    echo "- Artifact write stderr: \`$(json_value "$summary_json" '.artifacts.artifact_stderr')\`"
+    echo
+    echo "## Environment"
+    echo
+    echo "- OS:"
+    echo "- Shell:"
+    echo "- CodeInsight version:"
+    echo "- MCP client:"
+    echo "- Repository language/framework:"
+    echo "- Repository size:"
+    echo
+    echo "## Notes"
+    echo
+    echo "Describe what you expected the first-read route to do and what looked wrong."
+  } >"$target"
 }
 
 main() {
@@ -312,13 +383,24 @@ main() {
     --summary-json "$OUTPUT_DIR/mcp-first-call.json" >"$OUTPUT_DIR/mcp-first-call.out" 2>"$mcp_log" ||
     fail_step mcp_first_call "$mcp_log" "MCP first-call verification failed"
 
+  local issue_template_path
+  issue_template_path=""
+  if [ "$ISSUE_TEMPLATE" = "1" ]; then
+    issue_template_path="$OUTPUT_DIR/issue-template.md"
+  fi
+
   if ! {
     write_summary_json "$OUTPUT_DIR/summary.json" \
       "$OUTPUT_DIR/local-repo-evidence.json" \
-      "$OUTPUT_DIR/mcp-first-call.json"
+      "$OUTPUT_DIR/mcp-first-call.json" \
+      "$issue_template_path"
     write_markdown_summary "$OUTPUT_DIR/adoption-evidence.md" \
       "$OUTPUT_DIR/local-repo-evidence.json" \
-      "$OUTPUT_DIR/mcp-first-call.json"
+      "$OUTPUT_DIR/mcp-first-call.json" \
+      "$issue_template_path"
+    if [ -n "$issue_template_path" ]; then
+      write_issue_template "$issue_template_path" "$OUTPUT_DIR/summary.json"
+    fi
   } 2>"$artifact_log"; then
     fail_step artifact_write "$artifact_log" "aggregate adoption artifacts could not be written"
   fi
@@ -326,6 +408,9 @@ main() {
   echo "adoption evidence written to $OUTPUT_DIR"
   echo "markdown: $OUTPUT_DIR/adoption-evidence.md"
   echo "summary_json: $OUTPUT_DIR/summary.json"
+  if [ -n "$issue_template_path" ]; then
+    echo "issue_template: $issue_template_path"
+  fi
   if [ "$PRINT_SNIPPET" = "1" ]; then
     echo
     print_snippet "$OUTPUT_DIR/summary.json"

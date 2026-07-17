@@ -40,7 +40,8 @@ When you need a complete adoption evidence bundle for your own repository:
 ```bash
 scripts/adoption-evidence.sh /path/to/repo \
   --output-dir /tmp/codeinsight-adoption-evidence \
-  --print-snippet
+  --print-snippet \
+  --issue-template
 ```
 
 When you only need local first-read evidence artifacts:
@@ -80,6 +81,9 @@ Pass criteria:
 - `--print-snippet` prints the same pass/fail evidence shape to stdout so it
   can be copied into an issue, PR, README, or evaluation note without opening
   the artifact files.
+- `--issue-template` writes `issue-template.md` with the copyable evidence
+  snippet, failure category placeholder, artifact paths, and environment fields
+  needed for a reproducible adoption report.
 - Failures are categorized as `[usage]`, `[prerequisite]`,
   `[local_cli_route]`, `[mcp_first_call]`, or `[artifact_write]`, with the
   relevant child-process stderr included for issue reports.
