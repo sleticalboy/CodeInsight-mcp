@@ -2663,7 +2663,7 @@ fn seed_file_ranges(
                 &matched_keywords,
             ),
             source: "seed_file".to_string(),
-            score: CONTEXT_SCORE_SEED_HEADER,
+            score: CONTEXT_SCORE_SEED_HEADER + seed_file_task_boost(&matched_keywords),
         });
     }
 
@@ -2698,7 +2698,7 @@ fn seed_file_ranges(
                 &matched_keywords,
             ),
             source: "seed_file".to_string(),
-            score: CONTEXT_SCORE_SEED_FILE,
+            score: CONTEXT_SCORE_SEED_FILE + seed_file_task_boost(&matched_keywords),
         });
     }
 
@@ -2999,6 +2999,14 @@ fn seed_symbol_task_boost(symbol: &Symbol, keywords: &[String]) -> i32 {
     }
 }
 
+fn seed_file_task_boost(matched_keywords: &[String]) -> i32 {
+    if matched_keywords.is_empty() {
+        0
+    } else {
+        CONTEXT_SCORE_SEED_SYMBOL_TASK_MATCH_BOOST
+    }
+}
+
 fn reference_task_boost(reference: &ReferenceMatch, keywords: &[String]) -> i32 {
     task_match_boost(
         keywords,
@@ -3115,7 +3123,7 @@ struct AutoContextSeedSelection {
     seeds: Vec<ContextSeed>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct AutoSeedCandidate {
     file: String,
     role: String,
@@ -3213,16 +3221,40 @@ fn auto_context_seed_files(
         } else {
             "auto_entrypoint"
         };
+        let companion_entrypoint = (source == "task_match")
+            .then(|| {
+                candidates
+                    .iter()
+                    .find(|entrypoint| {
+                        entrypoint.source == "overview_entrypoint"
+                            && entrypoint.role == "source"
+                            && entrypoint.file != file
+                    })
+                    .cloned()
+            })
+            .flatten();
+        let mut files = vec![file.clone()];
+        let mut seeds = vec![ContextSeed {
+            kind: "file".to_string(),
+            value: file,
+            source,
+            role: Some(candidate.role.clone()),
+            matched_keywords: candidate.matched_keywords.clone(),
+        }];
+        if let Some(entrypoint) = companion_entrypoint {
+            files.push(entrypoint.file.clone());
+            seeds.push(ContextSeed {
+                kind: "file".to_string(),
+                value: entrypoint.file,
+                source: entrypoint.source,
+                role: Some(entrypoint.role),
+                matched_keywords: entrypoint.matched_keywords,
+            });
+        }
         return Ok(AutoContextSeedSelection {
             strategy: strategy.to_string(),
-            files: vec![file.clone()],
-            seeds: vec![ContextSeed {
-                kind: "file".to_string(),
-                value: file,
-                source,
-                role: Some(candidate.role.clone()),
-                matched_keywords: candidate.matched_keywords.clone(),
-            }],
+            files,
+            seeds,
         });
     }
 

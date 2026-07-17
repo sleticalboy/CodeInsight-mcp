@@ -328,12 +328,22 @@ main() {
     "task keywords should choose router seed before generic main entrypoint"
   require_jq "$focused_route_json" '.context_pack.selected_seeds[0].matched_keywords == ["router"]' \
     "task-focused seed should explain matched keywords"
+  require_jq "$focused_route_json" '.context_pack.selected_seeds[1].value == "src/main.ts"' \
+    "task-focused route should keep the main entrypoint as a companion seed"
+  require_jq "$focused_route_json" '.context_pack.selected_seeds[1].source == "overview_entrypoint"' \
+    "task-focused companion seed should come from overview entrypoints"
   require_jq "$focused_route_json" '.context_pack.files[0].file == "src/router.ts"' \
     "task-focused route should read router first"
+  require_jq "$focused_route_json" '[.context_pack.files[].file] | index("src/main.ts")' \
+    "task-focused route should retain main entrypoint context"
   require_jq "$focused_route_json" '.context_pack.files[0].reason | contains("matched task keywords: router")' \
     "task-focused file reason should explain matched task keywords"
   require_jq "$focused_route_json" '.context_pack.reading_plan[0].file == "src/router.ts"' \
     "task-focused reading plan should start with router"
+  require_jq "$focused_route_json" '[.context_pack.reading_plan[].file] | index("src/main.ts")' \
+    "task-focused reading plan should include main entrypoint context"
+  require_jq "$focused_route_json" '[.execution_plan[0].files[]] | index("src/main.ts")' \
+    "task-focused execution plan should include main entrypoint context"
 
   local noisy_repo="$TEMP_DIR/noisy-entrypoint-repo"
   local noisy_route_json="$TEMP_DIR/noisy-entrypoint-agent-route.json"

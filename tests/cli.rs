@@ -2023,6 +2023,100 @@ fn cli_agent_route_runs_first_read_pipeline() {
 }
 
 #[test]
+fn cli_agent_route_keeps_entrypoint_companion_for_task_match() {
+    let fixture = TempDir::new().unwrap();
+    std::fs::create_dir_all(fixture.path().join("src")).unwrap();
+    std::fs::write(
+        fixture.path().join("package.json"),
+        r#"{
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/main.ts"
+  }
+}
+"#,
+    )
+    .unwrap();
+    std::fs::write(
+        fixture.path().join("src/main.ts"),
+        r#"import { bootRouter } from "./router";
+
+export function main() {
+  return bootRouter();
+}
+
+main();
+"#,
+    )
+    .unwrap();
+    std::fs::write(
+        fixture.path().join("src/router.ts"),
+        r#"import { authenticate } from "./auth";
+
+export function bootRouter() {
+  return authenticate("demo-user");
+}
+"#,
+    )
+    .unwrap();
+    std::fs::write(
+        fixture.path().join("src/auth.ts"),
+        r#"export function authenticate(user: string) {
+  return { user, status: "accepted" };
+}
+"#,
+    )
+    .unwrap();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand router auth flow",
+        "--token-budget",
+        "1600",
+        "--force-index",
+    ]);
+
+    assert_eq!(route["context_pack"]["seed_strategy"], "auto_task_match");
+    assert_eq!(
+        route["context_pack"]["selected_seeds"][0]["value"],
+        "src/router.ts"
+    );
+    assert_eq!(
+        route["context_pack"]["selected_seeds"][0]["source"],
+        "task_match"
+    );
+    assert_eq!(
+        route["context_pack"]["selected_seeds"][1]["value"],
+        "src/main.ts"
+    );
+    assert_eq!(
+        route["context_pack"]["selected_seeds"][1]["source"],
+        "overview_entrypoint"
+    );
+    assert_eq!(route["context_pack"]["files"][0]["file"], "src/router.ts");
+    assert!(
+        route["context_pack"]["files"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|file| file["file"] == "src/main.ts")
+    );
+    assert_eq!(
+        route["context_pack"]["reading_plan"][0]["file"],
+        "src/router.ts"
+    );
+    assert!(
+        route["context_pack"]["reading_plan"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|step| step["file"] == "src/main.ts")
+    );
+}
+
+#[test]
 fn cli_resolves_pnpm_workspace_package_exports() {
     let fixture = pnpm_workspace_fixture_project();
 

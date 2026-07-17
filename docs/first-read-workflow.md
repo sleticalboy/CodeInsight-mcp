@@ -117,7 +117,10 @@ The response includes `seed_strategy` (`explicit`, `auto_entrypoint`,
 `auto_task_match`, or `auto_source_fallback`) and `selected_seeds` so clients
 can inspect seed decisions without parsing summary text. When `seed_strategy`
 is `auto_task_match`, `selected_seeds[].matched_keywords` explains which task
-terms matched the selected file path or symbol names.
+terms matched the selected file path or symbol names. Task-matched first reads
+keep the task-matched seed first and may include a source entrypoint companion
+seed afterward, so agents can stay focused without losing the application
+startup path.
 
 ## Context Ranking
 

@@ -336,7 +336,8 @@ It also returns `seed_strategy` and `selected_seeds`; use these fields to show
 whether context came from explicit seeds, an overview entrypoint, task-matched
 source, or indexed source-file fallback. For task-matched seeds,
 `selected_seeds[].matched_keywords` names the task terms that matched file paths
-or symbol names.
+or symbol names. The first seed remains the task match; a later seed can be an
+`overview_entrypoint` companion that preserves the application startup path.
 
 Example `context_pack` response shape:
 
@@ -350,6 +351,13 @@ Example `context_pack` response shape:
       "source": "task_match",
       "role": "source",
       "matched_keywords": ["router"]
+    },
+    {
+      "kind": "file",
+      "value": "src/main.ts",
+      "source": "overview_entrypoint",
+      "role": "source",
+      "matched_keywords": []
     }
   ],
   "reading_plan": [
