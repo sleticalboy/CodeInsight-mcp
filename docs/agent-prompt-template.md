@@ -152,6 +152,7 @@ evidence, not compiler-grade proof.
 ## Related Docs
 
 - [Client workflow](client-workflow.md)
+- [Client integration examples](client-integration-examples.md)
 - [MCP client configuration](mcp-client-config.md)
 - [First-read workflow](first-read-workflow.md)
 - [Recommendation contract](recommendation-contract.md)

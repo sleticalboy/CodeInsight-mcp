@@ -221,7 +221,9 @@ Call `index_project`, `project_overview`, `context_pack`, and
 refresh control, or a user already named a specific file or symbol.
 
 See [First-read workflow](first-read-workflow.md) for the full overview and
-context-pack response contract.
+context-pack response contract. See
+[Client integration examples](client-integration-examples.md) for copyable
+Codex, Claude Code, Cursor, and generic MCP consumption policies.
 
 `project_overview.recommended_next_tools[]` entries include:
 

@@ -29,6 +29,9 @@ main() {
     '\[Known limitations\]\(docs/known-limitations\.md\)' \
     "known limitations link"
   require_pattern README.md \
+    '\[Client integration examples\]\(docs/client-integration-examples\.md\)' \
+    "client integration examples link"
+  require_pattern README.md \
     'scripts/installed-quickstart-smoke\.sh' \
     "README installed quickstart adoption gate"
   require_pattern README.md \
@@ -53,6 +56,9 @@ main() {
   require_pattern docs/README.md \
     '\[Known limitations\]\(known-limitations\.md\)' \
     "known limitations link"
+  require_pattern docs/README.md \
+    '\[Client integration examples\]\(client-integration-examples\.md\)' \
+    "docs index client integration examples link"
   require_pattern docs/README.md \
     'Default adoption path:' \
     "docs index default adoption path"
@@ -99,6 +105,9 @@ main() {
     'Call `agent_route` with `root`, `task`, and `token_budget`' \
     "client workflow agent_route path"
   require_pattern docs/client-workflow.md \
+    '\[Client integration examples\]\(client-integration-examples\.md\)' \
+    "client workflow integration examples link"
+  require_pattern docs/client-workflow.md \
     'Treat `reading_plan\[\]\.reason` as the instruction for' \
     "client workflow reading reason instruction"
   require_pattern docs/client-workflow.md \
@@ -110,6 +119,9 @@ main() {
   require_pattern docs/agent-prompt-template.md \
     'call agent_route with root, task, and' \
     "agent prompt agent_route path"
+  require_pattern docs/agent-prompt-template.md \
+    '\[Client integration examples\]\(client-integration-examples\.md\)' \
+    "agent prompt integration examples link"
   require_pattern docs/agent-prompt-template.md \
     'Treat reading_plan\.reason as' \
     "agent prompt reading reason policy"
@@ -125,6 +137,9 @@ main() {
   require_pattern docs/mcp-client-config.md \
     'Call `agent_route` with `root`, `task`, and `token_budget`' \
     "MCP client config agent_route flow"
+  require_pattern docs/mcp-client-config.md \
+    '\[Client integration examples\]\(client-integration-examples\.md\)' \
+    "MCP client config integration examples link"
   require_pattern docs/mcp-client-config.md \
     '`reason` is the executable instruction for' \
     "MCP client config reason contract"
@@ -155,6 +170,28 @@ main() {
   require_pattern docs/adoption-checklist.md \
     '`reading_plan\[0\]\.selection_reason` is present' \
     "adoption context-pack selection reason gate"
+
+  require_pattern docs/client-integration-examples.md \
+    'Every client should treat `agent_route\.execution_plan\[\]` as the ordered action' \
+    "client examples execution plan contract"
+  require_pattern docs/client-integration-examples.md \
+    'read_selected_context -> use_current_reading_step_suggested_tool ->' \
+    "client examples action order"
+  require_pattern docs/client-integration-examples.md \
+    'Only offer continuation_summary\.suggested_tool after selected context has been' \
+    "client examples continuation ordering"
+  require_pattern docs/client-integration-examples.md \
+    'Suggested-tool buttons should be disabled or visually secondary until the' \
+    "client examples suggested tool gating"
+  require_pattern docs/client-integration-examples.md \
+    'Codex' \
+    "client examples Codex section"
+  require_pattern docs/client-integration-examples.md \
+    'Claude Code' \
+    "client examples Claude Code section"
+  require_pattern docs/client-integration-examples.md \
+    'Cursor' \
+    "client examples Cursor section"
 
   require_pattern docs/maintainer-checklist.md \
     'local-first MCP code context routing' \

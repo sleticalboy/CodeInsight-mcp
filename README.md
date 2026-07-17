@@ -87,6 +87,7 @@ Key docs:
 - [Demo script](docs/demo-script.md)
 - [Demo output snapshot](docs/demo-output.md)
 - [Agent prompt templates](docs/agent-prompt-template.md)
+- [Client integration examples](docs/client-integration-examples.md)
 - [Current status](docs/status.md)
 - [Maintainer checklist](docs/maintainer-checklist.md)
 - [Maintenance commands](docs/maintenance-commands.md)

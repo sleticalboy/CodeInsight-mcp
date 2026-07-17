@@ -204,4 +204,6 @@ A simple client can implement this policy:
    `impact_analysis` for changed targets.
 
 For field-level contracts, see [First-read workflow](first-read-workflow.md)
-and [Recommendation contract](recommendation-contract.md).
+and [Recommendation contract](recommendation-contract.md). For copyable
+Codex, Claude Code, Cursor, and generic MCP examples, see
+[Client integration examples](client-integration-examples.md).
