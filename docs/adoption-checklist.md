@@ -44,6 +44,14 @@ scripts/adoption-evidence.sh /path/to/repo \
   --issue-template
 ```
 
+When you need one uploadable handoff archive:
+
+```bash
+scripts/adoption-report.sh /path/to/repo \
+  --output-dir /tmp/codeinsight-adoption-report \
+  --print-snippet
+```
+
 When you only need local first-read evidence artifacts:
 
 ```bash
@@ -84,6 +92,9 @@ Pass criteria:
 - `--issue-template` writes `issue-template.md` with the copyable evidence
   snippet, failure category placeholder, artifact paths, and environment fields
   needed for a reproducible adoption report.
+- `adoption-report.sh` writes `codeinsight-adoption-report.tar.gz` with the
+  aggregate summaries, issue template, raw route JSON, MCP first-call JSON,
+  manifest, and diagnostic stdout/stderr logs.
 - Failures are categorized as `[usage]`, `[prerequisite]`,
   `[local_cli_route]`, `[mcp_first_call]`, or `[artifact_write]`, with the
   relevant child-process stderr included for issue reports.

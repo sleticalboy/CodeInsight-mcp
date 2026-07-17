@@ -125,6 +125,12 @@ main() {
     'issue-template\.md' \
     "README adoption issue template artifact"
   require_pattern README.md \
+    'scripts/adoption-report\.sh /path/to/repo' \
+    "README adoption report command"
+  require_pattern README.md \
+    'codeinsight-adoption-report\.tar\.gz' \
+    "README adoption report archive artifact"
+  require_pattern README.md \
     'prints this copyable shape' \
     "README adoption printed snippet guidance"
   require_pattern README.md \
@@ -139,6 +145,12 @@ main() {
   require_pattern docs/adoption-checklist.md \
     'failure category placeholder' \
     "adoption checklist issue template contents"
+  require_pattern docs/adoption-checklist.md \
+    'scripts/adoption-report\.sh /path/to/repo' \
+    "adoption checklist report command"
+  require_pattern docs/adoption-checklist.md \
+    'codeinsight-adoption-report\.tar\.gz' \
+    "adoption checklist report archive artifact"
   require_pattern docs/quickstart.md \
     'You want evidence for your own repository' \
     "quickstart local benchmark row"

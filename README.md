@@ -70,6 +70,7 @@ which file to open next.
    | --- | --- | --- |
    | See the product loop | `scripts/two-minute-demo.sh` | You want a visible `agent_route -> context_pack -> impact_analysis` walkthrough with an `[Evidence summary]`. |
    | Build adoption evidence | `scripts/adoption-evidence.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-evidence --print-snippet --issue-template` | You want one folder with local first-read evidence, raw route JSON, MCP first-call JSON, aggregate Markdown/JSON summaries, a copyable terminal snippet, and a ready-to-file issue template. |
+   | Package adoption report | `scripts/adoption-report.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-report --print-snippet` | You want a tar.gz report containing the evidence summaries, issue template, raw JSON, and diagnostic logs for upload or handoff. |
    | Check the first MCP call | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/mcp-first-call-smoke.sh` | You want a compact JSON proof that stdio MCP accepts `agent_route`, returns selected files, exposes an execution plan, runs a suggested tool, and includes `impact_status`. |
    | Verify installed adoption | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh` | You want the installed binary to pass CLI `agent-route`, MCP stdio, and MCP `agent_route` against a temporary project. |
 
@@ -101,6 +102,14 @@ scripts/adoption-evidence.sh /path/to/repo \
   --output-dir /tmp/codeinsight-adoption-evidence \
   --print-snippet \
   --issue-template
+```
+
+Package the same evidence into a handoff archive:
+
+```bash
+scripts/adoption-report.sh /path/to/repo \
+  --output-dir /tmp/codeinsight-adoption-report \
+  --print-snippet
 ```
 
 Generate only the local first-read evidence files:
@@ -194,6 +203,11 @@ summary snippet, failure category placeholder, artifact paths, and environment
 fields already filled in. Use `summary.json` from the same folder when CI,
 README automation, or issue
 templates need the same result without parsing Markdown.
+
+Use `scripts/adoption-report.sh` when you need one uploadable archive. It writes
+`codeinsight-adoption-report.tar.gz` with `adoption-evidence.md`,
+`issue-template.md`, `summary.json`, raw route JSON, MCP first-call JSON, a
+manifest, and diagnostic stdout/stderr logs.
 
 Refresh the reports locally:
 
