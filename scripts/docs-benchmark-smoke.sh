@@ -630,6 +630,21 @@ main() {
   require_pattern docs/mcp-client-smoke.md \
     'suggested tool is a usable MCP call' \
     "MCP client smoke execution-plan suggested tool contract"
+  require_pattern docs/mcp-client-config.md \
+    '^## First Agent Route Call$' \
+    "MCP client config first agent route section"
+  require_pattern docs/mcp-client-config.md \
+    '"name": "agent_route"' \
+    "MCP client config first agent_route tools call"
+  require_pattern docs/mcp-client-config.md \
+    '"token_budget": 6000' \
+    "MCP client config first agent_route token budget"
+  require_pattern docs/mcp-client-config.md \
+    'Offer `execution_plan\[\]\.suggested_tool` only after the selected file has' \
+    "MCP client config suggested tool ordering"
+  require_pattern docs/mcp-client-config.md \
+    'checks that `agent_route\.execution_plan\[\]\.suggested_tool` executes through MCP' \
+    "MCP client config suggested tool execution smoke"
   require_pattern scripts/two-minute-demo.sh \
     'Problem: AI agents waste the first read' \
     "two-minute demo problem statement"

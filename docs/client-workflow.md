@@ -22,6 +22,29 @@ When a client needs custom routing or partial refresh control, it can call the
 lower-level tools directly: `index_project`, `project_overview`,
 `context_pack`, then `impact_analysis`.
 
+## First Agent Route Call
+
+For the first broad task after MCP setup, call `agent_route` with the repository
+root, the user's task, and a bounded token budget:
+
+```json
+{
+  "name": "agent_route",
+  "arguments": {
+    "root": "/absolute/path/to/repo",
+    "task": "understand the main application entrypoint",
+    "token_budget": 6000
+  }
+}
+```
+
+Then apply the returned payload in this order:
+
+1. Read `context_pack.files[]` using `context_pack.reading_plan[]`.
+2. Use `agent_route.execution_plan[]` as the client checklist.
+3. Run the current step's `suggested_tool` only after selected context is read.
+4. Use the included `impact_analysis` preview before edits.
+
 ## Agent Policy Prompt
 
 Use this policy in MCP client instructions or agent system prompts when

@@ -177,6 +177,34 @@ official client docs when wiring a new environment:
 - Claude Code MCP guide: https://docs.anthropic.com/en/docs/claude-code/mcp
 - Cursor MCP guide: https://cursor.com/docs/mcp
 
+## First Agent Route Call
+
+After the MCP server is configured, the first broad repository task should call
+`agent_route` through MCP `tools/call`:
+
+```json
+{
+  "name": "agent_route",
+  "arguments": {
+    "root": "/absolute/path/to/repo",
+    "task": "understand the main application entrypoint",
+    "token_budget": 6000
+  }
+}
+```
+
+The response is the default first-read bundle. A minimal client should:
+
+1. Read `context_pack.files[]` in `context_pack.reading_plan[]` order.
+2. Follow `agent_route.execution_plan[]` as the UI or agent checklist.
+3. Offer `execution_plan[].suggested_tool` only after the selected file has
+   been read.
+4. Review the included `impact_analysis` before edits.
+
+Use `scripts/mcp-stdio-smoke.sh` to verify this path end to end. The smoke
+checks that `agent_route.execution_plan[].suggested_tool` executes through MCP
+`tools/call`.
+
 ## Tool Inputs
 
 CodeInsight tools accept explicit repository or file paths. The server does not

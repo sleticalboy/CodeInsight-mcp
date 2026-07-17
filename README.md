@@ -59,6 +59,9 @@ which file to open next.
    Follow agent_route.execution_plan[] in order.
    ```
 
+   The first MCP `tools/call` payload is shown in
+   [First Agent Route Call](docs/mcp-client-config.md#first-agent-route-call).
+
 4. Verify the path:
 
    ```bash

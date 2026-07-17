@@ -47,6 +47,9 @@ main() {
     'Follow agent_route\.execution_plan\[\] in order' \
     "README fast path execution plan policy"
   require_pattern README.md \
+    '\[First Agent Route Call\]\(docs/mcp-client-config\.md#first-agent-route-call\)' \
+    "README first agent route call link"
+  require_pattern README.md \
     'CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/installed-quickstart-smoke\.sh' \
     "README fast path installed quickstart gate"
   require_pattern README.md \
@@ -171,6 +174,15 @@ main() {
     'Call `agent_route` with `root`, `task`, and `token_budget`' \
     "client workflow agent_route path"
   require_pattern docs/client-workflow.md \
+    '^## First Agent Route Call$' \
+    "client workflow first agent route call section"
+  require_pattern docs/client-workflow.md \
+    '"name": "agent_route"' \
+    "client workflow first agent route JSON"
+  require_pattern docs/client-workflow.md \
+    'Use `agent_route\.execution_plan\[\]` as the client checklist' \
+    "client workflow execution plan checklist"
+  require_pattern docs/client-workflow.md \
     '\[Client integration examples\]\(client-integration-examples\.md\)' \
     "client workflow integration examples link"
   require_pattern docs/client-workflow.md \
@@ -203,6 +215,15 @@ main() {
   require_pattern docs/mcp-client-config.md \
     'Call `agent_route` with `root`, `task`, and `token_budget`' \
     "MCP client config agent_route flow"
+  require_pattern docs/mcp-client-config.md \
+    '^## First Agent Route Call$' \
+    "MCP client config first agent route section"
+  require_pattern docs/mcp-client-config.md \
+    '"name": "agent_route"' \
+    "MCP client config first agent route JSON"
+  require_pattern docs/mcp-client-config.md \
+    'Use `scripts/mcp-stdio-smoke\.sh` to verify this path end to end' \
+    "MCP client config smoke verification"
   require_pattern docs/mcp-client-config.md \
     '\[Client integration examples\]\(client-integration-examples\.md\)' \
     "MCP client config integration examples link"
