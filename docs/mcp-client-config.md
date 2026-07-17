@@ -201,6 +201,18 @@ The response is the default first-read bundle. A minimal client should:
    been read.
 4. Review the included `impact_analysis` before edits.
 
+Expected first-call signals:
+
+| Field | Expected Signal | Client Action |
+| --- | --- | --- |
+| `route[]` | Includes `index_project`, `project_overview`, `context_pack`, and `impact_analysis`. | Treat the route as already executed; do not rerun those tools unless the repository changed. |
+| `context_pack.files[]` | Contains the bounded files or excerpts to read first. | Read these files before broad `rg` or full-file scans. |
+| `context_pack.reading_plan[].reason` | Explains what the agent should learn from the selected file. | Show it as the current reading instruction. |
+| `context_pack.reading_plan[].selection_reason` | Explains why this file was selected under the token budget. | Use it as compact evidence in logs or UI. |
+| `execution_plan[]` | Starts with `read_selected_context`, then gates deeper tools and continuation. | Render it as the ordered checklist for the agent. |
+| `execution_plan[].suggested_tool` | Contains a ready MCP tool call such as `file_outline` when deeper local structure is useful. | Run it only after the related selected context has been read. |
+| `impact_status` | Usually `complete` when a seed file or symbol was selected. | Review `impact_analysis` before editing. |
+
 Use `scripts/mcp-stdio-smoke.sh` to verify this path end to end. The smoke
 checks that `agent_route.execution_plan[].suggested_tool` executes through MCP
 `tools/call`.

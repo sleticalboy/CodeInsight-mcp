@@ -45,6 +45,17 @@ Then apply the returned payload in this order:
 3. Run the current step's `suggested_tool` only after selected context is read.
 4. Use the included `impact_analysis` preview before edits.
 
+The first call is healthy when the response has:
+
+- `route[]` with `index_project`, `project_overview`, `context_pack`, and
+  `impact_analysis`
+- at least one `context_pack.files[]` entry
+- `context_pack.reading_plan[].reason` for the current reading instruction
+- `context_pack.reading_plan[].selection_reason` for selection evidence
+- `execution_plan[0].action` set to `read_selected_context`
+- a ready `execution_plan[].suggested_tool` for focused follow-up navigation
+- `impact_status` set to `complete` when an impact seed is available
+
 ## Agent Policy Prompt
 
 Use this policy in MCP client instructions or agent system prompts when

@@ -257,6 +257,21 @@ main() {
   require_pattern docs/mcp-client-config.md \
     '`selection_reason` is the compact raw ranking reason' \
     "MCP client config selection reason contract"
+  require_pattern docs/mcp-client-config.md \
+    'Expected first-call signals:' \
+    "MCP client config first-call signal table"
+  require_pattern docs/mcp-client-config.md \
+    '\| `context_pack\.files\[\]` \| Contains the bounded files or excerpts to read first\.' \
+    "MCP client config bounded context signal"
+  require_pattern docs/mcp-client-config.md \
+    '\| `context_pack\.reading_plan\[\]\.reason` \| Explains what the agent should learn' \
+    "MCP client config reading reason signal"
+  require_pattern docs/mcp-client-config.md \
+    '\| `execution_plan\[\]` \| Starts with `read_selected_context`' \
+    "MCP client config execution plan signal"
+  require_pattern docs/mcp-client-config.md \
+    '\| `impact_status` \| Usually `complete` when a seed file or symbol was selected\.' \
+    "MCP client config impact signal"
   require_pattern docs/recommendation-contract.md \
     '## Agent Route Execution Plan' \
     "recommendation contract execution plan section"

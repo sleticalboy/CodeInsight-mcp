@@ -660,6 +660,21 @@ main() {
   require_pattern docs/mcp-client-config.md \
     'checks that `agent_route\.execution_plan\[\]\.suggested_tool` executes through MCP' \
     "MCP client config suggested tool execution smoke"
+  require_pattern docs/mcp-client-config.md \
+    'Expected first-call signals:' \
+    "MCP client config first-call signals"
+  require_pattern docs/mcp-client-config.md \
+    '\| `route\[\]` \| Includes `index_project`, `project_overview`, `context_pack`, and `impact_analysis`\.' \
+    "MCP client config route signal"
+  require_pattern docs/mcp-client-config.md \
+    '\| `execution_plan\[\]` \| Starts with `read_selected_context`, then gates deeper tools and continuation\.' \
+    "MCP client config execution plan signal"
+  require_pattern docs/client-workflow.md \
+    'The first call is healthy when the response has:' \
+    "client workflow first-call health checklist"
+  require_pattern docs/client-workflow.md \
+    '`execution_plan\[0\]\.action` set to `read_selected_context`' \
+    "client workflow first execution action health check"
   require_pattern scripts/two-minute-demo.sh \
     'Problem: AI agents waste the first read' \
     "two-minute demo problem statement"
