@@ -139,6 +139,9 @@ main() {
   require_pattern docs/benchmark-methodology.md \
     'CODEINSIGHT_BENCH_SUMMARY_JSON=/tmp/codeinsight-local-summary\.json' \
     "benchmark methodology summary JSON command"
+  require_pattern docs/benchmark-methodology.md \
+    'scripts/benchmark-summary-text\.sh /tmp/codeinsight-local-summary\.json' \
+    "benchmark methodology summary text command"
   require_pattern scripts/benchmark-smoke.sh \
     'CODEINSIGHT_BENCH_LOCAL_ROOT is required when CODEINSIGHT_BENCH_PROFILE=local' \
     "benchmark local profile root validation"
@@ -151,6 +154,12 @@ main() {
   require_pattern scripts/benchmark-local-smoke.sh \
     'CODEINSIGHT_BENCH_PROFILE=local' \
     "benchmark local smoke profile"
+  require_pattern scripts/benchmark-summary-text.sh \
+    'CodeInsight Benchmark Summary' \
+    "benchmark summary text heading"
+  require_pattern scripts/benchmark-summary-text-smoke.sh \
+    'Routing: `context_pack` first for 1/1 repositories' \
+    "benchmark summary text smoke routing"
   require_pattern docs/benchmark-methodology.md \
     'Every report also checks that:' \
     "benchmark methodology guardrails"

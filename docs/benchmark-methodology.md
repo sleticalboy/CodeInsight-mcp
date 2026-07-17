@@ -76,6 +76,12 @@ CODEINSIGHT_BENCH_SUMMARY_JSON=/tmp/codeinsight-local-summary.json \
   scripts/benchmark-smoke.sh
 ```
 
+Turn that JSON into copyable Markdown for a PR comment or CI summary:
+
+```bash
+scripts/benchmark-summary-text.sh /tmp/codeinsight-local-summary.json
+```
+
 Reuse existing clones during local iteration:
 
 ```bash
