@@ -93,6 +93,14 @@ evidence, or client integration debugging:
 CODEINSIGHT_DEMO_SAVE_JSON=/tmp/codeinsight-agent-route.json scripts/two-minute-demo.sh
 ```
 
+Generate a copyable Markdown evidence summary for your own repository:
+
+```bash
+scripts/local-repo-evidence.sh /path/to/repo \
+  --output /tmp/codeinsight-local-evidence.md \
+  --json /tmp/codeinsight-agent-route.json
+```
+
 The demo executes the same product path an MCP client should follow:
 `agent_route`, which runs `index_project -> project_overview -> context_pack ->
 impact_analysis` in one first-read route. It prints index timing, entrypoint and

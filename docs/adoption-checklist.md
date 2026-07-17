@@ -35,6 +35,14 @@ Or against your own repository:
 CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/two-minute-demo.sh
 ```
 
+When you need a copyable Markdown evidence artifact for your own repository:
+
+```bash
+scripts/local-repo-evidence.sh /path/to/repo \
+  --output /tmp/codeinsight-local-evidence.md \
+  --json /tmp/codeinsight-agent-route.json
+```
+
 Pass criteria:
 
 - `indexed_files` is greater than zero.
@@ -49,6 +57,9 @@ Pass criteria:
 - The final talk track names `agent_route` as the default first-read path and
   includes `project_overview`, `context_pack`, and `impact_analysis` as the
   route internals.
+- `local-repo-evidence.sh` writes a Markdown summary with selected lines,
+  line reduction, first reading question, first selected file, first suggested
+  tool, impact risk, and the raw `agent_route` JSON path when `--json` is used.
 
 ## 3. MCP Server Starts And Lists Tools
 
