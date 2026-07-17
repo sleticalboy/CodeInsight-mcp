@@ -72,6 +72,11 @@ token_budget: 6000
 Run against another repository:
   CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/two-minute-demo.sh
 
+[Evidence summary]
+agent_route selected 123/28235 source lines (99.6% reduction) across 2 files.
+The first selected file is src/tools.rs; read it before offering file_outline.
+Before edits, impact_analysis reports high risk across 7 impacted files.
+
 [Talk track]
 1. agent_route ran index_project, project_overview, context_pack, and impact_analysis in one call.
 2. project_overview found 7 entrypoints and 4 recommended next tools.
@@ -102,6 +107,8 @@ Run this walkthrough against another repository:
   estimate, line reduction, route reason, and continuation status.
 - `impact_analysis` includes its route reason so the demo frames it as the
   pre-edit impact check after selected context is read.
+- The evidence summary gives a compact copyable result for README videos or
+  project introductions.
 - The talk track explains the same path a user should show in a recording.
 - The agent policy matches the MCP client workflow.
 

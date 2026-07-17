@@ -652,6 +652,12 @@ main() {
     'offer it only after the selected file has been read' \
     "two-minute demo suggested tool gating talk track"
   require_pattern scripts/two-minute-demo.sh \
+    '\[Evidence summary\]' \
+    "two-minute demo evidence summary section"
+  require_pattern scripts/two-minute-demo.sh \
+    'agent_route selected \$\{selected_lines\}/\$\{total_lines\} source lines' \
+    "two-minute demo line-reduction evidence summary"
+  require_pattern scripts/two-minute-demo.sh \
     'impact_analysis reports' \
     "two-minute demo impact-analysis talk track"
 

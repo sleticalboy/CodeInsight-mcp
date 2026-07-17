@@ -191,6 +191,14 @@ EOF
     fail "missing selection reason"
   grep -Fq 'selected context reduced source reading by' "$TEMP_DIR/output.log" ||
     fail "missing line reduction talk track"
+  grep -Fq '[Evidence summary]' "$TEMP_DIR/output.log" ||
+    fail "missing evidence summary"
+  grep -Fq 'agent_route selected 439/27681 source lines (98.4% reduction) across 1 files.' "$TEMP_DIR/output.log" ||
+    fail "missing evidence summary line reduction"
+  grep -Fq 'The first selected file is src/main.rs; read it before offering file_outline.' "$TEMP_DIR/output.log" ||
+    fail "missing evidence summary suggested tool timing"
+  grep -Fq 'Before edits, impact_analysis reports high risk across 11 impacted files.' "$TEMP_DIR/output.log" ||
+    fail "missing evidence summary impact check"
   grep -Fq 'execution_plan starts with read_selected_context, then use_current_reading_step_suggested_tool; this keeps suggested tools behind selected-context reading.' "$TEMP_DIR/output.log" ||
     fail "missing execution plan talk track"
   grep -Fq 'The first execution-plan suggested tool is file_outline; offer it only after the selected file has been read.' "$TEMP_DIR/output.log" ||

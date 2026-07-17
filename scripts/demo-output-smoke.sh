@@ -80,6 +80,18 @@ main() {
     '\[Talk track\]' \
     "talk track section"
   require_pattern docs/demo-output.md \
+    '\[Evidence summary\]' \
+    "evidence summary section"
+  require_pattern docs/demo-output.md \
+    'agent_route selected [0-9]+/[0-9]+ source lines \([0-9]+\.[0-9]% reduction\) across [0-9]+ files\.' \
+    "evidence summary line reduction"
+  require_pattern docs/demo-output.md \
+    'read it before offering file_outline\.' \
+    "evidence summary suggested tool timing"
+  require_pattern docs/demo-output.md \
+    'Before edits, impact_analysis reports high risk across [0-9]+ impacted files\.' \
+    "evidence summary impact check"
+  require_pattern docs/demo-output.md \
     'agent_route ran index_project, project_overview, context_pack, and impact_analysis in one call\.' \
     "agent route talk track"
   require_pattern docs/demo-output.md \
@@ -106,6 +118,9 @@ main() {
   require_pattern docs/demo-output.md \
     'pre-edit impact check estimated [0-9]+ impacted files' \
     "impact route reason talk track"
+  require_pattern docs/demo-output.md \
+    'The evidence summary gives a compact copyable result' \
+    "evidence summary check guidance"
   require_pattern docs/demo-output.md \
     '\[Agent policy\]' \
     "agent policy section"

@@ -65,6 +65,12 @@ main() {
     'Context reading plan' \
     "README benchmark reading plan evidence"
   require_pattern README.md \
+    'two-minute demo for this repository shows the agent route selecting' \
+    "README demo evidence summary"
+  require_pattern README.md \
+    '`file_outline` behind the selected-context read before the impact check' \
+    "README demo suggested tool gating evidence"
+  require_pattern README.md \
     'executes `agent_route\.execution_plan\[\]\.suggested_tool`' \
     "README MCP suggested tool execution evidence"
 

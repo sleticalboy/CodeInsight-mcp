@@ -74,6 +74,9 @@ without external services.
 
 Current benchmark snapshot:
 
+- The two-minute demo for this repository shows the agent route selecting 123
+  of 28,235 source lines, a 99.6% first-read line reduction, then gating
+  `file_outline` behind the selected-context read before the impact check.
 - Smoke repositories route `context_pack` first for 4/4 repositories and
   select 629 of 75,753 source lines, a 99.2% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and

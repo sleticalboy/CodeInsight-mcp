@@ -115,6 +115,11 @@ Promise: route the agent through agent_route before edits.
    suggested_checks: 4
    route_reason: after selected context is read, pre-edit impact check estimated 7 impacted files at high risk, including 5 call-related files, 1 dependency-related files, 27 call paths, and 1 dependency paths
 
+[Evidence summary]
+agent_route selected 123/28235 source lines (99.6% reduction) across 2 files.
+The first selected file is src/tools.rs; read it before offering file_outline.
+Before edits, impact_analysis reports high risk across 7 impacted files.
+
 [Talk track]
 1. agent_route ran index_project, project_overview, context_pack, and impact_analysis in one call.
 2. project_overview found 7 entrypoints and 4 recommended next tools.

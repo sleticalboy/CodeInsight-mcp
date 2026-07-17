@@ -217,6 +217,15 @@ main() {
   echo "Run against another repository:"
   echo "  CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/two-minute-demo.sh"
   echo
+  echo "[Evidence summary]"
+  echo "agent_route selected ${selected_lines}/${total_lines} source lines (${reduction} reduction) across ${selected_files} files."
+  echo "The first selected file is ${first_context_file}; read it before offering ${first_execution_suggested_tool}."
+  if [ -n "$risk_level" ]; then
+    echo "Before edits, impact_analysis reports ${risk_level} risk across ${impacted_files} impacted files."
+  else
+    echo "Before edits, run impact_analysis when context_pack selects a file seed."
+  fi
+  echo
   echo "[Talk track]"
   echo "1. agent_route ran index_project, project_overview, context_pack, and impact_analysis in one call."
   echo "2. project_overview found ${entrypoints} entrypoints and ${recommended_tools} recommended next tools."
