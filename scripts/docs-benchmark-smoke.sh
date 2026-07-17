@@ -450,6 +450,12 @@ main() {
   require_pattern scripts/mcp-first-call-artifact-smoke.sh \
     'suggested_tool_executed == true' \
     "MCP first-call artifact suggested tool validation"
+  require_pattern scripts/mcp-first-call-artifact-smoke.sh \
+    'first_reading_question' \
+    "MCP first-call artifact first reading question output"
+  require_pattern docs/maintainer-checklist.md \
+    'the first reading question, execution plan actions' \
+    "maintainer MCP first-call first reading question summary"
   require_pattern docs/release-commands.md \
     'scripts/release-pretag-check\.sh main' \
     "release commands benchmark artifact gate"

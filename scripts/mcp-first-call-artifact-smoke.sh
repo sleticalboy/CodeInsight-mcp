@@ -222,6 +222,7 @@ main() {
 
   echo "MCP first-call artifact smoke passed"
   echo "summary: $summary_file"
+  echo "first_reading_question: $(jq -r '.reading_plan[0].question' "$summary_file")"
 }
 
 main "$@"

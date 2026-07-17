@@ -129,6 +129,8 @@ EOF
     fail "missing artifact smoke success output"
   grep -Fq "summary: $TEMP_DIR/download/mcp-first-call.json" "$TEMP_DIR/output.log" ||
     fail "missing summary path output"
+  grep -Fq 'first_reading_question: What entrypoints define the main flow?' "$TEMP_DIR/output.log" ||
+    fail "missing first reading question output"
   grep -Fq 'gh run download 123456 --repo sleticalboy/CodeInsight-mcp --name codeinsight-mcp-first-call --dir '"$TEMP_DIR/download" "$TEMP_DIR/calls.log" ||
     fail "missing fixed-run artifact download"
 
@@ -145,6 +147,8 @@ EOF
     fail "missing latest successful run lookup"
   grep -Fq 'gh run download 123456 --repo sleticalboy/CodeInsight-mcp --name codeinsight-mcp-first-call --dir' "$TEMP_DIR/latest-calls.log" ||
     fail "missing latest successful artifact download"
+  grep -Fq 'first_reading_question: What entrypoints define the main flow?' "$TEMP_DIR/latest-output.log" ||
+    fail "missing latest first reading question output"
 
   echo "MCP first-call artifact smoke smoke passed"
 }
