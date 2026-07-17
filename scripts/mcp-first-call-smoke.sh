@@ -8,15 +8,58 @@ FIRST_CALL_TASK="${CODEINSIGHT_FIRST_CALL_TASK:-understand app entrypoint flow}"
 FIRST_CALL_TOKEN_BUDGET="${CODEINSIGHT_FIRST_CALL_TOKEN_BUDGET:-1600}"
 TEMP_DIR=""
 
-fail() {
-  echo "mcp first-call smoke failed [binary]: $*" >&2
+fail_with() {
+  local category="$1"
+  shift
+  echo "mcp first-call smoke failed [$category]: $*" >&2
   exit 1
+}
+
+fail() {
+  fail_with binary "$@"
 }
 
 require_command() {
   if ! command -v "$1" >/dev/null 2>&1; then
     fail "missing required command: $1"
   fi
+}
+
+usage() {
+  cat <<'EOF'
+usage: scripts/mcp-first-call-smoke.sh [--help]
+
+Runs a compact MCP stdio first-call check and prints a JSON summary.
+
+Environment:
+  CODEINSIGHT_BIN                       Existing codeinsight binary to test.
+                                        Defaults to a local release build.
+  CODEINSIGHT_FIRST_CALL_ROOT           Repository to analyze.
+                                        Defaults to a temporary TypeScript fixture.
+  CODEINSIGHT_FIRST_CALL_TASK           Task passed to agent_route.
+                                        Defaults to "understand app entrypoint flow".
+  CODEINSIGHT_FIRST_CALL_TOKEN_BUDGET   Token budget passed to agent_route.
+                                        Defaults to 1600.
+
+Output:
+  stdout  JSON summary when the first MCP agent_route call succeeds.
+  stderr  Categorized failures such as [binary], [mcp_server],
+          [agent_route_contract], [suggested_tool], or [unexpected].
+EOF
+}
+
+parse_args() {
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      -h|--help)
+        usage
+        exit 0
+        ;;
+      *)
+        fail_with usage "unknown argument: $1"
+        ;;
+    esac
+  done
 }
 
 build_binary_if_needed() {
@@ -80,6 +123,7 @@ cleanup() {
 }
 
 main() {
+  parse_args "$@"
   require_command python3
   build_binary_if_needed
 

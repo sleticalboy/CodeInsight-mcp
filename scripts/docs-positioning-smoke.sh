@@ -178,6 +178,9 @@ main() {
     'Expected output shape:' \
     "quickstart MCP first-call output shape"
   require_pattern docs/quickstart.md \
+    'scripts/mcp-first-call-smoke\.sh --help' \
+    "quickstart MCP first-call help"
+  require_pattern docs/quickstart.md \
     '"route_tools": \[' \
     "quickstart MCP first-call route tools"
   require_pattern docs/quickstart.md \

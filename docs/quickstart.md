@@ -164,6 +164,9 @@ scripts/mcp-stdio-smoke.sh
 files, execution plan, suggested tool, and impact preview without reading the
 full protocol smoke log.
 
+Run `scripts/mcp-first-call-smoke.sh --help` to see the supported environment
+variables for binary path, target repository, task, and token budget.
+
 Expected output shape:
 
 ```json

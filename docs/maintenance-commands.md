@@ -82,7 +82,7 @@ Choose the narrowest check for the change:
 | --- | --- | --- |
 | README/demo positioning changed | `scripts/two-minute-demo.sh` and `scripts/demo-output-smoke.sh` | User-facing `agent_route` walkthrough and checked snapshot. |
 | First MCP call onboarding changed | `scripts/mcp-first-call-smoke.sh` | Compact JSON proof for `agent_route`, selected files, execution plan, suggested tool, and impact status. |
-| First MCP call failure messaging changed | `scripts/mcp-first-call-failure-smoke.sh` | Fast checks for `[binary]` and `[mcp_server]` failure prefixes. |
+| First MCP call help or failure messaging changed | `scripts/mcp-first-call-failure-smoke.sh` | Fast checks for `--help`, `[usage]`, `[binary]`, and `[mcp_server]` output. |
 | MCP protocol or tool payload changed | `scripts/mcp-stdio-smoke.sh` | Stdio MCP handshake, `agent_route`, `context_pack`, and executable suggested-tool calls. |
 | Installed-binary adoption path changed | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh` | CLI and MCP first-read routes through the installed binary against a temporary project. |
 | One-call `agent_route` JSON contract changed | `scripts/agent-route-smoke.sh` | Route order, execution plan, context pack, and impact-analysis preview. |
