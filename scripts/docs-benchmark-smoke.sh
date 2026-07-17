@@ -136,9 +136,15 @@ main() {
   require_pattern docs/benchmark-methodology.md \
     'prints a terminal summary with the report path' \
     "benchmark methodology terminal summary"
+  require_pattern docs/benchmark-methodology.md \
+    'CODEINSIGHT_BENCH_SUMMARY_JSON=/tmp/codeinsight-local-summary\.json' \
+    "benchmark methodology summary JSON command"
   require_pattern scripts/benchmark-smoke.sh \
     'CODEINSIGHT_BENCH_LOCAL_ROOT is required when CODEINSIGHT_BENCH_PROFILE=local' \
     "benchmark local profile root validation"
+  require_pattern scripts/benchmark-smoke.sh \
+    'wrote summary \$SUMMARY_JSON' \
+    "benchmark summary JSON output"
   require_pattern scripts/benchmark-smoke.sh \
     'continue with: file_outline for first files, dependency_graph for imports, impact_analysis before edits' \
     "benchmark terminal next steps"

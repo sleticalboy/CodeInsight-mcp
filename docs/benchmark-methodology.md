@@ -66,6 +66,16 @@ compression metrics, guardrail failures, and suggested next steps. Open the full
 report when you need the `Context reading plan` table or per-file selection
 evidence.
 
+For CI or PR automation, write the same summary as JSON:
+
+```bash
+CODEINSIGHT_BENCH_SUMMARY_JSON=/tmp/codeinsight-local-summary.json \
+  CODEINSIGHT_BENCH_PROFILE=local \
+  CODEINSIGHT_BENCH_LOCAL_ROOT=/path/to/repo \
+  CODEINSIGHT_BENCH_LOCAL_CONTEXT_FILE=src/main.ts \
+  scripts/benchmark-smoke.sh
+```
+
 Reuse existing clones during local iteration:
 
 ```bash

@@ -10,6 +10,7 @@ REUSE_REPOS="${CODEINSIGHT_BENCH_REUSE_REPOS:-0}"
 BENCH_REPOS="${CODEINSIGHT_BENCH_REPOS:-}"
 OUTPUT_WAS_SET="${CODEINSIGHT_BENCH_OUTPUT+x}"
 PRINT_CONFIG="${CODEINSIGHT_BENCH_PRINT_CONFIG:-0}"
+SUMMARY_JSON="${CODEINSIGHT_BENCH_SUMMARY_JSON:-}"
 LOCAL_ROOT="${CODEINSIGHT_BENCH_LOCAL_ROOT:-}"
 LOCAL_NAME="${CODEINSIGHT_BENCH_LOCAL_NAME:-}"
 LOCAL_LANGUAGE="${CODEINSIGHT_BENCH_LOCAL_LANGUAGE:-Local}"
@@ -747,6 +748,84 @@ print_terminal_summary() {
   echo "  continue with: file_outline for first files, dependency_graph for imports, impact_analysis before edits"
 }
 
+write_summary_json() {
+  local context_reduction average_tokens average_index_ms total_failures
+
+  if [ -z "$SUMMARY_JSON" ]; then
+    return
+  fi
+
+  context_reduction="$(line_reduction "$TOTAL_REPO_LINES" "$TOTAL_CONTEXT_LINES")"
+  average_tokens="$(average_number "$TOTAL_CONTEXT_TOKENS" "$BENCHMARKED_REPOS")"
+  average_index_ms="$(average_number "$TOTAL_INDEX_MS" "$BENCHMARKED_REPOS")"
+  total_failures=$((BUDGET_FAILURES + CONTEXT_GUARDRAIL_FAILURES + SYMBOL_TARGET_FAILURES + CALL_TARGET_FAILURES + CALL_EDGE_FAILURES))
+
+  mkdir -p "$(dirname "$SUMMARY_JSON")"
+  jq -n \
+    --arg report "$OUTPUT" \
+    --arg profile "$BENCH_PROFILE" \
+    --arg subset "$(repo_subset_label)" \
+    --arg context_reduction "$context_reduction" \
+    --arg next_open_report "$OUTPUT" \
+    --arg next_inspect "Key Results, Summary, and each Context reading plan table" \
+    --arg next_continue "file_outline for first files, dependency_graph for imports, impact_analysis before edits" \
+    --argjson repositories "$BENCHMARKED_REPOS" \
+    --argjson context_pack_first "$CONTEXT_PACK_FIRST_RECOMMENDATIONS" \
+    --argjson total_repo_lines "$TOTAL_REPO_LINES" \
+    --argjson total_context_lines "$TOTAL_CONTEXT_LINES" \
+    --argjson total_context_tokens "$TOTAL_CONTEXT_TOKENS" \
+    --argjson average_context_tokens "$average_tokens" \
+    --argjson total_context_files "$TOTAL_CONTEXT_FILES" \
+    --argjson total_context_ranges "$TOTAL_CONTEXT_RANGES" \
+    --argjson total_index_ms "$TOTAL_INDEX_MS" \
+    --argjson average_index_ms "$average_index_ms" \
+    --argjson truncated_context_packs "$TRUNCATED_CONTEXT_PACKS" \
+    --argjson budget_failures "$BUDGET_FAILURES" \
+    --argjson context_guardrail_failures "$CONTEXT_GUARDRAIL_FAILURES" \
+    --argjson symbol_target_failures "$SYMBOL_TARGET_FAILURES" \
+    --argjson call_target_failures "$CALL_TARGET_FAILURES" \
+    --argjson call_edge_failures "$CALL_EDGE_FAILURES" \
+    --argjson total_failures "$total_failures" \
+    '{
+      report: $report,
+      profile: $profile,
+      repository_subset: $subset,
+      repositories: $repositories,
+      routing: {
+        context_pack_first: $context_pack_first,
+        total: $repositories
+      },
+      context: {
+        total_repo_lines: $total_repo_lines,
+        selected_lines: $total_context_lines,
+        line_reduction: $context_reduction,
+        estimated_tokens_total: $total_context_tokens,
+        estimated_tokens_average: $average_context_tokens,
+        selected_files: $total_context_files,
+        selected_ranges: $total_context_ranges,
+        truncated_packs: $truncated_context_packs
+      },
+      indexing: {
+        total_ms: $total_index_ms,
+        average_ms: $average_index_ms
+      },
+      failures: {
+        total: $total_failures,
+        budget: $budget_failures,
+        context_guardrail: $context_guardrail_failures,
+        symbol_target: $symbol_target_failures,
+        call_target: $call_target_failures,
+        call_edge: $call_edge_failures
+      },
+      next_steps: {
+        open_report: $next_open_report,
+        inspect: $next_inspect,
+        continue_with: $next_continue
+      }
+    }' >"$SUMMARY_JSON"
+  echo "wrote summary $SUMMARY_JSON"
+}
+
 append_summary_row() {
   local name="$1"
   local language="$2"
@@ -1103,6 +1182,7 @@ EOF
   mv "$REPORT_FILE" "$OUTPUT"
   echo "wrote $OUTPUT"
   print_terminal_summary
+  write_summary_json
   if [ "$BUDGET_FAILURES" -gt 0 ]; then
     echo "benchmark budget failures: $BUDGET_FAILURES" >&2
     exit 1
