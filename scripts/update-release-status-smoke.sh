@@ -102,6 +102,11 @@ EOF
       "name": "codeinsight-agent-route-smoke",
       "url": "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/3",
       "summary": "/tmp/agent-route.json"
+    },
+    "mcp_first_call": {
+      "name": "codeinsight-mcp-first-call",
+      "url": "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/4",
+      "summary": "/tmp/mcp-first-call.json"
     }
   },
   "release_notes_block": "## v9.8.7 release evidence"
@@ -119,6 +124,7 @@ ci_run: 654321
 benchmark_artifact_url: https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/654321/artifacts/1
 context_pack_quality_artifact_url: https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/654321/artifacts/2
 agent_route_artifact_url: https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/654321/artifacts/3
+mcp_first_call_artifact_url: https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/654321/artifacts/4
 EOF
 
   CODEINSIGHT_STATUS_DATE=2026-07-14 \
@@ -144,6 +150,7 @@ EOF
   grep -q -- '  - CI run: `123456`' "$status_doc"
   grep -q -- '  - Metadata: `cargo=9.8.7`, `install=v9.8.7`, `changelog=9.8.7 (2026-07-15)`' "$status_doc"
   grep -q -- '  - Agent-route artifact: \[codeinsight-agent-route-smoke\](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/3)' "$status_doc"
+  grep -q -- '  - MCP first-call artifact: \[codeinsight-mcp-first-call\](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/4)' "$status_doc"
   grep -q '## Current Release Tooling State' "$status_doc"
 
   CODEINSIGHT_STATUS_DATE=2026-07-15 \
@@ -152,6 +159,7 @@ EOF
   grep -q -- "  - Evidence file: \`$evidence_md_file\`" "$fallback_status_doc"
   grep -q -- '  - Target commit: `md456`' "$fallback_status_doc"
   grep -q -- '  - CI run: `654321`' "$fallback_status_doc"
+  grep -q -- '  - MCP first-call artifact: \[codeinsight-mcp-first-call\](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/654321/artifacts/4)' "$fallback_status_doc"
 
   echo "update release status smoke passed"
 }

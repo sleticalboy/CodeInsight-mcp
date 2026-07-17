@@ -77,6 +77,9 @@ if [ "$1" = "api" ]; then
     *'codeinsight-agent-route-smoke'*)
       printf '987656\n'
       ;;
+    *'codeinsight-mcp-first-call'*)
+      printf '987657\n'
+      ;;
     *)
       exit 13
       ;;
@@ -136,11 +139,28 @@ echo "summary: /tmp/codeinsight-agent-route-artifact-123456/summary.json"
 EOF
   chmod +x "$TEMP_DIR/agent-route-artifact-smoke"
 
+  cat >"$TEMP_DIR/mcp-first-call-artifact-smoke" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+log="${CODEINSIGHT_EVIDENCE_SMOKE_LOG:?}"
+printf 'mcp-first-call-artifact %s\n' "$*" >>"$log"
+test "$1" = "--repo"
+test "$2" = "sleticalboy/CodeInsight-mcp"
+test "$3" = "--artifact-name"
+test "$4" = "codeinsight-mcp-first-call"
+test "$5" = "123456"
+echo "MCP first-call artifact smoke passed"
+echo "summary: /tmp/codeinsight-mcp-first-call-artifact-123456/summary.json"
+EOF
+  chmod +x "$TEMP_DIR/mcp-first-call-artifact-smoke"
+
   CODEINSIGHT_EVIDENCE_SMOKE_LOG="$TEMP_DIR/calls.log" \
     CODEINSIGHT_ROOT_DIR="$TEMP_DIR/repo" \
     CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/benchmark-artifact-smoke" \
     CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/context-pack-quality-artifact-smoke" \
     CODEINSIGHT_AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/agent-route-artifact-smoke" \
+    CODEINSIGHT_MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/mcp-first-call-artifact-smoke" \
     PATH="$TEMP_DIR/bin:$PATH" \
     "$ROOT_DIR/scripts/release-evidence-summary.sh" \
       --repo sleticalboy/CodeInsight-mcp \
@@ -171,6 +191,10 @@ EOF
     fail "missing agent-route artifact URL"
   grep -Fq 'agent_route_summary: /tmp/codeinsight-agent-route-artifact-123456/summary.json' "$TEMP_DIR/output.log" ||
     fail "missing agent-route summary output"
+  grep -Fq 'mcp_first_call_artifact_url: https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987657' "$TEMP_DIR/output.log" ||
+    fail "missing MCP first-call artifact URL"
+  grep -Fq 'mcp_first_call_summary: /tmp/codeinsight-mcp-first-call-artifact-123456/summary.json' "$TEMP_DIR/output.log" ||
+    fail "missing MCP first-call summary output"
   grep -Fq '## v99.88.77 release evidence' "$TEMP_DIR/output.log" ||
     fail "missing release notes block"
   grep -Fq -- '- CI: [run 123456](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456)' "$TEMP_DIR/output.log" ||
@@ -179,6 +203,8 @@ EOF
     fail "missing release notes context-pack quality artifact link"
   grep -Fq -- '- Agent-route artifact: [codeinsight-agent-route-smoke](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987656)' "$TEMP_DIR/output.log" ||
     fail "missing release notes agent-route artifact link"
+  grep -Fq -- '- MCP first-call artifact: [codeinsight-mcp-first-call](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987657)' "$TEMP_DIR/output.log" ||
+    fail "missing release notes MCP first-call artifact link"
   jq -e '
     .schema_version == 1 and
     .tag == "v99.88.77" and
@@ -199,6 +225,9 @@ EOF
     .artifacts.agent_route.name == "codeinsight-agent-route-smoke" and
     .artifacts.agent_route.url == "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987656" and
     .artifacts.agent_route.summary == "/tmp/codeinsight-agent-route-artifact-123456/summary.json" and
+    .artifacts.mcp_first_call.name == "codeinsight-mcp-first-call" and
+    .artifacts.mcp_first_call.url == "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987657" and
+    .artifacts.mcp_first_call.summary == "/tmp/codeinsight-mcp-first-call-artifact-123456/summary.json" and
     (.release_notes_block | contains("## v99.88.77 release evidence")) and
     (.release_notes_block | contains("- metadata_cargo: 99.88.77"))
   ' "$TEMP_DIR/evidence.json" >/dev/null ||
@@ -214,18 +243,23 @@ EOF
     fail "missing context-pack quality artifact lookup"
   grep -Fq 'gh api repos/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts --jq .artifacts[] | select(.name == "codeinsight-agent-route-smoke") | .id' "$TEMP_DIR/calls.log" ||
     fail "missing agent-route artifact lookup"
+  grep -Fq 'gh api repos/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts --jq .artifacts[] | select(.name == "codeinsight-mcp-first-call") | .id' "$TEMP_DIR/calls.log" ||
+    fail "missing MCP first-call artifact lookup"
   grep -Fq 'artifact --repo sleticalboy/CodeInsight-mcp --artifact-name codeinsight-benchmark-subset 123456' "$TEMP_DIR/calls.log" ||
     fail "missing benchmark artifact validation"
   grep -Fq 'quality-artifact --repo sleticalboy/CodeInsight-mcp --artifact-name codeinsight-context-pack-quality 123456' "$TEMP_DIR/calls.log" ||
     fail "missing context-pack quality artifact validation"
   grep -Fq 'agent-route-artifact --repo sleticalboy/CodeInsight-mcp --artifact-name codeinsight-agent-route-smoke 123456' "$TEMP_DIR/calls.log" ||
     fail "missing agent-route artifact validation"
+  grep -Fq 'mcp-first-call-artifact --repo sleticalboy/CodeInsight-mcp --artifact-name codeinsight-mcp-first-call 123456' "$TEMP_DIR/calls.log" ||
+    fail "missing MCP first-call artifact validation"
 
   CODEINSIGHT_EVIDENCE_SMOKE_LOG="$TEMP_DIR/run-id-calls.log" \
     CODEINSIGHT_ROOT_DIR="$TEMP_DIR/repo" \
     CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/benchmark-artifact-smoke" \
     CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/context-pack-quality-artifact-smoke" \
     CODEINSIGHT_AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/agent-route-artifact-smoke" \
+    CODEINSIGHT_MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/mcp-first-call-artifact-smoke" \
     PATH="$TEMP_DIR/bin:$PATH" \
     "$ROOT_DIR/scripts/release-evidence-summary.sh" \
       --repo sleticalboy/CodeInsight-mcp \
@@ -256,6 +290,7 @@ EOF
     CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/benchmark-artifact-smoke" \
     CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/context-pack-quality-artifact-smoke" \
     CODEINSIGHT_AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/agent-route-artifact-smoke" \
+    CODEINSIGHT_MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/mcp-first-call-artifact-smoke" \
     PATH="$TEMP_DIR/bin:$PATH" \
     "$ROOT_DIR/scripts/release-evidence-summary.sh" \
       --repo sleticalboy/CodeInsight-mcp \

@@ -91,6 +91,14 @@ printf 'agent-route-artifact %s\n' "$*" >>"$log"
 EOF
   chmod +x "$TEMP_DIR/agent-route-artifact-smoke"
 
+  cat >"$TEMP_DIR/mcp-first-call-artifact-smoke" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+log="${CODEINSIGHT_DRY_RUN_SMOKE_LOG:?}"
+printf 'mcp-first-call-artifact %s\n' "$*" >>"$log"
+EOF
+  chmod +x "$TEMP_DIR/mcp-first-call-artifact-smoke"
+
   cat >"$TEMP_DIR/release-tag-preflight" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -100,6 +108,7 @@ printf 'tag-preflight %s\n' "$*" >>"$log"
 test "$CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT" = "${CODEINSIGHT_DRY_RUN_BENCHMARK_ARTIFACT_SMOKE_SCRIPT:?}"
 test "$CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT" = "${CODEINSIGHT_DRY_RUN_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT:?}"
 test "$CODEINSIGHT_AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT" = "${CODEINSIGHT_DRY_RUN_AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT:?}"
+test "$CODEINSIGHT_MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT" = "${CODEINSIGHT_DRY_RUN_MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT:?}"
 test "$CODEINSIGHT_ROOT_DIR" != "${CODEINSIGHT_DRY_RUN_SOURCE_ROOT:?}"
 grep -q 'version = "9.8.7"' "$CODEINSIGHT_ROOT_DIR/Cargo.toml"
 grep -q 'CODEINSIGHT_VERSION=v9.8.7' "$CODEINSIGHT_ROOT_DIR/docs/install.md"
@@ -118,6 +127,7 @@ head_sha: abc123
 artifact_gate_benchmark: passed
 artifact_gate_context_pack_quality: passed
 artifact_gate_agent_route: passed
+artifact_gate_mcp_first_call: passed
 SUMMARY
 echo "release tag preflight passed"
 EOF
@@ -132,6 +142,7 @@ printf 'evidence-summary %s\n' "$*" >>"$log"
 test "$CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT" = "${CODEINSIGHT_DRY_RUN_BENCHMARK_ARTIFACT_SMOKE_SCRIPT:?}"
 test "$CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT" = "${CODEINSIGHT_DRY_RUN_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT:?}"
 test "$CODEINSIGHT_AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT" = "${CODEINSIGHT_DRY_RUN_AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT:?}"
+test "$CODEINSIGHT_MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT" = "${CODEINSIGHT_DRY_RUN_MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT:?}"
 test "$CODEINSIGHT_ROOT_DIR" != "${CODEINSIGHT_DRY_RUN_SOURCE_ROOT:?}"
 grep -q 'version = "9.8.7"' "$CODEINSIGHT_ROOT_DIR/Cargo.toml"
 test "$1" = "--repo"
@@ -167,6 +178,7 @@ EOF
     CODEINSIGHT_DRY_RUN_BENCHMARK_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/benchmark-artifact-smoke" \
     CODEINSIGHT_DRY_RUN_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/context-pack-quality-artifact-smoke" \
     CODEINSIGHT_DRY_RUN_AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/agent-route-artifact-smoke" \
+    CODEINSIGHT_DRY_RUN_MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/mcp-first-call-artifact-smoke" \
     CODEINSIGHT_DRY_RUN_SOURCE_ROOT="$TEMP_DIR/repo" \
     CODEINSIGHT_ROOT_DIR="$TEMP_DIR/repo" \
     CODEINSIGHT_RELEASE_DATE=2026-07-15 \
@@ -177,6 +189,7 @@ EOF
     CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/benchmark-artifact-smoke" \
     CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/context-pack-quality-artifact-smoke" \
     CODEINSIGHT_AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/agent-route-artifact-smoke" \
+    CODEINSIGHT_MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/mcp-first-call-artifact-smoke" \
     "$ROOT_DIR/scripts/release-dry-run.sh" \
       --repo sleticalboy/CodeInsight-mcp \
       --head-sha abc123 \
@@ -199,6 +212,8 @@ EOF
     fail "missing pretag evidence summary"
   grep -Fq 'artifact_gate_agent_route: passed' "$TEMP_DIR/output.log" ||
     fail "missing pretag agent-route gate summary"
+  grep -Fq 'artifact_gate_mcp_first_call: passed' "$TEMP_DIR/output.log" ||
+    fail "missing pretag MCP first-call gate summary"
   grep -Fq '[4/4] release evidence summary' "$TEMP_DIR/output.log" ||
     fail "missing evidence summary step"
   grep -Fq '## v9.8.7 release evidence' "$TEMP_DIR/output.log" ||

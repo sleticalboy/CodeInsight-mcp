@@ -56,6 +56,11 @@ main() {
       "name": "codeinsight-agent-route-smoke",
       "url": "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/3",
       "summary": "/tmp/agent-route.json"
+    },
+    "mcp_first_call": {
+      "name": "codeinsight-mcp-first-call",
+      "url": "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/4",
+      "summary": "/tmp/mcp-first-call.json"
     }
   },
   "release_notes_block": "## v9.8.7 release evidence"
@@ -116,6 +121,8 @@ EOF
     fail "missing release gate"
   grep -Fq -- '- Agent-route artifact: [codeinsight-agent-route-smoke](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/3)' "$TEMP_DIR/stdout.md" ||
     fail "missing agent-route artifact"
+  grep -Fq -- '- MCP first-call artifact: [codeinsight-mcp-first-call](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/4)' "$TEMP_DIR/stdout.md" ||
+    fail "missing MCP first-call artifact"
 
   "$ROOT_DIR/scripts/release-handoff-summary.sh" \
     --evidence-json "$evidence_json" \

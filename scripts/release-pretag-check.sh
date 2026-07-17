@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BENCHMARK_ARTIFACT_SMOKE_SCRIPT="${CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT:-$ROOT_DIR/scripts/benchmark-artifact-smoke.sh}"
 CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="${CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT:-$ROOT_DIR/scripts/context-pack-quality-artifact-smoke.sh}"
 AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT="${CODEINSIGHT_AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT:-$ROOT_DIR/scripts/agent-route-artifact-smoke.sh}"
+MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT="${CODEINSIGHT_MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT:-$ROOT_DIR/scripts/mcp-first-call-artifact-smoke.sh}"
 REPO_ARG=()
 RUN_ID=""
 HEAD_SHA=""
@@ -36,6 +37,7 @@ Environment:
   CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT=scripts/benchmark-artifact-smoke.sh
   CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT=scripts/context-pack-quality-artifact-smoke.sh
   CODEINSIGHT_AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT=scripts/agent-route-artifact-smoke.sh
+  CODEINSIGHT_MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT=scripts/mcp-first-call-artifact-smoke.sh
 EOF
   exit "$status"
 }
@@ -161,6 +163,9 @@ main() {
   if [ ! -x "$AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT" ]; then
     fail "agent-route artifact smoke script is not executable: $AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT"
   fi
+  if [ ! -x "$MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT" ]; then
+    fail "MCP first-call artifact smoke script is not executable: $MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT"
+  fi
   if [ -n "$RUN_ID" ] && [ -n "$HEAD_SHA" ]; then
     fail "--run-id and --head-sha cannot be used together"
   fi
@@ -179,11 +184,13 @@ main() {
     "$BENCHMARK_ARTIFACT_SMOKE_SCRIPT" "${REPO_ARG[@]}" "$RUN_ID"
     "$CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT" "${REPO_ARG[@]}" "$RUN_ID"
     "$AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT" "${REPO_ARG[@]}" "$RUN_ID"
+    "$MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT" "${REPO_ARG[@]}" "$RUN_ID"
   else
     gh run watch "$RUN_ID" --exit-status
     "$BENCHMARK_ARTIFACT_SMOKE_SCRIPT" "$RUN_ID"
     "$CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT" "$RUN_ID"
     "$AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT" "$RUN_ID"
+    "$MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT" "$RUN_ID"
   fi
 
   echo "release pretag evidence"
@@ -193,6 +200,7 @@ main() {
   echo "artifact_gate_benchmark: passed"
   echo "artifact_gate_context_pack_quality: passed"
   echo "artifact_gate_agent_route: passed"
+  echo "artifact_gate_mcp_first_call: passed"
   echo "release pretag check passed"
 }
 

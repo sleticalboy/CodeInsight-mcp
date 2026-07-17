@@ -235,6 +235,7 @@ main() {
   require_pretag_evidence "$PRETAG_OUTPUT" "artifact_gate_benchmark: passed" "benchmark artifact gate"
   require_pretag_evidence "$PRETAG_OUTPUT" "artifact_gate_context_pack_quality: passed" "context-pack quality artifact gate"
   require_pretag_evidence "$PRETAG_OUTPUT" "artifact_gate_agent_route: passed" "agent-route artifact gate"
+  require_pretag_evidence "$PRETAG_OUTPUT" "artifact_gate_mcp_first_call: passed" "MCP first-call artifact gate"
 
   echo "release tag preflight passed"
   echo "next: git tag -a $TAG_NAME -m \"$TAG_NAME\" && git push origin $TAG_NAME"

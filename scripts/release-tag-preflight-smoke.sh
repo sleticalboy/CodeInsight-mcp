@@ -123,6 +123,7 @@ head_sha: abc123
 artifact_gate_benchmark: passed
 artifact_gate_context_pack_quality: passed
 artifact_gate_agent_route: passed
+artifact_gate_mcp_first_call: passed
 release pretag check passed
 SUMMARY
 EOF
@@ -167,6 +168,8 @@ EOF
     fail "missing context-pack quality artifact gate status"
   grep -Fq 'artifact_gate_agent_route: passed' "$TEMP_DIR/output.log" ||
     fail "missing agent-route artifact gate status"
+  grep -Fq 'artifact_gate_mcp_first_call: passed' "$TEMP_DIR/output.log" ||
+    fail "missing MCP first-call artifact gate status"
   grep -Fq 'next: git tag -a v99.88.77 -m "v99.88.77" && git push origin v99.88.77' "$TEMP_DIR/output.log" ||
     fail "missing next tag command"
 

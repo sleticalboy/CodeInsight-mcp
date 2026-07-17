@@ -12,6 +12,7 @@ RELEASE_PRETAG_CHECK_SCRIPT="${CODEINSIGHT_RELEASE_PRETAG_CHECK_SCRIPT:-$SCRIPT_
 BENCHMARK_ARTIFACT_SMOKE_SCRIPT="${CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT:-$SCRIPT_ROOT/scripts/benchmark-artifact-smoke.sh}"
 CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="${CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT:-$SCRIPT_ROOT/scripts/context-pack-quality-artifact-smoke.sh}"
 AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT="${CODEINSIGHT_AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT:-$SCRIPT_ROOT/scripts/agent-route-artifact-smoke.sh}"
+MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT="${CODEINSIGHT_MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT:-$SCRIPT_ROOT/scripts/mcp-first-call-artifact-smoke.sh}"
 REPO_ARG=()
 REPO=""
 BRANCH="main"
@@ -58,6 +59,7 @@ Environment:
   CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT=scripts/benchmark-artifact-smoke.sh
   CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT=scripts/context-pack-quality-artifact-smoke.sh
   CODEINSIGHT_AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT=scripts/agent-route-artifact-smoke.sh
+  CODEINSIGHT_MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT=scripts/mcp-first-call-artifact-smoke.sh
 EOF
   exit "$status"
 }
@@ -231,6 +233,7 @@ main() {
   require_executable "$BENCHMARK_ARTIFACT_SMOKE_SCRIPT" "benchmark artifact smoke script"
   require_executable "$CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT" "context-pack quality artifact smoke script"
   require_executable "$AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT" "agent-route artifact smoke script"
+  require_executable "$MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT" "MCP first-call artifact smoke script"
 
   if [ -z "$HEAD_SHA" ]; then
     HEAD_SHA="$(git -C "$ROOT_DIR" rev-parse HEAD)"
@@ -268,6 +271,7 @@ main() {
     CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT="$BENCHMARK_ARTIFACT_SMOKE_SCRIPT" \
     CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="$CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT" \
     CODEINSIGHT_AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT="$AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT" \
+    CODEINSIGHT_MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT="$MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT" \
     "$RELEASE_TAG_PREFLIGHT_SCRIPT" "${REPO_ARG[@]}" --head-sha "$HEAD_SHA" "$TAG_NAME" "$BRANCH" |
     tee "$preflight_output_file"
   echo
@@ -284,6 +288,7 @@ main() {
       CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT="$BENCHMARK_ARTIFACT_SMOKE_SCRIPT" \
       CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="$CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT" \
       CODEINSIGHT_AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT="$AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT" \
+      CODEINSIGHT_MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT="$MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT" \
       CODEINSIGHT_RELEASE_METADATA_SUMMARY_SCRIPT="$RELEASE_METADATA_SUMMARY_SCRIPT" \
       "$RELEASE_EVIDENCE_SUMMARY_SCRIPT" "${evidence_summary_args[@]}"
   )"
@@ -302,6 +307,7 @@ main() {
   require_literal_in_file "$preflight_output_file" "artifact_gate_benchmark: passed" "pretag benchmark artifact gate"
   require_literal_in_file "$preflight_output_file" "artifact_gate_context_pack_quality: passed" "pretag context-pack quality artifact gate"
   require_literal_in_file "$preflight_output_file" "artifact_gate_agent_route: passed" "pretag agent-route artifact gate"
+  require_literal_in_file "$preflight_output_file" "artifact_gate_mcp_first_call: passed" "pretag MCP first-call artifact gate"
   ci_run="$(require_field_from_file "$evidence_output_file" "ci_run" "release evidence CI run")"
   metadata_cargo="$(require_field_from_file "$evidence_output_file" "metadata_cargo" "Cargo metadata")"
   metadata_install="$(require_field_from_file "$evidence_output_file" "metadata_install" "install metadata")"
@@ -318,6 +324,7 @@ main() {
   echo "artifact_gate_benchmark: passed"
   echo "artifact_gate_context_pack_quality: passed"
   echo "artifact_gate_agent_route: passed"
+  echo "artifact_gate_mcp_first_call: passed"
   if [ -n "$EVIDENCE_FILE" ]; then
     echo "evidence_file: $EVIDENCE_FILE"
   fi

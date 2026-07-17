@@ -86,12 +86,16 @@ optional external checks, see [Maintenance commands](maintenance-commands.md).
   table plus the `codeinsight-context-pack-quality` artifact link. Open the
   `agent-route-smoke` job summary and confirm it includes the route line,
   context-pack metrics, impact metrics, and the
-  `codeinsight-agent-route-smoke` artifact link.
+  `codeinsight-agent-route-smoke` artifact link. Open the
+  `mcp-first-call-smoke` job summary and confirm it includes selected files,
+  execution plan actions, suggested tool execution, impact status, and the
+  `codeinsight-mcp-first-call` artifact link.
 
   ```bash
   scripts/benchmark-artifact-smoke.sh <ci-run-id>
   scripts/context-pack-quality-artifact-smoke.sh <ci-run-id>
   scripts/agent-route-artifact-smoke.sh <ci-run-id>
+  scripts/mcp-first-call-artifact-smoke.sh <ci-run-id>
   ```
 
 ## Before Tagging A Release

@@ -162,6 +162,7 @@ artifacts = evidence.fetch("artifacts")
 benchmark = artifacts.fetch("benchmark")
 quality = artifacts.fetch("context_pack_quality")
 agent_route = artifacts.fetch("agent_route")
+mcp_first_call = artifacts.fetch("mcp_first_call")
 gates = verification.fetch("gates")
 expected_assets = verification.fetch("expected_assets")
 
@@ -189,7 +190,8 @@ markdown_lines = [
   "",
   "- Benchmark artifact: [#{benchmark.fetch("name")}](#{benchmark.fetch("url")})",
   "- Context-pack quality artifact: [#{quality.fetch("name")}](#{quality.fetch("url")})",
-  "- Agent-route artifact: [#{agent_route.fetch("name")}](#{agent_route.fetch("url")})"
+  "- Agent-route artifact: [#{agent_route.fetch("name")}](#{agent_route.fetch("url")})",
+  "- MCP first-call artifact: [#{mcp_first_call.fetch("name")}](#{mcp_first_call.fetch("url")})"
 ]
 
 markdown = markdown_lines.join("\n")

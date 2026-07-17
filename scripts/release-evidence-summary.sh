@@ -6,10 +6,12 @@ ROOT_DIR="${CODEINSIGHT_ROOT_DIR:-$SCRIPT_ROOT}"
 BENCHMARK_ARTIFACT_SMOKE_SCRIPT="${CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT:-$ROOT_DIR/scripts/benchmark-artifact-smoke.sh}"
 CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="${CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT:-$ROOT_DIR/scripts/context-pack-quality-artifact-smoke.sh}"
 AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT="${CODEINSIGHT_AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT:-$ROOT_DIR/scripts/agent-route-artifact-smoke.sh}"
+MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT="${CODEINSIGHT_MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT:-$ROOT_DIR/scripts/mcp-first-call-artifact-smoke.sh}"
 RELEASE_METADATA_SUMMARY_SCRIPT="${CODEINSIGHT_RELEASE_METADATA_SUMMARY_SCRIPT:-$SCRIPT_ROOT/scripts/release-metadata-summary.sh}"
 ARTIFACT_NAME="codeinsight-benchmark-subset"
 CONTEXT_PACK_QUALITY_ARTIFACT_NAME="codeinsight-context-pack-quality"
 AGENT_ROUTE_ARTIFACT_NAME="codeinsight-agent-route-smoke"
+MCP_FIRST_CALL_ARTIFACT_NAME="codeinsight-mcp-first-call"
 REPO_ARG=()
 REPO=""
 BRANCH="main"
@@ -43,6 +45,8 @@ Options:
                           Context-pack quality artifact name. Default: codeinsight-context-pack-quality.
   --agent-route-artifact-name NAME
                           Agent-route artifact name. Default: codeinsight-agent-route-smoke.
+  --mcp-first-call-artifact-name NAME
+                          MCP first-call artifact name. Default: codeinsight-mcp-first-call.
   --json-output PATH      Write a machine-readable evidence summary JSON.
   -h, --help              Show this help.
 
@@ -50,6 +54,7 @@ Environment:
   CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT=scripts/benchmark-artifact-smoke.sh
   CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT=scripts/context-pack-quality-artifact-smoke.sh
   CODEINSIGHT_AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT=scripts/agent-route-artifact-smoke.sh
+  CODEINSIGHT_MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT=scripts/mcp-first-call-artifact-smoke.sh
   CODEINSIGHT_RELEASE_METADATA_SUMMARY_SCRIPT=scripts/release-metadata-summary.sh
   CODEINSIGHT_ROOT_DIR=/path/to/repo
 EOF
@@ -211,6 +216,23 @@ validate_agent_route_artifact() {
   printf "%s\n" "$output" | awk -F': ' '/^summary: / { print $2; exit }'
 }
 
+validate_mcp_first_call_artifact() {
+  local run_id="$1"
+  local output
+
+  if [ ! -x "$MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT" ]; then
+    fail "MCP first-call artifact smoke script is not executable: $MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT"
+  fi
+
+  if [ "${#REPO_ARG[@]}" -gt 0 ]; then
+    output="$("$MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT" "${REPO_ARG[@]}" --artifact-name "$MCP_FIRST_CALL_ARTIFACT_NAME" "$run_id")"
+  else
+    output="$("$MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT" --artifact-name "$MCP_FIRST_CALL_ARTIFACT_NAME" "$run_id")"
+  fi
+
+  printf "%s\n" "$output" | awk -F': ' '/^summary: / { print $2; exit }'
+}
+
 write_json_summary() {
   local output_file="$1"
   local metadata_summary="$2"
@@ -222,6 +244,8 @@ write_json_summary() {
   local context_pack_quality_summary_file="$8"
   local agent_route_artifact_url="$9"
   local agent_route_summary_file="${10}"
+  local mcp_first_call_artifact_url="${11}"
+  local mcp_first_call_summary_file="${12}"
 
   mkdir -p "$(dirname "$output_file")"
   TAG_NAME="$TAG_NAME" \
@@ -239,6 +263,9 @@ write_json_summary() {
     AGENT_ROUTE_ARTIFACT_NAME="$AGENT_ROUTE_ARTIFACT_NAME" \
     AGENT_ROUTE_ARTIFACT_URL="$agent_route_artifact_url" \
     AGENT_ROUTE_SUMMARY_FILE="$agent_route_summary_file" \
+    MCP_FIRST_CALL_ARTIFACT_NAME="$MCP_FIRST_CALL_ARTIFACT_NAME" \
+    MCP_FIRST_CALL_ARTIFACT_URL="$mcp_first_call_artifact_url" \
+    MCP_FIRST_CALL_SUMMARY_FILE="$mcp_first_call_summary_file" \
     METADATA_SUMMARY="$metadata_summary" \
     ruby -rjson - "$output_file" <<'RUBY'
 output_file = ARGV.fetch(0)
@@ -259,6 +286,8 @@ release_notes = [
   "- Context-pack quality summary: `#{ENV.fetch("CONTEXT_PACK_QUALITY_SUMMARY_FILE")}`",
   "- Agent-route artifact: [#{ENV.fetch("AGENT_ROUTE_ARTIFACT_NAME")}](#{ENV.fetch("AGENT_ROUTE_ARTIFACT_URL")})",
   "- Agent-route summary: `#{ENV.fetch("AGENT_ROUTE_SUMMARY_FILE")}`",
+  "- MCP first-call artifact: [#{ENV.fetch("MCP_FIRST_CALL_ARTIFACT_NAME")}](#{ENV.fetch("MCP_FIRST_CALL_ARTIFACT_URL")})",
+  "- MCP first-call summary: `#{ENV.fetch("MCP_FIRST_CALL_SUMMARY_FILE")}`",
   *metadata.map { |key, value| "- #{key}: #{value}" }
 ].join("\n")
 
@@ -292,6 +321,11 @@ summary = {
       "name" => ENV.fetch("AGENT_ROUTE_ARTIFACT_NAME"),
       "url" => ENV.fetch("AGENT_ROUTE_ARTIFACT_URL"),
       "summary" => ENV.fetch("AGENT_ROUTE_SUMMARY_FILE")
+    },
+    "mcp_first_call" => {
+      "name" => ENV.fetch("MCP_FIRST_CALL_ARTIFACT_NAME"),
+      "url" => ENV.fetch("MCP_FIRST_CALL_ARTIFACT_URL"),
+      "summary" => ENV.fetch("MCP_FIRST_CALL_SUMMARY_FILE")
     }
   },
   "release_notes_block" => release_notes
@@ -312,6 +346,8 @@ main() {
   local context_pack_quality_summary_file
   local agent_route_artifact_url
   local agent_route_summary_file
+  local mcp_first_call_artifact_url
+  local mcp_first_call_summary_file
 
   while [ "$#" -gt 0 ]; do
     case "$1" in
@@ -360,6 +396,13 @@ main() {
           usage
         fi
         AGENT_ROUTE_ARTIFACT_NAME="$1"
+        ;;
+      --mcp-first-call-artifact-name)
+        shift
+        if [ "$#" -eq 0 ]; then
+          usage
+        fi
+        MCP_FIRST_CALL_ARTIFACT_NAME="$1"
         ;;
       --json-output)
         shift
@@ -430,9 +473,11 @@ main() {
   benchmark_artifact_url="$(resolve_artifact_url "$repo_name" "$RUN_ID" "$ARTIFACT_NAME")"
   context_pack_quality_artifact_url="$(resolve_artifact_url "$repo_name" "$RUN_ID" "$CONTEXT_PACK_QUALITY_ARTIFACT_NAME")"
   agent_route_artifact_url="$(resolve_artifact_url "$repo_name" "$RUN_ID" "$AGENT_ROUTE_ARTIFACT_NAME")"
+  mcp_first_call_artifact_url="$(resolve_artifact_url "$repo_name" "$RUN_ID" "$MCP_FIRST_CALL_ARTIFACT_NAME")"
   benchmark_report_file="$(validate_benchmark_artifact "$RUN_ID")"
   context_pack_quality_summary_file="$(validate_context_pack_quality_artifact "$RUN_ID")"
   agent_route_summary_file="$(validate_agent_route_artifact "$RUN_ID")"
+  mcp_first_call_summary_file="$(validate_mcp_first_call_artifact "$RUN_ID")"
 
   echo "release evidence summary"
   echo "tag: $TAG_NAME"
@@ -449,6 +494,9 @@ main() {
   echo "agent_route_artifact: $AGENT_ROUTE_ARTIFACT_NAME"
   echo "agent_route_artifact_url: $agent_route_artifact_url"
   echo "agent_route_summary: $agent_route_summary_file"
+  echo "mcp_first_call_artifact: $MCP_FIRST_CALL_ARTIFACT_NAME"
+  echo "mcp_first_call_artifact_url: $mcp_first_call_artifact_url"
+  echo "mcp_first_call_summary: $mcp_first_call_summary_file"
   echo
   echo "release_notes_block:"
   echo "## $TAG_NAME release evidence"
@@ -461,6 +509,8 @@ main() {
   echo "- Context-pack quality summary: \`$context_pack_quality_summary_file\`"
   echo "- Agent-route artifact: [$AGENT_ROUTE_ARTIFACT_NAME]($agent_route_artifact_url)"
   echo "- Agent-route summary: \`$agent_route_summary_file\`"
+  echo "- MCP first-call artifact: [$MCP_FIRST_CALL_ARTIFACT_NAME]($mcp_first_call_artifact_url)"
+  echo "- MCP first-call summary: \`$mcp_first_call_summary_file\`"
   printf "%s\n" "$metadata_summary" | sed 's/^/- /'
 
   if [ -n "$JSON_OUTPUT_FILE" ]; then
@@ -474,7 +524,9 @@ main() {
       "$context_pack_quality_artifact_url" \
       "$context_pack_quality_summary_file" \
       "$agent_route_artifact_url" \
-      "$agent_route_summary_file"
+      "$agent_route_summary_file" \
+      "$mcp_first_call_artifact_url" \
+      "$mcp_first_call_summary_file"
   fi
 }
 

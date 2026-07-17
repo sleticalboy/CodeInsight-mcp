@@ -281,6 +281,10 @@ The context-pack quality summary should show the scenario table and a
 The agent-route summary should show the route line, context-pack metrics,
 impact metrics, and a `codeinsight-agent-route-smoke` artifact link.
 
+The MCP first-call summary should show selected files, execution plan actions,
+suggested tool execution, impact status, and a `codeinsight-mcp-first-call`
+artifact link.
+
 Use the artifacts when you need the full Markdown report or JSON summary rather
 than the summary excerpt:
 
@@ -288,6 +292,7 @@ than the summary excerpt:
 scripts/benchmark-artifact-smoke.sh <ci-run-id>
 scripts/context-pack-quality-artifact-smoke.sh <ci-run-id>
 scripts/agent-route-artifact-smoke.sh <ci-run-id>
+scripts/mcp-first-call-artifact-smoke.sh <ci-run-id>
 ```
 
 Treat the CI subset as a quick regression signal only. The checked-in smoke and

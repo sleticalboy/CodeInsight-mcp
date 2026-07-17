@@ -309,12 +309,18 @@ main() {
   require_pattern docs/release-readiness.md \
     'scripts/benchmark-artifact-smoke\.sh <ci-run-id>' \
     "release readiness benchmark artifact download"
+  require_pattern docs/release-readiness.md \
+    'scripts/mcp-first-call-artifact-smoke\.sh <ci-run-id>' \
+    "release readiness MCP first-call artifact download"
   require_pattern docs/maintenance-commands.md \
     'scripts/benchmark-artifact-smoke\.sh <ci-run-id>' \
     "maintenance benchmark artifact download"
   require_pattern docs/maintenance-commands.md \
     'scripts/context-pack-quality-artifact-smoke\.sh <ci-run-id>' \
     "maintenance context-pack quality artifact download"
+  require_pattern docs/maintenance-commands.md \
+    'scripts/mcp-first-call-artifact-smoke\.sh <ci-run-id>' \
+    "maintenance MCP first-call artifact download"
   require_pattern docs/maintenance-commands.md \
     'scripts/release-evidence-summary-artifact-smoke\.sh --repo sleticalboy/CodeInsight-mcp <ci-run-id>' \
     "maintenance release evidence summary artifact smoke command"
@@ -402,6 +408,9 @@ main() {
   require_pattern docs/maintainer-checklist.md \
     'scripts/context-pack-quality-artifact-smoke\.sh <ci-run-id>' \
     "maintainer context-pack quality artifact smoke command"
+  require_pattern docs/maintainer-checklist.md \
+    'scripts/mcp-first-call-artifact-smoke\.sh <ci-run-id>' \
+    "maintainer MCP first-call artifact smoke command"
   require_pattern scripts/context-pack-quality-step-summary-smoke.sh \
     'codeinsight-context-pack-quality' \
     "context-pack quality step summary smoke artifact"
@@ -414,6 +423,15 @@ main() {
   require_pattern scripts/context-pack-quality-artifact-smoke.sh \
     'omitted_candidates_available' \
     "context-pack quality artifact metric validation"
+  require_pattern scripts/mcp-first-call-artifact-smoke.sh \
+    'gh run download "\$RUN_ID"' \
+    "MCP first-call artifact gh download command"
+  require_pattern scripts/mcp-first-call-artifact-smoke.sh \
+    '\-\-latest-success BRANCH' \
+    "MCP first-call artifact latest successful run option"
+  require_pattern scripts/mcp-first-call-artifact-smoke.sh \
+    'suggested_tool_executed == true' \
+    "MCP first-call artifact suggested tool validation"
   require_pattern docs/release-commands.md \
     'scripts/release-pretag-check\.sh main' \
     "release commands benchmark artifact gate"
@@ -435,6 +453,9 @@ main() {
   require_pattern docs/release-commands.md \
     'release-evidence/vX\.Y\.Z\.md' \
     "release commands evidence archive path"
+  require_pattern docs/release-commands.md \
+    'codeinsight-mcp-first-call' \
+    "release commands MCP first-call evidence artifact"
   require_pattern docs/release-commands.md \
     'machine-readable JSON' \
     "release commands machine-readable evidence JSON"
@@ -538,6 +559,9 @@ main() {
     'verify-pretag-ci' \
     "release runbook tag pretag workflow gate"
   require_pattern docs/release-runbook.md \
+    'codeinsight-mcp-first-call' \
+    "release runbook MCP first-call artifact"
+  require_pattern docs/release-runbook.md \
     'Cancelled, failed, or in-progress' \
     "release runbook cancelled CI evidence guard"
   require_pattern docs/release-runbook.md \
@@ -552,6 +576,9 @@ main() {
   require_pattern docs/release-runbook.md \
     'artifact_gate_benchmark' \
     "release runbook pretag benchmark evidence summary"
+  require_pattern docs/release-runbook.md \
+    'artifact_gate_mcp_first_call' \
+    "release runbook pretag MCP first-call evidence summary"
   require_pattern scripts/release-pretag-check.sh \
     'gh run watch "\$RUN_ID".*--exit-status' \
     "release pretag CI watch"
@@ -565,11 +592,17 @@ main() {
     'artifact_gate_agent_route: passed' \
     "release pretag agent-route gate summary"
   require_pattern scripts/release-pretag-check.sh \
+    'artifact_gate_mcp_first_call: passed' \
+    "release pretag MCP first-call gate summary"
+  require_pattern scripts/release-pretag-check.sh \
     'BENCHMARK_ARTIFACT_SMOKE_SCRIPT' \
     "release pretag artifact smoke hook"
   require_pattern scripts/release-pretag-check.sh \
     'CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT' \
     "release pretag context-pack quality artifact smoke hook"
+  require_pattern scripts/release-pretag-check.sh \
+    'MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT' \
+    "release pretag MCP first-call artifact smoke hook"
   require_pattern scripts/release-tag-preflight.sh \
     'RELEASE_METADATA_SUMMARY_SCRIPT' \
     "release tag preflight metadata summary hook"
@@ -579,6 +612,9 @@ main() {
   require_pattern scripts/release-evidence-summary.sh \
     'context_pack_quality_artifact_url' \
     "release evidence context-pack quality artifact URL"
+  require_pattern scripts/release-evidence-summary.sh \
+    'mcp_first_call_artifact_url' \
+    "release evidence MCP first-call artifact URL"
   require_pattern scripts/archive-release-evidence.sh \
     'release-evidence/\$TAG_NAME\.md' \
     "archive release evidence default path"
@@ -589,6 +625,9 @@ main() {
     'context_pack_quality_artifact_url' \
     "release evidence summary artifact smoke context-pack quality URL"
   require_pattern scripts/release-evidence-summary-artifact-smoke.sh \
+    'mcp_first_call_artifact_url' \
+    "release evidence summary artifact smoke MCP first-call URL"
+  require_pattern scripts/release-evidence-summary-artifact-smoke.sh \
     '\-\-run-id "\$RUN_ID"' \
     "release evidence summary artifact smoke fixed run ID validation"
   require_pattern scripts/release-evidence-summary-artifact-smoke.sh \
@@ -597,6 +636,9 @@ main() {
   require_pattern scripts/release-dry-run.sh \
     'CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT' \
     "release dry run context-pack quality artifact hook"
+  require_pattern scripts/release-dry-run.sh \
+    'CODEINSIGHT_MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT' \
+    "release dry run MCP first-call artifact hook"
   require_pattern docs/maintainer-checklist.md \
     'README benchmark snapshot, \[Demo script\]\(demo-script\.md\)' \
     "maintainer benchmark evidence consistency"
@@ -612,6 +654,9 @@ main() {
   require_pattern docs/maintainer-checklist.md \
     'scripts/benchmark-artifact-smoke\.sh <ci-run-id>' \
     "maintainer benchmark artifact smoke command"
+  require_pattern docs/status.md \
+    'MCP first-call onboarding' \
+    "status MCP first-call evidence artifact"
   require_pattern scripts/benchmark-artifact-smoke.sh \
     'gh run download "\$RUN_ID"' \
     "benchmark artifact gh download command"

@@ -106,8 +106,9 @@ scripts/archive-release-evidence.sh --repo sleticalboy/CodeInsight-mcp --json-ou
 ```
 
 This resolves the successful `CI` run for the target commit, validates the
-`codeinsight-benchmark-subset`, `codeinsight-context-pack-quality`, and
-`codeinsight-agent-route-smoke` artifacts, and writes
+`codeinsight-benchmark-subset`, `codeinsight-context-pack-quality`,
+`codeinsight-agent-route-smoke`, and `codeinsight-mcp-first-call` artifacts,
+and writes
 `release-evidence/vX.Y.Z.md` with the target SHA, CI run URL, artifact URLs,
 local report paths, and release metadata summary. Use `--json-output PATH` to
 write the same evidence as machine-readable JSON, `--output PATH` for a custom

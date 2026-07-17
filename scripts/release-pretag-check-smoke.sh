@@ -95,10 +95,23 @@ test "$3" = "123456"
 EOF
   chmod +x "$TEMP_DIR/agent-route-artifact-smoke"
 
+  cat >"$TEMP_DIR/mcp-first-call-artifact-smoke" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+log="${CODEINSIGHT_PRETAG_SMOKE_LOG:?}"
+printf 'mcp-first-call-artifact %s\n' "$*" >>"$log"
+test "$1" = "--repo"
+test "$2" = "sleticalboy/CodeInsight-mcp"
+test "$3" = "123456"
+EOF
+  chmod +x "$TEMP_DIR/mcp-first-call-artifact-smoke"
+
   CODEINSIGHT_PRETAG_SMOKE_LOG="$TEMP_DIR/calls.log" \
     CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/benchmark-artifact-smoke" \
     CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/context-pack-quality-artifact-smoke" \
     CODEINSIGHT_AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/agent-route-artifact-smoke" \
+    CODEINSIGHT_MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/mcp-first-call-artifact-smoke" \
     PATH="$TEMP_DIR/bin:$PATH" \
     "$ROOT_DIR/scripts/release-pretag-check.sh" --repo sleticalboy/CodeInsight-mcp main >"$TEMP_DIR/latest.out"
 
@@ -106,6 +119,7 @@ EOF
     CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/benchmark-artifact-smoke" \
     CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/context-pack-quality-artifact-smoke" \
     CODEINSIGHT_AGENT_ROUTE_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/agent-route-artifact-smoke" \
+    CODEINSIGHT_MCP_FIRST_CALL_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/mcp-first-call-artifact-smoke" \
     PATH="$TEMP_DIR/bin:$PATH" \
     "$ROOT_DIR/scripts/release-pretag-check.sh" --repo sleticalboy/CodeInsight-mcp --head-sha abc123 main >"$TEMP_DIR/head-sha.out"
 
@@ -123,6 +137,8 @@ EOF
     fail "missing context-pack quality artifact smoke"
   grep -Fq 'agent-route-artifact --repo sleticalboy/CodeInsight-mcp 123456' "$TEMP_DIR/calls.log" ||
     fail "missing agent-route artifact smoke"
+  grep -Fq 'mcp-first-call-artifact --repo sleticalboy/CodeInsight-mcp 123456' "$TEMP_DIR/calls.log" ||
+    fail "missing MCP first-call artifact smoke"
   grep -Fq 'release pretag evidence' "$TEMP_DIR/latest.out" ||
     fail "missing latest evidence heading"
   grep -Fq 'branch: main' "$TEMP_DIR/latest.out" ||
@@ -137,6 +153,8 @@ EOF
     fail "missing context-pack quality gate summary"
   grep -Fq 'artifact_gate_agent_route: passed' "$TEMP_DIR/latest.out" ||
     fail "missing agent-route gate summary"
+  grep -Fq 'artifact_gate_mcp_first_call: passed' "$TEMP_DIR/latest.out" ||
+    fail "missing MCP first-call gate summary"
   grep -Fq 'head_sha: abc123' "$TEMP_DIR/head-sha.out" ||
     fail "missing supplied head SHA summary"
 

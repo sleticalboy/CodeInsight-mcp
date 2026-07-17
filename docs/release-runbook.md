@@ -119,17 +119,18 @@ scripts/release-pretag-check.sh main
 ```
 
 This waits for the latest `CI` run on `main`, downloads
-`codeinsight-benchmark-subset`, `codeinsight-context-pack-quality`, and
-`codeinsight-agent-route-smoke`, validates those artifacts, and confirms the
-benchmark, context-pack quality, and agent-route evidence is readable outside
-the GitHub Actions UI before tagging.
+`codeinsight-benchmark-subset`, `codeinsight-context-pack-quality`,
+`codeinsight-agent-route-smoke`, and `codeinsight-mcp-first-call`, validates
+those artifacts, and confirms the benchmark, context-pack quality,
+agent-route, and MCP first-call evidence is readable outside the GitHub Actions
+UI before tagging.
 When a tag target is checked by `--head-sha`, the pretag gate resolves only a
 successful `CI` run for that exact commit. Cancelled, failed, or in-progress
 runs cannot satisfy release evidence, even if they share the branch.
 After the artifact checks pass, `release-pretag-check.sh` prints a
 `release pretag evidence` block with the resolved branch, CI run, head SHA, and
 `artifact_gate_benchmark`, `artifact_gate_context_pack_quality`, and
-`artifact_gate_agent_route` statuses.
+`artifact_gate_agent_route`, and `artifact_gate_mcp_first_call` statuses.
 
 Dry-run the tag preflight without creating or pushing a tag:
 
@@ -147,7 +148,8 @@ preflight output prints `metadata_cargo`, `metadata_install`, and `metadata_chan
 so the prepared versions are visible before tagging. It also includes and
 validates the `release pretag evidence` block from `release-pretag-check.sh`,
 including `ci_run`, `head_sha`, `artifact_gate_benchmark`,
-`artifact_gate_context_pack_quality`, and `artifact_gate_agent_route`.
+`artifact_gate_context_pack_quality`, `artifact_gate_agent_route`, and
+`artifact_gate_mcp_first_call`.
 
 Archive the release evidence block:
 
@@ -156,12 +158,13 @@ scripts/archive-release-evidence.sh --repo sleticalboy/CodeInsight-mcp --json-ou
 ```
 
 This resolves the successful `CI` run for the target SHA, validates the
-`codeinsight-benchmark-subset`, `codeinsight-context-pack-quality`, and
-`codeinsight-agent-route-smoke` artifacts, and prints a Markdown block with the
-commit, workflow run, artifact links, local report paths, and release metadata
-to `release-evidence/vX.Y.Z.md`. Use `--output PATH` for a custom archive path
-or `--force` to intentionally overwrite an existing evidence file. Use
-`--json-output PATH` to also write a machine-readable evidence summary.
+`codeinsight-benchmark-subset`, `codeinsight-context-pack-quality`,
+`codeinsight-agent-route-smoke`, and `codeinsight-mcp-first-call` artifacts,
+and prints a Markdown block with the commit, workflow run, artifact links,
+local report paths, and release metadata to `release-evidence/vX.Y.Z.md`. Use
+`--output PATH` for a custom archive path or `--force` to intentionally
+overwrite an existing evidence file. Use `--json-output PATH` to also write a
+machine-readable evidence summary.
 
 ## Publish A Tagged Release
 
@@ -180,10 +183,10 @@ The tag triggers:
 The tagged `Release Build` workflow first runs `verify-pretag-ci`, which checks
 that the tag target SHA has a successful `CI` run on `main` and validates that
 same run's `codeinsight-benchmark-subset`,
-`codeinsight-context-pack-quality`, and `codeinsight-agent-route-smoke`
-artifacts before any release assets are built. If branch concurrency cancelled
-an older run, that cancelled run is ignored because the gate binds evidence to a
-successful run for the tag target SHA.
+`codeinsight-context-pack-quality`, `codeinsight-agent-route-smoke`, and
+`codeinsight-mcp-first-call` artifacts before any release assets are built. If
+branch concurrency cancelled an older run, that cancelled run is ignored
+because the gate binds evidence to a successful run for the tag target SHA.
 
 Watch the release workflows:
 

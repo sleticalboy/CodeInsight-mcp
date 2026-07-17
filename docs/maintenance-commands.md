@@ -166,6 +166,12 @@ To validate the one-call agent-route artifact from a completed `CI` run:
 scripts/agent-route-artifact-smoke.sh <ci-run-id>
 ```
 
+To validate the first MCP call artifact from a completed `CI` run:
+
+```bash
+scripts/mcp-first-call-artifact-smoke.sh <ci-run-id>
+```
+
 To validate the full release evidence summary against a completed `CI` run,
 including artifact URLs and downloaded local report paths:
 

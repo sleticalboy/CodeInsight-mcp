@@ -110,6 +110,8 @@ main() {
   local evidence_context_pack_quality_url=""
   local evidence_agent_route_name="codeinsight-agent-route-smoke"
   local evidence_agent_route_url=""
+  local evidence_mcp_first_call_name="codeinsight-mcp-first-call"
+  local evidence_mcp_first_call_url=""
   local evidence_display_file=""
 
   while [ "$#" -gt 0 ]; do
@@ -183,6 +185,8 @@ main() {
     evidence_context_pack_quality_url="$(require_evidence_json_field '.artifacts.context_pack_quality.url' "context-pack quality artifact URL")"
     evidence_agent_route_name="$(require_evidence_json_field '.artifacts.agent_route.name' "agent-route artifact name")"
     evidence_agent_route_url="$(require_evidence_json_field '.artifacts.agent_route.url' "agent-route artifact URL")"
+    evidence_mcp_first_call_name="$(require_evidence_json_field '.artifacts.mcp_first_call.name' "MCP first-call artifact name")"
+    evidence_mcp_first_call_url="$(require_evidence_json_field '.artifacts.mcp_first_call.url' "MCP first-call artifact URL")"
   elif [ -n "$EVIDENCE_FILE" ]; then
     if [ ! -f "$EVIDENCE_FILE" ]; then
       echo "release evidence file not found: $EVIDENCE_FILE" >&2
@@ -197,6 +201,7 @@ main() {
     evidence_benchmark_url="$(require_evidence_field benchmark_artifact_url "benchmark artifact URL")"
     evidence_context_pack_quality_url="$(require_evidence_field context_pack_quality_artifact_url "context-pack quality artifact URL")"
     evidence_agent_route_url="$(require_evidence_field agent_route_artifact_url "agent-route artifact URL")"
+    evidence_mcp_first_call_url="$(require_evidence_field mcp_first_call_artifact_url "MCP first-call artifact URL")"
   fi
 
   jq -e '
@@ -254,6 +259,7 @@ main() {
       printf '  - Benchmark artifact: [%s](%s)\n' "$evidence_benchmark_name" "$evidence_benchmark_url"
       printf '  - Context-pack quality artifact: [%s](%s)\n' "$evidence_context_pack_quality_name" "$evidence_context_pack_quality_url"
       printf '  - Agent-route artifact: [%s](%s)\n' "$evidence_agent_route_name" "$evidence_agent_route_url"
+      printf '  - MCP first-call artifact: [%s](%s)\n' "$evidence_mcp_first_call_name" "$evidence_mcp_first_call_url"
     fi
     echo "<!-- release-verification-summary:end -->"
   } >"$BLOCK_FILE"
