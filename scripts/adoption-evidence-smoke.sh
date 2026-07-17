@@ -173,6 +173,10 @@ EOF
     fail "missing selected context line"
   grep -Fq -- '- MCP suggested tool executed: `true`' "$TEMP_DIR/evidence/adoption-evidence.md" ||
     fail "missing MCP suggested tool execution line"
+  grep -Fq -- "- Local evidence stdout: \`$TEMP_DIR/evidence/local-repo-evidence.out\`" "$TEMP_DIR/evidence/adoption-evidence.md" ||
+    fail "missing local evidence stdout artifact"
+  grep -Fq -- "- MCP first-call stderr: \`$TEMP_DIR/evidence/mcp-first-call.err\`" "$TEMP_DIR/evidence/adoption-evidence.md" ||
+    fail "missing MCP stderr artifact"
 
   jq -e \
     '.status == "pass"
@@ -181,9 +185,20 @@ EOF
       and .local_evidence.metrics.line_reduction == "90.0%"
       and .mcp_first_call.suggested_tool_executed == true
       and .artifacts.markdown == "'"$TEMP_DIR"'/evidence/adoption-evidence.md"
-      and .artifacts.mcp_first_call_json == "'"$TEMP_DIR"'/evidence/mcp-first-call.json"' \
+      and .artifacts.mcp_first_call_json == "'"$TEMP_DIR"'/evidence/mcp-first-call.json"
+      and .artifacts.local_stdout == "'"$TEMP_DIR"'/evidence/local-repo-evidence.out"
+      and .artifacts.local_stderr == "'"$TEMP_DIR"'/evidence/local-repo-evidence.err"
+      and .artifacts.mcp_stdout == "'"$TEMP_DIR"'/evidence/mcp-first-call.out"
+      and .artifacts.mcp_stderr == "'"$TEMP_DIR"'/evidence/mcp-first-call.err"
+      and .artifacts.artifact_stderr == "'"$TEMP_DIR"'/evidence/artifact-write.err"' \
     "$TEMP_DIR/evidence/summary.json" >/dev/null ||
     fail "aggregate summary JSON does not match expected contract"
+  test -f "$TEMP_DIR/evidence/local-repo-evidence.out" ||
+    fail "local evidence stdout file is missing"
+  test -f "$TEMP_DIR/evidence/mcp-first-call.err" ||
+    fail "MCP first-call stderr file is missing"
+  test -f "$TEMP_DIR/evidence/artifact-write.err" ||
+    fail "artifact write stderr file is missing"
 
   CODEINSIGHT_LOCAL_REPO_EVIDENCE_SCRIPT="$TEMP_DIR/local-repo-evidence" \
   CODEINSIGHT_MCP_FIRST_CALL_SMOKE_SCRIPT="$TEMP_DIR/mcp-first-call-smoke" \

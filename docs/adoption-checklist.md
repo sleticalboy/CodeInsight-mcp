@@ -74,6 +74,9 @@ Pass criteria:
 - `adoption-evidence.sh` writes one folder containing local first-read evidence,
   raw `agent_route` JSON, MCP first-call JSON, and aggregate Markdown/JSON
   summaries that prove the CLI route and MCP route both work.
+- The aggregate Markdown and JSON summaries list diagnostic stdout/stderr files
+  for local evidence generation, MCP first-call verification, and artifact
+  writing.
 - `--print-snippet` prints the same pass/fail evidence shape to stdout so it
   can be copied into an issue, PR, README, or evaluation note without opening
   the artifact files.

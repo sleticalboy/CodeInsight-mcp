@@ -165,6 +165,11 @@ write_markdown_summary() {
     echo "- Raw agent_route JSON: \`$OUTPUT_DIR/agent-route.json\`"
     echo "- MCP first-call summary JSON: \`$OUTPUT_DIR/mcp-first-call.json\`"
     echo "- Aggregate summary JSON: \`$OUTPUT_DIR/summary.json\`"
+    echo "- Local evidence stdout: \`$OUTPUT_DIR/local-repo-evidence.out\`"
+    echo "- Local evidence stderr: \`$OUTPUT_DIR/local-repo-evidence.err\`"
+    echo "- MCP first-call stdout: \`$OUTPUT_DIR/mcp-first-call.out\`"
+    echo "- MCP first-call stderr: \`$OUTPUT_DIR/mcp-first-call.err\`"
+    echo "- Artifact write stderr: \`$OUTPUT_DIR/artifact-write.err\`"
     echo
     echo "## Adoption Policy"
     echo
@@ -198,7 +203,12 @@ write_summary_json() {
         local_markdown: ($output_dir + "/local-repo-evidence.md"),
         local_summary_json: ($output_dir + "/local-repo-evidence.json"),
         raw_agent_route_json: ($output_dir + "/agent-route.json"),
-        mcp_first_call_json: ($output_dir + "/mcp-first-call.json")
+        mcp_first_call_json: ($output_dir + "/mcp-first-call.json"),
+        local_stdout: ($output_dir + "/local-repo-evidence.out"),
+        local_stderr: ($output_dir + "/local-repo-evidence.err"),
+        mcp_stdout: ($output_dir + "/mcp-first-call.out"),
+        mcp_stderr: ($output_dir + "/mcp-first-call.err"),
+        artifact_stderr: ($output_dir + "/artifact-write.err")
       }
     }' >"$target"
 
