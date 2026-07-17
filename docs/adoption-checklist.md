@@ -187,6 +187,8 @@ Pass criteria:
 - `budget.candidate_files` is greater than or equal to
   `budget.selected_files`.
 - `reading_plan[]` is present.
+- `reading_plan[0].question` is present and states the local reading
+  checklist for the first selected file.
 - `reading_plan[0].reason` is present and explains the question, deeper
   evidence tool, and selection rationale.
 - `reading_plan[0].selection_reason` is present and explains why the first file

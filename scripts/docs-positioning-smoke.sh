@@ -187,6 +187,12 @@ main() {
     '"route_tools": \[' \
     "quickstart MCP first-call route tools"
   require_pattern docs/quickstart.md \
+    '"reading_plan": \[' \
+    "quickstart MCP first-call reading plan"
+  require_pattern docs/quickstart.md \
+    '"question": "What entrypoints' \
+    "quickstart MCP first-call reading question"
+  require_pattern docs/quickstart.md \
     '"suggested_tool_executed": true' \
     "quickstart MCP first-call suggested tool execution"
   require_pattern docs/quickstart.md \
@@ -205,6 +211,9 @@ main() {
     'Call agent_route with root, task, and token_budget' \
     "quickstart agent_route policy"
   require_pattern docs/quickstart.md \
+    'Treat reading_plan\.question as the local checklist' \
+    "quickstart reading question policy"
+  require_pattern docs/quickstart.md \
     '\[Adoption checklist\]\(adoption-checklist\.md\)' \
     "adoption checklist link"
   require_pattern docs/quickstart.md \
@@ -213,6 +222,9 @@ main() {
   require_pattern docs/quickstart.md \
     'CLI `agent-route`, MCP stdio, and MCP `agent_route`' \
     "quickstart installed agent_route coverage"
+  require_pattern docs/quickstart.md \
+    '`reading_plan\.question`, `reading_plan\.reason`, and `selection_reason`' \
+    "quickstart installed reading question coverage"
 
   require_pattern docs/cli-usage.md \
     '\[First-read workflow\]\(first-read-workflow\.md\)' \
@@ -350,6 +362,9 @@ main() {
   require_pattern docs/adoption-checklist.md \
     '`reading_plan\[0\]\.reason` is present' \
     "adoption context-pack reason gate"
+  require_pattern docs/adoption-checklist.md \
+    '`reading_plan\[0\]\.question` is present' \
+    "adoption context-pack question gate"
   require_pattern docs/adoption-checklist.md \
     '`reading_plan\[0\]\.selection_reason` is present' \
     "adoption context-pack selection reason gate"

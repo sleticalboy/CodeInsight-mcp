@@ -133,9 +133,11 @@ Minimum policy:
 Before broad repository reading, use CodeInsight:
 1. Call agent_route with root, task, and token_budget for the default first read.
 2. Read context_pack.files in reading_plan order.
-3. Use continuation_summary only after selected context is consumed.
-4. Use focused follow-up tools only when the selected context is insufficient.
-5. For custom routing, call index_project, project_overview, context_pack, and
+3. Treat reading_plan.question as the local checklist and reading_plan.reason
+   as the current-step instruction.
+4. Use continuation_summary only after selected context is consumed.
+5. Use focused follow-up tools only when the selected context is insufficient.
+6. For custom routing, call index_project, project_overview, context_pack, and
    impact_analysis directly.
 ```
 
@@ -183,6 +185,13 @@ Expected output shape:
     "impact_analysis"
   ],
   "selected_files": ["src/main.ts", "src/auth.ts"],
+  "reading_plan": [
+    {
+      "file": "src/main.ts",
+      "question": "What entrypoints, exported symbols, or setup code define the main flow here?",
+      "suggested_tool": "file_outline"
+    }
+  ],
   "execution_plan_actions": [
     "read_selected_context",
     "use_current_reading_step_suggested_tool",
@@ -232,9 +241,9 @@ The installed quickstart smoke prints `installed quickstart smoke passed` after
 the installed binary completes `version`, `index`, `overview`, `context-pack`,
 CLI `agent-route`, MCP stdio, and MCP `agent_route` calls against a temporary
 project. It also checks `agent_route.execution_plan[]`,
-`reading_plan.reason`, and `selection_reason` in both CLI and MCP first-read
-paths. This is the same installed-binary adoption gate referenced by the
-[Adoption checklist](adoption-checklist.md).
+`reading_plan.question`, `reading_plan.reason`, and `selection_reason` in both
+CLI and MCP first-read paths. This is the same installed-binary adoption gate
+referenced by the [Adoption checklist](adoption-checklist.md).
 
 ## 7. First Agent Task
 
