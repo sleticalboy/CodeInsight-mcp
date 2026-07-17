@@ -148,6 +148,17 @@ CODEINSIGHT_BENCH_PROFILE=large scripts/benchmark-smoke.sh
 For subset runs and guardrail details, see
 [Benchmark methodology](docs/benchmark-methodology.md).
 
+Run the same benchmark shape against your own repository:
+
+```bash
+CODEINSIGHT_BENCH_PROFILE=local \
+  CODEINSIGHT_BENCH_LOCAL_ROOT=/path/to/repo \
+  CODEINSIGHT_BENCH_LOCAL_CONTEXT_FILE=src/main.ts \
+  CODEINSIGHT_BENCH_LOCAL_TASK="understand the app entrypoint" \
+  CODEINSIGHT_BENCH_OUTPUT=/tmp/codeinsight-local-benchmark.md \
+  scripts/benchmark-smoke.sh
+```
+
 Key docs:
 
 - [Quickstart](docs/quickstart.md)

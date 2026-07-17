@@ -151,6 +151,7 @@ Use the narrowest check that matches where you are in adoption:
 | You want a copyable first MCP call summary | `scripts/mcp-first-call-smoke.sh` | The stdio server accepts `agent_route` and returns `route_tools`, `selected_files`, `execution_plan_actions`, `suggested_tool`, and `impact_status` as JSON. |
 | You are wiring an MCP client from this checkout | `scripts/mcp-stdio-smoke.sh` | The stdio server lists tools, runs `agent_route`, and executes `agent_route.execution_plan[].suggested_tool` through MCP. |
 | You installed `codeinsight` and want an adoption gate | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh` | The installed binary can run CLI and MCP first-read routes against a temporary project outside this checkout. |
+| You want evidence for your own repository | `CODEINSIGHT_BENCH_PROFILE=local CODEINSIGHT_BENCH_LOCAL_ROOT=/path/to/repo CODEINSIGHT_BENCH_LOCAL_CONTEXT_FILE=src/main.ts CODEINSIGHT_BENCH_OUTPUT=/tmp/codeinsight-local-benchmark.md scripts/benchmark-smoke.sh` | A shareable benchmark report with routing, compression, reading-plan, and guardrail evidence for one local checkout. |
 
 ## 6. Smoke Test MCP
 

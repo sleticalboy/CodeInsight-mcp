@@ -107,6 +107,15 @@ main() {
     'CODEINSIGHT_BENCH_PROFILE=large scripts/benchmark-smoke\.sh' \
     "large benchmark refresh command"
   require_pattern README.md \
+    'CODEINSIGHT_BENCH_LOCAL_ROOT=/path/to/repo' \
+    "README local benchmark command"
+  require_pattern docs/quickstart.md \
+    'You want evidence for your own repository' \
+    "quickstart local benchmark row"
+  require_pattern docs/README.md \
+    'Local repository benchmark' \
+    "docs index local benchmark validation row"
+  require_pattern README.md \
     'route `context_pack` first for 4/4 repositories' \
     "context_pack benchmark claim"
   require_pattern README.md \

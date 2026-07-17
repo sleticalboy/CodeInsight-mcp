@@ -59,6 +59,7 @@ Choose the check by adoption stage:
 | Copyable MCP first-call JSON | `scripts/mcp-first-call-smoke.sh` |
 | MCP client wiring | `scripts/mcp-stdio-smoke.sh` |
 | Installed-binary adoption gate | `scripts/installed-quickstart-smoke.sh` |
+| Local repository benchmark | `CODEINSIGHT_BENCH_PROFILE=local ... scripts/benchmark-smoke.sh` |
 
 - [Maintenance commands](maintenance-commands.md)
 - Two-minute demo: `scripts/two-minute-demo.sh`
