@@ -30,6 +30,13 @@ Against another repository:
 CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/two-minute-demo.sh
 ```
 
+When you need the raw route payload for an issue, README recording, benchmark
+evidence, or client integration debugging:
+
+```bash
+CODEINSIGHT_DEMO_SAVE_JSON=/tmp/codeinsight-agent-route.json scripts/two-minute-demo.sh
+```
+
 For machine-readable CI validation, `scripts/two-minute-demo.sh` runs the
 `agent-route` CLI command and renders the first-read metrics. Use
 `scripts/agent-router-demo.sh` when you need lower-level metrics, reading

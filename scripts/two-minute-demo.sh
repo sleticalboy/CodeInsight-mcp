@@ -6,6 +6,7 @@ DEMO_ROOT="${CODEINSIGHT_DEMO_ROOT:-$ROOT_DIR}"
 DEMO_TASK="${CODEINSIGHT_DEMO_TASK:-understand agent context routing}"
 TOKEN_BUDGET="${CODEINSIGHT_DEMO_TOKEN_BUDGET:-6000}"
 FORCE_INDEX="${CODEINSIGHT_DEMO_FORCE_INDEX:-1}"
+SAVE_JSON="${CODEINSIGHT_DEMO_SAVE_JSON:-}"
 CODEINSIGHT_BIN="${CODEINSIGHT_BIN:-}"
 TEMP_DIR=""
 
@@ -138,6 +139,11 @@ main() {
   require_json_string "$route_json" '.execution_plan[0].action' "first execution-plan action"
   require_json_string "$route_json" '.execution_plan[1].suggested_tool.tool' "first execution-plan suggested tool"
 
+  if [ -n "$SAVE_JSON" ]; then
+    mkdir -p "$(dirname "$SAVE_JSON")"
+    cp "$route_json" "$SAVE_JSON"
+  fi
+
   local total_lines selected_lines reduction first_entrypoint first_context_file
   local entrypoints recommended_tools selected_files selected_ranges reading_plan_steps
   local execution_plan_steps first_execution_action second_execution_action
@@ -219,6 +225,11 @@ main() {
   echo
   echo "Run against another repository:"
   echo "  CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/two-minute-demo.sh"
+  echo "Save the raw agent_route JSON:"
+  echo "  CODEINSIGHT_DEMO_SAVE_JSON=/tmp/codeinsight-agent-route.json scripts/two-minute-demo.sh"
+  if [ -n "$SAVE_JSON" ]; then
+    echo "raw_agent_route_json: $SAVE_JSON"
+  fi
   echo
   echo "[Evidence summary]"
   echo "agent_route selected ${selected_lines}/${total_lines} source lines (${reduction} reduction) across ${selected_files} files."

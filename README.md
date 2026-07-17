@@ -86,6 +86,13 @@ Run it against another repository:
 CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/two-minute-demo.sh
 ```
 
+Save the raw `agent_route` JSON for issue reports, recordings, benchmark
+evidence, or client integration debugging:
+
+```bash
+CODEINSIGHT_DEMO_SAVE_JSON=/tmp/codeinsight-agent-route.json scripts/two-minute-demo.sh
+```
+
 The demo executes the same product path an MCP client should follow:
 `agent_route`, which runs `index_project -> project_overview -> context_pack ->
 impact_analysis` in one first-read route. It prints index timing, entrypoint and

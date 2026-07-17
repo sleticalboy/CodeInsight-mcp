@@ -136,6 +136,9 @@ main() {
   require_pattern docs/demo-output.md \
     'Call agent_route with root, task, and token_budget for the default first read\.' \
     "agent policy path"
+  require_pattern docs/demo-output.md \
+    'CODEINSIGHT_DEMO_SAVE_JSON=/tmp/codeinsight-agent-route\.json scripts/two-minute-demo\.sh' \
+    "save raw agent route JSON command"
 
   echo "demo output smoke passed"
 }

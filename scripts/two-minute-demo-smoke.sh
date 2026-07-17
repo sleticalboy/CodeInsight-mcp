@@ -161,6 +161,7 @@ EOF
   chmod +x "$TEMP_DIR/codeinsight"
 
   CODEINSIGHT_BIN="$TEMP_DIR/codeinsight" \
+  CODEINSIGHT_DEMO_SAVE_JSON="$TEMP_DIR/agent-route.json" \
     "$ROOT_DIR/scripts/two-minute-demo.sh" >"$TEMP_DIR/output.log"
 
   grep -Fq 'Problem: AI agents waste the first read' "$TEMP_DIR/output.log" ||
@@ -219,6 +220,15 @@ EOF
     fail "missing impact_analysis talk track"
   grep -Fq 'Call agent_route with root, task, and token_budget for the default first read.' "$TEMP_DIR/output.log" ||
     fail "missing agent policy"
+  grep -Fq "raw_agent_route_json: $TEMP_DIR/agent-route.json" "$TEMP_DIR/output.log" ||
+    fail "missing saved JSON path"
+
+  if [ ! -s "$TEMP_DIR/agent-route.json" ]; then
+    fail "saved JSON file is missing"
+  fi
+  jq -e '.route[0].tool == "index_project" and .context_pack.reading_plan[0].file == "src/main.rs"' \
+    "$TEMP_DIR/agent-route.json" >/dev/null ||
+    fail "saved JSON file does not contain the raw agent_route payload"
 
   echo "two-minute demo smoke passed"
 }

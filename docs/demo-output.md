@@ -72,6 +72,8 @@ token_budget: 6000
 
 Run against another repository:
   CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/two-minute-demo.sh
+Save the raw agent_route JSON:
+  CODEINSIGHT_DEMO_SAVE_JSON=/tmp/codeinsight-agent-route.json scripts/two-minute-demo.sh
 
 [Evidence summary]
 agent_route selected 123/28235 source lines (99.6% reduction) across 2 files.
@@ -115,6 +117,9 @@ Run this walkthrough against another repository:
   project introductions.
 - The talk track explains the same path a user should show in a recording.
 - The agent policy matches the MCP client workflow.
+- `CODEINSIGHT_DEMO_SAVE_JSON` can persist the raw `agent_route` payload for
+  issue reports, README recordings, benchmark evidence, or client integration
+  debugging.
 
 Refresh this snapshot after material changes to indexing, project overview,
 context packing, impact analysis, or demo wording.
