@@ -162,6 +162,32 @@ Current benchmark snapshot:
   through `tools/call`, proving the follow-up is usable by clients instead of
   only display metadata.
 
+Adoption evidence snippet for your own repository:
+
+```bash
+scripts/adoption-evidence.sh /path/to/repo \
+  --output-dir /tmp/codeinsight-adoption-evidence
+```
+
+Successful output produces `/tmp/codeinsight-adoption-evidence/adoption-evidence.md`
+with this copyable shape:
+
+```text
+# CodeInsight Adoption Evidence
+
+- Status: `pass`
+- Route: `index_project -> project_overview -> context_pack -> impact_analysis`
+- Selected context: `<selected>/<total>` source lines, `<reduction>` reduction
+- First selected file: `<file>`
+- First reading question: <question>
+- MCP server: `codeinsight`
+- MCP suggested tool executed: `true`
+- MCP impact status: `complete`
+```
+
+Use `summary.json` from the same folder when CI, README automation, or issue
+templates need the same result without parsing Markdown.
+
 Refresh the reports locally:
 
 ```bash

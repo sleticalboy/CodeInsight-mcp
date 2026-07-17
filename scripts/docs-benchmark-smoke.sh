@@ -109,6 +109,18 @@ main() {
   require_pattern README.md \
     'CODEINSIGHT_BENCH_LOCAL_ROOT=/path/to/repo' \
     "README local benchmark command"
+  require_pattern README.md \
+    'Adoption evidence snippet for your own repository:' \
+    "README adoption evidence snippet heading"
+  require_pattern README.md \
+    'scripts/adoption-evidence\.sh /path/to/repo' \
+    "README adoption evidence command"
+  require_pattern README.md \
+    'MCP suggested tool executed: `true`' \
+    "README adoption MCP suggested tool signal"
+  require_pattern README.md \
+    'Use `summary\.json` from the same folder' \
+    "README adoption summary JSON guidance"
   require_pattern docs/quickstart.md \
     'You want evidence for your own repository' \
     "quickstart local benchmark row"
