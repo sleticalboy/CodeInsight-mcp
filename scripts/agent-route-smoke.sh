@@ -149,6 +149,11 @@ write_summary_json() {
       execution_plan_steps: (.execution_plan | length),
       requested_token_budget: .context_pack.budget.requested_token_budget,
       applied_token_budget: .context_pack.budget.applied_token_budget,
+      seed_strategy: (.context_pack.seed_strategy // ""),
+      selected_seed_count: (.context_pack.selected_seeds | length),
+      first_seed_source: (.context_pack.selected_seeds[0].source // ""),
+      first_seed_value: (.context_pack.selected_seeds[0].value // ""),
+      companion_entrypoint: (([.context_pack.selected_seeds[1:][]? | select(.source == "overview_entrypoint") | .value] | first) // ""),
       first_context_file: (.context_pack.files[0].file // ""),
       first_reading_file: (.context_pack.reading_plan[0].file // ""),
       first_execution_action: (.execution_plan[0].action // ""),
@@ -172,6 +177,10 @@ write_summary_json() {
       and .metrics.index_errors == 0
       and .metrics.reading_plan_steps >= 1
       and .metrics.execution_plan_steps == 4
+      and (.metrics.seed_strategy | type == "string" and length > 0)
+      and (.metrics.selected_seed_count | type == "number")
+      and (.metrics.first_seed_source | type == "string")
+      and (.metrics.companion_entrypoint | type == "string")
       and .metrics.first_execution_action == "read_selected_context"
       and .metrics.second_execution_action == "use_current_reading_step_suggested_tool"
       and (.metrics.first_execution_suggested_tool | type == "string" and length > 0)

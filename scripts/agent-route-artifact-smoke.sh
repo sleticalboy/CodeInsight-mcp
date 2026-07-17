@@ -86,7 +86,13 @@ validate_summary_json() {
       and .metrics.execution_plan_steps == 4
       and .metrics.requested_token_budget == 1600
       and .metrics.applied_token_budget == 1600
+      and (.metrics.seed_strategy | type == "string" and length > 0)
+      and (.metrics.selected_seed_count | type == "number" and . >= 1)
+      and (.metrics.first_seed_source | type == "string")
+      and (.metrics.first_seed_value | type == "string")
+      and (.metrics.companion_entrypoint | type == "string")
       and (.metrics.first_context_file | type == "string" and length > 0)
+      and (.metrics.first_reading_file | type == "string" and length > 0)
       and .metrics.first_execution_action == "read_selected_context"
       and .metrics.second_execution_action == "use_current_reading_step_suggested_tool"
       and (.metrics.first_execution_suggested_tool | type == "string" and length > 0)

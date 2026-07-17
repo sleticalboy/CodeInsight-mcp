@@ -86,6 +86,11 @@ cat >"$summary_json" <<JSON
     "estimated_tokens": 180,
     "reading_plan_steps": 1,
     "execution_plan_steps": 4,
+    "seed_strategy": "auto_task_match",
+    "selected_seed_count": 2,
+    "first_seed_source": "task_match",
+    "first_seed_value": "src/router.ts",
+    "companion_entrypoint": "src/main.ts",
     "first_file": "src/main.ts",
     "first_reading_question": "What setup code defines the main application flow?",
     "first_next_action": "inspect_seed_file",
@@ -174,6 +179,14 @@ EOF
     fail "missing adoption evidence title"
   grep -Fq -- '- Selected context: `12/120` source lines, `90.0%` reduction' "$TEMP_DIR/evidence/adoption-evidence.md" ||
     fail "missing selected context line"
+  grep -Fq -- '- Seed strategy: `auto_task_match`' "$TEMP_DIR/evidence/adoption-evidence.md" ||
+    fail "missing seed strategy line"
+  grep -Fq -- '- Selected seeds: `2`' "$TEMP_DIR/evidence/adoption-evidence.md" ||
+    fail "missing selected seeds line"
+  grep -Fq -- '- First seed source: `task_match`' "$TEMP_DIR/evidence/adoption-evidence.md" ||
+    fail "missing first seed source line"
+  grep -Fq -- '- Companion entrypoint: `src/main.ts`' "$TEMP_DIR/evidence/adoption-evidence.md" ||
+    fail "missing companion entrypoint line"
   grep -Fq -- '- MCP suggested tool executed: `true`' "$TEMP_DIR/evidence/adoption-evidence.md" ||
     fail "missing MCP suggested tool execution line"
   grep -Fq -- "- Local evidence stdout: \`$TEMP_DIR/evidence/local-repo-evidence.out\`" "$TEMP_DIR/evidence/adoption-evidence.md" ||
@@ -188,6 +201,10 @@ EOF
       and .local_evidence.status == "pass"
       and .mcp_first_call.status == "pass"
       and .local_evidence.metrics.line_reduction == "90.0%"
+      and .local_evidence.metrics.seed_strategy == "auto_task_match"
+      and .local_evidence.metrics.selected_seed_count == 2
+      and .local_evidence.metrics.first_seed_source == "task_match"
+      and .local_evidence.metrics.companion_entrypoint == "src/main.ts"
       and .mcp_first_call.suggested_tool_executed == true
       and .artifacts.markdown == "'"$TEMP_DIR"'/evidence/adoption-evidence.md"
       and .artifacts.mcp_first_call_json == "'"$TEMP_DIR"'/evidence/mcp-first-call.json"
@@ -233,6 +250,8 @@ EOF
     fail "missing printed snippet title"
   grep -Fq -- '- Selected context: `12/120` source lines, `90.0%` reduction' "$TEMP_DIR/snippet.log" ||
     fail "missing printed selected context line"
+  grep -Fq -- '- Companion entrypoint: `src/main.ts`' "$TEMP_DIR/snippet.log" ||
+    fail "missing printed companion entrypoint line"
   grep -Fq -- '- MCP suggested tool executed: `true`' "$TEMP_DIR/snippet.log" ||
     fail "missing printed MCP suggested tool execution line"
 

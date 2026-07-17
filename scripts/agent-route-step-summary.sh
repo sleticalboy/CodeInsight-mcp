@@ -39,7 +39,13 @@ require_summary_contract() {
       and (.metrics.execution_plan_steps | type == "number")
       and (.metrics.requested_token_budget | type == "number")
       and (.metrics.applied_token_budget | type == "number")
+      and (.metrics.seed_strategy | type == "string")
+      and (.metrics.selected_seed_count | type == "number")
+      and (.metrics.first_seed_source | type == "string")
+      and (.metrics.first_seed_value | type == "string")
+      and (.metrics.companion_entrypoint | type == "string")
       and (.metrics.first_context_file | type == "string")
+      and (.metrics.first_reading_file | type == "string")
       and (.metrics.first_execution_action | type == "string")
       and (.metrics.second_execution_action | type == "string")
       and (.metrics.first_execution_suggested_tool | type == "string")
@@ -107,7 +113,13 @@ main() {
     printf '| Reading-plan steps | `%s` |\n' "$(metric '.metrics.reading_plan_steps')"
     printf '| Execution-plan steps | `%s` |\n' "$(metric '.metrics.execution_plan_steps')"
     printf '| Token budget | `%s/%s` |\n' "$(metric '.metrics.applied_token_budget')" "$(metric '.metrics.requested_token_budget')"
+    printf '| Seed strategy | `%s` |\n' "$(metric '.metrics.seed_strategy')"
+    printf '| Selected seeds | `%s` |\n' "$(metric '.metrics.selected_seed_count')"
+    printf '| First seed source | `%s` |\n' "$(metric '.metrics.first_seed_source')"
+    printf '| First seed value | `%s` |\n' "$(metric '.metrics.first_seed_value')"
+    printf '| Companion entrypoint | `%s` |\n' "$(metric '(.metrics.companion_entrypoint // "") as $value | if $value == "" then "-" else $value end')"
     printf '| First context file | `%s` |\n' "$(metric '.metrics.first_context_file')"
+    printf '| First reading file | `%s` |\n' "$(metric '.metrics.first_reading_file')"
     printf '| First execution action | `%s` |\n' "$(metric '.metrics.first_execution_action')"
     printf '| Second execution action | `%s` |\n' "$(metric '.metrics.second_execution_action')"
     printf '| First execution suggested tool | `%s` |\n' "$(metric '.metrics.first_execution_suggested_tool')"

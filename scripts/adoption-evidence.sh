@@ -157,6 +157,10 @@ write_markdown_summary() {
     echo
     echo "- Route: \`$(json_value "$local_summary" '.route_tools | join(" -> ")')\`"
     echo "- Selected context: \`$(json_value "$local_summary" '.metrics.selected_lines')/$(json_value "$local_summary" '.metrics.total_lines')\` source lines, \`$(json_value "$local_summary" '.metrics.line_reduction')\` reduction"
+    echo "- Seed strategy: \`$(json_value "$local_summary" '.metrics.seed_strategy // "-"')\`"
+    echo "- Selected seeds: \`$(json_value "$local_summary" '.metrics.selected_seed_count // 0')\`"
+    echo "- First seed source: \`$(json_value "$local_summary" '.metrics.first_seed_source // "-"')\`"
+    echo "- Companion entrypoint: \`$(json_value "$local_summary" '(.metrics.companion_entrypoint // "") as $value | if $value == "" then "-" else $value end')\`"
     echo "- First selected file: \`$(json_value "$local_summary" '.metrics.first_file')\`"
     echo "- First reading question: $(json_value "$local_summary" '.metrics.first_reading_question')"
     echo "- First suggested tool: \`$(json_value "$local_summary" '.metrics.first_suggested_tool')\`"
@@ -250,6 +254,10 @@ print_snippet() {
 - Status: \`$(json_value "$summary_json" '.status')\`
 - Route: \`$(json_value "$summary_json" '.local_evidence.route_tools | join(" -> ")')\`
 - Selected context: \`$(json_value "$summary_json" '.local_evidence.metrics.selected_lines')/$(json_value "$summary_json" '.local_evidence.metrics.total_lines')\` source lines, \`$(json_value "$summary_json" '.local_evidence.metrics.line_reduction')\` reduction
+- Seed strategy: \`$(json_value "$summary_json" '.local_evidence.metrics.seed_strategy // "-"')\`
+- Selected seeds: \`$(json_value "$summary_json" '.local_evidence.metrics.selected_seed_count // 0')\`
+- First seed source: \`$(json_value "$summary_json" '.local_evidence.metrics.first_seed_source // "-"')\`
+- Companion entrypoint: \`$(json_value "$summary_json" '(.local_evidence.metrics.companion_entrypoint // "") as $value | if $value == "" then "-" else $value end')\`
 - First selected file: \`$(json_value "$summary_json" '.local_evidence.metrics.first_file')\`
 - First reading question: $(json_value "$summary_json" '.local_evidence.metrics.first_reading_question')
 - MCP server: \`$(json_value "$summary_json" '.mcp_first_call.server')\`

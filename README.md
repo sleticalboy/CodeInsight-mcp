@@ -191,6 +191,10 @@ and `/tmp/codeinsight-adoption-evidence/issue-template.md`, then prints this cop
 - Status: `pass`
 - Route: `index_project -> project_overview -> context_pack -> impact_analysis`
 - Selected context: `<selected>/<total>` source lines, `<reduction>` reduction
+- Seed strategy: `<seed_strategy>`
+- Selected seeds: `<count>`
+- First seed source: `<source>`
+- Companion entrypoint: `<file-or-dash>`
 - First selected file: `<file>`
 - First reading question: <question>
 - MCP server: `codeinsight`

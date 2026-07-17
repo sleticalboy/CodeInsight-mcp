@@ -185,6 +185,10 @@ write_markdown() {
     echo "- Selected ranges: \`$(json_value "$route_json" '.context_pack.budget.selected_ranges')\`"
     echo "- Estimated tokens: \`$(json_value "$route_json" '.context_pack.estimated_tokens')\`"
     echo "- Reading-plan steps: \`$(json_value "$route_json" '.context_pack.reading_plan | length')\`"
+    echo "- Seed strategy: \`$(json_value "$route_json" '.context_pack.seed_strategy // "-"')\`"
+    echo "- Selected seeds: \`$(json_value "$route_json" '.context_pack.selected_seeds | length')\`"
+    echo "- First seed source: \`$(json_value "$route_json" '.context_pack.selected_seeds[0].source // "-"')\`"
+    echo "- Companion entrypoint: \`$(json_value "$route_json" '([.context_pack.selected_seeds[1:][]? | select(.source == "overview_entrypoint") | .value] | first) // "-"')\`"
     echo "- First selected file: \`$(json_value "$route_json" '.context_pack.files[0].file // "-"')\`"
     echo "- First reading question: $(json_value "$route_json" '.context_pack.reading_plan[0].question // "-"')"
     echo "- First next action: \`$(json_value "$route_json" '.context_pack.reading_plan[0].next_action // "-"')\`"
@@ -249,6 +253,11 @@ write_summary_json() {
         estimated_tokens: .context_pack.estimated_tokens,
         reading_plan_steps: (.context_pack.reading_plan | length),
         execution_plan_steps: (.execution_plan | length),
+        seed_strategy: (.context_pack.seed_strategy // ""),
+        selected_seed_count: (.context_pack.selected_seeds | length),
+        first_seed_source: (.context_pack.selected_seeds[0].source // ""),
+        first_seed_value: (.context_pack.selected_seeds[0].value // ""),
+        companion_entrypoint: (([.context_pack.selected_seeds[1:][]? | select(.source == "overview_entrypoint") | .value] | first) // ""),
         first_file: (.context_pack.files[0].file // ""),
         first_reading_question: (.context_pack.reading_plan[0].question // ""),
         first_next_action: (.context_pack.reading_plan[0].next_action // ""),
@@ -270,6 +279,9 @@ write_summary_json() {
       and (.metrics.total_lines | type == "number")
       and (.metrics.selected_lines | type == "number")
       and (.metrics.line_reduction | type == "string" and length > 0)
+      and (.metrics.selected_seed_count | type == "number")
+      and (.metrics.first_seed_source | type == "string")
+      and (.metrics.companion_entrypoint | type == "string")
       and (.metrics.first_file | type == "string" and length > 0)
       and (.metrics.first_reading_question | type == "string" and length > 0)
       and (.metrics.risk_level | type == "string" and length > 0)' \

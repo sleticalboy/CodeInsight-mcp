@@ -50,7 +50,13 @@ main() {
     "execution_plan_steps": 4,
     "requested_token_budget": 1600,
     "applied_token_budget": 1600,
+    "seed_strategy": "auto_task_match",
+    "selected_seed_count": 2,
+    "first_seed_source": "task_match",
+    "first_seed_value": "src/router.ts",
+    "companion_entrypoint": "src/main.ts",
     "first_context_file": "src/main.ts",
+    "first_reading_file": "src/main.ts",
     "first_execution_action": "read_selected_context",
     "second_execution_action": "use_current_reading_step_suggested_tool",
     "first_execution_suggested_tool": "file_outline",
@@ -78,6 +84,12 @@ EOF
   require_literal "$summary_md" 'Workflow artifact: [`codeinsight-agent-route-smoke`](https://example.com/artifact)' "artifact link"
   require_literal "$summary_md" '| Indexed files | `3` |' "indexed files metric"
   require_literal "$summary_md" '| Execution-plan steps | `4` |' "execution plan steps metric"
+  require_literal "$summary_md" '| Seed strategy | `auto_task_match` |' "seed strategy metric"
+  require_literal "$summary_md" '| Selected seeds | `2` |' "selected seeds metric"
+  require_literal "$summary_md" '| First seed source | `task_match` |' "first seed source metric"
+  require_literal "$summary_md" '| First seed value | `src/router.ts` |' "first seed value metric"
+  require_literal "$summary_md" '| Companion entrypoint | `src/main.ts` |' "companion entrypoint metric"
+  require_literal "$summary_md" '| First reading file | `src/main.ts` |' "first reading file metric"
   require_literal "$summary_md" '| First execution action | `read_selected_context` |' "first execution action metric"
   require_literal "$summary_md" '| Second execution action | `use_current_reading_step_suggested_tool` |' "second execution action metric"
   require_literal "$summary_md" '| First execution suggested tool | `file_outline` |' "first execution suggested tool metric"

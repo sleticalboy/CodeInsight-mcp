@@ -68,6 +68,23 @@ cat <<'JSON'
     "recommended_next_tools": [{}, {}]
   },
   "context_pack": {
+    "seed_strategy": "auto_task_match",
+    "selected_seeds": [
+      {
+        "kind": "file",
+        "value": "src/router.ts",
+        "source": "task_match",
+        "role": "source",
+        "matched_keywords": ["router"]
+      },
+      {
+        "kind": "file",
+        "value": "src/main.ts",
+        "source": "overview_entrypoint",
+        "role": "source",
+        "matched_keywords": []
+      }
+    ],
     "estimated_tokens": 180,
     "reading_plan": [
       {
@@ -121,6 +138,14 @@ EOF
     fail "missing selected context reduction"
   grep -Fq -- '- First selected file: `src/main.ts`' "$TEMP_DIR/evidence.md" ||
     fail "missing first selected file"
+  grep -Fq -- '- Seed strategy: `auto_task_match`' "$TEMP_DIR/evidence.md" ||
+    fail "missing seed strategy"
+  grep -Fq -- '- Selected seeds: `2`' "$TEMP_DIR/evidence.md" ||
+    fail "missing selected seed count"
+  grep -Fq -- '- First seed source: `task_match`' "$TEMP_DIR/evidence.md" ||
+    fail "missing first seed source"
+  grep -Fq -- '- Companion entrypoint: `src/main.ts`' "$TEMP_DIR/evidence.md" ||
+    fail "missing companion entrypoint"
   grep -Fq -- '- First reading question: What setup code defines the main application flow?' "$TEMP_DIR/evidence.md" ||
     fail "missing first reading question"
   grep -Fq -- '- First suggested tool: `file_outline`' "$TEMP_DIR/evidence.md" ||
@@ -139,6 +164,11 @@ EOF
       and .metrics.total_lines == 120
       and .metrics.selected_lines == 12
       and .metrics.line_reduction == "90.0%"
+      and .metrics.seed_strategy == "auto_task_match"
+      and .metrics.selected_seed_count == 2
+      and .metrics.first_seed_source == "task_match"
+      and .metrics.first_seed_value == "src/router.ts"
+      and .metrics.companion_entrypoint == "src/main.ts"
       and .metrics.first_file == "src/main.ts"
       and .metrics.first_reading_question == "What setup code defines the main application flow?"
       and .metrics.first_suggested_tool == "file_outline"
