@@ -62,14 +62,13 @@ which file to open next.
    The first MCP `tools/call` payload is shown in
    [First Agent Route Call](docs/mcp-client-config.md#first-agent-route-call).
 
-4. Verify the path:
+4. Pick the validation that matches your goal:
 
-   ```bash
-   CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh
-   ```
-
-   For a visible demo, run `scripts/two-minute-demo.sh` and read the
-   `[Evidence summary]`.
+   | Goal | Command | Use When |
+   | --- | --- | --- |
+   | See the product loop | `scripts/two-minute-demo.sh` | You want a visible `agent_route -> context_pack -> impact_analysis` walkthrough with an `[Evidence summary]`. |
+   | Check the first MCP call | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/mcp-first-call-smoke.sh` | You want a compact JSON proof that stdio MCP accepts `agent_route`, returns selected files, exposes an execution plan, runs a suggested tool, and includes `impact_status`. |
+   | Verify installed adoption | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh` | You want the installed binary to pass CLI `agent-route`, MCP stdio, and MCP `agent_route` against a temporary project. |
 
 ## Two-Minute Demo
 

@@ -246,6 +246,15 @@ main() {
   require_pattern README.md \
     'scripts/two-minute-demo\.sh' \
     "README two-minute demo command"
+  require_pattern README.md \
+    'Pick the validation that matches your goal:' \
+    "README validation chooser"
+  require_pattern README.md \
+    'CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/mcp-first-call-smoke\.sh' \
+    "README MCP first-call smoke command"
+  require_pattern README.md \
+    'CLI `agent-route`, MCP stdio, and MCP `agent_route`' \
+    "README installed adoption coverage"
   require_pattern docs/quickstart.md \
     'scripts/two-minute-demo\.sh' \
     "quickstart two-minute demo command"

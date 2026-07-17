@@ -50,8 +50,23 @@ main() {
     '\[First Agent Route Call\]\(docs/mcp-client-config\.md#first-agent-route-call\)' \
     "README first agent route call link"
   require_pattern README.md \
+    'Pick the validation that matches your goal:' \
+    "README fast path validation chooser"
+  require_pattern README.md \
+    '\| See the product loop \| `scripts/two-minute-demo\.sh` \|' \
+    "README fast path product demo validation"
+  require_pattern README.md \
+    '\| Check the first MCP call \| `CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/mcp-first-call-smoke\.sh` \|' \
+    "README fast path MCP first-call validation"
+  require_pattern README.md \
+    '\| Verify installed adoption \| `CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/installed-quickstart-smoke\.sh` \|' \
+    "README fast path installed adoption validation"
+  require_pattern README.md \
     'CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/installed-quickstart-smoke\.sh' \
     "README fast path installed quickstart gate"
+  require_pattern README.md \
+    'compact JSON proof that stdio MCP accepts `agent_route`' \
+    "README fast path MCP first-call proof"
   require_pattern README.md \
     '\[Evidence summary\]' \
     "README fast path evidence summary cue"
