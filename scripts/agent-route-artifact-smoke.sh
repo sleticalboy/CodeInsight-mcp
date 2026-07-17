@@ -75,6 +75,7 @@ validate_summary_json() {
   if ! jq -e \
     '.status == "pass"
       and .route_tools == ["index_project", "project_overview", "context_pack", "impact_analysis"]
+      and .execution_plan_actions == ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"]
       and .metrics.indexed_files >= 3
       and .metrics.symbols >= 3
       and .metrics.index_errors == 0
@@ -82,9 +83,13 @@ validate_summary_json() {
       and .metrics.selected_files >= 1
       and .metrics.selected_ranges >= 1
       and .metrics.reading_plan_steps >= 1
+      and .metrics.execution_plan_steps == 4
       and .metrics.requested_token_budget == 1600
       and .metrics.applied_token_budget == 1600
       and (.metrics.first_context_file | type == "string" and length > 0)
+      and .metrics.first_execution_action == "read_selected_context"
+      and .metrics.second_execution_action == "use_current_reading_step_suggested_tool"
+      and (.metrics.first_execution_suggested_tool | type == "string" and length > 0)
       and (.metrics.first_next_action | type == "string" and length > 0)
       and .metrics.impact_status == "complete"
       and .metrics.impacted_files >= 1

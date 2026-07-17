@@ -27,6 +27,7 @@ require_summary_contract() {
   if ! jq -e \
     '.status == "pass"
       and .route_tools == ["index_project", "project_overview", "context_pack", "impact_analysis"]
+      and .execution_plan_actions == ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"]
       and (.metrics | type == "object")
       and (.metrics.indexed_files | type == "number")
       and (.metrics.symbols | type == "number")
@@ -35,9 +36,13 @@ require_summary_contract() {
       and (.metrics.selected_files | type == "number")
       and (.metrics.selected_ranges | type == "number")
       and (.metrics.reading_plan_steps | type == "number")
+      and (.metrics.execution_plan_steps | type == "number")
       and (.metrics.requested_token_budget | type == "number")
       and (.metrics.applied_token_budget | type == "number")
       and (.metrics.first_context_file | type == "string")
+      and (.metrics.first_execution_action | type == "string")
+      and (.metrics.second_execution_action | type == "string")
+      and (.metrics.first_execution_suggested_tool | type == "string")
       and (.metrics.first_next_action | type == "string")
       and (.metrics.context_route_reason | type == "string")
       and (.metrics.impact_route_reason | type == "string")
@@ -80,6 +85,7 @@ main() {
     printf 'Status: `%s`\n\n' "$(metric '.status')"
     printf 'Task: `%s`\n\n' "$(metric '.task')"
     printf 'Route: `%s`\n\n' "$(metric '.route_tools | join(" -> ")')"
+    printf 'Execution plan: `%s`\n\n' "$(metric '.execution_plan_actions | join(" -> ")')"
     printf 'Full JSON summary: `%s`\n\n' "$SUMMARY_JSON"
     if [ -n "$RUN_URL" ]; then
       printf 'Workflow run: [open run](%s)\n\n' "$RUN_URL"
@@ -98,8 +104,12 @@ main() {
     printf '| Selected files | `%s` |\n' "$(metric '.metrics.selected_files')"
     printf '| Selected ranges | `%s` |\n' "$(metric '.metrics.selected_ranges')"
     printf '| Reading-plan steps | `%s` |\n' "$(metric '.metrics.reading_plan_steps')"
+    printf '| Execution-plan steps | `%s` |\n' "$(metric '.metrics.execution_plan_steps')"
     printf '| Token budget | `%s/%s` |\n' "$(metric '.metrics.applied_token_budget')" "$(metric '.metrics.requested_token_budget')"
     printf '| First context file | `%s` |\n' "$(metric '.metrics.first_context_file')"
+    printf '| First execution action | `%s` |\n' "$(metric '.metrics.first_execution_action')"
+    printf '| Second execution action | `%s` |\n' "$(metric '.metrics.second_execution_action')"
+    printf '| First execution suggested tool | `%s` |\n' "$(metric '.metrics.first_execution_suggested_tool')"
     printf '| First next action | `%s` |\n' "$(metric '.metrics.first_next_action')"
     printf '| Context route reason | %s |\n' "$(metric '.metrics.context_route_reason')"
     printf '| Impact route reason | %s |\n' "$(metric '.metrics.impact_route_reason')"

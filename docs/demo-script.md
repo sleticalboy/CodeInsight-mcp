@@ -100,6 +100,9 @@ Promise: route the agent through agent_route before edits.
    selected_files: 2
    selected_ranges: 4
    reading_plan_steps: 2
+   execution_plan_steps: 4
+   first_execution_action: read_selected_context
+   second_execution_action: use_current_reading_step_suggested_tool
    first_next_action: inspect_seed_file
    line_reduction: 99.6%
    continuation: complete
@@ -115,7 +118,8 @@ Promise: route the agent through agent_route before edits.
 1. agent_route ran index_project, project_overview, context_pack, and impact_analysis in one call.
 2. project_overview found 7 entrypoints and 4 recommended next tools.
 3. context_pack selected 2 files and 4 ranges, then produced 2 reading-plan steps.
-4. The first action is inspect_seed_file; the selected context reduced source reading by 99.6%; selected 2 files, 4 ranges, and 2 reading-plan steps within the token budget; read src/tools.rs first via inspect_seed_file, use file_outline when deeper evidence is needed, then follow continuation read_selected_context
+4. execution_plan starts with read_selected_context, then use_current_reading_step_suggested_tool; this keeps suggested tools behind selected-context reading.
+5. The first reading-plan action is inspect_seed_file; the selected context reduced source reading by 99.6%; selected 2 files, 4 ranges, and 2 reading-plan steps within the token budget; read src/tools.rs first via inspect_seed_file, use file_outline when deeper evidence is needed, then follow continuation read_selected_context
 ```
 
 Exact numbers vary by repository and current source state. The important point

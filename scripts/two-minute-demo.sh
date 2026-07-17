@@ -130,12 +130,15 @@ main() {
   require_json_number_gt_zero "$route_json" '.index_report.indexed_files' "indexed files"
   require_json_number_gt_zero "$route_json" '.context_pack.files | length' "context_pack selected files"
   require_json_number_gt_zero "$route_json" '.context_pack.reading_plan | length' "context_pack reading plan steps"
+  require_json_number_gt_zero "$route_json" '.execution_plan | length' "agent_route execution plan steps"
   require_json_string "$route_json" '.context_pack.reading_plan[0].next_action' "first reading-plan next action"
   require_json_string "$route_json" '.context_pack.reading_plan[0].reason' "first reading-plan reason"
   require_json_string "$route_json" '.context_pack.reading_plan[0].selection_reason' "first reading-plan selection reason"
+  require_json_string "$route_json" '.execution_plan[0].action' "first execution-plan action"
 
   local total_lines selected_lines reduction first_entrypoint first_context_file
   local entrypoints recommended_tools selected_files selected_ranges reading_plan_steps
+  local execution_plan_steps first_execution_action second_execution_action
   local first_next_action first_reading_reason first_selection_reason
   local continuation risk_level impacted_files suggested_checks impact_seed_file
 
@@ -149,6 +152,9 @@ main() {
   selected_files="$(json_value "$route_json" '.context_pack.files | length')"
   selected_ranges="$(json_value "$route_json" '.context_pack.budget.selected_ranges')"
   reading_plan_steps="$(json_value "$route_json" '.context_pack.reading_plan | length')"
+  execution_plan_steps="$(json_value "$route_json" '.execution_plan | length')"
+  first_execution_action="$(json_value "$route_json" '.execution_plan[0].action // "-"')"
+  second_execution_action="$(json_value "$route_json" '.execution_plan[1].action // "-"')"
   first_next_action="$(json_value "$route_json" '.context_pack.reading_plan[0].next_action // "-"')"
   first_reading_reason="$(json_value "$route_json" '.context_pack.reading_plan[0].reason // "-"')"
   first_selection_reason="$(json_value "$route_json" '.context_pack.reading_plan[0].selection_reason // "-"')"
@@ -178,6 +184,9 @@ main() {
   echo "   selected_files: $selected_files"
   echo "   selected_ranges: $selected_ranges"
   echo "   reading_plan_steps: $reading_plan_steps"
+  echo "   execution_plan_steps: $execution_plan_steps"
+  echo "   first_execution_action: $first_execution_action"
+  echo "   second_execution_action: $second_execution_action"
   echo "   first_next_action: $first_next_action"
   echo "   selected_lines: $selected_lines"
   echo "   line_reduction: $reduction"
@@ -209,14 +218,15 @@ main() {
   echo "1. agent_route ran index_project, project_overview, context_pack, and impact_analysis in one call."
   echo "2. project_overview found ${entrypoints} entrypoints and ${recommended_tools} recommended next tools."
   echo "3. context_pack selected ${selected_files} files and ${selected_ranges} ranges, then produced ${reading_plan_steps} reading-plan steps."
-  echo "4. The first action is ${first_next_action}; ${first_reading_reason}"
-  echo "5. The selected context reduced source reading by ${reduction}; ${context_route_reason}"
-  echo "6. Selection evidence: ${first_selection_reason}"
-  echo "7. Continuation status is ${continuation}, so the agent knows whether to ask for a focused follow-up."
+  echo "4. execution_plan starts with ${first_execution_action}, then ${second_execution_action}; this keeps suggested tools behind selected-context reading."
+  echo "5. The first reading-plan action is ${first_next_action}; ${first_reading_reason}"
+  echo "6. The selected context reduced source reading by ${reduction}; ${context_route_reason}"
+  echo "7. Selection evidence: ${first_selection_reason}"
+  echo "8. Continuation status is ${continuation}, so the agent knows whether to ask for a focused follow-up."
   if [ -n "$risk_level" ]; then
-    echo "8. impact_analysis reports ${risk_level} risk across ${impacted_files} impacted files with ${suggested_checks} suggested checks; ${impact_route_reason}"
+    echo "9. impact_analysis reports ${risk_level} risk across ${impacted_files} impacted files with ${suggested_checks} suggested checks; ${impact_route_reason}"
   else
-    echo "8. impact_analysis is the pre-edit step when context_pack selects a file seed."
+    echo "9. impact_analysis is the pre-edit step when context_pack selects a file seed."
   fi
   echo
   echo "[Agent policy]"

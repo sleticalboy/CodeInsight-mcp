@@ -39,6 +39,35 @@ cat <<'JSON'
     {"order": 3, "tool": "context_pack", "status": "complete", "reason": "selected 1 files, 11 ranges, and 1 reading-plan steps within the token budget; read src/main.rs first via inspect_seed_file, use file_outline when deeper evidence is needed, then follow continuation read_selected_context"},
     {"order": 4, "tool": "impact_analysis", "status": "complete", "reason": "after selected context is read, pre-edit impact check estimated 11 impacted files at high risk, including 3 call-related files, 2 dependency-related files, 4 call paths, and 5 dependency paths"}
   ],
+  "execution_plan": [
+    {
+      "order": 1,
+      "action": "read_selected_context",
+      "status": "ready",
+      "instruction": "Read context_pack.files[] in reading_plan[] order, starting with src/main.rs.",
+      "files": ["src/main.rs"]
+    },
+    {
+      "order": 2,
+      "action": "use_current_reading_step_suggested_tool",
+      "status": "available_after_current_file",
+      "instruction": "After reading src/main.rs, call file_outline only if deeper evidence is needed.",
+      "files": ["src/main.rs"],
+      "suggested_tool": {"tool": "file_outline"}
+    },
+    {
+      "order": 3,
+      "action": "use_continuation_if_needed",
+      "status": "complete",
+      "instruction": "Use continuation_summary only after selected context has been read."
+    },
+    {
+      "order": 4,
+      "action": "review_impact_before_edits",
+      "status": "complete",
+      "instruction": "Before editing, review impact_analysis."
+    }
+  ],
   "impact_seed_files": ["src/main.rs"],
   "impact_seed_symbols": [],
   "impact_status": "complete",
@@ -146,6 +175,12 @@ EOF
     fail "missing overview talk track"
   grep -Fq 'context_pack selected 1 files and 11 ranges, then produced 1 reading-plan steps.' "$TEMP_DIR/output.log" ||
     fail "missing context_pack talk track"
+  grep -Fq 'execution_plan_steps: 4' "$TEMP_DIR/output.log" ||
+    fail "missing execution plan steps metric"
+  grep -Fq 'first_execution_action: read_selected_context' "$TEMP_DIR/output.log" ||
+    fail "missing first execution action metric"
+  grep -Fq 'second_execution_action: use_current_reading_step_suggested_tool' "$TEMP_DIR/output.log" ||
+    fail "missing second execution action metric"
   grep -Fq 'route_reason: selected 1 files, 11 ranges, and 1 reading-plan steps within the token budget; read src/main.rs first via inspect_seed_file, use file_outline when deeper evidence is needed, then follow continuation read_selected_context' "$TEMP_DIR/output.log" ||
     fail "missing context route reason"
   grep -Fq 'reading_plan_reason: Read this step to answer: What entrypoints or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: src/main.rs' "$TEMP_DIR/output.log" ||
@@ -154,7 +189,9 @@ EOF
     fail "missing selection reason"
   grep -Fq 'selected context reduced source reading by' "$TEMP_DIR/output.log" ||
     fail "missing line reduction talk track"
-  grep -Fq 'The first action is inspect_seed_file; Read this step to answer: What entrypoints or setup code define the main flow here?' "$TEMP_DIR/output.log" ||
+  grep -Fq 'execution_plan starts with read_selected_context, then use_current_reading_step_suggested_tool; this keeps suggested tools behind selected-context reading.' "$TEMP_DIR/output.log" ||
+    fail "missing execution plan talk track"
+  grep -Fq 'The first reading-plan action is inspect_seed_file; Read this step to answer: What entrypoints or setup code define the main flow here?' "$TEMP_DIR/output.log" ||
     fail "missing reading reason talk track"
   grep -Fq 'Selection evidence: Selected for high relevance via seed_file: Seed file header and imports for task: src/main.rs' "$TEMP_DIR/output.log" ||
     fail "missing selection evidence talk track"

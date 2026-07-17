@@ -33,12 +33,12 @@ token_budget: 6000
 
 1. index_project
    indexed_files: 23
-   symbols: 929
+   symbols: 931
    duration_ms: <duration_ms>
    errors: 0
 
 2. project_overview
-   total_lines: 28082
+   total_lines: 28235
    entrypoints: 7
    first_entrypoint: src/main.rs
    recommended_next_tools: 4
@@ -47,6 +47,9 @@ token_budget: 6000
    selected_files: 2
    selected_ranges: 4
    reading_plan_steps: 2
+   execution_plan_steps: 4
+   first_execution_action: read_selected_context
+   second_execution_action: use_current_reading_step_suggested_tool
    first_next_action: inspect_seed_file
    selected_lines: 123
    line_reduction: 99.6%
@@ -72,11 +75,12 @@ Run against another repository:
 1. agent_route ran index_project, project_overview, context_pack, and impact_analysis in one call.
 2. project_overview found 7 entrypoints and 4 recommended next tools.
 3. context_pack selected 2 files and 4 ranges, then produced 2 reading-plan steps.
-4. The first action is inspect_seed_file; Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: src/tools.rs
-5. The selected context reduced source reading by 99.6%; selected 2 files, 4 ranges, and 2 reading-plan steps within the token budget; read src/tools.rs first via inspect_seed_file, use file_outline when deeper evidence is needed, then follow continuation read_selected_context
-6. Selection evidence: Selected for high relevance via seed_file: Seed file header and imports for task: src/tools.rs
-7. Continuation status is complete, so the agent knows whether to ask for a focused follow-up.
-8. impact_analysis reports high risk across 7 impacted files with 4 suggested checks; after selected context is read, pre-edit impact check estimated 7 impacted files at high risk, including 5 call-related files, 1 dependency-related files, 27 call paths, and 1 dependency paths
+4. execution_plan starts with read_selected_context, then use_current_reading_step_suggested_tool; this keeps suggested tools behind selected-context reading.
+5. The first reading-plan action is inspect_seed_file; Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: src/tools.rs
+6. The selected context reduced source reading by 99.6%; selected 2 files, 4 ranges, and 2 reading-plan steps within the token budget; read src/tools.rs first via inspect_seed_file, use file_outline when deeper evidence is needed, then follow continuation read_selected_context
+7. Selection evidence: Selected for high relevance via seed_file: Seed file header and imports for task: src/tools.rs
+8. Continuation status is complete, so the agent knows whether to ask for a focused follow-up.
+9. impact_analysis reports high risk across 7 impacted files with 4 suggested checks; after selected context is read, pre-edit impact check estimated 7 impacted files at high risk, including 5 call-related files, 1 dependency-related files, 27 call paths, and 1 dependency paths
 
 [Agent policy]
 Call agent_route with root, task, and token_budget for the default first read.
@@ -91,8 +95,9 @@ Run this walkthrough against another repository:
 - The path starts with `agent_route`, whose `route[]` includes
   `index_project`, `project_overview`, `context_pack`, and `impact_analysis`.
 - `context_pack` includes selected files, selected ranges, reading-plan steps,
-  first next action, reading-plan reason, selection reason, token estimate,
-  line reduction, route reason, and continuation status.
+  execution-plan steps, first execution action, first next action,
+  reading-plan reason, selection reason, token estimate, line reduction, route
+  reason, and continuation status.
 - `impact_analysis` includes its route reason so the demo frames it as the
   pre-edit impact check after selected context is read.
 - The talk track explains the same path a user should show in a recording.

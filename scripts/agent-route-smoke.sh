@@ -137,6 +137,7 @@ write_summary_json() {
     task,
     token_budget,
     route_tools: [.route[].tool],
+    execution_plan_actions: [.execution_plan[].action],
     metrics: {
       indexed_files: .index_report.indexed_files,
       symbols: .index_report.symbols,
@@ -145,9 +146,13 @@ write_summary_json() {
       selected_files: (.context_pack.files | length),
       selected_ranges: .context_pack.budget.selected_ranges,
       reading_plan_steps: (.context_pack.reading_plan | length),
+      execution_plan_steps: (.execution_plan | length),
       requested_token_budget: .context_pack.budget.requested_token_budget,
       applied_token_budget: .context_pack.budget.applied_token_budget,
       first_context_file: (.context_pack.files[0].file // ""),
+      first_execution_action: (.execution_plan[0].action // ""),
+      second_execution_action: (.execution_plan[1].action // ""),
+      first_execution_suggested_tool: (.execution_plan[1].suggested_tool.tool // ""),
       first_next_action: (.context_pack.reading_plan[0].next_action // ""),
       context_route_reason: (.route[] | select(.tool == "context_pack") | .reason),
       impact_route_reason: (.route[] | select(.tool == "impact_analysis") | .reason),
@@ -160,9 +165,14 @@ write_summary_json() {
   require_jq "$SUMMARY_JSON" \
     '.status == "pass"
       and .route_tools == ["index_project", "project_overview", "context_pack", "impact_analysis"]
+      and .execution_plan_actions == ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"]
       and .metrics.indexed_files >= 3
       and .metrics.index_errors == 0
       and .metrics.reading_plan_steps >= 1
+      and .metrics.execution_plan_steps == 4
+      and .metrics.first_execution_action == "read_selected_context"
+      and .metrics.second_execution_action == "use_current_reading_step_suggested_tool"
+      and (.metrics.first_execution_suggested_tool | type == "string" and length > 0)
       and .metrics.impact_status == "complete"
       and .metrics.impacted_files >= 1' \
     "summary JSON should match the agent-route evidence contract"
@@ -228,6 +238,9 @@ main() {
   require_jq "$route_json" '.task == "understand auth entrypoint flow"' "task should round-trip"
   require_jq "$route_json" '.token_budget == 1600' "token budget should round-trip"
   require_jq "$route_json" '.route | map(.tool) == ["index_project", "project_overview", "context_pack", "impact_analysis"]' "route should run the first-read pipeline in order"
+  require_jq "$route_json" '.execution_plan | map(.action) == ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"]' "execution plan should describe the client follow-up path"
+  require_jq "$route_json" '.execution_plan[0].status == "ready" and (.execution_plan[0].files | length >= 1)' "execution plan should start by reading selected context"
+  require_jq "$route_json" '.execution_plan[1].suggested_tool.tool != null and .execution_plan[1].suggested_tool.tool != ""' "execution plan should expose the current-step suggested tool"
   require_jq "$route_json" 'all(.route[]; .status == "complete")' "all route steps should complete"
   require_jq "$route_json" '.index_report.indexed_files >= 3' "fixture should index source files"
   require_jq "$route_json" '.index_report.symbols >= 3' "fixture should index symbols"
@@ -279,6 +292,8 @@ main() {
   echo "entrypoints: $(json_value "$route_json" '.overview.entrypoints | length')"
   echo "selected_files: $(json_value "$route_json" '.context_pack.files | length')"
   echo "reading_plan_steps: $(json_value "$route_json" '.context_pack.reading_plan | length')"
+  echo "execution_plan_steps: $(json_value "$route_json" '.execution_plan | length')"
+  echo "first_execution_action: $(json_value "$route_json" '.execution_plan[0].action')"
   echo "impact_status: $(json_value "$route_json" '.impact_status')"
   echo "impacted_files: $(json_value "$route_json" '.impact_analysis.impact_counts.impacted_files')"
 }

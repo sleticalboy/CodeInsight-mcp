@@ -47,6 +47,15 @@ main() {
     'reading_plan_steps: [0-9]+' \
     "reading-plan metric"
   require_pattern docs/demo-output.md \
+    'execution_plan_steps: 4' \
+    "execution-plan metric"
+  require_pattern docs/demo-output.md \
+    'first_execution_action: read_selected_context' \
+    "first execution action metric"
+  require_pattern docs/demo-output.md \
+    'second_execution_action: use_current_reading_step_suggested_tool' \
+    "second execution action metric"
+  require_pattern docs/demo-output.md \
     'first_next_action: inspect_seed_file' \
     "first next action metric"
   require_pattern docs/demo-output.md \
@@ -77,7 +86,10 @@ main() {
     'context_pack selected' \
     "context-pack talk track"
   require_pattern docs/demo-output.md \
-    'The first action is inspect_seed_file; Read this step to answer:' \
+    'execution_plan starts with read_selected_context, then use_current_reading_step_suggested_tool' \
+    "execution plan talk track"
+  require_pattern docs/demo-output.md \
+    'The first reading-plan action is inspect_seed_file; Read this step to answer:' \
     "reading reason talk track"
   require_pattern docs/demo-output.md \
     'Selection evidence: Selected for high relevance' \

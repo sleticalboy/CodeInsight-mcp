@@ -91,6 +91,8 @@ Pass criteria:
 - The smoke output includes `context_reading_reason`,
   `context_selection_reason`, `agent_route_reading_reason`, and
   `mcp_agent_route_selection_reason`.
+- The smoke output includes `agent_route_execution_plan` and
+  `mcp_agent_route_execution_plan` with the expected client action order.
 - `agent_route_tools` includes `index_project`, `project_overview`,
   `context_pack`, and `impact_analysis`.
 - `agent_route_impact_status` and `mcp_agent_route_impact_status` are
