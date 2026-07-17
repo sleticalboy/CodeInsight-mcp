@@ -99,8 +99,8 @@ refreshing [Demo output snapshot](demo-output.md).
 `agent-route-smoke.sh --summary-json <path>` writes a reusable JSON evidence
 summary for the one-call first-read route. The remote `agent-route-smoke` job
 uploads it as `codeinsight-agent-route-smoke` and writes the key route,
-context, token-budget, and impact metrics to the Actions summary with
-`scripts/agent-route-step-summary.sh`.
+context, first reading question, token-budget, and impact metrics to the
+Actions summary with `scripts/agent-route-step-summary.sh`.
 
 `context-pack-quality-smoke.sh` is a deterministic offline quality regression
 check. It uses checked-in and temporary fixtures to verify explicit symbol

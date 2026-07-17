@@ -220,6 +220,7 @@ main() {
 
   echo "agent-route artifact smoke passed"
   echo "summary: $summary_file"
+  echo "first_reading_question: $(jq -r '.metrics.first_reading_question' "$summary_file")"
 }
 
 main "$@"

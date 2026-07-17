@@ -44,6 +44,7 @@ require_summary_contract() {
       and (.metrics.second_execution_action | type == "string")
       and (.metrics.first_execution_suggested_tool | type == "string")
       and (.metrics.first_next_action | type == "string")
+      and (.metrics.first_reading_question | type == "string")
       and (.metrics.context_route_reason | type == "string")
       and (.metrics.impact_route_reason | type == "string")
       and (.metrics.impact_status | type == "string")
@@ -111,6 +112,7 @@ main() {
     printf '| Second execution action | `%s` |\n' "$(metric '.metrics.second_execution_action')"
     printf '| First execution suggested tool | `%s` |\n' "$(metric '.metrics.first_execution_suggested_tool')"
     printf '| First next action | `%s` |\n' "$(metric '.metrics.first_next_action')"
+    printf '| First reading question | `%s` |\n' "$(metric '.metrics.first_reading_question')"
     printf '| Context route reason | %s |\n' "$(metric '.metrics.context_route_reason')"
     printf '| Impact route reason | %s |\n' "$(metric '.metrics.impact_route_reason')"
     printf '| Impact status | `%s` |\n' "$(metric '.metrics.impact_status')"

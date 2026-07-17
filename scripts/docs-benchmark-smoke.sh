@@ -340,6 +340,9 @@ main() {
     'scripts/mcp-first-call-artifact-smoke\.sh <ci-run-id>' \
     "maintenance MCP first-call artifact download"
   require_pattern docs/maintenance-commands.md \
+    'context, first reading question, token-budget, and impact metrics' \
+    "maintenance agent-route first reading question summary"
+  require_pattern docs/maintenance-commands.md \
     'scripts/release-evidence-summary-artifact-smoke\.sh --repo sleticalboy/CodeInsight-mcp <ci-run-id>' \
     "maintenance release evidence summary artifact smoke command"
   require_pattern docs/maintenance-commands.md \
@@ -435,6 +438,9 @@ main() {
   require_pattern docs/maintainer-checklist.md \
     'scripts/mcp-first-call-artifact-smoke\.sh <ci-run-id>' \
     "maintainer MCP first-call artifact smoke command"
+  require_pattern docs/maintainer-checklist.md \
+    'context-pack metrics, first reading question, impact metrics' \
+    "maintainer agent-route first reading question summary"
   require_pattern scripts/context-pack-quality-step-summary-smoke.sh \
     'codeinsight-context-pack-quality' \
     "context-pack quality step summary smoke artifact"
@@ -738,6 +744,12 @@ main() {
   require_pattern scripts/mcp-stdio-smoke.sh \
     'agent_route_suggested_tool_executed' \
     "MCP stdio execution-plan suggested tool execution output"
+  require_pattern scripts/agent-route-step-summary-smoke.sh \
+    'First reading question' \
+    "agent-route step summary first reading question"
+  require_pattern scripts/agent-route-artifact-smoke.sh \
+    'first_reading_question' \
+    "agent-route artifact first reading question output"
   require_pattern scripts/mcp-stdio-smoke.sh \
     'agent_route execution_plan suggested file_outline did not return entrypoint symbol' \
     "MCP stdio execution-plan suggested tool assertion"
