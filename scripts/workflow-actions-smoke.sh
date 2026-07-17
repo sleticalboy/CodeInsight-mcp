@@ -43,6 +43,8 @@ main() {
   require_pattern ".github/workflows/ci.yml" "scripts/mcp-first-call-smoke\\.sh --summary-json /tmp/codeinsight-mcp-first-call\\.json" "MCP first-call CI summary JSON"
   require_pattern ".github/workflows/ci.yml" "scripts/mcp-first-call-failure-smoke\\.sh" "MCP first-call failure CI script"
   require_pattern ".github/workflows/ci.yml" "codeinsight-mcp-first-call" "MCP first-call CI artifact"
+  require_pattern ".github/workflows/ci.yml" "mcp-first-call-artifact" "MCP first-call artifact step id"
+  require_pattern ".github/workflows/ci.yml" "scripts/mcp-first-call-step-summary\\.sh" "MCP first-call step summary"
   require_pattern ".github/workflows/ci.yml" "context-pack-quality-smoke:" "context-pack quality CI job"
   require_pattern ".github/workflows/ci.yml" "codeinsight-context-pack-quality" "context-pack quality artifact"
   require_pattern ".github/workflows/ci.yml" "context-pack-quality-step-summary\\.sh" "context-pack quality step summary"

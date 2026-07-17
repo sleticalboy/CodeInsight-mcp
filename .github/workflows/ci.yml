@@ -68,11 +68,13 @@ jobs:
       - run: |
           scripts/mcp-first-call-smoke.sh --summary-json /tmp/codeinsight-mcp-first-call.json
           cat /tmp/codeinsight-mcp-first-call.json
-      - uses: actions/upload-artifact@v7
+      - id: mcp-first-call-artifact
+        uses: actions/upload-artifact@v7
         with:
           name: codeinsight-mcp-first-call
           path: /tmp/codeinsight-mcp-first-call.json
           if-no-files-found: error
+      - run: scripts/mcp-first-call-step-summary.sh /tmp/codeinsight-mcp-first-call.json codeinsight-mcp-first-call "${{ steps.mcp-first-call-artifact.outputs.artifact-url }}" "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
   context-pack-quality-smoke:
     runs-on: ubuntu-latest

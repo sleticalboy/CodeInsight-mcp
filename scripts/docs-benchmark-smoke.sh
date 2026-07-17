@@ -349,6 +349,15 @@ main() {
     'selected files, execution plan, suggested tool, impact status, and saved artifacts' \
     "maintenance MCP first-call artifact scope"
   require_pattern docs/maintenance-commands.md \
+    'scripts/mcp-first-call-step-summary-smoke\.sh' \
+    "maintenance MCP first-call step summary smoke"
+  require_pattern docs/maintenance-commands.md \
+    '\| First MCP call Actions summary changed \| `scripts/mcp-first-call-step-summary-smoke\.sh` \|' \
+    "maintenance MCP first-call step summary chooser"
+  require_pattern docs/maintenance-commands.md \
+    'Actions Summary section for selected files, execution plan, suggested tool, impact status, and artifact link' \
+    "maintenance MCP first-call step summary scope"
+  require_pattern docs/maintenance-commands.md \
     '\| First MCP call help or failure messaging changed \| `scripts/mcp-first-call-failure-smoke\.sh` \|' \
     "maintenance MCP first-call failure smoke chooser"
   require_pattern docs/maintenance-commands.md \
