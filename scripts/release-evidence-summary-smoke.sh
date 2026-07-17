@@ -104,6 +104,7 @@ test "$4" = "codeinsight-benchmark-subset"
 test "$5" = "123456"
 echo "benchmark artifact smoke passed"
 echo "report: /tmp/codeinsight-benchmark-artifact-123456/report.md"
+echo "summary: /tmp/codeinsight-benchmark-artifact-123456/summary.json"
 EOF
   chmod +x "$TEMP_DIR/benchmark-artifact-smoke"
 
@@ -183,6 +184,8 @@ EOF
     fail "missing CI run output"
   grep -Fq 'benchmark_artifact_url: https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987654' "$TEMP_DIR/output.log" ||
     fail "missing benchmark artifact URL"
+  grep -Fq 'benchmark_summary: /tmp/codeinsight-benchmark-artifact-123456/summary.json' "$TEMP_DIR/output.log" ||
+    fail "missing benchmark summary output"
   grep -Fq 'context_pack_quality_artifact_url: https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987655' "$TEMP_DIR/output.log" ||
     fail "missing context-pack quality artifact URL"
   grep -Fq 'context_pack_quality_summary: /tmp/codeinsight-context-pack-quality-artifact-123456/summary.json' "$TEMP_DIR/output.log" ||
@@ -201,6 +204,8 @@ EOF
     fail "missing release notes CI link"
   grep -Fq -- '- Context-pack quality artifact: [codeinsight-context-pack-quality](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987655)' "$TEMP_DIR/output.log" ||
     fail "missing release notes context-pack quality artifact link"
+  grep -Fq -- '- Benchmark summary: `/tmp/codeinsight-benchmark-artifact-123456/summary.json`' "$TEMP_DIR/output.log" ||
+    fail "missing release notes benchmark summary"
   grep -Fq -- '- Agent-route artifact: [codeinsight-agent-route-smoke](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987656)' "$TEMP_DIR/output.log" ||
     fail "missing release notes agent-route artifact link"
   grep -Fq -- '- MCP first-call artifact: [codeinsight-mcp-first-call](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987657)' "$TEMP_DIR/output.log" ||
@@ -219,6 +224,7 @@ EOF
     .artifacts.benchmark.name == "codeinsight-benchmark-subset" and
     .artifacts.benchmark.url == "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987654" and
     .artifacts.benchmark.report == "/tmp/codeinsight-benchmark-artifact-123456/report.md" and
+    .artifacts.benchmark.summary == "/tmp/codeinsight-benchmark-artifact-123456/summary.json" and
     .artifacts.context_pack_quality.name == "codeinsight-context-pack-quality" and
     .artifacts.context_pack_quality.url == "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987655" and
     .artifacts.context_pack_quality.summary == "/tmp/codeinsight-context-pack-quality-artifact-123456/summary.json" and

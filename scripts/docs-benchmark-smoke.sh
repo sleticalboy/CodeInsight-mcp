@@ -759,6 +759,9 @@ main() {
   require_pattern docs/maintainer-checklist.md \
     'scripts/benchmark-artifact-smoke\.sh <ci-run-id>' \
     "maintainer benchmark artifact smoke command"
+  require_pattern docs/maintenance-commands.md \
+    'summary uploaded by `benchmark-subset-smoke`' \
+    "maintenance benchmark summary artifact validation"
   require_pattern docs/status.md \
     'MCP first-call onboarding' \
     "status MCP first-call evidence artifact"
@@ -771,6 +774,15 @@ main() {
   require_pattern scripts/benchmark-artifact-smoke.sh \
     'benchmark-report-smoke\.sh' \
     "benchmark artifact report validation"
+  require_pattern scripts/benchmark-artifact-smoke.sh \
+    'benchmark-summary-text\.sh' \
+    "benchmark artifact summary JSON validation"
+  require_pattern scripts/release-evidence-summary.sh \
+    'benchmark_summary:' \
+    "release evidence benchmark summary output"
+  require_pattern scripts/release-evidence-summary.sh \
+    'Benchmark summary:' \
+    "release notes benchmark summary output"
   require_pattern scripts/agent-router-demo.sh \
     'reading_plan_steps' \
     "agent-router reading plan output"

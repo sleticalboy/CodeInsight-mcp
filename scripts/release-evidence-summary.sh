@@ -179,7 +179,7 @@ validate_benchmark_artifact() {
     output="$("$BENCHMARK_ARTIFACT_SMOKE_SCRIPT" --artifact-name "$ARTIFACT_NAME" "$run_id")"
   fi
 
-  printf "%s\n" "$output" | awk -F': ' '/^report: / { print $2; exit }'
+  printf "%s\n" "$output" | awk -F': ' '/^report: / { print "report: " $2 } /^summary: / { print "summary: " $2 }'
 }
 
 validate_context_pack_quality_artifact() {
@@ -240,12 +240,13 @@ write_json_summary() {
   local ci_url="$4"
   local benchmark_artifact_url="$5"
   local benchmark_report_file="$6"
-  local context_pack_quality_artifact_url="$7"
-  local context_pack_quality_summary_file="$8"
-  local agent_route_artifact_url="$9"
-  local agent_route_summary_file="${10}"
-  local mcp_first_call_artifact_url="${11}"
-  local mcp_first_call_summary_file="${12}"
+  local benchmark_summary_file="$7"
+  local context_pack_quality_artifact_url="$8"
+  local context_pack_quality_summary_file="$9"
+  local agent_route_artifact_url="${10}"
+  local agent_route_summary_file="${11}"
+  local mcp_first_call_artifact_url="${12}"
+  local mcp_first_call_summary_file="${13}"
 
   mkdir -p "$(dirname "$output_file")"
   TAG_NAME="$TAG_NAME" \
@@ -257,6 +258,7 @@ write_json_summary() {
     ARTIFACT_NAME="$ARTIFACT_NAME" \
     BENCHMARK_ARTIFACT_URL="$benchmark_artifact_url" \
     BENCHMARK_REPORT_FILE="$benchmark_report_file" \
+    BENCHMARK_SUMMARY_FILE="$benchmark_summary_file" \
     CONTEXT_PACK_QUALITY_ARTIFACT_NAME="$CONTEXT_PACK_QUALITY_ARTIFACT_NAME" \
     CONTEXT_PACK_QUALITY_ARTIFACT_URL="$context_pack_quality_artifact_url" \
     CONTEXT_PACK_QUALITY_SUMMARY_FILE="$context_pack_quality_summary_file" \
@@ -282,6 +284,7 @@ release_notes = [
   "- CI: [run #{ENV.fetch("RUN_ID")}](#{ENV.fetch("CI_URL")})",
   "- Benchmark artifact: [#{ENV.fetch("ARTIFACT_NAME")}](#{ENV.fetch("BENCHMARK_ARTIFACT_URL")})",
   "- Benchmark report: `#{ENV.fetch("BENCHMARK_REPORT_FILE")}`",
+  "- Benchmark summary: `#{ENV.fetch("BENCHMARK_SUMMARY_FILE")}`",
   "- Context-pack quality artifact: [#{ENV.fetch("CONTEXT_PACK_QUALITY_ARTIFACT_NAME")}](#{ENV.fetch("CONTEXT_PACK_QUALITY_ARTIFACT_URL")})",
   "- Context-pack quality summary: `#{ENV.fetch("CONTEXT_PACK_QUALITY_SUMMARY_FILE")}`",
   "- Agent-route artifact: [#{ENV.fetch("AGENT_ROUTE_ARTIFACT_NAME")}](#{ENV.fetch("AGENT_ROUTE_ARTIFACT_URL")})",
@@ -310,7 +313,8 @@ summary = {
     "benchmark" => {
       "name" => ENV.fetch("ARTIFACT_NAME"),
       "url" => ENV.fetch("BENCHMARK_ARTIFACT_URL"),
-      "report" => ENV.fetch("BENCHMARK_REPORT_FILE")
+      "report" => ENV.fetch("BENCHMARK_REPORT_FILE"),
+      "summary" => ENV.fetch("BENCHMARK_SUMMARY_FILE")
     },
     "context_pack_quality" => {
       "name" => ENV.fetch("CONTEXT_PACK_QUALITY_ARTIFACT_NAME"),
@@ -341,7 +345,9 @@ main() {
   local repo_name
   local ci_url
   local benchmark_artifact_url
+  local benchmark_artifact_validation
   local benchmark_report_file
+  local benchmark_summary_file
   local context_pack_quality_artifact_url
   local context_pack_quality_summary_file
   local agent_route_artifact_url
@@ -474,7 +480,15 @@ main() {
   context_pack_quality_artifact_url="$(resolve_artifact_url "$repo_name" "$RUN_ID" "$CONTEXT_PACK_QUALITY_ARTIFACT_NAME")"
   agent_route_artifact_url="$(resolve_artifact_url "$repo_name" "$RUN_ID" "$AGENT_ROUTE_ARTIFACT_NAME")"
   mcp_first_call_artifact_url="$(resolve_artifact_url "$repo_name" "$RUN_ID" "$MCP_FIRST_CALL_ARTIFACT_NAME")"
-  benchmark_report_file="$(validate_benchmark_artifact "$RUN_ID")"
+  benchmark_artifact_validation="$(validate_benchmark_artifact "$RUN_ID")"
+  benchmark_report_file="$(printf "%s\n" "$benchmark_artifact_validation" | awk -F': ' '/^report: / { print $2; exit }')"
+  benchmark_summary_file="$(printf "%s\n" "$benchmark_artifact_validation" | awk -F': ' '/^summary: / { print $2; exit }')"
+  if [ -z "$benchmark_report_file" ]; then
+    fail "benchmark artifact smoke did not report a Markdown report path"
+  fi
+  if [ -z "$benchmark_summary_file" ]; then
+    fail "benchmark artifact smoke did not report a JSON summary path"
+  fi
   context_pack_quality_summary_file="$(validate_context_pack_quality_artifact "$RUN_ID")"
   agent_route_summary_file="$(validate_agent_route_artifact "$RUN_ID")"
   mcp_first_call_summary_file="$(validate_mcp_first_call_artifact "$RUN_ID")"
@@ -488,6 +502,7 @@ main() {
   echo "benchmark_artifact: $ARTIFACT_NAME"
   echo "benchmark_artifact_url: $benchmark_artifact_url"
   echo "benchmark_report: $benchmark_report_file"
+  echo "benchmark_summary: $benchmark_summary_file"
   echo "context_pack_quality_artifact: $CONTEXT_PACK_QUALITY_ARTIFACT_NAME"
   echo "context_pack_quality_artifact_url: $context_pack_quality_artifact_url"
   echo "context_pack_quality_summary: $context_pack_quality_summary_file"
@@ -505,6 +520,7 @@ main() {
   echo "- CI: [run $RUN_ID]($ci_url)"
   echo "- Benchmark artifact: [$ARTIFACT_NAME]($benchmark_artifact_url)"
   echo "- Benchmark report: \`$benchmark_report_file\`"
+  echo "- Benchmark summary: \`$benchmark_summary_file\`"
   echo "- Context-pack quality artifact: [$CONTEXT_PACK_QUALITY_ARTIFACT_NAME]($context_pack_quality_artifact_url)"
   echo "- Context-pack quality summary: \`$context_pack_quality_summary_file\`"
   echo "- Agent-route artifact: [$AGENT_ROUTE_ARTIFACT_NAME]($agent_route_artifact_url)"
@@ -521,6 +537,7 @@ main() {
       "$ci_url" \
       "$benchmark_artifact_url" \
       "$benchmark_report_file" \
+      "$benchmark_summary_file" \
       "$context_pack_quality_artifact_url" \
       "$context_pack_quality_summary_file" \
       "$agent_route_artifact_url" \

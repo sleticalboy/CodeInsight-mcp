@@ -23,7 +23,8 @@ usage: scripts/benchmark-artifact-smoke.sh [options] <ci-run-id>
        scripts/benchmark-artifact-smoke.sh [options] --latest-success BRANCH
 
 Downloads the CI benchmark subset artifact and validates the Markdown report
-with scripts/benchmark-report-smoke.sh.
+with scripts/benchmark-report-smoke.sh plus the compact summary JSON with
+scripts/benchmark-summary-text.sh.
 
 Options:
   --repo OWNER/REPO       Pass an explicit GitHub repository to gh.
@@ -78,6 +79,8 @@ resolve_latest_success_run() {
 main() {
   local report_file
   local report_count
+  local summary_file
+  local summary_count
 
   while [ "$#" -gt 0 ]; do
     case "$1" in
@@ -202,13 +205,22 @@ main() {
   fi
   report_file="$(find "$OUTPUT_DIR" -type f -name '*.md' | head -n 1)"
 
+  summary_count="$(find "$OUTPUT_DIR" -type f -name '*.json' | wc -l | tr -d ' ')"
+  if [ "$summary_count" -ne 1 ]; then
+    find "$OUTPUT_DIR" -type f -print >&2
+    fail "expected exactly one JSON summary in $OUTPUT_DIR, found $summary_count"
+  fi
+  summary_file="$(find "$OUTPUT_DIR" -type f -name '*.json' | head -n 1)"
+
   "$ROOT_DIR/scripts/benchmark-report-smoke.sh" \
     "$report_file" \
     "$EXPECTED_PROFILE" \
     "$EXPECTED_REPOS"
+  "$ROOT_DIR/scripts/benchmark-summary-text.sh" "$summary_file" >/dev/null
 
   echo "benchmark artifact smoke passed"
   echo "report: $report_file"
+  echo "summary: $summary_file"
 }
 
 main "$@"

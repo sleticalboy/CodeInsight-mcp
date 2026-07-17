@@ -155,6 +155,9 @@ To inspect the artifact locally, download and validate it from a completed
 scripts/benchmark-artifact-smoke.sh <ci-run-id>
 ```
 
+The artifact smoke validates both the Markdown report and the compact JSON
+summary uploaded by `benchmark-subset-smoke`.
+
 To validate the context-pack quality artifact from a completed `CI` run:
 
 ```bash

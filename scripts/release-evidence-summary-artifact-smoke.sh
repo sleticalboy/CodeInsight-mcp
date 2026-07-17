@@ -216,6 +216,7 @@ main() {
   require_output "$output_file" "agent_route_artifact_url: https://github.com/$repo_name/actions/runs/$RUN_ID/artifacts/" "agent-route artifact URL"
   require_output "$output_file" "mcp_first_call_artifact_url: https://github.com/$repo_name/actions/runs/$RUN_ID/artifacts/" "MCP first-call artifact URL"
   require_output "$output_file" "benchmark_report: " "benchmark report path"
+  require_output "$output_file" "benchmark_summary: " "benchmark summary path"
   require_output "$output_file" "context_pack_quality_summary: " "context-pack quality summary path"
   require_output "$output_file" "agent_route_summary: " "agent-route summary path"
   require_output "$output_file" "mcp_first_call_summary: " "MCP first-call summary path"
