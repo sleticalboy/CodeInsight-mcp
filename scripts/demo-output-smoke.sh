@@ -62,6 +62,9 @@ main() {
     'first_next_action: inspect_seed_file' \
     "first next action metric"
   require_pattern docs/demo-output.md \
+    'first_reading_question: What entrypoints' \
+    "first reading question metric"
+  require_pattern docs/demo-output.md \
     'route_reason: selected [0-9]+ files, [0-9]+ ranges, and [0-9]+ reading-plan steps within the token budget; read .* first via inspect_seed_file' \
     "context route reason metric"
   require_pattern docs/demo-output.md \
@@ -86,6 +89,9 @@ main() {
     'agent_route selected [0-9]+/[0-9]+ source lines \([0-9]+\.[0-9]% reduction\) across [0-9]+ files\.' \
     "evidence summary line reduction"
   require_pattern docs/demo-output.md \
+    'First reading question: What entrypoints' \
+    "evidence summary first reading question"
+  require_pattern docs/demo-output.md \
     'read it before offering file_outline\.' \
     "evidence summary suggested tool timing"
   require_pattern docs/demo-output.md \
@@ -106,6 +112,9 @@ main() {
   require_pattern docs/demo-output.md \
     'The first execution-plan suggested tool is file_outline; offer it only after the selected file has been read\.' \
     "execution suggested tool talk track"
+  require_pattern docs/demo-output.md \
+    'The first reading-plan question is: What entrypoints' \
+    "reading question talk track"
   require_pattern docs/demo-output.md \
     'The first reading-plan action is inspect_seed_file; Read this step to answer:' \
     "reading reason talk track"

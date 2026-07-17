@@ -105,6 +105,7 @@ Promise: route the agent through agent_route before edits.
    second_execution_action: use_current_reading_step_suggested_tool
    first_execution_suggested_tool: file_outline
    first_next_action: inspect_seed_file
+   first_reading_question: What entrypoints, exported symbols, or setup code define the main flow here?
    line_reduction: 99.6%
    continuation: complete
    route_reason: selected 2 files, 4 ranges, and 2 reading-plan steps within the token budget; read src/tools.rs first via inspect_seed_file, use file_outline when deeper evidence is needed, then follow continuation read_selected_context
@@ -117,6 +118,7 @@ Promise: route the agent through agent_route before edits.
 
 [Evidence summary]
 agent_route selected 123/28235 source lines (99.6% reduction) across 2 files.
+First reading question: What entrypoints, exported symbols, or setup code define the main flow here?
 The first selected file is src/tools.rs; read it before offering file_outline.
 Before edits, impact_analysis reports high risk across 7 impacted files.
 
@@ -126,7 +128,8 @@ Before edits, impact_analysis reports high risk across 7 impacted files.
 3. context_pack selected 2 files and 4 ranges, then produced 2 reading-plan steps.
 4. execution_plan starts with read_selected_context, then use_current_reading_step_suggested_tool; this keeps suggested tools behind selected-context reading.
 5. The first execution-plan suggested tool is file_outline; offer it only after the selected file has been read.
-6. The first reading-plan action is inspect_seed_file; the selected context reduced source reading by 99.6%; selected 2 files, 4 ranges, and 2 reading-plan steps within the token budget; read src/tools.rs first via inspect_seed_file, use file_outline when deeper evidence is needed, then follow continuation read_selected_context
+6. The first reading-plan question is: What entrypoints, exported symbols, or setup code define the main flow here?
+7. The first reading-plan action is inspect_seed_file; the selected context reduced source reading by 99.6%; selected 2 files, 4 ranges, and 2 reading-plan steps within the token budget; read src/tools.rs first via inspect_seed_file, use file_outline when deeper evidence is needed, then follow continuation read_selected_context
 ```
 
 Exact numbers vary by repository and current source state. The important point

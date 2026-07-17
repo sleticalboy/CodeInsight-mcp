@@ -52,6 +52,7 @@ token_budget: 6000
    second_execution_action: use_current_reading_step_suggested_tool
    first_execution_suggested_tool: file_outline
    first_next_action: inspect_seed_file
+   first_reading_question: What entrypoints, exported symbols, or setup code define the main flow here?
    selected_lines: 123
    line_reduction: 99.6%
    estimated_tokens: 1073
@@ -74,6 +75,7 @@ Run against another repository:
 
 [Evidence summary]
 agent_route selected 123/28235 source lines (99.6% reduction) across 2 files.
+First reading question: What entrypoints, exported symbols, or setup code define the main flow here?
 The first selected file is src/tools.rs; read it before offering file_outline.
 Before edits, impact_analysis reports high risk across 7 impacted files.
 
@@ -83,11 +85,12 @@ Before edits, impact_analysis reports high risk across 7 impacted files.
 3. context_pack selected 2 files and 4 ranges, then produced 2 reading-plan steps.
 4. execution_plan starts with read_selected_context, then use_current_reading_step_suggested_tool; this keeps suggested tools behind selected-context reading.
 5. The first execution-plan suggested tool is file_outline; offer it only after the selected file has been read.
-6. The first reading-plan action is inspect_seed_file; Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: src/tools.rs
-7. The selected context reduced source reading by 99.6%; selected 2 files, 4 ranges, and 2 reading-plan steps within the token budget; read src/tools.rs first via inspect_seed_file, use file_outline when deeper evidence is needed, then follow continuation read_selected_context
-8. Selection evidence: Selected for high relevance via seed_file: Seed file header and imports for task: src/tools.rs
-9. Continuation status is complete, so the agent knows whether to ask for a focused follow-up.
-10. impact_analysis reports high risk across 7 impacted files with 4 suggested checks; after selected context is read, pre-edit impact check estimated 7 impacted files at high risk, including 5 call-related files, 1 dependency-related files, 27 call paths, and 1 dependency paths
+6. The first reading-plan question is: What entrypoints, exported symbols, or setup code define the main flow here?
+7. The first reading-plan action is inspect_seed_file; Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: src/tools.rs
+8. The selected context reduced source reading by 99.6%; selected 2 files, 4 ranges, and 2 reading-plan steps within the token budget; read src/tools.rs first via inspect_seed_file, use file_outline when deeper evidence is needed, then follow continuation read_selected_context
+9. Selection evidence: Selected for high relevance via seed_file: Seed file header and imports for task: src/tools.rs
+10. Continuation status is complete, so the agent knows whether to ask for a focused follow-up.
+11. impact_analysis reports high risk across 7 impacted files with 4 suggested checks; after selected context is read, pre-edit impact check estimated 7 impacted files at high risk, including 5 call-related files, 1 dependency-related files, 27 call paths, and 1 dependency paths
 
 [Agent policy]
 Call agent_route with root, task, and token_budget for the default first read.
@@ -103,8 +106,9 @@ Run this walkthrough against another repository:
   `index_project`, `project_overview`, `context_pack`, and `impact_analysis`.
 - `context_pack` includes selected files, selected ranges, reading-plan steps,
   execution-plan steps, first execution action, first next action,
-  first execution suggested tool, reading-plan reason, selection reason, token
-  estimate, line reduction, route reason, and continuation status.
+  first execution suggested tool, first reading question, reading-plan reason,
+  selection reason, token estimate, line reduction, route reason, and
+  continuation status.
 - `impact_analysis` includes its route reason so the demo frames it as the
   pre-edit impact check after selected context is read.
 - The evidence summary gives a compact copyable result for README videos or

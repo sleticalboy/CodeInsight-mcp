@@ -183,6 +183,8 @@ EOF
     fail "missing second execution action metric"
   grep -Fq 'first_execution_suggested_tool: file_outline' "$TEMP_DIR/output.log" ||
     fail "missing first execution suggested tool metric"
+  grep -Fq 'first_reading_question: What entrypoints or setup code define the main flow here?' "$TEMP_DIR/output.log" ||
+    fail "missing first reading question metric"
   grep -Fq 'route_reason: selected 1 files, 11 ranges, and 1 reading-plan steps within the token budget; read src/main.rs first via inspect_seed_file, use file_outline when deeper evidence is needed, then follow continuation read_selected_context' "$TEMP_DIR/output.log" ||
     fail "missing context route reason"
   grep -Fq 'reading_plan_reason: Read this step to answer: What entrypoints or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: src/main.rs' "$TEMP_DIR/output.log" ||
@@ -195,6 +197,8 @@ EOF
     fail "missing evidence summary"
   grep -Fq 'agent_route selected 439/27681 source lines (98.4% reduction) across 1 files.' "$TEMP_DIR/output.log" ||
     fail "missing evidence summary line reduction"
+  grep -Fq 'First reading question: What entrypoints or setup code define the main flow here?' "$TEMP_DIR/output.log" ||
+    fail "missing evidence summary reading question"
   grep -Fq 'The first selected file is src/main.rs; read it before offering file_outline.' "$TEMP_DIR/output.log" ||
     fail "missing evidence summary suggested tool timing"
   grep -Fq 'Before edits, impact_analysis reports high risk across 11 impacted files.' "$TEMP_DIR/output.log" ||
@@ -203,6 +207,8 @@ EOF
     fail "missing execution plan talk track"
   grep -Fq 'The first execution-plan suggested tool is file_outline; offer it only after the selected file has been read.' "$TEMP_DIR/output.log" ||
     fail "missing execution suggested tool talk track"
+  grep -Fq 'The first reading-plan question is: What entrypoints or setup code define the main flow here?' "$TEMP_DIR/output.log" ||
+    fail "missing reading question talk track"
   grep -Fq 'The first reading-plan action is inspect_seed_file; Read this step to answer: What entrypoints or setup code define the main flow here?' "$TEMP_DIR/output.log" ||
     fail "missing reading reason talk track"
   grep -Fq 'Selection evidence: Selected for high relevance via seed_file: Seed file header and imports for task: src/main.rs' "$TEMP_DIR/output.log" ||

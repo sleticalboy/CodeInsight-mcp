@@ -787,6 +787,9 @@ main() {
     'first_execution_suggested_tool' \
     "two-minute demo execution-plan suggested tool metric"
   require_pattern scripts/two-minute-demo.sh \
+    'first_reading_question' \
+    "two-minute demo first reading question metric"
+  require_pattern scripts/two-minute-demo.sh \
     'offer it only after the selected file has been read' \
     "two-minute demo suggested tool gating talk track"
   require_pattern scripts/two-minute-demo.sh \

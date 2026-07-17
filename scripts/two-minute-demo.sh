@@ -132,6 +132,7 @@ main() {
   require_json_number_gt_zero "$route_json" '.context_pack.reading_plan | length' "context_pack reading plan steps"
   require_json_number_gt_zero "$route_json" '.execution_plan | length' "agent_route execution plan steps"
   require_json_string "$route_json" '.context_pack.reading_plan[0].next_action' "first reading-plan next action"
+  require_json_string "$route_json" '.context_pack.reading_plan[0].question' "first reading-plan question"
   require_json_string "$route_json" '.context_pack.reading_plan[0].reason' "first reading-plan reason"
   require_json_string "$route_json" '.context_pack.reading_plan[0].selection_reason' "first reading-plan selection reason"
   require_json_string "$route_json" '.execution_plan[0].action' "first execution-plan action"
@@ -140,7 +141,7 @@ main() {
   local total_lines selected_lines reduction first_entrypoint first_context_file
   local entrypoints recommended_tools selected_files selected_ranges reading_plan_steps
   local execution_plan_steps first_execution_action second_execution_action
-  local first_execution_suggested_tool first_next_action first_reading_reason first_selection_reason
+  local first_execution_suggested_tool first_next_action first_reading_question first_reading_reason first_selection_reason
   local continuation risk_level impacted_files suggested_checks impact_seed_file
 
   total_lines="$(json_value "$route_json" '.overview.total_lines // 0')"
@@ -158,6 +159,7 @@ main() {
   second_execution_action="$(json_value "$route_json" '.execution_plan[1].action // "-"')"
   first_execution_suggested_tool="$(json_value "$route_json" '.execution_plan[1].suggested_tool.tool // "-"')"
   first_next_action="$(json_value "$route_json" '.context_pack.reading_plan[0].next_action // "-"')"
+  first_reading_question="$(json_value "$route_json" '.context_pack.reading_plan[0].question // "-"')"
   first_reading_reason="$(json_value "$route_json" '.context_pack.reading_plan[0].reason // "-"')"
   first_selection_reason="$(json_value "$route_json" '.context_pack.reading_plan[0].selection_reason // "-"')"
   context_route_reason="$(json_value "$route_json" '.route[] | select(.tool == "context_pack") | .reason')"
@@ -191,6 +193,7 @@ main() {
   echo "   second_execution_action: $second_execution_action"
   echo "   first_execution_suggested_tool: $first_execution_suggested_tool"
   echo "   first_next_action: $first_next_action"
+  echo "   first_reading_question: $first_reading_question"
   echo "   selected_lines: $selected_lines"
   echo "   line_reduction: $reduction"
   echo "   estimated_tokens: $(json_value "$route_json" '.context_pack.estimated_tokens')"
@@ -219,6 +222,7 @@ main() {
   echo
   echo "[Evidence summary]"
   echo "agent_route selected ${selected_lines}/${total_lines} source lines (${reduction} reduction) across ${selected_files} files."
+  echo "First reading question: ${first_reading_question}"
   echo "The first selected file is ${first_context_file}; read it before offering ${first_execution_suggested_tool}."
   if [ -n "$risk_level" ]; then
     echo "Before edits, impact_analysis reports ${risk_level} risk across ${impacted_files} impacted files."
@@ -232,14 +236,15 @@ main() {
   echo "3. context_pack selected ${selected_files} files and ${selected_ranges} ranges, then produced ${reading_plan_steps} reading-plan steps."
   echo "4. execution_plan starts with ${first_execution_action}, then ${second_execution_action}; this keeps suggested tools behind selected-context reading."
   echo "5. The first execution-plan suggested tool is ${first_execution_suggested_tool}; offer it only after the selected file has been read."
-  echo "6. The first reading-plan action is ${first_next_action}; ${first_reading_reason}"
-  echo "7. The selected context reduced source reading by ${reduction}; ${context_route_reason}"
-  echo "8. Selection evidence: ${first_selection_reason}"
-  echo "9. Continuation status is ${continuation}, so the agent knows whether to ask for a focused follow-up."
+  echo "6. The first reading-plan question is: ${first_reading_question}"
+  echo "7. The first reading-plan action is ${first_next_action}; ${first_reading_reason}"
+  echo "8. The selected context reduced source reading by ${reduction}; ${context_route_reason}"
+  echo "9. Selection evidence: ${first_selection_reason}"
+  echo "10. Continuation status is ${continuation}, so the agent knows whether to ask for a focused follow-up."
   if [ -n "$risk_level" ]; then
-    echo "10. impact_analysis reports ${risk_level} risk across ${impacted_files} impacted files with ${suggested_checks} suggested checks; ${impact_route_reason}"
+    echo "11. impact_analysis reports ${risk_level} risk across ${impacted_files} impacted files with ${suggested_checks} suggested checks; ${impact_route_reason}"
   else
-    echo "10. impact_analysis is the pre-edit step when context_pack selects a file seed."
+    echo "11. impact_analysis is the pre-edit step when context_pack selects a file seed."
   fi
   echo
   echo "[Agent policy]"
