@@ -40,6 +40,7 @@ main() {
     (.installed_quickstart.coverage | index("agent-route")) and
     (.installed_quickstart.coverage | index("mcp_agent_route")) and
     (.installed_quickstart.coverage | index("agent_route_execution_plan")) and
+    (.installed_quickstart.coverage | index("reading_plan_question")) and
     (.installed_quickstart.coverage | index("reading_plan_reason")) and
     (.installed_quickstart.coverage | index("selection_reason")) and
     (.expected_assets | length) == 4
@@ -54,6 +55,7 @@ main() {
     (.installed_quickstart.coverage | index("agent-route")) and
     (.installed_quickstart.coverage | index("mcp_agent_route")) and
     (.installed_quickstart.coverage | index("agent_route_execution_plan")) and
+    (.installed_quickstart.coverage | index("reading_plan_question")) and
     (.installed_quickstart.coverage | index("reading_plan_reason")) and
     (.installed_quickstart.coverage | index("selection_reason"))
   ' "$SMOKE_TEMP_DIR/skipped-summary.json" >/dev/null

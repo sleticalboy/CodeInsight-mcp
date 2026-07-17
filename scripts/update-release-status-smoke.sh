@@ -65,7 +65,7 @@ EOF
   "installed_quickstart": {
     "binary": "/tmp/codeinsight",
     "skipped": true,
-    "coverage": ["version", "index", "overview", "context-pack", "agent-route", "mcp_stdio", "mcp_agent_route", "agent_route_execution_plan", "reading_plan_reason", "selection_reason"]
+    "coverage": ["version", "index", "overview", "context-pack", "agent-route", "mcp_stdio", "mcp_agent_route", "agent_route_execution_plan", "reading_plan_question", "reading_plan_reason", "selection_reason"]
   }
 }
 EOF
@@ -143,7 +143,7 @@ EOF
   grep -q -- '- Docker image: `ghcr.io/sleticalboy/codeinsight-mcp` (skipped locally)' "$status_doc"
   grep -q -- '- Homebrew tap: `sleticalboy/tap` (skipped locally)' "$status_doc"
   grep -q -- '- Installed quickstart binary: `/tmp/codeinsight` (skipped locally)' "$status_doc"
-  grep -q -- '- Installed quickstart coverage: `version`, `index`, `overview`, `context-pack`, `agent-route`, `mcp_stdio`, `mcp_agent_route`, `agent_route_execution_plan`, `reading_plan_reason`, `selection_reason`' "$status_doc"
+  grep -q -- '- Installed quickstart coverage: `version`, `index`, `overview`, `context-pack`, `agent-route`, `mcp_stdio`, `mcp_agent_route`, `agent_route_execution_plan`, `reading_plan_question`, `reading_plan_reason`, `selection_reason`' "$status_doc"
   grep -q -- '- Pre-release evidence:' "$status_doc"
   grep -q -- "  - Evidence file: \`$evidence_json_file\`" "$status_doc"
   grep -q -- '  - Target commit: `abc123`' "$status_doc"

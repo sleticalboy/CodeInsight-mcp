@@ -324,11 +324,17 @@ main() {
     '`selection_reason` is the compact raw ranking reason' \
     "MCP client config selection reason contract"
   require_pattern docs/mcp-client-config.md \
+    'Treat `context_pack\.reading_plan\[\]\.question` as the local checklist' \
+    "MCP client config reading question client action"
+  require_pattern docs/mcp-client-config.md \
     'Expected first-call signals:' \
     "MCP client config first-call signal table"
   require_pattern docs/mcp-client-config.md \
     '\| `context_pack\.files\[\]` \| Contains the bounded files or excerpts to read first\.' \
     "MCP client config bounded context signal"
+  require_pattern docs/mcp-client-config.md \
+    '\| `context_pack\.reading_plan\[\]\.question` \| States the concrete question' \
+    "MCP client config reading question signal"
   require_pattern docs/mcp-client-config.md \
     '\| `context_pack\.reading_plan\[\]\.reason` \| Explains what the agent should learn' \
     "MCP client config reading reason signal"
@@ -357,8 +363,17 @@ main() {
     'CLI `agent-route`, MCP stdio, and MCP `agent_route`' \
     "adoption CLI and MCP agent_route coverage"
   require_pattern docs/adoption-checklist.md \
+    '`context_reading_question`' \
+    "adoption installed quickstart reading question output"
+  require_pattern docs/adoption-checklist.md \
+    '`mcp_agent_route_reading_question`' \
+    "adoption installed quickstart MCP reading question output"
+  require_pattern docs/adoption-checklist.md \
     'The agent calls `agent_route` with `root`, `task`, and `token_budget` before' \
     "adoption agent_route first-read policy"
+  require_pattern docs/adoption-checklist.md \
+    '`reading_plan\[\]\.question` as the local checklist' \
+    "adoption reading question policy"
   require_pattern docs/adoption-checklist.md \
     '`reading_plan\[\]\.reason` as the current-step instruction' \
     "adoption reading reason policy"
@@ -382,6 +397,9 @@ main() {
     'Every client should treat `agent_route\.execution_plan\[\]` as the ordered action' \
     "client examples execution plan contract"
   require_pattern docs/client-integration-examples.md \
+    'Use reading_plan\[\]\.question as the local checklist' \
+    "client examples reading question policy"
+  require_pattern docs/client-integration-examples.md \
     'read_selected_context -> use_current_reading_step_suggested_tool ->' \
     "client examples action order"
   require_pattern docs/client-integration-examples.md \
@@ -390,6 +408,9 @@ main() {
   require_pattern docs/client-integration-examples.md \
     'Suggested-tool buttons should be disabled or visually secondary until the' \
     "client examples suggested tool gating"
+  require_pattern docs/client-integration-examples.md \
+    '`reading_plan\[\]\.question` beside each selected file' \
+    "client examples UI reading question"
   require_pattern docs/client-integration-examples.md \
     'Codex' \
     "client examples Codex section"

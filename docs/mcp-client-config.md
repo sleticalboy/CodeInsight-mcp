@@ -196,10 +196,12 @@ After the MCP server is configured, the first broad repository task should call
 The response is the default first-read bundle. A minimal client should:
 
 1. Read `context_pack.files[]` in `context_pack.reading_plan[]` order.
-2. Follow `agent_route.execution_plan[]` as the UI or agent checklist.
-3. Offer `execution_plan[].suggested_tool` only after the selected file has
+2. Treat `context_pack.reading_plan[].question` as the local checklist for the
+   selected file.
+3. Follow `agent_route.execution_plan[]` as the UI or agent checklist.
+4. Offer `execution_plan[].suggested_tool` only after the selected file has
    been read.
-4. Review the included `impact_analysis` before edits.
+5. Review the included `impact_analysis` before edits.
 
 Expected first-call signals:
 
@@ -207,6 +209,7 @@ Expected first-call signals:
 | --- | --- | --- |
 | `route[]` | Includes `index_project`, `project_overview`, `context_pack`, and `impact_analysis`. | Treat the route as already executed; do not rerun those tools unless the repository changed. |
 | `context_pack.files[]` | Contains the bounded files or excerpts to read first. | Read these files before broad `rg` or full-file scans. |
+| `context_pack.reading_plan[].question` | States the concrete question the selected file should answer. | Show it as the local reading checklist. |
 | `context_pack.reading_plan[].reason` | Explains what the agent should learn from the selected file. | Show it as the current reading instruction. |
 | `context_pack.reading_plan[].selection_reason` | Explains why this file was selected under the token budget. | Use it as compact evidence in logs or UI. |
 | `execution_plan[]` | Starts with `read_selected_context`, then gates deeper tools and continuation. | Render it as the ordered checklist for the agent. |

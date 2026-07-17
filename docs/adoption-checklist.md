@@ -88,9 +88,10 @@ Pass criteria:
 - Output includes `installed quickstart smoke passed`.
 - The smoke covers `version`, `index`, `overview`, `context-pack`,
   CLI `agent-route`, MCP stdio, and MCP `agent_route`.
-- The smoke output includes `context_reading_reason`,
-  `context_selection_reason`, `agent_route_reading_reason`, and
-  `mcp_agent_route_selection_reason`.
+- The smoke output includes `context_reading_question`,
+  `agent_route_reading_question`, `mcp_context_reading_question`,
+  `mcp_agent_route_reading_question`, and the matching reading reason and
+  selection reason fields.
 - The smoke output includes `agent_route_execution_plan` and
   `mcp_agent_route_execution_plan` with the expected client action order.
 - `agent_route_tools` includes `index_project`, `project_overview`,
@@ -154,10 +155,11 @@ Pass criteria:
 - The agent uses `project_overview` and `context_pack` from the `agent_route`
   response instead of duplicating the first-read path manually.
 - The agent reads selected files in `reading_plan[]` order and uses
+  `reading_plan[].question` as the local checklist and
   `reading_plan[].reason` as the current-step instruction.
 - The agent can explain `reading_plan[].selection_reason` as the evidence for
   why a file was selected, without treating it as a replacement for
-  `reading_plan[].reason`.
+  `reading_plan[].question` or `reading_plan[].reason`.
 - The agent does not execute `continuation_summary.suggested_tool` or
   `omitted_candidates[].suggested_tool` until the selected `files[]` excerpts
   have been read.
@@ -258,9 +260,9 @@ CodeInsight is successfully adopted when:
   `agent_route`.
 - The agent follows the `agent_route` first-read policy.
 - `context_pack` returns a bounded reading plan.
-- The agent follows `reading_plan[].reason`, can surface
-  `reading_plan[].selection_reason`, and waits to use continuation tools until
-  selected context has been read.
+- The agent follows `reading_plan[].question` and `reading_plan[].reason`, can
+  surface `reading_plan[].selection_reason`, and waits to use continuation
+  tools until selected context has been read.
 - `impact_analysis` is used before edits.
 - Local smoke or benchmark evidence can be reproduced on at least one real
   repository.

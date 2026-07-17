@@ -200,8 +200,8 @@ CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.s
 This smoke proves the installed binary can run `version`, `index`, `overview`,
 `context-pack`, CLI `agent-route`, MCP stdio, and MCP `agent_route` against a
 temporary project outside the source checkout. It also verifies the returned
-agent-route execution plan, reading-plan reason, and selection reason that
-agents use to read files in the right order.
+agent-route execution plan, reading-plan question, reading-plan reason, and
+selection reason that agents use to read files in the right order.
 
 For the complete adoption checklist, see
 [Adoption checklist](docs/adoption-checklist.md).
