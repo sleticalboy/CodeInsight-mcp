@@ -741,6 +741,10 @@ print_terminal_summary() {
   echo "  indexing: $TOTAL_INDEX_MS ms total, $average_index_ms ms average"
   echo "  guardrail failures: $total_failures"
   echo "  truncated context packs: $TRUNCATED_CONTEXT_PACKS"
+  echo "next steps"
+  echo "  open report: $OUTPUT"
+  echo "  inspect: Key Results, Summary, and each Context reading plan table"
+  echo "  continue with: file_outline for first files, dependency_graph for imports, impact_analysis before edits"
 }
 
 append_summary_row() {

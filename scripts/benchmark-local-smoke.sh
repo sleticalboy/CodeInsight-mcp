@@ -71,6 +71,10 @@ grep -Fq "report: $report" "$output_log"
 grep -Fq 'repositories: 1 (all)' "$output_log"
 grep -Fq 'context_pack first: 1/1' "$output_log"
 grep -Fq 'guardrail failures: 0' "$output_log"
+grep -Fq 'next steps' "$output_log"
+grep -Fq "open report: $report" "$output_log"
+grep -Fq 'inspect: Key Results, Summary, and each Context reading plan table' "$output_log"
+grep -Fq 'continue with: file_outline for first files, dependency_graph for imports, impact_analysis before edits' "$output_log"
 
 if [ -d "$repo/.codeinsight" ]; then
   echo "local benchmark should not write .codeinsight into source repository" >&2

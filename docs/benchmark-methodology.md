@@ -61,6 +61,11 @@ CODEINSIGHT_BENCH_PROFILE=local \
   scripts/benchmark-smoke.sh
 ```
 
+The command prints a terminal summary with the report path, routing and
+compression metrics, guardrail failures, and suggested next steps. Open the full
+report when you need the `Context reading plan` table or per-file selection
+evidence.
+
 Reuse existing clones during local iteration:
 
 ```bash

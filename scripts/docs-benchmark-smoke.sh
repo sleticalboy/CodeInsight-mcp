@@ -133,9 +133,15 @@ main() {
   require_pattern docs/benchmark-methodology.md \
     'CODEINSIGHT_BENCH_PROFILE=local' \
     "benchmark methodology local profile command"
+  require_pattern docs/benchmark-methodology.md \
+    'prints a terminal summary with the report path' \
+    "benchmark methodology terminal summary"
   require_pattern scripts/benchmark-smoke.sh \
     'CODEINSIGHT_BENCH_LOCAL_ROOT is required when CODEINSIGHT_BENCH_PROFILE=local' \
     "benchmark local profile root validation"
+  require_pattern scripts/benchmark-smoke.sh \
+    'continue with: file_outline for first files, dependency_graph for imports, impact_analysis before edits' \
+    "benchmark terminal next steps"
   require_pattern scripts/benchmark-local-smoke.sh \
     'CODEINSIGHT_BENCH_PROFILE=local' \
     "benchmark local smoke profile"
