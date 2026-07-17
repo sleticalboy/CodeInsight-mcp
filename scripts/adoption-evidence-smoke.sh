@@ -164,6 +164,9 @@ EOF
 
   grep -Fq "adoption evidence written to $TEMP_DIR/evidence" "$TEMP_DIR/output.log" ||
     fail "missing output directory message"
+  if grep -Fq '# CodeInsight Adoption Evidence' "$TEMP_DIR/output.log"; then
+    fail "default run should not print the copyable snippet"
+  fi
   grep -Fq '# CodeInsight Adoption Evidence' "$TEMP_DIR/evidence/adoption-evidence.md" ||
     fail "missing adoption evidence title"
   grep -Fq -- '- Selected context: `12/120` source lines, `90.0%` reduction' "$TEMP_DIR/evidence/adoption-evidence.md" ||
@@ -181,6 +184,20 @@ EOF
       and .artifacts.mcp_first_call_json == "'"$TEMP_DIR"'/evidence/mcp-first-call.json"' \
     "$TEMP_DIR/evidence/summary.json" >/dev/null ||
     fail "aggregate summary JSON does not match expected contract"
+
+  CODEINSIGHT_LOCAL_REPO_EVIDENCE_SCRIPT="$TEMP_DIR/local-repo-evidence" \
+  CODEINSIGHT_MCP_FIRST_CALL_SMOKE_SCRIPT="$TEMP_DIR/mcp-first-call-smoke" \
+    "$ROOT_DIR/scripts/adoption-evidence.sh" \
+    "$TEMP_DIR/repo" \
+    --output-dir "$TEMP_DIR/evidence-with-snippet" \
+    --print-snippet >"$TEMP_DIR/snippet.log"
+
+  grep -Fq '# CodeInsight Adoption Evidence' "$TEMP_DIR/snippet.log" ||
+    fail "missing printed snippet title"
+  grep -Fq -- '- Selected context: `12/120` source lines, `90.0%` reduction' "$TEMP_DIR/snippet.log" ||
+    fail "missing printed selected context line"
+  grep -Fq -- '- MCP suggested tool executed: `true`' "$TEMP_DIR/snippet.log" ||
+    fail "missing printed MCP suggested tool execution line"
 
   echo "adoption evidence smoke passed"
 }

@@ -69,7 +69,7 @@ which file to open next.
    | Goal | Command | Use When |
    | --- | --- | --- |
    | See the product loop | `scripts/two-minute-demo.sh` | You want a visible `agent_route -> context_pack -> impact_analysis` walkthrough with an `[Evidence summary]`. |
-   | Build adoption evidence | `scripts/adoption-evidence.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-evidence` | You want one folder with local first-read evidence, raw route JSON, MCP first-call JSON, and aggregate Markdown/JSON summaries. |
+   | Build adoption evidence | `scripts/adoption-evidence.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-evidence --print-snippet` | You want one folder with local first-read evidence, raw route JSON, MCP first-call JSON, aggregate Markdown/JSON summaries, and a copyable terminal snippet. |
    | Check the first MCP call | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/mcp-first-call-smoke.sh` | You want a compact JSON proof that stdio MCP accepts `agent_route`, returns selected files, exposes an execution plan, runs a suggested tool, and includes `impact_status`. |
    | Verify installed adoption | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh` | You want the installed binary to pass CLI `agent-route`, MCP stdio, and MCP `agent_route` against a temporary project. |
 
@@ -98,7 +98,8 @@ Generate a copyable Markdown evidence summary for your own repository:
 
 ```bash
 scripts/adoption-evidence.sh /path/to/repo \
-  --output-dir /tmp/codeinsight-adoption-evidence
+  --output-dir /tmp/codeinsight-adoption-evidence \
+  --print-snippet
 ```
 
 Generate only the local first-read evidence files:
@@ -166,11 +167,12 @@ Adoption evidence snippet for your own repository:
 
 ```bash
 scripts/adoption-evidence.sh /path/to/repo \
-  --output-dir /tmp/codeinsight-adoption-evidence
+  --output-dir /tmp/codeinsight-adoption-evidence \
+  --print-snippet
 ```
 
 Successful output produces `/tmp/codeinsight-adoption-evidence/adoption-evidence.md`
-with this copyable shape:
+and prints this copyable shape:
 
 ```text
 # CodeInsight Adoption Evidence

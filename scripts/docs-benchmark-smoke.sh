@@ -116,6 +116,12 @@ main() {
     'scripts/adoption-evidence\.sh /path/to/repo' \
     "README adoption evidence command"
   require_pattern README.md \
+    '\-\-print-snippet' \
+    "README adoption evidence print snippet option"
+  require_pattern README.md \
+    'prints this copyable shape' \
+    "README adoption printed snippet guidance"
+  require_pattern README.md \
     'MCP suggested tool executed: `true`' \
     "README adoption MCP suggested tool signal"
   require_pattern README.md \

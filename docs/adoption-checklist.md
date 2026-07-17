@@ -39,7 +39,8 @@ When you need a complete adoption evidence bundle for your own repository:
 
 ```bash
 scripts/adoption-evidence.sh /path/to/repo \
-  --output-dir /tmp/codeinsight-adoption-evidence
+  --output-dir /tmp/codeinsight-adoption-evidence \
+  --print-snippet
 ```
 
 When you only need local first-read evidence artifacts:
@@ -73,6 +74,9 @@ Pass criteria:
 - `adoption-evidence.sh` writes one folder containing local first-read evidence,
   raw `agent_route` JSON, MCP first-call JSON, and aggregate Markdown/JSON
   summaries that prove the CLI route and MCP route both work.
+- `--print-snippet` prints the same pass/fail evidence shape to stdout so it
+  can be copied into an issue, PR, README, or evaluation note without opening
+  the artifact files.
 
 ## 3. MCP Server Starts And Lists Tools
 

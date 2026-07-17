@@ -8,6 +8,7 @@ TOKEN_BUDGET="${CODEINSIGHT_ADOPTION_TOKEN_BUDGET:-6000}"
 OUTPUT_DIR="${CODEINSIGHT_ADOPTION_OUTPUT_DIR:-}"
 CODEINSIGHT_BIN="${CODEINSIGHT_BIN:-}"
 FORCE_INDEX="${CODEINSIGHT_ADOPTION_FORCE_INDEX:-1}"
+PRINT_SNIPPET="${CODEINSIGHT_ADOPTION_PRINT_SNIPPET:-0}"
 LOCAL_REPO_EVIDENCE_SCRIPT="${CODEINSIGHT_LOCAL_REPO_EVIDENCE_SCRIPT:-$ROOT_DIR/scripts/local-repo-evidence.sh}"
 MCP_FIRST_CALL_SMOKE_SCRIPT="${CODEINSIGHT_MCP_FIRST_CALL_SMOKE_SCRIPT:-$ROOT_DIR/scripts/mcp-first-call-smoke.sh}"
 
@@ -25,6 +26,7 @@ Options:
   --token-budget N      Token budget for context routing. Default: 6000.
   --output-dir PATH     Evidence output directory. Default: /tmp/codeinsight-adoption-evidence.
   --bin PATH            Use a specific codeinsight binary.
+  --print-snippet       Print a copyable terminal summary after writing files.
   --no-force-index      Reuse the existing index when available.
   -h, --help            Show this help text.
 
@@ -34,6 +36,7 @@ Environment:
   CODEINSIGHT_ADOPTION_TOKEN_BUDGET
   CODEINSIGHT_ADOPTION_OUTPUT_DIR
   CODEINSIGHT_ADOPTION_FORCE_INDEX
+  CODEINSIGHT_ADOPTION_PRINT_SNIPPET
   CODEINSIGHT_BIN
 EOF
 }
@@ -76,6 +79,10 @@ parse_args() {
         [ "$#" -ge 2 ] || fail "--bin requires a path"
         CODEINSIGHT_BIN="$2"
         shift 2
+        ;;
+      --print-snippet)
+        PRINT_SNIPPET="1"
+        shift
         ;;
       --no-force-index)
         FORCE_INDEX="0"
@@ -186,6 +193,23 @@ write_summary_json() {
     fail "aggregate summary JSON does not match the adoption evidence contract"
 }
 
+print_snippet() {
+  local summary_json="$1"
+
+  cat <<EOF
+# CodeInsight Adoption Evidence
+
+- Status: \`$(json_value "$summary_json" '.status')\`
+- Route: \`$(json_value "$summary_json" '.local_evidence.route_tools | join(" -> ")')\`
+- Selected context: \`$(json_value "$summary_json" '.local_evidence.metrics.selected_lines')/$(json_value "$summary_json" '.local_evidence.metrics.total_lines')\` source lines, \`$(json_value "$summary_json" '.local_evidence.metrics.line_reduction')\` reduction
+- First selected file: \`$(json_value "$summary_json" '.local_evidence.metrics.first_file')\`
+- First reading question: $(json_value "$summary_json" '.local_evidence.metrics.first_reading_question')
+- MCP server: \`$(json_value "$summary_json" '.mcp_first_call.server')\`
+- MCP suggested tool executed: \`$(json_value "$summary_json" '.mcp_first_call.suggested_tool_executed')\`
+- MCP impact status: \`$(json_value "$summary_json" '.mcp_first_call.impact_status')\`
+EOF
+}
+
 main() {
   parse_args "$@"
   require_command jq
@@ -261,6 +285,10 @@ main() {
   echo "adoption evidence written to $OUTPUT_DIR"
   echo "markdown: $OUTPUT_DIR/adoption-evidence.md"
   echo "summary_json: $OUTPUT_DIR/summary.json"
+  if [ "$PRINT_SNIPPET" = "1" ]; then
+    echo
+    print_snippet "$OUTPUT_DIR/summary.json"
+  fi
 }
 
 main "$@"
