@@ -42,13 +42,33 @@ EOF
 }
 
 fail() {
-  echo "adoption evidence failed: $*" >&2
+  echo "adoption evidence failed [unexpected]: $*" >&2
+  exit 1
+}
+
+fail_with() {
+  local category="$1"
+  shift
+  echo "adoption evidence failed [${category}]: $*" >&2
+  exit 1
+}
+
+fail_step() {
+  local category="$1"
+  local log_file="$2"
+  local description="$3"
+
+  echo "adoption evidence failed [${category}]: ${description}" >&2
+  if [ -s "$log_file" ]; then
+    echo "--- ${category} stderr ---" >&2
+    tail -40 "$log_file" >&2
+  fi
   exit 1
 }
 
 require_command() {
   if ! command -v "$1" >/dev/null 2>&1; then
-    fail "missing required command: $1"
+    fail_with prerequisite "missing required command: $1"
   fi
 }
 
@@ -56,27 +76,27 @@ parse_args() {
   while [ "$#" -gt 0 ]; do
     case "$1" in
       --root)
-        [ "$#" -ge 2 ] || fail "--root requires a path"
+        [ "$#" -ge 2 ] || fail_with usage "--root requires a path"
         REPO_ROOT="$2"
         shift 2
         ;;
       --task)
-        [ "$#" -ge 2 ] || fail "--task requires text"
+        [ "$#" -ge 2 ] || fail_with usage "--task requires text"
         TASK="$2"
         shift 2
         ;;
       --token-budget)
-        [ "$#" -ge 2 ] || fail "--token-budget requires a number"
+        [ "$#" -ge 2 ] || fail_with usage "--token-budget requires a number"
         TOKEN_BUDGET="$2"
         shift 2
         ;;
       --output-dir)
-        [ "$#" -ge 2 ] || fail "--output-dir requires a path"
+        [ "$#" -ge 2 ] || fail_with usage "--output-dir requires a path"
         OUTPUT_DIR="$2"
         shift 2
         ;;
       --bin)
-        [ "$#" -ge 2 ] || fail "--bin requires a path"
+        [ "$#" -ge 2 ] || fail_with usage "--bin requires a path"
         CODEINSIGHT_BIN="$2"
         shift 2
         ;;
@@ -93,11 +113,11 @@ parse_args() {
         exit 0
         ;;
       -*)
-        fail "unknown argument: $1"
+        fail_with usage "unknown argument: $1"
         ;;
       *)
         if [ -n "$REPO_ROOT" ]; then
-          fail "unexpected positional argument: $1"
+          fail_with usage "unexpected positional argument: $1"
         fi
         REPO_ROOT="$1"
         shift
@@ -190,7 +210,7 @@ write_summary_json() {
       and .mcp_first_call.route_tools == ["index_project", "project_overview", "context_pack", "impact_analysis"]
       and .mcp_first_call.suggested_tool_executed == true' \
     "$target" >/dev/null ||
-    fail "aggregate summary JSON does not match the adoption evidence contract"
+    fail_with artifact_write "aggregate summary JSON does not match the adoption evidence contract"
 }
 
 print_snippet() {
@@ -215,31 +235,35 @@ main() {
   require_command jq
 
   if [ -z "$REPO_ROOT" ]; then
-    fail "missing repository root"
+    fail_with usage "missing repository root"
   fi
   if [ ! -d "$REPO_ROOT" ]; then
-    fail "repository root does not exist: $REPO_ROOT"
+    fail_with usage "repository root does not exist: $REPO_ROOT"
   fi
   case "$TOKEN_BUDGET" in
     ''|*[!0-9]*)
-      fail "--token-budget must be a positive integer"
+      fail_with usage "--token-budget must be a positive integer"
       ;;
   esac
   if [ "$TOKEN_BUDGET" -le 0 ]; then
-    fail "--token-budget must be greater than zero"
+    fail_with usage "--token-budget must be greater than zero"
   fi
   if [ ! -x "$LOCAL_REPO_EVIDENCE_SCRIPT" ]; then
-    fail "local repo evidence script is not executable: $LOCAL_REPO_EVIDENCE_SCRIPT"
+    fail_with prerequisite "local repo evidence script is not executable: $LOCAL_REPO_EVIDENCE_SCRIPT"
   fi
   if [ ! -x "$MCP_FIRST_CALL_SMOKE_SCRIPT" ]; then
-    fail "MCP first-call smoke script is not executable: $MCP_FIRST_CALL_SMOKE_SCRIPT"
+    fail_with prerequisite "MCP first-call smoke script is not executable: $MCP_FIRST_CALL_SMOKE_SCRIPT"
   fi
 
   REPO_ROOT="$(cd "$REPO_ROOT" && pwd)"
   OUTPUT_DIR="${OUTPUT_DIR:-/tmp/codeinsight-adoption-evidence}"
-  mkdir -p "$OUTPUT_DIR"
+  mkdir -p "$OUTPUT_DIR" ||
+    fail_with artifact_write "could not create output directory: $OUTPUT_DIR"
 
-  local local_args mcp_env
+  local local_args mcp_env local_log mcp_log artifact_log
+  local_log="$OUTPUT_DIR/local-repo-evidence.err"
+  mcp_log="$OUTPUT_DIR/mcp-first-call.err"
+  artifact_log="$OUTPUT_DIR/artifact-write.err"
   local_args=(
     "$REPO_ROOT"
     "--task"
@@ -260,7 +284,9 @@ main() {
     local_args+=("--no-force-index")
   fi
 
-  "$LOCAL_REPO_EVIDENCE_SCRIPT" "${local_args[@]}" >/dev/null
+  if ! "$LOCAL_REPO_EVIDENCE_SCRIPT" "${local_args[@]}" >"$OUTPUT_DIR/local-repo-evidence.out" 2>"$local_log"; then
+    fail_step local_cli_route "$local_log" "local first-read evidence generation failed"
+  fi
 
   mcp_env=(
     "CODEINSIGHT_FIRST_CALL_ROOT=$REPO_ROOT"
@@ -273,14 +299,19 @@ main() {
 
   env "${mcp_env[@]}" \
     "$MCP_FIRST_CALL_SMOKE_SCRIPT" \
-    --summary-json "$OUTPUT_DIR/mcp-first-call.json" >/dev/null
+    --summary-json "$OUTPUT_DIR/mcp-first-call.json" >"$OUTPUT_DIR/mcp-first-call.out" 2>"$mcp_log" ||
+    fail_step mcp_first_call "$mcp_log" "MCP first-call verification failed"
 
-  write_summary_json "$OUTPUT_DIR/summary.json" \
-    "$OUTPUT_DIR/local-repo-evidence.json" \
-    "$OUTPUT_DIR/mcp-first-call.json"
-  write_markdown_summary "$OUTPUT_DIR/adoption-evidence.md" \
-    "$OUTPUT_DIR/local-repo-evidence.json" \
-    "$OUTPUT_DIR/mcp-first-call.json"
+  if ! {
+    write_summary_json "$OUTPUT_DIR/summary.json" \
+      "$OUTPUT_DIR/local-repo-evidence.json" \
+      "$OUTPUT_DIR/mcp-first-call.json"
+    write_markdown_summary "$OUTPUT_DIR/adoption-evidence.md" \
+      "$OUTPUT_DIR/local-repo-evidence.json" \
+      "$OUTPUT_DIR/mcp-first-call.json"
+  } 2>"$artifact_log"; then
+    fail_step artifact_write "$artifact_log" "aggregate adoption artifacts could not be written"
+  fi
 
   echo "adoption evidence written to $OUTPUT_DIR"
   echo "markdown: $OUTPUT_DIR/adoption-evidence.md"

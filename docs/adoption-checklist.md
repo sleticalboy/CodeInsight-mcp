@@ -77,6 +77,9 @@ Pass criteria:
 - `--print-snippet` prints the same pass/fail evidence shape to stdout so it
   can be copied into an issue, PR, README, or evaluation note without opening
   the artifact files.
+- Failures are categorized as `[usage]`, `[prerequisite]`,
+  `[local_cli_route]`, `[mcp_first_call]`, or `[artifact_write]`, with the
+  relevant child-process stderr included for issue reports.
 
 ## 3. MCP Server Starts And Lists Tools
 

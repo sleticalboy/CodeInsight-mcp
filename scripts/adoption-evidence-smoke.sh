@@ -199,6 +199,46 @@ EOF
   grep -Fq -- '- MCP suggested tool executed: `true`' "$TEMP_DIR/snippet.log" ||
     fail "missing printed MCP suggested tool execution line"
 
+  cat >"$TEMP_DIR/local-repo-evidence-fail" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+echo "simulated local route failure" >&2
+exit 42
+EOF
+  chmod +x "$TEMP_DIR/local-repo-evidence-fail"
+
+  if CODEINSIGHT_LOCAL_REPO_EVIDENCE_SCRIPT="$TEMP_DIR/local-repo-evidence-fail" \
+    CODEINSIGHT_MCP_FIRST_CALL_SMOKE_SCRIPT="$TEMP_DIR/mcp-first-call-smoke" \
+    "$ROOT_DIR/scripts/adoption-evidence.sh" \
+      "$TEMP_DIR/repo" \
+      --output-dir "$TEMP_DIR/evidence-local-fail" >"$TEMP_DIR/local-fail.out" 2>"$TEMP_DIR/local-fail.err"; then
+    fail "local route failure should fail adoption evidence"
+  fi
+  grep -Fq 'adoption evidence failed [local_cli_route]: local first-read evidence generation failed' "$TEMP_DIR/local-fail.err" ||
+    fail "missing local route failure category"
+  grep -Fq 'simulated local route failure' "$TEMP_DIR/local-fail.err" ||
+    fail "missing local route failure stderr"
+
+  cat >"$TEMP_DIR/mcp-first-call-smoke-fail" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+echo "simulated MCP first-call failure" >&2
+exit 43
+EOF
+  chmod +x "$TEMP_DIR/mcp-first-call-smoke-fail"
+
+  if CODEINSIGHT_LOCAL_REPO_EVIDENCE_SCRIPT="$TEMP_DIR/local-repo-evidence" \
+    CODEINSIGHT_MCP_FIRST_CALL_SMOKE_SCRIPT="$TEMP_DIR/mcp-first-call-smoke-fail" \
+    "$ROOT_DIR/scripts/adoption-evidence.sh" \
+      "$TEMP_DIR/repo" \
+      --output-dir "$TEMP_DIR/evidence-mcp-fail" >"$TEMP_DIR/mcp-fail.out" 2>"$TEMP_DIR/mcp-fail.err"; then
+    fail "MCP first-call failure should fail adoption evidence"
+  fi
+  grep -Fq 'adoption evidence failed [mcp_first_call]: MCP first-call verification failed' "$TEMP_DIR/mcp-fail.err" ||
+    fail "missing MCP first-call failure category"
+  grep -Fq 'simulated MCP first-call failure' "$TEMP_DIR/mcp-fail.err" ||
+    fail "missing MCP first-call failure stderr"
+
   echo "adoption evidence smoke passed"
 }
 
