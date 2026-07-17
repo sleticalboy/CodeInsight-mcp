@@ -41,8 +41,8 @@ Pass criteria:
 - `entrypoints` or `recommended_next_tools` is greater than zero.
 - `context_pack` reports `selected_files`, `selected_ranges`, and
   `estimated_tokens`.
-- The demo prints `first_reading_question`, `reading_plan_reason`, and
-  `selection_reason` for the first selected context file.
+- The demo prints `first_reading_question`, executable `reading_plan_reason`,
+  and raw `selection_reason` for the first selected context file.
 - `line_reduction` is present and below 100%.
 - `impact_analysis` reports `risk_level`, `impacted_files`, `paths`, or
   `suggested_checks`.

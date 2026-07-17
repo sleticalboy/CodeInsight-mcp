@@ -336,6 +336,9 @@ main() {
     'Treat `context_pack\.reading_plan\[\]\.question` as the local checklist' \
     "MCP client config reading question client action"
   require_pattern docs/mcp-client-config.md \
+    'Treat `reading_plan\[\]\.question` as the local checklist' \
+    "MCP client config agent policy reading question"
+  require_pattern docs/mcp-client-config.md \
     'Expected first-call signals:' \
     "MCP client config first-call signal table"
   require_pattern docs/mcp-client-config.md \

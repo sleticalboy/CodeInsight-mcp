@@ -106,9 +106,9 @@ Run this walkthrough against another repository:
   `index_project`, `project_overview`, `context_pack`, and `impact_analysis`.
 - `context_pack` includes selected files, selected ranges, reading-plan steps,
   execution-plan steps, first execution action, first next action,
-  first execution suggested tool, first reading question, reading-plan reason,
-  selection reason, token estimate, line reduction, route reason, and
-  continuation status.
+  first execution suggested tool, first reading question, executable
+  reading-plan reason, raw selection reason, token estimate, line reduction,
+  route reason, and continuation status.
 - `impact_analysis` includes its route reason so the demo frames it as the
   pre-edit impact check after selected context is read.
 - The evidence summary gives a compact copyable result for README videos or

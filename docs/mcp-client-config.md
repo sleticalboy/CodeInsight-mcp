@@ -289,7 +289,8 @@ Recommended first-read flow for agents:
    `continuation_summary` after selected context, then review impact before
    edits.
 3. Read the returned `context_pack.files[]` in `reading_plan[]` order.
-4. Treat `reading_plan[].reason` as the current-step instruction and
+4. Treat `reading_plan[].question` as the local checklist,
+   `reading_plan[].reason` as the current-step instruction, and
    `reading_plan[].selection_reason` as display or audit evidence.
 5. Use `continuation_summary` only after selected context is consumed.
 
