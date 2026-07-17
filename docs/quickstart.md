@@ -4,6 +4,16 @@ This quickstart takes a new user from install to a working MCP client setup.
 It keeps the path local-first: no external database, vector service, or hosted
 index is required.
 
+## Fast Path
+
+1. Install `codeinsight`.
+2. Configure the local stdio MCP server:
+   `codeinsight serve --transport stdio`.
+3. Add the agent policy so broad repository tasks start with `agent_route`.
+4. Run `scripts/two-minute-demo.sh` for a visible evidence summary, or
+   `scripts/installed-quickstart-smoke.sh` for the installed-binary adoption
+   gate.
+
 ## 1. Install
 
 Install the latest macOS or Linux release:

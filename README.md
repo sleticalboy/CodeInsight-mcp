@@ -28,6 +28,46 @@ CodeInsight is not trying to replace an IDE, LSP, compiler, or Sourcegraph. Its
 job is to help AI agents read less code, pick better context, and stop guessing
 which file to open next.
 
+## Fast Path
+
+1. Install the binary:
+
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/sleticalboy/CodeInsight-mcp/main/scripts/install.sh | sh
+   ```
+
+2. Add the local MCP server:
+
+   ```json
+   {
+     "mcpServers": {
+       "codeinsight": {
+         "command": "codeinsight",
+         "args": ["serve", "--transport", "stdio"]
+       }
+     }
+   }
+   ```
+
+   Codex, Claude Code, Cursor, and generic JSON examples are in
+   [MCP client configuration](docs/mcp-client-config.md).
+
+3. Tell the agent to start broad repository tasks with:
+
+   ```text
+   Call agent_route with root, task, and token_budget 6000 before reading files directly.
+   Follow agent_route.execution_plan[] in order.
+   ```
+
+4. Verify the path:
+
+   ```bash
+   CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh
+   ```
+
+   For a visible demo, run `scripts/two-minute-demo.sh` and read the
+   `[Evidence summary]`.
+
 ## Two-Minute Demo
 
 Run the user-facing two-minute demo against this repository:

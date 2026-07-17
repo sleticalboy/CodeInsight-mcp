@@ -32,6 +32,27 @@ main() {
     'CodeInsight is not trying to replace an IDE, LSP, compiler, or Sourcegraph' \
     "explicit non-goal positioning"
   require_pattern README.md \
+    '^## Fast Path$' \
+    "README fast path section"
+  require_pattern README.md \
+    'Add the local MCP server' \
+    "README fast path MCP setup"
+  require_pattern README.md \
+    '\[MCP client configuration\]\(docs/mcp-client-config\.md\)' \
+    "README fast path MCP config link"
+  require_pattern README.md \
+    'Call agent_route with root, task, and token_budget 6000 before reading files directly' \
+    "README fast path agent_route prompt"
+  require_pattern README.md \
+    'Follow agent_route\.execution_plan\[\] in order' \
+    "README fast path execution plan policy"
+  require_pattern README.md \
+    'CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/installed-quickstart-smoke\.sh' \
+    "README fast path installed quickstart gate"
+  require_pattern README.md \
+    '\[Evidence summary\]' \
+    "README fast path evidence summary cue"
+  require_pattern README.md \
     '\[First-read workflow\]\(docs/first-read-workflow\.md\)' \
     "first-read workflow link"
   require_pattern README.md \
@@ -87,6 +108,9 @@ main() {
     'Default adoption path:' \
     "docs index default adoption path"
   require_pattern docs/README.md \
+    'Configure a local stdio MCP server with' \
+    "docs index MCP config adoption path"
+  require_pattern docs/README.md \
     'Use `agent_route` as the default first-read route' \
     "docs index agent_route adoption path"
   require_pattern docs/README.md \
@@ -96,6 +120,18 @@ main() {
   require_pattern docs/quickstart.md \
     'local-first' \
     "local-first setup framing"
+  require_pattern docs/quickstart.md \
+    '^## Fast Path$' \
+    "quickstart fast path section"
+  require_pattern docs/quickstart.md \
+    'Configure the local stdio MCP server' \
+    "quickstart MCP setup fast path"
+  require_pattern docs/quickstart.md \
+    'broad repository tasks start with `agent_route`' \
+    "quickstart agent_route fast path"
+  require_pattern docs/quickstart.md \
+    '`scripts/two-minute-demo\.sh` for a visible evidence summary' \
+    "quickstart demo evidence fast path"
   require_pattern docs/quickstart.md \
     '\[Client workflow\]\(client-workflow\.md#agent-policy-prompt\)' \
     "agent policy prompt link"

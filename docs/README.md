@@ -8,9 +8,11 @@ release documents for CodeInsight.
 Default adoption path:
 
 1. Follow [Quickstart](quickstart.md).
-2. Use `agent_route` as the default first-read route.
-3. Verify the installed binary with `scripts/installed-quickstart-smoke.sh`.
-4. Finish with the [Adoption checklist](adoption-checklist.md).
+2. Configure a local stdio MCP server with
+   [MCP client configuration](mcp-client-config.md).
+3. Use `agent_route` as the default first-read route.
+4. Verify the installed binary with `scripts/installed-quickstart-smoke.sh`.
+5. Finish with the [Adoption checklist](adoption-checklist.md).
 
 - [Quickstart](quickstart.md)
 - [Adoption checklist](adoption-checklist.md)
