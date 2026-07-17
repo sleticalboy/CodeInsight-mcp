@@ -10,10 +10,18 @@ REUSE_REPOS="${CODEINSIGHT_BENCH_REUSE_REPOS:-0}"
 BENCH_REPOS="${CODEINSIGHT_BENCH_REPOS:-}"
 OUTPUT_WAS_SET="${CODEINSIGHT_BENCH_OUTPUT+x}"
 PRINT_CONFIG="${CODEINSIGHT_BENCH_PRINT_CONFIG:-0}"
+LOCAL_ROOT="${CODEINSIGHT_BENCH_LOCAL_ROOT:-}"
+LOCAL_NAME="${CODEINSIGHT_BENCH_LOCAL_NAME:-}"
+LOCAL_LANGUAGE="${CODEINSIGHT_BENCH_LOCAL_LANGUAGE:-Local}"
+LOCAL_CONTEXT_FILE="${CODEINSIGHT_BENCH_LOCAL_CONTEXT_FILE:-}"
+LOCAL_CONTEXT_TASK="${CODEINSIGHT_BENCH_LOCAL_TASK:-understand the local repository first-read path}"
+LOCAL_CONTEXT_GUARDRAILS="${CODEINSIGHT_BENCH_LOCAL_GUARDRAILS:-selected_files:1|selected_ranges:1|reading_plan_steps:1|max_tokens:6000|min_line_reduction:0}"
+LOCAL_MAX_INDEX_MS="${CODEINSIGHT_BENCH_LOCAL_MAX_INDEX_MS:-10000}"
 REPORT_FILE=""
 
 REPO_NAMES=()
 REPO_URLS=()
+REPO_LOCAL_ROOTS=()
 REPO_LANGUAGES=()
 REPO_CONTEXT_FILES=()
 REPO_CONTEXT_TASKS=()
@@ -53,6 +61,12 @@ configure_profile() {
         "https://github.com/pallets/itsdangerous.git"
         "https://github.com/golang/example.git"
         "https://github.com/BurntSushi/memchr.git"
+      )
+      REPO_LOCAL_ROOTS=(
+        ""
+        ""
+        ""
+        ""
       )
       REPO_LANGUAGES=(
         "TypeScript"
@@ -117,6 +131,12 @@ configure_profile() {
         "https://github.com/gin-gonic/gin.git"
         "https://github.com/tokio-rs/tokio.git"
       )
+      REPO_LOCAL_ROOTS=(
+        ""
+        ""
+        ""
+        ""
+      )
       REPO_LANGUAGES=(
         "JavaScript"
         "Python"
@@ -166,12 +186,55 @@ configure_profile() {
         ""
       )
       ;;
+    local)
+      configure_local_profile
+      ;;
     *)
       echo "unknown benchmark profile: $BENCH_PROFILE" >&2
-      echo "supported profiles: smoke, large" >&2
+      echo "supported profiles: smoke, large, local" >&2
       exit 1
       ;;
   esac
+}
+
+configure_local_profile() {
+  local root name
+
+  if [ -z "$LOCAL_ROOT" ]; then
+    echo "CODEINSIGHT_BENCH_LOCAL_ROOT is required when CODEINSIGHT_BENCH_PROFILE=local" >&2
+    exit 1
+  fi
+  if [ -z "$LOCAL_CONTEXT_FILE" ]; then
+    echo "CODEINSIGHT_BENCH_LOCAL_CONTEXT_FILE is required when CODEINSIGHT_BENCH_PROFILE=local" >&2
+    exit 1
+  fi
+  if [ ! -d "$LOCAL_ROOT" ]; then
+    echo "CODEINSIGHT_BENCH_LOCAL_ROOT is not a directory: $LOCAL_ROOT" >&2
+    exit 1
+  fi
+  if [ ! -f "$LOCAL_ROOT/$LOCAL_CONTEXT_FILE" ]; then
+    echo "CODEINSIGHT_BENCH_LOCAL_CONTEXT_FILE does not exist under local root: $LOCAL_CONTEXT_FILE" >&2
+    exit 1
+  fi
+
+  root="$(cd "$LOCAL_ROOT" && pwd)"
+  name="$LOCAL_NAME"
+  if [ -z "$name" ]; then
+    name="$(basename "$root")"
+  fi
+
+  OUTPUT="${CODEINSIGHT_BENCH_OUTPUT:-$WORK_DIR/results/benchmark-local.md}"
+  REPO_NAMES=("$name")
+  REPO_URLS=("local:$root")
+  REPO_LOCAL_ROOTS=("$root")
+  REPO_LANGUAGES=("$LOCAL_LANGUAGE")
+  REPO_CONTEXT_FILES=("$LOCAL_CONTEXT_FILE")
+  REPO_CONTEXT_TASKS=("$LOCAL_CONTEXT_TASK")
+  REPO_CONTEXT_GUARDRAILS=("$LOCAL_CONTEXT_GUARDRAILS")
+  REPO_MAX_INDEX_MS=("$LOCAL_MAX_INDEX_MS")
+  REPO_SYMBOL_TARGETS=("")
+  REPO_CALL_TARGETS=("")
+  REPO_CALL_EDGES=("")
 }
 
 require_command() {
@@ -251,8 +314,23 @@ print_benchmark_config() {
 clone_repo() {
   local name="$1"
   local url="$2"
+  local local_root="${3:-}"
   local repo_dir="$WORK_DIR/repos/$name"
   local attempts=3
+
+  if [ -n "$local_root" ]; then
+    rm -rf "$repo_dir"
+    mkdir -p "$repo_dir"
+    (
+      cd "$local_root"
+      tar --exclude .codeinsight -cf - .
+    ) | (
+      cd "$repo_dir"
+      tar -xf -
+    )
+    rm -rf "$repo_dir/.codeinsight"
+    return
+  fi
 
   if [ "$REUSE_REPOS" = "1" ] && [ -d "$repo_dir/.git" ]; then
     echo "reusing existing checkout for $name"
@@ -284,6 +362,26 @@ clone_repo() {
   rm -rf "$repo_dir/.codeinsight"
 }
 
+repo_commit_short() {
+  local repo_dir="$1"
+
+  if git -C "$repo_dir" rev-parse --short HEAD >/dev/null 2>&1; then
+    git -C "$repo_dir" rev-parse --short HEAD
+  else
+    printf "local"
+  fi
+}
+
+repo_commit_full() {
+  local repo_dir="$1"
+
+  if git -C "$repo_dir" rev-parse HEAD >/dev/null 2>&1; then
+    git -C "$repo_dir" rev-parse HEAD
+  else
+    printf "local"
+  fi
+}
+
 json_value() {
   local file="$1"
   local query="$2"
@@ -300,6 +398,7 @@ write_report_header() {
   case "$BENCH_PROFILE" in
     smoke) profile_title="Smoke" ;;
     large) profile_title="Large Repository" ;;
+    local) profile_title="Local Repository" ;;
     *) profile_title="$BENCH_PROFILE" ;;
   esac
 
@@ -309,15 +408,14 @@ write_report_header() {
 Generated at: $generated_at
 
 This is a benchmark fixture report, not a controlled performance benchmark. It
-verifies that CodeInsight can index real public repositories across the MVP
-language set and produce stable project summaries and context packs without
-crashing.
+verifies that CodeInsight can index real repositories across the MVP language
+set and produce stable project summaries and context packs without crashing.
 
 Environment:
 
 - Command: \`$display_bin\`
 - Profile: \`$BENCH_PROFILE\`
-- Work directory: temporary clone directory
+- Work directory: temporary benchmark directory
 - Repository subset: \`$(repo_subset_label)\`
 - Index mode: forced clean index per repository
 - Context pack mode: one stable file seed per repository, 6000 token budget
@@ -636,7 +734,7 @@ append_summary_row() {
   local max_index_ms="$7"
 
   local commit files lines symbols skipped errors duration budget db_size entrypoints first_entrypoint recommended_tools first_recommended_tool context_files ranges selected_lines reduction tokens applied_budget omitted_files continuation_status truncated first_context_file status
-  commit="$(git -C "$repo_dir" rev-parse --short HEAD)"
+  commit="$(repo_commit_short "$repo_dir")"
   files="$(json_value "$index_json" '.indexed_files')"
   lines="$(json_value "$overview_json" '[.languages[].lines] | add // 0')"
   symbols="$(json_value "$index_json" '.symbols')"
@@ -711,7 +809,7 @@ append_detail_section() {
     echo "## $name"
     echo
     echo "- URL: $repo_url"
-    echo "- Commit: \`$(git -C "$repo_dir" rev-parse HEAD)\`"
+    echo "- Commit: \`$(repo_commit_full "$repo_dir")\`"
     echo "- Indexed files: $(json_value "$index_json" '.indexed_files')"
     echo "- Symbols: $(json_value "$index_json" '.symbols')"
     echo "- Duration: $duration ms"
@@ -896,6 +994,7 @@ main() {
   require_command cargo
   require_command du
   require_command awk
+  require_command tar
 
   mkdir -p "$WORK_DIR/results" "$(dirname "$OUTPUT")"
   REPORT_FILE="$WORK_DIR/results/benchmark-report.md"
@@ -915,6 +1014,7 @@ main() {
     fi
 
     url="${REPO_URLS[$i]}"
+    local_root="${REPO_LOCAL_ROOTS[$i]}"
     language="${REPO_LANGUAGES[$i]}"
     context_file="${REPO_CONTEXT_FILES[$i]}"
     context_task="${REPO_CONTEXT_TASKS[$i]}"
@@ -933,7 +1033,7 @@ main() {
     context_guardrails_file="$WORK_DIR/results/$name-context-guardrails.tsv"
 
     echo "benchmarking $name"
-    clone_repo "$name" "$url"
+    clone_repo "$name" "$url" "$local_root"
     "$CODEINSIGHT_BIN" index "$repo_dir" --force >"$index_json"
     "$CODEINSIGHT_BIN" overview "$repo_dir" >"$overview_json"
     "$CODEINSIGHT_BIN" context-pack "$repo_dir" \
@@ -962,6 +1062,7 @@ EOF
     fi
 
     url="${REPO_URLS[$i]}"
+    local_root="${REPO_LOCAL_ROOTS[$i]}"
     repo_dir="$WORK_DIR/repos/$name"
     index_json="$WORK_DIR/results/$name-index.json"
     overview_json="$WORK_DIR/results/$name-overview.json"

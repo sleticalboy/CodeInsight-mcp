@@ -122,6 +122,15 @@ main() {
     'CODEINSIGHT_BENCH_REPOS=p-limit scripts/benchmark-smoke\.sh' \
     "benchmark methodology subset command"
   require_pattern docs/benchmark-methodology.md \
+    'CODEINSIGHT_BENCH_PROFILE=local' \
+    "benchmark methodology local profile command"
+  require_pattern scripts/benchmark-smoke.sh \
+    'CODEINSIGHT_BENCH_LOCAL_ROOT is required when CODEINSIGHT_BENCH_PROFILE=local' \
+    "benchmark local profile root validation"
+  require_pattern scripts/benchmark-local-smoke.sh \
+    'CODEINSIGHT_BENCH_PROFILE=local' \
+    "benchmark local smoke profile"
+  require_pattern docs/benchmark-methodology.md \
     'Every report also checks that:' \
     "benchmark methodology guardrails"
   require_pattern .github/workflows/ci.yml \

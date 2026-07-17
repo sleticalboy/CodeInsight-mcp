@@ -26,6 +26,7 @@ performance, or universal token savings across arbitrary tasks.
 | --- | --- | --- | --- |
 | `smoke` | `docs/benchmark-v0.1.md` | p-limit, itsdangerous, Go example, memchr | Fast cross-language sanity check. |
 | `large` | `docs/benchmark-large.md` | express, Flask, Gin, Tokio | Larger repository context-routing evidence. |
+| `local` | `CODEINSIGHT_BENCH_OUTPUT` or `benchmark-local.md` | one local checkout | Shareable evidence for an arbitrary local repository. |
 
 ## Refresh Commands
 
@@ -46,6 +47,18 @@ Run a subset without overwriting checked-in reports:
 ```bash
 CODEINSIGHT_BENCH_REPOS=p-limit scripts/benchmark-smoke.sh
 CODEINSIGHT_BENCH_PROFILE=large CODEINSIGHT_BENCH_REPOS=flask scripts/benchmark-smoke.sh
+```
+
+Run an arbitrary local repository without writing `.codeinsight` into the
+source checkout:
+
+```bash
+CODEINSIGHT_BENCH_PROFILE=local \
+  CODEINSIGHT_BENCH_LOCAL_ROOT=/path/to/repo \
+  CODEINSIGHT_BENCH_LOCAL_CONTEXT_FILE=src/main.ts \
+  CODEINSIGHT_BENCH_LOCAL_TASK="understand the app entrypoint" \
+  CODEINSIGHT_BENCH_OUTPUT=/tmp/codeinsight-local-benchmark.md \
+  scripts/benchmark-smoke.sh
 ```
 
 Reuse existing clones during local iteration:
