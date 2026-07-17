@@ -154,6 +154,7 @@ write_summary_json() {
       second_execution_action: (.execution_plan[1].action // ""),
       first_execution_suggested_tool: (.execution_plan[1].suggested_tool.tool // ""),
       first_next_action: (.context_pack.reading_plan[0].next_action // ""),
+      first_reading_question: (.context_pack.reading_plan[0].question // ""),
       context_route_reason: (.route[] | select(.tool == "context_pack") | .reason),
       impact_route_reason: (.route[] | select(.tool == "impact_analysis") | .reason),
       impact_status,
@@ -173,6 +174,7 @@ write_summary_json() {
       and .metrics.first_execution_action == "read_selected_context"
       and .metrics.second_execution_action == "use_current_reading_step_suggested_tool"
       and (.metrics.first_execution_suggested_tool | type == "string" and length > 0)
+      and (.metrics.first_reading_question | type == "string" and length > 0)
       and .metrics.impact_status == "complete"
       and .metrics.impacted_files >= 1' \
     "summary JSON should match the agent-route evidence contract"
@@ -249,6 +251,7 @@ main() {
   require_jq "$route_json" '.context_pack.files | length >= 1' "context_pack should select files"
   require_jq "$route_json" '.context_pack.reading_plan | length >= 1' "context_pack should include a reading plan"
   require_jq "$route_json" '.context_pack.reading_plan[0].next_action != null and .context_pack.reading_plan[0].next_action != ""' "reading plan should include next action"
+  require_jq "$route_json" '.context_pack.reading_plan[0].question != null and .context_pack.reading_plan[0].question != ""' "reading plan should include a question"
   require_jq "$route_json" '.context_pack.budget.requested_token_budget == 1600' "context_pack should preserve requested budget"
   require_jq "$route_json" '.context_pack.budget.applied_token_budget == 1600' "context_pack should apply requested budget"
   require_jq "$route_json" '.route[2].reason as $reason | .context_pack.reading_plan[0] as $step | $reason | contains("read \($step.file) first") and contains($step.next_action) and contains($step.suggested_tool.tool) and contains("follow continuation")' "context route step should explain the first read path"
@@ -294,6 +297,7 @@ main() {
   echo "reading_plan_steps: $(json_value "$route_json" '.context_pack.reading_plan | length')"
   echo "execution_plan_steps: $(json_value "$route_json" '.execution_plan | length')"
   echo "first_execution_action: $(json_value "$route_json" '.execution_plan[0].action')"
+  echo "first_reading_question: $(json_value "$route_json" '.context_pack.reading_plan[0].question')"
   echo "impact_status: $(json_value "$route_json" '.impact_status')"
   echo "impacted_files: $(json_value "$route_json" '.impact_analysis.impact_counts.impacted_files')"
 }

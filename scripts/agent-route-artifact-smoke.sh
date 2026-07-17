@@ -91,6 +91,7 @@ validate_summary_json() {
       and .metrics.second_execution_action == "use_current_reading_step_suggested_tool"
       and (.metrics.first_execution_suggested_tool | type == "string" and length > 0)
       and (.metrics.first_next_action | type == "string" and length > 0)
+      and (.metrics.first_reading_question | type == "string" and length > 0)
       and .metrics.impact_status == "complete"
       and .metrics.impacted_files >= 1
       and .metrics.suggested_checks >= 1' \

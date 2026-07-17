@@ -44,6 +44,7 @@ main() {
   "reading_plan": [
     {
       "file": "src/main.ts",
+      "question": "What entrypoints define the main flow?",
       "reason": "Read this step to answer: What entrypoints define the main flow?",
       "selection_reason": "Selected for high relevance via seed_file",
       "suggested_tool": "file_outline"
@@ -79,6 +80,7 @@ EOF
   require_literal "$summary_md" 'Route: `index_project -> project_overview -> context_pack -> impact_analysis`' "route"
   require_literal "$summary_md" 'Execution plan: `read_selected_context -> use_current_reading_step_suggested_tool -> use_continuation_if_needed -> review_impact_before_edits`' "execution plan"
   require_literal "$summary_md" 'Selected files: `src/main.ts`, `src/auth.ts`' "selected files"
+  require_literal "$summary_md" 'First reading question: `What entrypoints define the main flow?`' "first reading question"
   require_literal "$summary_md" 'Suggested tool: `file_outline`' "suggested tool"
   require_literal "$summary_md" 'Suggested tool executed: `true`' "suggested tool execution"
   require_literal "$summary_md" 'Impact status: `complete`' "impact status"

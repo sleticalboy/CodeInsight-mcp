@@ -296,6 +296,7 @@ try:
     reading_plan = context_pack.get("reading_plan", [])
     expect(context_pack.get("files"), "agent_route_contract", "agent_route selected no context files")
     expect(reading_plan, "agent_route_contract", "agent_route returned no reading plan")
+    expect(reading_plan[0].get("question"), "agent_route_contract", "reading_plan[0].question is missing")
     expect(reading_plan[0].get("reason"), "agent_route_contract", "reading_plan[0].reason is missing")
     expect(
         reading_plan[0].get("selection_reason"),
@@ -358,6 +359,7 @@ try:
         "reading_plan": [
             {
                 "file": step["file"],
+                "question": step["question"],
                 "reason": step["reason"],
                 "selection_reason": step["selection_reason"],
                 "suggested_tool": step["suggested_tool"]["tool"],

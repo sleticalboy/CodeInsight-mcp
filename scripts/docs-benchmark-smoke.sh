@@ -352,7 +352,7 @@ main() {
     '\| First MCP call onboarding changed \| `scripts/mcp-first-call-smoke\.sh --summary-json /tmp/codeinsight-mcp-first-call\.json` \|' \
     "maintenance MCP first-call smoke chooser"
   require_pattern docs/maintenance-commands.md \
-    'selected files, execution plan, suggested tool, impact status, and saved artifacts' \
+    'selected files, first reading question, execution plan, suggested tool, impact status, and saved artifacts' \
     "maintenance MCP first-call artifact scope"
   require_pattern docs/maintenance-commands.md \
     'scripts/mcp-first-call-step-summary-smoke\.sh' \
@@ -361,7 +361,7 @@ main() {
     '\| First MCP call Actions summary changed \| `scripts/mcp-first-call-step-summary-smoke\.sh` \|' \
     "maintenance MCP first-call step summary chooser"
   require_pattern docs/maintenance-commands.md \
-    'Actions Summary section for selected files, execution plan, suggested tool, impact status, and artifact link' \
+    'Actions Summary section for selected files, first reading question, execution plan, suggested tool, impact status, and artifact link' \
     "maintenance MCP first-call step summary scope"
   require_pattern docs/maintenance-commands.md \
     '\| First MCP call help or failure messaging changed \| `scripts/mcp-first-call-failure-smoke\.sh` \|' \

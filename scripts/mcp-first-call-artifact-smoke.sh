@@ -87,6 +87,7 @@ validate_summary_json() {
       and (.reading_plan | type == "array")
       and (.reading_plan | length) >= 1
       and (.reading_plan[0].file == "src/main.ts")
+      and (.reading_plan[0].question | type == "string" and length > 0)
       and (.reading_plan[0].suggested_tool | type == "string" and length > 0)
       and (.suggested_tool.tool | type == "string" and length > 0)
       and (.suggested_tool.arguments | type == "object")

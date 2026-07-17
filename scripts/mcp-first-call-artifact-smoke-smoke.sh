@@ -41,6 +41,7 @@ write_summary_json() {
   "reading_plan": [
     {
       "file": "src/main.ts",
+      "question": "What entrypoints define the main flow?",
       "reason": "Read the app entrypoint first.",
       "selection_reason": "Selected for high relevance via seed_file",
       "suggested_tool": "file_outline"

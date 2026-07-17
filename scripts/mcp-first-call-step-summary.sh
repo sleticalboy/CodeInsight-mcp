@@ -31,6 +31,7 @@ require_summary_contract() {
       and .execution_plan_actions == ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"]
       and (.selected_files | type == "array")
       and (.selected_files | length) >= 1
+      and (.reading_plan[0].question | type == "string" and length > 0)
       and (.suggested_tool.tool | type == "string")
       and .suggested_tool_executed == true
       and .impact_status == "complete"
@@ -73,6 +74,7 @@ main() {
     printf 'Route: `%s`\n\n' "$(value '.route_tools | join(" -> ")')"
     printf 'Execution plan: `%s`\n\n' "$(value '.execution_plan_actions | join(" -> ")')"
     printf 'Selected files: `%s`\n\n' "$(value '.selected_files | join("`, `")')"
+    printf 'First reading question: `%s`\n\n' "$(value '.reading_plan[0].question')"
     printf 'Suggested tool: `%s`\n\n' "$(value '.suggested_tool.tool')"
     printf 'Suggested tool executed: `%s`\n\n' "$(value '.suggested_tool_executed')"
     printf 'Impact status: `%s`\n\n' "$(value '.impact_status')"
