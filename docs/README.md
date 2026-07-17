@@ -51,6 +51,14 @@ Default adoption path:
 
 ## Validation
 
+Choose the check by adoption stage:
+
+| Stage | Command |
+| --- | --- |
+| Product walkthrough | `scripts/two-minute-demo.sh` |
+| MCP client wiring | `scripts/mcp-stdio-smoke.sh` |
+| Installed-binary adoption gate | `scripts/installed-quickstart-smoke.sh` |
+
 - [Maintenance commands](maintenance-commands.md)
 - Two-minute demo: `scripts/two-minute-demo.sh`
 - Installed first-read route: `scripts/installed-quickstart-smoke.sh`

@@ -137,7 +137,17 @@ Before broad repository reading, use CodeInsight:
    impact_analysis directly.
 ```
 
-## 5. Smoke Test MCP
+## 5. Choose A Smoke Check
+
+Use the narrowest check that matches where you are in adoption:
+
+| Situation | Command | What It Proves |
+| --- | --- | --- |
+| You want a visible product walkthrough | `scripts/two-minute-demo.sh` | `agent_route` selects bounded context, prints `[Evidence summary]`, and frames the pre-edit impact check. |
+| You are wiring an MCP client from this checkout | `scripts/mcp-stdio-smoke.sh` | The stdio server lists tools, runs `agent_route`, and executes `agent_route.execution_plan[].suggested_tool` through MCP. |
+| You installed `codeinsight` and want an adoption gate | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh` | The installed binary can run CLI and MCP first-read routes against a temporary project outside this checkout. |
+
+## 6. Smoke Test MCP
 
 From a development checkout:
 
@@ -179,7 +189,7 @@ project. It also checks `agent_route.execution_plan[]`,
 paths. This is the same installed-binary adoption gate referenced by the
 [Adoption checklist](adoption-checklist.md).
 
-## 6. First Agent Task
+## 7. First Agent Task
 
 Ask your MCP-enabled agent:
 

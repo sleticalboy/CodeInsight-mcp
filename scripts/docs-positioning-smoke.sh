@@ -119,6 +119,18 @@ main() {
   require_pattern docs/README.md \
     'Installed first-read route: `scripts/installed-quickstart-smoke\.sh`' \
     "docs index installed quickstart validation"
+  require_pattern docs/README.md \
+    'Choose the check by adoption stage:' \
+    "docs index validation chooser"
+  require_pattern docs/README.md \
+    '\| Product walkthrough \| `scripts/two-minute-demo\.sh` \|' \
+    "docs index product walkthrough validation"
+  require_pattern docs/README.md \
+    '\| MCP client wiring \| `scripts/mcp-stdio-smoke\.sh` \|' \
+    "docs index MCP wiring validation"
+  require_pattern docs/README.md \
+    '\| Installed-binary adoption gate \| `scripts/installed-quickstart-smoke\.sh` \|' \
+    "docs index installed adoption validation"
 
   require_pattern docs/quickstart.md \
     'local-first' \
@@ -135,6 +147,18 @@ main() {
   require_pattern docs/quickstart.md \
     '`scripts/two-minute-demo\.sh` for a visible evidence summary' \
     "quickstart demo evidence fast path"
+  require_pattern docs/quickstart.md \
+    '^## 5\. Choose A Smoke Check$' \
+    "quickstart smoke chooser section"
+  require_pattern docs/quickstart.md \
+    '\| You want a visible product walkthrough \| `scripts/two-minute-demo\.sh` \|' \
+    "quickstart product walkthrough chooser"
+  require_pattern docs/quickstart.md \
+    '\| You are wiring an MCP client from this checkout \| `scripts/mcp-stdio-smoke\.sh` \|' \
+    "quickstart MCP smoke chooser"
+  require_pattern docs/quickstart.md \
+    '\| You installed `codeinsight` and want an adoption gate \| `CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/installed-quickstart-smoke\.sh` \|' \
+    "quickstart installed smoke chooser"
   require_pattern docs/quickstart.md \
     '\[Client workflow\]\(client-workflow\.md#agent-policy-prompt\)' \
     "agent policy prompt link"

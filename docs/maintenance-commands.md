@@ -74,6 +74,16 @@ scripts/semantic-smoke.sh
 scripts/installed-quickstart-smoke.sh
 ```
 
+Choose the narrowest check for the change:
+
+| Change Or Question | Command | Scope |
+| --- | --- | --- |
+| README/demo positioning changed | `scripts/two-minute-demo.sh` and `scripts/demo-output-smoke.sh` | User-facing `agent_route` walkthrough and checked snapshot. |
+| MCP protocol or tool payload changed | `scripts/mcp-stdio-smoke.sh` | Stdio MCP handshake, `agent_route`, `context_pack`, and executable suggested-tool calls. |
+| Installed-binary adoption path changed | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh` | CLI and MCP first-read routes through the installed binary against a temporary project. |
+| One-call `agent_route` JSON contract changed | `scripts/agent-route-smoke.sh` | Route order, execution plan, context pack, and impact-analysis preview. |
+| Context ranking or continuation changed | `scripts/context-pack-quality-smoke.sh` | Deterministic context-pack quality regressions. |
+
 Use `two-minute-demo.sh` for user-facing `agent_route` walkthroughs,
 `agent-route-smoke.sh` for the one-call JSON contract, and
 `agent-router-demo.sh` for lower-level metrics, reading reasons, impact

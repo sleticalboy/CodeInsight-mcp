@@ -328,6 +328,21 @@ main() {
     'scripts/context-pack-quality-smoke\.sh' \
     "maintenance context-pack quality smoke"
   require_pattern docs/maintenance-commands.md \
+    'Choose the narrowest check for the change:' \
+    "maintenance smoke check chooser"
+  require_pattern docs/maintenance-commands.md \
+    '\| README/demo positioning changed \| `scripts/two-minute-demo\.sh` and `scripts/demo-output-smoke\.sh` \|' \
+    "maintenance README demo smoke chooser"
+  require_pattern docs/maintenance-commands.md \
+    '\| MCP protocol or tool payload changed \| `scripts/mcp-stdio-smoke\.sh` \|' \
+    "maintenance MCP smoke chooser"
+  require_pattern docs/maintenance-commands.md \
+    '\| Installed-binary adoption path changed \| `CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/installed-quickstart-smoke\.sh` \|' \
+    "maintenance installed binary smoke chooser"
+  require_pattern docs/maintenance-commands.md \
+    '\| One-call `agent_route` JSON contract changed \| `scripts/agent-route-smoke\.sh` \|' \
+    "maintenance agent route smoke chooser"
+  require_pattern docs/maintenance-commands.md \
     'production-vs-test' \
     "maintenance context-pack quality scope"
   require_pattern docs/maintenance-commands.md \
