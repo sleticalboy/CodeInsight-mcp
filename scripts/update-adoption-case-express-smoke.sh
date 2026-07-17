@@ -148,6 +148,27 @@ EOF
   grep -Fq -- "- Generated with: \`scripts/update-adoption-case.sh gin\`" "$TEMP_DIR/adoption-case-gin.md" ||
     fail "missing gin generator line"
 
+  "$ROOT_DIR/scripts/update-adoption-cases.sh" \
+    --output "$TEMP_DIR/adoption-cases.md" \
+    "$TEMP_DIR/adoption-case-express.md" \
+    "$TEMP_DIR/adoption-case-gin.md" \
+    >"$TEMP_DIR/summary-output.log"
+
+  grep -Fq "updated adoption cases summary: $TEMP_DIR/adoption-cases.md" "$TEMP_DIR/summary-output.log" ||
+    fail "summary updater did not report output path"
+  grep -Fq 'Blind first-read baseline: `42,956` source lines' "$TEMP_DIR/adoption-cases.md" ||
+    fail "summary updater did not aggregate baselines"
+  grep -Fq 'Aggregate read-less ratio: `92.6x`' "$TEMP_DIR/adoption-cases.md" ||
+    fail "summary updater did not aggregate read-less ratio"
+  "$ROOT_DIR/scripts/update-adoption-cases.sh" \
+    --check \
+    --output "$TEMP_DIR/adoption-cases.md" \
+    "$TEMP_DIR/adoption-case-express.md" \
+    "$TEMP_DIR/adoption-case-gin.md" \
+    >"$TEMP_DIR/summary-check-output.log"
+  grep -Fq "adoption cases summary is up to date" "$TEMP_DIR/summary-check-output.log" ||
+    fail "summary updater check mode did not pass"
+
   echo "update adoption case smoke passed"
 }
 

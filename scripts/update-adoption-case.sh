@@ -362,6 +362,7 @@ main() {
     fail "comparison summary does not match the adoption case contract"
 
   write_case_doc "$COMPARISON_OUTPUT_DIR/summary.json" "$OUTPUT_FILE"
+  "$ROOT_DIR/scripts/update-adoption-cases.sh"
 
   echo "updated adoption case: $OUTPUT_FILE"
   echo "repository: $REPO_ROOT"

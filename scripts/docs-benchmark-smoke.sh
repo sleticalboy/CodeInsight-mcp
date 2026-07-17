@@ -274,6 +274,7 @@ main() {
   require_pattern docs/adoption-cases.md \
     '\[case\]\(adoption-case-gin\.md\)' \
     "adoption cases Gin detail link"
+  "$ROOT_DIR/scripts/update-adoption-cases.sh" --check >/dev/null
   require_pattern scripts/update-adoption-case.sh \
     'Refreshes a checked-in adoption case from a live adoption-comparison run' \
     "Express adoption case update script purpose"
