@@ -170,8 +170,17 @@ main() {
     'steps\.benchmark-artifact\.outputs\.artifact-url' \
     "benchmark artifact URL summary input"
   require_pattern .github/workflows/ci.yml \
+    'CODEINSIGHT_BENCH_SUMMARY_JSON: /tmp/codeinsight-benchmark-subset\.json' \
+    "benchmark summary JSON CI output"
+  require_pattern .github/workflows/ci.yml \
     'scripts/benchmark-step-summary\.sh /tmp/codeinsight-benchmark-subset\.md codeinsight-benchmark-subset' \
     "benchmark step summary command"
+  require_pattern .github/workflows/ci.yml \
+    '/tmp/codeinsight-benchmark-subset\.json' \
+    "benchmark summary JSON CI input"
+  require_pattern scripts/benchmark-step-summary.sh \
+    'benchmark-summary-text\.sh' \
+    "benchmark step summary compact JSON renderer"
   require_pattern .github/workflows/ci.yml \
     'context-pack-quality-smoke:' \
     "context-pack quality CI job"
@@ -744,6 +753,9 @@ main() {
   require_pattern docs/maintainer-checklist.md \
     '`benchmark-subset-smoke` job summary' \
     "maintainer CI benchmark summary guidance"
+  require_pattern docs/maintainer-checklist.md \
+    'compact benchmark summary' \
+    "maintainer compact benchmark summary guidance"
   require_pattern docs/maintainer-checklist.md \
     'scripts/benchmark-artifact-smoke\.sh <ci-run-id>' \
     "maintainer benchmark artifact smoke command"

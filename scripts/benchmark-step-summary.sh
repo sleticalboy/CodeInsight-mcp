@@ -1,20 +1,24 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPORT_FILE="${1:-}"
 ARTIFACT_NAME="${2:-codeinsight-benchmark-subset}"
 ARTIFACT_URL="${3:-}"
 RUN_URL="${4:-}"
+SUMMARY_JSON="${5:-}"
 SUMMARY_FILE="${GITHUB_STEP_SUMMARY:-/dev/stdout}"
 
 usage() {
   cat >&2 <<'EOF'
-usage: scripts/benchmark-step-summary.sh REPORT_FILE [ARTIFACT_NAME] [ARTIFACT_URL] [RUN_URL]
+usage: scripts/benchmark-step-summary.sh REPORT_FILE [ARTIFACT_NAME] [ARTIFACT_URL] [RUN_URL] [SUMMARY_JSON]
 
 Appends the benchmark report's Summary and Key Results sections to the GitHub
 Actions step summary. When GITHUB_STEP_SUMMARY is not set, writes to stdout.
 RUN_URL defaults to the current GitHub Actions run when standard GITHUB_*
 environment variables are available.
+When SUMMARY_JSON is provided, also appends the compact machine-readable
+benchmark summary as Markdown.
 EOF
 }
 
@@ -77,6 +81,10 @@ main() {
       printf 'Workflow artifact: [`%s`](%s)\n\n' "$ARTIFACT_NAME" "$ARTIFACT_URL"
     else
       printf 'Workflow artifact: `%s`\n\n' "$ARTIFACT_NAME"
+    fi
+    if [ -n "$SUMMARY_JSON" ]; then
+      "$ROOT_DIR/scripts/benchmark-summary-text.sh" "$SUMMARY_JSON"
+      printf "\n"
     fi
     printf "Download the full Markdown report from the workflow artifact when you need detail rows, guardrail tables, or context-pack file lists.\n\n"
     printf "### Key Results\n\n"

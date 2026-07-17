@@ -105,14 +105,17 @@ jobs:
         env:
           CODEINSIGHT_BENCH_REPOS: p-limit
           CODEINSIGHT_BENCH_OUTPUT: /tmp/codeinsight-benchmark-subset.md
+          CODEINSIGHT_BENCH_SUMMARY_JSON: /tmp/codeinsight-benchmark-subset.json
       - run: scripts/benchmark-report-smoke.sh /tmp/codeinsight-benchmark-subset.md smoke p-limit
       - id: benchmark-artifact
         uses: actions/upload-artifact@v7
         with:
           name: codeinsight-benchmark-subset
-          path: /tmp/codeinsight-benchmark-subset.md
+          path: |
+            /tmp/codeinsight-benchmark-subset.md
+            /tmp/codeinsight-benchmark-subset.json
           if-no-files-found: error
-      - run: scripts/benchmark-step-summary.sh /tmp/codeinsight-benchmark-subset.md codeinsight-benchmark-subset "${{ steps.benchmark-artifact.outputs.artifact-url }}" "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+      - run: scripts/benchmark-step-summary.sh /tmp/codeinsight-benchmark-subset.md codeinsight-benchmark-subset "${{ steps.benchmark-artifact.outputs.artifact-url }}" "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" /tmp/codeinsight-benchmark-subset.json
 
   release-install-smoke:
     name: release-install-smoke-${{ matrix.os }}
