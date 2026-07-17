@@ -35,7 +35,14 @@ Or against your own repository:
 CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/two-minute-demo.sh
 ```
 
-When you need a copyable Markdown evidence artifact for your own repository:
+When you need a complete adoption evidence bundle for your own repository:
+
+```bash
+scripts/adoption-evidence.sh /path/to/repo \
+  --output-dir /tmp/codeinsight-adoption-evidence
+```
+
+When you only need local first-read evidence artifacts:
 
 ```bash
 scripts/local-repo-evidence.sh /path/to/repo \
@@ -63,6 +70,9 @@ Pass criteria:
   tool, impact risk, and the raw `agent_route` JSON path when `--json` is used.
 - `--summary-json` writes the same core metrics in a compact machine-readable
   contract for CI artifacts, README evidence snippets, or benchmark aggregation.
+- `adoption-evidence.sh` writes one folder containing local first-read evidence,
+  raw `agent_route` JSON, MCP first-call JSON, and aggregate Markdown/JSON
+  summaries that prove the CLI route and MCP route both work.
 
 ## 3. MCP Server Starts And Lists Tools
 
