@@ -724,6 +724,25 @@ append_key_results_section() {
 EOF
 }
 
+print_terminal_summary() {
+  local context_reduction average_tokens average_index_ms total_failures
+
+  context_reduction="$(line_reduction "$TOTAL_REPO_LINES" "$TOTAL_CONTEXT_LINES")"
+  average_tokens="$(average_number "$TOTAL_CONTEXT_TOKENS" "$BENCHMARKED_REPOS")"
+  average_index_ms="$(average_number "$TOTAL_INDEX_MS" "$BENCHMARKED_REPOS")"
+  total_failures=$((BUDGET_FAILURES + CONTEXT_GUARDRAIL_FAILURES + SYMBOL_TARGET_FAILURES + CALL_TARGET_FAILURES + CALL_EDGE_FAILURES))
+
+  echo "benchmark summary"
+  echo "  report: $OUTPUT"
+  echo "  repositories: $BENCHMARKED_REPOS ($(repo_subset_label))"
+  echo "  context_pack first: $CONTEXT_PACK_FIRST_RECOMMENDATIONS/$BENCHMARKED_REPOS"
+  echo "  context lines: $TOTAL_CONTEXT_LINES / $TOTAL_REPO_LINES ($context_reduction reduction)"
+  echo "  estimated tokens: $TOTAL_CONTEXT_TOKENS total, $average_tokens average"
+  echo "  indexing: $TOTAL_INDEX_MS ms total, $average_index_ms ms average"
+  echo "  guardrail failures: $total_failures"
+  echo "  truncated context packs: $TRUNCATED_CONTEXT_PACKS"
+}
+
 append_summary_row() {
   local name="$1"
   local language="$2"
@@ -1079,6 +1098,7 @@ EOF
 
   mv "$REPORT_FILE" "$OUTPUT"
   echo "wrote $OUTPUT"
+  print_terminal_summary
   if [ "$BUDGET_FAILURES" -gt 0 ]; then
     echo "benchmark budget failures: $BUDGET_FAILURES" >&2
     exit 1

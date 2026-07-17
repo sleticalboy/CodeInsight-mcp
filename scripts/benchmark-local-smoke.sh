@@ -12,6 +12,7 @@ trap cleanup EXIT INT TERM
 
 repo="$TEMP_DIR/repo"
 report="$TEMP_DIR/benchmark-local.md"
+output_log="$TEMP_DIR/output.log"
 mkdir -p "$repo/src"
 
 cat >"$repo/src/main.ts" <<'TS'
@@ -56,7 +57,7 @@ CODEINSIGHT_BENCH_PROFILE=local \
   CODEINSIGHT_BENCH_LOCAL_TASK="understand local app bootstrap flow" \
   CODEINSIGHT_BENCH_WORKDIR="$TEMP_DIR/work" \
   CODEINSIGHT_BENCH_OUTPUT="$report" \
-  "$ROOT_DIR/scripts/benchmark-smoke.sh"
+  "$ROOT_DIR/scripts/benchmark-smoke.sh" | tee "$output_log"
 
 "$ROOT_DIR/scripts/benchmark-report-smoke.sh" "$report" local
 
@@ -65,6 +66,11 @@ grep -Fq 'URL: local:' "$report"
 grep -Fq '## local-fixture' "$report"
 grep -Fq 'Context seed file: `src/main.ts`' "$report"
 grep -Fq '`first_reading_question` | present' "$report"
+grep -Fq 'benchmark summary' "$output_log"
+grep -Fq "report: $report" "$output_log"
+grep -Fq 'repositories: 1 (all)' "$output_log"
+grep -Fq 'context_pack first: 1/1' "$output_log"
+grep -Fq 'guardrail failures: 0' "$output_log"
 
 if [ -d "$repo/.codeinsight" ]; then
   echo "local benchmark should not write .codeinsight into source repository" >&2
