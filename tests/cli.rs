@@ -994,6 +994,17 @@ fn cli_indexes_and_queries_fixture_project() {
         let first_omitted = &omitted_candidates[0];
         assert!(first_omitted["file"].as_str().unwrap().starts_with("src/"));
         assert!(first_omitted["score"].as_i64().unwrap() > 0);
+        assert!(first_omitted["selection_rank"].as_u64().unwrap() > 0);
+        assert!(
+            !first_omitted["omission_reason"]
+                .as_str()
+                .unwrap()
+                .is_empty()
+        );
+        assert_eq!(
+            first_omitted["next_action"],
+            "run_omitted_candidate_context_pack"
+        );
         assert!(!first_omitted["source"].as_str().unwrap().is_empty());
         assert!(!first_omitted["reason"].as_str().unwrap().is_empty());
         assert!(!first_omitted["ranges"].as_array().unwrap().is_empty());
@@ -1056,6 +1067,11 @@ fn cli_indexes_and_queries_fixture_project() {
     assert!(auth_context_files.contains(&"src/consumer.py"));
     assert_eq!(context["reading_plan"][0]["order"].as_u64(), Some(1));
     assert_eq!(context["reading_plan"][0]["file"], "src/auth.py");
+    assert_eq!(
+        context["reading_plan"][0]["selection_rank"].as_u64(),
+        Some(1)
+    );
+    assert_eq!(context["files"][0]["selection_rank"].as_u64(), Some(1));
     assert!(
         context["reading_plan"][0]["focus"]
             .as_str()

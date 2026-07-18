@@ -355,9 +355,10 @@ commands, and `commands_override_builtin` so clients can explain whether
 configured commands will take precedence over built-in inference.
 
 `context_pack` returns `files[]` entries with structured `source`, `score`,
-`reason`, and `ranges[]` fields. Each range also includes `source`, `score`,
-`start_line`, `end_line`, `importance`, `reason`, and `excerpt`, so clients can
-sort or filter snippets without parsing explanation text.
+`selection_rank`, `reason`, and `ranges[]` fields. Each range also includes
+`source`, `score`, `start_line`, `end_line`, `importance`, `reason`, and
+`excerpt`, so clients can sort or filter snippets without parsing explanation
+text.
 It also returns `seed_strategy` and `selected_seeds`; use these fields to show
 whether context came from explicit seeds, an overview entrypoint, task-matched
 source, or indexed source-file fallback. For task-matched seeds,
@@ -390,6 +391,7 @@ Example `context_pack` response shape:
     {
       "order": 1,
       "file": "src/auth.ts",
+      "selection_rank": 1,
       "focus": "Follow static call graph evidence around the seed flow.",
       "next_action": "follow_call_graph",
       "question": "Which callers or callees explain how control moves through this flow?",
@@ -456,7 +458,10 @@ Example `context_pack` response shape:
       "file": "src/session.ts",
       "source": "reference",
       "score": 60,
-      "reason": "Omitted from selected context due to budget or lower rank; top reason: References symbol near line 42",
+      "selection_rank": 4,
+      "omission_reason": "token_budget_exhausted",
+      "next_action": "run_omitted_candidate_context_pack",
+      "reason": "Omitted from selected context because token_budget_exhausted; candidate rank 4 by score; top reason: References symbol near line 42",
       "ranges": [
         {
           "start_line": 40,
@@ -502,16 +507,22 @@ Example `context_pack` response shape:
 
 `reading_plan` is derived from the final selected `files[]` after token-budget
 selection. Use it when a client needs an ordered read path without carrying the
-full code excerpts. `next_action` is a stable snake_case hint for client
-controls or follow-up tool routing, and `question` is a short prompt that can be
-shown directly to an agent or user. `reason` is the executable instruction for
-the current step: it combines the question, deeper-evidence tool, and selection
-rationale. `selection_reason` is the compact raw ranking reason for UI or audit
-display. `suggested_tool` contains an MCP-ready `tool`, `priority`, `reason`,
-and `suggested_arguments` object for the next local analysis call after reading
-that step.
+full code excerpts. `selection_rank` preserves the file's rank from the original
+candidate ordering, while `order` is the final reading order. `next_action` is a
+stable snake_case hint for client controls or follow-up tool routing, and
+`question` is a short prompt that can be shown directly to an agent or user.
+`reason` is the executable instruction for the current step: it combines the
+question, deeper-evidence tool, and selection rationale. `selection_reason` is the compact raw ranking reason
+for UI or audit display. `suggested_tool` contains an MCP-ready `tool`,
+`priority`, `reason`, and `suggested_arguments` object for the next local
+analysis call after reading that step.
 Dependency follow-ups are scoped with the current file in
 `suggested_arguments.files` when the suggested tool is `dependency_graph`.
+
+`omitted_candidates[]` uses the same candidate ranking scale. Its
+`selection_rank`, `omission_reason`, and `next_action` fields let clients show
+why an important-looking file was excluded and offer the focused
+`suggested_tool` without parsing the human-readable `reason`.
 
 Known `source` values are `seed_file`, `symbol_definition`, `reference`,
 `call_graph`, `semantic`, and `dependency`.

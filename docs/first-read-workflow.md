@@ -186,9 +186,9 @@ Known source values include:
 ## Reading Plan
 
 `reading_plan` provides an ordered, excerpt-free read path over the selected
-files with focus text, machine-readable `next_action`, guiding `question`,
-executable `reason`, raw `selection_reason`, prioritized `suggested_tool`, and
-structured line ranges.
+files with candidate `selection_rank`, focus text, machine-readable
+`next_action`, guiding `question`, executable `reason`, raw `selection_reason`,
+prioritized `suggested_tool`, and structured line ranges.
 
 `reason` is written for the agent loop: it names the question to answer, the
 suggested follow-up tool to call when deeper evidence is needed, and the
@@ -209,6 +209,9 @@ Client behavior should be strict:
 - Execute `suggested_tool` only when the current step needs deeper local
   evidence; do not run omitted-candidate continuation before reading the
   selected context.
+- Use `omitted_candidates[].selection_rank`, `omission_reason`, and
+  `next_action` to explain which ranked files were excluded by the token budget
+  or lower-priority selection and how to continue with a focused follow-up.
 
 The plan is derived from the final selected `files[]` after token-budget
 selection. It is a client hint, not a separate ranking pass. Suggested tool

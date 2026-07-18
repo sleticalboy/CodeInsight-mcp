@@ -1351,7 +1351,7 @@ pub fn context_pack_value(
     let mut files = Vec::new();
     let mut truncated = false;
 
-    for candidate in &candidates {
+    for (candidate_index, candidate) in candidates.iter().enumerate() {
         let path = root.join(&candidate.file);
         let Ok(source) = fs::read_to_string(&path) else {
             continue;
@@ -1421,6 +1421,7 @@ pub fn context_pack_value(
                 file: candidate.file.clone(),
                 source: source.clone(),
                 score: selected_max_score,
+                selection_rank: candidate_index + 1,
                 reason: format!(
                     "Selected for {} relevance via {}: {}",
                     importance_for_score(selected_max_score),
@@ -1470,6 +1471,7 @@ pub fn context_pack_value(
         &task,
         &candidates,
         &files,
+        truncated,
         CONTEXT_OMITTED_CANDIDATE_LIMIT,
     );
     let budget_summary = ContextBudget {
@@ -1539,18 +1541,31 @@ fn context_omitted_candidates(
     task: &str,
     candidates: &[ContextFileCandidate],
     files: &[ContextFile],
+    budget_exhausted: bool,
     limit: usize,
 ) -> Vec<ContextOmittedCandidate> {
     let selected_files = files
         .iter()
         .map(|file| file.file.as_str())
         .collect::<BTreeSet<_>>();
+    let omission_reason = context_omission_reason(budget_exhausted);
     candidates
         .iter()
-        .filter(|candidate| !selected_files.contains(candidate.file.as_str()))
+        .enumerate()
+        .filter(|(_, candidate)| !selected_files.contains(candidate.file.as_str()))
         .take(limit)
-        .filter_map(|candidate| context_omitted_candidate(root, task, candidate))
+        .filter_map(|(index, candidate)| {
+            context_omitted_candidate(root, task, candidate, index + 1, omission_reason)
+        })
         .collect()
+}
+
+fn context_omission_reason(budget_exhausted: bool) -> &'static str {
+    if budget_exhausted {
+        "token_budget_exhausted"
+    } else {
+        "lower_ranked_candidate_after_budget_selection"
+    }
 }
 
 fn context_continuation_summary(
@@ -1628,6 +1643,8 @@ fn context_omitted_candidate(
     root: &Path,
     task: &str,
     candidate: &ContextFileCandidate,
+    selection_rank: usize,
+    omission_reason: &str,
 ) -> Option<ContextOmittedCandidate> {
     let primary_range = candidate.ranges.first()?;
     let ranges = candidate
@@ -1645,9 +1662,12 @@ fn context_omitted_candidate(
         file: candidate.file.clone(),
         source: primary_range.source.clone(),
         score: candidate.max_score,
+        selection_rank,
+        omission_reason: omission_reason.to_string(),
+        next_action: "run_omitted_candidate_context_pack".to_string(),
         reason: format!(
-            "Omitted from selected context due to budget or lower rank; top reason: {}",
-            primary_range.reason
+            "Omitted from selected context because {}; candidate rank {} by score; top reason: {}",
+            omission_reason, selection_rank, primary_range.reason
         ),
         ranges,
         suggested_tool: ContextSuggestedTool {
@@ -1687,6 +1707,7 @@ fn context_reading_plan(root: &Path, files: &[ContextFile]) -> Vec<ContextReadin
             ContextReadingStep {
                 order: index + 1,
                 file: file.file.clone(),
+                selection_rank: file.selection_rank,
                 focus: context_reading_focus(file),
                 next_action,
                 question: question.clone(),

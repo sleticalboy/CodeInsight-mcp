@@ -371,6 +371,9 @@ pub struct ContextOmittedCandidate {
     pub file: String,
     pub source: String,
     pub score: i32,
+    pub selection_rank: usize,
+    pub omission_reason: String,
+    pub next_action: String,
     pub reason: String,
     pub ranges: Vec<ContextReadingRange>,
     pub suggested_tool: ContextSuggestedTool,
@@ -404,6 +407,7 @@ pub struct ContextSemanticStatus {
 pub struct ContextReadingStep {
     pub order: usize,
     pub file: String,
+    pub selection_rank: usize,
     pub focus: String,
     pub next_action: String,
     pub question: String,
@@ -436,6 +440,7 @@ pub struct ContextFile {
     pub file: String,
     pub source: String,
     pub score: i32,
+    pub selection_rank: usize,
     pub reason: String,
     pub ranges: Vec<ContextRange>,
 }

@@ -139,6 +139,8 @@ size.
 Each omitted candidate includes:
 
 - `file`, `source`, `score`, and `reason` for display and ranking context.
+- `selection_rank`, `omission_reason`, and `next_action` for machine-readable
+  continuation UI and agent routing.
 - `ranges[]` with line numbers, source, and importance, but no excerpt.
 - `suggested_tool` pointing to a file-scoped `context_pack` call.
 

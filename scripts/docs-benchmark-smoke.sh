@@ -776,6 +776,15 @@ main() {
   require_pattern docs/maintenance-commands.md \
     'omitted_candidates' \
     "maintenance context-pack omitted candidates scope"
+  require_pattern docs/mcp-client-config.md \
+    '`selection_rank`, `omission_reason`, and `next_action` fields let clients show' \
+    "MCP client omitted candidate explanation fields"
+  require_pattern docs/recommendation-contract.md \
+    '`selection_rank`, `omission_reason`, and `next_action` for machine-readable' \
+    "recommendation contract omitted candidate explanation fields"
+  require_pattern docs/first-read-workflow.md \
+    '`omitted_candidates\[\]\.selection_rank`, `omission_reason`, and' \
+    "first-read omitted candidate explanation fields"
   require_pattern docs/maintenance-commands.md \
     'minimum_budget_applied' \
     "maintenance context-pack minimum budget scope"
@@ -1220,6 +1229,12 @@ main() {
   require_pattern scripts/agent-router-demo.sh \
     'require_json_string "\$context_json" '\''\.reading_plan\[0\]\.reason'\''' \
     "agent-router reading-plan reason assertion"
+  require_pattern tests/cli.rs \
+    'context\["reading_plan"\]\[0\]\["selection_rank"\]' \
+    "CLI context-pack reading-plan selection rank assertion"
+  require_pattern tests/cli.rs \
+    'first_omitted\["omission_reason"\]' \
+    "CLI context-pack omitted candidate omission reason assertion"
   require_pattern scripts/mcp-stdio-smoke.sh \
     'agent_route_execution_plan_steps' \
     "MCP stdio execution plan steps output"
