@@ -228,7 +228,8 @@ Expected first-call signals:
 
 Use `scripts/mcp-stdio-smoke.sh` to verify this path end to end. The smoke
 checks that `agent_route.execution_plan[].suggested_tool` executes through MCP
-`tools/call`.
+`tools/call` and prints first-reading `selection_rank` plus continuation and
+omitted-candidate evidence.
 
 For a shorter copyable check, run `scripts/mcp-first-call-smoke.sh`. It prints
 a JSON summary with `route_tools`, `selected_files`, `execution_plan_actions`,

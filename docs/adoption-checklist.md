@@ -177,6 +177,9 @@ Pass criteria:
   selection reason fields.
 - The smoke output includes `agent_route_execution_plan` and
   `mcp_agent_route_execution_plan` with the expected client action order.
+- `mcp-stdio-smoke.sh` prints first-reading `selection_rank`,
+  `continuation_status`, and first omitted-candidate fields when continuation
+  evidence is available.
 - `agent_route_tools` includes `index_project`, `project_overview`,
   `context_pack`, and `impact_analysis`.
 - `agent_route_impact_status` and `mcp_agent_route_impact_status` are

@@ -118,8 +118,20 @@ auto_seed_strategy: auto_entrypoint
 auto_reading_plan_steps: 2
 agent_route_execution_plan_steps: 4
 agent_route_first_execution_action: read_selected_context
+agent_route_first_reading_selection_rank: 1
+agent_route_continuation_status: complete
+agent_route_continuation_next_action: read_selected_context
+agent_route_first_omitted_file: -
+agent_route_first_omitted_selection_rank: -
+agent_route_first_omitted_omission_reason: -
 agent_route_suggested_tool: file_outline
 agent_route_suggested_tool_executed: true
+explicit_first_reading_selection_rank: 1
+explicit_continuation_status: omitted_candidates_available
+explicit_continuation_next_action: run_omitted_candidate_context_pack
+explicit_first_omitted_file: src/consumer_14.py
+explicit_first_omitted_selection_rank: 7
+explicit_first_omitted_omission_reason: token_budget_exhausted
 explicit_suggested_tool: file_outline
 auto_suggested_tool: file_outline
 explicit_omitted_candidates: 8
@@ -133,6 +145,10 @@ step, seed symbol, and token budget.
 route unless the contract changes deliberately.
 `agent_route_suggested_tool_executed` should remain `true`; it verifies the
 execution-plan suggested tool is a usable MCP call, not only display metadata.
+`agent_route_first_reading_selection_rank` and
+`explicit_first_omitted_omission_reason` should remain present so protocol
+smoke output exposes the same candidate-ranking and continuation evidence as
+the compact MCP first-call summary.
 Clients should still gate that action behind selected-context reading. The
 smoke proves protocol usability; it does not change the first-read ordering
 contract.

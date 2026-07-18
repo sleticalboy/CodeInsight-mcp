@@ -265,6 +265,12 @@ try:
         }
     )
     agent_route_result = agent_route["result"]["structuredContent"]
+    agent_route_context = agent_route_result["context_pack"]
+    agent_route_reading_plan = agent_route_context["reading_plan"]
+    agent_route_continuation = agent_route_context["continuation_summary"]
+    agent_route_omitted_candidates = agent_route_context["omitted_candidates"]
+    assert agent_route_reading_plan, "agent_route produced no reading plan"
+    agent_route_first_reading = agent_route_reading_plan[0]
     assert [step["tool"] for step in agent_route_result["route"]] == [
         "index_project",
         "project_overview",
@@ -280,9 +286,29 @@ try:
     assert agent_route_result["execution_plan"][0]["status"] == "ready"
     assert agent_route_result["execution_plan"][0]["files"]
     assert "reading_plan[] order" in agent_route_result["execution_plan"][0]["instruction"]
+    assert agent_route_first_reading["selection_rank"] > 0
+    assert (
+        f"candidate rank {agent_route_first_reading['selection_rank']}"
+        in agent_route_result["execution_plan"][0]["instruction"]
+    )
     assert agent_route_result["execution_plan"][1]["suggested_tool"]["tool"]
     assert agent_route_result["execution_plan"][1]["suggested_tool"]["suggested_arguments"]
-    assert agent_route_result["context_pack"]["reading_plan"], "agent_route produced no reading plan"
+    assert agent_route_continuation["status"]
+    assert agent_route_continuation["next_action"]
+    assert agent_route_continuation["next_action"] in agent_route_result["execution_plan"][2]["instruction"]
+    if agent_route_omitted_candidates:
+        first_agent_route_omitted = agent_route_omitted_candidates[0]
+        assert first_agent_route_omitted["selection_rank"] > 0
+        assert first_agent_route_omitted["omission_reason"]
+        assert first_agent_route_omitted["next_action"]
+        assert first_agent_route_omitted["file"] in agent_route_result["execution_plan"][2]["instruction"]
+        assert (
+            f"candidate rank {first_agent_route_omitted['selection_rank']}"
+            in agent_route_result["execution_plan"][2]["instruction"]
+        )
+        assert first_agent_route_omitted["omission_reason"] in agent_route_result["execution_plan"][2]["instruction"]
+    else:
+        first_agent_route_omitted = {}
     assert agent_route_result["impact_status"] == "complete"
     assert agent_route_result["impact_analysis"]["format"] == "summary"
     assert agent_route_result["impact_analysis"]["depth"] == 2
@@ -421,6 +447,7 @@ try:
     assert explicit_reading_plan, "explicit context reading_plan missing"
     assert explicit_reading_plan[0]["order"] == 1
     assert explicit_reading_plan[0]["file"] == context_result["files"][0]["file"]
+    assert explicit_reading_plan[0]["selection_rank"] > 0
     assert explicit_reading_plan[0]["next_action"]
     assert explicit_reading_plan[0]["question"]
     assert "Read this step to answer:" in explicit_reading_plan[0]["reason"]
@@ -447,6 +474,9 @@ try:
         assert omitted_candidate["file"]
         assert omitted_candidate["source"]
         assert omitted_candidate["score"] > 0
+        assert omitted_candidate["selection_rank"] > 0
+        assert omitted_candidate["omission_reason"]
+        assert omitted_candidate["next_action"] == "run_omitted_candidate_context_pack"
         assert omitted_candidate["reason"]
         assert omitted_candidate["ranges"], "omitted candidate ranges missing"
         assert "excerpt" not in omitted_candidate["ranges"][0]
@@ -465,6 +495,8 @@ try:
             item["file"] == omitted_candidate["file"]
             for item in omitted_follow_up_result["files"]
         ), "omitted candidate follow-up did not select requested file"
+    else:
+        omitted_candidate = {}
 
     auto_context = request(
         {
@@ -527,8 +559,20 @@ try:
     print(f"auto_reading_plan_steps: {len(auto_context_result['reading_plan'])}")
     print(f"agent_route_execution_plan_steps: {len(agent_route_result['execution_plan'])}")
     print(f"agent_route_first_execution_action: {agent_route_result['execution_plan'][0]['action']}")
+    print(f"agent_route_first_reading_selection_rank: {agent_route_first_reading['selection_rank']}")
+    print(f"agent_route_continuation_status: {agent_route_continuation['status']}")
+    print(f"agent_route_continuation_next_action: {agent_route_continuation['next_action']}")
+    print(f"agent_route_first_omitted_file: {first_agent_route_omitted.get('file', '-')}")
+    print(f"agent_route_first_omitted_selection_rank: {first_agent_route_omitted.get('selection_rank', '-')}")
+    print(f"agent_route_first_omitted_omission_reason: {first_agent_route_omitted.get('omission_reason', '-')}")
     print(f"agent_route_suggested_tool: {agent_route_result['execution_plan'][1]['suggested_tool']['tool']}")
     print(f"agent_route_suggested_tool_executed: true")
+    print(f"explicit_first_reading_selection_rank: {explicit_reading_plan[0]['selection_rank']}")
+    print(f"explicit_continuation_status: {context_result['continuation_summary']['status']}")
+    print(f"explicit_continuation_next_action: {context_result['continuation_summary']['next_action']}")
+    print(f"explicit_first_omitted_file: {omitted_candidate.get('file', '-')}")
+    print(f"explicit_first_omitted_selection_rank: {omitted_candidate.get('selection_rank', '-')}")
+    print(f"explicit_first_omitted_omission_reason: {omitted_candidate.get('omission_reason', '-')}")
     print(f"explicit_suggested_tool: {explicit_reading_plan[0]['suggested_tool']['tool']}")
     print(f"auto_suggested_tool: {auto_context_result['reading_plan'][0]['suggested_tool']['tool']}")
     print(f"explicit_omitted_candidates: {len(context_result['omitted_candidates'])}")

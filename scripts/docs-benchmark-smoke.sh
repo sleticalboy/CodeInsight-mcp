@@ -768,6 +768,9 @@ main() {
     '\| MCP protocol or tool payload changed \| `scripts/mcp-stdio-smoke\.sh` \|' \
     "maintenance MCP smoke chooser"
   require_pattern docs/maintenance-commands.md \
+    'executable suggested-tool calls, selection rank, and continuation evidence' \
+    "maintenance MCP smoke selection evidence scope"
+  require_pattern docs/maintenance-commands.md \
     '\| Installed-binary adoption path changed \| `CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/installed-quickstart-smoke\.sh` \|' \
     "maintenance installed binary smoke chooser"
   require_pattern docs/maintenance-commands.md \
@@ -1256,6 +1259,15 @@ main() {
   require_pattern scripts/mcp-stdio-smoke.sh \
     'agent_route_suggested_tool_executed' \
     "MCP stdio execution-plan suggested tool execution output"
+  require_pattern scripts/mcp-stdio-smoke.sh \
+    'agent_route_first_reading_selection_rank' \
+    "MCP stdio agent-route selection rank output"
+  require_pattern scripts/mcp-stdio-smoke.sh \
+    'agent_route_continuation_status' \
+    "MCP stdio agent-route continuation status output"
+  require_pattern scripts/mcp-stdio-smoke.sh \
+    'explicit_first_omitted_omission_reason' \
+    "MCP stdio explicit omitted reason output"
   require_pattern scripts/agent-route-step-summary-smoke.sh \
     'First reading question' \
     "agent-route step summary first reading question"
@@ -1281,8 +1293,17 @@ main() {
     'agent_route_suggested_tool_executed: true' \
     "MCP client smoke execution-plan suggested tool output"
   require_pattern docs/mcp-client-smoke.md \
+    'agent_route_first_reading_selection_rank: 1' \
+    "MCP client smoke selection rank output"
+  require_pattern docs/mcp-client-smoke.md \
+    'explicit_first_omitted_omission_reason: token_budget_exhausted' \
+    "MCP client smoke omitted reason output"
+  require_pattern docs/mcp-client-smoke.md \
     'suggested tool is a usable MCP call' \
     "MCP client smoke execution-plan suggested tool contract"
+  require_pattern docs/mcp-client-smoke.md \
+    'candidate-ranking and continuation evidence' \
+    "MCP client smoke candidate evidence contract"
   require_pattern docs/mcp-client-smoke.md \
     'not permission' \
     "MCP client smoke suggested tool ordering boundary"
