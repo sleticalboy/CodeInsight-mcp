@@ -23,6 +23,17 @@ When a client needs custom routing or partial refresh control, it can call the
 lower-level tools directly: `index_project`, `project_overview`,
 `context_pack`, then `impact_analysis`.
 
+Client invariants:
+
+- Never run a `reading_plan[].suggested_tool` before reading the matching
+  selected context file.
+- Never run `continuation_summary.suggested_tool` before the selected context
+  has been consumed.
+- Always treat `impact_analysis` as the pre-edit planning gate, then verify
+  changes with normal local checks.
+- Use raw broad file search only after CodeInsight has pointed to a file, the
+  selected context is insufficient, or the user named a specific location.
+
 ## First Agent Route Call
 
 For the first broad task after MCP setup, call `agent_route` with the repository

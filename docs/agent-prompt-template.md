@@ -30,6 +30,8 @@ When CodeInsight MCP is available for a repository:
    directly only when custom routing or partial refresh control is needed.
 7. Treat CodeInsight call graphs and references as best-effort navigation
    evidence, not compiler-grade proof.
+8. Do not use suggested_tool or continuation as a shortcut around reading the
+   selected context first.
 ```
 
 ## First Read A Repository
@@ -57,7 +59,8 @@ Workflow:
    - remaining unknowns
    - recommended next CodeInsight tool calls
 
-Do not scan the whole repository unless the selected context is insufficient.
+Do not scan the whole repository or run continuation unless the selected
+context is insufficient.
 ```
 
 ## Change Preflight
@@ -116,9 +119,9 @@ Workflow:
 1. Call agent_route with the review task and a bounded token_budget.
 2. Read selected files in reading_plan order.
 3. Call impact_analysis for each changed or planned target.
-5. Use callers, callees, find_references, or dependency_graph only when the
+4. Use callers, callees, find_references, or dependency_graph only when the
    review question requires flow or dependency evidence.
-6. Report:
+5. Report:
    - expected behavior surface
    - risk level and impacted files
    - tests or checks to run
@@ -135,10 +138,10 @@ instruction:
 
 ```text
 Use CodeInsight before broad repository reading: call agent_route with
-root/task/token_budget. Read selected files in reading_plan order. Use
-continuation only after selected context is consumed. Review impact_analysis
-before edits. Treat call graphs and references as best-effort navigation
-evidence, not compiler-grade proof.
+root/task/token_budget. Read selected files in reading_plan order before
+suggested_tool or continuation. Review impact_analysis before edits. Treat call
+graphs and references as best-effort navigation evidence, not compiler-grade
+proof.
 ```
 
 ## Recommended Defaults

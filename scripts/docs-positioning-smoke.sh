@@ -389,9 +389,24 @@ main() {
   require_pattern docs/agent-prompt-template.md \
     'Use each reading_plan\.question as the local checklist' \
     "agent prompt first read question policy"
+  require_pattern docs/agent-prompt-template.md \
+    'Do not use suggested_tool or continuation as a shortcut around reading the' \
+    "agent prompt suggested tool ordering"
+  require_pattern docs/agent-prompt-template.md \
+    'Read selected files in reading_plan order before' \
+    "agent prompt minimal ordering"
   require_pattern docs/first-read-workflow.md \
     '`agent_route` is the default first-read contract' \
     "first-read workflow agent_route contract"
+  require_pattern docs/first-read-workflow.md \
+    'agent_route -> read selected context -> current-step suggested_tool if needed -> continuation if needed -> impact check before edits' \
+    "first-read workflow ordering contract"
+  require_pattern docs/first-read-workflow.md \
+    '`suggested_tool` and continuation are follow-up actions, not replacements' \
+    "first-read workflow suggested tool boundary"
+  require_pattern docs/first-read-workflow.md \
+    '`impact_analysis` is the pre-edit planning gate' \
+    "first-read workflow impact gate"
   require_pattern docs/first-read-workflow.md \
     'Use `question` as the local checklist' \
     "first-read workflow question checklist"
@@ -401,6 +416,18 @@ main() {
   require_pattern docs/first-read-workflow.md \
     'Use `selection_reason` for compact UI labels' \
     "first-read workflow selection reason UI guidance"
+  require_pattern docs/client-workflow.md \
+    '^Client invariants:$' \
+    "client workflow invariants section"
+  require_pattern docs/client-workflow.md \
+    'Never run a `reading_plan\[\]\.suggested_tool` before reading the matching' \
+    "client workflow suggested tool invariant"
+  require_pattern docs/client-workflow.md \
+    'Never run `continuation_summary\.suggested_tool` before the selected context' \
+    "client workflow continuation invariant"
+  require_pattern docs/client-workflow.md \
+    'Always treat `impact_analysis` as the pre-edit planning gate' \
+    "client workflow impact invariant"
   require_pattern docs/mcp-client-config.md \
     'Call `agent_route` with `root`, `task`, and `token_budget`' \
     "MCP client config agent_route flow"

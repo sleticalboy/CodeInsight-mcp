@@ -44,6 +44,17 @@ Recommended MCP first-read flow:
    for why the file was selected.
 3. Use `continuation_summary` only after selected context is consumed.
 
+The first-read ordering contract is strict:
+
+```text
+agent_route -> read selected context -> current-step suggested_tool if needed -> continuation if needed -> impact check before edits
+```
+
+`suggested_tool` and continuation are follow-up actions, not replacements for
+reading the selected context. `impact_analysis` is the pre-edit planning gate;
+it does not prove the change is safe and does not replace tests or compiler
+checks.
+
 When the client needs custom routing or partial refresh control, call the
 lower-level tools directly: `index_project`, `project_overview`,
 `context_pack`, then `impact_analysis`.
