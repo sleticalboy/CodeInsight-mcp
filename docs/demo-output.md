@@ -64,7 +64,7 @@ token_budget: 6000
    continuation_timing_contract: true
    reading_plan_reason: Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: src/tools.rs
    selection_reason: Selected for high relevance via seed_file: Seed file header and imports for task: src/tools.rs
-   route_reason: selected 10 files, 14 ranges, and 8 reading-plan steps within the token budget; read src/tools.rs first via inspect_seed_file, use file_outline when deeper evidence is needed, then follow continuation read_selected_context
+   route_reason: selected 10 files, 14 ranges, and 8 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context
 
 4. impact_analysis
    seed_file: src/tools.rs
@@ -98,7 +98,7 @@ Before edits, impact_analysis reports high risk across 7 impacted files.
 8. Reading order contract is true; execution_plan[0].files follows reading_plan[] order.
 9. Suggested-tool handoff contract is true; execution_plan[1] points to the current reading step.
 10. Continuation timing contract is true; continuation is only considered after selected context is read.
-11. The selected context reduced source reading by 98.2%; selected 10 files, 14 ranges, and 8 reading-plan steps within the token budget; read src/tools.rs first via inspect_seed_file, use file_outline when deeper evidence is needed, then follow continuation read_selected_context
+11. The selected context reduced source reading by 98.2%; selected 10 files, 14 ranges, and 8 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context
 12. Selection evidence: Selected for high relevance via seed_file: Seed file header and imports for task: src/tools.rs
 13. Continuation status is complete, so the agent knows whether to ask for a focused follow-up.
 14. impact_analysis reports high risk across 7 impacted files with 4 suggested checks; after selected context is read, pre-edit impact check estimated 7 impacted files at high risk, including 5 call-related files, 1 dependency-related files, 27 call paths, and 1 dependency paths

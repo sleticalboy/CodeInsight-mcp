@@ -36,7 +36,7 @@ cat <<'JSON'
   "route": [
     {"order": 1, "tool": "index_project", "status": "complete", "reason": "indexed"},
     {"order": 2, "tool": "project_overview", "status": "complete", "reason": "overview"},
-    {"order": 3, "tool": "context_pack", "status": "complete", "reason": "selected 1 files, 11 ranges, and 1 reading-plan steps within the token budget; read src/main.rs first via inspect_seed_file, use file_outline when deeper evidence is needed, then follow continuation read_selected_context"},
+    {"order": 3, "tool": "context_pack", "status": "complete", "reason": "selected 1 files, 11 ranges, and 1 reading-plan steps within the token budget; read src/main.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context"},
     {"order": 4, "tool": "impact_analysis", "status": "complete", "reason": "after selected context is read, pre-edit impact check estimated 11 impacted files at high risk, including 3 call-related files, 2 dependency-related files, 4 call paths, and 5 dependency paths"}
   ],
   "execution_plan": [
@@ -44,7 +44,7 @@ cat <<'JSON'
       "order": 1,
       "action": "read_selected_context",
       "status": "ready",
-      "instruction": "Read context_pack.files[] in reading_plan[] order, starting with src/main.rs.",
+      "instruction": "Read context_pack.files[] in reading_plan[] order, starting with src/main.rs (candidate rank 1).",
       "files": ["src/main.rs"]
     },
     {
@@ -195,7 +195,7 @@ EOF
     fail "missing suggested tool handoff contract metric"
   grep -Fq 'continuation_timing_contract: true' "$TEMP_DIR/output.log" ||
     fail "missing continuation timing contract metric"
-  grep -Fq 'route_reason: selected 1 files, 11 ranges, and 1 reading-plan steps within the token budget; read src/main.rs first via inspect_seed_file, use file_outline when deeper evidence is needed, then follow continuation read_selected_context' "$TEMP_DIR/output.log" ||
+  grep -Fq 'route_reason: selected 1 files, 11 ranges, and 1 reading-plan steps within the token budget; read src/main.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context' "$TEMP_DIR/output.log" ||
     fail "missing context route reason"
   grep -Fq 'reading_plan_reason: Read this step to answer: What entrypoints or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: src/main.rs' "$TEMP_DIR/output.log" ||
     fail "missing reading plan reason"

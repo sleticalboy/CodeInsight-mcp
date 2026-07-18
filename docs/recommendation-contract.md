@@ -49,9 +49,10 @@ semantic score. Treat them as coarse display buckets.
 one call. It is route metadata rather than a recommendation list; clients should
 render it as provenance for `index_report`, `overview`, `context_pack`, and
 `impact_analysis`. The `reason` field also summarizes why the next stage matters:
-the `context_pack` step points to the first `reading_plan` file/action, and the
-`impact_analysis` step frames the included preview as the pre-edit impact check
-after selected context is read.
+the `context_pack` step points to the first `reading_plan` file/action,
+candidate `selection_rank`, and omitted-candidate continuation when available.
+The `impact_analysis` step frames the included preview as the pre-edit impact
+check after selected context is read.
 
 ## Agent Route Execution Plan
 
@@ -80,6 +81,9 @@ The default action order is:
 Clients should read selected `context_pack.files[]` before enabling or
 executing `use_current_reading_step_suggested_tool`, and should not use
 `continuation_summary.suggested_tool` until selected context has been consumed.
+The first execution step names the first reading file with its
+`selection_rank`; the continuation step names the first omitted candidate,
+`omission_reason`, and suggested continuation tool when one exists.
 Use `review_impact_before_edits` as a pre-edit checkpoint, not as proof of
 compiler-grade safety.
 

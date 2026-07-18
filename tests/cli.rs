@@ -1976,9 +1976,10 @@ fn cli_agent_route_runs_first_read_pipeline() {
     assert_eq!(route["impact_analysis"]["evidence_limit"].as_u64(), Some(3));
     let context_reason = route["route"][2]["reason"].as_str().unwrap();
     assert!(context_reason.contains("read src/main.ts first"));
+    assert!(context_reason.contains("candidate rank 1"));
     assert!(context_reason.contains("inspect_seed_file"));
     assert!(context_reason.contains("file_outline"));
-    assert!(context_reason.contains("follow continuation"));
+    assert!(context_reason.contains("continuation"));
     let execution_actions = route["execution_plan"]
         .as_array()
         .unwrap()
@@ -6165,6 +6166,7 @@ fn mcp_stdio_executes_agent_route() {
     );
     let context_reason = route["route"][2]["reason"].as_str().unwrap();
     assert!(context_reason.contains("read src/main.ts first"));
+    assert!(context_reason.contains("candidate rank 1"));
     assert!(context_reason.contains("file_outline"));
     assert_eq!(
         route["execution_plan"][0]["action"],
@@ -6321,6 +6323,16 @@ fn assert_agent_route_execution_plan_matches_context(route: &Value) {
             .contains(first_step["file"].as_str().unwrap()),
         "first execution step should name the first reading-plan file"
     );
+    assert!(
+        execution_plan[0]["instruction"]
+            .as_str()
+            .unwrap()
+            .contains(&format!(
+                "candidate rank {}",
+                first_step["selection_rank"].as_u64().unwrap()
+            )),
+        "first execution step should expose the first reading-plan candidate rank"
+    );
     assert_eq!(execution_plan[1]["files"][0], first_step["file"]);
     assert_eq!(
         execution_plan[1]["suggested_tool"], first_step["suggested_tool"],
@@ -6342,6 +6354,26 @@ fn assert_agent_route_execution_plan_matches_context(route: &Value) {
             .contains(continuation["next_action"].as_str().unwrap()),
         "continuation execution step should name continuation_summary.next_action"
     );
+
+    let omitted_candidates = context_pack["omitted_candidates"].as_array().unwrap();
+    if let Some(first_omitted) = omitted_candidates.first() {
+        let continuation_instruction = execution_plan[2]["instruction"].as_str().unwrap();
+        assert!(
+            continuation_instruction.contains(first_omitted["file"].as_str().unwrap()),
+            "continuation execution step should name the first omitted candidate"
+        );
+        assert!(
+            continuation_instruction.contains(&format!(
+                "candidate rank {}",
+                first_omitted["selection_rank"].as_u64().unwrap()
+            )),
+            "continuation execution step should expose the omitted candidate rank"
+        );
+        assert!(
+            continuation_instruction.contains(first_omitted["omission_reason"].as_str().unwrap()),
+            "continuation execution step should expose the omission reason"
+        );
+    }
 
     if !continuation["suggested_tool"].is_null() {
         assert_eq!(

@@ -77,7 +77,7 @@ main() {
     'continuation_timing_contract: true' \
     "continuation timing contract metric"
   require_pattern docs/demo-output.md \
-    'route_reason: selected [0-9]+ files, [0-9]+ ranges, and [0-9]+ reading-plan steps within the token budget; read .* first via inspect_seed_file' \
+    'route_reason: selected [0-9]+ files, [0-9]+ ranges, and [0-9]+ reading-plan steps within the token budget; read .* first \(candidate rank [0-9]+\) via inspect_seed_file' \
     "context route reason metric"
   require_pattern docs/demo-output.md \
     'reading_plan_reason: Read this step to answer:' \

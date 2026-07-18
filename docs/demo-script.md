@@ -120,7 +120,7 @@ Promise: route the agent through agent_route before edits.
    continuation_timing_contract: true
    line_reduction: 98.2%
    continuation: complete
-   route_reason: selected 10 files, 14 ranges, and 8 reading-plan steps within the token budget; read src/tools.rs first via inspect_seed_file, use file_outline when deeper evidence is needed, then follow continuation read_selected_context
+   route_reason: selected 10 files, 14 ranges, and 8 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context
 
 4. impact_analysis
    risk_level: high
@@ -143,7 +143,7 @@ Before edits, impact_analysis reports high risk across 7 impacted files.
 4. execution_plan starts with read_selected_context, then use_current_reading_step_suggested_tool; this keeps suggested tools behind selected-context reading.
 5. The first execution-plan suggested tool is file_outline; offer it only after the selected file has been read.
 6. The first reading-plan question is: What entrypoints, exported symbols, or setup code define the main flow here?
-7. The first reading-plan action is inspect_seed_file; the selected context reduced source reading by 98.2%; selected 10 files, 14 ranges, and 8 reading-plan steps within the token budget; read src/tools.rs first via inspect_seed_file, use file_outline when deeper evidence is needed, then follow continuation read_selected_context
+7. The first reading-plan action is inspect_seed_file; the selected context reduced source reading by 98.2%; selected 10 files, 14 ranges, and 8 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context
 8. Reading order contract is true; execution_plan[0].files follows reading_plan[] order.
 9. Suggested-tool handoff contract is true; execution_plan[1] points to the current reading step.
 10. Continuation timing contract is true; continuation is only considered after selected context is read.

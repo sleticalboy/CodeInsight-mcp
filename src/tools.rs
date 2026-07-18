@@ -343,8 +343,8 @@ fn agent_route_execution_plan(
         },
         instruction: match first_step {
             Some(step) => format!(
-                "Read context_pack.files[] in reading_plan[] order, starting with {}. Treat reading_plan[].reason as the current-step instruction and selection_reason as evidence for why each file was selected.",
-                step.file
+                "Read context_pack.files[] in reading_plan[] order, starting with {} (candidate rank {}). Treat reading_plan[].reason as the current-step instruction and selection_reason as evidence for why each file was selected.",
+                step.file, step.selection_rank
             ),
             None => {
                 "No reading_plan was produced; narrow the task or provide seed files before broad reading."
@@ -378,10 +378,7 @@ fn agent_route_execution_plan(
             None if continuation.status == "complete" => "complete".to_string(),
             None => "manual_after_selected_context".to_string(),
         },
-        instruction: format!(
-            "Use continuation_summary only after selected context has been read. Current continuation status is {} with next_action {}.",
-            continuation.status, continuation.next_action
-        ),
+        instruction: agent_route_continuation_instruction(context_pack),
         files: continuation
             .first_omitted_file
             .iter()
@@ -419,10 +416,9 @@ fn agent_route_context_reason(context_pack: &ContextPack) -> String {
 
     match context_pack.reading_plan.first() {
         Some(step) => format!(
-            "{summary}; read {} first via {}, use {} when deeper evidence is needed, then follow continuation {}",
-            step.file,
-            step.next_action,
-            step.suggested_tool.tool,
+            "{summary}; {}; {}; continuation {}",
+            agent_route_first_step_summary(step),
+            agent_route_omitted_summary(context_pack),
             context_pack.continuation_summary.next_action
         ),
         None => {
@@ -431,6 +427,56 @@ fn agent_route_context_reason(context_pack: &ContextPack) -> String {
             )
         }
     }
+}
+
+fn agent_route_first_step_summary(step: &ContextReadingStep) -> String {
+    format!(
+        "read {} first (candidate rank {}) via {}, use {} when deeper evidence is needed",
+        step.file, step.selection_rank, step.next_action, step.suggested_tool.tool
+    )
+}
+
+fn agent_route_omitted_summary(context_pack: &ContextPack) -> String {
+    if let Some(candidate) = context_pack.omitted_candidates.first() {
+        return format!(
+            "first omitted candidate {} (candidate rank {}, reason {}) can be revisited via {} using {} after selected context",
+            candidate.file,
+            candidate.selection_rank,
+            candidate.omission_reason,
+            candidate.next_action,
+            candidate.suggested_tool.tool
+        );
+    }
+
+    if context_pack.budget.omitted_files > 0 || context_pack.budget.omitted_ranges > 0 {
+        return format!(
+            "{} lower-ranked files and {} ranges were omitted without a focused candidate; next action {}",
+            context_pack.budget.omitted_files,
+            context_pack.budget.omitted_ranges,
+            context_pack.continuation_summary.next_action
+        );
+    }
+
+    "no omitted candidate follow-up is needed before the selected context is read".to_string()
+}
+
+fn agent_route_continuation_instruction(context_pack: &ContextPack) -> String {
+    let continuation = &context_pack.continuation_summary;
+    if let Some(candidate) = context_pack.omitted_candidates.first() {
+        return format!(
+            "Use continuation_summary only after selected context has been read. First omitted candidate is {} (candidate rank {}, reason {}); next_action {} with suggested tool {}.",
+            candidate.file,
+            candidate.selection_rank,
+            candidate.omission_reason,
+            candidate.next_action,
+            candidate.suggested_tool.tool
+        );
+    }
+
+    format!(
+        "Use continuation_summary only after selected context has been read. Current continuation status is {} with next_action {}.",
+        continuation.status, continuation.next_action
+    )
 }
 
 fn agent_route_impact_reason(report: &ImpactAnalysisReport) -> String {

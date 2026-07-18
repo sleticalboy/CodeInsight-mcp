@@ -43,7 +43,7 @@ cat <<'JSON'
   "route": [
     {"order": 1, "tool": "index_project", "status": "complete", "reason": "indexed"},
     {"order": 2, "tool": "project_overview", "status": "complete", "reason": "overview"},
-    {"order": 3, "tool": "context_pack", "status": "complete", "reason": "selected 1 files, 1 ranges, and 1 reading-plan steps within the token budget; read src/main.ts first via inspect_seed_file"},
+    {"order": 3, "tool": "context_pack", "status": "complete", "reason": "selected 1 files, 1 ranges, and 1 reading-plan steps within the token budget; read src/main.ts first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context"},
     {"order": 4, "tool": "impact_analysis", "status": "complete", "reason": "pre-edit impact check estimated 2 impacted files at medium risk"}
   ],
   "execution_plan": [
@@ -90,6 +90,7 @@ cat <<'JSON'
       {
         "order": 1,
         "file": "src/main.ts",
+        "selection_rank": 1,
         "next_action": "inspect_seed_file",
         "question": "What setup code defines the main application flow?",
         "selection_reason": "Selected for high relevance via seed_file"
