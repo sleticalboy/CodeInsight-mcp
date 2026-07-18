@@ -42,6 +42,10 @@ For machine-readable CI validation, `scripts/two-minute-demo.sh` runs the
 `scripts/agent-router-demo.sh` when you need lower-level metrics, reading
 reasons, impact breakdown output, and CI-style assertions.
 
+Use `scripts/framework-entrypoint-demo.sh` when you need a compact local proof
+that framework-oriented first reads route matching tasks to Next.js app router,
+Rails routes, Django urls, and C# startup files.
+
 For a copyable example of the current repository output, see the
 [demo output snapshot](demo-output.md).
 
@@ -229,6 +233,8 @@ Before recording or presenting:
 - Run `scripts/two-minute-demo.sh`.
 - Run `scripts/agent-router-demo.sh` when you need assertion-oriented metrics,
   reading reasons, and impact breakdown output.
+- Run `scripts/framework-entrypoint-demo.sh` when framework entrypoint routing
+  is part of the demo, README update, or regression check.
 - Compare with [Demo output snapshot](demo-output.md) when preparing README
   videos, release notes, or project introductions.
 - Confirm `indexed_files` is greater than zero.

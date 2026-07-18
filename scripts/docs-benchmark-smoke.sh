@@ -629,9 +629,15 @@ main() {
   require_pattern docs/demo-script.md \
     'scripts/agent-router-demo\.sh' \
     "agent-router raw metrics command"
+  require_pattern docs/demo-script.md \
+    'scripts/framework-entrypoint-demo\.sh' \
+    "framework entrypoint demo command"
   require_pattern README.md \
     'scripts/two-minute-demo\.sh' \
     "README two-minute demo command"
+  require_pattern README.md \
+    'scripts/framework-entrypoint-demo\.sh' \
+    "README framework entrypoint demo command"
   require_pattern README.md \
     'Pick the validation that matches your adoption stage:' \
     "README validation chooser"
@@ -647,6 +653,9 @@ main() {
   require_pattern docs/quickstart.md \
     'scripts/two-minute-demo\.sh' \
     "quickstart two-minute demo command"
+  require_pattern docs/quickstart.md \
+    'scripts/framework-entrypoint-demo\.sh' \
+    "quickstart framework entrypoint demo command"
   require_pattern docs/adoption-checklist.md \
     'scripts/two-minute-demo\.sh' \
     "adoption two-minute demo command"
@@ -806,6 +815,12 @@ main() {
   require_pattern docs/maintenance-commands.md \
     'executable suggested-tool calls, selection rank, and continuation evidence' \
     "maintenance MCP smoke selection evidence scope"
+  require_pattern docs/maintenance-commands.md \
+    '\| Framework entrypoint routing changed \| `scripts/framework-entrypoint-demo\.sh` \|' \
+    "maintenance framework entrypoint smoke chooser"
+  require_pattern docs/maintenance-commands.md \
+    'Temporary multi-framework fixture covering Next\.js, Rails, Django, and C# web first-context selection' \
+    "maintenance framework entrypoint smoke scope"
   require_pattern docs/maintenance-commands.md \
     '\| Installed-binary adoption path changed \| `CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/installed-quickstart-smoke\.sh` \|' \
     "maintenance installed binary smoke chooser"

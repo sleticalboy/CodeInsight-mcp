@@ -86,6 +86,7 @@ Choose the narrowest check for the change:
 | First MCP call Actions summary changed | `scripts/mcp-first-call-step-summary-smoke.sh` | Checks the Actions Summary section for selected files, first context file, first reading file, selection rank, omitted-candidate continuation fields, reading-plan order, suggested-tool handoff, continuation timing, impact status, and artifact link. |
 | First MCP call help or failure messaging changed | `scripts/mcp-first-call-failure-smoke.sh` | Fast checks for `--help`, `[usage]`, `[binary]`, and `[mcp_server]` output. |
 | MCP protocol or tool payload changed | `scripts/mcp-stdio-smoke.sh` | Stdio MCP handshake, `agent_route`, `context_pack`, executable suggested-tool calls, selection rank, and continuation evidence. |
+| Framework entrypoint routing changed | `scripts/framework-entrypoint-demo.sh` | Temporary multi-framework fixture covering Next.js, Rails, Django, and C# web first-context selection. |
 | Installed-binary adoption path changed | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh` | CLI and MCP first-read routes through the installed binary, including selection rank and continuation evidence. |
 | One-call `agent_route` JSON contract changed | `scripts/agent-route-smoke.sh` | Route order, execution plan, context pack, and impact-analysis preview. |
 | Context ranking or continuation changed | `scripts/context-pack-quality-smoke.sh` | Deterministic context-pack quality regressions. |
@@ -93,8 +94,10 @@ Choose the narrowest check for the change:
 Use `two-minute-demo.sh` for user-facing `agent_route` walkthroughs,
 `agent-route-smoke.sh` for the one-call JSON contract, and
 `agent-router-demo.sh` for lower-level metrics, reading reasons, impact
-breakdown output, and CI-style assertions. Use `demo-output-smoke.sh` after
-refreshing [Demo output snapshot](demo-output.md).
+breakdown output, and CI-style assertions. Use
+`framework-entrypoint-demo.sh` when entrypoint heuristics or task matching
+changes touch framework routing. Use `demo-output-smoke.sh` after refreshing
+[Demo output snapshot](demo-output.md).
 
 `agent-route-smoke.sh --summary-json <path>` writes a reusable JSON evidence
 summary for the one-call first-read route. The remote `agent-route-smoke` job
