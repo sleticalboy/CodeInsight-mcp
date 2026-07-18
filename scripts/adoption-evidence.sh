@@ -168,6 +168,7 @@ write_markdown_summary() {
     echo "- Impacted files: \`$(json_value "$local_summary" '.metrics.impacted_files')\`"
     echo "- MCP server: \`$(json_value "$mcp_summary" '.server')\`"
     echo "- MCP first-call contract: reading_order=\`$(json_value "$mcp_summary" '.execution_plan_reads_in_reading_plan_order')\`, suggested_tool_handoff=\`$(json_value "$mcp_summary" '.current_step_suggested_tool_matches_reading_plan')\`, continuation_after_selected_context=\`$(json_value "$mcp_summary" '.continuation_after_selected_context')\`"
+    echo "- First-read gating: suggested_tool_after_selected_context=\`$(json_value "$mcp_summary" '(.execution_plan_reads_in_reading_plan_order == true and .current_step_suggested_tool_matches_reading_plan == true and .suggested_tool_executed == true)')\`, continuation_after_selected_context=\`$(json_value "$mcp_summary" '.continuation_after_selected_context')\`, impact_review_before_edits=\`$(json_value "$mcp_summary" '((.execution_plan_actions | index("review_impact_before_edits")) != null and .impact_status == "complete")')\`"
     echo "- MCP suggested tool executed: \`$(json_value "$mcp_summary" '.suggested_tool_executed')\`"
     echo "- MCP impact status: \`$(json_value "$mcp_summary" '.impact_status')\`"
     echo
@@ -216,6 +217,20 @@ write_summary_json() {
       output_dir: $output_dir,
       local_evidence: $local[0],
       mcp_first_call: $mcp[0],
+      first_read_gating: {
+        suggested_tool_after_selected_context: (
+          $mcp[0].execution_plan_reads_in_reading_plan_order == true
+          and $mcp[0].current_step_suggested_tool_matches_reading_plan == true
+          and $mcp[0].suggested_tool_executed == true
+        ),
+        continuation_after_selected_context: (
+          $mcp[0].continuation_after_selected_context == true
+        ),
+        impact_review_before_edits: (
+          (($mcp[0].execution_plan_actions | index("review_impact_before_edits")) != null)
+          and $mcp[0].impact_status == "complete"
+        )
+      },
       artifacts: {
         markdown: ($output_dir + "/adoption-evidence.md"),
         local_markdown: ($output_dir + "/local-repo-evidence.md"),
@@ -244,7 +259,10 @@ write_summary_json() {
       and .mcp_first_call.execution_plan_reads_in_reading_plan_order == true
       and .mcp_first_call.current_step_suggested_tool_matches_reading_plan == true
       and .mcp_first_call.continuation_after_selected_context == true
-      and .mcp_first_call.suggested_tool_executed == true' \
+      and .mcp_first_call.suggested_tool_executed == true
+      and .first_read_gating.suggested_tool_after_selected_context == true
+      and .first_read_gating.continuation_after_selected_context == true
+      and .first_read_gating.impact_review_before_edits == true' \
     "$target" >/dev/null ||
     fail_with artifact_write "aggregate summary JSON does not match the adoption evidence contract"
 }
@@ -266,6 +284,7 @@ print_snippet() {
 - First reading question: $(json_value "$summary_json" '.local_evidence.metrics.first_reading_question')
 - MCP server: \`$(json_value "$summary_json" '.mcp_first_call.server')\`
 - MCP first-call contract: reading_order=\`$(json_value "$summary_json" '.mcp_first_call.execution_plan_reads_in_reading_plan_order')\`, suggested_tool_handoff=\`$(json_value "$summary_json" '.mcp_first_call.current_step_suggested_tool_matches_reading_plan')\`, continuation_after_selected_context=\`$(json_value "$summary_json" '.mcp_first_call.continuation_after_selected_context')\`
+- First-read gating: suggested_tool_after_selected_context=\`$(json_value "$summary_json" '.first_read_gating.suggested_tool_after_selected_context')\`, continuation_after_selected_context=\`$(json_value "$summary_json" '.first_read_gating.continuation_after_selected_context')\`, impact_review_before_edits=\`$(json_value "$summary_json" '.first_read_gating.impact_review_before_edits')\`
 - MCP suggested tool executed: \`$(json_value "$summary_json" '.mcp_first_call.suggested_tool_executed')\`
 - MCP impact status: \`$(json_value "$summary_json" '.mcp_first_call.impact_status')\`
 EOF

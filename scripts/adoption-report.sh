@@ -214,7 +214,10 @@ main() {
       and .artifacts.mcp_stderr
       and .mcp_first_call.execution_plan_reads_in_reading_plan_order == true
       and .mcp_first_call.current_step_suggested_tool_matches_reading_plan == true
-      and .mcp_first_call.continuation_after_selected_context == true' \
+      and .mcp_first_call.continuation_after_selected_context == true
+      and .first_read_gating.suggested_tool_after_selected_context == true
+      and .first_read_gating.continuation_after_selected_context == true
+      and .first_read_gating.impact_review_before_edits == true' \
     "$OUTPUT_DIR/summary.json" >/dev/null ||
     fail "summary.json does not contain the adoption report artifact contract"
 

@@ -171,8 +171,14 @@ main() {
     'MCP first-call contract: reading_order=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`' \
     "README adoption MCP first-call contract signal"
   require_pattern README.md \
+    'First-read gating: suggested_tool_after_selected_context=`true`, continuation_after_selected_context=`true`, impact_review_before_edits=`true`' \
+    "README adoption first-read gating signal"
+  require_pattern README.md \
     'Use `summary\.json` from the same folder' \
     "README adoption summary JSON guidance"
+  require_pattern README.md \
+    'it includes `first_read_gating`' \
+    "README adoption first-read gating JSON guidance"
   require_pattern docs/adoption-checklist.md \
     '\-\-issue-template' \
     "adoption checklist issue template option"
@@ -182,6 +188,9 @@ main() {
   require_pattern docs/adoption-checklist.md \
     'scripts/adoption-report\.sh /path/to/repo' \
     "adoption checklist report command"
+  require_pattern docs/adoption-checklist.md \
+    'include `first_read_gating` signals' \
+    "adoption checklist first-read gating summary"
   require_pattern docs/adoption-checklist.md \
     'scripts/adoption-comparison\.sh /path/to/repo' \
     "adoption checklist comparison command"
@@ -362,6 +371,9 @@ main() {
   require_pattern docs/adoption-report-codeinsight.md \
     'Suggested tool executed through MCP `tools/call` \| `true`' \
     "CodeInsight self adoption report suggested tool contract"
+  require_pattern docs/adoption-report-codeinsight.md \
+    'First-read gating: suggested_tool_after_selected_context=`true`, continuation_after_selected_context=`true`, impact_review_before_edits=`true`' \
+    "CodeInsight self adoption report first-read gating line"
   require_pattern docs/adoption-report-codeinsight.md \
     '/tmp/codeinsight-self-adoption-report\.tar\.gz' \
     "CodeInsight self adoption report archive path"

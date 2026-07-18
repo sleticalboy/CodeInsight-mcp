@@ -110,4 +110,5 @@ Expected summary line:
 
 ```text
 - MCP first-call contract: reading_order=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`
+- First-read gating: suggested_tool_after_selected_context=`true`, continuation_after_selected_context=`true`, impact_review_before_edits=`true`
 ```

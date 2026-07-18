@@ -245,6 +245,7 @@ and `/tmp/codeinsight-adoption-evidence/issue-template.md`, then prints this cop
 - First reading question: <question>
 - MCP server: `codeinsight`
 - MCP first-call contract: reading_order=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`
+- First-read gating: suggested_tool_after_selected_context=`true`, continuation_after_selected_context=`true`, impact_review_before_edits=`true`
 - MCP suggested tool executed: `true`
 - MCP impact status: `complete`
 ```
@@ -252,8 +253,9 @@ and `/tmp/codeinsight-adoption-evidence/issue-template.md`, then prints this cop
 Use `issue-template.md` when filing a reproducible adoption report with the
 summary snippet, failure category placeholder, artifact paths, and environment
 fields already filled in. Use `summary.json` from the same folder when CI,
-README automation, or issue
-templates need the same result without parsing Markdown.
+README automation, or issue templates need the same result without parsing
+Markdown; it includes `first_read_gating` for selected-context, continuation,
+and impact-review ordering.
 
 Use `scripts/adoption-report.sh` when you need one uploadable archive. It writes
 `codeinsight-adoption-report.tar.gz` with `adoption-evidence.md`,

@@ -113,6 +113,9 @@ Pass criteria:
 - The aggregate Markdown and JSON summaries list diagnostic stdout/stderr files
   for local evidence generation, MCP first-call verification, and artifact
   writing.
+- The aggregate Markdown and JSON summaries include `first_read_gating` signals
+  for suggested-tool ordering, continuation ordering, and impact review before
+  edits.
 - `--print-snippet` prints the same pass/fail evidence shape to stdout so it
   can be copied into an issue, PR, README, or evaluation note without opening
   the artifact files.

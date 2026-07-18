@@ -194,6 +194,8 @@ EOF
     fail "missing MCP suggested tool execution line"
   grep -Fq -- '- MCP first-call contract: reading_order=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`' "$TEMP_DIR/evidence/adoption-evidence.md" ||
     fail "missing MCP first-call contract line"
+  grep -Fq -- '- First-read gating: suggested_tool_after_selected_context=`true`, continuation_after_selected_context=`true`, impact_review_before_edits=`true`' "$TEMP_DIR/evidence/adoption-evidence.md" ||
+    fail "missing first-read gating line"
   grep -Fq -- "- Local evidence stdout: \`$TEMP_DIR/evidence/local-repo-evidence.out\`" "$TEMP_DIR/evidence/adoption-evidence.md" ||
     fail "missing local evidence stdout artifact"
   grep -Fq -- "- MCP first-call stderr: \`$TEMP_DIR/evidence/mcp-first-call.err\`" "$TEMP_DIR/evidence/adoption-evidence.md" ||
@@ -214,6 +216,9 @@ EOF
       and .mcp_first_call.current_step_suggested_tool_matches_reading_plan == true
       and .mcp_first_call.continuation_after_selected_context == true
       and .mcp_first_call.suggested_tool_executed == true
+      and .first_read_gating.suggested_tool_after_selected_context == true
+      and .first_read_gating.continuation_after_selected_context == true
+      and .first_read_gating.impact_review_before_edits == true
       and .artifacts.markdown == "'"$TEMP_DIR"'/evidence/adoption-evidence.md"
       and .artifacts.mcp_first_call_json == "'"$TEMP_DIR"'/evidence/mcp-first-call.json"
       and .artifacts.local_stdout == "'"$TEMP_DIR"'/evidence/local-repo-evidence.out"
@@ -242,6 +247,8 @@ EOF
     fail "missing issue template artifacts section"
   grep -Fq -- "- MCP first-call stderr: \`$TEMP_DIR/evidence/mcp-first-call.err\`" "$TEMP_DIR/evidence/issue-template.md" ||
     fail "missing issue template MCP stderr artifact"
+  grep -Fq -- '- First-read gating: suggested_tool_after_selected_context=`true`, continuation_after_selected_context=`true`, impact_review_before_edits=`true`' "$TEMP_DIR/evidence/issue-template.md" ||
+    fail "missing issue template first-read gating line"
   grep -Fq '## Environment' "$TEMP_DIR/evidence/issue-template.md" ||
     fail "missing issue template environment section"
   grep -Fq -- '- CodeInsight version:' "$TEMP_DIR/evidence/issue-template.md" ||
@@ -264,6 +271,8 @@ EOF
     fail "missing printed MCP suggested tool execution line"
   grep -Fq -- '- MCP first-call contract: reading_order=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`' "$TEMP_DIR/snippet.log" ||
     fail "missing printed MCP first-call contract line"
+  grep -Fq -- '- First-read gating: suggested_tool_after_selected_context=`true`, continuation_after_selected_context=`true`, impact_review_before_edits=`true`' "$TEMP_DIR/snippet.log" ||
+    fail "missing printed first-read gating line"
 
   cat >"$TEMP_DIR/local-repo-evidence-fail" <<'EOF'
 #!/usr/bin/env bash
