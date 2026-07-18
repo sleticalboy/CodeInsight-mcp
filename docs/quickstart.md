@@ -169,8 +169,8 @@ scripts/mcp-stdio-smoke.sh
 
 `mcp-first-call-smoke.sh` prints a compact JSON summary for the first MCP
 `agent_route` call. Use it when you want to confirm the server, route, selected
-files, reading plan order, suggested tool handoff, and impact preview without
-reading the full protocol smoke log.
+files, selection rank, continuation summary, reading plan order, suggested tool
+handoff, and impact preview without reading the full protocol smoke log.
 
 Run `scripts/mcp-first-call-smoke.sh --help` to see the supported environment
 variables for binary path, target repository, task, and token budget.
@@ -193,9 +193,11 @@ Expected output shape:
   "selected_files": ["src/main.ts", "src/auth.ts"],
   "first_context_file": "src/main.ts",
   "first_reading_file": "src/main.ts",
+  "first_reading_selection_rank": 1,
   "reading_plan": [
     {
       "file": "src/main.ts",
+      "selection_rank": 1,
       "next_action": "inspect_seed_file",
       "question": "What entrypoints, exported symbols, or setup code define the main flow here?",
       "reason": "Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file",
@@ -212,6 +214,12 @@ Expected output shape:
   "execution_plan_reads_in_reading_plan_order": true,
   "current_step_suggested_tool_matches_reading_plan": true,
   "continuation_after_selected_context": true,
+  "continuation_status": "complete",
+  "continuation_next_action": "read_selected_context",
+  "first_omitted_file": "",
+  "first_omitted_selection_rank": null,
+  "first_omitted_omission_reason": "",
+  "first_omitted_next_action": "",
   "suggested_tool": {
     "tool": "file_outline",
     "arguments": {

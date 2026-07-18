@@ -86,9 +86,11 @@ validate_summary_json() {
       and (.selected_files | index("src/auth.ts"))
       and .first_context_file == "src/main.ts"
       and .first_reading_file == .first_context_file
+      and (.first_reading_selection_rank | type == "number")
       and (.reading_plan | type == "array")
       and (.reading_plan | length) >= 1
       and (.reading_plan[0].file == "src/main.ts")
+      and (.reading_plan[0].selection_rank == .first_reading_selection_rank)
       and (.reading_plan[0].next_action == "inspect_seed_file")
       and (.reading_plan[0].question | type == "string" and length > 0)
       and (.reading_plan[0].selection_reason | type == "string" and length > 0)
@@ -102,6 +104,12 @@ validate_summary_json() {
       and .execution_plan_reads_in_reading_plan_order == true
       and .current_step_suggested_tool_matches_reading_plan == true
       and .continuation_after_selected_context == true
+      and (.continuation_status | type == "string")
+      and (.continuation_next_action | type == "string" and length > 0)
+      and (.first_omitted_file | type == "string")
+      and ((.first_omitted_selection_rank | type == "number") or (.first_omitted_selection_rank == null))
+      and (.first_omitted_omission_reason | type == "string")
+      and (.first_omitted_next_action | type == "string")
       and (.suggested_tool.tool | type == "string" and length > 0)
       and .suggested_tool.tool == .reading_plan[0].suggested_tool
       and (.suggested_tool.arguments | type == "object")
@@ -237,6 +245,9 @@ main() {
   echo "MCP first-call artifact smoke passed"
   echo "summary: $summary_file"
   echo "first_reading_question: $(jq -r '.reading_plan[0].question' "$summary_file")"
+  echo "first_reading_selection_rank: $(jq -r '.first_reading_selection_rank' "$summary_file")"
+  echo "continuation_status: $(jq -r '.continuation_status' "$summary_file")"
+  echo "first_omitted_omission_reason: $(jq -r 'if .first_omitted_omission_reason == "" then "-" else .first_omitted_omission_reason end' "$summary_file")"
 }
 
 main "$@"

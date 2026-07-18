@@ -40,9 +40,11 @@ write_summary_json() {
   "impact_status": "complete",
   "first_context_file": "src/main.ts",
   "first_reading_file": "src/main.ts",
+  "first_reading_selection_rank": 1,
   "reading_plan": [
     {
       "file": "src/main.ts",
+      "selection_rank": 1,
       "next_action": "inspect_seed_file",
       "question": "What entrypoints define the main flow?",
       "reason": "Read this step to answer: What entrypoints define the main flow? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file",
@@ -60,6 +62,12 @@ write_summary_json() {
   "execution_plan_reads_in_reading_plan_order": true,
   "current_step_suggested_tool_matches_reading_plan": true,
   "continuation_after_selected_context": true,
+  "continuation_status": "complete",
+  "continuation_next_action": "read_selected_context",
+  "first_omitted_file": "",
+  "first_omitted_selection_rank": null,
+  "first_omitted_omission_reason": "",
+  "first_omitted_next_action": "",
   "selected_files": [
     "src/main.ts",
     "src/auth.ts"
@@ -137,6 +145,12 @@ EOF
     fail "missing summary path output"
   grep -Fq 'first_reading_question: What entrypoints define the main flow?' "$TEMP_DIR/output.log" ||
     fail "missing first reading question output"
+  grep -Fq 'first_reading_selection_rank: 1' "$TEMP_DIR/output.log" ||
+    fail "missing first reading selection rank output"
+  grep -Fq 'continuation_status: complete' "$TEMP_DIR/output.log" ||
+    fail "missing continuation status output"
+  grep -Fq 'first_omitted_omission_reason: -' "$TEMP_DIR/output.log" ||
+    fail "missing omitted omission reason output"
   grep -Fq 'gh run download 123456 --repo sleticalboy/CodeInsight-mcp --name codeinsight-mcp-first-call --dir '"$TEMP_DIR/download" "$TEMP_DIR/calls.log" ||
     fail "missing fixed-run artifact download"
 
@@ -155,6 +169,10 @@ EOF
     fail "missing latest successful artifact download"
   grep -Fq 'first_reading_question: What entrypoints define the main flow?' "$TEMP_DIR/latest-output.log" ||
     fail "missing latest first reading question output"
+  grep -Fq 'first_reading_selection_rank: 1' "$TEMP_DIR/latest-output.log" ||
+    fail "missing latest first reading selection rank output"
+  grep -Fq 'continuation_status: complete' "$TEMP_DIR/latest-output.log" ||
+    fail "missing latest continuation status output"
 
   echo "MCP first-call artifact smoke smoke passed"
 }

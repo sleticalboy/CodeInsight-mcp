@@ -90,8 +90,9 @@ optional external checks, see [Maintenance commands](maintenance-commands.md).
   context-pack metrics, first reading question, impact metrics, and the
   `codeinsight-agent-route-smoke` artifact link. Open the
   `mcp-first-call-smoke` job summary and confirm it includes selected files,
-  the first context file, first reading file, first next action, reading-order
-  and suggested-tool handoff contracts, impact status, and the
+  the first context file, first reading file, selection rank, first next
+  action, omitted-candidate continuation fields, reading-order and
+  suggested-tool handoff contracts, impact status, and the
   `codeinsight-mcp-first-call` artifact link.
 
   ```bash

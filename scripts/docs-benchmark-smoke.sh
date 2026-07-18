@@ -729,7 +729,7 @@ main() {
     '\| First MCP call onboarding changed \| `scripts/mcp-first-call-smoke\.sh --summary-json /tmp/codeinsight-mcp-first-call\.json` \|' \
     "maintenance MCP first-call smoke chooser"
   require_pattern docs/maintenance-commands.md \
-    'first context file, reading-plan order, suggested-tool handoff, impact status, and saved artifacts' \
+    'first context file, selection rank, continuation summary, reading-plan order, suggested-tool handoff, impact status, and saved artifacts' \
     "maintenance MCP first-call artifact scope"
   require_pattern docs/maintenance-commands.md \
     'scripts/mcp-first-call-step-summary-smoke\.sh' \
@@ -738,11 +738,14 @@ main() {
     '\| First MCP call Actions summary changed \| `scripts/mcp-first-call-step-summary-smoke\.sh` \|' \
     "maintenance MCP first-call step summary chooser"
   require_pattern docs/maintenance-commands.md \
-    'Actions Summary section for selected files, first context file, first reading file, reading-plan order, suggested-tool handoff, continuation timing, impact status, and artifact link' \
+    'Actions Summary section for selected files, first context file, first reading file, selection rank, omitted-candidate continuation fields, reading-plan order, suggested-tool handoff, continuation timing, impact status, and artifact link' \
     "maintenance MCP first-call step summary scope"
   require_pattern scripts/mcp-first-call-step-summary-smoke.sh \
     'First context file: `src/main\.ts`' \
     "MCP first-call step summary first context file"
+  require_pattern scripts/mcp-first-call-step-summary-smoke.sh \
+    'First reading selection rank: `1`' \
+    "MCP first-call step summary first reading selection rank"
   require_pattern scripts/mcp-first-call-step-summary-smoke.sh \
     'Reading order contract: `true`' \
     "MCP first-call step summary reading order contract"
@@ -752,6 +755,9 @@ main() {
   require_pattern scripts/mcp-first-call-step-summary-smoke.sh \
     'Continuation timing contract: `true`' \
     "MCP first-call step summary continuation timing contract"
+  require_pattern scripts/mcp-first-call-step-summary-smoke.sh \
+    'First omitted omission reason: `-`' \
+    "MCP first-call step summary omitted reason"
   require_pattern docs/maintenance-commands.md \
     '\| First MCP call help or failure messaging changed \| `scripts/mcp-first-call-failure-smoke\.sh` \|' \
     "maintenance MCP first-call failure smoke chooser"
@@ -851,11 +857,17 @@ main() {
   require_pattern scripts/mcp-first-call-artifact-smoke.sh \
     'first_reading_question' \
     "MCP first-call artifact first reading question output"
+  require_pattern scripts/mcp-first-call-artifact-smoke.sh \
+    'first_reading_selection_rank' \
+    "MCP first-call artifact first reading selection rank output"
+  require_pattern scripts/mcp-first-call-artifact-smoke.sh \
+    'first_omitted_omission_reason' \
+    "MCP first-call artifact omitted reason output"
   require_pattern docs/maintainer-checklist.md \
-    'the first context file, first reading file, first next action, reading-order' \
+    'the first context file, first reading file, selection rank, first next' \
     "maintainer MCP first-call route contract summary"
   require_pattern docs/release-readiness.md \
-    'first reading file, first next action, reading-order and suggested-tool handoff' \
+    'first reading file, selection rank, first next action, omitted-candidate' \
     "release readiness MCP first-call route contract summary"
   require_pattern docs/release-commands.md \
     'scripts/release-pretag-check\.sh main' \
@@ -1305,8 +1317,11 @@ main() {
     '`route_tools`, `selected_files`, `execution_plan_actions`' \
     "MCP client config first-call JSON fields"
   require_pattern docs/mcp-client-config.md \
-    '`reading_plan\[\]`, suggested-tool handoff checks' \
-    "MCP client config first-call handoff fields"
+    'first reading selection rank, `reading_plan\[\]`' \
+    "MCP client config first-call selection rank field"
+  require_pattern docs/mcp-client-config.md \
+    'continuation summary fields, suggested-tool handoff checks' \
+    "MCP client config first-call continuation fields"
   require_pattern docs/mcp-client-config.md \
     'Expected summary shape:' \
     "MCP client config first-call summary example"

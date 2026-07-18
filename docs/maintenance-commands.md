@@ -82,8 +82,8 @@ Choose the narrowest check for the change:
 | Change Or Question | Command | Scope |
 | --- | --- | --- |
 | README/demo positioning changed | `scripts/two-minute-demo.sh` and `scripts/demo-output-smoke.sh` | User-facing `agent_route` walkthrough and checked snapshot. |
-| First MCP call onboarding changed | `scripts/mcp-first-call-smoke.sh --summary-json /tmp/codeinsight-mcp-first-call.json` | Compact JSON proof for `agent_route`, first context file, reading-plan order, suggested-tool handoff, impact status, and saved artifacts. |
-| First MCP call Actions summary changed | `scripts/mcp-first-call-step-summary-smoke.sh` | Checks the Actions Summary section for selected files, first context file, first reading file, reading-plan order, suggested-tool handoff, continuation timing, impact status, and artifact link. |
+| First MCP call onboarding changed | `scripts/mcp-first-call-smoke.sh --summary-json /tmp/codeinsight-mcp-first-call.json` | Compact JSON proof for `agent_route`, first context file, selection rank, continuation summary, reading-plan order, suggested-tool handoff, impact status, and saved artifacts. |
+| First MCP call Actions summary changed | `scripts/mcp-first-call-step-summary-smoke.sh` | Checks the Actions Summary section for selected files, first context file, first reading file, selection rank, omitted-candidate continuation fields, reading-plan order, suggested-tool handoff, continuation timing, impact status, and artifact link. |
 | First MCP call help or failure messaging changed | `scripts/mcp-first-call-failure-smoke.sh` | Fast checks for `--help`, `[usage]`, `[binary]`, and `[mcp_server]` output. |
 | MCP protocol or tool payload changed | `scripts/mcp-stdio-smoke.sh` | Stdio MCP handshake, `agent_route`, `context_pack`, and executable suggested-tool calls. |
 | Installed-binary adoption path changed | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh` | CLI and MCP first-read routes through the installed binary against a temporary project. |

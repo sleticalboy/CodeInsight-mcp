@@ -297,6 +297,12 @@ try:
     expect(context_pack.get("files"), "agent_route_contract", "agent_route selected no context files")
     expect(reading_plan, "agent_route_contract", "agent_route returned no reading plan")
     expect(reading_plan[0].get("file"), "agent_route_contract", "reading_plan[0].file is missing")
+    expect(
+        isinstance(reading_plan[0].get("selection_rank"), int)
+        and reading_plan[0]["selection_rank"] > 0,
+        "agent_route_contract",
+        "reading_plan[0].selection_rank is missing",
+    )
     expect(reading_plan[0].get("next_action"), "agent_route_contract", "reading_plan[0].next_action is missing")
     expect(reading_plan[0].get("question"), "agent_route_contract", "reading_plan[0].question is missing")
     expect(reading_plan[0].get("reason"), "agent_route_contract", "reading_plan[0].reason is missing")
@@ -355,6 +361,11 @@ try:
         "agent_route_contract",
         f"execution_plan[0].files should match reading_plan file order: {first_execution.get('files')!r} != {reading_files!r}",
     )
+    expect(
+        f"candidate rank {reading_plan[0]['selection_rank']}" in first_execution.get("instruction", ""),
+        "agent_route_contract",
+        "execution_plan[0].instruction should expose reading_plan[0].selection_rank",
+    )
 
     suggested_tool = execution_plan[1].get("suggested_tool", {})
     expect(suggested_tool.get("tool"), "suggested_tool", "execution_plan suggested_tool.tool is missing")
@@ -390,6 +401,28 @@ try:
             "agent_route_contract",
             "execution_plan[2].suggested_tool should match continuation_summary.suggested_tool",
         )
+    omitted_candidates = context_pack.get("omitted_candidates", [])
+    first_omitted = omitted_candidates[0] if omitted_candidates else {}
+    if first_omitted:
+        expect(
+            isinstance(first_omitted.get("selection_rank"), int)
+            and first_omitted["selection_rank"] > 0,
+            "agent_route_contract",
+            "omitted_candidates[0].selection_rank is missing",
+        )
+        expect(
+            first_omitted.get("omission_reason"),
+            "agent_route_contract",
+            "omitted_candidates[0].omission_reason is missing",
+        )
+        continuation_instruction = execution_plan[2].get("instruction", "")
+        expect(
+            first_omitted["file"] in continuation_instruction
+            and f"candidate rank {first_omitted['selection_rank']}" in continuation_instruction
+            and first_omitted["omission_reason"] in continuation_instruction,
+            "agent_route_contract",
+            "execution_plan[2].instruction should expose omitted candidate evidence",
+        )
 
     suggested_result = call_tool(
         4,
@@ -424,9 +457,11 @@ try:
         "selected_files": [item["file"] for item in context_pack["files"]],
         "first_context_file": first_context_file,
         "first_reading_file": first_reading_file,
+        "first_reading_selection_rank": reading_plan[0]["selection_rank"],
         "reading_plan": [
             {
                 "file": step["file"],
+                "selection_rank": step["selection_rank"],
                 "next_action": step["next_action"],
                 "question": step["question"],
                 "reason": step["reason"],
@@ -440,6 +475,12 @@ try:
         "first_execution_action": first_execution["action"],
         "current_step_suggested_tool_matches_reading_plan": True,
         "continuation_after_selected_context": True,
+        "continuation_status": continuation_summary.get("status", ""),
+        "continuation_next_action": continuation_summary.get("next_action", ""),
+        "first_omitted_file": first_omitted.get("file", ""),
+        "first_omitted_selection_rank": first_omitted.get("selection_rank"),
+        "first_omitted_omission_reason": first_omitted.get("omission_reason", ""),
+        "first_omitted_next_action": first_omitted.get("next_action", ""),
         "suggested_tool": {
             "tool": suggested_tool["tool"],
             "arguments": suggested_tool["suggested_arguments"],

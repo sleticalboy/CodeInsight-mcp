@@ -232,7 +232,8 @@ checks that `agent_route.execution_plan[].suggested_tool` executes through MCP
 
 For a shorter copyable check, run `scripts/mcp-first-call-smoke.sh`. It prints
 a JSON summary with `route_tools`, `selected_files`, `execution_plan_actions`,
-the first context file, `reading_plan[]`, suggested-tool handoff checks,
+the first context file, first reading selection rank, `reading_plan[]`,
+continuation summary fields, suggested-tool handoff checks,
 `suggested_tool_executed`, and `impact_status`.
 
 Expected summary shape:
@@ -250,9 +251,11 @@ Expected summary shape:
   "selected_files": ["src/main.ts", "src/auth.ts"],
   "first_context_file": "src/main.ts",
   "first_reading_file": "src/main.ts",
+  "first_reading_selection_rank": 1,
   "reading_plan": [
     {
       "file": "src/main.ts",
+      "selection_rank": 1,
       "next_action": "inspect_seed_file",
       "question": "What entrypoints, exported symbols, or setup code define the main flow here?",
       "reason": "Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file",
@@ -269,6 +272,12 @@ Expected summary shape:
   "execution_plan_reads_in_reading_plan_order": true,
   "current_step_suggested_tool_matches_reading_plan": true,
   "continuation_after_selected_context": true,
+  "continuation_status": "complete",
+  "continuation_next_action": "read_selected_context",
+  "first_omitted_file": "",
+  "first_omitted_selection_rank": null,
+  "first_omitted_omission_reason": "",
+  "first_omitted_next_action": "",
   "suggested_tool": {
     "tool": "file_outline",
     "arguments": {

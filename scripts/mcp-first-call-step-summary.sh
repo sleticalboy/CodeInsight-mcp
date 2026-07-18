@@ -33,10 +33,18 @@ require_summary_contract() {
       and (.selected_files | length) >= 1
       and (.first_context_file | type == "string" and length > 0)
       and .first_reading_file == .first_context_file
+      and (.first_reading_selection_rank | type == "number")
       and .execution_plan_reads_in_reading_plan_order == true
       and .current_step_suggested_tool_matches_reading_plan == true
       and .continuation_after_selected_context == true
+      and (.continuation_status | type == "string")
+      and (.continuation_next_action | type == "string" and length > 0)
+      and (.first_omitted_file | type == "string")
+      and ((.first_omitted_selection_rank | type == "number") or (.first_omitted_selection_rank == null))
+      and (.first_omitted_omission_reason | type == "string")
+      and (.first_omitted_next_action | type == "string")
       and (.reading_plan[0].file == .first_reading_file)
+      and (.reading_plan[0].selection_rank == .first_reading_selection_rank)
       and (.reading_plan[0].next_action | type == "string" and length > 0)
       and (.reading_plan[0].question | type == "string" and length > 0)
       and (.reading_plan[0].selection_reason | type == "string" and length > 0)
@@ -91,11 +99,17 @@ main() {
     printf 'Selected files: `%s`\n\n' "$(value '.selected_files | join("`, `")')"
     printf 'First context file: `%s`\n\n' "$(value '.first_context_file')"
     printf 'First reading file: `%s`\n\n' "$(value '.first_reading_file')"
+    printf 'First reading selection rank: `%s`\n\n' "$(value '.first_reading_selection_rank')"
     printf 'First next action: `%s`\n\n' "$(value '.reading_plan[0].next_action')"
     printf 'First reading question: `%s`\n\n' "$(value '.reading_plan[0].question')"
     printf 'Reading order contract: `%s`\n\n' "$(value '.execution_plan_reads_in_reading_plan_order')"
     printf 'Suggested tool handoff contract: `%s`\n\n' "$(value '.current_step_suggested_tool_matches_reading_plan')"
     printf 'Continuation timing contract: `%s`\n\n' "$(value '.continuation_after_selected_context')"
+    printf 'Continuation status: `%s`\n\n' "$(value '.continuation_status')"
+    printf 'Continuation next action: `%s`\n\n' "$(value '.continuation_next_action')"
+    printf 'First omitted file: `%s`\n\n' "$(value 'if .first_omitted_file == "" then "-" else .first_omitted_file end')"
+    printf 'First omitted selection rank: `%s`\n\n' "$(value 'if .first_omitted_selection_rank == null then "-" else .first_omitted_selection_rank end')"
+    printf 'First omitted omission reason: `%s`\n\n' "$(value 'if .first_omitted_omission_reason == "" then "-" else .first_omitted_omission_reason end')"
     printf 'Suggested tool: `%s`\n\n' "$(value '.suggested_tool.tool')"
     printf 'Suggested tool executed: `%s`\n\n' "$(value '.suggested_tool_executed')"
     printf 'Impact status: `%s`\n\n' "$(value '.impact_status')"
