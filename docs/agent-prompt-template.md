@@ -18,7 +18,8 @@ When CodeInsight MCP is available for a repository:
    token_budget for the default first read.
 2. Read context_pack.files in reading_plan order. Treat reading_plan.reason as
    the current-step instruction, reading_plan.question as the local reading
-   checklist, and reading_plan.selection_reason as the selection evidence.
+   checklist, reading_plan.selection_rank as the candidate rank audit trail,
+   and reading_plan.selection_reason as the selection evidence.
 3. Prefer reading_plan[].suggested_tool for deeper evidence on the current
    selected file.
 4. Use continuation_summary.suggested_tool only after the selected context has
@@ -49,8 +50,9 @@ Workflow:
    - token_budget: 6000
 2. Read selected files in reading_plan order.
 3. Use each reading_plan.question as the local checklist for the selected file,
-   reading_plan.reason as the current-step instruction, and selection_reason
-   only to explain why the file was selected.
+   reading_plan.reason as the current-step instruction, selection_rank as the
+   candidate rank, and selection_reason only to explain why the file was
+   selected.
 4. Summarize:
    - primary purpose
    - likely entrypoints
@@ -98,10 +100,14 @@ Workflow:
 1. Check context_pack.continuation_summary.status.
 2. If status is "complete", do not fetch more context unless the selected files
    fail to answer the user's task.
-3. If continuation_summary.suggested_tool exists, execute that suggested tool.
-4. Prefer omitted_candidates that match the current unresolved question.
-5. Keep the follow-up task narrower than the first task.
-6. Report what changed after the continuation:
+3. Use continuation_summary.next_action to decide whether to narrow the task,
+   read selected context, or run an omitted-candidate follow-up.
+4. If continuation_summary.suggested_tool exists, execute that suggested tool.
+5. Prefer omitted_candidates that match the current unresolved question; use
+   omitted_candidates[].selection_rank and omission_reason to explain the
+   follow-up.
+6. Keep the follow-up task narrower than the first task.
+7. Report what changed after the continuation:
    - new files read
    - new symbols or references found
    - remaining uncertainty

@@ -384,6 +384,9 @@ main() {
     '`reading_plan\[\]\.reason` as the instruction' \
     "client workflow reading reason instruction"
   require_pattern docs/client-workflow.md \
+    '`reading_plan\[\]\.selection_rank` as the candidate rank' \
+    "client workflow selection rank evidence"
+  require_pattern docs/client-workflow.md \
     '`reading_plan\[\]\.selection_reason` as the compact' \
     "client workflow selection reason evidence"
   require_pattern docs/client-workflow.md \
@@ -399,8 +402,17 @@ main() {
     'Treat reading_plan\.reason as' \
     "agent prompt reading reason policy"
   require_pattern docs/agent-prompt-template.md \
+    'reading_plan\.selection_rank as the candidate rank audit trail' \
+    "agent prompt selection rank policy"
+  require_pattern docs/agent-prompt-template.md \
     'Use each reading_plan\.question as the local checklist' \
     "agent prompt first read question policy"
+  require_pattern docs/agent-prompt-template.md \
+    'Use continuation_summary\.next_action to decide whether to narrow the task' \
+    "agent prompt continuation next action policy"
+  require_pattern docs/agent-prompt-template.md \
+    'omitted_candidates\[\]\.selection_rank and omission_reason' \
+    "agent prompt omitted candidate rank policy"
   require_pattern docs/agent-prompt-template.md \
     'Do not use suggested_tool or continuation as a shortcut around reading the' \
     "agent prompt suggested tool ordering"
@@ -582,6 +594,12 @@ main() {
   require_pattern docs/client-integration-examples.md \
     'Use reading_plan\[\]\.question as the local checklist' \
     "client examples reading question policy"
+  require_pattern docs/client-integration-examples.md \
+    'Use reading_plan\[\]\.selection_rank as the candidate rank audit trail' \
+    "client examples selection rank policy"
+  require_pattern docs/client-integration-examples.md \
+    'Use continuation_summary\.next_action and omitted_candidates\[\] to explain' \
+    "client examples continuation next action policy"
   require_pattern docs/client-integration-examples.md \
     'read_selected_context -> use_current_reading_step_suggested_tool ->' \
     "client examples action order"

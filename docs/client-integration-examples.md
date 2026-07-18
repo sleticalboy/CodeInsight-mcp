@@ -18,11 +18,14 @@ plan after the server has completed the first-read route.
 2. Read context_pack.files[] in reading_plan[] order.
 3. Use reading_plan[].question as the local checklist for the selected file.
 4. Use reading_plan[].reason as the current-step instruction.
-5. Use reading_plan[].selection_reason only as selection evidence.
-6. Call execution_plan[].suggested_tool only when the current step needs deeper
+5. Use reading_plan[].selection_rank as the candidate rank audit trail.
+6. Use reading_plan[].selection_reason only as selection evidence.
+7. Call execution_plan[].suggested_tool only when the current step needs deeper
    evidence.
-7. Use continuation_summary only after selected context has been read.
-8. Review impact_analysis before edits.
+8. Use continuation_summary only after selected context has been read.
+9. Use continuation_summary.next_action and omitted_candidates[] to explain any
+   follow-up context request.
+10. Review impact_analysis before edits.
 ```
 
 Do not treat `route[]` and `execution_plan[]` as the same thing:
@@ -47,9 +50,10 @@ code.
 
 Read context_pack.files[] in reading_plan[] order. Treat
 reading_plan[].question as the local checklist for the selected file,
-reading_plan[].reason as the instruction for the current file, and
+reading_plan[].reason as the instruction for the current file,
+reading_plan[].selection_rank as the candidate rank audit trail, and
 reading_plan[].selection_reason as evidence for why the file was selected, not
-as a replacement for question or reason.
+as a replacement for question, reason, or rank.
 ```
 
 ## Codex
@@ -71,7 +75,8 @@ reading. Follow agent_route.execution_plan[] exactly:
 
 Use reading_plan[].question as the local checklist,
 reading_plan[].reason as the current-step instruction, and
-reading_plan[].selection_reason as selection evidence.
+reading_plan[].selection_rank plus reading_plan[].selection_reason as selection
+evidence.
 ```
 
 ## Claude Code
@@ -103,7 +108,8 @@ use_continuation_if_needed -> review_impact_before_edits.
 
 Only offer continuation_summary.suggested_tool after selected context has been
 read. Use question for the local checklist, reason for the agent's reading
-instruction, and selection_reason for display or audit labels.
+instruction, selection_rank for candidate order, and selection_reason for
+display or audit labels.
 ```
 
 ## UI Checklist
@@ -117,7 +123,9 @@ Clients with a visible tool panel should render:
   active only after the matching selected context file is read.
 - `reading_plan[].question` beside each selected file as the local checklist.
 - `reading_plan[].reason` beside each selected file.
+- `reading_plan[].selection_rank` as the candidate rank.
 - `reading_plan[].selection_reason` as compact evidence text.
+- `continuation_summary.next_action` as the post-read continuation decision.
 - `continuation_summary.suggested_tool` as a continue action only after the
   selected context is insufficient for the current task.
 - `impact_analysis` as a pre-edit review step before any edit controls are
@@ -137,6 +145,8 @@ A working integration should pass these checks:
 - The first broad task calls `agent_route`.
 - The agent reads selected files in `reading_plan[]` order.
 - The agent can answer `reading_plan[].question` for each selected file.
+- The agent can explain `reading_plan[].selection_rank` and
+  `reading_plan[].selection_reason` for selected files.
 - `read_selected_context` happens before `use_current_reading_step_suggested_tool`.
 - `continuation_summary.suggested_tool` is not used before selected context.
 - `impact_analysis` is reviewed before edits.
