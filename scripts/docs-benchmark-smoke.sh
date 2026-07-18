@@ -110,6 +110,9 @@ main() {
     '\[Gin adoption case\]\(docs/adoption-case-gin\.md\)' \
     "README Gin adoption case link"
   require_pattern README.md \
+    '\[Memchr adoption case\]\(docs/adoption-case-memchr\.md\)' \
+    "README Memchr adoption case link"
+  require_pattern README.md \
     '\[Requests adoption case\]\(docs/adoption-case-requests\.md\)' \
     "README Requests adoption case link"
   require_pattern README.md \
@@ -119,13 +122,16 @@ main() {
     '472 of 24,099 source lines' \
     "README Gin adoption case snapshot"
   require_pattern README.md \
+    '230 of 69,381 source lines' \
+    "README Memchr adoption case snapshot"
+  require_pattern README.md \
     '651 of 12,032 source lines' \
     "README Requests adoption case snapshot"
   require_pattern README.md \
-    '1,355 of 57,609 source lines' \
+    '1,585 of 126,990 source lines' \
     "README adoption cases aggregate snapshot"
   require_pattern README.md \
-    '42\.5x aggregate read-less ratio' \
+    '80\.1x aggregate read-less ratio' \
     "README adoption cases aggregate read-less ratio"
   require_pattern README.md \
     'scripts/update-adoption-case\.sh express' \
@@ -133,6 +139,9 @@ main() {
   require_pattern README.md \
     'scripts/update-adoption-case\.sh gin' \
     "README Gin adoption case refresh command"
+  require_pattern README.md \
+    'scripts/update-adoption-case\.sh memchr' \
+    "README Memchr adoption case refresh command"
   require_pattern README.md \
     'scripts/update-adoption-case\.sh requests' \
     "README Requests adoption case refresh command"
@@ -215,6 +224,9 @@ main() {
     '\[Gin adoption case\]\(adoption-case-gin\.md\)' \
     "adoption checklist Gin case link"
   require_pattern docs/adoption-checklist.md \
+    '\[Memchr adoption case\]\(adoption-case-memchr\.md\)' \
+    "adoption checklist Memchr case link"
+  require_pattern docs/adoption-checklist.md \
     '\[Requests adoption case\]\(adoption-case-requests\.md\)' \
     "adoption checklist Requests case link"
   require_pattern docs/adoption-checklist.md \
@@ -223,6 +235,9 @@ main() {
   require_pattern docs/adoption-checklist.md \
     'scripts/update-adoption-case\.sh gin' \
     "adoption checklist Gin refresh command"
+  require_pattern docs/adoption-checklist.md \
+    'scripts/update-adoption-case\.sh memchr' \
+    "adoption checklist Memchr refresh command"
   require_pattern docs/adoption-checklist.md \
     'scripts/update-adoption-case\.sh requests' \
     "adoption checklist Requests refresh command"
@@ -247,6 +262,9 @@ main() {
   require_pattern docs/README.md \
     '\[Gin adoption case\]\(adoption-case-gin\.md\)' \
     "docs index Gin adoption case link"
+  require_pattern docs/README.md \
+    '\[Memchr adoption case\]\(adoption-case-memchr\.md\)' \
+    "docs index Memchr adoption case link"
   require_pattern docs/README.md \
     '\[Requests adoption case\]\(adoption-case-requests\.md\)' \
     "docs index Requests adoption case link"
@@ -286,6 +304,21 @@ main() {
   require_pattern docs/adoption-case-gin.md \
     'scripts/adoption-comparison\.sh /tmp/codeinsight-case-gin' \
     "Gin adoption case reproduce command"
+  require_pattern docs/adoption-case-memchr.md \
+    'Commit: `bce7df7140acff420478a358cde5587904000cb1`' \
+    "Memchr adoption case commit"
+  require_pattern docs/adoption-case-memchr.md \
+    'Read less | `301\.7x`' \
+    "Memchr adoption case read-less metric"
+  require_pattern docs/adoption-case-memchr.md \
+    'Generated with: `scripts/update-adoption-case\.sh memchr`' \
+    "Memchr adoption case generator"
+  require_pattern docs/adoption-case-memchr.md \
+    'scripts/update-adoption-case\.sh memchr --commit bce7df7140acff420478a358cde5587904000cb1' \
+    "Memchr adoption case exact refresh command"
+  require_pattern docs/adoption-case-memchr.md \
+    'scripts/adoption-comparison\.sh /tmp/codeinsight-case-memchr' \
+    "Memchr adoption case reproduce command"
   require_pattern docs/adoption-case-requests.md \
     'Commit: `f361ead047be5cb873174218582f7d8b9fcd9f49`' \
     "Requests adoption case commit"
@@ -302,13 +335,13 @@ main() {
     'scripts/adoption-comparison\.sh /tmp/codeinsight-case-requests' \
     "Requests adoption case reproduce command"
   require_pattern docs/adoption-cases.md \
-    'Blind first-read baseline: `57,609` source lines' \
+    'Blind first-read baseline: `126,990` source lines' \
     "adoption cases aggregate baseline"
   require_pattern docs/adoption-cases.md \
-    'Aggregate first-read reduction: `97\.6%`' \
+    'Aggregate first-read reduction: `98\.8%`' \
     "adoption cases aggregate reduction"
   require_pattern docs/adoption-cases.md \
-    'Aggregate read-less ratio: `42\.5x`' \
+    'Aggregate read-less ratio: `80\.1x`' \
     "adoption cases aggregate read-less ratio"
   require_pattern docs/adoption-cases.md \
     '^## How To Read These Numbers$' \
@@ -329,6 +362,9 @@ main() {
     '\[case\]\(adoption-case-gin\.md\)' \
     "adoption cases Gin detail link"
   require_pattern docs/adoption-cases.md \
+    '\[case\]\(adoption-case-memchr\.md\)' \
+    "adoption cases Memchr detail link"
+  require_pattern docs/adoption-cases.md \
     '\[case\]\(adoption-case-requests\.md\)' \
     "adoption cases Requests detail link"
   "$ROOT_DIR/scripts/update-adoption-cases.sh" --check >/dev/null
@@ -338,6 +374,9 @@ main() {
   require_pattern scripts/update-adoption-case.sh \
     'gin\)' \
     "Gin adoption case update script branch"
+  require_pattern scripts/update-adoption-case.sh \
+    'memchr\)' \
+    "Memchr adoption case update script branch"
   require_pattern scripts/update-adoption-case.sh \
     'requests\)' \
     "Requests adoption case update script branch"

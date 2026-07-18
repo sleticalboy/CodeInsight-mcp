@@ -25,6 +25,7 @@ Refreshes a checked-in adoption case from a live adoption-comparison run.
 Supported cases:
   express
   gin
+  memchr
   requests
 
 Options:
@@ -69,7 +70,7 @@ require_command() {
 parse_args() {
   while [ "$#" -gt 0 ]; do
     case "$1" in
-      express|gin|requests)
+      express|gin|memchr|requests)
         if [ -n "$CASE_NAME" ] && [ "$CASE_NAME" != "$1" ]; then
           fail "case specified more than once"
         fi
@@ -157,6 +158,14 @@ configure_case() {
       WORK_DIR="${WORK_DIR:-/tmp/codeinsight-adoption-case-gin}"
       OUTPUT_FILE="${OUTPUT_FILE:-$ROOT_DIR/docs/adoption-case-gin.md}"
       TASK="${TASK:-understand gin engine routing behavior}"
+      ;;
+    memchr)
+      CASE_TITLE="Memchr Adoption Comparison"
+      CASE_SUBJECT="Memchr"
+      REPO_URL="${REPO_URL:-https://github.com/BurntSushi/memchr.git}"
+      WORK_DIR="${WORK_DIR:-/tmp/codeinsight-adoption-case-memchr}"
+      OUTPUT_FILE="${OUTPUT_FILE:-$ROOT_DIR/docs/adoption-case-memchr.md}"
+      TASK="${TASK:-understand memchr search implementation flow}"
       ;;
     requests)
       CASE_TITLE="Requests Adoption Comparison"

@@ -95,6 +95,7 @@ end
 def ecosystem_for(title, repo)
   return "JavaScript web framework" if title == "Express" || repo.include?("expressjs/express")
   return "Go web framework" if title == "Gin" || repo.include?("gin-gonic/gin")
+  return "Rust search library" if title == "Memchr" || repo.include?("BurntSushi/memchr")
   return "Python HTTP library" if title == "Requests" || repo.include?("psf/requests")
 
   "Public repository"

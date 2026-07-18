@@ -91,14 +91,17 @@ Pass criteria:
   report and `summary.json` with source lines avoided, read-less ratio, seed
   strategy, first selected file, first reading question, and artifact paths.
 - Use the [Adoption cases](adoption-cases.md) summary plus the
-  [Express adoption case](adoption-case-express.md) and
-  [Gin adoption case](adoption-case-gin.md) and
+  [Express adoption case](adoption-case-express.md),
+  [Gin adoption case](adoption-case-gin.md),
+  [Memchr adoption case](adoption-case-memchr.md), and
   [Requests adoption case](adoption-case-requests.md) as reference shapes for
   public repository comparison snapshots.
 - Run `scripts/update-adoption-case.sh express` to refresh that checked-in case
   from a live `adoption-comparison` run. The older
   `scripts/update-adoption-case-express.sh` wrapper delegates to the same path.
 - Run `scripts/update-adoption-case.sh gin` to refresh the Go adoption case.
+- Run `scripts/update-adoption-case.sh memchr` to refresh the Rust library
+  adoption case.
 - Run `scripts/update-adoption-case.sh requests` to refresh the Python library
   adoption case.
 - `adoption-evidence.sh` writes one folder containing local first-read evidence,
