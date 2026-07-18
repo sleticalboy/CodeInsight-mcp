@@ -99,6 +99,10 @@ Pass criteria:
 - Use the [CodeInsight self adoption report](adoption-report-codeinsight.md) as
   the reference shape for complete `tar.gz` report handoffs that include the
   issue template, manifest, raw MCP first-call JSON, and diagnostic logs.
+- Run `scripts/update-self-adoption-report.sh` to refresh that checked-in
+  self adoption report from a live `adoption-report` run; use
+  `scripts/update-self-adoption-report.sh --check` before release handoff to
+  catch stale snapshots.
 - Run `scripts/update-adoption-case.sh express` to refresh that checked-in case
   from a live `adoption-comparison` run. The older
   `scripts/update-adoption-case-express.sh` wrapper delegates to the same path.

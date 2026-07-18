@@ -380,6 +380,18 @@ main() {
   require_pattern docs/adoption-report-codeinsight.md \
     'mcp-first-call\.json' \
     "CodeInsight self adoption report MCP artifact"
+  require_pattern docs/adoption-report-codeinsight.md \
+    'scripts/update-self-adoption-report\.sh --check' \
+    "CodeInsight self adoption report updater check command"
+  require_pattern docs/adoption-checklist.md \
+    'scripts/update-self-adoption-report\.sh --check' \
+    "adoption checklist self adoption report check command"
+  require_pattern scripts/update-self-adoption-report.sh \
+    'Refreshes docs/adoption-report-codeinsight\.md from a live adoption-report run' \
+    "CodeInsight self adoption report updater purpose"
+  require_pattern scripts/update-self-adoption-report.sh \
+    'Verify the checked-in report is already up to date' \
+    "CodeInsight self adoption report updater check mode"
   "$ROOT_DIR/scripts/update-adoption-cases.sh" --check >/dev/null
   require_pattern scripts/update-adoption-case.sh \
     'Refreshes a checked-in adoption case from a live adoption-comparison run' \

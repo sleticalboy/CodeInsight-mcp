@@ -68,8 +68,8 @@ What entrypoints, exported symbols, or setup code define the main flow here?
 | MCP impact status | `complete` |
 
 The first MCP selected file and first reading-plan file were both
-`src/main.rs`, and the executable suggested tool was `file_outline` with an
-absolute `src/main.rs` path.
+`src/main.rs`, and the executable suggested tool was
+`file_outline` with an absolute `/Users/binlee/code/open-source/CodeInsight-mcp/src/main.rs` path.
 
 ## Report Bundle
 
@@ -122,6 +122,18 @@ The `--print-snippet` output from the refreshed report was:
 ```
 
 ## Reproduce
+
+Refresh this checked-in snapshot:
+
+```bash
+scripts/update-self-adoption-report.sh
+```
+
+Verify the checked-in snapshot is current:
+
+```bash
+scripts/update-self-adoption-report.sh --check
+```
 
 Run from a CodeInsight checkout:
 
