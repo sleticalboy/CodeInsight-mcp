@@ -31,8 +31,23 @@ require_summary_contract() {
       and .execution_plan_actions == ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"]
       and (.selected_files | type == "array")
       and (.selected_files | length) >= 1
+      and (.first_context_file | type == "string" and length > 0)
+      and .first_reading_file == .first_context_file
+      and .execution_plan_reads_in_reading_plan_order == true
+      and .current_step_suggested_tool_matches_reading_plan == true
+      and .continuation_after_selected_context == true
+      and (.reading_plan[0].file == .first_reading_file)
+      and (.reading_plan[0].next_action | type == "string" and length > 0)
       and (.reading_plan[0].question | type == "string" and length > 0)
+      and (.reading_plan[0].selection_reason | type == "string" and length > 0)
+      and (.reading_plan[0] as $step
+        | ($step.reason | type == "string")
+        and ($step.reason | contains($step.question))
+        and ($step.reason | contains("If deeper evidence is needed, call "))
+        and ($step.reason | contains($step.suggested_tool))
+        and ($step.reason | contains("Selection reason:")))
       and (.suggested_tool.tool | type == "string")
+      and .suggested_tool.tool == .reading_plan[0].suggested_tool
       and .suggested_tool_executed == true
       and .impact_status == "complete"
       and (.impact_counts.impacted_files | type == "number")' \

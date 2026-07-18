@@ -41,17 +41,23 @@ main() {
   "token_budget": 1600,
   "route_tools": ["index_project", "project_overview", "context_pack", "impact_analysis"],
   "selected_files": ["src/main.ts", "src/auth.ts"],
+  "first_context_file": "src/main.ts",
+  "first_reading_file": "src/main.ts",
   "reading_plan": [
     {
       "file": "src/main.ts",
+      "next_action": "inspect_seed_file",
       "question": "What entrypoints define the main flow?",
-      "reason": "Read this step to answer: What entrypoints define the main flow?",
+      "reason": "Read this step to answer: What entrypoints define the main flow? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file",
       "selection_reason": "Selected for high relevance via seed_file",
       "suggested_tool": "file_outline"
     }
   ],
   "execution_plan_actions": ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"],
+  "execution_plan_reads_in_reading_plan_order": true,
   "first_execution_action": "read_selected_context",
+  "current_step_suggested_tool_matches_reading_plan": true,
+  "continuation_after_selected_context": true,
   "suggested_tool": {
     "tool": "file_outline",
     "arguments": {

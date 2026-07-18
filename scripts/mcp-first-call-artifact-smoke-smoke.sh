@@ -38,11 +38,14 @@ write_summary_json() {
     "symbols": 2
   },
   "impact_status": "complete",
+  "first_context_file": "src/main.ts",
+  "first_reading_file": "src/main.ts",
   "reading_plan": [
     {
       "file": "src/main.ts",
+      "next_action": "inspect_seed_file",
       "question": "What entrypoints define the main flow?",
-      "reason": "Read the app entrypoint first.",
+      "reason": "Read this step to answer: What entrypoints define the main flow? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file",
       "selection_reason": "Selected for high relevance via seed_file",
       "suggested_tool": "file_outline"
     }
@@ -54,6 +57,9 @@ write_summary_json() {
     "context_pack",
     "impact_analysis"
   ],
+  "execution_plan_reads_in_reading_plan_order": true,
+  "current_step_suggested_tool_matches_reading_plan": true,
+  "continuation_after_selected_context": true,
   "selected_files": [
     "src/main.ts",
     "src/auth.ts"

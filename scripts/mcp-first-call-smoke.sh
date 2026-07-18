@@ -296,12 +296,45 @@ try:
     reading_plan = context_pack.get("reading_plan", [])
     expect(context_pack.get("files"), "agent_route_contract", "agent_route selected no context files")
     expect(reading_plan, "agent_route_contract", "agent_route returned no reading plan")
+    expect(reading_plan[0].get("file"), "agent_route_contract", "reading_plan[0].file is missing")
+    expect(reading_plan[0].get("next_action"), "agent_route_contract", "reading_plan[0].next_action is missing")
     expect(reading_plan[0].get("question"), "agent_route_contract", "reading_plan[0].question is missing")
     expect(reading_plan[0].get("reason"), "agent_route_contract", "reading_plan[0].reason is missing")
     expect(
         reading_plan[0].get("selection_reason"),
         "agent_route_contract",
         "reading_plan[0].selection_reason is missing",
+    )
+    expect(
+        reading_plan[0].get("suggested_tool", {}).get("tool"),
+        "agent_route_contract",
+        "reading_plan[0].suggested_tool.tool is missing",
+    )
+    first_context_file = context_pack["files"][0]["file"]
+    first_reading_file = reading_plan[0]["file"]
+    expect(
+        first_reading_file == first_context_file,
+        "agent_route_contract",
+        f"reading_plan[0].file should match context_pack.files[0].file: {first_reading_file!r} != {first_context_file!r}",
+    )
+    first_reason = reading_plan[0]["reason"]
+    first_question = reading_plan[0]["question"]
+    first_reading_tool = reading_plan[0]["suggested_tool"]["tool"]
+    expect(
+        first_question in first_reason,
+        "agent_route_contract",
+        "reading_plan[0].reason should include reading_plan[0].question",
+    )
+    expect(
+        "If deeper evidence is needed, call " in first_reason
+        and first_reading_tool in first_reason,
+        "agent_route_contract",
+        "reading_plan[0].reason should name the suggested tool",
+    )
+    expect(
+        "Selection reason:" in first_reason,
+        "agent_route_contract",
+        "reading_plan[0].reason should include selection provenance",
     )
 
     first_execution = execution_plan[0]
@@ -316,6 +349,12 @@ try:
         f"execution_plan[0].status should be ready, got {first_execution.get('status')!r}",
     )
     expect(first_execution.get("files"), "agent_route_contract", "execution_plan[0].files is missing")
+    reading_files = [step["file"] for step in reading_plan]
+    expect(
+        first_execution.get("files") == reading_files,
+        "agent_route_contract",
+        f"execution_plan[0].files should match reading_plan file order: {first_execution.get('files')!r} != {reading_files!r}",
+    )
 
     suggested_tool = execution_plan[1].get("suggested_tool", {})
     expect(suggested_tool.get("tool"), "suggested_tool", "execution_plan suggested_tool.tool is missing")
@@ -324,6 +363,33 @@ try:
         "suggested_tool",
         "execution_plan suggested_tool.suggested_arguments is missing",
     )
+    expect(
+        execution_plan[1].get("files") == [first_reading_file],
+        "suggested_tool",
+        f"execution_plan[1].files should point to reading_plan[0]: {execution_plan[1].get('files')!r}",
+    )
+    expect(
+        suggested_tool == reading_plan[0]["suggested_tool"],
+        "suggested_tool",
+        "execution_plan[1].suggested_tool should match reading_plan[0].suggested_tool",
+    )
+    continuation_summary = context_pack.get("continuation_summary", {})
+    expect(
+        continuation_summary.get("next_action"),
+        "agent_route_contract",
+        "continuation_summary.next_action is missing",
+    )
+    expect(
+        continuation_summary["next_action"] in execution_plan[2].get("instruction", ""),
+        "agent_route_contract",
+        "execution_plan[2].instruction should name continuation_summary.next_action",
+    )
+    if continuation_summary.get("suggested_tool") is not None:
+        expect(
+            execution_plan[2].get("suggested_tool") == continuation_summary["suggested_tool"],
+            "agent_route_contract",
+            "execution_plan[2].suggested_tool should match continuation_summary.suggested_tool",
+        )
 
     suggested_result = call_tool(
         4,
@@ -356,9 +422,12 @@ try:
         "token_budget": token_budget,
         "route_tools": route_tools,
         "selected_files": [item["file"] for item in context_pack["files"]],
+        "first_context_file": first_context_file,
+        "first_reading_file": first_reading_file,
         "reading_plan": [
             {
                 "file": step["file"],
+                "next_action": step["next_action"],
                 "question": step["question"],
                 "reason": step["reason"],
                 "selection_reason": step["selection_reason"],
@@ -367,7 +436,10 @@ try:
             for step in reading_plan
         ],
         "execution_plan_actions": execution_plan_actions,
+        "execution_plan_reads_in_reading_plan_order": True,
         "first_execution_action": first_execution["action"],
+        "current_step_suggested_tool_matches_reading_plan": True,
+        "continuation_after_selected_context": True,
         "suggested_tool": {
             "tool": suggested_tool["tool"],
             "arguments": suggested_tool["suggested_arguments"],
