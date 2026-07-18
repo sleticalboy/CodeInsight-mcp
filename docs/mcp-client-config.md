@@ -203,6 +203,16 @@ The response is the default first-read bundle. A minimal client should:
    been read.
 5. Review the included `impact_analysis` before edits.
 
+UI gating rules:
+
+- Mark `read_selected_context` as the first active step.
+- Keep `execution_plan[].suggested_tool` disabled or visually secondary until
+  the matching selected context file has been read.
+- Keep `continuation_summary.suggested_tool` hidden, disabled, or visually
+  secondary until all selected context needed for the task has been consumed.
+- Surface `impact_analysis` as the pre-edit review step, not as proof that an
+  edit is safe.
+
 Expected first-call signals:
 
 | Field | Expected Signal | Client Action |

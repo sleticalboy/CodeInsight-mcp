@@ -113,13 +113,22 @@ Clients with a visible tool panel should render:
 - `execution_plan[].action` as the next-action checklist.
 - `execution_plan[].status` as the availability state.
 - `execution_plan[].instruction` as the agent-facing instruction.
-- `execution_plan[].suggested_tool` as an optional action button.
+- `execution_plan[].suggested_tool` as an optional action button that becomes
+  active only after the matching selected context file is read.
 - `reading_plan[].question` beside each selected file as the local checklist.
 - `reading_plan[].reason` beside each selected file.
 - `reading_plan[].selection_reason` as compact evidence text.
+- `continuation_summary.suggested_tool` as a continue action only after the
+  selected context is insufficient for the current task.
+- `impact_analysis` as a pre-edit review step before any edit controls are
+  treated as ready.
 
 Suggested-tool buttons should be disabled or visually secondary until the
 selected file for the current reading step has been consumed.
+Continuation buttons should stay disabled or hidden until selected context has
+been consumed and the task still needs more evidence.
+Impact-review controls should be shown after the first read and before edits;
+they should not be labeled as a safety guarantee.
 
 ## Acceptance Checks
 

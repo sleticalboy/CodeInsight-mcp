@@ -465,6 +465,18 @@ main() {
     'Expected first-call signals:' \
     "MCP client config first-call signal table"
   require_pattern docs/mcp-client-config.md \
+    '^UI gating rules:$' \
+    "MCP client config UI gating section"
+  require_pattern docs/mcp-client-config.md \
+    'Keep `execution_plan\[\]\.suggested_tool` disabled or visually secondary until' \
+    "MCP client config suggested tool UI gate"
+  require_pattern docs/mcp-client-config.md \
+    'Keep `continuation_summary\.suggested_tool` hidden, disabled, or visually' \
+    "MCP client config continuation UI gate"
+  require_pattern docs/mcp-client-config.md \
+    'Surface `impact_analysis` as the pre-edit review step' \
+    "MCP client config impact UI gate"
+  require_pattern docs/mcp-client-config.md \
     '\| `context_pack\.files\[\]` \| Contains the bounded files or excerpts to read first\.' \
     "MCP client config bounded context signal"
   require_pattern docs/mcp-client-config.md \
@@ -543,6 +555,18 @@ main() {
   require_pattern docs/client-integration-examples.md \
     'Suggested-tool buttons should be disabled or visually secondary until the' \
     "client examples suggested tool gating"
+  require_pattern docs/client-integration-examples.md \
+    'active only after the matching selected context file is read' \
+    "client examples suggested tool active state"
+  require_pattern docs/client-integration-examples.md \
+    '`continuation_summary\.suggested_tool` as a continue action only after the' \
+    "client examples continuation button state"
+  require_pattern docs/client-integration-examples.md \
+    'Continuation buttons should stay disabled or hidden until selected context' \
+    "client examples continuation disabled state"
+  require_pattern docs/client-integration-examples.md \
+    'Impact-review controls should be shown after the first read and before edits' \
+    "client examples impact review state"
   require_pattern docs/client-integration-examples.md \
     '`reading_plan\[\]\.question` beside each selected file' \
     "client examples UI reading question"
