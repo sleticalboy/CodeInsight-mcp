@@ -1298,6 +1298,30 @@ main() {
   require_pattern scripts/agent-router-demo.sh \
     'require_json_string "\$context_json" '\''\.continuation_summary\.next_action'\''' \
     "agent-router continuation next action assertion"
+  require_pattern scripts/framework-entrypoint-demo.sh \
+    'framework entrypoint demo passed' \
+    "framework entrypoint demo success output"
+  require_pattern scripts/framework-entrypoint-demo.sh \
+    'Next\.js app router entrypoint' \
+    "framework entrypoint demo Next.js assertion"
+  require_pattern scripts/framework-entrypoint-demo.sh \
+    'Rails route entrypoint' \
+    "framework entrypoint demo Rails assertion"
+  require_pattern scripts/framework-entrypoint-demo.sh \
+    'Python web framework entrypoint' \
+    "framework entrypoint demo Python assertion"
+  require_pattern scripts/framework-entrypoint-demo.sh \
+    'C# web application entrypoint' \
+    "framework entrypoint demo C# assertion"
+  require_pattern scripts/framework-entrypoint-demo.sh \
+    'routes_first_context' \
+    "framework entrypoint demo routes-first output"
+  require_pattern scripts/framework-entrypoint-demo.sh \
+    'urls_first_context' \
+    "framework entrypoint demo urls-first output"
+  require_pattern scripts/framework-entrypoint-demo.sh \
+    'csharp_first_context' \
+    "framework entrypoint demo csharp-first output"
   require_pattern tests/cli.rs \
     'context\["reading_plan"\]\[0\]\["selection_rank"\]' \
     "CLI context-pack reading-plan selection rank assertion"
