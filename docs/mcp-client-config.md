@@ -221,7 +221,9 @@ Expected first-call signals:
 | `context_pack.files[]` | Contains the bounded files or excerpts to read first. | Read these files before broad `rg` or full-file scans. |
 | `context_pack.reading_plan[].question` | States the concrete question the selected file should answer. | Show it as the local reading checklist. |
 | `context_pack.reading_plan[].reason` | Explains what the agent should learn from the selected file. | Show it as the current reading instruction. |
+| `context_pack.reading_plan[].selection_rank` | Preserves the file's rank from the candidate list that produced the selected pack. | Show it in logs or UI when explaining why this file came first. |
 | `context_pack.reading_plan[].selection_reason` | Explains why this file was selected under the token budget. | Use it as compact evidence in logs or UI. |
+| `context_pack.continuation_summary.next_action` | Gives the next post-read action after selected context is consumed. | Use it only after the selected context is read. |
 | `execution_plan[]` | Starts with `read_selected_context`, then gates deeper tools and continuation. | Render it as the ordered checklist for the agent. |
 | `execution_plan[].suggested_tool` | Contains a ready MCP tool call such as `file_outline` when deeper local structure is useful. | Run it only after the related selected context has been read. |
 | `impact_status` | Usually `complete` when a seed file or symbol was selected. | Review `impact_analysis` before editing. |
@@ -327,7 +329,8 @@ Recommended first-read flow for agents:
 3. Read the returned `context_pack.files[]` in `reading_plan[]` order.
 4. Treat `reading_plan[].question` as the local checklist,
    `reading_plan[].reason` as the current-step instruction, and
-   `reading_plan[].selection_reason` as display or audit evidence.
+   `reading_plan[].selection_rank` plus `reading_plan[].selection_reason` as
+   display or audit evidence.
 5. Use `continuation_summary` only after selected context is consumed.
 
 Call `index_project`, `project_overview`, `context_pack`, and

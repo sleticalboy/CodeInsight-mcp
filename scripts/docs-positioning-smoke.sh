@@ -71,6 +71,12 @@ main() {
     'Treat reading_plan\.question as the local checklist for the selected file' \
     "README fast path reading question prompt"
   require_pattern README.md \
+    'Read selected files in reading_plan order and use selection_rank as the audit trail' \
+    "README fast path selection rank prompt"
+  require_pattern README.md \
+    'Use continuation_summary only after selected context is consumed' \
+    "README fast path continuation prompt"
+  require_pattern README.md \
     'Follow agent_route\.execution_plan\[\] in order' \
     "README fast path execution plan policy"
   require_pattern README.md \
@@ -116,16 +122,16 @@ main() {
     '`agent_route`, which runs `index_project -> project_overview -> context_pack ->' \
     "README one-call agent_route demo path"
   require_pattern README.md \
-    'reading-plan questions, reading-plan reasons, selection evidence' \
-    "README demo reading reason evidence"
+    'reading-plan questions, reading-plan reasons, candidate selection rank' \
+    "README demo candidate rank evidence"
   require_pattern README.md \
     'what question it should answer' \
     "README demo reading question positioning"
   require_pattern README.md \
-    'the first executable suggested' \
+    'executable suggested tool, continuation status' \
     "README demo executable suggested tool evidence"
   require_pattern README.md \
-    'why the agent should read' \
+    'should read it first' \
     "README first-read reason positioning"
   require_pattern README.md \
     'when a local tool is safe to' \
@@ -134,14 +140,17 @@ main() {
     'Context reading plan' \
     "README benchmark reading plan evidence"
   require_pattern README.md \
-    'reading question, first-read reason' \
-    "README benchmark reading question evidence"
+    'rank, the local reading question, first-read reason' \
+    "README benchmark reading rank evidence"
   require_pattern README.md \
     'two-minute demo for this repository shows the agent route selecting' \
     "README demo evidence summary"
   require_pattern README.md \
-    '`file_outline` behind the selected-context read before the impact check' \
+    '`file_outline` behind the selected-context read' \
     "README demo suggested tool gating evidence"
+  require_pattern README.md \
+    'reporting continuation status before the impact check' \
+    "README demo continuation evidence"
   require_pattern README.md \
     'executes `agent_route\.execution_plan\[\]\.suggested_tool`' \
     "README MCP suggested tool execution evidence"

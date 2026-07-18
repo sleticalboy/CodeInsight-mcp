@@ -75,7 +75,9 @@ hands the agent to precise local tools when the selected context is not enough.
 
    ```text
    Call agent_route with root, task, and token_budget 6000 before reading files directly.
+   Read selected files in reading_plan order and use selection_rank as the audit trail.
    Treat reading_plan.question as the local checklist for the selected file.
+   Use continuation_summary only after selected context is consumed.
    Follow agent_route.execution_plan[] in order.
    ```
 
@@ -87,10 +89,10 @@ hands the agent to precise local tools when the selected context is not enough.
    | Stage | Command | Use When |
    | --- | --- | --- |
    | First look | `scripts/two-minute-demo.sh` | You want a visible `agent_route -> context_pack -> impact_analysis` walkthrough with an `[Evidence summary]`. |
-   | MCP wiring | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/mcp-first-call-smoke.sh` | You want a compact JSON proof that stdio MCP accepts `agent_route`, returns the first context file, follows `reading_plan[]`, runs the current step's suggested tool, and includes `impact_status`. |
-   | Installed adoption | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh` | You want the installed binary to pass CLI `agent-route`, MCP stdio, and MCP `agent_route` against a temporary project. |
+   | MCP wiring | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/mcp-first-call-smoke.sh` | You want a compact JSON proof that stdio MCP accepts `agent_route`, returns the first context file, follows `reading_plan[]`, exposes selection rank and continuation evidence, runs the current step's suggested tool, and includes `impact_status`. |
+   | Installed adoption | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh` | You want the installed binary to pass CLI `agent-route`, MCP stdio, and MCP `agent_route` against a temporary project with selection rank and continuation evidence. |
    | Local evidence | `scripts/adoption-evidence.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-evidence --print-snippet --issue-template` | You want one folder with local first-read evidence, raw route JSON, MCP first-call JSON, aggregate Markdown/JSON summaries, a copyable terminal snippet, and a ready-to-file issue template. |
-   | Adoption comparison | `scripts/adoption-comparison.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-comparison` | You want a shareable blind-read vs routed-first-read comparison showing source lines avoided, read-less ratio, seed strategy, and first reading question. |
+   | Adoption comparison | `scripts/adoption-comparison.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-comparison` | You want a shareable blind-read vs routed-first-read comparison showing source lines avoided, read-less ratio, seed strategy, first reading question, selection rank, and continuation next action. |
    | Handoff report | `scripts/adoption-report.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-report --print-snippet` | You want a tar.gz report containing the evidence summaries, issue template, raw JSON, and diagnostic logs for upload or handoff. |
 
 ## Two-Minute Demo
@@ -155,13 +157,15 @@ The demo executes the same product path an MCP client should follow:
 `agent_route`, which runs `index_project -> project_overview -> context_pack ->
 impact_analysis` in one first-read route. It prints index timing, entrypoint and
 recommendation counts, selected context size, reading-plan steps,
-reading-plan questions, reading-plan reasons, selection evidence,
-line-reduction percentage, execution-plan actions, the first executable suggested
-tool, continuation status, impact-analysis summary, and a short talk track for
-recordings or project introductions. The important demo signal is not just which
-file was selected, but what question it should answer, why the agent should read
-it first, when a local tool is safe to offer, and what impact check should happen
-before edits.
+reading-plan questions, reading-plan reasons, candidate selection rank,
+selection evidence, line-reduction percentage, execution-plan actions, the first
+executable suggested tool, continuation status, continuation next action,
+omitted-candidate follow-up status, impact-analysis summary, and a short talk
+track for recordings or project introductions. The important demo signal is not
+just which file was selected, but what question it should answer, why the agent
+should read it first, when a local tool is safe to offer, whether more context
+is available after the selected pack, and what impact check should happen before
+edits.
 
 For a recording or project introduction, use the
 [two-minute demo script](docs/demo-script.md) and the checked-in
@@ -194,9 +198,10 @@ accuracy, or proof that unselected code is irrelevant.
 
 Current benchmark snapshot:
 
-- The two-minute demo for this repository shows the agent route selecting 123
-  of 28,235 source lines, a 99.6% first-read line reduction, then gating
-  `file_outline` behind the selected-context read before the impact check.
+- The two-minute demo for this repository shows the agent route selecting 521
+  of 28,553 source lines, a 98.2% first-read line reduction, then surfacing
+  candidate rank 1, gating `file_outline` behind the selected-context read,
+  and reporting continuation status before the impact check.
 - Smoke repositories route `context_pack` first for 4/4 repositories and
   select 629 of 75,753 source lines, a 99.2% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and
@@ -211,9 +216,9 @@ Current benchmark snapshot:
   [Adoption cases](docs/adoption-cases.md).
 - Generated reports include a `Key Results` section with routing,
   compression, token-budget, indexing, guardrail, and truncation evidence.
-- Per-repository details include a `Context reading plan` table with the local
-  reading question, first-read reason, and raw selection reason, so the
-  benchmark shows why the context router chose each file instead of only
+- Per-repository details include a `Context reading plan` table with candidate
+  rank, the local reading question, first-read reason, and raw selection reason,
+  so the benchmark shows why the context router chose each file instead of only
   reporting compression numbers.
 - The MCP stdio smoke executes `agent_route.execution_plan[].suggested_tool`
   through `tools/call`, proving the follow-up is usable by clients instead of
@@ -243,6 +248,11 @@ and `/tmp/codeinsight-adoption-evidence/issue-template.md`, then prints this cop
 - Companion entrypoint: `<file-or-dash>`
 - First selected file: `<file>`
 - First reading question: <question>
+- First selection rank: `<rank>`
+- First selection reason: <reason>
+- Continuation status: `<status>`
+- Continuation next action: `<next_action>`
+- First omitted candidate: `<file-or-none>`
 - MCP server: `codeinsight`
 - MCP first-call contract: reading_order=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`
 - First-read gating: suggested_tool_after_selected_context=`true`, continuation_after_selected_context=`true`, impact_review_before_edits=`true`
@@ -346,8 +356,9 @@ CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.s
 This smoke proves the installed binary can run `version`, `index`, `overview`,
 `context-pack`, CLI `agent-route`, MCP stdio, and MCP `agent_route` against a
 temporary project outside the source checkout. It also verifies the returned
-agent-route execution plan, reading-plan question, reading-plan reason, and
-selection reason that agents use to read files in the right order.
+agent-route execution plan, reading-plan question, reading-plan reason,
+selection rank, selection reason, and continuation evidence that agents use to
+read files in the right order.
 
 For the complete adoption checklist, see
 [Adoption checklist](docs/adoption-checklist.md).
@@ -400,7 +411,10 @@ Recommended MCP first-read flow:
 
 1. Call `agent_route` with `root`, `task`, and `token_budget` for the default
    first-read path.
-2. Use `index_project`, `project_overview`, `context_pack`, and
+2. Read `context_pack.files[]` in `reading_plan[]` order, using
+   `reading_plan[].selection_rank` and `selection_reason` as the audit trail.
+3. Use `continuation_summary` only after selected context has been consumed.
+4. Use `index_project`, `project_overview`, `context_pack`, and
    `impact_analysis` directly when the client needs custom routing or partial
    refresh control.
 

@@ -147,6 +147,12 @@ main() {
     'blind-read vs routed-first-read comparison' \
     "README adoption comparison description"
   require_pattern README.md \
+    'First selection rank: `<rank>`' \
+    "README adoption evidence selection rank snippet"
+  require_pattern README.md \
+    'Continuation next action: `<next_action>`' \
+    "README adoption evidence continuation snippet"
+  require_pattern README.md \
     '\-\-print-snippet' \
     "README adoption evidence print snippet option"
   require_pattern README.md \
@@ -633,8 +639,8 @@ main() {
     'CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/mcp-first-call-smoke\.sh' \
     "README MCP first-call smoke command"
   require_pattern README.md \
-    'returns the first context file, follows `reading_plan\[\]`, runs the current step'\''s suggested tool' \
-    "README MCP first-call value proof"
+    'exposes selection rank and continuation evidence' \
+    "README MCP first-call candidate evidence proof"
   require_pattern README.md \
     'CLI `agent-route`, MCP stdio, and MCP `agent_route`' \
     "README installed adoption coverage"

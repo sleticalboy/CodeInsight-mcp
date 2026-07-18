@@ -10,8 +10,9 @@ for a multi-step code-reading task.
 2. Read `context_pack.files[]` by following `reading_plan[]` order in the
    returned route payload. Treat `reading_plan[].question` as the local
    checklist for the selected file, `reading_plan[].reason` as the instruction
-   for the current step, and `reading_plan[].selection_reason` as the compact
-   evidence for why that file was selected.
+   for the current step, `reading_plan[].selection_rank` as the candidate rank
+   audit trail, and `reading_plan[].selection_reason` as the compact evidence
+   for why that file was selected.
 3. Execute `reading_plan[].suggested_tool` when a selected file needs deeper
    local navigation.
 4. Use `continuation_summary` and `omitted_candidates[]` when more context is
@@ -66,7 +67,10 @@ The first call is healthy when the response has:
 - at least one `context_pack.files[]` entry
 - `context_pack.reading_plan[].question` for the local reading checklist
 - `context_pack.reading_plan[].reason` for the current reading instruction
+- `context_pack.reading_plan[].selection_rank` for the candidate rank
 - `context_pack.reading_plan[].selection_reason` for selection evidence
+- `context_pack.continuation_summary.next_action` for the post-read
+  continuation decision
 - `execution_plan[0].action` set to `read_selected_context`
 - a ready `execution_plan[].suggested_tool` for focused follow-up navigation
 - `impact_status` set to `complete` when an impact seed is available
@@ -84,7 +88,8 @@ When working in a repository with CodeInsight MCP available:
    token_budget for the default first read.
 2. Read context_pack.files in reading_plan order. Treat reading_plan.reason as
    the current-step instruction, reading_plan.question as the local reading
-   checklist, and reading_plan.selection_reason as the selection evidence.
+   checklist, reading_plan.selection_rank as the candidate rank audit trail, and
+   reading_plan.selection_reason as the selection evidence.
 3. Prefer reading_plan[].suggested_tool for deeper evidence on the current
    file. Prefer continuation_summary.suggested_tool only after the selected
    context has been consumed.
@@ -179,16 +184,18 @@ show as navigation and routing metadata.
 
 For each `reading_plan[]` step:
 
-1. Show `file`, `focus`, `question`, `reason`, `selection_reason`, and
-   `ranges[]`.
+1. Show `file`, `selection_rank`, `focus`, `question`, `reason`,
+   `selection_reason`, and `ranges[]`.
 2. Read the matching excerpts from `files[]`.
 3. Offer `suggested_tool` when the user or agent needs deeper evidence.
 
 Use `reading_plan[].question` as the local checklist for what the selected file
 must answer. Use `reading_plan[].reason` as the executable instruction for the
 agent: it combines that question, the suggested follow-up tool, and the
-selection rationale. Use `reading_plan[].selection_reason` only when you need
-the raw ranking reason without the action guidance.
+selection rationale. Use `reading_plan[].selection_rank` to preserve the
+candidate order that produced the selected pack. Use
+`reading_plan[].selection_reason` only when you need the raw ranking reason
+without the action guidance.
 
 Do not treat `selection_reason` as a replacement for `question` or `reason`: it
 explains why the file made the budgeted pack, while `question` says what the
