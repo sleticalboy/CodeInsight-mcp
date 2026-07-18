@@ -174,6 +174,14 @@ Use `--json-output PATH` to also write a machine-readable evidence summary; the
 handoff summary and release notes draft read benchmark metrics and adoption
 report fields from that JSON.
 
+If you need the handoff first and the evidence JSON is not present yet, let the
+handoff command generate the default `release-evidence/<tag>.json` through the
+same evidence script before it reads the post-release verification:
+
+```bash
+scripts/release-handoff-summary.sh --generate-evidence --json-output release-handoff/vX.Y.Z.json --output release-handoff/vX.Y.Z.md vX.Y.Z
+```
+
 ## Publish A Tagged Release
 
 Create and push an annotated tag:

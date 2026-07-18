@@ -202,6 +202,13 @@ post-release verification:
 scripts/release-handoff-summary.sh --json-output release-handoff/vX.Y.Z.json --output release-handoff/vX.Y.Z.md vX.Y.Z
 ```
 
+If `release-evidence/vX.Y.Z.json` has not been archived yet, generate it
+through the same evidence summary path before the handoff reads it:
+
+```bash
+scripts/release-handoff-summary.sh --generate-evidence --json-output release-handoff/vX.Y.Z.json --output release-handoff/vX.Y.Z.md vX.Y.Z
+```
+
 The handoff includes the adoption report document link, reproduce command,
 `/tmp/codeinsight-self-adoption-report.tar.gz` archive path, `439/28433`
 routed first-read metric, and MCP first-call contract booleans when

@@ -2,11 +2,17 @@
 set -euo pipefail
 
 ROOT_DIR="${CODEINSIGHT_ROOT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+RELEASE_EVIDENCE_SUMMARY_SCRIPT="${CODEINSIGHT_RELEASE_EVIDENCE_SUMMARY_SCRIPT:-$ROOT_DIR/scripts/release-evidence-summary.sh}"
 TAG_NAME=""
 EVIDENCE_JSON_FILE=""
 VERIFICATION_JSON_FILE=""
 JSON_OUTPUT_FILE=""
 OUTPUT_FILE=""
+GENERATE_EVIDENCE=0
+EVIDENCE_BRANCH="main"
+EVIDENCE_HEAD_SHA=""
+EVIDENCE_RUN_ID=""
+EVIDENCE_REPO_ARG=()
 
 usage() {
   local status="${1:-2}"
@@ -24,6 +30,15 @@ single release handoff summary. Markdown is printed to stdout by default.
 Options:
   --evidence-json PATH      Read pre-release evidence JSON from PATH.
                             Default: release-evidence/<tag>.json.
+  --generate-evidence       Generate the evidence JSON first with
+                            scripts/release-evidence-summary.sh --json-output.
+  --evidence-branch BRANCH  Branch passed when generating evidence. Default: main.
+  --evidence-head-sha SHA   Head SHA passed when generating evidence.
+  --evidence-run-id ID      CI run ID passed when generating evidence.
+  --repo OWNER/REPO         Repository passed when generating evidence.
+  --release-evidence-summary-script PATH
+                            Evidence summary script. Default:
+                            scripts/release-evidence-summary.sh.
   --verification-json PATH  Read post-release verification JSON from PATH.
                             Default: release-verification/<tag>.json.
   --json-output PATH        Write a machine-readable handoff JSON to PATH.
@@ -32,6 +47,7 @@ Options:
 
 Environment:
   CODEINSIGHT_ROOT_DIR=/path/to/repo
+  CODEINSIGHT_RELEASE_EVIDENCE_SUMMARY_SCRIPT=scripts/release-evidence-summary.sh
 EOF
   exit "$status"
 }
@@ -49,6 +65,43 @@ normalize_tag() {
   esac
 }
 
+generate_evidence_json() {
+  local evidence_json_file="$1"
+  local evidence_markdown_file
+  local temp_json
+  local temp_markdown
+  local -a args
+
+  if [ ! -x "$RELEASE_EVIDENCE_SUMMARY_SCRIPT" ]; then
+    fail "release evidence summary script is not executable: $RELEASE_EVIDENCE_SUMMARY_SCRIPT"
+  fi
+
+  evidence_markdown_file="${evidence_json_file%.json}.md"
+  temp_json="$(mktemp)"
+  temp_markdown="$(mktemp)"
+  mkdir -p "$(dirname "$evidence_json_file")" "$(dirname "$evidence_markdown_file")"
+
+  args=()
+  if [ "${#EVIDENCE_REPO_ARG[@]}" -gt 0 ]; then
+    args+=("${EVIDENCE_REPO_ARG[@]}")
+  fi
+  if [ -n "$EVIDENCE_RUN_ID" ]; then
+    args+=(--run-id "$EVIDENCE_RUN_ID")
+  fi
+  if [ -n "$EVIDENCE_HEAD_SHA" ]; then
+    args+=(--head-sha "$EVIDENCE_HEAD_SHA")
+  fi
+  args+=(--json-output "$temp_json" "$TAG_NAME" "$EVIDENCE_BRANCH")
+
+  if ! CODEINSIGHT_ROOT_DIR="$ROOT_DIR" "$RELEASE_EVIDENCE_SUMMARY_SCRIPT" "${args[@]}" >"$temp_markdown"; then
+    rm -f "$temp_json" "$temp_markdown"
+    fail "could not generate release evidence JSON"
+  fi
+
+  mv "$temp_json" "$evidence_json_file"
+  mv "$temp_markdown" "$evidence_markdown_file"
+}
+
 main() {
   local markdown_file
 
@@ -63,6 +116,44 @@ main() {
           usage
         fi
         EVIDENCE_JSON_FILE="$1"
+        ;;
+      --generate-evidence)
+        GENERATE_EVIDENCE=1
+        ;;
+      --evidence-branch)
+        shift
+        if [ "$#" -eq 0 ]; then
+          usage
+        fi
+        EVIDENCE_BRANCH="$1"
+        ;;
+      --evidence-head-sha)
+        shift
+        if [ "$#" -eq 0 ]; then
+          usage
+        fi
+        EVIDENCE_HEAD_SHA="$1"
+        ;;
+      --evidence-run-id)
+        shift
+        if [ "$#" -eq 0 ]; then
+          usage
+        fi
+        EVIDENCE_RUN_ID="$1"
+        ;;
+      --repo)
+        shift
+        if [ "$#" -eq 0 ]; then
+          usage
+        fi
+        EVIDENCE_REPO_ARG=(--repo "$1")
+        ;;
+      --release-evidence-summary-script)
+        shift
+        if [ "$#" -eq 0 ]; then
+          usage
+        fi
+        RELEASE_EVIDENCE_SUMMARY_SCRIPT="$1"
         ;;
       --verification-json)
         shift
@@ -121,6 +212,9 @@ main() {
   fi
   if [ -z "$VERIFICATION_JSON_FILE" ]; then
     VERIFICATION_JSON_FILE="$ROOT_DIR/release-verification/$TAG_NAME.json"
+  fi
+  if [ "$GENERATE_EVIDENCE" -eq 1 ]; then
+    generate_evidence_json "$EVIDENCE_JSON_FILE"
   fi
   if [ ! -f "$EVIDENCE_JSON_FILE" ]; then
     fail "evidence JSON not found: $EVIDENCE_JSON_FILE"

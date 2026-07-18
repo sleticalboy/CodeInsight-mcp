@@ -906,6 +906,9 @@ main() {
     'scripts/release-handoff-summary\.sh --json-output release-handoff/vX\.Y\.Z\.json --output release-handoff/vX\.Y\.Z\.md vX\.Y\.Z' \
     "release commands handoff summary"
   require_pattern docs/release-commands.md \
+    'scripts/release-handoff-summary\.sh --generate-evidence --json-output release-handoff/vX\.Y\.Z\.json --output release-handoff/vX\.Y\.Z\.md vX\.Y\.Z' \
+    "release commands handoff generated evidence summary"
+  require_pattern docs/release-commands.md \
     'scripts/release-notes-draft\.sh --changelog-notes /tmp/codeinsight-release-notes\.md --output release-handoff/vX\.Y\.Z\.release-notes\.md vX\.Y\.Z' \
     "release commands handoff release notes draft"
   require_pattern docs/release-commands.md \
@@ -1058,6 +1061,12 @@ main() {
   require_pattern scripts/release-handoff-summary.sh \
     'Benchmark routing:' \
     "release handoff benchmark routing"
+  require_pattern scripts/release-handoff-summary.sh \
+    'Generate the evidence JSON first' \
+    "release handoff generated evidence option"
+  require_pattern scripts/release-handoff-summary.sh \
+    'RELEASE_EVIDENCE_SUMMARY_SCRIPT' \
+    "release handoff evidence summary script hook"
   require_pattern scripts/release-notes-draft.sh \
     'Benchmark Evidence' \
     "release notes benchmark evidence section"

@@ -23,6 +23,8 @@ main() {
   local verification_json="$TEMP_DIR/release-verification/v9.8.7.json"
   local handoff_md="$TEMP_DIR/release-handoff/v9.8.7.md"
   local handoff_json="$TEMP_DIR/release-handoff/v9.8.7.json"
+  local generated_evidence_json="$TEMP_DIR/generated-release-evidence/v9.8.7.json"
+  local generated_evidence_md="$TEMP_DIR/generated-release-evidence/v9.8.7.md"
 
   mkdir -p "$(dirname "$evidence_json")" "$(dirname "$verification_json")"
   cat >"$evidence_json" <<'EOF'
@@ -195,6 +197,158 @@ EOF
   fi
   grep -Fq 'evidence tag v9.8.7 does not match v9.8.8' "$TEMP_DIR/mismatch.err" ||
     fail "missing tag mismatch diagnostic"
+
+  cat >"$TEMP_DIR/release-evidence-summary" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+json_output=""
+repo=""
+run_id=""
+head_sha=""
+tag=""
+branch=""
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --repo)
+      repo="$2"
+      shift 2
+      ;;
+    --run-id)
+      run_id="$2"
+      shift 2
+      ;;
+    --head-sha)
+      head_sha="$2"
+      shift 2
+      ;;
+    --json-output)
+      json_output="$2"
+      shift 2
+      ;;
+    *)
+      if [ -z "$tag" ]; then
+        tag="$1"
+      elif [ -z "$branch" ]; then
+        branch="$1"
+      else
+        echo "unexpected argument: $1" >&2
+        exit 2
+      fi
+      shift
+      ;;
+  esac
+done
+
+test "$repo" = "sleticalboy/CodeInsight-mcp"
+test "$run_id" = "123456"
+test "$head_sha" = "abc123"
+test "$tag" = "v9.8.7"
+test "$branch" = "release"
+test -n "$json_output"
+mkdir -p "$(dirname "$json_output")"
+
+cat >"$json_output" <<JSON
+{
+  "schema_version": 1,
+  "tag": "v9.8.7",
+  "branch": "release",
+  "head_sha": "abc123",
+  "repo": "sleticalboy/CodeInsight-mcp",
+  "metadata": {
+    "cargo": "9.8.7",
+    "install": "v9.8.7",
+    "changelog": "9.8.7 (2026-07-15)"
+  },
+  "ci": {
+    "run_id": "123456",
+    "url": "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456"
+  },
+  "artifacts": {
+    "benchmark": {
+      "name": "codeinsight-benchmark-subset",
+      "url": "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/1",
+      "report": "/tmp/generated-benchmark.md",
+      "summary": "/tmp/generated-benchmark-summary.json",
+      "metrics": {
+        "context_pack_first": 2,
+        "routing_total": 2,
+        "line_reduction": "97.7%",
+        "guardrail_failures": 0,
+        "truncated_packs": 0
+      }
+    },
+    "context_pack_quality": {
+      "name": "codeinsight-context-pack-quality",
+      "url": "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/2",
+      "summary": "/tmp/generated-context-pack-quality.json"
+    },
+    "agent_route": {
+      "name": "codeinsight-agent-route-smoke",
+      "url": "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/3",
+      "summary": "/tmp/generated-agent-route.json"
+    },
+    "mcp_first_call": {
+      "name": "codeinsight-mcp-first-call",
+      "url": "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/4",
+      "summary": "/tmp/generated-mcp-first-call.json"
+    },
+    "adoption_report": {
+      "name": "CodeInsight self adoption report",
+      "document": "docs/adoption-report-codeinsight.md",
+      "command": "scripts/adoption-report.sh .",
+      "archive": "/tmp/codeinsight-self-adoption-report.tar.gz",
+      "metrics": {
+        "selected_lines": 80,
+        "total_lines": 1200,
+        "line_reduction": "93.3%",
+        "mcp_first_call_contract": {
+          "reading_order": true,
+          "suggested_tool_handoff": true,
+          "continuation_after_selected_context": true,
+          "suggested_tool_executed": true
+        }
+      }
+    }
+  },
+  "release_notes_block": "## v9.8.7 release evidence"
+}
+JSON
+
+echo "generated release evidence for $tag on $branch"
+EOF
+  chmod +x "$TEMP_DIR/release-evidence-summary"
+
+  "$ROOT_DIR/scripts/release-handoff-summary.sh" \
+    --generate-evidence \
+    --repo sleticalboy/CodeInsight-mcp \
+    --evidence-run-id 123456 \
+    --evidence-head-sha abc123 \
+    --evidence-branch release \
+    --release-evidence-summary-script "$TEMP_DIR/release-evidence-summary" \
+    --evidence-json "$generated_evidence_json" \
+    --verification-json "$verification_json" \
+    v9.8.7 >"$TEMP_DIR/generated-stdout.md"
+
+  [ -f "$generated_evidence_json" ] ||
+    fail "generate-evidence did not write evidence JSON"
+  [ -f "$generated_evidence_md" ] ||
+    fail "generate-evidence did not write evidence Markdown"
+  grep -Fq 'generated release evidence for v9.8.7 on release' "$generated_evidence_md" ||
+    fail "generate-evidence did not archive evidence Markdown stdout"
+  grep -Fq -- '- Benchmark routing: `context_pack` first for 2/2 repositories' "$TEMP_DIR/generated-stdout.md" ||
+    fail "handoff did not use generated evidence benchmark metrics"
+  grep -Fq -- '- Adoption report routed first-read: `80/1200` source lines, `93.3%` reduction' "$TEMP_DIR/generated-stdout.md" ||
+    fail "handoff did not use generated evidence adoption metrics"
+  jq -e '
+    .schema_version == 1 and
+    .tag == "v9.8.7" and
+    .branch == "release" and
+    .artifacts.benchmark.metrics.context_pack_first == 2 and
+    .artifacts.adoption_report.metrics.selected_lines == 80
+  ' "$generated_evidence_json" >/dev/null ||
+    fail "generated evidence JSON does not match expected fixture"
 
   echo "release handoff summary smoke passed"
 }
