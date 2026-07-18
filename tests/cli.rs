@@ -1986,6 +1986,7 @@ fn cli_agent_route_runs_first_read_pipeline() {
             .unwrap()
             .contains("reading_plan[] order")
     );
+    assert_agent_route_execution_plan_matches_context(&route);
     assert_eq!(
         route["execution_plan"][1]["suggested_tool"]["tool"],
         "file_outline"
@@ -6169,6 +6170,7 @@ fn mcp_stdio_executes_agent_route() {
         route["execution_plan"][3]["action"],
         "review_impact_before_edits"
     );
+    assert_agent_route_execution_plan_matches_context(route);
     let impact_reason = route["route"][3]["reason"].as_str().unwrap();
     assert!(impact_reason.contains("pre-edit impact check"));
     assert!(impact_reason.contains("call-related files"));
@@ -6261,6 +6263,78 @@ fn assert_context_file_ranges_have_reasons(file: &Value) {
         assert!(
             !range["reason"].as_str().unwrap_or_default().is_empty(),
             "context range reason is empty"
+        );
+    }
+}
+
+fn assert_agent_route_execution_plan_matches_context(route: &Value) {
+    let context_pack = &route["context_pack"];
+    let reading_plan = context_pack["reading_plan"].as_array().unwrap();
+    assert!(
+        !reading_plan.is_empty(),
+        "agent_route must return a reading plan"
+    );
+
+    let execution_plan = route["execution_plan"].as_array().unwrap();
+    assert!(
+        execution_plan.len() >= 4,
+        "agent_route should expose the full first-read execution plan"
+    );
+
+    let reading_files = reading_plan
+        .iter()
+        .map(|step| step["file"].as_str().unwrap())
+        .collect::<Vec<_>>();
+    let execution_read_files = execution_plan[0]["files"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|file| file.as_str().unwrap())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        execution_read_files, reading_files,
+        "read_selected_context should follow reading_plan file order"
+    );
+
+    let first_step = &reading_plan[0];
+    assert_eq!(execution_plan[0]["status"], "ready");
+    assert!(
+        execution_plan[0]["instruction"]
+            .as_str()
+            .unwrap()
+            .contains(first_step["file"].as_str().unwrap()),
+        "first execution step should name the first reading-plan file"
+    );
+    assert_eq!(execution_plan[1]["files"][0], first_step["file"]);
+    assert_eq!(
+        execution_plan[1]["suggested_tool"], first_step["suggested_tool"],
+        "current-step suggested tool should mirror reading_plan[0]"
+    );
+    assert!(
+        execution_plan[1]["instruction"]
+            .as_str()
+            .unwrap()
+            .contains(first_step["suggested_tool"]["tool"].as_str().unwrap()),
+        "current-step instruction should name the suggested tool"
+    );
+
+    let continuation = &context_pack["continuation_summary"];
+    assert!(
+        execution_plan[2]["instruction"]
+            .as_str()
+            .unwrap()
+            .contains(continuation["next_action"].as_str().unwrap()),
+        "continuation execution step should name continuation_summary.next_action"
+    );
+
+    if !continuation["suggested_tool"].is_null() {
+        assert_eq!(
+            execution_plan[2]["status"],
+            "available_after_selected_context"
+        );
+        assert_eq!(
+            execution_plan[2]["suggested_tool"], continuation["suggested_tool"],
+            "continuation suggested tool should mirror continuation_summary"
         );
     }
 }
