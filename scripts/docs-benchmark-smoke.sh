@@ -162,7 +162,7 @@ main() {
     'MCP suggested tool executed: `true`' \
     "README adoption MCP suggested tool signal"
   require_pattern README.md \
-    'MCP first-call contract: reading order, suggested-tool handoff, and' \
+    'MCP first-call contract: reading_order=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`' \
     "README adoption MCP first-call contract signal"
   require_pattern README.md \
     'Use `summary\.json` from the same folder' \

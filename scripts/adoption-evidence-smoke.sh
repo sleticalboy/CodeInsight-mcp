@@ -146,7 +146,10 @@ cat >"$summary_json" <<'JSON'
     }
   ],
   "execution_plan_actions": ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"],
+  "execution_plan_reads_in_reading_plan_order": true,
   "first_execution_action": "read_selected_context",
+  "current_step_suggested_tool_matches_reading_plan": true,
+  "continuation_after_selected_context": true,
   "suggested_tool": {
     "tool": "file_outline",
     "arguments": {"path": "src/main.ts"}
@@ -189,6 +192,8 @@ EOF
     fail "missing companion entrypoint line"
   grep -Fq -- '- MCP suggested tool executed: `true`' "$TEMP_DIR/evidence/adoption-evidence.md" ||
     fail "missing MCP suggested tool execution line"
+  grep -Fq -- '- MCP first-call contract: reading_order=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`' "$TEMP_DIR/evidence/adoption-evidence.md" ||
+    fail "missing MCP first-call contract line"
   grep -Fq -- "- Local evidence stdout: \`$TEMP_DIR/evidence/local-repo-evidence.out\`" "$TEMP_DIR/evidence/adoption-evidence.md" ||
     fail "missing local evidence stdout artifact"
   grep -Fq -- "- MCP first-call stderr: \`$TEMP_DIR/evidence/mcp-first-call.err\`" "$TEMP_DIR/evidence/adoption-evidence.md" ||
@@ -205,6 +210,9 @@ EOF
       and .local_evidence.metrics.selected_seed_count == 2
       and .local_evidence.metrics.first_seed_source == "task_match"
       and .local_evidence.metrics.companion_entrypoint == "src/main.ts"
+      and .mcp_first_call.execution_plan_reads_in_reading_plan_order == true
+      and .mcp_first_call.current_step_suggested_tool_matches_reading_plan == true
+      and .mcp_first_call.continuation_after_selected_context == true
       and .mcp_first_call.suggested_tool_executed == true
       and .artifacts.markdown == "'"$TEMP_DIR"'/evidence/adoption-evidence.md"
       and .artifacts.mcp_first_call_json == "'"$TEMP_DIR"'/evidence/mcp-first-call.json"
@@ -254,6 +262,8 @@ EOF
     fail "missing printed companion entrypoint line"
   grep -Fq -- '- MCP suggested tool executed: `true`' "$TEMP_DIR/snippet.log" ||
     fail "missing printed MCP suggested tool execution line"
+  grep -Fq -- '- MCP first-call contract: reading_order=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`' "$TEMP_DIR/snippet.log" ||
+    fail "missing printed MCP first-call contract line"
 
   cat >"$TEMP_DIR/local-repo-evidence-fail" <<'EOF'
 #!/usr/bin/env bash

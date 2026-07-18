@@ -122,6 +122,11 @@ cat >"$output_dir/summary.json" <<JSON
   "status": "pass",
   "repository": "$repo_root",
   "task": "$task",
+  "mcp_first_call": {
+    "execution_plan_reads_in_reading_plan_order": true,
+    "current_step_suggested_tool_matches_reading_plan": true,
+    "continuation_after_selected_context": true
+  },
   "artifacts": {
     "markdown": "$output_dir/adoption-evidence.md",
     "issue_template": "$output_dir/issue-template.md",
@@ -190,6 +195,9 @@ EOF
     fail "extracted manifest JSON does not match expected contract"
   jq -e \
     '.status == "pass"
+      and .mcp_first_call.execution_plan_reads_in_reading_plan_order == true
+      and .mcp_first_call.current_step_suggested_tool_matches_reading_plan == true
+      and .mcp_first_call.continuation_after_selected_context == true
       and .artifacts.issue_template == "'"$TEMP_DIR"'/report/issue-template.md"
       and .artifacts.local_stderr == "'"$TEMP_DIR"'/report/local-repo-evidence.err"
       and .artifacts.mcp_stderr == "'"$TEMP_DIR"'/report/mcp-first-call.err"' \
