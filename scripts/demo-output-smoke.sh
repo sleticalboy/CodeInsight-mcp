@@ -65,6 +65,18 @@ main() {
     'first_reading_question: What entrypoints' \
     "first reading question metric"
   require_pattern docs/demo-output.md \
+    'first_reading_file: ' \
+    "first reading file metric"
+  require_pattern docs/demo-output.md \
+    'reading_order_contract: true' \
+    "reading order contract metric"
+  require_pattern docs/demo-output.md \
+    'suggested_tool_handoff_contract: true' \
+    "suggested tool handoff contract metric"
+  require_pattern docs/demo-output.md \
+    'continuation_timing_contract: true' \
+    "continuation timing contract metric"
+  require_pattern docs/demo-output.md \
     'route_reason: selected [0-9]+ files, [0-9]+ ranges, and [0-9]+ reading-plan steps within the token budget; read .* first via inspect_seed_file' \
     "context route reason metric"
   require_pattern docs/demo-output.md \
@@ -92,7 +104,13 @@ main() {
     'First reading question: What entrypoints' \
     "evidence summary first reading question"
   require_pattern docs/demo-output.md \
-    'read it before offering file_outline\.' \
+    'reading_plan starts at ' \
+    "evidence summary first reading file"
+  require_pattern docs/demo-output.md \
+    'Execution contract: reading_order=true, suggested_tool_handoff=true, continuation_after_selected_context=true\.' \
+    "evidence summary execution contract"
+  require_pattern docs/demo-output.md \
+    'Read .* before offering file_outline\.' \
     "evidence summary suggested tool timing"
   require_pattern docs/demo-output.md \
     'Before edits, impact_analysis reports high risk across [0-9]+ impacted files\.' \
@@ -115,6 +133,15 @@ main() {
   require_pattern docs/demo-output.md \
     'The first reading-plan question is: What entrypoints' \
     "reading question talk track"
+  require_pattern docs/demo-output.md \
+    'Reading order contract is true; execution_plan\[0\]\.files follows reading_plan\[\] order\.' \
+    "reading order contract talk track"
+  require_pattern docs/demo-output.md \
+    'Suggested-tool handoff contract is true; execution_plan\[1\] points to the current reading step\.' \
+    "suggested tool handoff contract talk track"
+  require_pattern docs/demo-output.md \
+    'Continuation timing contract is true; continuation is only considered after selected context is read\.' \
+    "continuation timing contract talk track"
   require_pattern docs/demo-output.md \
     'The first reading-plan action is inspect_seed_file; Read this step to answer:' \
     "reading reason talk track"

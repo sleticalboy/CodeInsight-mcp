@@ -162,6 +162,9 @@ main() {
     'MCP suggested tool executed: `true`' \
     "README adoption MCP suggested tool signal"
   require_pattern README.md \
+    'MCP first-call contract: reading order, suggested-tool handoff, and' \
+    "README adoption MCP first-call contract signal"
+  require_pattern README.md \
     'Use `summary\.json` from the same folder' \
     "README adoption summary JSON guidance"
   require_pattern docs/adoption-checklist.md \
@@ -1211,6 +1214,24 @@ main() {
   require_pattern scripts/two-minute-demo.sh \
     'first_reading_question' \
     "two-minute demo first reading question metric"
+  require_pattern scripts/two-minute-demo.sh \
+    'first_reading_file' \
+    "two-minute demo first reading file metric"
+  require_pattern scripts/two-minute-demo.sh \
+    'reading_order_contract' \
+    "two-minute demo reading order contract metric"
+  require_pattern scripts/two-minute-demo.sh \
+    'suggested_tool_handoff_contract' \
+    "two-minute demo suggested tool handoff contract metric"
+  require_pattern scripts/two-minute-demo.sh \
+    'continuation_timing_contract' \
+    "two-minute demo continuation timing contract metric"
+  require_pattern scripts/two-minute-demo.sh \
+    'execution_plan\[0\]\.files follows reading_plan\[\] order' \
+    "two-minute demo reading order contract talk track"
+  require_pattern scripts/two-minute-demo.sh \
+    'execution_plan\[1\] points to the current reading step' \
+    "two-minute demo suggested tool handoff talk track"
   require_pattern scripts/two-minute-demo.sh \
     'offer it only after the selected file has been read' \
     "two-minute demo suggested tool gating talk track"

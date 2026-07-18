@@ -227,6 +227,8 @@ and `/tmp/codeinsight-adoption-evidence/issue-template.md`, then prints this cop
 - First selected file: `<file>`
 - First reading question: <question>
 - MCP server: `codeinsight`
+- MCP first-call contract: reading order, suggested-tool handoff, and
+  continuation timing all passed.
 - MCP suggested tool executed: `true`
 - MCP impact status: `complete`
 ```
