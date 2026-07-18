@@ -229,6 +229,13 @@ the generated status summary and release handoff:
 scripts/post-release-verify.sh --handoff vX.Y.Z
 ```
 
+If the pre-release evidence JSON was not archived yet, generate it as part of
+that wrapper before the handoff and status refresh read the evidence:
+
+```bash
+scripts/post-release-verify.sh --handoff --generate-evidence-for-handoff vX.Y.Z
+```
+
 If the local machine cannot run Docker or Homebrew, pass the same explicit
 skip options:
 

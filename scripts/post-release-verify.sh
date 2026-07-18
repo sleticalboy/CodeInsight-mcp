@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VERIFY_RELEASE_SCRIPT="${CODEINSIGHT_VERIFY_RELEASE_SCRIPT:-$ROOT_DIR/scripts/verify-release.sh}"
 UPDATE_RELEASE_STATUS_SCRIPT="${CODEINSIGHT_UPDATE_RELEASE_STATUS_SCRIPT:-$ROOT_DIR/scripts/update-release-status.sh}"
 RELEASE_HANDOFF_SUMMARY_SCRIPT="${CODEINSIGHT_RELEASE_HANDOFF_SUMMARY_SCRIPT:-$ROOT_DIR/scripts/release-handoff-summary.sh}"
+RELEASE_EVIDENCE_SUMMARY_SCRIPT="${CODEINSIGHT_RELEASE_EVIDENCE_SUMMARY_SCRIPT:-$ROOT_DIR/scripts/release-evidence-summary.sh}"
 RAW_OUTPUT_FILE=""
 
 cleanup() {
@@ -35,6 +36,16 @@ Options:
   --handoff-output PATH     Write release handoff Markdown to PATH.
   --handoff-json-output PATH
                             Write release handoff JSON to PATH.
+  --generate-evidence-for-handoff
+                            Generate release-evidence/<tag>.json before handoff
+                            when the JSON archive is missing.
+  --evidence-branch BRANCH  Branch passed when generating handoff evidence.
+                            Default: main.
+  --evidence-head-sha SHA   Head SHA passed when generating handoff evidence.
+  --evidence-run-id ID      CI run ID passed when generating handoff evidence.
+  --repo OWNER/REPO         Repository passed when generating handoff evidence.
+  --release-evidence-summary-script PATH
+                            Evidence summary script used by handoff generation.
   --skip-docker             Set CODEINSIGHT_SKIP_DOCKER=1.
   --skip-homebrew           Set CODEINSIGHT_SKIP_HOMEBREW=1.
   --skip-installed-quickstart
@@ -50,6 +61,7 @@ Environment:
   CODEINSIGHT_VERIFY_RELEASE_SCRIPT=scripts/verify-release.sh
   CODEINSIGHT_UPDATE_RELEASE_STATUS_SCRIPT=scripts/update-release-status.sh
   CODEINSIGHT_RELEASE_HANDOFF_SUMMARY_SCRIPT=scripts/release-handoff-summary.sh
+  CODEINSIGHT_RELEASE_EVIDENCE_SUMMARY_SCRIPT=scripts/release-evidence-summary.sh
 EOF
   exit "$status"
 }
@@ -131,10 +143,16 @@ main() {
   local handoff_enabled=0
   local handoff_output_file=""
   local handoff_json_output_file=""
+  local handoff_generate_evidence=0
+  local handoff_should_generate_evidence=0
+  local handoff_evidence_branch="main"
+  local handoff_evidence_head_sha=""
+  local handoff_evidence_run_id=""
   local skip_docker=0
   local skip_homebrew=0
   local skip_installed_quickstart=0
   local allow_asset_download_unreachable=0
+  local -a handoff_evidence_repo_arg=()
 
   while [ "$#" -gt 0 ]; do
     case "$1" in
@@ -187,6 +205,45 @@ main() {
         fi
         handoff_enabled=1
         handoff_json_output_file="$1"
+        ;;
+      --generate-evidence-for-handoff)
+        handoff_enabled=1
+        handoff_generate_evidence=1
+        ;;
+      --evidence-branch)
+        shift
+        if [ "$#" -eq 0 ]; then
+          usage
+        fi
+        handoff_evidence_branch="$1"
+        ;;
+      --evidence-head-sha)
+        shift
+        if [ "$#" -eq 0 ]; then
+          usage
+        fi
+        handoff_evidence_head_sha="$1"
+        ;;
+      --evidence-run-id)
+        shift
+        if [ "$#" -eq 0 ]; then
+          usage
+        fi
+        handoff_evidence_run_id="$1"
+        ;;
+      --repo)
+        shift
+        if [ "$#" -eq 0 ]; then
+          usage
+        fi
+        handoff_evidence_repo_arg=(--repo "$1")
+        ;;
+      --release-evidence-summary-script)
+        shift
+        if [ "$#" -eq 0 ]; then
+          usage
+        fi
+        RELEASE_EVIDENCE_SUMMARY_SCRIPT="$1"
         ;;
       --skip-docker)
         skip_docker=1
@@ -242,8 +299,17 @@ main() {
     evidence_file="$ROOT_DIR/release-evidence/${tag}.md"
   fi
   if [ "$handoff_enabled" -eq 1 ] && [ -z "$evidence_json_file" ]; then
-    echo "post-release verification failed: release handoff requires --evidence-json-file or release-evidence/${tag}.json" >&2
-    exit 1
+    if [ "$handoff_generate_evidence" -eq 1 ]; then
+      evidence_json_file="$ROOT_DIR/release-evidence/${tag}.json"
+      evidence_file=""
+      handoff_should_generate_evidence=1
+    else
+      echo "post-release verification failed: release handoff requires --evidence-json-file, release-evidence/${tag}.json, or --generate-evidence-for-handoff" >&2
+      exit 1
+    fi
+  fi
+  if [ "$handoff_enabled" -eq 1 ] && [ "$handoff_generate_evidence" -eq 1 ] && [ -n "$evidence_json_file" ] && [ ! -f "$evidence_json_file" ]; then
+    handoff_should_generate_evidence=1
   fi
   if [ "$handoff_enabled" -eq 1 ]; then
     local handoff_dir
@@ -277,6 +343,31 @@ main() {
   env "${verify_env[@]}" "$VERIFY_RELEASE_SCRIPT" --json "$tag" | tee "$RAW_OUTPUT_FILE"
   extract_summary_json "$RAW_OUTPUT_FILE" "$summary_file"
 
+  local handoff_written=0
+  if [ "$handoff_enabled" -eq 1 ] && [ "$handoff_should_generate_evidence" -eq 1 ]; then
+    echo "writing release handoff"
+    local -a handoff_generate_args=(
+      --generate-evidence
+      --evidence-json "$evidence_json_file"
+      --evidence-branch "$handoff_evidence_branch"
+      --release-evidence-summary-script "$RELEASE_EVIDENCE_SUMMARY_SCRIPT"
+      --verification-json "$summary_file"
+      --json-output "$handoff_json_output_file"
+      --output "$handoff_output_file"
+    )
+    if [ "${#handoff_evidence_repo_arg[@]}" -gt 0 ]; then
+      handoff_generate_args+=("${handoff_evidence_repo_arg[@]}")
+    fi
+    if [ -n "$handoff_evidence_head_sha" ]; then
+      handoff_generate_args+=(--evidence-head-sha "$handoff_evidence_head_sha")
+    fi
+    if [ -n "$handoff_evidence_run_id" ]; then
+      handoff_generate_args+=(--evidence-run-id "$handoff_evidence_run_id")
+    fi
+    "$RELEASE_HANDOFF_SUMMARY_SCRIPT" "${handoff_generate_args[@]}" "$tag"
+    handoff_written=1
+  fi
+
   echo "updating status document"
   local -a update_args=()
   if [ -n "$evidence_json_file" ]; then
@@ -287,7 +378,7 @@ main() {
   update_args+=("$summary_file" "$status_doc")
   "$UPDATE_RELEASE_STATUS_SCRIPT" "${update_args[@]}"
 
-  if [ "$handoff_enabled" -eq 1 ]; then
+  if [ "$handoff_enabled" -eq 1 ] && [ "$handoff_written" -eq 0 ]; then
     echo "writing release handoff"
     "$RELEASE_HANDOFF_SUMMARY_SCRIPT" \
       --evidence-json "$evidence_json_file" \

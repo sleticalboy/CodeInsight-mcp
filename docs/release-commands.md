@@ -150,6 +150,14 @@ Run the recommended post-release verification command:
 scripts/post-release-verify.sh --handoff vX.Y.Z
 ```
 
+If `release-evidence/vX.Y.Z.json` was not archived before the release, let the
+post-release wrapper generate it before it writes the handoff and refreshes the
+status block:
+
+```bash
+scripts/post-release-verify.sh --handoff --generate-evidence-for-handoff vX.Y.Z
+```
+
 If Docker or Homebrew is not usable on the local machine, skip only those local
 gates explicitly:
 
@@ -175,8 +183,12 @@ including the adoption report document, reproduce command, archive path,
 routed first-read metric, and MCP first-call contract booleans when present. If
 the JSON archive is missing, it falls back to `release-evidence/<tag>.md`. Use
 `--evidence-json-file PATH` or `--evidence-file PATH` to pass a custom archive.
+Use `--generate-evidence-for-handoff` when handoff should create a missing JSON
+archive through `scripts/release-evidence-summary.sh` before the status update.
 Use `--handoff-output PATH` or `--handoff-json-output PATH` to override the
-handoff destinations.
+handoff destinations. Use `--evidence-branch`, `--evidence-head-sha`,
+`--evidence-run-id`, `--repo`, or `--release-evidence-summary-script` when that
+generated evidence needs explicit CI metadata.
 
 ## Targeted Checks
 

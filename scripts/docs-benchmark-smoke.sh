@@ -956,6 +956,12 @@ main() {
   require_pattern docs/release-commands.md \
     'scripts/post-release-verify\.sh --handoff vX\.Y\.Z' \
     "release commands short path post-release verification handoff"
+  require_pattern docs/release-commands.md \
+    'scripts/post-release-verify\.sh --handoff --generate-evidence-for-handoff vX\.Y\.Z' \
+    "release commands post-release generated evidence handoff"
+  require_pattern docs/release-commands.md \
+    'Use `--generate-evidence-for-handoff` when handoff should create a missing JSON' \
+    "release commands post-release generated evidence explanation"
   require_pattern docs/release-runbook.md \
     '^## Recommended SOP$' \
     "release runbook recommended SOP section"
@@ -974,6 +980,9 @@ main() {
   require_pattern docs/release-runbook.md \
     'scripts/release-tag-preflight\.sh --repo sleticalboy/CodeInsight-mcp vX\.Y\.Z main' \
     "release runbook tag preflight gate"
+  require_pattern docs/release-runbook.md \
+    'scripts/post-release-verify\.sh --handoff --generate-evidence-for-handoff vX\.Y\.Z' \
+    "release runbook post-release generated evidence handoff"
   require_pattern docs/release-runbook.md \
     'GitHub Release already exists for the tag' \
     "release runbook release conflict gate"
