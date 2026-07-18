@@ -774,6 +774,9 @@ main() {
     '\| Installed-binary adoption path changed \| `CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/installed-quickstart-smoke\.sh` \|' \
     "maintenance installed binary smoke chooser"
   require_pattern docs/maintenance-commands.md \
+    'installed binary, including selection rank and continuation evidence' \
+    "maintenance installed binary selection evidence scope"
+  require_pattern docs/maintenance-commands.md \
     '\| One-call `agent_route` JSON contract changed \| `scripts/agent-route-smoke\.sh` \|' \
     "maintenance agent route smoke chooser"
   require_pattern docs/maintenance-commands.md \
@@ -1250,6 +1253,18 @@ main() {
   require_pattern tests/cli.rs \
     'first_omitted\["omission_reason"\]' \
     "CLI context-pack omitted candidate omission reason assertion"
+  require_pattern scripts/installed-quickstart-smoke.sh \
+    'context_selection_rank' \
+    "installed quickstart context selection rank output"
+  require_pattern scripts/installed-quickstart-smoke.sh \
+    'agent_route_continuation_status' \
+    "installed quickstart agent-route continuation output"
+  require_pattern scripts/installed-quickstart-smoke.sh \
+    'mcp_agent_route_selection_rank' \
+    "installed quickstart MCP agent-route selection rank output"
+  require_pattern scripts/installed-quickstart-smoke.sh \
+    'mcp_agent_route_first_omitted_omission_reason' \
+    "installed quickstart MCP agent-route omitted reason output"
   require_pattern scripts/mcp-stdio-smoke.sh \
     'agent_route_execution_plan_steps' \
     "MCP stdio execution plan steps output"

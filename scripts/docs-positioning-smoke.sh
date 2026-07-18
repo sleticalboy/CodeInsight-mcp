@@ -292,8 +292,11 @@ main() {
     'CLI `agent-route`, MCP stdio, and MCP `agent_route`' \
     "quickstart installed agent_route coverage"
   require_pattern docs/quickstart.md \
-    '`reading_plan\.question`, `reading_plan\.reason`, and `selection_reason`' \
+    '`reading_plan\.question`, `reading_plan\.reason`, `selection_reason`,' \
     "quickstart installed reading question coverage"
+  require_pattern docs/quickstart.md \
+    '`selection_rank`, and continuation evidence' \
+    "quickstart installed rank continuation coverage"
   require_pattern docs/product-prototype.md \
     '本地优先的 AI Agent 代码上下文路由器' \
     "product prototype context router positioning"
@@ -515,6 +518,12 @@ main() {
   require_pattern docs/adoption-checklist.md \
     '`mcp_agent_route_reading_question`' \
     "adoption installed quickstart MCP reading question output"
+  require_pattern docs/adoption-checklist.md \
+    '`mcp_agent_route_selection_rank`' \
+    "adoption installed quickstart MCP selection rank output"
+  require_pattern docs/adoption-checklist.md \
+    'continuation status and next-action fields' \
+    "adoption installed quickstart continuation output"
   require_pattern docs/adoption-checklist.md \
     'The agent calls `agent_route` with `root`, `task`, and `token_budget` before' \
     "adoption agent_route first-read policy"

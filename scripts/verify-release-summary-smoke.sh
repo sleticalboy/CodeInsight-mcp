@@ -43,6 +43,8 @@ main() {
     (.installed_quickstart.coverage | index("reading_plan_question")) and
     (.installed_quickstart.coverage | index("reading_plan_reason")) and
     (.installed_quickstart.coverage | index("selection_reason")) and
+    (.installed_quickstart.coverage | index("selection_rank")) and
+    (.installed_quickstart.coverage | index("continuation_evidence")) and
     (.expected_assets | length) == 4
   ' "$SMOKE_TEMP_DIR/summary.json" >/dev/null
 
@@ -57,7 +59,9 @@ main() {
     (.installed_quickstart.coverage | index("agent_route_execution_plan")) and
     (.installed_quickstart.coverage | index("reading_plan_question")) and
     (.installed_quickstart.coverage | index("reading_plan_reason")) and
-    (.installed_quickstart.coverage | index("selection_reason"))
+    (.installed_quickstart.coverage | index("selection_reason")) and
+    (.installed_quickstart.coverage | index("selection_rank")) and
+    (.installed_quickstart.coverage | index("continuation_evidence"))
   ' "$SMOKE_TEMP_DIR/skipped-summary.json" >/dev/null
 
   echo "verify-release summary smoke passed"

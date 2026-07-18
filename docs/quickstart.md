@@ -154,7 +154,7 @@ Use the narrowest check that matches where you are in adoption:
 | You want a visible product walkthrough | `scripts/two-minute-demo.sh` | `agent_route` selects bounded context, prints `[Evidence summary]`, and frames the pre-edit impact check. |
 | You want a copyable first MCP call summary | `scripts/mcp-first-call-smoke.sh` | The stdio server accepts `agent_route` and returns the first context file, `reading_plan[]`, execution plan contract checks, `suggested_tool_executed`, and `impact_status` as JSON. |
 | You are wiring an MCP client from this checkout | `scripts/mcp-stdio-smoke.sh` | The stdio server lists tools, runs `agent_route`, executes `agent_route.execution_plan[].suggested_tool`, and prints selection/continuation evidence through MCP. |
-| You installed `codeinsight` and want an adoption gate | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh` | The installed binary can run CLI and MCP first-read routes against a temporary project outside this checkout. |
+| You installed `codeinsight` and want an adoption gate | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh` | The installed binary can run CLI and MCP first-read routes with selection rank and continuation evidence against a temporary project outside this checkout. |
 | You need adoption comparison evidence | `scripts/adoption-comparison.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-comparison` | A blind-read vs routed-first-read report with source lines avoided, read-less ratio, seed strategy, and first reading question. |
 | You want evidence for your own repository | `CODEINSIGHT_BENCH_PROFILE=local CODEINSIGHT_BENCH_LOCAL_ROOT=/path/to/repo CODEINSIGHT_BENCH_LOCAL_CONTEXT_FILE=src/main.ts CODEINSIGHT_BENCH_OUTPUT=/tmp/codeinsight-local-benchmark.md scripts/benchmark-smoke.sh` | A shareable benchmark report with routing, compression, reading-plan, and guardrail evidence for one local checkout. |
 
@@ -263,9 +263,10 @@ The installed quickstart smoke prints `installed quickstart smoke passed` after
 the installed binary completes `version`, `index`, `overview`, `context-pack`,
 CLI `agent-route`, MCP stdio, and MCP `agent_route` calls against a temporary
 project. It also checks `agent_route.execution_plan[]`,
-`reading_plan.question`, `reading_plan.reason`, and `selection_reason` in both
-CLI and MCP first-read paths. This is the same installed-binary adoption gate
-referenced by the [Adoption checklist](adoption-checklist.md).
+`reading_plan.question`, `reading_plan.reason`, `selection_reason`,
+`selection_rank`, and continuation evidence in both CLI and MCP first-read
+paths. This is the same installed-binary adoption gate referenced by the
+[Adoption checklist](adoption-checklist.md).
 
 ## 7. First Agent Task
 

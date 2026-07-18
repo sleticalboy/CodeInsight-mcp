@@ -86,7 +86,7 @@ Choose the narrowest check for the change:
 | First MCP call Actions summary changed | `scripts/mcp-first-call-step-summary-smoke.sh` | Checks the Actions Summary section for selected files, first context file, first reading file, selection rank, omitted-candidate continuation fields, reading-plan order, suggested-tool handoff, continuation timing, impact status, and artifact link. |
 | First MCP call help or failure messaging changed | `scripts/mcp-first-call-failure-smoke.sh` | Fast checks for `--help`, `[usage]`, `[binary]`, and `[mcp_server]` output. |
 | MCP protocol or tool payload changed | `scripts/mcp-stdio-smoke.sh` | Stdio MCP handshake, `agent_route`, `context_pack`, executable suggested-tool calls, selection rank, and continuation evidence. |
-| Installed-binary adoption path changed | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh` | CLI and MCP first-read routes through the installed binary against a temporary project. |
+| Installed-binary adoption path changed | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh` | CLI and MCP first-read routes through the installed binary, including selection rank and continuation evidence. |
 | One-call `agent_route` JSON contract changed | `scripts/agent-route-smoke.sh` | Route order, execution plan, context pack, and impact-analysis preview. |
 | Context ranking or continuation changed | `scripts/context-pack-quality-smoke.sh` | Deterministic context-pack quality regressions. |
 

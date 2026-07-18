@@ -175,6 +175,11 @@ Pass criteria:
   `agent_route_reading_question`, `mcp_context_reading_question`,
   `mcp_agent_route_reading_question`, and the matching reading reason and
   selection reason fields.
+- The smoke output includes `context_selection_rank`,
+  `agent_route_selection_rank`, `mcp_context_selection_rank`, and
+  `mcp_agent_route_selection_rank`.
+- The smoke output includes continuation status and next-action fields for
+  CLI/MCP `context_pack` and `agent_route`.
 - The smoke output includes `agent_route_execution_plan` and
   `mcp_agent_route_execution_plan` with the expected client action order.
 - `mcp-stdio-smoke.sh` prints first-reading `selection_rank`,

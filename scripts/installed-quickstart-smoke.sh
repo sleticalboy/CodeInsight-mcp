@@ -82,6 +82,8 @@ def assert_actionable_reading_plan(payload, label):
         raise AssertionError({label: first_step})
     if first_step.get("file") != first_file:
         raise AssertionError({label: first_step, "first_file": first_file})
+    if not isinstance(first_step.get("selection_rank"), int) or first_step["selection_rank"] < 1:
+        raise AssertionError({label: first_step})
     if not first_step.get("next_action"):
         raise AssertionError({label: first_step})
     if not first_step.get("question"):
@@ -111,6 +113,50 @@ def assert_actionable_reading_plan(payload, label):
     return first_step
 
 
+def first_omitted_candidate(payload):
+    omitted_candidates = payload.get("omitted_candidates", [])
+    if not omitted_candidates:
+        return {}
+    candidate = omitted_candidates[0]
+    if not candidate.get("file"):
+        raise AssertionError(candidate)
+    if not isinstance(candidate.get("selection_rank"), int) or candidate["selection_rank"] < 1:
+        raise AssertionError(candidate)
+    if not candidate.get("omission_reason"):
+        raise AssertionError(candidate)
+    if not candidate.get("next_action"):
+        raise AssertionError(candidate)
+    return candidate
+
+
+def assert_continuation_summary(payload, label):
+    continuation = payload.get("continuation_summary", {})
+    if not continuation.get("status"):
+        raise AssertionError({label: continuation})
+    if not continuation.get("next_action"):
+        raise AssertionError({label: continuation})
+    return continuation
+
+
+def assert_agent_route_execution_evidence(route, reading_step, label):
+    first_execution = route["execution_plan"][0]
+    if f"candidate rank {reading_step['selection_rank']}" not in first_execution.get("instruction", ""):
+        raise AssertionError({label: first_execution})
+    continuation = assert_continuation_summary(route["context_pack"], label)
+    continuation_instruction = route["execution_plan"][2].get("instruction", "")
+    if continuation["next_action"] not in continuation_instruction:
+        raise AssertionError({label: route["execution_plan"][2]})
+    omitted = first_omitted_candidate(route["context_pack"])
+    if omitted:
+        if omitted["file"] not in continuation_instruction:
+            raise AssertionError({label: route["execution_plan"][2]})
+        if f"candidate rank {omitted['selection_rank']}" not in continuation_instruction:
+            raise AssertionError({label: route["execution_plan"][2]})
+        if omitted["omission_reason"] not in continuation_instruction:
+            raise AssertionError({label: route["execution_plan"][2]})
+    return continuation, omitted
+
+
 version = run_json(["version"])
 if version["name"] != "codeinsight":
     raise AssertionError(version)
@@ -136,6 +182,8 @@ if len(context["files"]) < 1 or len(context["reading_plan"]) < 1:
 if context["budget"]["applied_token_budget"] != 1200:
     raise AssertionError(context["budget"])
 context_reading_step = assert_actionable_reading_plan(context, "cli_context_pack")
+context_continuation = assert_continuation_summary(context, "cli_context_pack")
+context_omitted = first_omitted_candidate(context)
 
 agent_route = run_json([
     "agent-route",
@@ -181,6 +229,11 @@ if agent_route["context_pack"]["budget"]["applied_token_budget"] != 1200:
 agent_route_reading_step = assert_actionable_reading_plan(
     agent_route["context_pack"],
     "cli_agent_route_context_pack",
+)
+agent_route_continuation, agent_route_omitted = assert_agent_route_execution_evidence(
+    agent_route,
+    agent_route_reading_step,
+    "cli_agent_route_execution_plan",
 )
 if agent_route["impact_status"] != "complete":
     raise AssertionError(agent_route)
@@ -275,6 +328,8 @@ try:
         mcp_context,
         "mcp_context_pack",
     )
+    mcp_context_continuation = assert_continuation_summary(mcp_context, "mcp_context_pack")
+    mcp_context_omitted = first_omitted_candidate(mcp_context)
 
     mcp_agent_route = request(
         {
@@ -319,6 +374,11 @@ try:
         mcp_agent_route["context_pack"],
         "mcp_agent_route_context_pack",
     )
+    mcp_agent_route_continuation, mcp_agent_route_omitted = assert_agent_route_execution_evidence(
+        mcp_agent_route,
+        mcp_agent_route_reading_step,
+        "mcp_agent_route_execution_plan",
+    )
     if mcp_agent_route["impact_status"] != "complete":
         raise AssertionError(mcp_agent_route)
     if mcp_agent_route["impact_analysis"]["depth"] != 2:
@@ -342,22 +402,46 @@ print(json.dumps({
     "context_reading_plan": len(context["reading_plan"]),
     "context_reading_question": context_reading_step["question"],
     "context_reading_reason": context_reading_step["reason"],
+    "context_selection_rank": context_reading_step["selection_rank"],
     "context_selection_reason": context_reading_step["selection_reason"],
+    "context_continuation_status": context_continuation["status"],
+    "context_continuation_next_action": context_continuation["next_action"],
+    "context_first_omitted_file": context_omitted.get("file", ""),
+    "context_first_omitted_selection_rank": context_omitted.get("selection_rank"),
+    "context_first_omitted_omission_reason": context_omitted.get("omission_reason", ""),
     "agent_route_tools": [step["tool"] for step in agent_route["route"]],
     "agent_route_execution_plan": [step["action"] for step in agent_route["execution_plan"]],
     "agent_route_context_files": len(agent_route["context_pack"]["files"]),
     "agent_route_reading_question": agent_route_reading_step["question"],
     "agent_route_reading_reason": agent_route_reading_step["reason"],
+    "agent_route_selection_rank": agent_route_reading_step["selection_rank"],
     "agent_route_selection_reason": agent_route_reading_step["selection_reason"],
+    "agent_route_continuation_status": agent_route_continuation["status"],
+    "agent_route_continuation_next_action": agent_route_continuation["next_action"],
+    "agent_route_first_omitted_file": agent_route_omitted.get("file", ""),
+    "agent_route_first_omitted_selection_rank": agent_route_omitted.get("selection_rank"),
+    "agent_route_first_omitted_omission_reason": agent_route_omitted.get("omission_reason", ""),
     "agent_route_impact_status": agent_route["impact_status"],
     "mcp_agent_route_impact_status": mcp_agent_route["impact_status"],
     "mcp_agent_route_execution_plan": [step["action"] for step in mcp_agent_route["execution_plan"]],
     "mcp_context_reading_question": mcp_context_reading_step["question"],
     "mcp_context_reading_reason": mcp_context_reading_step["reason"],
+    "mcp_context_selection_rank": mcp_context_reading_step["selection_rank"],
     "mcp_context_selection_reason": mcp_context_reading_step["selection_reason"],
+    "mcp_context_continuation_status": mcp_context_continuation["status"],
+    "mcp_context_continuation_next_action": mcp_context_continuation["next_action"],
+    "mcp_context_first_omitted_file": mcp_context_omitted.get("file", ""),
+    "mcp_context_first_omitted_selection_rank": mcp_context_omitted.get("selection_rank"),
+    "mcp_context_first_omitted_omission_reason": mcp_context_omitted.get("omission_reason", ""),
     "mcp_agent_route_reading_question": mcp_agent_route_reading_step["question"],
     "mcp_agent_route_reading_reason": mcp_agent_route_reading_step["reason"],
+    "mcp_agent_route_selection_rank": mcp_agent_route_reading_step["selection_rank"],
     "mcp_agent_route_selection_reason": mcp_agent_route_reading_step["selection_reason"],
+    "mcp_agent_route_continuation_status": mcp_agent_route_continuation["status"],
+    "mcp_agent_route_continuation_next_action": mcp_agent_route_continuation["next_action"],
+    "mcp_agent_route_first_omitted_file": mcp_agent_route_omitted.get("file", ""),
+    "mcp_agent_route_first_omitted_selection_rank": mcp_agent_route_omitted.get("selection_rank"),
+    "mcp_agent_route_first_omitted_omission_reason": mcp_agent_route_omitted.get("omission_reason", ""),
     "mcp_tools": len(tool_names),
 }, indent=2))
 PY
