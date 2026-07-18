@@ -87,8 +87,9 @@ optional external checks, see [Maintenance commands](maintenance-commands.md).
   table, first reading question metrics, and the
   `codeinsight-context-pack-quality` artifact link. Open the
   `agent-route-smoke` job summary and confirm it includes the route line,
-  context-pack metrics, first reading question, impact metrics, and the
-  `codeinsight-agent-route-smoke` artifact link. Open the
+  context-pack metrics, first reading question, selection rank, continuation next
+  action, impact metrics, and the `codeinsight-agent-route-smoke` artifact link.
+  Open the
   `mcp-first-call-smoke` job summary and confirm it includes selected files,
   the first context file, first reading file, selection rank, first next
   action, omitted-candidate continuation fields, reading-order and

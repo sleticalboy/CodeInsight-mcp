@@ -711,8 +711,8 @@ main() {
     'scripts/mcp-first-call-artifact-smoke\.sh <ci-run-id>' \
     "maintenance MCP first-call artifact download"
   require_pattern docs/maintenance-commands.md \
-    'context, first reading question, token-budget, and impact metrics' \
-    "maintenance agent-route first reading question summary"
+    'context, first reading question, selection rank, continuation next action' \
+    "maintenance agent-route first-read evidence summary"
   require_pattern docs/maintenance-commands.md \
     'scripts/release-evidence-summary-artifact-smoke\.sh --repo sleticalboy/CodeInsight-mcp <ci-run-id>' \
     "maintenance release evidence summary artifact smoke command"
@@ -843,8 +843,11 @@ main() {
     'scripts/mcp-first-call-artifact-smoke\.sh <ci-run-id>' \
     "maintainer MCP first-call artifact smoke command"
   require_pattern docs/maintainer-checklist.md \
-    'context-pack metrics, first reading question, impact metrics' \
-    "maintainer agent-route first reading question summary"
+    'context-pack metrics, first reading question, selection rank, continuation next' \
+    "maintainer agent-route first-read evidence summary"
+  require_pattern docs/maintenance-commands.md \
+    'first reading question, selection rank, continuation next action' \
+    "maintenance agent-route summary evidence scope"
   require_pattern scripts/context-pack-quality-step-summary-smoke.sh \
     'codeinsight-context-pack-quality' \
     "context-pack quality step summary smoke artifact"

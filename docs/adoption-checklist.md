@@ -75,8 +75,8 @@ Pass criteria:
 - `context_pack` reports `selected_files`, `selected_ranges`, and
   `estimated_tokens`.
 - The demo prints `first_reading_question`, executable `reading_plan_reason`,
-  `selection_rank`, and raw `selection_reason` for the first selected context
-  file.
+  `selection_rank`, raw `selection_reason`, and `continuation_next_action` for
+  the first selected context file.
 - `line_reduction` is present and below 100%.
 - `impact_analysis` reports `risk_level`, `impacted_files`, `paths`, or
   `suggested_checks`.
