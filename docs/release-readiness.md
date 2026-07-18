@@ -299,9 +299,11 @@ scripts/mcp-first-call-artifact-smoke.sh <ci-run-id>
 
 Treat the CI subset as a quick regression signal only. The checked-in smoke and
 large benchmark reports remain the release evidence for public-facing claims.
-When preparing a release handoff or release notes draft, confirm the archived
-evidence JSON includes benchmark metrics and that the generated handoff/notes
-show the benchmark routing and line-reduction lines.
+When preparing a release handoff, release notes draft, or status summary,
+confirm the archived evidence JSON includes benchmark metrics and adoption
+report fields, and that the generated handoff/notes/status output shows the
+benchmark routing, line-reduction lines, adoption report routed first-read
+metric, and MCP first-call contract booleans.
 
 ## Communication Gate
 

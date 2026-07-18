@@ -170,8 +170,10 @@ The post-release verifier saves a JSON summary under
 summary block in [Current status](status.md), and with `--handoff` also writes
 `release-handoff/<tag>.json` and `release-handoff/<tag>.md`. When
 `release-evidence/<tag>.json` exists, the status update also includes the
-archived pre-release evidence fields from that machine-readable archive. If the
-JSON archive is missing, it falls back to `release-evidence/<tag>.md`. Use
+archived pre-release evidence fields from that machine-readable archive,
+including the adoption report document, reproduce command, archive path,
+routed first-read metric, and MCP first-call contract booleans when present. If
+the JSON archive is missing, it falls back to `release-evidence/<tag>.md`. Use
 `--evidence-json-file PATH` or `--evidence-file PATH` to pass a custom archive.
 Use `--handoff-output PATH` or `--handoff-json-output PATH` to override the
 handoff destinations.

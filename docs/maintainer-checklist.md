@@ -101,9 +101,12 @@ optional external checks, see [Maintenance commands](maintenance-commands.md).
   scripts/mcp-first-call-artifact-smoke.sh <ci-run-id>
   ```
 
-  For release handoff or release-note work, confirm the generated evidence JSON
-  carries benchmark metrics and that `release-handoff-summary.sh` /
-  `release-notes-draft.sh` show the benchmark routing and line-reduction lines.
+  For release handoff, release-note, or status-summary work, confirm the
+  generated evidence JSON carries benchmark metrics and adoption report fields,
+  and that `release-handoff-summary.sh`, `release-notes-draft.sh`, and
+  `update-release-status.sh` show the benchmark routing, line-reduction lines,
+  adoption report routed first-read metric, and MCP first-call contract
+  booleans.
 
 ## Before Tagging A Release
 

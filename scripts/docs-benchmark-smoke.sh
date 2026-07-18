@@ -870,6 +870,12 @@ main() {
     'archived pre-release evidence fields' \
     "release commands archived evidence fields"
   require_pattern docs/release-commands.md \
+    'including the adoption report document, reproduce command, archive path' \
+    "release commands status adoption report fields"
+  require_pattern docs/release-commands.md \
+    'MCP first-call contract booleans when present' \
+    "release commands status adoption report contract"
+  require_pattern docs/release-commands.md \
     'falls back to `release-evidence/<tag>\.md`' \
     "release commands evidence markdown fallback"
   require_pattern docs/release-commands.md \
@@ -1103,9 +1109,18 @@ main() {
   require_pattern docs/maintainer-checklist.md \
     'release-handoff-summary\.sh' \
     "maintainer release handoff benchmark metrics guidance"
+  require_pattern docs/maintainer-checklist.md \
+    'update-release-status\.sh' \
+    "maintainer release status adoption report guidance"
   require_pattern docs/release-readiness.md \
-    'benchmark routing and line-reduction lines' \
+    'benchmark routing, line-reduction lines' \
     "release readiness handoff benchmark metrics guidance"
+  require_pattern docs/release-readiness.md \
+    'adoption report routed first-read' \
+    "release readiness adoption report status guidance"
+  require_pattern docs/release-readiness.md \
+    'MCP first-call contract booleans' \
+    "release readiness adoption report contract guidance"
   require_pattern docs/maintainer-checklist.md \
     'scripts/benchmark-artifact-smoke\.sh <ci-run-id>' \
     "maintainer benchmark artifact smoke command"

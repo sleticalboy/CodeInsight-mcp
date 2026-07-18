@@ -107,6 +107,23 @@ EOF
       "name": "codeinsight-mcp-first-call",
       "url": "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/4",
       "summary": "/tmp/mcp-first-call.json"
+    },
+    "adoption_report": {
+      "name": "CodeInsight self adoption report",
+      "document": "docs/adoption-report-codeinsight.md",
+      "command": "scripts/adoption-report.sh . --task \"understand the main application entrypoint\" --token-budget 6000 --output-dir /tmp/codeinsight-self-adoption-report --archive /tmp/codeinsight-self-adoption-report.tar.gz --print-snippet",
+      "archive": "/tmp/codeinsight-self-adoption-report.tar.gz",
+      "metrics": {
+        "selected_lines": 439,
+        "total_lines": 28433,
+        "line_reduction": "98.5%",
+        "mcp_first_call_contract": {
+          "reading_order": true,
+          "suggested_tool_handoff": true,
+          "continuation_after_selected_context": true,
+          "suggested_tool_executed": true
+        }
+      }
     }
   },
   "release_notes_block": "## v9.8.7 release evidence"
@@ -125,6 +142,12 @@ benchmark_artifact_url: https://github.com/sleticalboy/CodeInsight-mcp/actions/r
 context_pack_quality_artifact_url: https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/654321/artifacts/2
 agent_route_artifact_url: https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/654321/artifacts/3
 mcp_first_call_artifact_url: https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/654321/artifacts/4
+adoption_report: CodeInsight self adoption report
+adoption_report_doc: docs/adoption-report-codeinsight.md
+adoption_report_archive: /tmp/codeinsight-self-adoption-report.tar.gz
+adoption_report_command: scripts/adoption-report.sh . --task "understand the main application entrypoint" --token-budget 6000 --output-dir /tmp/codeinsight-self-adoption-report --archive /tmp/codeinsight-self-adoption-report.tar.gz --print-snippet
+adoption_report_selected_lines: 439/28433
+adoption_report_line_reduction: 98.5%
 EOF
 
   CODEINSIGHT_STATUS_DATE=2026-07-14 \
@@ -151,6 +174,10 @@ EOF
   grep -q -- '  - Metadata: `cargo=9.8.7`, `install=v9.8.7`, `changelog=9.8.7 (2026-07-15)`' "$status_doc"
   grep -q -- '  - Agent-route artifact: \[codeinsight-agent-route-smoke\](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/3)' "$status_doc"
   grep -q -- '  - MCP first-call artifact: \[codeinsight-mcp-first-call\](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/4)' "$status_doc"
+  grep -q -- '  - Adoption report: \[CodeInsight self adoption report\](docs/adoption-report-codeinsight.md)' "$status_doc"
+  grep -q -- '  - Adoption report archive: `/tmp/codeinsight-self-adoption-report.tar.gz`' "$status_doc"
+  grep -q -- '  - Adoption report routed first-read: `439/28433` source lines, `98.5%` reduction' "$status_doc"
+  grep -q -- '  - Adoption report MCP first-call contract: `reading_order=true`, `suggested_tool_handoff=true`, `continuation_after_selected_context=true`, `suggested_tool_executed=true`' "$status_doc"
   grep -q '## Current Release Tooling State' "$status_doc"
 
   CODEINSIGHT_STATUS_DATE=2026-07-15 \
@@ -160,6 +187,8 @@ EOF
   grep -q -- '  - Target commit: `md456`' "$fallback_status_doc"
   grep -q -- '  - CI run: `654321`' "$fallback_status_doc"
   grep -q -- '  - MCP first-call artifact: \[codeinsight-mcp-first-call\](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/654321/artifacts/4)' "$fallback_status_doc"
+  grep -q -- '  - Adoption report: \[CodeInsight self adoption report\](docs/adoption-report-codeinsight.md)' "$fallback_status_doc"
+  grep -q -- '  - Adoption report routed first-read: `439/28433` source lines, `98.5%` reduction' "$fallback_status_doc"
 
   echo "update release status smoke passed"
 }
