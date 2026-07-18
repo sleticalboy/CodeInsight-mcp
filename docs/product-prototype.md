@@ -2,11 +2,18 @@
 
 ## 1. 产品定位
 
-CodeInsight MCP Server 是一个本地优先的代码智能分析 MCP 服务器。它通过轻量级代码索引、符号关系分析和面向 AI Agent 的上下文压缩，让 Cursor、Claude Code、Codex 等 AI 编程助手可以用更少 token、更高准确率理解代码库。
+CodeInsight MCP Server 是一个本地优先的 AI Agent 代码上下文路由器。它通过轻量级代码索引、符号关系分析和面向 AI Agent 的上下文压缩，让 Cursor、Claude Code、Codex 等 AI 编程助手先读对文件、按预算读取上下文，并在改代码前预览影响范围。
 
 一句话定位：
 
-> 面向 AI Agent 的本地代码理解层，让 AI 少读文件、少猜上下文、少浪费 token。
+> 面向 AI Agent 的本地代码上下文路由层，让 AI 少读文件、少猜上下文、少浪费 token。
+
+产品边界：
+
+- 不替代 IDE、LSP、编译器、测试框架或 Sourcegraph。
+- 不把静态启发式结果包装成确定性语义结论。
+- 不默认依赖外部向量数据库、图数据库或托管索引服务。
+- 核心价值是给 Agent 一条可追溯的 first-read 路线：`agent_route -> selected context -> suggested_tool -> impact check`。
 
 ## 2. 核心用户
 
@@ -49,11 +56,11 @@ CodeInsight MCP Server 是一个本地优先的代码智能分析 MCP 服务器�
 
 ### 3.3 Agent 友好
 
-输出不是简单搜索结果，而是可被 AI 直接消费的结构化上下文，包括文件路径、行号、符号、关系、摘要和置信度。
+输出不是简单搜索结果，而是可被 AI 直接消费的结构化上下文，包括文件路径、行号、符号、关系、阅读问题、选择理由、后续工具建议和置信度。
 
 ### 3.4 渐进增强
 
-基础能力离线可用，高级能力如语义搜索、团队共享索引、远程部署可以作为可选能力加入。
+基础能力离线可用，高级能力如语义搜索、团队共享索引、远程部署可以作为可选能力加入，但不能成为默认使用路径。
 
 ### 3.5 可追溯
 
@@ -61,13 +68,19 @@ CodeInsight MCP Server 是一个本地优先的代码智能分析 MCP 服务器�
 
 ## 4. MVP 产品范围
 
-MVP 不追求“支持最多语言”，而追求“核心场景闭环可用”。第一版目标支持 5 种语言：
+MVP 不追求“支持最多语言”，而追求“核心场景闭环可用”。当前 MVP 支持这些语法级基础索引语言：
 
-- Python
 - JavaScript / TypeScript
+- Python
 - Go
 - Rust
 - Java
+- C / C++
+- C#
+- PHP
+- Ruby
+
+这些语言用于验证跨语言仓库中的 first-read 路由、文件大纲、依赖关系、引用查找、调用关系和上下文压缩。精度目标是 Agent 导航可用，不承诺 compiler-grade 或 LSP-grade 的完整语义分析。
 
 ### 4.1 MVP 核心工作流
 
@@ -77,12 +90,12 @@ MVP 不追求“支持最多语言”，而追求“核心场景闭环可用”�
 
 > 这个项目的入口在哪里？核心模块有哪些？
 
-工具链路：
+推荐入口：
 
-1. `index_project` 建立本地索引。
-2. `project_overview` 返回目录结构、语言分布、入口文件候选、主要模块。
-3. `file_outline` 展示关键文件中的类、函数、导入关系。
-4. `context_pack` 返回适合 Agent 阅读的压缩上下文。
+1. `agent_route` 一次性执行 first-read 路线。
+2. 返回的 `route[]` 记录 `index_project -> project_overview -> context_pack -> impact_analysis`。
+3. Agent 先按 `context_pack.reading_plan[]` 阅读选中文件。
+4. 如果选中上下文不足，再执行 `reading_plan[].suggested_tool`。
 
 #### 工作流 2：查找符号和引用
 
@@ -108,7 +121,7 @@ MVP 不追求“支持最多语言”，而追求“核心场景闭环可用”�
 1. `symbol_search` 定位目标符号。
 2. `callers` 和 `callees` 获取直接调用关系。
 3. `dependency_graph` 找到模块级依赖。
-4. `impact_analysis_basic` 输出影响范围、风险文件和建议验证点。
+4. `impact_analysis` 输出影响范围、风险文件和建议验证点。
 
 #### 工作流 4：给 Agent 精准上下文
 
@@ -285,7 +298,7 @@ MVP 不追求“支持最多语言”，而追求“核心场景闭环可用”�
 - top_targets
 - 已解析的本地文件路径提示
 
-### 5.9 `impact_analysis_basic`
+### 5.9 `impact_analysis`
 
 用途：根据符号或文件返回基础影响范围。
 
@@ -343,6 +356,28 @@ MVP 只做静态近似分析，不承诺完整类型系统精度。
 
 这是 MVP 的核心差异化工具。它不是搜索工具，而是帮助 Agent 选择、压缩和组织代码上下文。
 
+### 5.11 `agent_route`
+
+用途：作为默认 first-read 入口，一次性完成本地索引、项目概览、上下文包选择和修改前影响预览。
+
+输入：
+
+```json
+{
+  "root": "/absolute/path/to/repo",
+  "task": "understand the main application entrypoint",
+  "token_budget": 6000
+}
+```
+
+输出重点：
+
+- `route[]`：说明已经执行的 `index_project`、`project_overview`、`context_pack`、`impact_analysis` 路线。
+- `context_pack.files[]`：Agent 应先读的文件和行范围。
+- `context_pack.reading_plan[]`：每个文件要回答的问题、选择理由和建议后续工具。
+- `execution_plan[]`：客户端或 Agent 下一步应执行的有序动作。
+- `impact_analysis`：修改前风险预览。
+
 ## 6. 界面与交互原型
 
 MVP 主要以 MCP 工具方式交互，不先做独立 GUI。
@@ -352,8 +387,9 @@ MVP 主要以 MCP 工具方式交互，不先做独立 GUI。
 ```bash
 codeinsight index /path/to/repo
 codeinsight overview /path/to/repo
-codeinsight symbols PaymentService
-codeinsight refs PaymentService
+codeinsight agent-route /path/to/repo --task "understand app entrypoint" --token-budget 6000
+codeinsight symbols /path/to/repo PaymentService
+codeinsight refs /path/to/repo PaymentService
 codeinsight serve --transport stdio
 ```
 
@@ -489,11 +525,11 @@ MVP 目标：
 
 ### 9.1 不做 Sourcegraph 替代品
 
-CodeInsight 不以企业级代码搜索平台为第一目标，而是以 AI Agent 本地代码理解为第一目标。
+CodeInsight 不以企业级代码搜索平台为第一目标，而是以 AI Agent 本地代码上下文路由为第一目标。
 
 ### 9.2 不做纯语义搜索工具
 
-语义搜索只是能力之一。真正核心是符号关系、调用关系、依赖关系和上下文压缩。
+语义搜索只是可选增强。真正核心是 `agent_route`、`context_pack`、阅读计划、后续工具交接和修改前影响预览。
 
 ### 9.3 不做 IDE 插件优先
 
@@ -503,14 +539,15 @@ MVP 先把 MCP 工具和 CLI 做稳定，再考虑 IDE 插件。
 
 ### 10.1 MVP 成功指标
 
-- 能在 5 种语言项目中稳定建立索引。
-- 符号搜索准确率达到可用水平。
+- 能在当前支持语言项目中稳定建立索引。
+- `agent_route` 能作为默认 first-read 入口，返回阅读顺序、阅读问题、选择理由和可执行后续工具。
 - `context_pack` 能明显减少 Agent 需要读取的文件数量。
+- `impact_analysis` 能作为修改前风险预览，而不是最终正确性证明。
 - 在真实仓库中，常见理解任务能减少 30% 以上上下文读取量。
 
 ### 10.2 v1.0 成功指标
 
 - GitHub star 达到 1000。
 - 每月活跃安装达到 1000。
-- 支持 8 种主流语言。
+- 支持当前主流语言并保持输出 schema 稳定。
 - 真实用户反馈中，代码理解和定位问题场景有明确收益。

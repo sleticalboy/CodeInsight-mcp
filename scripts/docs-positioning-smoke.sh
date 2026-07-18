@@ -294,6 +294,42 @@ main() {
   require_pattern docs/quickstart.md \
     '`reading_plan\.question`, `reading_plan\.reason`, and `selection_reason`' \
     "quickstart installed reading question coverage"
+  require_pattern docs/product-prototype.md \
+    '本地优先的 AI Agent 代码上下文路由器' \
+    "product prototype context router positioning"
+  require_pattern docs/product-prototype.md \
+    '不替代 IDE、LSP、编译器、测试框架或 Sourcegraph' \
+    "product prototype non-replacement boundary"
+  require_pattern docs/product-prototype.md \
+    'agent_route -> selected context -> suggested_tool -> impact check' \
+    "product prototype first-read route"
+  require_pattern docs/product-prototype.md \
+    '当前 MVP 支持这些语法级基础索引语言' \
+    "product prototype current MVP language scope"
+  require_pattern docs/product-prototype.md \
+    '精度目标是 Agent 导航可用，不承诺 compiler-grade 或 LSP-grade' \
+    "product prototype accuracy boundary"
+  require_pattern docs/product-prototype.md \
+    '### 5\.11 `agent_route`' \
+    "product prototype agent_route tool"
+  require_pattern docs/product-prototype.md \
+    '真正核心是 `agent_route`、`context_pack`、阅读计划、后续工具交接和修改前影响预览' \
+    "product prototype semantic-search non-core boundary"
+  require_pattern docs/implementation-plan.md \
+    '通过 `agent_route` 给 AI Agent 提供 first-read 路线' \
+    "implementation plan agent_route strategy"
+  require_pattern docs/implementation-plan.md \
+    '当前 MVP 目标已经从“能否做出来”转为“能否被真实 Agent 工作流持续采用”' \
+    "implementation plan current MVP stage"
+  require_pattern docs/implementation-plan.md \
+    '\| `agent_route` \| P0 \| 默认 first-read 入口 \|' \
+    "implementation plan agent_route P0"
+  require_pattern docs/implementation-plan.md \
+    '以下能力不作为最小 MVP 的默认主线' \
+    "implementation plan default MVP boundary"
+  require_pattern docs/implementation-plan.md \
+    '当前不把商业化作为主线' \
+    "implementation plan commercialization boundary"
 
   require_pattern docs/cli-usage.md \
     '\[First-read workflow\]\(first-read-workflow\.md\)' \

@@ -2,11 +2,11 @@
 
 ## 1. 总体策略
 
-CodeInsight 不应从“跨语言智能分析全家桶”开始做，而应从一个可验证的最小闭环开始：
+CodeInsight 不应从“跨语言智能分析全家桶”开始做，而应持续收敛在一个可验证闭环上：
 
-> 本地索引代码库，提供符号搜索、引用查找、调用关系和 Agent 上下文压缩。
+> 本地索引代码库，通过 `agent_route` 给 AI Agent 提供 first-read 路线、上下文包、后续工具建议和修改前影响预览。
 
-第一阶段的关键不是语言数量，而是分析结果是否稳定、是否能被 AI Agent 直接使用、是否真的减少 token 消耗。
+当前阶段的关键不是继续扩大语言和功能清单，而是证明分析结果稳定、能被 AI Agent 直接使用、能减少首轮读代码成本，并清楚标注静态启发式分析的精度边界。
 
 ## 2. 技术路线
 
@@ -19,7 +19,7 @@ CodeInsight 不应从“跨语言智能分析全家桶”开始做，而应从�
 | 解析引擎 | Tree-sitter | Tree-sitter + LSP/语言服务增强 |
 | 本地存储 | SQLite | SQLite / RocksDB |
 | 全文检索 | SQLite FTS5 或 Tantivy | Tantivy |
-| 向量检索 | 暂不内置 | 可选本地 embedding + Qdrant/pgvector |
+| 向量检索 | 可选 embedding provider，本地默认可不用 | 可选本地 embedding + 外部 provider |
 | 图关系 | SQLite 表建模 | 可选图数据库适配 |
 | 传输协议 | stdio | stdio + Streamable HTTP |
 | 分发 | cargo install / Homebrew | cargo、Homebrew、Docker、npm wrapper |
@@ -99,11 +99,17 @@ CodeInsight MCP Server
 
 ### 4.1 MVP 目标
 
-在 4 到 6 周内做出一个可以真实接入 Codex、Claude Code 或 Cursor 的本地 MCP server，支持对真实仓库进行基础代码理解。
+当前 MVP 目标已经从“能否做出来”转为“能否被真实 Agent 工作流持续采用”：
+
+- 可以真实接入 Codex、Claude Code 或 Cursor。
+- 默认 first-read 入口是 `agent_route`。
+- `agent_route` 返回 `index_project -> project_overview -> context_pack -> impact_analysis` 路线证据。
+- Agent 先读选中上下文，再按 `reading_plan[].suggested_tool` 执行后续工具。
+- 任何影响分析都作为修改前规划证据，不作为最终正确性证明。
 
 ### 4.2 MVP 支持语言
 
-当前 MVP 支持少量核心语言：
+当前 MVP 支持这些基础索引语言：
 
 - TypeScript / JavaScript
 - Python
@@ -129,6 +135,7 @@ Java、C/C++、C#、PHP 和 Ruby 已作为语法级基础索引语言纳入当�
 | 功能 | 优先级 | 说明 |
 |---|---|---|
 | `serve --transport stdio` | P0 | MCP 接入基础 |
+| `agent_route` | P0 | 默认 first-read 入口 |
 | `index_project` | P0 | 建立本地索引 |
 | `project_overview` | P0 | 项目概览 |
 | `symbol_search` | P0 | 按名称查找符号 |
@@ -137,12 +144,12 @@ Java、C/C++、C#、PHP 和 Ruby 已作为语法级基础索引语言纳入当�
 | `dependency_graph` | P1 | 文件/目录依赖 |
 | `context_pack` | P0 | Agent 上下文压缩 |
 | `callers` / `callees` | P1 | 基础调用链 |
+| `impact_analysis` | P0 | 修改前影响预览 |
 
 ### 4.4 MVP 不做功能
 
-以下能力不进入最小 MVP：
+以下能力不作为最小 MVP 的默认主线：
 
-- 语义搜索
 - 向量数据库
 - 图数据库
 - 安全污点分析
@@ -153,7 +160,7 @@ Java、C/C++、C#、PHP 和 Ruby 已作为语法级基础索引语言纳入当�
 - Windows 完整兼容
 - 16 种语言支持
 
-这些能力都可以做，但不应阻塞第一版真实使用。
+语义搜索可以作为可选增强存在，但默认路径仍应不联网、不依赖外部服务。其它能力都可以做，但不应阻塞 Agent first-read 路由的真实使用。
 
 ### 4.5 MVP 验收标准
 
@@ -163,7 +170,9 @@ Java、C/C++、C#、PHP 和 Ruby 已作为语法级基础索引语言纳入当�
 - 可以索引至少 3 个真实开源项目。
 - 索引失败文件不会导致全局失败。
 - `symbol_search` 能定位主要函数、类、方法。
-- `context_pack` 可以按 token 预算返回相关文件片段。
+- `agent_route` 可以返回完整 first-read 路线。
+- `context_pack` 可以按 token 预算返回相关文件片段、阅读问题、选择理由和后续工具建议。
+- `impact_analysis` 可以在修改前返回风险文件和建议验证点。
 
 性能验收：
 
@@ -179,102 +188,51 @@ Java、C/C++、C#、PHP 和 Ruby 已作为语法级基础索引语言纳入当�
 - 工具输出包含文件路径和行号。
 - 关键工具有集成测试。
 
-## 5. 4-6 周执行计划
+## 5. 近期执行计划
 
-### Week 1：项目骨架与 MCP 通路
+当前代码已经越过初始 4-6 周 MVP 阶段。后续执行按“提升采用率”的优先级推进。
 
-交付物：
-
-- Rust workspace 初始化。
-- CLI 入口：`codeinsight`。
-- MCP stdio server 能启动。
-- 工具注册框架完成。
-- `health` 或 `version` 测试工具可调用。
-
-技术任务：
-
-- 选择 Rust MCP SDK 或轻量 JSON-RPC 实现。
-- 定义统一错误格式。
-- 定义工具响应 schema。
-- 建立基础测试和 CI。
-
-### Week 2：索引器与文件扫描
+### P0：Agent first-read 采用闭环
 
 交付物：
 
-- `index_project` 可扫描真实仓库。
-- 支持 ignore 规则。
-- 支持文件 hash。
-- SQLite schema 初版。
+- README、Quickstart、产品原型和落地计划都统一到“本地 AI Agent 代码上下文路由器”定位。
+- 新用户 2 分钟内能看到 `agent_route -> context_pack -> impact_analysis` 证据。
+- MCP first-call smoke 能证明 `reading_plan[]`、`execution_plan[]`、`suggested_tool` 和 `impact_analysis` 都可用。
 
 技术任务：
 
-- 项目 root 识别。
-- 语言识别。
-- 文件内容读取和缓存。
-- 基础 project、file 表。
+- 继续守住 `scripts/docs-positioning-smoke.sh`。
+- 保持 `scripts/mcp-first-call-smoke.sh` 和 `scripts/installed-quickstart-smoke.sh` 作为 adoption gate。
+- 用真实仓库报告展示 selected lines、line reduction、first reading question 和 suggested tool execution。
 
-### Week 3：Tree-sitter 解析与符号提取
+### P1：上下文质量和影响分析可信度
 
 交付物：
 
-- TypeScript/JavaScript、Python、Go、Rust、Java、C/C++、C#、PHP、Ruby 的 AST 解析。
-- `file_outline` 可返回文件大纲。
-- `symbol_search` 可按名称查询。
+- `context_pack` 在更多真实仓库上稳定选择入口文件、依赖文件和关键引用。
+- `impact_analysis` 清晰区分 call-related、dependency-related、reference-related 证据。
+- 输出中的 `confidence`、`reason`、`selection_reason` 能解释静态启发式边界。
 
 技术任务：
 
-- 接入 tree-sitter grammars。
-- 为每种语言实现 symbol extractor。
-- 设计统一 Symbol 模型。
-- 写 fixture 测试。
+- 增加回归 fixture 覆盖常见框架入口。
+- 优化 import resolution 和调用边解析。
+- 增强测试文件推荐和 suggested checks。
 
-### Week 4：引用、依赖与上下文包
+### P2：分发和采用证据
 
 交付物：
 
-- `find_references` 初版。
-- `dependency_graph` 初版。
-- `context_pack` 初版。
+- 安装、MCP 配置和 adoption checklist 保持可复制。
+- 发布证据、adoption report 和 benchmark 快照能互相对齐。
+- CI queued 时不阻塞本地继续推进，但必须记录远端状态。
 
 技术任务：
 
-- 建立 reference 表。
-- 解析 import/require/from/use/package。
-- 根据符号、引用、依赖关系计算上下文重要性。
-- 实现 token 预算估算。
-
-### Week 5：调用关系与真实仓库验证
-
-交付物：
-
-- `callers` / `callees` 初版。
-- 在 3 到 5 个真实仓库中验证。
-- 修复解析失败、性能瓶颈和输出可用性问题。
-
-技术任务：
-
-- 基础 callers/callees 查询。
-- JavaScript/TypeScript imported target hints。
-- 增加性能采样日志。
-- 建立真实仓库 smoke test。
-
-### Week 6：打包、文档和首个预览版
-
-交付物：
-
-- `v0.1.0` 预览版本。
-- README。
-- MCP client 配置示例。
-- Homebrew 或 cargo install 分发说明。
-- 示例演示仓库。
-
-技术任务：
-
-- 发布二进制。
-- 添加基础 GitHub Actions。
-- 增加用户反馈模板。
-- 编写限制说明和路线图。
+- 保持 `scripts/local-ci-smoke.sh` 为提交前总闸。
+- 继续用 adoption report 打包可复现证据。
+- 每次触及 README/Quickstart/发布证据时同步文档 smoke。
 
 ## 6. MVP 后路线图
 
@@ -406,23 +364,9 @@ Java、C/C++、C#、PHP 和 Ruby 已作为语法级基础索引语言纳入当�
 
 - 从个人工具升级为团队研发效率基础设施。
 
-### Phase 4：企业代码知识图谱
-
-时间：18 个月以上。
-
-核心能力：
-
-- 跨仓库知识图谱。
-- 架构依赖分析。
-- 服务边界识别。
-- 安全与合规分析。
-- 自然语言代码库问答。
-
-产品目标：
-
-- 成为企业内部 AI 研发平台的代码知识底座。
-
 ## 8. 商业化规划
+
+当前不把商业化作为主线。商业化只有在 adoption evidence 足够稳定后再推进。
 
 ### 8.1 开源核心
 
@@ -432,7 +376,7 @@ Java、C/C++、C#、PHP 和 Ruby 已作为语法级基础索引语言纳入当�
 - 基础索引。
 - 基础符号搜索。
 - 文件大纲。
-- 基础上下文包。
+- `agent_route` 和基础上下文包。
 - 主要语言 parser。
 
 许可证建议：
@@ -440,7 +384,7 @@ Java、C/C++、C#、PHP 和 Ruby 已作为语法级基础索引语言纳入当�
 - Apache 2.0 更利于企业采用。
 - 如担心云厂商直接托管变现，可后续评估 Apache 2.0 + 商业附加组件。
 
-### 8.2 Pro 版本
+### 8.2 可选 Pro 方向
 
 适合个人高级用户。
 
@@ -453,7 +397,7 @@ Java、C/C++、C#、PHP 和 Ruby 已作为语法级基础索引语言纳入当�
 - 高级影响分析。
 - IDE 集成。
 
-### 8.3 Team 版本
+### 8.3 可选 Team 方向
 
 适合研发团队。
 
@@ -466,7 +410,7 @@ Java、C/C++、C#、PHP 和 Ruby 已作为语法级基础索引语言纳入当�
 - 权限控制。
 - 使用统计。
 
-### 8.4 Enterprise 版本
+### 8.4 可选 Enterprise 方向
 
 适合大型组织。
 
@@ -501,9 +445,9 @@ Tree-sitter 只提供语法树，不等同于完整语义理解。跨文件引�
 
 应对：
 
-- MVP 限定少量核心语言，避免一次性扩展到 16 种语言。
+- MVP 保持当前语言集合的质量边界，避免一次性扩展到 16 种语言。
 - 每个版本只围绕一个主目标。
-- 把 `context_pack` 定义为第一壁垒。
+- 把 `agent_route` 和 `context_pack` 定义为第一壁垒。
 
 ### 9.3 竞品跟进风险
 
@@ -531,12 +475,12 @@ MCP 协议、SDK 和传输方式仍在演进。
 
 ## 10. 决策建议
 
-建议立即启动最小 MVP，而不是继续扩大规划范围。
+建议继续围绕 Agent first-read adoption 推进，而不是扩大成通用代码智能平台。
 
-第一阶段只验证三个问题：
+当前阶段持续验证三个问题：
 
 1. 能否稳定索引真实仓库？
 2. 能否提供比普通 grep 更有用的结构化代码理解？
 3. 能否让 AI Agent 少读文件并更快定位关键代码？
 
-如果这三个问题成立，再扩展语义搜索、安全分析、团队协作和商业化能力。
+如果这三个问题持续成立，再扩展语义搜索、安全分析、团队协作和商业化能力。
