@@ -44,6 +44,18 @@ main() {
     'LSP, compiler, test runner, and language-specific tools' \
     "README keep using precise local tools"
   require_pattern README.md \
+    '^Best-fit tasks:$' \
+    "README best-fit task boundary"
+  require_pattern README.md \
+    'understand a new repository before opening many files' \
+    "README repository first-read use case"
+  require_pattern README.md \
+    'Do not treat CodeInsight output as compiler-grade proof' \
+    "README compiler-grade non-goal"
+  require_pattern README.md \
+    'router: it narrows the first read' \
+    "README context-router boundary"
+  require_pattern README.md \
     '^## Fast Path$' \
     "README fast path section"
   require_pattern README.md \
@@ -65,16 +77,16 @@ main() {
     '\[First Agent Route Call\]\(docs/mcp-client-config\.md#first-agent-route-call\)' \
     "README first agent route call link"
   require_pattern README.md \
-    'Pick the validation that matches your goal:' \
+    'Pick the validation that matches your adoption stage:' \
     "README fast path validation chooser"
   require_pattern README.md \
-    '\| See the product loop \| `scripts/two-minute-demo\.sh` \|' \
+    '\| First look \| `scripts/two-minute-demo\.sh` \|' \
     "README fast path product demo validation"
   require_pattern README.md \
-    '\| Check the first MCP call \| `CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/mcp-first-call-smoke\.sh` \|' \
+    '\| MCP wiring \| `CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/mcp-first-call-smoke\.sh` \|' \
     "README fast path MCP first-call validation"
   require_pattern README.md \
-    '\| Verify installed adoption \| `CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/installed-quickstart-smoke\.sh` \|' \
+    '\| Installed adoption \| `CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/installed-quickstart-smoke\.sh` \|' \
     "README fast path installed adoption validation"
   require_pattern README.md \
     'CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/installed-quickstart-smoke\.sh' \
@@ -181,6 +193,12 @@ main() {
     'local-first' \
     "local-first setup framing"
   require_pattern docs/quickstart.md \
+    'The main path is intentionally one call from the agent: `agent_route`' \
+    "quickstart one-call agent route framing"
+  require_pattern docs/quickstart.md \
+    'refreshes the local index, returns a repository overview, selects the bounded' \
+    "quickstart one-call route contents"
+  require_pattern docs/quickstart.md \
     '^## Fast Path$' \
     "quickstart fast path section"
   require_pattern docs/quickstart.md \
@@ -192,6 +210,12 @@ main() {
   require_pattern docs/quickstart.md \
     '`scripts/two-minute-demo\.sh` for a visible evidence summary' \
     "quickstart demo evidence fast path"
+  require_pattern docs/quickstart.md \
+    'The demo calls `agent_route`' \
+    "quickstart demo agent_route call"
+  require_pattern docs/quickstart.md \
+    'The returned `route\[\]` records the local work' \
+    "quickstart route provenance"
   require_pattern docs/quickstart.md \
     '^## 5\. Choose A Smoke Check$' \
     "quickstart smoke chooser section"

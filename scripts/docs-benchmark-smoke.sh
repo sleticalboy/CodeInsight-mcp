@@ -594,7 +594,7 @@ main() {
     'scripts/two-minute-demo\.sh' \
     "README two-minute demo command"
   require_pattern README.md \
-    'Pick the validation that matches your goal:' \
+    'Pick the validation that matches your adoption stage:' \
     "README validation chooser"
   require_pattern README.md \
     'CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/mcp-first-call-smoke\.sh' \

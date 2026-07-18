@@ -36,6 +36,17 @@ Use CodeInsight when the agent needs a local reading route. Keep using the IDE,
 LSP, compiler, test runner, and language-specific tools for precise diagnostics,
 type checks, and final verification.
 
+Best-fit tasks:
+
+- understand a new repository before opening many files
+- plan an edit from a broad request such as "change the auth flow"
+- collect the first files, reading questions, and follow-up tools for an agent
+- preview likely impact before touching code
+
+Do not treat CodeInsight output as compiler-grade proof. It is a local context
+router: it narrows the first read, explains why each file was selected, and
+hands the agent to precise local tools when the selected context is not enough.
+
 ## Fast Path
 
 1. Install the binary:
@@ -71,16 +82,16 @@ type checks, and final verification.
    The first MCP `tools/call` payload is shown in
    [First Agent Route Call](docs/mcp-client-config.md#first-agent-route-call).
 
-4. Pick the validation that matches your goal:
+4. Pick the validation that matches your adoption stage:
 
-   | Goal | Command | Use When |
+   | Stage | Command | Use When |
    | --- | --- | --- |
-   | See the product loop | `scripts/two-minute-demo.sh` | You want a visible `agent_route -> context_pack -> impact_analysis` walkthrough with an `[Evidence summary]`. |
-   | Compare adoption impact | `scripts/adoption-comparison.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-comparison` | You want a shareable blind-read vs routed-first-read comparison showing source lines avoided, read-less ratio, seed strategy, and first reading question. |
-   | Build adoption evidence | `scripts/adoption-evidence.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-evidence --print-snippet --issue-template` | You want one folder with local first-read evidence, raw route JSON, MCP first-call JSON, aggregate Markdown/JSON summaries, a copyable terminal snippet, and a ready-to-file issue template. |
-   | Package adoption report | `scripts/adoption-report.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-report --print-snippet` | You want a tar.gz report containing the evidence summaries, issue template, raw JSON, and diagnostic logs for upload or handoff. |
-   | Check the first MCP call | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/mcp-first-call-smoke.sh` | You want a compact JSON proof that stdio MCP accepts `agent_route`, returns the first context file, follows `reading_plan[]`, runs the current step's suggested tool, and includes `impact_status`. |
-   | Verify installed adoption | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh` | You want the installed binary to pass CLI `agent-route`, MCP stdio, and MCP `agent_route` against a temporary project. |
+   | First look | `scripts/two-minute-demo.sh` | You want a visible `agent_route -> context_pack -> impact_analysis` walkthrough with an `[Evidence summary]`. |
+   | MCP wiring | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/mcp-first-call-smoke.sh` | You want a compact JSON proof that stdio MCP accepts `agent_route`, returns the first context file, follows `reading_plan[]`, runs the current step's suggested tool, and includes `impact_status`. |
+   | Installed adoption | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh` | You want the installed binary to pass CLI `agent-route`, MCP stdio, and MCP `agent_route` against a temporary project. |
+   | Local evidence | `scripts/adoption-evidence.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-evidence --print-snippet --issue-template` | You want one folder with local first-read evidence, raw route JSON, MCP first-call JSON, aggregate Markdown/JSON summaries, a copyable terminal snippet, and a ready-to-file issue template. |
+   | Adoption comparison | `scripts/adoption-comparison.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-comparison` | You want a shareable blind-read vs routed-first-read comparison showing source lines avoided, read-less ratio, seed strategy, and first reading question. |
+   | Handoff report | `scripts/adoption-report.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-report --print-snippet` | You want a tar.gz report containing the evidence summaries, issue template, raw JSON, and diagnostic logs for upload or handoff. |
 
 ## Two-Minute Demo
 

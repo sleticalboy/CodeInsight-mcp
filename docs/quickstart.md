@@ -4,6 +4,10 @@ This quickstart takes a new user from install to a working MCP client setup.
 It keeps the path local-first: no external database, vector service, or hosted
 index is required.
 
+The main path is intentionally one call from the agent: `agent_route`. It
+refreshes the local index, returns a repository overview, selects the bounded
+context pack, and includes an impact preview for edit planning.
+
 ## Fast Path
 
 1. Install `codeinsight`.
@@ -63,13 +67,13 @@ Against another repository:
 CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/two-minute-demo.sh
 ```
 
-The demo runs the product loop:
+The demo calls `agent_route`. The returned `route[]` records the local work
+CodeInsight already performed:
 
-1. `agent_route`
-2. `index_project`
-3. `project_overview`
-4. `context_pack`
-5. `impact_analysis`
+1. `index_project`
+2. `project_overview`
+3. `context_pack`
+4. `impact_analysis`
 
 It prints index timing, entrypoint count, recommended-tool count, selected
 context size, line reduction, continuation status, impact summary, and a short
