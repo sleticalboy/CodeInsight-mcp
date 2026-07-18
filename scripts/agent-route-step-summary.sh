@@ -51,6 +51,10 @@ require_summary_contract() {
       and (.metrics.first_execution_suggested_tool | type == "string")
       and (.metrics.first_next_action | type == "string")
       and (.metrics.first_reading_question | type == "string")
+      and (.metrics.first_selection_rank | type == "number")
+      and (.metrics.first_selection_reason | type == "string")
+      and (.metrics.continuation_status | type == "string")
+      and (.metrics.continuation_next_action | type == "string")
       and (.metrics.context_route_reason | type == "string")
       and (.metrics.impact_route_reason | type == "string")
       and (.metrics.impact_status | type == "string")
@@ -125,6 +129,10 @@ main() {
     printf '| First execution suggested tool | `%s` |\n' "$(metric '.metrics.first_execution_suggested_tool')"
     printf '| First next action | `%s` |\n' "$(metric '.metrics.first_next_action')"
     printf '| First reading question | `%s` |\n' "$(metric '.metrics.first_reading_question')"
+    printf '| First selection rank | `%s` |\n' "$(metric '.metrics.first_selection_rank')"
+    printf '| First selection reason | %s |\n' "$(metric '.metrics.first_selection_reason')"
+    printf '| Continuation status | `%s` |\n' "$(metric '.metrics.continuation_status')"
+    printf '| Continuation next action | `%s` |\n' "$(metric '.metrics.continuation_next_action')"
     printf '| Context route reason | %s |\n' "$(metric '.metrics.context_route_reason')"
     printf '| Impact route reason | %s |\n' "$(metric '.metrics.impact_route_reason')"
     printf '| Impact status | `%s` |\n' "$(metric '.metrics.impact_status')"

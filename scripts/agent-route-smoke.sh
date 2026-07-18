@@ -161,6 +161,10 @@ write_summary_json() {
       first_execution_suggested_tool: (.execution_plan[1].suggested_tool.tool // ""),
       first_next_action: (.context_pack.reading_plan[0].next_action // ""),
       first_reading_question: (.context_pack.reading_plan[0].question // ""),
+      first_selection_rank: (.context_pack.reading_plan[0].selection_rank // 0),
+      first_selection_reason: (.context_pack.reading_plan[0].selection_reason // ""),
+      continuation_status: (.context_pack.continuation_summary.status // ""),
+      continuation_next_action: (.context_pack.continuation_summary.next_action // ""),
       context_route_reason: (.route[] | select(.tool == "context_pack") | .reason),
       impact_route_reason: (.route[] | select(.tool == "impact_analysis") | .reason),
       impact_status,
@@ -185,6 +189,10 @@ write_summary_json() {
       and .metrics.second_execution_action == "use_current_reading_step_suggested_tool"
       and (.metrics.first_execution_suggested_tool | type == "string" and length > 0)
       and (.metrics.first_reading_question | type == "string" and length > 0)
+      and (.metrics.first_selection_rank | type == "number" and . >= 1)
+      and (.metrics.first_selection_reason | type == "string" and length > 0)
+      and (.metrics.continuation_status | type == "string" and length > 0)
+      and (.metrics.continuation_next_action | type == "string" and length > 0)
       and .metrics.impact_status == "complete"
       and .metrics.impacted_files >= 1' \
     "summary JSON should match the agent-route evidence contract"
@@ -308,6 +316,10 @@ main() {
   require_jq "$route_json" '.context_pack.reading_plan | length >= 1' "context_pack should include a reading plan"
   require_jq "$route_json" '.context_pack.reading_plan[0].next_action != null and .context_pack.reading_plan[0].next_action != ""' "reading plan should include next action"
   require_jq "$route_json" '.context_pack.reading_plan[0].question != null and .context_pack.reading_plan[0].question != ""' "reading plan should include a question"
+  require_jq "$route_json" '.context_pack.reading_plan[0].selection_rank >= 1' "reading plan should include candidate selection rank"
+  require_jq "$route_json" '.context_pack.reading_plan[0].selection_reason != null and .context_pack.reading_plan[0].selection_reason != ""' "reading plan should include selection reason"
+  require_jq "$route_json" '.context_pack.continuation_summary.status != null and .context_pack.continuation_summary.status != ""' "context_pack should include continuation status"
+  require_jq "$route_json" '.context_pack.continuation_summary.next_action != null and .context_pack.continuation_summary.next_action != ""' "context_pack should include continuation next action"
   require_jq "$route_json" '.context_pack.budget.requested_token_budget == 1600' "context_pack should preserve requested budget"
   require_jq "$route_json" '.context_pack.budget.applied_token_budget == 1600' "context_pack should apply requested budget"
   require_jq "$route_json" '.route[2].reason as $reason | .context_pack.reading_plan[0] as $step | $reason | contains("read \($step.file) first") and contains("candidate rank \($step.selection_rank)") and contains($step.next_action) and contains($step.suggested_tool.tool) and contains("continuation")' "context route step should explain the first read path"
@@ -392,6 +404,10 @@ main() {
   echo "first_context_file: $(json_value "$route_json" '.context_pack.files[0].file')"
   echo "first_reading_file: $(json_value "$route_json" '.context_pack.reading_plan[0].file')"
   echo "first_reading_question: $(json_value "$route_json" '.context_pack.reading_plan[0].question')"
+  echo "first_selection_rank: $(json_value "$route_json" '.context_pack.reading_plan[0].selection_rank')"
+  echo "first_selection_reason: $(json_value "$route_json" '.context_pack.reading_plan[0].selection_reason')"
+  echo "continuation_status: $(json_value "$route_json" '.context_pack.continuation_summary.status')"
+  echo "continuation_next_action: $(json_value "$route_json" '.context_pack.continuation_summary.next_action')"
   echo "noisy_entrypoint_first_file: $(json_value "$noisy_route_json" '.context_pack.files[0].file')"
   echo "impact_status: $(json_value "$route_json" '.impact_status')"
   echo "impacted_files: $(json_value "$route_json" '.impact_analysis.impact_counts.impacted_files')"

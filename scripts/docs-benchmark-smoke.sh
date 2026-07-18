@@ -1310,9 +1310,15 @@ main() {
   require_pattern scripts/mcp-stdio-smoke.sh \
     'explicit_first_omitted_omission_reason' \
     "MCP stdio explicit omitted reason output"
-  require_pattern scripts/agent-route-step-summary-smoke.sh \
-    'First reading question' \
-    "agent-route step summary first reading question"
+	  require_pattern scripts/agent-route-step-summary-smoke.sh \
+	    'First reading question' \
+	    "agent-route step summary first reading question"
+	  require_pattern scripts/agent-route-step-summary-smoke.sh \
+	    'First selection rank' \
+	    "agent-route step summary first selection rank"
+	  require_pattern scripts/agent-route-step-summary-smoke.sh \
+	    'Continuation next action' \
+	    "agent-route step summary continuation next action"
   require_pattern scripts/agent-route-artifact-smoke.sh \
     'first_reading_question' \
     "agent-route artifact first reading question output"

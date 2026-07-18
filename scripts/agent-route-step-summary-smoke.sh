@@ -59,10 +59,14 @@ main() {
     "first_reading_file": "src/main.ts",
     "first_execution_action": "read_selected_context",
     "second_execution_action": "use_current_reading_step_suggested_tool",
-    "first_execution_suggested_tool": "file_outline",
-    "first_next_action": "inspect_seed_file",
-    "first_reading_question": "What entrypoints define the main flow?",
-    "context_route_reason": "selected 2 files, 2 ranges, and 2 reading-plan steps within the token budget; read src/main.ts first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context",
+	    "first_execution_suggested_tool": "file_outline",
+	    "first_next_action": "inspect_seed_file",
+	    "first_reading_question": "What entrypoints define the main flow?",
+	    "first_selection_rank": 1,
+	    "first_selection_reason": "Selected for high relevance via seed_file: Seed file header and imports for task: src/main.ts",
+	    "continuation_status": "complete",
+	    "continuation_next_action": "read_selected_context",
+	    "context_route_reason": "selected 2 files, 2 ranges, and 2 reading-plan steps within the token budget; read src/main.ts first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context",
     "impact_route_reason": "after selected context is read, pre-edit impact check estimated 2 impacted files at medium risk, including 1 call-related files, 1 dependency-related files, 1 call paths, and 1 dependency paths",
     "impact_status": "complete",
     "impacted_files": 2,
@@ -92,10 +96,14 @@ EOF
   require_literal "$summary_md" '| First reading file | `src/main.ts` |' "first reading file metric"
   require_literal "$summary_md" '| First execution action | `read_selected_context` |' "first execution action metric"
   require_literal "$summary_md" '| Second execution action | `use_current_reading_step_suggested_tool` |' "second execution action metric"
-  require_literal "$summary_md" '| First execution suggested tool | `file_outline` |' "first execution suggested tool metric"
-  require_literal "$summary_md" '| First next action | `inspect_seed_file` |' "next action metric"
-  require_literal "$summary_md" '| First reading question | `What entrypoints define the main flow?` |' "first reading question metric"
-  require_literal "$summary_md" '| Context route reason | selected 2 files, 2 ranges, and 2 reading-plan steps within the token budget; read src/main.ts first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context |' "context route reason metric"
+	  require_literal "$summary_md" '| First execution suggested tool | `file_outline` |' "first execution suggested tool metric"
+	  require_literal "$summary_md" '| First next action | `inspect_seed_file` |' "next action metric"
+	  require_literal "$summary_md" '| First reading question | `What entrypoints define the main flow?` |' "first reading question metric"
+	  require_literal "$summary_md" '| First selection rank | `1` |' "first selection rank metric"
+	  require_literal "$summary_md" '| First selection reason | Selected for high relevance via seed_file: Seed file header and imports for task: src/main.ts |' "first selection reason metric"
+	  require_literal "$summary_md" '| Continuation status | `complete` |' "continuation status metric"
+	  require_literal "$summary_md" '| Continuation next action | `read_selected_context` |' "continuation next action metric"
+	  require_literal "$summary_md" '| Context route reason | selected 2 files, 2 ranges, and 2 reading-plan steps within the token budget; read src/main.ts first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context |' "context route reason metric"
   require_literal "$summary_md" '| Impact route reason | after selected context is read, pre-edit impact check estimated 2 impacted files at medium risk, including 1 call-related files, 1 dependency-related files, 1 call paths, and 1 dependency paths |' "impact route reason metric"
   require_literal "$summary_md" '| Impacted files | `2` |' "impacted files metric"
 
