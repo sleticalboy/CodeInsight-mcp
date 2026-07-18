@@ -701,12 +701,18 @@ main() {
   require_pattern docs/first-read-workflow.md \
     'Python web framework signals include `manage\.py`' \
     "first-read workflow Python framework entrypoints"
+  require_pattern docs/first-read-workflow.md \
+    'C# web application signals include' \
+    "first-read workflow C# framework entrypoints"
   require_pattern docs/status.md \
     'Framework-oriented entrypoint signals' \
     "status framework entrypoint signals"
   require_pattern docs/status.md \
     'Python web framework roots' \
     "status Python framework entrypoint signals"
+  require_pattern docs/status.md \
+    'C# web' \
+    "status C# framework entrypoint signals"
   require_pattern docs/release-readiness.md \
     '`benchmark-subset-smoke` job summary' \
     "release readiness CI benchmark summary guidance"

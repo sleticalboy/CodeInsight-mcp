@@ -20,7 +20,8 @@ MVP workflow is now implemented end to end.
   entrypoint candidates, and MCP-ready recommended next tools.
 - Framework-oriented entrypoint signals for common first-read surfaces,
   including Next.js app router files, Next.js pages bootstrap files, Rails
-  routes, Java application roots, and Python web framework roots.
+  routes, Java application roots, Python web framework roots, and C# web
+  application roots.
 - Dependency graph with local resolution, source/target file filters, language
   filters, summaries, top source stats, and top target stats.
 - Text reference search, impact analysis, token-budgeted context packs, reading

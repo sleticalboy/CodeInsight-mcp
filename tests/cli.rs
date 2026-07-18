@@ -5429,12 +5429,26 @@ fn cli_overview_detects_framework_entrypoint_files() {
                 && entrypoint["role"] == "source"
                 && entrypoint["reason"] == "Python web framework entrypoint")
     );
+    assert!(
+        entrypoints
+            .iter()
+            .any(|entrypoint| entrypoint["file"] == "src/Program.cs"
+                && entrypoint["role"] == "source"
+                && entrypoint["reason"] == "C# web application entrypoint")
+    );
+    assert!(
+        entrypoints
+            .iter()
+            .any(|entrypoint| entrypoint["file"] == "src/Startup.cs"
+                && entrypoint["role"] == "source"
+                && entrypoint["reason"] == "C# web application entrypoint")
+    );
 
     let context = run_json([
         "context-pack",
         fixture.path().to_str().unwrap(),
         "--task",
-        "understand startup flow",
+        "understand launch sequence",
         "--token-budget",
         "1200",
     ]);
@@ -7444,6 +7458,27 @@ from django.urls import path
 urlpatterns = [
     path("", lambda request: None),
 ]
+"#,
+    );
+    write_file(
+        &dir,
+        "src/Program.cs",
+        r#"
+var builder = WebApplication.CreateBuilder(args);
+var app = builder.Build();
+app.Run();
+"#,
+    );
+    write_file(
+        &dir,
+        "src/Startup.cs",
+        r#"
+public class Startup
+{
+    public void Configure()
+    {
+    }
+}
 "#,
     );
 
