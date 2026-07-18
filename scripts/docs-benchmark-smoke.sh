@@ -564,6 +564,9 @@ main() {
     'CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/mcp-first-call-smoke\.sh' \
     "README MCP first-call smoke command"
   require_pattern README.md \
+    'returns the first context file, follows `reading_plan\[\]`, runs the current step'\''s suggested tool' \
+    "README MCP first-call value proof"
+  require_pattern README.md \
     'CLI `agent-route`, MCP stdio, and MCP `agent_route`' \
     "README installed adoption coverage"
   require_pattern docs/quickstart.md \
@@ -758,6 +761,12 @@ main() {
   require_pattern scripts/mcp-first-call-artifact-smoke.sh \
     'suggested_tool_executed == true' \
     "MCP first-call artifact suggested tool validation"
+  require_pattern scripts/mcp-first-call-artifact-smoke.sh \
+    'execution_plan_reads_in_reading_plan_order == true' \
+    "MCP first-call artifact reading order validation"
+  require_pattern scripts/mcp-first-call-artifact-smoke.sh \
+    'current_step_suggested_tool_matches_reading_plan == true' \
+    "MCP first-call artifact suggested tool handoff validation"
   require_pattern scripts/mcp-first-call-artifact-smoke.sh \
     'first_reading_question' \
     "MCP first-call artifact first reading question output"
@@ -1136,6 +1145,9 @@ main() {
   require_pattern docs/mcp-client-config.md \
     '`route_tools`, `selected_files`, `execution_plan_actions`' \
     "MCP client config first-call JSON fields"
+  require_pattern docs/mcp-client-config.md \
+    '`reading_plan\[\]`, suggested-tool handoff checks' \
+    "MCP client config first-call handoff fields"
   require_pattern docs/mcp-client-config.md \
     'Expected summary shape:' \
     "MCP client config first-call summary example"

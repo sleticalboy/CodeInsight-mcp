@@ -222,7 +222,8 @@ checks that `agent_route.execution_plan[].suggested_tool` executes through MCP
 
 For a shorter copyable check, run `scripts/mcp-first-call-smoke.sh`. It prints
 a JSON summary with `route_tools`, `selected_files`, `execution_plan_actions`,
-`suggested_tool`, `suggested_tool_executed`, and `impact_status`.
+the first context file, `reading_plan[]`, suggested-tool handoff checks,
+`suggested_tool_executed`, and `impact_status`.
 
 Expected summary shape:
 
@@ -237,12 +238,27 @@ Expected summary shape:
     "impact_analysis"
   ],
   "selected_files": ["src/main.ts", "src/auth.ts"],
+  "first_context_file": "src/main.ts",
+  "first_reading_file": "src/main.ts",
+  "reading_plan": [
+    {
+      "file": "src/main.ts",
+      "next_action": "inspect_seed_file",
+      "question": "What entrypoints, exported symbols, or setup code define the main flow here?",
+      "reason": "Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file",
+      "selection_reason": "Selected for high relevance via seed_file",
+      "suggested_tool": "file_outline"
+    }
+  ],
   "execution_plan_actions": [
     "read_selected_context",
     "use_current_reading_step_suggested_tool",
     "use_continuation_if_needed",
     "review_impact_before_edits"
   ],
+  "execution_plan_reads_in_reading_plan_order": true,
+  "current_step_suggested_tool_matches_reading_plan": true,
+  "continuation_after_selected_context": true,
   "suggested_tool": {
     "tool": "file_outline",
     "arguments": {

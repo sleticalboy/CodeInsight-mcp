@@ -148,7 +148,7 @@ Use the narrowest check that matches where you are in adoption:
 | Situation | Command | What It Proves |
 | --- | --- | --- |
 | You want a visible product walkthrough | `scripts/two-minute-demo.sh` | `agent_route` selects bounded context, prints `[Evidence summary]`, and frames the pre-edit impact check. |
-| You want a copyable first MCP call summary | `scripts/mcp-first-call-smoke.sh` | The stdio server accepts `agent_route` and returns `route_tools`, `selected_files`, `execution_plan_actions`, `suggested_tool`, and `impact_status` as JSON. |
+| You want a copyable first MCP call summary | `scripts/mcp-first-call-smoke.sh` | The stdio server accepts `agent_route` and returns the first context file, `reading_plan[]`, execution plan contract checks, `suggested_tool_executed`, and `impact_status` as JSON. |
 | You are wiring an MCP client from this checkout | `scripts/mcp-stdio-smoke.sh` | The stdio server lists tools, runs `agent_route`, and executes `agent_route.execution_plan[].suggested_tool` through MCP. |
 | You installed `codeinsight` and want an adoption gate | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh` | The installed binary can run CLI and MCP first-read routes against a temporary project outside this checkout. |
 | You need adoption comparison evidence | `scripts/adoption-comparison.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-comparison` | A blind-read vs routed-first-read report with source lines avoided, read-less ratio, seed strategy, and first reading question. |
@@ -165,8 +165,8 @@ scripts/mcp-stdio-smoke.sh
 
 `mcp-first-call-smoke.sh` prints a compact JSON summary for the first MCP
 `agent_route` call. Use it when you want to confirm the server, route, selected
-files, execution plan, suggested tool, and impact preview without reading the
-full protocol smoke log.
+files, reading plan order, suggested tool handoff, and impact preview without
+reading the full protocol smoke log.
 
 Run `scripts/mcp-first-call-smoke.sh --help` to see the supported environment
 variables for binary path, target repository, task, and token budget.
@@ -187,10 +187,15 @@ Expected output shape:
     "impact_analysis"
   ],
   "selected_files": ["src/main.ts", "src/auth.ts"],
+  "first_context_file": "src/main.ts",
+  "first_reading_file": "src/main.ts",
   "reading_plan": [
     {
       "file": "src/main.ts",
+      "next_action": "inspect_seed_file",
       "question": "What entrypoints, exported symbols, or setup code define the main flow here?",
+      "reason": "Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file",
+      "selection_reason": "Selected for high relevance via seed_file",
       "suggested_tool": "file_outline"
     }
   ],
@@ -200,6 +205,9 @@ Expected output shape:
     "use_continuation_if_needed",
     "review_impact_before_edits"
   ],
+  "execution_plan_reads_in_reading_plan_order": true,
+  "current_step_suggested_tool_matches_reading_plan": true,
+  "continuation_after_selected_context": true,
   "suggested_tool": {
     "tool": "file_outline",
     "arguments": {

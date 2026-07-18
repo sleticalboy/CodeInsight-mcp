@@ -211,8 +211,26 @@ main() {
     '"reading_plan": \[' \
     "quickstart MCP first-call reading plan"
   require_pattern docs/quickstart.md \
+    '"first_context_file": "src/main\.ts"' \
+    "quickstart MCP first-call first context file"
+  require_pattern docs/quickstart.md \
+    '"first_reading_file": "src/main\.ts"' \
+    "quickstart MCP first-call first reading file"
+  require_pattern docs/quickstart.md \
+    '"next_action": "inspect_seed_file"' \
+    "quickstart MCP first-call next action"
+  require_pattern docs/quickstart.md \
     '"question": "What entrypoints' \
     "quickstart MCP first-call reading question"
+  require_pattern docs/quickstart.md \
+    '"execution_plan_reads_in_reading_plan_order": true' \
+    "quickstart MCP first-call reading order contract"
+  require_pattern docs/quickstart.md \
+    '"current_step_suggested_tool_matches_reading_plan": true' \
+    "quickstart MCP first-call suggested tool contract"
+  require_pattern docs/quickstart.md \
+    '"continuation_after_selected_context": true' \
+    "quickstart MCP first-call continuation contract"
   require_pattern docs/quickstart.md \
     '"suggested_tool_executed": true' \
     "quickstart MCP first-call suggested tool execution"
