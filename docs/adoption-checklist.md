@@ -205,6 +205,14 @@ Pass criteria:
   `use_current_reading_step_suggested_tool`, `use_continuation_if_needed`, and
   `review_impact_before_edits`.
 - `agent_route.context_pack.reading_plan[]` is present.
+- Client UI or agent policy treats `read_selected_context` as the first active
+  step.
+- Suggested-tool controls are disabled or visually secondary until the matching
+  selected context file has been read.
+- Continuation controls are hidden, disabled, or visually secondary until the
+  selected context has been consumed and the task still needs more evidence.
+- Impact-review controls are shown before edits and are not labeled as a
+  safety guarantee.
 - The client can call `index_project` for a local repository.
 - The client can call `project_overview` after indexing when step-by-step
   routing is needed.
@@ -239,6 +247,10 @@ Pass criteria:
 - The agent does not execute `continuation_summary.suggested_tool` or
   `omitted_candidates[].suggested_tool` until the selected `files[]` excerpts
   have been read.
+- The agent does not execute `reading_plan[].suggested_tool` until the matching
+  selected context file has been read.
+- The agent reviews `impact_analysis` before edits without treating it as proof
+  that the edit is safe.
 - The agent does not immediately fall back to broad `rg` / `cat` exploration
   unless CodeInsight points to a file or the user asks for a specific location.
 
@@ -339,6 +351,8 @@ CodeInsight is successfully adopted when:
 - The agent follows `reading_plan[].question` and `reading_plan[].reason`, can
   surface `reading_plan[].selection_reason`, and waits to use continuation
   tools until selected context has been read.
+- Suggested-tool and continuation controls are gated behind selected-context
+  reading, and impact review is required before edits.
 - `impact_analysis` is used before edits.
 - Local smoke or benchmark evidence can be reproduced on at least one real
   repository.

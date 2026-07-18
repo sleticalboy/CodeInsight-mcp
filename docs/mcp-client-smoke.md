@@ -67,6 +67,12 @@ It also asserts the MCP-facing structured fields that clients commonly render:
   `suggested_tool`
 - second `agent_route.execution_plan[]` suggested tool executes through
   MCP `tools/call`
+- suggested-tool execution is proof the follow-up call is usable, not permission
+  to run it before selected context is read
+- continuation follow-ups remain gated behind selected-context reading even
+  when omitted candidates expose ready MCP calls
+- `review_impact_before_edits` remains the pre-edit planning checkpoint, not a
+  safety guarantee
 - explicit and auto `context_pack.reading_plan`
 - `context_pack.reading_plan[].next_action` and `question`
 - `context_pack.reading_plan[].suggested_tool`
@@ -127,6 +133,9 @@ step, seed symbol, and token budget.
 route unless the contract changes deliberately.
 `agent_route_suggested_tool_executed` should remain `true`; it verifies the
 execution-plan suggested tool is a usable MCP call, not only display metadata.
+Clients should still gate that action behind selected-context reading. The
+smoke proves protocol usability; it does not change the first-read ordering
+contract.
 
 ## Troubleshooting
 

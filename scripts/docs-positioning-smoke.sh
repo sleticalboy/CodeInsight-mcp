@@ -531,6 +531,24 @@ main() {
     'does not execute `continuation_summary\.suggested_tool`' \
     "adoption continuation ordering"
   require_pattern docs/adoption-checklist.md \
+    'Suggested-tool controls are disabled or visually secondary until the matching' \
+    "adoption suggested tool UI gate"
+  require_pattern docs/adoption-checklist.md \
+    'Continuation controls are hidden, disabled, or visually secondary until the' \
+    "adoption continuation UI gate"
+  require_pattern docs/adoption-checklist.md \
+    'Impact-review controls are shown before edits' \
+    "adoption impact UI gate"
+  require_pattern docs/adoption-checklist.md \
+    'does not execute `reading_plan\[\]\.suggested_tool` until the matching' \
+    "adoption suggested tool ordering"
+  require_pattern docs/adoption-checklist.md \
+    'without treating it as proof' \
+    "adoption impact safety boundary"
+  require_pattern docs/adoption-checklist.md \
+    'Suggested-tool and continuation controls are gated behind selected-context' \
+    "adoption complete UI gate"
+  require_pattern docs/adoption-checklist.md \
     '`reading_plan\[0\]\.reason` is present' \
     "adoption context-pack reason gate"
   require_pattern docs/adoption-checklist.md \

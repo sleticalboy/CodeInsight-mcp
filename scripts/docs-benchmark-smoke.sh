@@ -1214,6 +1214,18 @@ main() {
   require_pattern docs/mcp-client-smoke.md \
     'suggested tool is a usable MCP call' \
     "MCP client smoke execution-plan suggested tool contract"
+  require_pattern docs/mcp-client-smoke.md \
+    'not permission' \
+    "MCP client smoke suggested tool ordering boundary"
+  require_pattern docs/mcp-client-smoke.md \
+    'continuation follow-ups remain gated behind selected-context reading' \
+    "MCP client smoke continuation ordering boundary"
+  require_pattern docs/mcp-client-smoke.md \
+    '`review_impact_before_edits` remains the pre-edit planning checkpoint' \
+    "MCP client smoke impact checkpoint boundary"
+  require_pattern docs/mcp-client-smoke.md \
+    'smoke proves protocol usability; it does not change the first-read ordering' \
+    "MCP client smoke protocol usability boundary"
   require_pattern docs/mcp-client-config.md \
     '^## First Agent Route Call$' \
     "MCP client config first agent route section"
