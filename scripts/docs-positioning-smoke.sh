@@ -136,6 +136,9 @@ main() {
   require_pattern README.md \
     'MCP first-call contract: reading_order=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`' \
     "README MCP first-call contract evidence"
+  require_pattern README.md \
+    '\[CodeInsight self adoption report\]\(docs/adoption-report-codeinsight\.md\)' \
+    "README self adoption report evidence"
 
   require_pattern docs/README.md \
     '\[First-read workflow\]\(first-read-workflow\.md\)' \

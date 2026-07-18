@@ -96,6 +96,9 @@ Pass criteria:
   [Memchr adoption case](adoption-case-memchr.md), and
   [Requests adoption case](adoption-case-requests.md) as reference shapes for
   public repository comparison snapshots.
+- Use the [CodeInsight self adoption report](adoption-report-codeinsight.md) as
+  the reference shape for complete `tar.gz` report handoffs that include the
+  issue template, manifest, raw MCP first-call JSON, and diagnostic logs.
 - Run `scripts/update-adoption-case.sh express` to refresh that checked-in case
   from a live `adoption-comparison` run. The older
   `scripts/update-adoption-case-express.sh` wrapper delegates to the same path.

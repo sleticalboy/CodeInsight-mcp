@@ -19,6 +19,7 @@ Default adoption path:
 - [Demo script](demo-script.md)
 - [Demo output snapshot](demo-output.md)
 - [Adoption cases](adoption-cases.md)
+- [CodeInsight self adoption report](adoption-report-codeinsight.md)
 - [Express adoption case](adoption-case-express.md)
 - [Gin adoption case](adoption-case-gin.md)
 - [Memchr adoption case](adoption-case-memchr.md)
@@ -65,6 +66,7 @@ Choose the check by adoption stage:
 | MCP client wiring | `scripts/mcp-stdio-smoke.sh` |
 | Installed-binary adoption gate | `scripts/installed-quickstart-smoke.sh` |
 | Adoption comparison evidence | `scripts/adoption-comparison.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-comparison` |
+| Uploadable adoption report | `scripts/adoption-report.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-report` |
 | Local repository benchmark | `CODEINSIGHT_BENCH_PROFILE=local ... scripts/benchmark-smoke.sh` |
 
 - [Maintenance commands](maintenance-commands.md)
@@ -79,6 +81,7 @@ Choose the check by adoption stage:
 - [Semantic smoke test](semantic-smoke.md)
 - [Benchmark methodology](benchmark-methodology.md)
 - [Adoption cases](adoption-cases.md)
+- [CodeInsight self adoption report](adoption-report-codeinsight.md)
 - [Express adoption case](adoption-case-express.md)
 - [Gin adoption case](adoption-case-gin.md)
 - [Memchr adoption case](adoption-case-memchr.md)

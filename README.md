@@ -169,6 +169,9 @@ entrypoint and recommended-tool routing decisions from `project_overview`:
 - [Adoption cases](docs/adoption-cases.md): public repository blind-read vs
   routed-first-read comparison summary across JavaScript, Go, Rust, and Python
   public repositories.
+- [CodeInsight self adoption report](docs/adoption-report-codeinsight.md): a
+  complete report bundle snapshot with issue template, manifest, raw MCP
+  first-call JSON, and diagnostic logs.
 - [Benchmark methodology](docs/benchmark-methodology.md): what the reports
   prove, refresh commands, profile knobs, and guardrails.
 
@@ -190,6 +193,9 @@ Current benchmark snapshot:
 - The adoption case summary covers 4 public repositories and routes a first read
   to 1,585 of 126,990 source lines, avoiding 125,405 lines before broad file
   reading, a 98.8% aggregate reduction and 80.1x aggregate read-less ratio.
+- The CodeInsight self adoption report packages a full tar.gz handoff and
+  routes the entrypoint task to 439 of 28,433 source lines, a 98.5% first-read
+  reduction, while the MCP first-call contract fields all pass.
 - Per-repository adoption metrics, commits, and refresh commands live in
   [Adoption cases](docs/adoption-cases.md).
 - Generated reports include a `Key Results` section with routing,
@@ -271,6 +277,7 @@ Key docs:
 - [Demo script](docs/demo-script.md)
 - [Demo output snapshot](docs/demo-output.md)
 - [Adoption cases](docs/adoption-cases.md)
+- [CodeInsight self adoption report](docs/adoption-report-codeinsight.md)
 - [Express adoption case](docs/adoption-case-express.md)
 - [Gin adoption case](docs/adoption-case-gin.md)
 - [Memchr adoption case](docs/adoption-case-memchr.md)

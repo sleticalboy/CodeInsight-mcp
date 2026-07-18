@@ -104,11 +104,17 @@ main() {
     '\[Adoption cases\]\(docs/adoption-cases\.md\)' \
     "README adoption cases summary link"
   require_pattern README.md \
+    '\[CodeInsight self adoption report\]\(docs/adoption-report-codeinsight\.md\)' \
+    "README self adoption report link"
+  require_pattern README.md \
     '1,585 of 126,990 source lines' \
     "README adoption cases aggregate snapshot"
   require_pattern README.md \
     '80\.1x aggregate read-less ratio' \
     "README adoption cases aggregate read-less ratio"
+  require_pattern README.md \
+    'routes the entrypoint task to 439 of 28,433 source lines, a 98\.5% first-read' \
+    "README self adoption report metric"
   "$ROOT_DIR/scripts/readme-adoption-summary-smoke.sh" >/dev/null
   require_pattern README.md \
     '\[Benchmark methodology\]\(docs/benchmark-methodology\.md\)' \
@@ -198,6 +204,9 @@ main() {
     '\[Requests adoption case\]\(adoption-case-requests\.md\)' \
     "adoption checklist Requests case link"
   require_pattern docs/adoption-checklist.md \
+    '\[CodeInsight self adoption report\]\(adoption-report-codeinsight\.md\)' \
+    "adoption checklist self report link"
+  require_pattern docs/adoption-checklist.md \
     'scripts/update-adoption-case\.sh express' \
     "adoption checklist Express refresh command"
   require_pattern docs/adoption-checklist.md \
@@ -224,6 +233,12 @@ main() {
   require_pattern docs/README.md \
     '\[Adoption cases\]\(adoption-cases\.md\)' \
     "docs index adoption cases summary link"
+  require_pattern docs/README.md \
+    '\[CodeInsight self adoption report\]\(adoption-report-codeinsight\.md\)' \
+    "docs index self adoption report link"
+  require_pattern docs/README.md \
+    'Uploadable adoption report' \
+    "docs index uploadable adoption report validation row"
   require_pattern docs/README.md \
     '\[Express adoption case\]\(adoption-case-express\.md\)' \
     "docs index Express adoption case link"
@@ -335,6 +350,24 @@ main() {
   require_pattern docs/adoption-cases.md \
     '\[case\]\(adoption-case-requests\.md\)' \
     "adoption cases Requests detail link"
+  require_pattern docs/adoption-report-codeinsight.md \
+    'CodeInsight routed first-read \| `439` source lines' \
+    "CodeInsight self adoption report routed lines"
+  require_pattern docs/adoption-report-codeinsight.md \
+    'First-read reduction \| `98\.5%`' \
+    "CodeInsight self adoption report reduction"
+  require_pattern docs/adoption-report-codeinsight.md \
+    'Reading order starts with selected context \| `true`' \
+    "CodeInsight self adoption report reading order contract"
+  require_pattern docs/adoption-report-codeinsight.md \
+    'Suggested tool executed through MCP `tools/call` \| `true`' \
+    "CodeInsight self adoption report suggested tool contract"
+  require_pattern docs/adoption-report-codeinsight.md \
+    '/tmp/codeinsight-self-adoption-report\.tar\.gz' \
+    "CodeInsight self adoption report archive path"
+  require_pattern docs/adoption-report-codeinsight.md \
+    'mcp-first-call\.json' \
+    "CodeInsight self adoption report MCP artifact"
   "$ROOT_DIR/scripts/update-adoption-cases.sh" --check >/dev/null
   require_pattern scripts/update-adoption-case.sh \
     'Refreshes a checked-in adoption case from a live adoption-comparison run' \
