@@ -110,7 +110,8 @@ Framework-oriented file signals are also included for common first-read
 surfaces such as Next.js app router files (`app/page.tsx`,
 `app/layout.tsx`, `app/**/route.ts`), Next.js pages bootstrap files
 (`pages/_app.tsx`, `pages/_document.tsx`), Rails `config/routes.rb`, and Java
-`*Application.java` files.
+`*Application.java` files. Python web framework signals include `manage.py`,
+`asgi.py`, `wsgi.py`, and `urls.py`.
 
 `recommended_next_tools` contains MCP-ready `tool`, `priority`, `reason`, and
 `suggested_arguments` entries for likely next calls such as `context_pack`,

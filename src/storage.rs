@@ -2796,6 +2796,8 @@ fn file_entrypoint_signal(file: &str) -> Option<(usize, String)> {
         Some((82, "Next.js pages bootstrap entrypoint".to_string()))
     } else if path == "config/routes.rb" || path.ends_with("/config/routes.rb") {
         Some((82, "Rails route entrypoint".to_string()))
+    } else if is_python_web_entrypoint(&path, &basename) {
+        Some((79, "Python web framework entrypoint".to_string()))
     } else if basename == "lib.rs" {
         Some((90, "Rust library root".to_string()))
     } else if basename == "mod.rs" {
@@ -2825,6 +2827,17 @@ fn is_next_app_router_entrypoint(path: &str, basename: &str) -> bool {
 fn is_next_pages_entrypoint(path: &str, basename: &str) -> bool {
     (path.starts_with("pages/") || path.contains("/pages/"))
         && (basename.starts_with("_app.") || basename.starts_with("_document."))
+}
+
+fn is_python_web_entrypoint(path: &str, basename: &str) -> bool {
+    basename == "manage.py"
+        || basename == "asgi.py"
+        || basename == "wsgi.py"
+        || basename == "urls.py"
+        || path.ends_with("/manage.py")
+        || path.ends_with("/asgi.py")
+        || path.ends_with("/wsgi.py")
+        || path.ends_with("/urls.py")
 }
 
 fn path_role(path: &str) -> &'static str {

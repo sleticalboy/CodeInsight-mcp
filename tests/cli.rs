@@ -5415,6 +5415,20 @@ fn cli_overview_detects_framework_entrypoint_files() {
         == "src/BillingApplication.java"
         && entrypoint["role"] == "source"
         && entrypoint["reason"] == "Java application entrypoint naming"));
+    assert!(
+        entrypoints
+            .iter()
+            .any(|entrypoint| entrypoint["file"] == "manage.py"
+                && entrypoint["role"] == "source"
+                && entrypoint["reason"] == "Python web framework entrypoint")
+    );
+    assert!(
+        entrypoints
+            .iter()
+            .any(|entrypoint| entrypoint["file"] == "project/urls.py"
+                && entrypoint["role"] == "source"
+                && entrypoint["reason"] == "Python web framework entrypoint")
+    );
 
     let context = run_json([
         "context-pack",
@@ -5450,6 +5464,22 @@ fn cli_overview_detects_framework_entrypoint_files() {
         "routes"
     );
     assert_eq!(route_context["files"][0]["file"], "config/routes.rb");
+
+    let url_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand django urls",
+        "--token-budget",
+        "1200",
+    ]);
+    assert_eq!(url_context["seed_strategy"], "auto_entrypoint");
+    assert_eq!(url_context["selected_seeds"][0]["value"], "project/urls.py");
+    assert_eq!(
+        url_context["selected_seeds"][0]["matched_keywords"][0],
+        "urls"
+    );
+    assert_eq!(url_context["files"][0]["file"], "project/urls.py");
 }
 
 #[test]
@@ -7375,6 +7405,45 @@ package fixture;
 
 public class BillingApplication {
 }
+"#,
+    );
+    write_file(
+        &dir,
+        "manage.py",
+        r#"
+from django.core.management import execute_from_command_line
+
+if __name__ == "__main__":
+    execute_from_command_line()
+"#,
+    );
+    write_file(
+        &dir,
+        "project/asgi.py",
+        r#"
+from django.core.asgi import get_asgi_application
+
+application = get_asgi_application()
+"#,
+    );
+    write_file(
+        &dir,
+        "project/wsgi.py",
+        r#"
+from django.core.wsgi import get_wsgi_application
+
+application = get_wsgi_application()
+"#,
+    );
+    write_file(
+        &dir,
+        "project/urls.py",
+        r#"
+from django.urls import path
+
+urlpatterns = [
+    path("", lambda request: None),
+]
 "#,
     );
 
