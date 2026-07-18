@@ -5382,6 +5382,54 @@ class AuthService:
 }
 
 #[test]
+fn cli_overview_detects_framework_entrypoint_files() {
+    let fixture = framework_entrypoint_fixture_project();
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert!(index["indexed_files"].as_u64().unwrap() >= 4);
+
+    let overview = run_json(["overview", fixture.path().to_str().unwrap()]);
+    let entrypoints = overview["entrypoints"].as_array().unwrap();
+    assert!(
+        entrypoints
+            .iter()
+            .any(|entrypoint| entrypoint["file"] == "app/page.tsx"
+                && entrypoint["role"] == "source"
+                && entrypoint["reason"] == "Next.js app router entrypoint")
+    );
+    assert!(
+        entrypoints
+            .iter()
+            .any(|entrypoint| entrypoint["file"] == "pages/_app.tsx"
+                && entrypoint["role"] == "source"
+                && entrypoint["reason"] == "Next.js pages bootstrap entrypoint")
+    );
+    assert!(
+        entrypoints
+            .iter()
+            .any(|entrypoint| entrypoint["file"] == "config/routes.rb"
+                && entrypoint["role"] == "source"
+                && entrypoint["reason"] == "Rails route entrypoint")
+    );
+    assert!(entrypoints.iter().any(|entrypoint| entrypoint["file"]
+        == "src/BillingApplication.java"
+        && entrypoint["role"] == "source"
+        && entrypoint["reason"] == "Java application entrypoint naming"));
+
+    let context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand startup flow",
+        "--token-budget",
+        "1200",
+    ]);
+    assert_eq!(context["seed_strategy"], "auto_entrypoint");
+    assert_eq!(context["selected_seeds"][0]["value"], "app/page.tsx");
+    assert_eq!(context["files"][0]["file"], "app/page.tsx");
+}
+
+#[test]
 fn cli_impact_analysis_reports_depth_paths() {
     let fixture = TempDir::new().unwrap();
     write_file(
@@ -7260,6 +7308,49 @@ import "fmt"
 
 func Login() {
   fmt.Println("login")
+}
+"#,
+    );
+
+    dir
+}
+
+fn framework_entrypoint_fixture_project() -> TempDir {
+    let dir = TempDir::new().unwrap();
+    write_file(
+        &dir,
+        "app/page.tsx",
+        r#"
+export default function Page() {
+  return <main>Dashboard</main>;
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "pages/_app.tsx",
+        r#"
+export default function App({ Component, pageProps }) {
+  return <Component {...pageProps} />;
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "config/routes.rb",
+        r#"
+Rails.application.routes.draw do
+  root "dashboard#index"
+end
+"#,
+    );
+    write_file(
+        &dir,
+        "src/BillingApplication.java",
+        r#"
+package fixture;
+
+public class BillingApplication {
 }
 "#,
     );

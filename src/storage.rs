@@ -2790,6 +2790,12 @@ fn file_entrypoint_signal(file: &str) -> Option<(usize, String)> {
     let path = file.to_ascii_lowercase();
     if basename.starts_with("main.") {
         Some((100, "conventional main file".to_string()))
+    } else if is_next_app_router_entrypoint(&path, &basename) {
+        Some((82, "Next.js app router entrypoint".to_string()))
+    } else if is_next_pages_entrypoint(&path, &basename) {
+        Some((82, "Next.js pages bootstrap entrypoint".to_string()))
+    } else if path == "config/routes.rb" || path.ends_with("/config/routes.rb") {
+        Some((82, "Rails route entrypoint".to_string()))
     } else if basename == "lib.rs" {
         Some((90, "Rust library root".to_string()))
     } else if basename == "mod.rs" {
@@ -2802,9 +2808,23 @@ fn file_entrypoint_signal(file: &str) -> Option<(usize, String)> {
         Some((70, "server entrypoint naming".to_string()))
     } else if path.contains("/cli.") || basename.starts_with("cli.") {
         Some((65, "CLI entrypoint naming".to_string()))
+    } else if basename.ends_with("application.java") {
+        Some((62, "Java application entrypoint naming".to_string()))
     } else {
         None
     }
+}
+
+fn is_next_app_router_entrypoint(path: &str, basename: &str) -> bool {
+    (path.starts_with("app/") || path.contains("/app/"))
+        && (basename.starts_with("page.")
+            || basename.starts_with("layout.")
+            || basename.starts_with("route."))
+}
+
+fn is_next_pages_entrypoint(path: &str, basename: &str) -> bool {
+    (path.starts_with("pages/") || path.contains("/pages/"))
+        && (basename.starts_with("_app.") || basename.starts_with("_document."))
 }
 
 fn path_role(path: &str) -> &'static str {
