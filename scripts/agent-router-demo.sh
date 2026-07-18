@@ -117,7 +117,9 @@ main() {
   require_json_string "$context_json" '.reading_plan[0].next_action' "first reading-plan next action"
   require_json_string "$context_json" '.reading_plan[0].question' "first reading-plan question"
   require_json_string "$context_json" '.reading_plan[0].reason' "first reading-plan reason"
+  require_json_number_gt_zero "$context_json" '.reading_plan[0].selection_rank' "first reading-plan selection rank"
   require_json_string "$context_json" '.reading_plan[0].selection_reason' "first reading-plan selection reason"
+  require_json_string "$context_json" '.continuation_summary.next_action' "continuation next action"
 
   if [ -z "$IMPACT_FILE" ]; then
     IMPACT_FILE="$(json_value "$context_json" '.files[0].file // empty')"
@@ -132,7 +134,8 @@ main() {
   fi
 
   local total_lines selected_lines reduction first_entrypoint first_context_file
-  local first_next_action first_reading_question first_reading_plan_reason first_selection_reason
+  local first_next_action first_reading_question first_reading_plan_reason first_selection_rank
+  local first_selection_reason continuation_next_action
   total_lines="$(json_value "$overview_json" '.total_lines // 0')"
   selected_lines="$(selected_context_lines "$context_json")"
   reduction="$(line_reduction "$total_lines" "$selected_lines")"
@@ -141,7 +144,9 @@ main() {
   first_next_action="$(json_value "$context_json" '.reading_plan[0].next_action // "-"')"
   first_reading_question="$(json_value "$context_json" '.reading_plan[0].question // "-"')"
   first_reading_plan_reason="$(json_value "$context_json" '.reading_plan[0].reason // "-"')"
+  first_selection_rank="$(json_value "$context_json" '.reading_plan[0].selection_rank // 0')"
   first_selection_reason="$(json_value "$context_json" '.reading_plan[0].selection_reason // "-"')"
+  continuation_next_action="$(json_value "$context_json" '.continuation_summary.next_action // "-"')"
 
   echo "1. index_project"
   echo "   indexed_files: $(json_value "$index_json" '.indexed_files')"
@@ -167,8 +172,10 @@ main() {
   echo "   line_reduction: $reduction"
   echo "   estimated_tokens: $(json_value "$context_json" '.estimated_tokens')"
   echo "   continuation: $(json_value "$context_json" '.continuation_summary.status // "-"')"
+  echo "   continuation_next_action: $continuation_next_action"
   echo "   first_context_file: $first_context_file"
   echo "   reading_plan_reason: $first_reading_plan_reason"
+  echo "   selection_rank: $first_selection_rank"
   echo "   selection_reason: $first_selection_reason"
   echo
 

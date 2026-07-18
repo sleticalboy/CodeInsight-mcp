@@ -1245,8 +1245,14 @@ main() {
     'reading_plan_reason' \
     "agent-router reading-plan reason output"
   require_pattern scripts/agent-router-demo.sh \
+    'selection_rank' \
+    "agent-router selection rank output"
+  require_pattern scripts/agent-router-demo.sh \
     'selection_reason' \
     "agent-router selection reason output"
+  require_pattern scripts/agent-router-demo.sh \
+    'continuation_next_action' \
+    "agent-router continuation next action output"
   require_pattern scripts/agent-router-demo.sh \
     'impact_breakdown\.call_related_files' \
     "agent-router impact breakdown output"
@@ -1262,6 +1268,12 @@ main() {
   require_pattern scripts/agent-router-demo.sh \
     'require_json_string "\$context_json" '\''\.reading_plan\[0\]\.reason'\''' \
     "agent-router reading-plan reason assertion"
+  require_pattern scripts/agent-router-demo.sh \
+    'require_json_number_gt_zero "\$context_json" '\''\.reading_plan\[0\]\.selection_rank'\''' \
+    "agent-router selection rank assertion"
+  require_pattern scripts/agent-router-demo.sh \
+    'require_json_string "\$context_json" '\''\.continuation_summary\.next_action'\''' \
+    "agent-router continuation next action assertion"
   require_pattern tests/cli.rs \
     'context\["reading_plan"\]\[0\]\["selection_rank"\]' \
     "CLI context-pack reading-plan selection rank assertion"

@@ -74,7 +74,8 @@ Choose the check by adoption stage:
 - MCP first-call JSON summary: `scripts/mcp-first-call-smoke.sh`
 - Installed first-read route: `scripts/installed-quickstart-smoke.sh`
 - Adoption comparison evidence: `scripts/adoption-comparison.sh`
-- Agent-router lower-level metrics and reasons: `scripts/agent-router-demo.sh`
+- Agent-router lower-level metrics, rank evidence, and continuation action:
+  `scripts/agent-router-demo.sh`
 - [Two-minute demo script](demo-script.md)
 - [Two-minute demo output snapshot](demo-output.md)
 - [MCP client smoke test](mcp-client-smoke.md)
