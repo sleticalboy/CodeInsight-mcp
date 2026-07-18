@@ -106,6 +106,11 @@ language, and top-directory stats, and adds:
 `test`, `fixture`, `vendor`, `docs`, or `example`. Entrypoints are heuristic
 candidates based on conventional file names and entry-like symbols such as
 `main`, with a normalized `confidence` score.
+Framework-oriented file signals are also included for common first-read
+surfaces such as Next.js app router files (`app/page.tsx`,
+`app/layout.tsx`, `app/**/route.ts`), Next.js pages bootstrap files
+(`pages/_app.tsx`, `pages/_document.tsx`), Rails `config/routes.rb`, and Java
+`*Application.java` files.
 
 `recommended_next_tools` contains MCP-ready `tool`, `priority`, `reason`, and
 `suggested_arguments` entries for likely next calls such as `context_pack`,

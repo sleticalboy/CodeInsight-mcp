@@ -692,6 +692,15 @@ main() {
   require_pattern docs/release-readiness.md \
     'report `Key Results` should agree on `context_pack` first-tool' \
     "release readiness key results consistency"
+  require_pattern docs/first-read-workflow.md \
+    'Framework-oriented file signals are also included' \
+    "first-read workflow framework entrypoint signals"
+  require_pattern docs/first-read-workflow.md \
+    'Rails `config/routes\.rb`, and Java' \
+    "first-read workflow Rails and Java entrypoints"
+  require_pattern docs/status.md \
+    'Framework-oriented entrypoint signals' \
+    "status framework entrypoint signals"
   require_pattern docs/release-readiness.md \
     '`benchmark-subset-smoke` job summary' \
     "release readiness CI benchmark summary guidance"
