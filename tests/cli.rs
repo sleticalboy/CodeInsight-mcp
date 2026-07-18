@@ -5427,6 +5427,29 @@ fn cli_overview_detects_framework_entrypoint_files() {
     assert_eq!(context["seed_strategy"], "auto_entrypoint");
     assert_eq!(context["selected_seeds"][0]["value"], "app/page.tsx");
     assert_eq!(context["files"][0]["file"], "app/page.tsx");
+
+    let route_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand routes",
+        "--token-budget",
+        "1200",
+    ]);
+    assert_eq!(route_context["seed_strategy"], "auto_entrypoint");
+    assert_eq!(
+        route_context["selected_seeds"][0]["value"],
+        "config/routes.rb"
+    );
+    assert_eq!(
+        route_context["selected_seeds"][0]["source"],
+        "overview_entrypoint"
+    );
+    assert_eq!(
+        route_context["selected_seeds"][0]["matched_keywords"][0],
+        "routes"
+    );
+    assert_eq!(route_context["files"][0]["file"], "config/routes.rb");
 }
 
 #[test]
