@@ -515,8 +515,11 @@ main() {
     'first_reading_question' \
     "benchmark first reading question guardrail"
   require_pattern scripts/benchmark-smoke.sh \
-    '\| File \| Question \| Next action \| Suggested tool \| Reason \| Selection reason \|' \
-    "benchmark reading-plan question column"
+    'first_selection_rank' \
+    "benchmark first selection rank guardrail"
+  require_pattern scripts/benchmark-smoke.sh \
+    '\| File \| Rank \| Question \| Next action \| Suggested tool \| Reason \| Selection reason \|' \
+    "benchmark reading-plan rank column"
 
   require_pattern docs/benchmark-v0.1.md \
     '^# CodeInsight v0\.1 Smoke Benchmark$' \
@@ -549,8 +552,8 @@ main() {
     'Context reading plan:' \
     "smoke context reading plan section"
   require_pattern docs/benchmark-v0.1.md \
-    '\| File \| Question \| Next action \| Suggested tool \| Reason \| Selection reason \|' \
-    "smoke context reading plan question column"
+    '\| File \| Rank \| Question \| Next action \| Suggested tool \| Reason \| Selection reason \|' \
+    "smoke context reading plan rank column"
   require_pattern docs/benchmark-v0.1.md \
     '\| `reading_plan_steps` \| >= [0-9]+' \
     "smoke reading plan guardrail"
@@ -560,6 +563,9 @@ main() {
   require_pattern docs/benchmark-v0.1.md \
     '\| `first_reading_reason` \| present \|' \
     "smoke reading reason guardrail"
+  require_pattern docs/benchmark-v0.1.md \
+    '\| `first_selection_rank` \| >= 1 \|' \
+    "smoke selection rank guardrail"
   require_context_guardrail_report_sync smoke docs/benchmark-v0.1.md
 
   require_pattern docs/benchmark-large.md \
@@ -593,8 +599,8 @@ main() {
     'Context reading plan:' \
     "large context reading plan section"
   require_pattern docs/benchmark-large.md \
-    '\| File \| Question \| Next action \| Suggested tool \| Reason \| Selection reason \|' \
-    "large context reading plan question column"
+    '\| File \| Rank \| Question \| Next action \| Suggested tool \| Reason \| Selection reason \|' \
+    "large context reading plan rank column"
   require_pattern docs/benchmark-large.md \
     '\| `reading_plan_steps` \| >= [0-9]+' \
     "large reading plan guardrail"
@@ -604,6 +610,9 @@ main() {
   require_pattern docs/benchmark-large.md \
     '\| `first_reading_reason` \| present \|' \
     "large reading reason guardrail"
+  require_pattern docs/benchmark-large.md \
+    '\| `first_selection_rank` \| >= 1 \|' \
+    "large selection rank guardrail"
   require_context_guardrail_report_sync large docs/benchmark-large.md
   "$ROOT_DIR/scripts/benchmark-report-smoke.sh" "$ROOT_DIR/docs/benchmark-v0.1.md" smoke
   "$ROOT_DIR/scripts/benchmark-report-smoke.sh" "$ROOT_DIR/docs/benchmark-large.md" large

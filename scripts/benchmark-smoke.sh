@@ -509,7 +509,7 @@ validate_context_guardrails() {
   local context_json="$3"
   local output="$4"
   local specs="$5"
-  local total_lines selected_lines first_recommended_tool context_files ranges reading_plan_steps first_next_action first_reading_question first_reading_reason first_selection_reason estimated_tokens applied_budget status min_files min_ranges min_reading_plan_steps max_tokens min_line_reduction
+  local total_lines selected_lines first_recommended_tool context_files ranges reading_plan_steps first_next_action first_reading_question first_reading_reason first_selection_reason first_selection_rank estimated_tokens applied_budget status min_files min_ranges min_reading_plan_steps max_tokens min_line_reduction
 
   : >"$output"
 
@@ -523,6 +523,7 @@ validate_context_guardrails() {
   first_reading_question="$(json_value "$context_json" '.reading_plan[0].question // "-"')"
   first_reading_reason="$(json_value "$context_json" '.reading_plan[0].reason // "-"')"
   first_selection_reason="$(json_value "$context_json" '.reading_plan[0].selection_reason // "-"')"
+  first_selection_rank="$(json_value "$context_json" '.reading_plan[0].selection_rank // 0')"
   estimated_tokens="$(json_value "$context_json" '.estimated_tokens')"
   applied_budget="$(json_value "$context_json" '.budget.applied_token_budget // 0')"
   min_files="$(context_guardrail_value "$specs" "selected_files" "1")"
@@ -572,6 +573,12 @@ validate_context_guardrails() {
     status="fail"
   fi
   write_context_guardrail "$output" "$name" "first_reading_reason" "present" "$first_reading_reason" "$status"
+
+  status="pass"
+  if [ "$first_selection_rank" -lt 1 ]; then
+    status="fail"
+  fi
+  write_context_guardrail "$output" "$name" "first_selection_rank" ">= 1" "$first_selection_rank" "$status"
 
   status="pass"
   if [ -z "$first_selection_reason" ] || [ "$first_selection_reason" = "-" ]; then
@@ -930,6 +937,14 @@ append_detail_section() {
     echo "- Context omitted ranges: $(json_value "$context_json" '.budget.omitted_ranges // 0')"
     echo "- Context truncation reason: $(json_value "$context_json" '.budget.truncation_reason // "none"')"
     echo "- Context continuation status: $(json_value "$context_json" '.continuation_summary.status // "-"')"
+    echo "- Context continuation next action: $(json_value "$context_json" '.continuation_summary.next_action // "-"')"
+    if jq -e '(.omitted_candidates // []) | length > 0' "$context_json" >/dev/null; then
+      echo "- First omitted candidate: \`$(json_value "$context_json" '.omitted_candidates[0].file // "-"')\` (candidate rank $(json_value "$context_json" '.omitted_candidates[0].selection_rank // "-"'))"
+      echo "- First omitted reason: $(json_value "$context_json" '.omitted_candidates[0].omission_reason // "-"')"
+      echo "- First omitted next action: $(json_value "$context_json" '.omitted_candidates[0].next_action // "-"')"
+    else
+      echo "- First omitted candidate: none"
+    fi
     echo "- Context truncated: $(json_value "$context_json" '.truncated')"
     echo
     echo "Entrypoint candidates:"
@@ -985,17 +1000,17 @@ append_detail_section() {
     echo
     echo "Context reading plan:"
     echo
-    echo "| File | Question | Next action | Suggested tool | Reason | Selection reason |"
-    echo "| --- | --- | --- | --- | --- | --- |"
+    echo "| File | Rank | Question | Next action | Suggested tool | Reason | Selection reason |"
+    echo "| --- | ---: | --- | --- | --- | --- | --- |"
   } >>"$REPORT_FILE"
 
   jq -r '
     def clean: tostring | gsub("\\|"; "\\|") | gsub("\n"; " ");
     (.reading_plan[:5] // [])
     | if length == 0 then
-        ["| - | none | - | - | none | none |"]
+        ["| - | 0 | none | - | - | none | none |"]
       else
-        map("| `" + (.file // "-" | clean) + "` | " + (.question // "-" | clean) + " | `" + (.next_action // "-" | clean) + "` | `" + (.suggested_tool.tool // "-" | clean) + "` | " + (.reason // "-" | clean) + " | " + (.selection_reason // "-" | clean) + " |")
+        map("| `" + (.file // "-" | clean) + "` | " + ((.selection_rank // 0) | tostring) + " | " + (.question // "-" | clean) + " | `" + (.next_action // "-" | clean) + "` | `" + (.suggested_tool.tool // "-" | clean) + "` | " + (.reason // "-" | clean) + " | " + (.selection_reason // "-" | clean) + " |")
       end
     | .[]
   ' "$context_json" >>"$REPORT_FILE"

@@ -76,7 +76,9 @@ main() {
   require_literal "Recommended next tools:" "recommended tools detail section"
   require_literal "Context pack files:" "context-pack files detail section"
   require_literal "Context reading plan:" "context reading-plan detail section"
-  require_literal "| File | Question | Next action | Suggested tool | Reason | Selection reason |" "context reading-plan question column"
+  require_literal "| File | Rank | Question | Next action | Suggested tool | Reason | Selection reason |" "context reading-plan rank column"
+  require_literal "- Context continuation next action:" "continuation next action detail"
+  require_literal "- First omitted candidate:" "omitted candidate detail"
   require_literal "What entrypoints, exported symbols, or setup code define the main flow here?" "context reading-plan question text"
   require_literal "Read this step to answer:" "actionable reading-plan reason"
   require_literal "Context pack guardrails:" "context-pack guardrail section"
@@ -85,6 +87,7 @@ main() {
   require_pattern '^\| `reading_plan_steps` \| >= [0-9]+ \| [0-9]+ \| pass \|$' "reading plan guardrail pass"
   require_pattern '^\| `first_reading_question` \| present \| .+ \| pass \|$' "first reading question guardrail pass"
   require_pattern '^\| `first_reading_reason` \| present \| .+ \| pass \|$' "first reading reason guardrail pass"
+  require_pattern '^\| `first_selection_rank` \| >= 1 \| [0-9]+ \| pass \|$' "first selection rank guardrail pass"
   require_pattern '^\| `first_selection_reason` \| present \| .+ \| pass \|$' "first selection reason guardrail pass"
   require_pattern '^\| `line_reduction` \| >= [0-9]+% \| [0-9.]+% \| pass \|$' "line reduction guardrail pass"
 

@@ -48,6 +48,9 @@ This is a benchmark fixture report, not a controlled performance benchmark.
 
 ## p-limit
 
+- Context continuation next action: read_selected_context
+- First omitted candidate: none
+
 Recommended next tools:
 
 | Tool | Score | Reason |
@@ -62,9 +65,9 @@ Context pack files:
 
 Context reading plan:
 
-| File | Question | Next action | Suggested tool | Reason | Selection reason |
-|---|---|---|---|---|---|
-| `index.js` | What entrypoints, exported symbols, or setup code define the main flow here? | inspect_seed_file | file_outline | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? | seed file |
+| File | Rank | Question | Next action | Suggested tool | Reason | Selection reason |
+|---|---:|---|---|---|---|---|
+| `index.js` | 1 | What entrypoints, exported symbols, or setup code define the main flow here? | inspect_seed_file | file_outline | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? | seed file |
 
 Context pack guardrails:
 
@@ -75,6 +78,7 @@ Context pack guardrails:
 | `reading_plan_steps` | >= 1 | 1 | pass |
 | `first_reading_question` | present | What entrypoints, exported symbols, or setup code define the main flow here? | pass |
 | `first_reading_reason` | present | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? | pass |
+| `first_selection_rank` | >= 1 | 1 | pass |
 | `first_selection_reason` | present | seed file | pass |
 | `line_reduction` | >= 50% | 99.0% | pass |
 EOF

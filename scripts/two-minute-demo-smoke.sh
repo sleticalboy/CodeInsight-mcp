@@ -115,6 +115,7 @@ cat <<'JSON'
         "next_action": "inspect_seed_file",
         "question": "What entrypoints or setup code define the main flow here?",
         "reason": "Read this step to answer: What entrypoints or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: src/main.rs",
+        "selection_rank": 1,
         "selection_reason": "Selected for high relevance via seed_file: Seed file header and imports for task: src/main.rs",
         "suggested_tool": {"tool": "file_outline"}
       }
@@ -133,7 +134,7 @@ cat <<'JSON'
       "truncated": false,
       "truncation_reason": "complete"
     },
-    "continuation_summary": {"status": "complete"},
+    "continuation_summary": {"status": "complete", "next_action": "read_selected_context"},
     "omitted_candidates": [],
     "files": [
       {
@@ -187,6 +188,8 @@ EOF
     fail "missing first execution suggested tool metric"
   grep -Fq 'first_reading_question: What entrypoints or setup code define the main flow here?' "$TEMP_DIR/output.log" ||
     fail "missing first reading question metric"
+  grep -Fq 'first_selection_rank: 1' "$TEMP_DIR/output.log" ||
+    fail "missing first selection rank metric"
   grep -Fq 'first_reading_file: src/main.rs' "$TEMP_DIR/output.log" ||
     fail "missing first reading file metric"
   grep -Fq 'reading_order_contract: true' "$TEMP_DIR/output.log" ||
@@ -195,6 +198,10 @@ EOF
     fail "missing suggested tool handoff contract metric"
   grep -Fq 'continuation_timing_contract: true' "$TEMP_DIR/output.log" ||
     fail "missing continuation timing contract metric"
+  grep -Fq 'continuation_next_action: read_selected_context' "$TEMP_DIR/output.log" ||
+    fail "missing continuation next action metric"
+  grep -Fq 'first_omitted_candidate: none' "$TEMP_DIR/output.log" ||
+    fail "missing no omitted candidate metric"
   grep -Fq 'route_reason: selected 1 files, 11 ranges, and 1 reading-plan steps within the token budget; read src/main.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context' "$TEMP_DIR/output.log" ||
     fail "missing context route reason"
   grep -Fq 'reading_plan_reason: Read this step to answer: What entrypoints or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: src/main.rs' "$TEMP_DIR/output.log" ||
@@ -209,10 +216,16 @@ EOF
     fail "missing evidence summary line reduction"
   grep -Fq 'First reading question: What entrypoints or setup code define the main flow here?' "$TEMP_DIR/output.log" ||
     fail "missing evidence summary reading question"
-  grep -Fq 'The first selected file is src/main.rs; reading_plan starts at src/main.rs.' "$TEMP_DIR/output.log" ||
+  grep -Fq 'The first selected file is src/main.rs; reading_plan starts at src/main.rs as candidate rank 1.' "$TEMP_DIR/output.log" ||
     fail "missing evidence summary first reading file"
   grep -Fq 'Execution contract: reading_order=true, suggested_tool_handoff=true, continuation_after_selected_context=true.' "$TEMP_DIR/output.log" ||
     fail "missing evidence summary execution contract"
+  grep -Fq 'Selection evidence: Selected for high relevance via seed_file: Seed file header and imports for task: src/main.rs' "$TEMP_DIR/output.log" ||
+    fail "missing evidence summary selection evidence"
+  grep -Fq 'Continuation: status=complete, next_action=read_selected_context.' "$TEMP_DIR/output.log" ||
+    fail "missing evidence summary continuation"
+  grep -Fq 'Next follow-up candidate: none before selected context is read.' "$TEMP_DIR/output.log" ||
+    fail "missing evidence summary omitted candidate"
   grep -Fq 'Read src/main.rs before offering file_outline.' "$TEMP_DIR/output.log" ||
     fail "missing evidence summary suggested tool timing"
   grep -Fq 'Before edits, impact_analysis reports high risk across 11 impacted files.' "$TEMP_DIR/output.log" ||
@@ -231,8 +244,10 @@ EOF
     fail "missing suggested tool handoff contract talk track"
   grep -Fq 'Continuation timing contract is true; continuation is only considered after selected context is read.' "$TEMP_DIR/output.log" ||
     fail "missing continuation timing contract talk track"
-  grep -Fq 'Selection evidence: Selected for high relevance via seed_file: Seed file header and imports for task: src/main.rs' "$TEMP_DIR/output.log" ||
+  grep -Fq 'Selection evidence: candidate rank 1; Selected for high relevance via seed_file: Seed file header and imports for task: src/main.rs' "$TEMP_DIR/output.log" ||
     fail "missing selection evidence talk track"
+  grep -Fq 'Continuation status is complete; next_action=read_selected_context, so no omitted candidate follow-up is needed before selected context is read.' "$TEMP_DIR/output.log" ||
+    fail "missing continuation next action talk track"
   grep -Fq 'pre-edit impact check estimated 11 impacted files at high risk' "$TEMP_DIR/output.log" ||
     fail "missing impact route reason"
   grep -Fq 'impact_analysis reports high risk across 11 impacted files with 3 suggested checks' "$TEMP_DIR/output.log" ||

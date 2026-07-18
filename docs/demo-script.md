@@ -113,6 +113,7 @@ Promise: route the agent through agent_route before edits.
    first_execution_suggested_tool: file_outline
    first_next_action: inspect_seed_file
    first_reading_question: What entrypoints, exported symbols, or setup code define the main flow here?
+   first_selection_rank: 1
    first_context_file: src/tools.rs
    first_reading_file: src/tools.rs
    reading_order_contract: true
@@ -120,6 +121,8 @@ Promise: route the agent through agent_route before edits.
    continuation_timing_contract: true
    line_reduction: 98.2%
    continuation: complete
+   continuation_next_action: read_selected_context
+   first_omitted_candidate: none
    route_reason: selected 10 files, 14 ranges, and 8 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context
 
 4. impact_analysis
@@ -129,10 +132,13 @@ Promise: route the agent through agent_route before edits.
    route_reason: after selected context is read, pre-edit impact check estimated 7 impacted files at high risk, including 5 call-related files, 1 dependency-related files, 27 call paths, and 1 dependency paths
 
 [Evidence summary]
-agent_route selected 521/28433 source lines (98.2% reduction) across 10 files.
+agent_route selected 521/28553 source lines (98.2% reduction) across 10 files.
 First reading question: What entrypoints, exported symbols, or setup code define the main flow here?
-The first selected file is src/tools.rs; reading_plan starts at src/tools.rs.
+The first selected file is src/tools.rs; reading_plan starts at src/tools.rs as candidate rank 1.
 Execution contract: reading_order=true, suggested_tool_handoff=true, continuation_after_selected_context=true.
+Selection evidence: Selected for high relevance via seed_file: Seed file header and imports for task: src/tools.rs
+Continuation: status=complete, next_action=read_selected_context.
+Next follow-up candidate: none before selected context is read.
 Read src/tools.rs before offering file_outline.
 Before edits, impact_analysis reports high risk across 7 impacted files.
 
@@ -164,6 +170,15 @@ continuation strategy if more context is needed.
 `route_reason` turns the route into an executable explanation: it says which
 file to read first, which action to take, which tool to use for deeper evidence,
 and why `impact_analysis` is the pre-edit check after selected context is read.
+
+`selection_rank` and `selection_reason` make the first-read choice auditable.
+They show that the first file is not just a returned excerpt; it is the top
+candidate under the current task and token budget.
+
+`continuation_summary` and `omitted_candidates[]` tell the agent what to do
+after the selected context is consumed. In a complete context pack, the demo
+prints that no omitted follow-up is needed yet. In a tighter budget, it names
+the next candidate and why it was omitted.
 
 `line_reduction` shows the routing value. The agent does not need to read the
 whole repository to start. It can begin with a bounded context pack and ask for

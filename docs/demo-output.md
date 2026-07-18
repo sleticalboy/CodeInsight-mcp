@@ -33,12 +33,12 @@ token_budget: 6000
 
 1. index_project
    indexed_files: 23
-   symbols: 934
+   symbols: 938
    duration_ms: <duration_ms>
    errors: 0
 
 2. project_overview
-   total_lines: 28433
+   total_lines: 28553
    entrypoints: 7
    first_entrypoint: src/main.rs
    recommended_next_tools: 4
@@ -53,10 +53,13 @@ token_budget: 6000
    first_execution_suggested_tool: file_outline
    first_next_action: inspect_seed_file
    first_reading_question: What entrypoints, exported symbols, or setup code define the main flow here?
+   first_selection_rank: 1
    selected_lines: 521
    line_reduction: 98.2%
    estimated_tokens: 5062
    continuation: complete
+   continuation_next_action: read_selected_context
+   first_omitted_candidate: none
    first_context_file: src/tools.rs
    first_reading_file: src/tools.rs
    reading_order_contract: true
@@ -80,10 +83,13 @@ Save the raw agent_route JSON:
   CODEINSIGHT_DEMO_SAVE_JSON=/tmp/codeinsight-agent-route.json scripts/two-minute-demo.sh
 
 [Evidence summary]
-agent_route selected 521/28433 source lines (98.2% reduction) across 10 files.
+agent_route selected 521/28553 source lines (98.2% reduction) across 10 files.
 First reading question: What entrypoints, exported symbols, or setup code define the main flow here?
-The first selected file is src/tools.rs; reading_plan starts at src/tools.rs.
+The first selected file is src/tools.rs; reading_plan starts at src/tools.rs as candidate rank 1.
 Execution contract: reading_order=true, suggested_tool_handoff=true, continuation_after_selected_context=true.
+Selection evidence: Selected for high relevance via seed_file: Seed file header and imports for task: src/tools.rs
+Continuation: status=complete, next_action=read_selected_context.
+Next follow-up candidate: none before selected context is read.
 Read src/tools.rs before offering file_outline.
 Before edits, impact_analysis reports high risk across 7 impacted files.
 
@@ -99,8 +105,8 @@ Before edits, impact_analysis reports high risk across 7 impacted files.
 9. Suggested-tool handoff contract is true; execution_plan[1] points to the current reading step.
 10. Continuation timing contract is true; continuation is only considered after selected context is read.
 11. The selected context reduced source reading by 98.2%; selected 10 files, 14 ranges, and 8 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context
-12. Selection evidence: Selected for high relevance via seed_file: Seed file header and imports for task: src/tools.rs
-13. Continuation status is complete, so the agent knows whether to ask for a focused follow-up.
+12. Selection evidence: candidate rank 1; Selected for high relevance via seed_file: Seed file header and imports for task: src/tools.rs
+13. Continuation status is complete; next_action=read_selected_context, so no omitted candidate follow-up is needed before selected context is read.
 14. impact_analysis reports high risk across 7 impacted files with 4 suggested checks; after selected context is read, pre-edit impact check estimated 7 impacted files at high risk, including 5 call-related files, 1 dependency-related files, 27 call paths, and 1 dependency paths
 
 [Agent policy]
@@ -117,9 +123,10 @@ Run this walkthrough against another repository:
   `index_project`, `project_overview`, `context_pack`, and `impact_analysis`.
 - `context_pack` includes selected files, selected ranges, reading-plan steps,
   execution-plan steps, first execution action, first next action,
-  first execution suggested tool, first reading question, executable
-  reading-plan reason, raw selection reason, token estimate, line reduction,
-  route reason, and continuation status.
+  first execution suggested tool, first reading question, first selection rank,
+  executable reading-plan reason, raw selection reason, token estimate, line
+  reduction, route reason, continuation status, continuation next action, and
+  omitted-candidate status.
 - `impact_analysis` includes its route reason so the demo frames it as the
   pre-edit impact check after selected context is read.
 - The evidence summary gives a compact copyable result for README videos or

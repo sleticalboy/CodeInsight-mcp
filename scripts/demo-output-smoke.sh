@@ -65,6 +65,9 @@ main() {
     'first_reading_question: What entrypoints' \
     "first reading question metric"
   require_pattern docs/demo-output.md \
+    'first_selection_rank: [0-9]+' \
+    "first selection rank metric"
+  require_pattern docs/demo-output.md \
     'first_reading_file: ' \
     "first reading file metric"
   require_pattern docs/demo-output.md \
@@ -92,6 +95,12 @@ main() {
     'continuation: complete' \
     "continuation status"
   require_pattern docs/demo-output.md \
+    'continuation_next_action: read_selected_context' \
+    "continuation next action"
+  require_pattern docs/demo-output.md \
+    'first_omitted_candidate: none' \
+    "omitted candidate status"
+  require_pattern docs/demo-output.md \
     '\[Talk track\]' \
     "talk track section"
   require_pattern docs/demo-output.md \
@@ -104,11 +113,20 @@ main() {
     'First reading question: What entrypoints' \
     "evidence summary first reading question"
   require_pattern docs/demo-output.md \
-    'reading_plan starts at ' \
-    "evidence summary first reading file"
+    'reading_plan starts at .* as candidate rank [0-9]+\.' \
+    "evidence summary first reading rank"
   require_pattern docs/demo-output.md \
     'Execution contract: reading_order=true, suggested_tool_handoff=true, continuation_after_selected_context=true\.' \
     "evidence summary execution contract"
+  require_pattern docs/demo-output.md \
+    'Selection evidence: Selected for high relevance' \
+    "evidence summary selection evidence"
+  require_pattern docs/demo-output.md \
+    'Continuation: status=complete, next_action=read_selected_context\.' \
+    "evidence summary continuation"
+  require_pattern docs/demo-output.md \
+    'Next follow-up candidate: none before selected context is read\.' \
+    "evidence summary omitted candidate"
   require_pattern docs/demo-output.md \
     'Read .* before offering file_outline\.' \
     "evidence summary suggested tool timing"
@@ -146,8 +164,11 @@ main() {
     'The first reading-plan action is inspect_seed_file; Read this step to answer:' \
     "reading reason talk track"
   require_pattern docs/demo-output.md \
-    'Selection evidence: Selected for high relevance' \
+    'Selection evidence: candidate rank [0-9]+; Selected for high relevance' \
     "selection evidence talk track"
+  require_pattern docs/demo-output.md \
+    'Continuation status is complete; next_action=read_selected_context, so no omitted candidate follow-up is needed before selected context is read\.' \
+    "continuation next action talk track"
   require_pattern docs/demo-output.md \
     'impact_analysis reports' \
     "impact-analysis talk track"

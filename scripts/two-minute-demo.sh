@@ -146,6 +146,9 @@ main() {
   require_json_string "$route_json" '.context_pack.reading_plan[0].question' "first reading-plan question"
   require_json_string "$route_json" '.context_pack.reading_plan[0].reason' "first reading-plan reason"
   require_json_string "$route_json" '.context_pack.reading_plan[0].selection_reason' "first reading-plan selection reason"
+  require_json_number_gt_zero "$route_json" '.context_pack.reading_plan[0].selection_rank' "first reading-plan selection rank"
+  require_json_string "$route_json" '.context_pack.continuation_summary.status' "continuation status"
+  require_json_string "$route_json" '.context_pack.continuation_summary.next_action' "continuation next action"
   require_json_string "$route_json" '.execution_plan[0].action' "first execution-plan action"
   require_json_string "$route_json" '.execution_plan[1].suggested_tool.tool' "first execution-plan suggested tool"
   require_json_true "$route_json" \
@@ -167,6 +170,7 @@ main() {
   local entrypoints recommended_tools selected_files selected_ranges reading_plan_steps
   local execution_plan_steps first_execution_action second_execution_action
   local first_execution_suggested_tool first_next_action first_reading_question first_reading_reason first_selection_reason
+  local first_selection_rank continuation_next_action first_omitted_file first_omitted_rank first_omitted_reason first_omitted_next_action
   local reading_order_contract suggested_tool_handoff_contract continuation_timing_contract
   local continuation risk_level impacted_files suggested_checks impact_seed_file
 
@@ -189,6 +193,12 @@ main() {
   first_reading_question="$(json_value "$route_json" '.context_pack.reading_plan[0].question // "-"')"
   first_reading_reason="$(json_value "$route_json" '.context_pack.reading_plan[0].reason // "-"')"
   first_selection_reason="$(json_value "$route_json" '.context_pack.reading_plan[0].selection_reason // "-"')"
+  first_selection_rank="$(json_value "$route_json" '.context_pack.reading_plan[0].selection_rank // "-"')"
+  continuation_next_action="$(json_value "$route_json" '.context_pack.continuation_summary.next_action // "-"')"
+  first_omitted_file="$(json_value "$route_json" '.context_pack.omitted_candidates[0].file // ""')"
+  first_omitted_rank="$(json_value "$route_json" '.context_pack.omitted_candidates[0].selection_rank // ""')"
+  first_omitted_reason="$(json_value "$route_json" '.context_pack.omitted_candidates[0].omission_reason // ""')"
+  first_omitted_next_action="$(json_value "$route_json" '.context_pack.omitted_candidates[0].next_action // ""')"
   reading_order_contract="$(json_value "$route_json" '(.execution_plan[0].files // []) == [.context_pack.reading_plan[].file]')"
   suggested_tool_handoff_contract="$(json_value "$route_json" '.execution_plan[1].files[0] == .context_pack.reading_plan[0].file and .execution_plan[1].suggested_tool.tool == .context_pack.reading_plan[0].suggested_tool.tool')"
   continuation_timing_contract="$(json_value "$route_json" '.execution_plan[2].action == "use_continuation_if_needed" and (.execution_plan[2].instruction | contains("only after selected context"))')"
@@ -224,10 +234,19 @@ main() {
   echo "   first_execution_suggested_tool: $first_execution_suggested_tool"
   echo "   first_next_action: $first_next_action"
   echo "   first_reading_question: $first_reading_question"
+  echo "   first_selection_rank: $first_selection_rank"
   echo "   selected_lines: $selected_lines"
   echo "   line_reduction: $reduction"
   echo "   estimated_tokens: $(json_value "$route_json" '.context_pack.estimated_tokens')"
   echo "   continuation: $continuation"
+  echo "   continuation_next_action: $continuation_next_action"
+  if [ -n "$first_omitted_file" ]; then
+    echo "   first_omitted_candidate: ${first_omitted_file} (candidate rank ${first_omitted_rank})"
+    echo "   first_omitted_reason: $first_omitted_reason"
+    echo "   first_omitted_next_action: $first_omitted_next_action"
+  else
+    echo "   first_omitted_candidate: none"
+  fi
   echo "   first_context_file: $first_context_file"
   echo "   first_reading_file: $first_reading_file"
   echo "   reading_order_contract: $reading_order_contract"
@@ -262,8 +281,15 @@ main() {
   echo "[Evidence summary]"
   echo "agent_route selected ${selected_lines}/${total_lines} source lines (${reduction} reduction) across ${selected_files} files."
   echo "First reading question: ${first_reading_question}"
-  echo "The first selected file is ${first_context_file}; reading_plan starts at ${first_reading_file}."
+  echo "The first selected file is ${first_context_file}; reading_plan starts at ${first_reading_file} as candidate rank ${first_selection_rank}."
   echo "Execution contract: reading_order=${reading_order_contract}, suggested_tool_handoff=${suggested_tool_handoff_contract}, continuation_after_selected_context=${continuation_timing_contract}."
+  echo "Selection evidence: ${first_selection_reason}"
+  echo "Continuation: status=${continuation}, next_action=${continuation_next_action}."
+  if [ -n "$first_omitted_file" ]; then
+    echo "Next follow-up candidate: ${first_omitted_file} at candidate rank ${first_omitted_rank}; ${first_omitted_reason}; next_action=${first_omitted_next_action}."
+  else
+    echo "Next follow-up candidate: none before selected context is read."
+  fi
   echo "Read ${first_reading_file} before offering ${first_execution_suggested_tool}."
   if [ -n "$risk_level" ]; then
     echo "Before edits, impact_analysis reports ${risk_level} risk across ${impacted_files} impacted files."
@@ -283,8 +309,12 @@ main() {
   echo "9. Suggested-tool handoff contract is ${suggested_tool_handoff_contract}; execution_plan[1] points to the current reading step."
   echo "10. Continuation timing contract is ${continuation_timing_contract}; continuation is only considered after selected context is read."
   echo "11. The selected context reduced source reading by ${reduction}; ${context_route_reason}"
-  echo "12. Selection evidence: ${first_selection_reason}"
-  echo "13. Continuation status is ${continuation}, so the agent knows whether to ask for a focused follow-up."
+  echo "12. Selection evidence: candidate rank ${first_selection_rank}; ${first_selection_reason}"
+  if [ -n "$first_omitted_file" ]; then
+    echo "13. Continuation status is ${continuation}; next follow-up is ${first_omitted_file} at candidate rank ${first_omitted_rank} because ${first_omitted_reason}; next_action=${first_omitted_next_action}."
+  else
+    echo "13. Continuation status is ${continuation}; next_action=${continuation_next_action}, so no omitted candidate follow-up is needed before selected context is read."
+  fi
   if [ -n "$risk_level" ]; then
     echo "14. impact_analysis reports ${risk_level} risk across ${impacted_files} impacted files with ${suggested_checks} suggested checks; ${impact_route_reason}"
   else

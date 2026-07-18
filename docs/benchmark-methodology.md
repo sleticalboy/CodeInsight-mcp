@@ -12,9 +12,10 @@ The checked-in reports verify that CodeInsight can:
 - produce `project_overview.recommended_next_tools`
 - route broad first-read tasks to `context_pack`
 - keep selected context inside a 6000-token budget
-- include `reading_plan[].question`, `reading_plan[].reason`, and
-  `reading_plan[].selection_reason`
-- report continuation and truncation state when context is omitted
+- include `reading_plan[].selection_rank`, `reading_plan[].question`,
+  `reading_plan[].reason`, and `reading_plan[].selection_reason`
+- report continuation status, continuation next action, omitted-candidate
+  evidence, and truncation state when context is omitted
 - keep guardrail failures visible in the generated report
 
 The reports do not prove compiler-grade reference precision, absolute indexing
@@ -63,8 +64,8 @@ CODEINSIGHT_BENCH_PROFILE=local \
 
 The command prints a terminal summary with the report path, routing and
 compression metrics, guardrail failures, and suggested next steps. Open the full
-report when you need the `Context reading plan` table or per-file selection
-evidence.
+report when you need the `Context reading plan` table, per-file candidate rank,
+or continuation follow-up evidence.
 
 For CI or PR automation, write the same summary as JSON:
 
@@ -101,6 +102,7 @@ Each repository profile defines minimum or maximum expectations for:
 - `selected_files`
 - `selected_ranges`
 - `reading_plan_steps`
+- `first_selection_rank`
 - `estimated_tokens`
 - `line_reduction`
 
@@ -109,6 +111,7 @@ Every report also checks that:
 - the first recommended tool is `context_pack`
 - the first reading-plan question is present
 - the first reading-plan reason is actionable
+- the first reading-plan selection rank is present
 - the first selection reason is present
 - index time stays under the configured budget
 
