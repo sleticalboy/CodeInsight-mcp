@@ -107,10 +107,10 @@ main() {
     '\[CodeInsight self adoption report\]\(docs/adoption-report-codeinsight\.md\)' \
     "README self adoption report link"
   require_pattern README.md \
-    '1,585 of 126,990 source lines' \
+    '1,361 of 126,990 source lines' \
     "README adoption cases aggregate snapshot"
   require_pattern README.md \
-    '80\.1x aggregate read-less ratio' \
+    '93\.3x aggregate read-less ratio' \
     "README adoption cases aggregate read-less ratio"
   require_pattern README.md \
     'routes the entrypoint task to 439 of 28,433 source lines, a 98\.5% first-read' \
@@ -291,8 +291,11 @@ main() {
     'Commit: `34dac209ffb6ef85cc78c5d217bbb7ad001d68fd`' \
     "Gin adoption case commit"
   require_pattern docs/adoption-case-gin.md \
-    'Read less | `51\.1x`' \
+    'Read less | `97\.2x`' \
     "Gin adoption case read-less metric"
+  require_pattern docs/adoption-case-gin.md \
+    'First selected file \| `routergroup\.go`' \
+    "Gin adoption case first selected file"
   require_pattern docs/adoption-case-gin.md \
     'Generated with: `scripts/update-adoption-case\.sh gin`' \
     "Gin adoption case generator"
@@ -324,6 +327,9 @@ main() {
     'Read less | `18\.5x`' \
     "Requests adoption case read-less metric"
   require_pattern docs/adoption-case-requests.md \
+    'First selected file \| `src/requests/sessions\.py`' \
+    "Requests adoption case first selected file"
+  require_pattern docs/adoption-case-requests.md \
     'Generated with: `scripts/update-adoption-case\.sh requests`' \
     "Requests adoption case generator"
   require_pattern docs/adoption-case-requests.md \
@@ -336,10 +342,10 @@ main() {
     'Blind first-read baseline: `126,990` source lines' \
     "adoption cases aggregate baseline"
   require_pattern docs/adoption-cases.md \
-    'Aggregate first-read reduction: `98\.8%`' \
+    'Aggregate first-read reduction: `98\.9%`' \
     "adoption cases aggregate reduction"
   require_pattern docs/adoption-cases.md \
-    'Aggregate read-less ratio: `80\.1x`' \
+    'Aggregate read-less ratio: `93\.3x`' \
     "adoption cases aggregate read-less ratio"
   require_pattern docs/adoption-cases.md \
     '^## How To Read These Numbers$' \

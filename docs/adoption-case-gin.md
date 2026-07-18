@@ -23,14 +23,14 @@ to show what an AI coding agent can read first before opening files broadly.
 | Metric | Value |
 | --- | ---: |
 | Blind first-read baseline | `24099` source lines |
-| CodeInsight routed first-read | `472` source lines |
-| Source lines avoided | `23627` |
-| First-read reduction | `98.0%` |
-| Read less | `51.1x` |
-| Selected files | `6` |
-| Selected ranges | `21` |
-| Estimated tokens | `4417` |
-| Impacted files | `20` |
+| CodeInsight routed first-read | `248` source lines |
+| Source lines avoided | `23851` |
+| First-read reduction | `99.0%` |
+| Read less | `97.2x` |
+| Selected files | `4` |
+| Selected ranges | `13` |
+| Estimated tokens | `2122` |
+| Impacted files | `10` |
 
 ## First-Read Route
 
@@ -38,9 +38,9 @@ to show what an AI coding agent can read first before opening files broadly.
 | --- | --- |
 | Seed strategy | `auto_task_match` |
 | First seed source | `task_match` |
-| First seed value | `gin.go` |
+| First seed value | `routergroup.go` |
 | Companion entrypoint | `context.go` |
-| First selected file | `gin.go` |
+| First selected file | `routergroup.go` |
 | First suggested tool | `file_outline` |
 | Impact risk | `high` |
 

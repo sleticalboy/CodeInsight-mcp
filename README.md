@@ -208,8 +208,8 @@ Current benchmark snapshot:
 - Large repositories route `context_pack` first for 4/4 repositories and
   select 1,748 of 241,555 source lines, a 99.3% aggregate line reduction.
 - The adoption case summary covers 4 public repositories and routes a first read
-  to 1,585 of 126,990 source lines, avoiding 125,405 lines before broad file
-  reading, a 98.8% aggregate reduction and 80.1x aggregate read-less ratio.
+  to 1,361 of 126,990 source lines, avoiding 125,629 lines before broad file
+  reading, a 98.9% aggregate reduction and 93.3x aggregate read-less ratio.
 - The CodeInsight self adoption report packages a full tar.gz handoff and
   routes the entrypoint task to 439 of 28,433 source lines, a 98.5% first-read
   reduction, while the MCP first-call contract fields all pass.

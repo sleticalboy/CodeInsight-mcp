@@ -13,7 +13,7 @@ show what an AI coding agent can read first before opening files broadly.
 | Case | Ecosystem | Task | Blind lines | Routed lines | Avoided lines | Reduction | Read less | Details |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- |
 | Express | JavaScript web framework | understand express application routing behavior | `21,478` | `232` | `21,246` | `98.9%` | `92.6x` | [case](adoption-case-express.md) |
-| Gin | Go web framework | understand gin engine routing behavior | `24,099` | `472` | `23,627` | `98.0%` | `51.1x` | [case](adoption-case-gin.md) |
+| Gin | Go web framework | understand gin engine routing behavior | `24,099` | `248` | `23,851` | `99.0%` | `97.2x` | [case](adoption-case-gin.md) |
 | Memchr | Rust search library | understand memchr search implementation flow | `69,381` | `230` | `69,151` | `99.7%` | `301.7x` | [case](adoption-case-memchr.md) |
 | Requests | Python HTTP library | understand requests session request flow | `12,032` | `651` | `11,381` | `94.6%` | `18.5x` | [case](adoption-case-requests.md) |
 
@@ -21,14 +21,14 @@ Aggregate snapshot:
 
 - Public repositories: `4`
 - Blind first-read baseline: `126,990` source lines
-- CodeInsight routed first-read: `1,585` source lines
-- Source lines avoided before broad file reading: `125,405`
-- Aggregate first-read reduction: `98.8%`
-- Aggregate read-less ratio: `80.1x`
-- Selected files: `31`
-- Selected ranges: `58`
-- Estimated tokens: `14,504`
-- Impacted files reported before edits: `60`
+- CodeInsight routed first-read: `1,361` source lines
+- Source lines avoided before broad file reading: `125,629`
+- Aggregate first-read reduction: `98.9%`
+- Aggregate read-less ratio: `93.3x`
+- Selected files: `29`
+- Selected ranges: `50`
+- Estimated tokens: `12,209`
+- Impacted files reported before edits: `61`
 
 ## How To Read These Numbers
 
@@ -48,9 +48,9 @@ compiler, test runner, and language-specific tools.
 | Case | Commit | Seed strategy | First selected file | Companion entrypoint | First suggested tool | Impact risk |
 | --- | --- | --- | --- | --- | --- | --- |
 | Express | `ae6dd37680e3a00618d6c8a3e522f0ee4eeba1a4` | `auto_task_match` | `lib/express.js` | `-` | `file_outline` | `high` |
-| Gin | `34dac209ffb6ef85cc78c5d217bbb7ad001d68fd` | `auto_task_match` | `gin.go` | `context.go` | `file_outline` | `high` |
+| Gin | `34dac209ffb6ef85cc78c5d217bbb7ad001d68fd` | `auto_task_match` | `routergroup.go` | `context.go` | `file_outline` | `high` |
 | Memchr | `bce7df7140acff420478a358cde5587904000cb1` | `auto_task_match` | `benchmarks/engines/rust-memchr/main.rs` | `benchmarks/engines/rust-jetscii/main.rs` | `file_outline` | `high` |
-| Requests | `f361ead047be5cb873174218582f7d8b9fcd9f49` | `auto_task_match` | `src/requests/help.py` | `src/requests/help.py` | `file_outline` | `high` |
+| Requests | `f361ead047be5cb873174218582f7d8b9fcd9f49` | `auto_task_match` | `src/requests/sessions.py` | `src/requests/help.py` | `file_outline` | `high` |
 
 ## Refresh
 

@@ -30,7 +30,7 @@ to show what an AI coding agent can read first before opening files broadly.
 | Selected files | `12` |
 | Selected ranges | `18` |
 | Estimated tokens | `5937` |
-| Impacted files | `4` |
+| Impacted files | `15` |
 
 ## First-Read Route
 
@@ -40,7 +40,7 @@ to show what an AI coding agent can read first before opening files broadly.
 | First seed source | `task_match` |
 | First seed value | `src/requests/sessions.py` |
 | Companion entrypoint | `src/requests/help.py` |
-| First selected file | `src/requests/help.py` |
+| First selected file | `src/requests/sessions.py` |
 | First suggested tool | `file_outline` |
 | Impact risk | `high` |
 
