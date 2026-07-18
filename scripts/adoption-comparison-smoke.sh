@@ -100,7 +100,15 @@ cat >"$summary_json" <<JSON
     "companion_entrypoint": "src/main.ts",
     "first_file": "src/router.ts",
     "first_reading_question": "What route owns login?",
+    "first_selection_rank": 1,
+    "first_selection_reason": "Selected for high relevance via seed_file",
     "first_suggested_tool": "file_outline",
+    "continuation_status": "complete",
+    "continuation_next_action": "read_selected_context",
+    "first_omitted_file": "",
+    "first_omitted_selection_rank": null,
+    "first_omitted_omission_reason": "",
+    "first_omitted_next_action": "",
     "risk_level": "medium",
     "impacted_files": 4
   }
@@ -132,6 +140,14 @@ EOF
     fail "missing read less ratio"
   grep -Fq -- '- Companion entrypoint: `src/main.ts`' "$TEMP_DIR/comparison/adoption-comparison.md" ||
     fail "missing companion entrypoint"
+  grep -Fq -- '- First selection rank: `1`' "$TEMP_DIR/comparison/adoption-comparison.md" ||
+    fail "missing first selection rank"
+  grep -Fq -- '- First selection reason: Selected for high relevance via seed_file' "$TEMP_DIR/comparison/adoption-comparison.md" ||
+    fail "missing first selection reason"
+  grep -Fq -- '- Continuation next action: `read_selected_context`' "$TEMP_DIR/comparison/adoption-comparison.md" ||
+    fail "missing continuation next action"
+  grep -Fq -- '- First omitted candidate: none' "$TEMP_DIR/comparison/adoption-comparison.md" ||
+    fail "missing omitted candidate status"
 
   jq -e \
     '.status == "pass"
@@ -140,6 +156,11 @@ EOF
       and .metrics.source_lines_avoided == 1140
       and .metrics.read_less_ratio == "20.0x"
       and .metrics.first_seed_source == "task_match"
+      and .metrics.first_selection_rank == 1
+      and .metrics.first_selection_reason == "Selected for high relevance via seed_file"
+      and .metrics.continuation_status == "complete"
+      and .metrics.continuation_next_action == "read_selected_context"
+      and .metrics.first_omitted_file == ""
       and .artifacts.raw_agent_route_json == "'"$TEMP_DIR"'/comparison/agent-route.json"' \
     "$TEMP_DIR/comparison/summary.json" >/dev/null ||
     fail "summary JSON does not match expected contract"

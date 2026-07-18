@@ -99,7 +99,8 @@ cat <<'JSON'
     "budget": {
       "selected_ranges": 1
     },
-    "continuation_summary": {"status": "complete"},
+    "continuation_summary": {"status": "complete", "next_action": "read_selected_context"},
+    "omitted_candidates": [],
     "files": [
       {
         "file": "src/main.ts",
@@ -149,8 +150,16 @@ EOF
     fail "missing companion entrypoint"
   grep -Fq -- '- First reading question: What setup code defines the main application flow?' "$TEMP_DIR/evidence.md" ||
     fail "missing first reading question"
+  grep -Fq -- '- First selection rank: `1`' "$TEMP_DIR/evidence.md" ||
+    fail "missing first selection rank"
+  grep -Fq -- '- First selection reason: Selected for high relevance via seed_file' "$TEMP_DIR/evidence.md" ||
+    fail "missing first selection reason"
   grep -Fq -- '- First suggested tool: `file_outline`' "$TEMP_DIR/evidence.md" ||
     fail "missing first suggested tool"
+  grep -Fq -- '- Continuation next action: `read_selected_context`' "$TEMP_DIR/evidence.md" ||
+    fail "missing continuation next action"
+  grep -Fq -- '- First omitted candidate: none' "$TEMP_DIR/evidence.md" ||
+    fail "missing omitted candidate status"
   grep -Fq -- '- Impact risk: `medium`' "$TEMP_DIR/evidence.md" ||
     fail "missing impact risk"
   grep -Fq 'Raw agent_route JSON:' "$TEMP_DIR/evidence.md" ||
@@ -172,7 +181,13 @@ EOF
       and .metrics.companion_entrypoint == "src/main.ts"
       and .metrics.first_file == "src/main.ts"
       and .metrics.first_reading_question == "What setup code defines the main application flow?"
+      and .metrics.first_selection_rank == 1
+      and .metrics.first_selection_reason == "Selected for high relevance via seed_file"
       and .metrics.first_suggested_tool == "file_outline"
+      and .metrics.continuation_status == "complete"
+      and .metrics.continuation_next_action == "read_selected_context"
+      and .metrics.first_omitted_file == ""
+      and .metrics.first_omitted_selection_rank == null
       and .metrics.risk_level == "medium"
       and .metrics.impacted_files == 2
       and .artifacts.markdown == "'"$TEMP_DIR"'/evidence.md"

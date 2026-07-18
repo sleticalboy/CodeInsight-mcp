@@ -75,7 +75,8 @@ Pass criteria:
 - `context_pack` reports `selected_files`, `selected_ranges`, and
   `estimated_tokens`.
 - The demo prints `first_reading_question`, executable `reading_plan_reason`,
-  and raw `selection_reason` for the first selected context file.
+  `selection_rank`, and raw `selection_reason` for the first selected context
+  file.
 - `line_reduction` is present and below 100%.
 - `impact_analysis` reports `risk_level`, `impacted_files`, `paths`, or
   `suggested_checks`.
@@ -83,11 +84,14 @@ Pass criteria:
   includes `project_overview`, `context_pack`, and `impact_analysis` as the
   route internals.
 - `local-repo-evidence.sh` writes a Markdown summary with selected lines,
-  line reduction, first reading question, first selected file, first suggested
-  tool, impact risk, and the raw `agent_route` JSON path when `--json` is used.
+  line reduction, first reading question, first selected file, first selection
+  rank/reason, first suggested tool, continuation next action, impact risk, and
+  the raw `agent_route` JSON path when `--json` is used.
 - `--summary-json` writes the same core metrics in a compact machine-readable
   contract for CI artifacts, README evidence snippets, or benchmark aggregation.
 - `adoption-comparison.sh` writes a blind-read vs routed-first-read Markdown
+  report with source-line savings, read-less ratio, first selection rank/reason,
+  and continuation next action.
   report and `summary.json` with source lines avoided, read-less ratio, seed
   strategy, first selected file, first reading question, and artifact paths.
 - Use the [Adoption cases](adoption-cases.md) summary plus the
@@ -345,8 +349,8 @@ Pass criteria:
 - `Key Results` summarizes routing, aggregate source-line compression, token
   usage, indexing time, guardrail failures, and truncation status.
 - Profile-specific context pack guardrails pass for selected files, selected
-  ranges, `reading_plan_steps`, first next action, token budget, and line
-  reduction.
+  ranges, `reading_plan_steps`, first selection rank, first next action, token
+  budget, and line reduction.
 
 Generated reports:
 
@@ -364,8 +368,8 @@ CodeInsight is successfully adopted when:
 - The agent follows the `agent_route` first-read policy.
 - `context_pack` returns a bounded reading plan.
 - The agent follows `reading_plan[].question` and `reading_plan[].reason`, can
-  surface `reading_plan[].selection_reason`, and waits to use continuation
-  tools until selected context has been read.
+  surface `reading_plan[].selection_rank` and `reading_plan[].selection_reason`,
+  and waits to use continuation tools until selected context has been read.
 - Suggested-tool and continuation controls are gated behind selected-context
   reading, and impact review is required before edits.
 - `impact_analysis` is used before edits.

@@ -169,7 +169,18 @@ write_markdown() {
     echo "- Companion entrypoint: \`$(json_value "$local_summary" '(.metrics.companion_entrypoint // "") as $value | if $value == "" then "-" else $value end')\`"
     echo "- First selected file: \`$(json_value "$local_summary" '.metrics.first_file')\`"
     echo "- First reading question: $(json_value "$local_summary" '.metrics.first_reading_question')"
+    echo "- First selection rank: \`$(json_value "$local_summary" '.metrics.first_selection_rank // "-"')\`"
+    echo "- First selection reason: $(json_value "$local_summary" '.metrics.first_selection_reason // "-"')"
     echo "- First suggested tool: \`$(json_value "$local_summary" '.metrics.first_suggested_tool')\`"
+    echo "- Continuation status: \`$(json_value "$local_summary" '.metrics.continuation_status // "-"')\`"
+    echo "- Continuation next action: \`$(json_value "$local_summary" '.metrics.continuation_next_action // "-"')\`"
+    if [ -n "$(json_value "$local_summary" '.metrics.first_omitted_file // ""')" ]; then
+      echo "- First omitted candidate: \`$(json_value "$local_summary" '.metrics.first_omitted_file')\` (candidate rank $(json_value "$local_summary" '.metrics.first_omitted_selection_rank // "-"'))"
+      echo "- First omitted reason: $(json_value "$local_summary" '.metrics.first_omitted_omission_reason // "-"')"
+      echo "- First omitted next action: \`$(json_value "$local_summary" '.metrics.first_omitted_next_action // "-"')\`"
+    else
+      echo "- First omitted candidate: none"
+    fi
     echo "- Impact risk: \`$(json_value "$local_summary" '.metrics.risk_level')\`"
     echo "- Impacted files: \`$(json_value "$local_summary" '.metrics.impacted_files')\`"
     echo
@@ -230,7 +241,15 @@ write_summary_json() {
         companion_entrypoint: .metrics.companion_entrypoint,
         first_file: .metrics.first_file,
         first_reading_question: .metrics.first_reading_question,
+        first_selection_rank: .metrics.first_selection_rank,
+        first_selection_reason: .metrics.first_selection_reason,
         first_suggested_tool: .metrics.first_suggested_tool,
+        continuation_status: .metrics.continuation_status,
+        continuation_next_action: .metrics.continuation_next_action,
+        first_omitted_file: .metrics.first_omitted_file,
+        first_omitted_selection_rank: .metrics.first_omitted_selection_rank,
+        first_omitted_omission_reason: .metrics.first_omitted_omission_reason,
+        first_omitted_next_action: .metrics.first_omitted_next_action,
         risk_level: .metrics.risk_level,
         impacted_files: .metrics.impacted_files
       },
@@ -250,6 +269,10 @@ write_summary_json() {
       and (.metrics.line_reduction | type == "string" and length > 0)
       and (.metrics.read_less_ratio | type == "string" and length > 0)
       and (.metrics.first_file | type == "string" and length > 0)
+      and (.metrics.first_selection_rank | type == "number" and . >= 1)
+      and (.metrics.first_selection_reason | type == "string" and length > 0)
+      and (.metrics.continuation_status | type == "string" and length > 0)
+      and (.metrics.continuation_next_action | type == "string" and length > 0)
       and (.artifacts.local_evidence_summary | type == "string" and length > 0)' \
     "$target" >/dev/null ||
     fail "summary JSON does not match the adoption comparison contract"

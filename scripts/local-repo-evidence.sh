@@ -191,9 +191,19 @@ write_markdown() {
     echo "- Companion entrypoint: \`$(json_value "$route_json" '([.context_pack.selected_seeds[1:][]? | select(.source == "overview_entrypoint") | .value] | first) // "-"')\`"
     echo "- First selected file: \`$(json_value "$route_json" '.context_pack.files[0].file // "-"')\`"
     echo "- First reading question: $(json_value "$route_json" '.context_pack.reading_plan[0].question // "-"')"
+    echo "- First selection rank: \`$(json_value "$route_json" '.context_pack.reading_plan[0].selection_rank // "-"')\`"
+    echo "- First selection reason: $(json_value "$route_json" '.context_pack.reading_plan[0].selection_reason // "-"')"
     echo "- First next action: \`$(json_value "$route_json" '.context_pack.reading_plan[0].next_action // "-"')\`"
     echo "- First suggested tool: \`$(json_value "$route_json" '.execution_plan[1].suggested_tool.tool // "-"')\`"
     echo "- Continuation status: \`$(json_value "$route_json" '.context_pack.continuation_summary.status // "-"')\`"
+    echo "- Continuation next action: \`$(json_value "$route_json" '.context_pack.continuation_summary.next_action // "-"')\`"
+    if jq -e '(.context_pack.omitted_candidates // []) | length > 0' "$route_json" >/dev/null; then
+      echo "- First omitted candidate: \`$(json_value "$route_json" '.context_pack.omitted_candidates[0].file // "-"')\` (candidate rank $(json_value "$route_json" '.context_pack.omitted_candidates[0].selection_rank // "-"'))"
+      echo "- First omitted reason: $(json_value "$route_json" '.context_pack.omitted_candidates[0].omission_reason // "-"')"
+      echo "- First omitted next action: \`$(json_value "$route_json" '.context_pack.omitted_candidates[0].next_action // "-"')\`"
+    else
+      echo "- First omitted candidate: none"
+    fi
     echo "- Impact risk: \`${risk_level}\`"
     echo "- Impacted files: \`$(json_value "$route_json" '.impact_analysis.impact_counts.impacted_files // 0')\`"
     echo "- Suggested checks: \`$(json_value "$route_json" '.impact_analysis.suggested_checks | length')\`"
@@ -260,9 +270,16 @@ write_summary_json() {
         companion_entrypoint: (([.context_pack.selected_seeds[1:][]? | select(.source == "overview_entrypoint") | .value] | first) // ""),
         first_file: (.context_pack.files[0].file // ""),
         first_reading_question: (.context_pack.reading_plan[0].question // ""),
+        first_selection_rank: (.context_pack.reading_plan[0].selection_rank // 0),
+        first_selection_reason: (.context_pack.reading_plan[0].selection_reason // ""),
         first_next_action: (.context_pack.reading_plan[0].next_action // ""),
         first_suggested_tool: (.execution_plan[1].suggested_tool.tool // ""),
         continuation_status: (.context_pack.continuation_summary.status // ""),
+        continuation_next_action: (.context_pack.continuation_summary.next_action // ""),
+        first_omitted_file: (.context_pack.omitted_candidates[0].file // ""),
+        first_omitted_selection_rank: (.context_pack.omitted_candidates[0].selection_rank // null),
+        first_omitted_omission_reason: (.context_pack.omitted_candidates[0].omission_reason // ""),
+        first_omitted_next_action: (.context_pack.omitted_candidates[0].next_action // ""),
         risk_level: (.impact_analysis.risk_level // "not_available"),
         impacted_files: (.impact_analysis.impact_counts.impacted_files // 0),
         suggested_checks: (.impact_analysis.suggested_checks | length)
@@ -284,6 +301,10 @@ write_summary_json() {
       and (.metrics.companion_entrypoint | type == "string")
       and (.metrics.first_file | type == "string" and length > 0)
       and (.metrics.first_reading_question | type == "string" and length > 0)
+      and (.metrics.first_selection_rank | type == "number" and . >= 1)
+      and (.metrics.first_selection_reason | type == "string" and length > 0)
+      and (.metrics.continuation_status | type == "string" and length > 0)
+      and (.metrics.continuation_next_action | type == "string" and length > 0)
       and (.metrics.risk_level | type == "string" and length > 0)' \
     "$target" >/dev/null ||
     fail "summary JSON does not match the local evidence contract"
