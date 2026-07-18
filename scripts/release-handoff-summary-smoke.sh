@@ -65,7 +65,13 @@ main() {
     "agent_route": {
       "name": "codeinsight-agent-route-smoke",
       "url": "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/3",
-      "summary": "/tmp/agent-route.json"
+      "summary": "/tmp/agent-route.json",
+      "metrics": {
+        "first_selection_rank": 1,
+        "first_selection_reason": "Selected for high relevance via seed_file: Seed file header and imports for task: src/auth.ts",
+        "continuation_status": "lower_ranked_context_omitted",
+        "continuation_next_action": "narrow_task_or_seed"
+      }
     },
     "mcp_first_call": {
       "name": "codeinsight-mcp-first-call",
@@ -152,6 +158,10 @@ EOF
     fail "missing release gate"
   grep -Fq -- '- Agent-route artifact: [codeinsight-agent-route-smoke](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/3)' "$TEMP_DIR/stdout.md" ||
     fail "missing agent-route artifact"
+  grep -Fq -- '- Agent-route first selection: rank `1`, Selected for high relevance via seed_file: Seed file header and imports for task: src/auth.ts' "$TEMP_DIR/stdout.md" ||
+    fail "missing agent-route first selection"
+  grep -Fq -- '- Agent-route continuation: `lower_ranked_context_omitted`, next action `narrow_task_or_seed`' "$TEMP_DIR/stdout.md" ||
+    fail "missing agent-route continuation"
   grep -Fq -- '- MCP first-call artifact: [codeinsight-mcp-first-call](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/4)' "$TEMP_DIR/stdout.md" ||
     fail "missing MCP first-call artifact"
   grep -Fq -- '- Adoption report: [CodeInsight self adoption report](docs/adoption-report-codeinsight.md)' "$TEMP_DIR/stdout.md" ||
@@ -287,7 +297,13 @@ cat >"$json_output" <<JSON
     "agent_route": {
       "name": "codeinsight-agent-route-smoke",
       "url": "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/3",
-      "summary": "/tmp/generated-agent-route.json"
+      "summary": "/tmp/generated-agent-route.json",
+      "metrics": {
+        "first_selection_rank": 2,
+        "first_selection_reason": "Selected for medium relevance via dependency: Local dependency of src/main.ts via ./auth",
+        "continuation_status": "complete",
+        "continuation_next_action": "read_selected_context"
+      }
     },
     "mcp_first_call": {
       "name": "codeinsight-mcp-first-call",
@@ -339,15 +355,19 @@ EOF
     fail "generate-evidence did not archive evidence Markdown stdout"
   grep -Fq -- '- Benchmark routing: `context_pack` first for 2/2 repositories' "$TEMP_DIR/generated-stdout.md" ||
     fail "handoff did not use generated evidence benchmark metrics"
+  grep -Fq -- '- Agent-route first selection: rank `2`, Selected for medium relevance via dependency: Local dependency of src/main.ts via ./auth' "$TEMP_DIR/generated-stdout.md" ||
+    fail "handoff did not use generated evidence agent-route metrics"
   grep -Fq -- '- Adoption report routed first-read: `80/1200` source lines, `93.3%` reduction' "$TEMP_DIR/generated-stdout.md" ||
     fail "handoff did not use generated evidence adoption metrics"
-  jq -e '
-    .schema_version == 1 and
-    .tag == "v9.8.7" and
-    .branch == "release" and
-    .artifacts.benchmark.metrics.context_pack_first == 2 and
-    .artifacts.adoption_report.metrics.selected_lines == 80
-  ' "$generated_evidence_json" >/dev/null ||
+	jq -e '
+	  .schema_version == 1 and
+	  .tag == "v9.8.7" and
+	  .branch == "release" and
+	  .artifacts.benchmark.metrics.context_pack_first == 2 and
+	  .artifacts.agent_route.metrics.first_selection_rank == 2 and
+	  .artifacts.agent_route.metrics.continuation_next_action == "read_selected_context" and
+	  .artifacts.adoption_report.metrics.selected_lines == 80
+	' "$generated_evidence_json" >/dev/null ||
     fail "generated evidence JSON does not match expected fixture"
 
   echo "release handoff summary smoke passed"

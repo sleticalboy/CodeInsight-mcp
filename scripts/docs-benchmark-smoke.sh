@@ -1325,6 +1325,24 @@ main() {
   require_pattern scripts/agent-route-artifact-smoke.sh \
     'first_reading_question' \
     "agent-route artifact first reading question output"
+  require_pattern scripts/agent-route-artifact-smoke.sh \
+    'first_selection_rank' \
+    "agent-route artifact first selection rank output"
+  require_pattern scripts/agent-route-artifact-smoke.sh \
+    'continuation_next_action' \
+    "agent-route artifact continuation next action output"
+  require_pattern scripts/release-evidence-summary.sh \
+    'agent_route_first_selection_rank' \
+    "release evidence agent-route first selection rank output"
+  require_pattern scripts/release-evidence-summary.sh \
+    'agent_route_continuation_next_action' \
+    "release evidence agent-route continuation next action output"
+  require_pattern scripts/release-handoff-summary.sh \
+    'Agent-route first selection' \
+    "release handoff agent-route first selection output"
+  require_pattern scripts/release-notes-draft.sh \
+    'Agent-route continuation' \
+    "release notes agent-route continuation output"
   require_pattern scripts/mcp-stdio-smoke.sh \
     'agent_route execution_plan suggested file_outline did not return entrypoint symbol' \
     "MCP stdio execution-plan suggested tool assertion"

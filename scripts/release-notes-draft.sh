@@ -152,6 +152,8 @@ metadata = pre_release.fetch("metadata")
 artifacts = pre_release.fetch("artifacts")
 benchmark = artifacts.fetch("benchmark")
 benchmark_metrics = benchmark["metrics"] || {}
+agent_route = artifacts.fetch("agent_route")
+agent_route_metrics = agent_route["metrics"] || {}
 adoption_report = artifacts["adoption_report"]
 gates = post_release.fetch("gates")
 expected_assets = post_release.fetch("expected_assets")
@@ -209,9 +211,16 @@ lines << ""
 [
   ["Benchmark", benchmark],
   ["Context-pack quality", artifacts.fetch("context_pack_quality")],
-  ["Agent-route", artifacts.fetch("agent_route")]
+  ["Agent-route", agent_route]
 ].each do |label, artifact|
   lines << "- #{label}: [#{artifact.fetch("name")}](#{artifact.fetch("url")})"
+end
+
+if agent_route_metrics.key?("first_selection_rank") && agent_route_metrics.key?("first_selection_reason")
+  lines << "- Agent-route first selection: rank `#{agent_route_metrics.fetch("first_selection_rank")}`, #{agent_route_metrics.fetch("first_selection_reason")}"
+end
+if agent_route_metrics.key?("continuation_status") && agent_route_metrics.key?("continuation_next_action")
+  lines << "- Agent-route continuation: `#{agent_route_metrics.fetch("continuation_status")}`, next action `#{agent_route_metrics.fetch("continuation_next_action")}`"
 end
 
 if adoption_report

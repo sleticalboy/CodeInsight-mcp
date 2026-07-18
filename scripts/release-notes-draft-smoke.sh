@@ -63,7 +63,13 @@ main() {
       },
       "agent_route": {
         "name": "codeinsight-agent-route-smoke",
-        "url": "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/3"
+        "url": "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/3",
+        "metrics": {
+          "first_selection_rank": 1,
+          "first_selection_reason": "Selected for high relevance via seed_file: Seed file header and imports for task: src/auth.ts",
+          "continuation_status": "lower_ranked_context_omitted",
+          "continuation_next_action": "narrow_task_or_seed"
+        }
       },
       "adoption_report": {
         "name": "CodeInsight self adoption report",
@@ -144,6 +150,10 @@ EOF
     fail "missing Docker distribution check"
   grep -Fq -- '- Benchmark: [codeinsight-benchmark-subset](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/1)' "$draft_md" ||
     fail "missing benchmark artifact"
+  grep -Fq -- '- Agent-route first selection: rank `1`, Selected for high relevance via seed_file: Seed file header and imports for task: src/auth.ts' "$draft_md" ||
+    fail "missing agent-route first selection"
+  grep -Fq -- '- Agent-route continuation: `lower_ranked_context_omitted`, next action `narrow_task_or_seed`' "$draft_md" ||
+    fail "missing agent-route continuation"
   grep -Fq -- '- Adoption report: [CodeInsight self adoption report](docs/adoption-report-codeinsight.md)' "$draft_md" ||
     fail "missing adoption report artifact"
   grep -Fq '### Benchmark Evidence' "$draft_md" ||

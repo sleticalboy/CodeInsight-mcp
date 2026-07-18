@@ -110,6 +110,10 @@ main() {
   local evidence_context_pack_quality_url=""
   local evidence_agent_route_name="codeinsight-agent-route-smoke"
   local evidence_agent_route_url=""
+  local evidence_agent_route_first_selection_rank=""
+  local evidence_agent_route_first_selection_reason=""
+  local evidence_agent_route_continuation_status=""
+  local evidence_agent_route_continuation_next_action=""
   local evidence_mcp_first_call_name="codeinsight-mcp-first-call"
   local evidence_mcp_first_call_url=""
   local evidence_adoption_report_name=""
@@ -195,6 +199,12 @@ main() {
     evidence_context_pack_quality_url="$(require_evidence_json_field '.artifacts.context_pack_quality.url' "context-pack quality artifact URL")"
     evidence_agent_route_name="$(require_evidence_json_field '.artifacts.agent_route.name' "agent-route artifact name")"
     evidence_agent_route_url="$(require_evidence_json_field '.artifacts.agent_route.url' "agent-route artifact URL")"
+    if jq -e '.artifacts.agent_route.metrics? != null' "$EVIDENCE_JSON_FILE" >/dev/null; then
+      evidence_agent_route_first_selection_rank="$(require_evidence_json_field '(.artifacts.agent_route.metrics.first_selection_rank | tostring)' "agent-route first selection rank")"
+      evidence_agent_route_first_selection_reason="$(require_evidence_json_field '.artifacts.agent_route.metrics.first_selection_reason' "agent-route first selection reason")"
+      evidence_agent_route_continuation_status="$(require_evidence_json_field '.artifacts.agent_route.metrics.continuation_status' "agent-route continuation status")"
+      evidence_agent_route_continuation_next_action="$(require_evidence_json_field '.artifacts.agent_route.metrics.continuation_next_action' "agent-route continuation next action")"
+    fi
     evidence_mcp_first_call_name="$(require_evidence_json_field '.artifacts.mcp_first_call.name' "MCP first-call artifact name")"
     evidence_mcp_first_call_url="$(require_evidence_json_field '.artifacts.mcp_first_call.url' "MCP first-call artifact URL")"
     if jq -e '.artifacts.adoption_report? != null' "$EVIDENCE_JSON_FILE" >/dev/null; then
@@ -223,6 +233,10 @@ main() {
     evidence_benchmark_url="$(require_evidence_field benchmark_artifact_url "benchmark artifact URL")"
     evidence_context_pack_quality_url="$(require_evidence_field context_pack_quality_artifact_url "context-pack quality artifact URL")"
     evidence_agent_route_url="$(require_evidence_field agent_route_artifact_url "agent-route artifact URL")"
+    evidence_agent_route_first_selection_rank="$(evidence_field agent_route_first_selection_rank)"
+    evidence_agent_route_first_selection_reason="$(evidence_field agent_route_first_selection_reason)"
+    evidence_agent_route_continuation_status="$(evidence_field agent_route_continuation_status)"
+    evidence_agent_route_continuation_next_action="$(evidence_field agent_route_continuation_next_action)"
     evidence_mcp_first_call_url="$(require_evidence_field mcp_first_call_artifact_url "MCP first-call artifact URL")"
     evidence_adoption_report_name="$(evidence_field adoption_report)"
     if [ -n "$evidence_adoption_report_name" ]; then
@@ -293,6 +307,14 @@ main() {
       printf '  - Benchmark artifact: [%s](%s)\n' "$evidence_benchmark_name" "$evidence_benchmark_url"
       printf '  - Context-pack quality artifact: [%s](%s)\n' "$evidence_context_pack_quality_name" "$evidence_context_pack_quality_url"
       printf '  - Agent-route artifact: [%s](%s)\n' "$evidence_agent_route_name" "$evidence_agent_route_url"
+      if [ -n "$evidence_agent_route_first_selection_rank" ]; then
+        printf '  - Agent-route first selection: rank `%s`, %s\n' \
+          "$evidence_agent_route_first_selection_rank" \
+          "$evidence_agent_route_first_selection_reason"
+        printf '  - Agent-route continuation: `%s`, next action `%s`\n' \
+          "$evidence_agent_route_continuation_status" \
+          "$evidence_agent_route_continuation_next_action"
+      fi
       printf '  - MCP first-call artifact: [%s](%s)\n' "$evidence_mcp_first_call_name" "$evidence_mcp_first_call_url"
       if [ -n "$evidence_adoption_report_name" ]; then
         printf '  - Adoption report: [%s](%s)\n' "$evidence_adoption_report_name" "$evidence_adoption_report_doc"

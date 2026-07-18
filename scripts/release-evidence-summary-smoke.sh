@@ -123,6 +123,18 @@ EOF
 }
 JSON
 
+  cat >"$TEMP_DIR/agent-route-summary.json" <<'JSON'
+{
+  "status": "pass",
+  "metrics": {
+    "first_selection_rank": 1,
+    "first_selection_reason": "Selected for high relevance via seed_file: Seed file header and imports for task: src/auth.ts",
+    "continuation_status": "lower_ranked_context_omitted",
+    "continuation_next_action": "narrow_task_or_seed"
+  }
+}
+JSON
+
   cat >"$TEMP_DIR/benchmark-artifact-smoke" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -168,7 +180,7 @@ test "$3" = "--artifact-name"
 test "$4" = "codeinsight-agent-route-smoke"
 test "$5" = "123456"
 echo "agent-route artifact smoke passed"
-echo "summary: /tmp/codeinsight-agent-route-artifact-123456/summary.json"
+echo "summary: ${CODEINSIGHT_EVIDENCE_AGENT_ROUTE_SUMMARY:?}"
 EOF
   chmod +x "$TEMP_DIR/agent-route-artifact-smoke"
 
@@ -190,6 +202,7 @@ EOF
 
     CODEINSIGHT_EVIDENCE_SMOKE_LOG="$TEMP_DIR/calls.log" \
     CODEINSIGHT_EVIDENCE_BENCHMARK_SUMMARY="$TEMP_DIR/benchmark-summary.json" \
+    CODEINSIGHT_EVIDENCE_AGENT_ROUTE_SUMMARY="$TEMP_DIR/agent-route-summary.json" \
     CODEINSIGHT_ROOT_DIR="$TEMP_DIR/repo" \
     CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/benchmark-artifact-smoke" \
     CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/context-pack-quality-artifact-smoke" \
@@ -229,8 +242,16 @@ EOF
     fail "missing context-pack quality summary output"
   grep -Fq 'agent_route_artifact_url: https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987656' "$TEMP_DIR/output.log" ||
     fail "missing agent-route artifact URL"
-  grep -Fq 'agent_route_summary: /tmp/codeinsight-agent-route-artifact-123456/summary.json' "$TEMP_DIR/output.log" ||
+  grep -Fq "agent_route_summary: $TEMP_DIR/agent-route-summary.json" "$TEMP_DIR/output.log" ||
     fail "missing agent-route summary output"
+  grep -Fq 'agent_route_first_selection_rank: 1' "$TEMP_DIR/output.log" ||
+    fail "missing agent-route first selection rank output"
+  grep -Fq 'agent_route_first_selection_reason: Selected for high relevance via seed_file: Seed file header and imports for task: src/auth.ts' "$TEMP_DIR/output.log" ||
+    fail "missing agent-route first selection reason output"
+  grep -Fq 'agent_route_continuation_status: lower_ranked_context_omitted' "$TEMP_DIR/output.log" ||
+    fail "missing agent-route continuation status output"
+  grep -Fq 'agent_route_continuation_next_action: narrow_task_or_seed' "$TEMP_DIR/output.log" ||
+    fail "missing agent-route continuation next action output"
   grep -Fq 'mcp_first_call_artifact_url: https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987657' "$TEMP_DIR/output.log" ||
     fail "missing MCP first-call artifact URL"
   grep -Fq 'mcp_first_call_summary: /tmp/codeinsight-mcp-first-call-artifact-123456/summary.json' "$TEMP_DIR/output.log" ||
@@ -263,6 +284,10 @@ EOF
     fail "missing release notes benchmark routing"
   grep -Fq -- '- Agent-route artifact: [codeinsight-agent-route-smoke](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987656)' "$TEMP_DIR/output.log" ||
     fail "missing release notes agent-route artifact link"
+  grep -Fq -- '- Agent-route first selection: rank `1`, Selected for high relevance via seed_file: Seed file header and imports for task: src/auth.ts' "$TEMP_DIR/output.log" ||
+    fail "missing release notes agent-route first selection"
+  grep -Fq -- '- Agent-route continuation: `lower_ranked_context_omitted`, next action `narrow_task_or_seed`' "$TEMP_DIR/output.log" ||
+    fail "missing release notes agent-route continuation"
   grep -Fq -- '- MCP first-call artifact: [codeinsight-mcp-first-call](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987657)' "$TEMP_DIR/output.log" ||
     fail "missing release notes MCP first-call artifact link"
   grep -Fq -- '- Adoption report: [CodeInsight self adoption report](docs/adoption-report-codeinsight.md)' "$TEMP_DIR/output.log" ||
@@ -296,7 +321,11 @@ EOF
     .artifacts.context_pack_quality.summary == "/tmp/codeinsight-context-pack-quality-artifact-123456/summary.json" and
     .artifacts.agent_route.name == "codeinsight-agent-route-smoke" and
     .artifacts.agent_route.url == "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987656" and
-    .artifacts.agent_route.summary == "/tmp/codeinsight-agent-route-artifact-123456/summary.json" and
+    .artifacts.agent_route.summary == "'"$TEMP_DIR"'/agent-route-summary.json" and
+    .artifacts.agent_route.metrics.first_selection_rank == 1 and
+    .artifacts.agent_route.metrics.first_selection_reason == "Selected for high relevance via seed_file: Seed file header and imports for task: src/auth.ts" and
+    .artifacts.agent_route.metrics.continuation_status == "lower_ranked_context_omitted" and
+    .artifacts.agent_route.metrics.continuation_next_action == "narrow_task_or_seed" and
     .artifacts.mcp_first_call.name == "codeinsight-mcp-first-call" and
     .artifacts.mcp_first_call.url == "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987657" and
     .artifacts.mcp_first_call.summary == "/tmp/codeinsight-mcp-first-call-artifact-123456/summary.json" and
@@ -311,6 +340,8 @@ EOF
     .artifacts.adoption_report.metrics.mcp_first_call_contract.continuation_after_selected_context == true and
     .artifacts.adoption_report.metrics.mcp_first_call_contract.suggested_tool_executed == true and
     (.release_notes_block | contains("## v99.88.77 release evidence")) and
+    (.release_notes_block | contains("- Agent-route first selection: rank `1`, Selected for high relevance")) and
+    (.release_notes_block | contains("- Agent-route continuation: `lower_ranked_context_omitted`, next action `narrow_task_or_seed`")) and
     (.release_notes_block | contains("- Adoption report routed first-read: `80/1200` source lines")) and
     (.release_notes_block | contains("- metadata_cargo: 99.88.77"))
   ' "$TEMP_DIR/evidence.json" >/dev/null ||
@@ -339,6 +370,7 @@ EOF
 
   CODEINSIGHT_EVIDENCE_SMOKE_LOG="$TEMP_DIR/run-id-calls.log" \
     CODEINSIGHT_EVIDENCE_BENCHMARK_SUMMARY="$TEMP_DIR/benchmark-summary.json" \
+    CODEINSIGHT_EVIDENCE_AGENT_ROUTE_SUMMARY="$TEMP_DIR/agent-route-summary.json" \
     CODEINSIGHT_ROOT_DIR="$TEMP_DIR/repo" \
     CODEINSIGHT_BENCHMARK_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/benchmark-artifact-smoke" \
     CODEINSIGHT_CONTEXT_PACK_QUALITY_ARTIFACT_SMOKE_SCRIPT="$TEMP_DIR/context-pack-quality-artifact-smoke" \

@@ -98,6 +98,10 @@ validate_summary_json() {
       and (.metrics.first_execution_suggested_tool | type == "string" and length > 0)
       and (.metrics.first_next_action | type == "string" and length > 0)
       and (.metrics.first_reading_question | type == "string" and length > 0)
+      and (.metrics.first_selection_rank | type == "number" and . >= 1)
+      and (.metrics.first_selection_reason | type == "string" and length > 0)
+      and (.metrics.continuation_status | type == "string" and length > 0)
+      and (.metrics.continuation_next_action | type == "string" and length > 0)
       and .metrics.impact_status == "complete"
       and .metrics.impacted_files >= 1
       and .metrics.suggested_checks >= 1' \
@@ -227,6 +231,8 @@ main() {
   echo "agent-route artifact smoke passed"
   echo "summary: $summary_file"
   echo "first_reading_question: $(jq -r '.metrics.first_reading_question' "$summary_file")"
+  echo "first_selection_rank: $(jq -r '.metrics.first_selection_rank' "$summary_file")"
+  echo "continuation_next_action: $(jq -r '.metrics.continuation_next_action' "$summary_file")"
 }
 
 main "$@"

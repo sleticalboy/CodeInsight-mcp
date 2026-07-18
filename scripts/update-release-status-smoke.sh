@@ -101,7 +101,13 @@ EOF
     "agent_route": {
       "name": "codeinsight-agent-route-smoke",
       "url": "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/3",
-      "summary": "/tmp/agent-route.json"
+      "summary": "/tmp/agent-route.json",
+      "metrics": {
+        "first_selection_rank": 1,
+        "first_selection_reason": "Selected for high relevance via seed_file: Seed file header and imports for task: src/auth.ts",
+        "continuation_status": "lower_ranked_context_omitted",
+        "continuation_next_action": "narrow_task_or_seed"
+      }
     },
     "mcp_first_call": {
       "name": "codeinsight-mcp-first-call",
@@ -141,6 +147,10 @@ ci_run: 654321
 benchmark_artifact_url: https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/654321/artifacts/1
 context_pack_quality_artifact_url: https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/654321/artifacts/2
 agent_route_artifact_url: https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/654321/artifacts/3
+agent_route_first_selection_rank: 2
+agent_route_first_selection_reason: Selected for medium relevance via dependency: Local dependency of src/main.ts via ./auth
+agent_route_continuation_status: complete
+agent_route_continuation_next_action: read_selected_context
 mcp_first_call_artifact_url: https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/654321/artifacts/4
 adoption_report: CodeInsight self adoption report
 adoption_report_doc: docs/adoption-report-codeinsight.md
@@ -173,6 +183,8 @@ EOF
   grep -q -- '  - CI run: `123456`' "$status_doc"
   grep -q -- '  - Metadata: `cargo=9.8.7`, `install=v9.8.7`, `changelog=9.8.7 (2026-07-15)`' "$status_doc"
   grep -q -- '  - Agent-route artifact: \[codeinsight-agent-route-smoke\](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/3)' "$status_doc"
+  grep -q -- '  - Agent-route first selection: rank `1`, Selected for high relevance via seed_file: Seed file header and imports for task: src/auth.ts' "$status_doc"
+  grep -q -- '  - Agent-route continuation: `lower_ranked_context_omitted`, next action `narrow_task_or_seed`' "$status_doc"
   grep -q -- '  - MCP first-call artifact: \[codeinsight-mcp-first-call\](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/4)' "$status_doc"
   grep -q -- '  - Adoption report: \[CodeInsight self adoption report\](docs/adoption-report-codeinsight.md)' "$status_doc"
   grep -q -- '  - Adoption report archive: `/tmp/codeinsight-self-adoption-report.tar.gz`' "$status_doc"
@@ -186,6 +198,8 @@ EOF
   grep -q -- "  - Evidence file: \`$evidence_md_file\`" "$fallback_status_doc"
   grep -q -- '  - Target commit: `md456`' "$fallback_status_doc"
   grep -q -- '  - CI run: `654321`' "$fallback_status_doc"
+  grep -q -- '  - Agent-route first selection: rank `2`, Selected for medium relevance via dependency: Local dependency of src/main.ts via ./auth' "$fallback_status_doc"
+  grep -q -- '  - Agent-route continuation: `complete`, next action `read_selected_context`' "$fallback_status_doc"
   grep -q -- '  - MCP first-call artifact: \[codeinsight-mcp-first-call\](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/654321/artifacts/4)' "$fallback_status_doc"
   grep -q -- '  - Adoption report: \[CodeInsight self adoption report\](docs/adoption-report-codeinsight.md)' "$fallback_status_doc"
   grep -q -- '  - Adoption report routed first-read: `439/28433` source lines, `98.5%` reduction' "$fallback_status_doc"

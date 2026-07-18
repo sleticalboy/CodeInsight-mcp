@@ -206,6 +206,19 @@ benchmark_metric() {
   printf "%s" "$value"
 }
 
+agent_route_metric() {
+  local summary_file="$1"
+  local query="$2"
+  local description="$3"
+  local value
+
+  value="$(jq -r "$query" "$summary_file")"
+  if [ -z "$value" ] || [ "$value" = "null" ]; then
+    fail "agent-route summary is missing $description: $summary_file"
+  fi
+  printf "%s" "$value"
+}
+
 validate_context_pack_quality_artifact() {
   local run_id="$1"
   local output
@@ -358,8 +371,12 @@ write_json_summary() {
   local context_pack_quality_summary_file="${14}"
   local agent_route_artifact_url="${15}"
   local agent_route_summary_file="${16}"
-  local mcp_first_call_artifact_url="${17}"
-  local mcp_first_call_summary_file="${18}"
+  local agent_route_first_selection_rank="${17}"
+  local agent_route_first_selection_reason="${18}"
+  local agent_route_continuation_status="${19}"
+  local agent_route_continuation_next_action="${20}"
+  local mcp_first_call_artifact_url="${21}"
+  local mcp_first_call_summary_file="${22}"
 
   mkdir -p "$(dirname "$output_file")"
   TAG_NAME="$TAG_NAME" \
@@ -383,6 +400,10 @@ write_json_summary() {
     AGENT_ROUTE_ARTIFACT_NAME="$AGENT_ROUTE_ARTIFACT_NAME" \
     AGENT_ROUTE_ARTIFACT_URL="$agent_route_artifact_url" \
     AGENT_ROUTE_SUMMARY_FILE="$agent_route_summary_file" \
+    AGENT_ROUTE_FIRST_SELECTION_RANK="$agent_route_first_selection_rank" \
+    AGENT_ROUTE_FIRST_SELECTION_REASON="$agent_route_first_selection_reason" \
+    AGENT_ROUTE_CONTINUATION_STATUS="$agent_route_continuation_status" \
+    AGENT_ROUTE_CONTINUATION_NEXT_ACTION="$agent_route_continuation_next_action" \
     MCP_FIRST_CALL_ARTIFACT_NAME="$MCP_FIRST_CALL_ARTIFACT_NAME" \
     MCP_FIRST_CALL_ARTIFACT_URL="$mcp_first_call_artifact_url" \
     MCP_FIRST_CALL_SUMMARY_FILE="$mcp_first_call_summary_file" \
@@ -422,6 +443,8 @@ release_notes = [
   "- Context-pack quality summary: `#{ENV.fetch("CONTEXT_PACK_QUALITY_SUMMARY_FILE")}`",
   "- Agent-route artifact: [#{ENV.fetch("AGENT_ROUTE_ARTIFACT_NAME")}](#{ENV.fetch("AGENT_ROUTE_ARTIFACT_URL")})",
   "- Agent-route summary: `#{ENV.fetch("AGENT_ROUTE_SUMMARY_FILE")}`",
+  "- Agent-route first selection: rank `#{ENV.fetch("AGENT_ROUTE_FIRST_SELECTION_RANK")}`, #{ENV.fetch("AGENT_ROUTE_FIRST_SELECTION_REASON")}",
+  "- Agent-route continuation: `#{ENV.fetch("AGENT_ROUTE_CONTINUATION_STATUS")}`, next action `#{ENV.fetch("AGENT_ROUTE_CONTINUATION_NEXT_ACTION")}`",
   "- MCP first-call artifact: [#{ENV.fetch("MCP_FIRST_CALL_ARTIFACT_NAME")}](#{ENV.fetch("MCP_FIRST_CALL_ARTIFACT_URL")})",
   "- MCP first-call summary: `#{ENV.fetch("MCP_FIRST_CALL_SUMMARY_FILE")}`",
   "- Adoption report: [#{ENV.fetch("ADOPTION_REPORT_NAME")}](#{ENV.fetch("ADOPTION_REPORT_DOC")})",
@@ -469,7 +492,13 @@ summary = {
     "agent_route" => {
       "name" => ENV.fetch("AGENT_ROUTE_ARTIFACT_NAME"),
       "url" => ENV.fetch("AGENT_ROUTE_ARTIFACT_URL"),
-      "summary" => ENV.fetch("AGENT_ROUTE_SUMMARY_FILE")
+      "summary" => ENV.fetch("AGENT_ROUTE_SUMMARY_FILE"),
+      "metrics" => {
+        "first_selection_rank" => ENV.fetch("AGENT_ROUTE_FIRST_SELECTION_RANK").to_i,
+        "first_selection_reason" => ENV.fetch("AGENT_ROUTE_FIRST_SELECTION_REASON"),
+        "continuation_status" => ENV.fetch("AGENT_ROUTE_CONTINUATION_STATUS"),
+        "continuation_next_action" => ENV.fetch("AGENT_ROUTE_CONTINUATION_NEXT_ACTION")
+      }
     },
     "mcp_first_call" => {
       "name" => ENV.fetch("MCP_FIRST_CALL_ARTIFACT_NAME"),
@@ -519,6 +548,10 @@ main() {
   local context_pack_quality_summary_file
   local agent_route_artifact_url
   local agent_route_summary_file
+  local agent_route_first_selection_rank
+  local agent_route_first_selection_reason
+  local agent_route_continuation_status
+  local agent_route_continuation_next_action
   local mcp_first_call_artifact_url
   local mcp_first_call_summary_file
 
@@ -666,6 +699,10 @@ main() {
   benchmark_truncated_packs="$(benchmark_metric "$benchmark_summary_file" '(.context.truncated_packs // 0) | tostring' "truncated context packs")"
   context_pack_quality_summary_file="$(validate_context_pack_quality_artifact "$RUN_ID")"
   agent_route_summary_file="$(validate_agent_route_artifact "$RUN_ID")"
+  agent_route_first_selection_rank="$(agent_route_metric "$agent_route_summary_file" '(.metrics.first_selection_rank // 0) | tostring' "first selection rank")"
+  agent_route_first_selection_reason="$(agent_route_metric "$agent_route_summary_file" '.metrics.first_selection_reason // empty' "first selection reason")"
+  agent_route_continuation_status="$(agent_route_metric "$agent_route_summary_file" '.metrics.continuation_status // empty' "continuation status")"
+  agent_route_continuation_next_action="$(agent_route_metric "$agent_route_summary_file" '.metrics.continuation_next_action // empty' "continuation next action")"
   mcp_first_call_summary_file="$(validate_mcp_first_call_artifact "$RUN_ID")"
   load_adoption_report_doc
 
@@ -689,6 +726,10 @@ main() {
   echo "agent_route_artifact: $AGENT_ROUTE_ARTIFACT_NAME"
   echo "agent_route_artifact_url: $agent_route_artifact_url"
   echo "agent_route_summary: $agent_route_summary_file"
+  echo "agent_route_first_selection_rank: $agent_route_first_selection_rank"
+  echo "agent_route_first_selection_reason: $agent_route_first_selection_reason"
+  echo "agent_route_continuation_status: $agent_route_continuation_status"
+  echo "agent_route_continuation_next_action: $agent_route_continuation_next_action"
   echo "mcp_first_call_artifact: $MCP_FIRST_CALL_ARTIFACT_NAME"
   echo "mcp_first_call_artifact_url: $mcp_first_call_artifact_url"
   echo "mcp_first_call_summary: $mcp_first_call_summary_file"
@@ -719,6 +760,8 @@ main() {
   echo "- Context-pack quality summary: \`$context_pack_quality_summary_file\`"
   echo "- Agent-route artifact: [$AGENT_ROUTE_ARTIFACT_NAME]($agent_route_artifact_url)"
   echo "- Agent-route summary: \`$agent_route_summary_file\`"
+  echo "- Agent-route first selection: rank \`$agent_route_first_selection_rank\`, $agent_route_first_selection_reason"
+  echo "- Agent-route continuation: \`$agent_route_continuation_status\`, next action \`$agent_route_continuation_next_action\`"
   echo "- MCP first-call artifact: [$MCP_FIRST_CALL_ARTIFACT_NAME]($mcp_first_call_artifact_url)"
   echo "- MCP first-call summary: \`$mcp_first_call_summary_file\`"
   echo "- Adoption report: [$ADOPTION_REPORT_NAME]($ADOPTION_REPORT_DOC)"
@@ -746,6 +789,10 @@ main() {
       "$context_pack_quality_summary_file" \
       "$agent_route_artifact_url" \
       "$agent_route_summary_file" \
+      "$agent_route_first_selection_rank" \
+      "$agent_route_first_selection_reason" \
+      "$agent_route_continuation_status" \
+      "$agent_route_continuation_next_action" \
       "$mcp_first_call_artifact_url" \
       "$mcp_first_call_summary_file"
   fi

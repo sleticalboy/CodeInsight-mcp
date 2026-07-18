@@ -257,6 +257,7 @@ benchmark = artifacts.fetch("benchmark")
 benchmark_metrics = benchmark["metrics"] || {}
 quality = artifacts.fetch("context_pack_quality")
 agent_route = artifacts.fetch("agent_route")
+agent_route_metrics = agent_route["metrics"] || {}
 mcp_first_call = artifacts.fetch("mcp_first_call")
 adoption_report = artifacts["adoption_report"]
 gates = verification.fetch("gates")
@@ -291,6 +292,8 @@ markdown_lines = [
   ("- Benchmark truncated context packs: `#{benchmark_metrics.fetch("truncated_packs")}`" if benchmark_metrics.key?("truncated_packs")),
   "- Context-pack quality artifact: [#{quality.fetch("name")}](#{quality.fetch("url")})",
   "- Agent-route artifact: [#{agent_route.fetch("name")}](#{agent_route.fetch("url")})",
+  ("- Agent-route first selection: rank `#{agent_route_metrics.fetch("first_selection_rank")}`, #{agent_route_metrics.fetch("first_selection_reason")}" if agent_route_metrics.key?("first_selection_rank") && agent_route_metrics.key?("first_selection_reason")),
+  ("- Agent-route continuation: `#{agent_route_metrics.fetch("continuation_status")}`, next action `#{agent_route_metrics.fetch("continuation_next_action")}`" if agent_route_metrics.key?("continuation_status") && agent_route_metrics.key?("continuation_next_action")),
   "- MCP first-call artifact: [#{mcp_first_call.fetch("name")}](#{mcp_first_call.fetch("url")})",
   (if adoption_report
      "- Adoption report: [#{adoption_report.fetch("name")}](#{adoption_report.fetch("document")})"
