@@ -16,9 +16,13 @@ ADOPTION_REPORT_NAME="CodeInsight self adoption report"
 ADOPTION_REPORT_DOC="docs/adoption-report-codeinsight.md"
 ADOPTION_REPORT_COMMAND='scripts/adoption-report.sh . --task "understand the main application entrypoint" --token-budget 6000 --output-dir /tmp/codeinsight-self-adoption-report --archive /tmp/codeinsight-self-adoption-report.tar.gz --print-snippet'
 ADOPTION_REPORT_ARCHIVE="/tmp/codeinsight-self-adoption-report.tar.gz"
-ADOPTION_REPORT_SELECTED_LINES="439"
-ADOPTION_REPORT_TOTAL_LINES="28433"
-ADOPTION_REPORT_LINE_REDUCTION="98.5%"
+ADOPTION_REPORT_SELECTED_LINES=""
+ADOPTION_REPORT_TOTAL_LINES=""
+ADOPTION_REPORT_LINE_REDUCTION=""
+ADOPTION_REPORT_READING_ORDER=""
+ADOPTION_REPORT_SUGGESTED_TOOL_HANDOFF=""
+ADOPTION_REPORT_CONTINUATION_AFTER_SELECTED_CONTEXT=""
+ADOPTION_REPORT_SUGGESTED_TOOL_EXECUTED=""
 REPO_ARG=()
 REPO=""
 BRANCH="main"
@@ -253,20 +257,88 @@ validate_mcp_first_call_artifact() {
   printf "%s\n" "$output" | awk -F': ' '/^summary: / { print $2; exit }'
 }
 
-validate_adoption_report_doc() {
+load_adoption_report_doc() {
   local report_doc="$ROOT_DIR/$ADOPTION_REPORT_DOC"
+  local selected_lines
+  local total_lines
+  local line_reduction
+  local reading_order
+  local suggested_tool_handoff
+  local continuation_after_selected_context
+  local suggested_tool_executed
 
   if [ ! -f "$report_doc" ]; then
     fail "adoption report document is missing: $ADOPTION_REPORT_DOC"
   fi
-  grep -Fq 'CodeInsight routed first-read | `439` source lines' "$report_doc" ||
-    fail "adoption report document is missing routed first-read evidence"
-  grep -Fq 'First-read reduction | `98.5%`' "$report_doc" ||
-    fail "adoption report document is missing reduction evidence"
-  grep -Fq 'Reading order starts with selected context | `true`' "$report_doc" ||
-    fail "adoption report document is missing MCP reading-order contract"
-  grep -Fq 'Suggested tool executed through MCP `tools/call` | `true`' "$report_doc" ||
-    fail "adoption report document is missing MCP suggested-tool contract"
+
+  selected_lines="$(adoption_report_table_value "$report_doc" "CodeInsight routed first-read" | sed 's/ source lines$//')"
+  total_lines="$(adoption_report_table_value "$report_doc" "Blind first-read baseline" | sed 's/ source lines$//')"
+  line_reduction="$(adoption_report_table_value "$report_doc" "First-read reduction")"
+  reading_order="$(adoption_report_table_value "$report_doc" "Reading order starts with selected context")"
+  suggested_tool_handoff="$(adoption_report_table_value "$report_doc" "Current-step suggested tool matches the reading plan")"
+  continuation_after_selected_context="$(adoption_report_table_value "$report_doc" "Continuation is checked after selected context")"
+  suggested_tool_executed="$(adoption_report_table_value "$report_doc" 'Suggested tool executed through MCP `tools/call`')"
+
+  case "$selected_lines" in
+    ''|*[!0-9]*)
+      fail "adoption report document has non-numeric routed first-read lines"
+      ;;
+  esac
+  case "$total_lines" in
+    ''|*[!0-9]*)
+      fail "adoption report document has non-numeric blind first-read baseline"
+      ;;
+  esac
+
+  ADOPTION_REPORT_SELECTED_LINES="$selected_lines"
+  ADOPTION_REPORT_TOTAL_LINES="$total_lines"
+  ADOPTION_REPORT_LINE_REDUCTION="$line_reduction"
+  ADOPTION_REPORT_READING_ORDER="$reading_order"
+  ADOPTION_REPORT_SUGGESTED_TOOL_HANDOFF="$suggested_tool_handoff"
+  ADOPTION_REPORT_CONTINUATION_AFTER_SELECTED_CONTEXT="$continuation_after_selected_context"
+  ADOPTION_REPORT_SUGGESTED_TOOL_EXECUTED="$suggested_tool_executed"
+
+  [ -n "$ADOPTION_REPORT_LINE_REDUCTION" ] ||
+    fail "adoption report document is missing line reduction"
+  [ "$ADOPTION_REPORT_READING_ORDER" = "true" ] ||
+    fail "adoption report MCP reading-order contract did not pass"
+  [ "$ADOPTION_REPORT_SUGGESTED_TOOL_HANDOFF" = "true" ] ||
+    fail "adoption report MCP suggested-tool handoff contract did not pass"
+  [ "$ADOPTION_REPORT_CONTINUATION_AFTER_SELECTED_CONTEXT" = "true" ] ||
+    fail "adoption report MCP continuation contract did not pass"
+  [ "$ADOPTION_REPORT_SUGGESTED_TOOL_EXECUTED" = "true" ] ||
+    fail "adoption report MCP suggested-tool execution contract did not pass"
+}
+
+adoption_report_table_value() {
+  local report_doc="$1"
+  local label="$2"
+  local value
+
+  value="$(
+    awk -F'|' -v label="$label" '
+      {
+        row_label = $2
+        gsub(/^[[:space:]]+|[[:space:]]+$/, "", row_label)
+      }
+      row_label == label {
+        value = $3
+        gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
+        gsub(/`/, "", value)
+        print value
+        found = 1
+        exit
+      }
+      END {
+        if (!found) {
+          exit 1
+        }
+      }
+    ' "$report_doc"
+  )" ||
+    fail "adoption report document is missing $label"
+
+  printf "%s" "$value"
 }
 
 write_json_summary() {
@@ -321,6 +393,10 @@ write_json_summary() {
     ADOPTION_REPORT_SELECTED_LINES="$ADOPTION_REPORT_SELECTED_LINES" \
     ADOPTION_REPORT_TOTAL_LINES="$ADOPTION_REPORT_TOTAL_LINES" \
     ADOPTION_REPORT_LINE_REDUCTION="$ADOPTION_REPORT_LINE_REDUCTION" \
+    ADOPTION_REPORT_READING_ORDER="$ADOPTION_REPORT_READING_ORDER" \
+    ADOPTION_REPORT_SUGGESTED_TOOL_HANDOFF="$ADOPTION_REPORT_SUGGESTED_TOOL_HANDOFF" \
+    ADOPTION_REPORT_CONTINUATION_AFTER_SELECTED_CONTEXT="$ADOPTION_REPORT_CONTINUATION_AFTER_SELECTED_CONTEXT" \
+    ADOPTION_REPORT_SUGGESTED_TOOL_EXECUTED="$ADOPTION_REPORT_SUGGESTED_TOOL_EXECUTED" \
     METADATA_SUMMARY="$metadata_summary" \
     ruby -rjson - "$output_file" <<'RUBY'
 output_file = ARGV.fetch(0)
@@ -352,7 +428,7 @@ release_notes = [
   "- Adoption report command: `#{ENV.fetch("ADOPTION_REPORT_COMMAND")}`",
   "- Adoption report archive: `#{ENV.fetch("ADOPTION_REPORT_ARCHIVE")}`",
   "- Adoption report routed first-read: `#{ENV.fetch("ADOPTION_REPORT_SELECTED_LINES")}/#{ENV.fetch("ADOPTION_REPORT_TOTAL_LINES")}` source lines, `#{ENV.fetch("ADOPTION_REPORT_LINE_REDUCTION")}` reduction",
-  "- Adoption report MCP first-call contract: `reading_order=true`, `suggested_tool_handoff=true`, `continuation_after_selected_context=true`, `suggested_tool_executed=true`",
+  "- Adoption report MCP first-call contract: `reading_order=#{ENV.fetch("ADOPTION_REPORT_READING_ORDER")}`, `suggested_tool_handoff=#{ENV.fetch("ADOPTION_REPORT_SUGGESTED_TOOL_HANDOFF")}`, `continuation_after_selected_context=#{ENV.fetch("ADOPTION_REPORT_CONTINUATION_AFTER_SELECTED_CONTEXT")}`, `suggested_tool_executed=#{ENV.fetch("ADOPTION_REPORT_SUGGESTED_TOOL_EXECUTED")}`",
   *metadata.map { |key, value| "- #{key}: #{value}" }
 ].join("\n")
 
@@ -410,10 +486,10 @@ summary = {
         "total_lines" => ENV.fetch("ADOPTION_REPORT_TOTAL_LINES").to_i,
         "line_reduction" => ENV.fetch("ADOPTION_REPORT_LINE_REDUCTION"),
         "mcp_first_call_contract" => {
-          "reading_order" => true,
-          "suggested_tool_handoff" => true,
-          "continuation_after_selected_context" => true,
-          "suggested_tool_executed" => true
+          "reading_order" => ENV.fetch("ADOPTION_REPORT_READING_ORDER") == "true",
+          "suggested_tool_handoff" => ENV.fetch("ADOPTION_REPORT_SUGGESTED_TOOL_HANDOFF") == "true",
+          "continuation_after_selected_context" => ENV.fetch("ADOPTION_REPORT_CONTINUATION_AFTER_SELECTED_CONTEXT") == "true",
+          "suggested_tool_executed" => ENV.fetch("ADOPTION_REPORT_SUGGESTED_TOOL_EXECUTED") == "true"
         }
       }
     }
@@ -591,7 +667,7 @@ main() {
   context_pack_quality_summary_file="$(validate_context_pack_quality_artifact "$RUN_ID")"
   agent_route_summary_file="$(validate_agent_route_artifact "$RUN_ID")"
   mcp_first_call_summary_file="$(validate_mcp_first_call_artifact "$RUN_ID")"
-  validate_adoption_report_doc
+  load_adoption_report_doc
 
   echo "release evidence summary"
   echo "tag: $TAG_NAME"
@@ -622,6 +698,10 @@ main() {
   echo "adoption_report_command: $ADOPTION_REPORT_COMMAND"
   echo "adoption_report_selected_lines: $ADOPTION_REPORT_SELECTED_LINES/$ADOPTION_REPORT_TOTAL_LINES"
   echo "adoption_report_line_reduction: $ADOPTION_REPORT_LINE_REDUCTION"
+  echo "adoption_report_contract_reading_order: $ADOPTION_REPORT_READING_ORDER"
+  echo "adoption_report_contract_suggested_tool_handoff: $ADOPTION_REPORT_SUGGESTED_TOOL_HANDOFF"
+  echo "adoption_report_contract_continuation_after_selected_context: $ADOPTION_REPORT_CONTINUATION_AFTER_SELECTED_CONTEXT"
+  echo "adoption_report_contract_suggested_tool_executed: $ADOPTION_REPORT_SUGGESTED_TOOL_EXECUTED"
   echo
   echo "release_notes_block:"
   echo "## $TAG_NAME release evidence"
@@ -645,7 +725,7 @@ main() {
   echo "- Adoption report command: \`$ADOPTION_REPORT_COMMAND\`"
   echo "- Adoption report archive: \`$ADOPTION_REPORT_ARCHIVE\`"
   echo "- Adoption report routed first-read: \`$ADOPTION_REPORT_SELECTED_LINES/$ADOPTION_REPORT_TOTAL_LINES\` source lines, \`$ADOPTION_REPORT_LINE_REDUCTION\` reduction"
-  echo "- Adoption report MCP first-call contract: \`reading_order=true\`, \`suggested_tool_handoff=true\`, \`continuation_after_selected_context=true\`, \`suggested_tool_executed=true\`"
+  echo "- Adoption report MCP first-call contract: \`reading_order=$ADOPTION_REPORT_READING_ORDER\`, \`suggested_tool_handoff=$ADOPTION_REPORT_SUGGESTED_TOOL_HANDOFF\`, \`continuation_after_selected_context=$ADOPTION_REPORT_CONTINUATION_AFTER_SELECTED_CONTEXT\`, \`suggested_tool_executed=$ADOPTION_REPORT_SUGGESTED_TOOL_EXECUTED\`"
   printf "%s\n" "$metadata_summary" | sed 's/^/- /'
 
   if [ -n "$JSON_OUTPUT_FILE" ]; then

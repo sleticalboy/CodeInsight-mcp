@@ -201,13 +201,22 @@ main() {
   repo_name="$(resolve_repo)"
   output_file="$(mktemp)"
 
-  CODEINSIGHT_ROOT_DIR="$ROOT_DIR" \
-    "$RELEASE_EVIDENCE_SUMMARY_SCRIPT" \
-      "${REPO_ARG[@]}" \
-      --run-id "$RUN_ID" \
-      --head-sha "$head_sha" \
-      "$TAG_NAME" \
-      "$BRANCH" >"$output_file"
+  if [ "${#REPO_ARG[@]}" -gt 0 ]; then
+    CODEINSIGHT_ROOT_DIR="$ROOT_DIR" \
+      "$RELEASE_EVIDENCE_SUMMARY_SCRIPT" \
+        "${REPO_ARG[@]}" \
+        --run-id "$RUN_ID" \
+        --head-sha "$head_sha" \
+        "$TAG_NAME" \
+        "$BRANCH" >"$output_file"
+  else
+    CODEINSIGHT_ROOT_DIR="$ROOT_DIR" \
+      "$RELEASE_EVIDENCE_SUMMARY_SCRIPT" \
+        --run-id "$RUN_ID" \
+        --head-sha "$head_sha" \
+        "$TAG_NAME" \
+        "$BRANCH" >"$output_file"
+  fi
 
   require_output "$output_file" "ci_run: $RUN_ID" "CI run line"
   require_output "$output_file" "head_sha: $head_sha" "head SHA line"
