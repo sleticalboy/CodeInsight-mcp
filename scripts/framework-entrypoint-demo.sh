@@ -129,9 +129,9 @@ main() {
   require_jq "$overview_json" '.entrypoints[] | select(.file == "src/Startup.cs" and .reason == "C# web application entrypoint")' "C# Startup entrypoint should be detected"
 
   require_jq "$launch_json" '.seed_strategy == "auto_entrypoint" and .files[0].file == "app/page.tsx"' "launch task should start at the strongest framework entrypoint"
-  require_jq "$routes_json" '.files[0].file == "config/routes.rb" and .selected_seeds[0].matched_keywords == ["routes"]' "routes task should start at Rails routes"
-  require_jq "$urls_json" '.files[0].file == "project/urls.py" and .selected_seeds[0].matched_keywords == ["urls"]' "Django urls task should start at urls.py"
-  require_jq "$csharp_json" '.files[0].file == "src/Startup.cs" and .selected_seeds[0].matched_keywords == ["startup"]' "C# startup task should start at Startup.cs"
+  require_jq "$routes_json" '.files[0].file == "config/routes.rb" and (.selected_seeds[0].matched_keywords | index("routes"))' "routes task should start at Rails routes"
+  require_jq "$urls_json" '.files[0].file == "project/urls.py" and (.selected_seeds[0].matched_keywords | index("urls"))' "Django urls task should start at urls.py"
+  require_jq "$csharp_json" '.files[0].file == "src/Startup.cs" and (.selected_seeds[0].matched_keywords | index("startup"))' "C# startup task should start at Startup.cs"
 
   echo "framework entrypoint demo passed"
   echo "fixture_root: $repo"

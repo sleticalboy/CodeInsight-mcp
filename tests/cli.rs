@@ -2135,6 +2135,116 @@ export function bootRouter() {
 }
 
 #[test]
+fn cli_context_pack_expands_common_agent_task_aliases() {
+    let fixture = TempDir::new().unwrap();
+    std::fs::create_dir_all(fixture.path().join("src")).unwrap();
+    std::fs::write(
+        fixture.path().join("src/main.ts"),
+        r#"import { bootRouter } from "./router";
+import { loadConfig } from "./config";
+
+export function main() {
+  return bootRouter(loadConfig());
+}
+
+main();
+"#,
+    )
+    .unwrap();
+    std::fs::write(
+        fixture.path().join("src/router.ts"),
+        r#"import { authenticate } from "./auth";
+
+export function bootRouter(settings: Record<string, string>) {
+  return authenticate(settings.user);
+}
+"#,
+    )
+    .unwrap();
+    std::fs::write(
+        fixture.path().join("src/auth.ts"),
+        r#"export function authenticate(user: string) {
+  return { user, status: "accepted" };
+}
+"#,
+    )
+    .unwrap();
+    std::fs::write(
+        fixture.path().join("src/config.ts"),
+        r#"export function loadConfig() {
+  return { user: "demo-user" };
+}
+"#,
+    )
+    .unwrap();
+
+    run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+
+    let routing_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand routing behavior",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(routing_context["seed_strategy"], "auto_task_match");
+    assert_eq!(
+        routing_context["selected_seeds"][0]["value"],
+        "src/router.ts"
+    );
+    assert!(
+        routing_context["selected_seeds"][0]["matched_keywords"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|keyword| keyword == "router")
+    );
+    assert_eq!(routing_context["files"][0]["file"], "src/router.ts");
+
+    let auth_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand authentication behavior",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(auth_context["seed_strategy"], "auto_task_match");
+    assert_eq!(auth_context["selected_seeds"][0]["value"], "src/auth.ts");
+    assert!(
+        auth_context["selected_seeds"][0]["matched_keywords"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|keyword| keyword == "auth")
+    );
+    assert_eq!(auth_context["files"][0]["file"], "src/auth.ts");
+
+    let settings_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand application settings",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(settings_context["seed_strategy"], "auto_task_match");
+    assert_eq!(
+        settings_context["selected_seeds"][0]["value"],
+        "src/config.ts"
+    );
+    assert!(
+        settings_context["selected_seeds"][0]["matched_keywords"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|keyword| keyword == "config")
+    );
+    assert_eq!(settings_context["files"][0]["file"], "src/config.ts");
+}
+
+#[test]
 fn cli_resolves_pnpm_workspace_package_exports() {
     let fixture = pnpm_workspace_fixture_project();
 
@@ -5473,9 +5583,12 @@ fn cli_overview_detects_framework_entrypoint_files() {
         route_context["selected_seeds"][0]["source"],
         "overview_entrypoint"
     );
-    assert_eq!(
-        route_context["selected_seeds"][0]["matched_keywords"][0],
-        "routes"
+    assert!(
+        route_context["selected_seeds"][0]["matched_keywords"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|keyword| keyword == "routes")
     );
     assert_eq!(route_context["files"][0]["file"], "config/routes.rb");
 
@@ -5489,9 +5602,12 @@ fn cli_overview_detects_framework_entrypoint_files() {
     ]);
     assert_eq!(url_context["seed_strategy"], "auto_entrypoint");
     assert_eq!(url_context["selected_seeds"][0]["value"], "project/urls.py");
-    assert_eq!(
-        url_context["selected_seeds"][0]["matched_keywords"][0],
-        "urls"
+    assert!(
+        url_context["selected_seeds"][0]["matched_keywords"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|keyword| keyword == "urls")
     );
     assert_eq!(url_context["files"][0]["file"], "project/urls.py");
 }

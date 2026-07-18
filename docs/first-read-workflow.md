@@ -133,6 +133,12 @@ the strongest seed. If no entrypoint or task match exists, it falls back to
 indexed source files. Test, fixture, vendor, docs, and example files are not
 auto-selected unless the task explicitly asks for those roles.
 
+Common agent task aliases are expanded before auto-selection. For example,
+`routing` can match `route`, `routes`, or `router`; `authentication` can match
+`auth`; `settings` can match `config`; and `startup` can match `Program.cs` or
+related startup files. Auto-selected seed files keep their seed order before
+dependency, call-graph, reference, or semantic expansion context.
+
 The response includes `seed_strategy` (`explicit`, `auto_entrypoint`,
 `auto_task_match`, or `auto_source_fallback`) and `selected_seeds` so clients
 can inspect seed decisions without parsing summary text. When `seed_strategy`

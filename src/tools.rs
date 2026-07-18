@@ -1192,6 +1192,11 @@ pub fn context_pack_value(
         selected_seeds = explicit_context_seeds(&seed_symbols, &seed_files);
     }
     let seed_file_set = seed_files.iter().cloned().collect::<BTreeSet<_>>();
+    let seed_file_order = seed_files
+        .iter()
+        .enumerate()
+        .map(|(index, file)| (file.clone(), index))
+        .collect::<BTreeMap<_, _>>();
     let scoring_policy = ContextScoringPolicy {
         prefer_low_value_files: context_prefers_low_value_files(&task_keywords, &seed_files),
     };
@@ -1379,6 +1384,7 @@ pub fn context_pack_value(
             ranges.sort_by(compare_context_ranges_for_budget);
             let max_score = ranges.iter().map(|range| range.score).max().unwrap_or(0);
             ContextFileCandidate {
+                seed_order: seed_file_order.get(&file).copied(),
                 file,
                 ranges,
                 max_score,
@@ -2697,6 +2703,7 @@ struct ContextCandidateRange {
 
 #[derive(Debug)]
 struct ContextFileCandidate {
+    seed_order: Option<usize>,
     file: String,
     ranges: Vec<ContextCandidateRange>,
     max_score: i32,
@@ -2884,11 +2891,23 @@ fn compare_context_file_candidates(
     left: &ContextFileCandidate,
     right: &ContextFileCandidate,
 ) -> Ordering {
-    right
-        .max_score
-        .cmp(&left.max_score)
-        .then_with(|| right.total_score.cmp(&left.total_score))
-        .then_with(|| left.file.cmp(&right.file))
+    match (left.seed_order, right.seed_order) {
+        (Some(left_order), Some(right_order)) => left_order.cmp(&right_order),
+        (Some(_), None) => Ordering::Less,
+        (None, Some(_)) => Ordering::Greater,
+        (None, None) => right
+            .max_score
+            .cmp(&left.max_score)
+            .then_with(|| right.total_score.cmp(&left.total_score))
+            .then_with(|| left.file.cmp(&right.file)),
+    }
+    .then_with(|| {
+        right
+            .max_score
+            .cmp(&left.max_score)
+            .then_with(|| right.total_score.cmp(&left.total_score))
+            .then_with(|| left.file.cmp(&right.file))
+    })
 }
 
 fn compare_context_ranges_for_budget(
@@ -3468,11 +3487,49 @@ fn auto_seed_file_role(file: &str) -> &'static str {
 }
 
 fn task_keywords(task: &str) -> Vec<String> {
-    task.split(|ch: char| !ch.is_ascii_alphanumeric())
+    let mut keywords = Vec::new();
+    for word in task
+        .split(|ch: char| !ch.is_ascii_alphanumeric())
         .map(str::to_ascii_lowercase)
         .filter(|word| word.len() >= 3 && !is_task_stop_word(word))
         .take(16)
-        .collect()
+    {
+        push_task_keyword(&mut keywords, word.as_str());
+        for alias in task_keyword_aliases(&word) {
+            push_task_keyword(&mut keywords, alias);
+        }
+    }
+    keywords.truncate(32);
+    keywords
+}
+
+fn push_task_keyword(keywords: &mut Vec<String>, keyword: &str) {
+    if !keywords.iter().any(|existing| existing == keyword) {
+        keywords.push(keyword.to_string());
+    }
+}
+
+fn task_keyword_aliases(keyword: &str) -> &'static [&'static str] {
+    match keyword {
+        "route" => &["routes", "router", "routing"],
+        "routes" => &["route", "router", "routing"],
+        "router" => &["route", "routes", "routing"],
+        "routing" => &["route", "routes", "router"],
+        "url" => &["urls"],
+        "urls" => &["url"],
+        "startup" => &["start", "boot", "program"],
+        "start" => &["startup", "boot"],
+        "boot" => &["startup", "start"],
+        "authentication" => &["auth", "login"],
+        "authenticate" => &["auth", "login"],
+        "authorization" => &["auth", "permission"],
+        "login" => &["auth", "authentication"],
+        "signin" => &["auth", "login"],
+        "config" => &["configuration", "settings"],
+        "configuration" => &["config", "settings"],
+        "settings" => &["config", "configuration"],
+        _ => &[],
+    }
 }
 
 fn is_task_stop_word(word: &str) -> bool {
@@ -3558,6 +3615,20 @@ mod tests {
     #[test]
     fn uncovered_segments_keeps_ranges_after_selected_overlap() {
         assert_eq!(uncovered_segments(1, 10, &[(4, 6)]), vec![(1, 3), (7, 10)]);
+    }
+
+    #[test]
+    fn task_keywords_expand_common_agent_routing_aliases() {
+        let keywords = task_keywords("understand routing authentication settings and startup flow");
+
+        assert!(keywords.contains(&"routing".to_string()));
+        assert!(keywords.contains(&"router".to_string()));
+        assert!(keywords.contains(&"auth".to_string()));
+        assert!(keywords.contains(&"config".to_string()));
+        assert!(keywords.contains(&"startup".to_string()));
+        assert!(keywords.contains(&"program".to_string()));
+        assert!(!keywords.contains(&"understand".to_string()));
+        assert!(!keywords.contains(&"flow".to_string()));
     }
 
     #[test]

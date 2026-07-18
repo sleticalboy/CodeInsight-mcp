@@ -713,6 +713,15 @@ main() {
   require_pattern docs/first-read-workflow.md \
     'C# web application signals include' \
     "first-read workflow C# framework entrypoints"
+  require_pattern docs/first-read-workflow.md \
+    'Common agent task aliases are expanded before auto-selection' \
+    "first-read workflow task alias routing"
+  require_pattern docs/first-read-workflow.md \
+    '`routing` can match `route`, `routes`, or `router`' \
+    "first-read workflow routing aliases"
+  require_pattern docs/first-read-workflow.md \
+    'Auto-selected seed files keep their seed order' \
+    "first-read workflow seed-order routing"
   require_pattern docs/status.md \
     'Framework-oriented entrypoint signals' \
     "status framework entrypoint signals"

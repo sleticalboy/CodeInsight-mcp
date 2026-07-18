@@ -347,7 +347,7 @@ main() {
     "task-focused route should report task-match seed strategy"
   require_jq "$focused_route_json" '.context_pack.selected_seeds[0].value == "src/router.ts"' \
     "task keywords should choose router seed before generic main entrypoint"
-  require_jq "$focused_route_json" '.context_pack.selected_seeds[0].matched_keywords == ["router"]' \
+  require_jq "$focused_route_json" '.context_pack.selected_seeds[0].matched_keywords | index("router")' \
     "task-focused seed should explain matched keywords"
   require_jq "$focused_route_json" '.context_pack.selected_seeds[1].value == "src/main.ts"' \
     "task-focused route should keep the main entrypoint as a companion seed"
@@ -357,7 +357,7 @@ main() {
     "task-focused route should read router first"
   require_jq "$focused_route_json" '[.context_pack.files[].file] | index("src/main.ts")' \
     "task-focused route should retain main entrypoint context"
-  require_jq "$focused_route_json" '.context_pack.files[0].reason | contains("matched task keywords: router")' \
+  require_jq "$focused_route_json" '.context_pack.files[0].reason | contains("router")' \
     "task-focused file reason should explain matched task keywords"
   require_jq "$focused_route_json" '.context_pack.reading_plan[0].file == "src/router.ts"' \
     "task-focused reading plan should start with router"
