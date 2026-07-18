@@ -260,12 +260,15 @@ Pass criteria:
 - The agent reads selected files in `reading_plan[]` order and uses
   `reading_plan[].question` as the local checklist and
   `reading_plan[].reason` as the current-step instruction.
-- The agent can explain `reading_plan[].selection_reason` as the evidence for
-  why a file was selected, without treating it as a replacement for
+- The agent preserves `reading_plan[].selection_rank` as the candidate-rank
+  audit trail and can explain `reading_plan[].selection_reason` as the evidence
+  for why a file was selected, without treating it as a replacement for
   `reading_plan[].question` or `reading_plan[].reason`.
 - The agent does not execute `continuation_summary.suggested_tool` or
   `omitted_candidates[].suggested_tool` until the selected `files[]` excerpts
   have been read.
+- The agent uses `continuation_summary.next_action` to describe the post-read
+  action instead of inventing a broad follow-up search.
 - The agent does not execute `reading_plan[].suggested_tool` until the matching
   selected context file has been read.
 - The agent reviews `impact_analysis` before edits without treating it as proof
@@ -300,9 +303,11 @@ Pass criteria:
   checklist for the first selected file.
 - `reading_plan[0].reason` is present and explains the question, deeper
   evidence tool, and selection rationale.
+- `reading_plan[0].selection_rank` is present and greater than zero.
 - `reading_plan[0].selection_reason` is present and explains why the first file
   was selected.
 - `continuation_summary.status` is present.
+- `continuation_summary.next_action` is present.
 
 When `continuation_summary.status` is `complete`, the agent should read the
 selected context before asking for more. When omitted candidates are available,

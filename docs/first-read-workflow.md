@@ -27,9 +27,9 @@ It reports:
 - overview entrypoint and recommendation counts
 - context-pack selected files, selected ranges, estimated tokens, and
   line-reduction percentage
-- first reading-plan question, executable reason, and raw selection reason for
-  the first selected context file
-- continuation status for follow-up context calls
+- first reading-plan question, candidate selection rank, executable reason, and
+  raw selection reason for the first selected context file
+- continuation status and next action for follow-up context calls
 - impact-analysis risk, impacted file count, path count, and suggested checks
 
 ## MCP Flow
@@ -40,9 +40,11 @@ Recommended MCP first-read flow:
 2. Read `context_pack.files[]` in `reading_plan[]` order from the returned
    route payload. Treat `reading_plan[].question` as the local checklist for
    the selected file, `reading_plan[].reason` as the executable instruction for
-   the current step, and `reading_plan[].selection_reason` as audit evidence
-   for why the file was selected.
-3. Use `continuation_summary` only after selected context is consumed.
+   the current step, `reading_plan[].selection_rank` as the candidate-rank audit
+   trail, and `reading_plan[].selection_reason` as compact evidence for why the
+   file was selected.
+3. Use `continuation_summary.next_action` only after selected context is
+   consumed.
 
 The first-read ordering contract is strict:
 
@@ -171,8 +173,9 @@ single "continue" action without interpreting budget counters themselves.
 
 When high-ranked files are omitted entirely, `omitted_candidates` returns a
 bounded, excerpt-free list of the next files to inspect. Each entry includes
-range metadata and a `suggested_tool` with a focused `context_pack` call so MCP
-clients can continue without asking the model to invent follow-up arguments.
+`selection_rank`, `omission_reason`, `next_action`, range metadata, and a
+`suggested_tool` with a focused `context_pack` call so MCP clients can continue
+without asking the model to invent follow-up arguments.
 
 Known source values include:
 
