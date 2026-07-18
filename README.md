@@ -167,15 +167,8 @@ entrypoint and recommended-tool routing decisions from `project_overview`:
 - [Large repository benchmark](docs/benchmark-large.md): express, Flask, Gin,
   and Tokio.
 - [Adoption cases](docs/adoption-cases.md): public repository blind-read vs
-  routed-first-read comparison summary.
-- [Express adoption case](docs/adoption-case-express.md): blind-read vs
-  routed-first-read evidence for a public JavaScript repository.
-- [Gin adoption case](docs/adoption-case-gin.md): blind-read vs
-  routed-first-read evidence for a public Go repository.
-- [Memchr adoption case](docs/adoption-case-memchr.md): blind-read vs
-  routed-first-read evidence for a public Rust library.
-- [Requests adoption case](docs/adoption-case-requests.md): blind-read vs
-  routed-first-read evidence for a public Python library.
+  routed-first-read comparison summary across JavaScript, Go, Rust, and Python
+  public repositories.
 - [Benchmark methodology](docs/benchmark-methodology.md): what the reports
   prove, refresh commands, profile knobs, and guardrails.
 
@@ -197,23 +190,8 @@ Current benchmark snapshot:
 - The adoption case summary covers 4 public repositories and routes a first read
   to 1,585 of 126,990 source lines, avoiding 125,405 lines before broad file
   reading, a 98.8% aggregate reduction and 80.1x aggregate read-less ratio.
-- The Express adoption case routes a first read to 232 of 21,478 source lines,
-  avoiding 21,246 lines before broad file reading, a 98.9% reduction and 92.6x
-  read-less ratio.
-- The Gin adoption case routes a first read to 472 of 24,099 source lines,
-  avoiding 23,627 lines before broad file reading, a 98.0% reduction and 51.1x
-  read-less ratio.
-- The Memchr adoption case routes a first read to 230 of 69,381 source lines,
-  avoiding 69,151 lines before broad file reading, a 99.7% reduction and 301.7x
-  read-less ratio.
-- The Requests adoption case routes a first read to 651 of 12,032 source lines,
-  avoiding 11,381 lines before broad file reading, a 94.6% reduction and 18.5x
-  read-less ratio.
-- Refresh the Express adoption case with `scripts/update-adoption-case.sh express`
-  or the compatibility wrapper `scripts/update-adoption-case-express.sh`.
-  Refresh the Gin case with `scripts/update-adoption-case.sh gin`.
-  Refresh the Memchr case with `scripts/update-adoption-case.sh memchr`.
-  Refresh the Requests case with `scripts/update-adoption-case.sh requests`.
+- Per-repository adoption metrics, commits, and refresh commands live in
+  [Adoption cases](docs/adoption-cases.md).
 - Generated reports include a `Key Results` section with routing,
   compression, token-budget, indexing, guardrail, and truncation evidence.
 - Per-repository details include a `Context reading plan` table with the local

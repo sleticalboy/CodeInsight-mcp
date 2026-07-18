@@ -104,47 +104,12 @@ main() {
     '\[Adoption cases\]\(docs/adoption-cases\.md\)' \
     "README adoption cases summary link"
   require_pattern README.md \
-    '\[Express adoption case\]\(docs/adoption-case-express\.md\)' \
-    "README Express adoption case link"
-  require_pattern README.md \
-    '\[Gin adoption case\]\(docs/adoption-case-gin\.md\)' \
-    "README Gin adoption case link"
-  require_pattern README.md \
-    '\[Memchr adoption case\]\(docs/adoption-case-memchr\.md\)' \
-    "README Memchr adoption case link"
-  require_pattern README.md \
-    '\[Requests adoption case\]\(docs/adoption-case-requests\.md\)' \
-    "README Requests adoption case link"
-  require_pattern README.md \
-    '232 of 21,478 source lines' \
-    "README Express adoption case snapshot"
-  require_pattern README.md \
-    '472 of 24,099 source lines' \
-    "README Gin adoption case snapshot"
-  require_pattern README.md \
-    '230 of 69,381 source lines' \
-    "README Memchr adoption case snapshot"
-  require_pattern README.md \
-    '651 of 12,032 source lines' \
-    "README Requests adoption case snapshot"
-  require_pattern README.md \
     '1,585 of 126,990 source lines' \
     "README adoption cases aggregate snapshot"
   require_pattern README.md \
     '80\.1x aggregate read-less ratio' \
     "README adoption cases aggregate read-less ratio"
-  require_pattern README.md \
-    'scripts/update-adoption-case\.sh express' \
-    "README Express adoption case refresh command"
-  require_pattern README.md \
-    'scripts/update-adoption-case\.sh gin' \
-    "README Gin adoption case refresh command"
-  require_pattern README.md \
-    'scripts/update-adoption-case\.sh memchr' \
-    "README Memchr adoption case refresh command"
-  require_pattern README.md \
-    'scripts/update-adoption-case\.sh requests' \
-    "README Requests adoption case refresh command"
+  "$ROOT_DIR/scripts/readme-adoption-summary-smoke.sh" >/dev/null
   require_pattern README.md \
     '\[Benchmark methodology\]\(docs/benchmark-methodology\.md\)' \
     "benchmark methodology README link"
