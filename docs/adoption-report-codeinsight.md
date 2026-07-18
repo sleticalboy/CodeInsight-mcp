@@ -17,6 +17,9 @@ first-call contract that a client or issue triage flow needs.
 - Token budget: `6000`
 - Route: `index_project -> project_overview -> context_pack -> impact_analysis`
 - Generated with: `scripts/adoption-report.sh`
+- Refreshed on: `2026-07-18`
+- Source summary: `/tmp/codeinsight-self-adoption-report/summary.json`
+- Source manifest: `/tmp/codeinsight-self-adoption-report/manifest.json`
 
 ## Result
 
@@ -92,6 +95,32 @@ The archive manifest contained:
 - `artifact-write.err`
 - `manifest.json`
 
+The generated manifest reported `status: pass` and listed the same 13 files
+that are packaged in the archive.
+
+## Generated Snippet
+
+The `--print-snippet` output from the refreshed report was:
+
+```text
+# CodeInsight Adoption Evidence
+
+- Status: `pass`
+- Route: `index_project -> project_overview -> context_pack -> impact_analysis`
+- Selected context: `439/28433` source lines, `98.5%` reduction
+- Seed strategy: `auto_entrypoint`
+- Selected seeds: `1`
+- First seed source: `overview_entrypoint`
+- Companion entrypoint: `-`
+- First selected file: `src/main.rs`
+- First reading question: What entrypoints, exported symbols, or setup code define the main flow here?
+- MCP server: `codeinsight`
+- MCP first-call contract: reading_order=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`
+- First-read gating: suggested_tool_after_selected_context=`true`, continuation_after_selected_context=`true`, impact_review_before_edits=`true`
+- MCP suggested tool executed: `true`
+- MCP impact status: `complete`
+```
+
 ## Reproduce
 
 Run from a CodeInsight checkout:
@@ -106,9 +135,10 @@ scripts/adoption-report.sh . \
   --print-snippet
 ```
 
-Expected summary line:
+Expected summary lines:
 
 ```text
+- Selected context: `439/28433` source lines, `98.5%` reduction
 - MCP first-call contract: reading_order=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`
 - First-read gating: suggested_tool_after_selected_context=`true`, continuation_after_selected_context=`true`, impact_review_before_edits=`true`
 ```
