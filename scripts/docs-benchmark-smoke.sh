@@ -669,7 +669,7 @@ main() {
     '\| First MCP call onboarding changed \| `scripts/mcp-first-call-smoke\.sh --summary-json /tmp/codeinsight-mcp-first-call\.json` \|' \
     "maintenance MCP first-call smoke chooser"
   require_pattern docs/maintenance-commands.md \
-    'selected files, first reading question, execution plan, suggested tool, impact status, and saved artifacts' \
+    'first context file, reading-plan order, suggested-tool handoff, impact status, and saved artifacts' \
     "maintenance MCP first-call artifact scope"
   require_pattern docs/maintenance-commands.md \
     'scripts/mcp-first-call-step-summary-smoke\.sh' \
@@ -678,8 +678,20 @@ main() {
     '\| First MCP call Actions summary changed \| `scripts/mcp-first-call-step-summary-smoke\.sh` \|' \
     "maintenance MCP first-call step summary chooser"
   require_pattern docs/maintenance-commands.md \
-    'Actions Summary section for selected files, first reading question, execution plan, suggested tool, impact status, and artifact link' \
+    'Actions Summary section for selected files, first context file, first reading file, reading-plan order, suggested-tool handoff, continuation timing, impact status, and artifact link' \
     "maintenance MCP first-call step summary scope"
+  require_pattern scripts/mcp-first-call-step-summary-smoke.sh \
+    'First context file: `src/main\.ts`' \
+    "MCP first-call step summary first context file"
+  require_pattern scripts/mcp-first-call-step-summary-smoke.sh \
+    'Reading order contract: `true`' \
+    "MCP first-call step summary reading order contract"
+  require_pattern scripts/mcp-first-call-step-summary-smoke.sh \
+    'Suggested tool handoff contract: `true`' \
+    "MCP first-call step summary suggested tool handoff contract"
+  require_pattern scripts/mcp-first-call-step-summary-smoke.sh \
+    'Continuation timing contract: `true`' \
+    "MCP first-call step summary continuation timing contract"
   require_pattern docs/maintenance-commands.md \
     '\| First MCP call help or failure messaging changed \| `scripts/mcp-first-call-failure-smoke\.sh` \|' \
     "maintenance MCP first-call failure smoke chooser"
@@ -771,8 +783,11 @@ main() {
     'first_reading_question' \
     "MCP first-call artifact first reading question output"
   require_pattern docs/maintainer-checklist.md \
-    'the first reading question, execution plan actions' \
-    "maintainer MCP first-call first reading question summary"
+    'the first context file, first reading file, first next action, reading-order' \
+    "maintainer MCP first-call route contract summary"
+  require_pattern docs/release-readiness.md \
+    'first reading file, first next action, reading-order and suggested-tool handoff' \
+    "release readiness MCP first-call route contract summary"
   require_pattern docs/release-commands.md \
     'scripts/release-pretag-check\.sh main' \
     "release commands benchmark artifact gate"
