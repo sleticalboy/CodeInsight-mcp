@@ -849,6 +849,15 @@ main() {
     'codeinsight-mcp-first-call' \
     "release commands MCP first-call evidence artifact"
   require_pattern docs/release-commands.md \
+    '\[CodeInsight self adoption report\]\(adoption-report-codeinsight\.md\)' \
+    "release commands adoption report handoff"
+  require_pattern docs/release-commands.md \
+    '/tmp/codeinsight-self-adoption-report\.tar\.gz' \
+    "release commands adoption report archive"
+  require_pattern docs/release-commands.md \
+    '439/28433' \
+    "release commands adoption report metric"
+  require_pattern docs/release-commands.md \
     'machine-readable JSON' \
     "release commands machine-readable evidence JSON"
   require_pattern docs/release-commands.md \
@@ -978,6 +987,12 @@ main() {
     'handoff summary and release notes draft read benchmark metrics' \
     "release runbook handoff benchmark metrics flow"
   require_pattern docs/release-runbook.md \
+    '\[CodeInsight self adoption report\]\(adoption-report-codeinsight\.md\)' \
+    "release runbook adoption report handoff"
+  require_pattern docs/release-runbook.md \
+    'report fields from that JSON' \
+    "release runbook adoption report JSON flow"
+  require_pattern docs/release-runbook.md \
     'artifact_gate_mcp_first_call' \
     "release runbook pretag MCP first-call evidence summary"
   require_pattern scripts/release-pretag-check.sh \
@@ -1037,6 +1052,15 @@ main() {
   require_pattern scripts/release-evidence-summary.sh \
     'mcp_first_call_artifact_url' \
     "release evidence MCP first-call artifact URL"
+  require_pattern scripts/release-evidence-summary.sh \
+    'adoption_report_line_reduction' \
+    "release evidence adoption report reduction output"
+  require_pattern scripts/release-handoff-summary.sh \
+    'Adoption report routed first-read' \
+    "release handoff adoption report metrics"
+  require_pattern scripts/release-notes-draft.sh \
+    'Adoption Report Evidence' \
+    "release notes adoption report evidence section"
   require_pattern scripts/archive-release-evidence.sh \
     'release-evidence/\$TAG_NAME\.md' \
     "archive release evidence default path"

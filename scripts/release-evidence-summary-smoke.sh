@@ -42,6 +42,19 @@ EOF
 
 - Smoke fixture release notes.
 EOF
+  cat >"$TEMP_DIR/repo/docs/adoption-report-codeinsight.md" <<'EOF'
+# CodeInsight Self Adoption Report
+
+| Metric | Value |
+| --- | ---: |
+| CodeInsight routed first-read | `439` source lines |
+| First-read reduction | `98.5%` |
+
+| Contract | Value |
+| --- | --- |
+| Reading order starts with selected context | `true` |
+| Suggested tool executed through MCP `tools/call` | `true` |
+EOF
 
   mkdir -p "$TEMP_DIR/bin"
 
@@ -219,6 +232,14 @@ EOF
     fail "missing MCP first-call artifact URL"
   grep -Fq 'mcp_first_call_summary: /tmp/codeinsight-mcp-first-call-artifact-123456/summary.json' "$TEMP_DIR/output.log" ||
     fail "missing MCP first-call summary output"
+  grep -Fq 'adoption_report_doc: docs/adoption-report-codeinsight.md' "$TEMP_DIR/output.log" ||
+    fail "missing adoption report document output"
+  grep -Fq 'adoption_report_archive: /tmp/codeinsight-self-adoption-report.tar.gz' "$TEMP_DIR/output.log" ||
+    fail "missing adoption report archive output"
+  grep -Fq 'adoption_report_selected_lines: 439/28433' "$TEMP_DIR/output.log" ||
+    fail "missing adoption report routed first-read output"
+  grep -Fq 'adoption_report_line_reduction: 98.5%' "$TEMP_DIR/output.log" ||
+    fail "missing adoption report reduction output"
   grep -Fq '## v99.88.77 release evidence' "$TEMP_DIR/output.log" ||
     fail "missing release notes block"
   grep -Fq -- '- CI: [run 123456](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456)' "$TEMP_DIR/output.log" ||
@@ -233,6 +254,12 @@ EOF
     fail "missing release notes agent-route artifact link"
   grep -Fq -- '- MCP first-call artifact: [codeinsight-mcp-first-call](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987657)' "$TEMP_DIR/output.log" ||
     fail "missing release notes MCP first-call artifact link"
+  grep -Fq -- '- Adoption report: [CodeInsight self adoption report](docs/adoption-report-codeinsight.md)' "$TEMP_DIR/output.log" ||
+    fail "missing release notes adoption report link"
+  grep -Fq -- '- Adoption report routed first-read: `439/28433` source lines, `98.5%` reduction' "$TEMP_DIR/output.log" ||
+    fail "missing release notes adoption report metrics"
+  grep -Fq -- '- Adoption report MCP first-call contract: `reading_order=true`, `suggested_tool_handoff=true`, `continuation_after_selected_context=true`, `suggested_tool_executed=true`' "$TEMP_DIR/output.log" ||
+    fail "missing release notes adoption report contract"
   jq -e --arg summary_path "$TEMP_DIR/benchmark-summary.json" '
     .schema_version == 1 and
     .tag == "v99.88.77" and
@@ -262,7 +289,18 @@ EOF
     .artifacts.mcp_first_call.name == "codeinsight-mcp-first-call" and
     .artifacts.mcp_first_call.url == "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/987657" and
     .artifacts.mcp_first_call.summary == "/tmp/codeinsight-mcp-first-call-artifact-123456/summary.json" and
+    .artifacts.adoption_report.name == "CodeInsight self adoption report" and
+    .artifacts.adoption_report.document == "docs/adoption-report-codeinsight.md" and
+    .artifacts.adoption_report.archive == "/tmp/codeinsight-self-adoption-report.tar.gz" and
+    .artifacts.adoption_report.metrics.selected_lines == 439 and
+    .artifacts.adoption_report.metrics.total_lines == 28433 and
+    .artifacts.adoption_report.metrics.line_reduction == "98.5%" and
+    .artifacts.adoption_report.metrics.mcp_first_call_contract.reading_order == true and
+    .artifacts.adoption_report.metrics.mcp_first_call_contract.suggested_tool_handoff == true and
+    .artifacts.adoption_report.metrics.mcp_first_call_contract.continuation_after_selected_context == true and
+    .artifacts.adoption_report.metrics.mcp_first_call_contract.suggested_tool_executed == true and
     (.release_notes_block | contains("## v99.88.77 release evidence")) and
+    (.release_notes_block | contains("- Adoption report routed first-read: `439/28433` source lines")) and
     (.release_notes_block | contains("- metadata_cargo: 99.88.77"))
   ' "$TEMP_DIR/evidence.json" >/dev/null ||
     fail "invalid evidence JSON output"

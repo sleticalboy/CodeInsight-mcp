@@ -69,6 +69,23 @@ main() {
       "name": "codeinsight-mcp-first-call",
       "url": "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/4",
       "summary": "/tmp/mcp-first-call.json"
+    },
+    "adoption_report": {
+      "name": "CodeInsight self adoption report",
+      "document": "docs/adoption-report-codeinsight.md",
+      "command": "scripts/adoption-report.sh . --task \"understand the main application entrypoint\" --token-budget 6000 --output-dir /tmp/codeinsight-self-adoption-report --archive /tmp/codeinsight-self-adoption-report.tar.gz --print-snippet",
+      "archive": "/tmp/codeinsight-self-adoption-report.tar.gz",
+      "metrics": {
+        "selected_lines": 439,
+        "total_lines": 28433,
+        "line_reduction": "98.5%",
+        "mcp_first_call_contract": {
+          "reading_order": true,
+          "suggested_tool_handoff": true,
+          "continuation_after_selected_context": true,
+          "suggested_tool_executed": true
+        }
+      }
     }
   },
   "release_notes_block": "## v9.8.7 release evidence"
@@ -135,6 +152,12 @@ EOF
     fail "missing agent-route artifact"
   grep -Fq -- '- MCP first-call artifact: [codeinsight-mcp-first-call](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/4)' "$TEMP_DIR/stdout.md" ||
     fail "missing MCP first-call artifact"
+  grep -Fq -- '- Adoption report: [CodeInsight self adoption report](docs/adoption-report-codeinsight.md)' "$TEMP_DIR/stdout.md" ||
+    fail "missing adoption report link"
+  grep -Fq -- '- Adoption report routed first-read: `439/28433` source lines, `98.5%` reduction' "$TEMP_DIR/stdout.md" ||
+    fail "missing adoption report metrics"
+  grep -Fq -- '- Adoption report MCP first-call contract: `reading_order=true`, `suggested_tool_handoff=true`, `continuation_after_selected_context=true`, `suggested_tool_executed=true`' "$TEMP_DIR/stdout.md" ||
+    fail "missing adoption report contract"
 
   "$ROOT_DIR/scripts/release-handoff-summary.sh" \
     --evidence-json "$evidence_json" \
@@ -156,6 +179,8 @@ EOF
     .target_commit == "abc123" and
     .pre_release.ci.run_id == "123456" and
     .pre_release.artifacts.benchmark.metrics.line_reduction == "99.0%" and
+    .pre_release.artifacts.adoption_report.metrics.line_reduction == "98.5%" and
+    .pre_release.artifacts.adoption_report.metrics.mcp_first_call_contract.reading_order == true and
     .post_release.gates.github_asset_downloads == "metadata_only" and
     (.post_release.expected_assets | length) == 2 and
     (.handoff_markdown | contains("## v9.8.7 release handoff"))

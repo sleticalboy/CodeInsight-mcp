@@ -164,6 +164,7 @@ benchmark_metrics = benchmark["metrics"] || {}
 quality = artifacts.fetch("context_pack_quality")
 agent_route = artifacts.fetch("agent_route")
 mcp_first_call = artifacts.fetch("mcp_first_call")
+adoption_report = artifacts["adoption_report"]
 gates = verification.fetch("gates")
 expected_assets = verification.fetch("expected_assets")
 
@@ -196,7 +197,25 @@ markdown_lines = [
   ("- Benchmark truncated context packs: `#{benchmark_metrics.fetch("truncated_packs")}`" if benchmark_metrics.key?("truncated_packs")),
   "- Context-pack quality artifact: [#{quality.fetch("name")}](#{quality.fetch("url")})",
   "- Agent-route artifact: [#{agent_route.fetch("name")}](#{agent_route.fetch("url")})",
-  "- MCP first-call artifact: [#{mcp_first_call.fetch("name")}](#{mcp_first_call.fetch("url")})"
+  "- MCP first-call artifact: [#{mcp_first_call.fetch("name")}](#{mcp_first_call.fetch("url")})",
+  (if adoption_report
+     "- Adoption report: [#{adoption_report.fetch("name")}](#{adoption_report.fetch("document")})"
+   end),
+  (if adoption_report
+     "- Adoption report command: `#{adoption_report.fetch("command")}`"
+   end),
+  (if adoption_report
+     "- Adoption report archive: `#{adoption_report.fetch("archive")}`"
+   end),
+  (if adoption_report
+     metrics = adoption_report.fetch("metrics")
+     "- Adoption report routed first-read: `#{metrics.fetch("selected_lines")}/#{metrics.fetch("total_lines")}` source lines, `#{metrics.fetch("line_reduction")}` reduction"
+   end),
+  (if adoption_report
+     metrics = adoption_report.fetch("metrics")
+     contract = metrics.fetch("mcp_first_call_contract")
+     "- Adoption report MCP first-call contract: `reading_order=#{contract.fetch("reading_order")}`, `suggested_tool_handoff=#{contract.fetch("suggested_tool_handoff")}`, `continuation_after_selected_context=#{contract.fetch("continuation_after_selected_context")}`, `suggested_tool_executed=#{contract.fetch("suggested_tool_executed")}`"
+   end)
 ].compact
 
 markdown = markdown_lines.join("\n")

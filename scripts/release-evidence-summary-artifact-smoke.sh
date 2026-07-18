@@ -215,6 +215,9 @@ main() {
   require_output "$output_file" "context_pack_quality_artifact_url: https://github.com/$repo_name/actions/runs/$RUN_ID/artifacts/" "context-pack quality artifact URL"
   require_output "$output_file" "agent_route_artifact_url: https://github.com/$repo_name/actions/runs/$RUN_ID/artifacts/" "agent-route artifact URL"
   require_output "$output_file" "mcp_first_call_artifact_url: https://github.com/$repo_name/actions/runs/$RUN_ID/artifacts/" "MCP first-call artifact URL"
+  require_output "$output_file" "adoption_report_doc: docs/adoption-report-codeinsight.md" "adoption report document path"
+  require_output "$output_file" "adoption_report_selected_lines: 439/28433" "adoption report routed first-read metric"
+  require_output "$output_file" "adoption_report_line_reduction: 98.5%" "adoption report line reduction"
   require_output "$output_file" "benchmark_report: " "benchmark report path"
   require_output "$output_file" "benchmark_summary: " "benchmark summary path"
   require_output "$output_file" "context_pack_quality_summary: " "context-pack quality summary path"
@@ -223,6 +226,8 @@ main() {
   require_output "$output_file" "- Context-pack quality artifact: [codeinsight-context-pack-quality]" "release notes context-pack quality link"
   require_output "$output_file" "- Agent-route artifact: [codeinsight-agent-route-smoke]" "release notes agent-route link"
   require_output "$output_file" "- MCP first-call artifact: [codeinsight-mcp-first-call]" "release notes MCP first-call link"
+  require_output "$output_file" "- Adoption report: [CodeInsight self adoption report](docs/adoption-report-codeinsight.md)" "release notes adoption report link"
+  require_output "$output_file" "- Adoption report MCP first-call contract: " "release notes adoption report contract"
 
   cat "$output_file"
   rm -f "$output_file"

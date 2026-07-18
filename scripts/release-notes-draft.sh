@@ -152,6 +152,7 @@ metadata = pre_release.fetch("metadata")
 artifacts = pre_release.fetch("artifacts")
 benchmark = artifacts.fetch("benchmark")
 benchmark_metrics = benchmark["metrics"] || {}
+adoption_report = artifacts["adoption_report"]
 gates = post_release.fetch("gates")
 expected_assets = post_release.fetch("expected_assets")
 docker = post_release["docker"] || {}
@@ -213,6 +214,10 @@ lines << ""
   lines << "- #{label}: [#{artifact.fetch("name")}](#{artifact.fetch("url")})"
 end
 
+if adoption_report
+  lines << "- Adoption report: [#{adoption_report.fetch("name")}](#{adoption_report.fetch("document")})"
+end
+
 unless benchmark_metrics.empty?
   lines << ""
   lines << "### Benchmark Evidence"
@@ -223,6 +228,19 @@ unless benchmark_metrics.empty?
   lines << "- Line reduction: `#{benchmark_metrics.fetch("line_reduction")}`" if benchmark_metrics.key?("line_reduction")
   lines << "- Guardrail failures: `#{benchmark_metrics.fetch("guardrail_failures")}`" if benchmark_metrics.key?("guardrail_failures")
   lines << "- Truncated context packs: `#{benchmark_metrics.fetch("truncated_packs")}`" if benchmark_metrics.key?("truncated_packs")
+end
+
+if adoption_report
+  metrics = adoption_report.fetch("metrics")
+  contract = metrics.fetch("mcp_first_call_contract")
+  lines << ""
+  lines << "### Adoption Report Evidence"
+  lines << ""
+  lines << "- Command: `#{adoption_report.fetch("command")}`"
+  lines << "- Archive: `#{adoption_report.fetch("archive")}`"
+  lines << "- Routed first-read: `#{metrics.fetch("selected_lines")}/#{metrics.fetch("total_lines")}` source lines"
+  lines << "- Line reduction: `#{metrics.fetch("line_reduction")}`"
+  lines << "- MCP first-call contract: `reading_order=#{contract.fetch("reading_order")}`, `suggested_tool_handoff=#{contract.fetch("suggested_tool_handoff")}`, `continuation_after_selected_context=#{contract.fetch("continuation_after_selected_context")}`, `suggested_tool_executed=#{contract.fetch("suggested_tool_executed")}`"
 end
 
 File.write(output_path, "#{lines.join("\n")}\n")

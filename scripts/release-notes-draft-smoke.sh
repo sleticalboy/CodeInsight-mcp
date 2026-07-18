@@ -64,6 +64,23 @@ main() {
       "agent_route": {
         "name": "codeinsight-agent-route-smoke",
         "url": "https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/3"
+      },
+      "adoption_report": {
+        "name": "CodeInsight self adoption report",
+        "document": "docs/adoption-report-codeinsight.md",
+        "command": "scripts/adoption-report.sh . --task \"understand the main application entrypoint\" --token-budget 6000 --output-dir /tmp/codeinsight-self-adoption-report --archive /tmp/codeinsight-self-adoption-report.tar.gz --print-snippet",
+        "archive": "/tmp/codeinsight-self-adoption-report.tar.gz",
+        "metrics": {
+          "selected_lines": 439,
+          "total_lines": 28433,
+          "line_reduction": "98.5%",
+          "mcp_first_call_contract": {
+            "reading_order": true,
+            "suggested_tool_handoff": true,
+            "continuation_after_selected_context": true,
+            "suggested_tool_executed": true
+          }
+        }
       }
     }
   },
@@ -127,12 +144,20 @@ EOF
     fail "missing Docker distribution check"
   grep -Fq -- '- Benchmark: [codeinsight-benchmark-subset](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/123456/artifacts/1)' "$draft_md" ||
     fail "missing benchmark artifact"
+  grep -Fq -- '- Adoption report: [CodeInsight self adoption report](docs/adoption-report-codeinsight.md)' "$draft_md" ||
+    fail "missing adoption report artifact"
   grep -Fq '### Benchmark Evidence' "$draft_md" ||
     fail "missing benchmark evidence section"
   grep -Fq -- '- Routing: `context_pack` first for 1/1 repositories' "$draft_md" ||
     fail "missing benchmark routing"
   grep -Fq -- '- Line reduction: `99.0%`' "$draft_md" ||
     fail "missing benchmark line reduction"
+  grep -Fq '### Adoption Report Evidence' "$draft_md" ||
+    fail "missing adoption report evidence section"
+  grep -Fq -- '- Routed first-read: `439/28433` source lines' "$draft_md" ||
+    fail "missing adoption report routed first-read"
+  grep -Fq -- '- MCP first-call contract: `reading_order=true`, `suggested_tool_handoff=true`, `continuation_after_selected_context=true`, `suggested_tool_executed=true`' "$draft_md" ||
+    fail "missing adoption report MCP contract"
 
   CODEINSIGHT_ROOT_DIR="$TEMP_DIR" \
     "$ROOT_DIR/scripts/release-notes-draft.sh" v9.8.7 >"$TEMP_DIR/stdout.md"

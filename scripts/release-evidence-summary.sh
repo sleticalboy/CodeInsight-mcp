@@ -12,6 +12,13 @@ ARTIFACT_NAME="codeinsight-benchmark-subset"
 CONTEXT_PACK_QUALITY_ARTIFACT_NAME="codeinsight-context-pack-quality"
 AGENT_ROUTE_ARTIFACT_NAME="codeinsight-agent-route-smoke"
 MCP_FIRST_CALL_ARTIFACT_NAME="codeinsight-mcp-first-call"
+ADOPTION_REPORT_NAME="CodeInsight self adoption report"
+ADOPTION_REPORT_DOC="docs/adoption-report-codeinsight.md"
+ADOPTION_REPORT_COMMAND='scripts/adoption-report.sh . --task "understand the main application entrypoint" --token-budget 6000 --output-dir /tmp/codeinsight-self-adoption-report --archive /tmp/codeinsight-self-adoption-report.tar.gz --print-snippet'
+ADOPTION_REPORT_ARCHIVE="/tmp/codeinsight-self-adoption-report.tar.gz"
+ADOPTION_REPORT_SELECTED_LINES="439"
+ADOPTION_REPORT_TOTAL_LINES="28433"
+ADOPTION_REPORT_LINE_REDUCTION="98.5%"
 REPO_ARG=()
 REPO=""
 BRANCH="main"
@@ -246,6 +253,22 @@ validate_mcp_first_call_artifact() {
   printf "%s\n" "$output" | awk -F': ' '/^summary: / { print $2; exit }'
 }
 
+validate_adoption_report_doc() {
+  local report_doc="$ROOT_DIR/$ADOPTION_REPORT_DOC"
+
+  if [ ! -f "$report_doc" ]; then
+    fail "adoption report document is missing: $ADOPTION_REPORT_DOC"
+  fi
+  grep -Fq 'CodeInsight routed first-read | `439` source lines' "$report_doc" ||
+    fail "adoption report document is missing routed first-read evidence"
+  grep -Fq 'First-read reduction | `98.5%`' "$report_doc" ||
+    fail "adoption report document is missing reduction evidence"
+  grep -Fq 'Reading order starts with selected context | `true`' "$report_doc" ||
+    fail "adoption report document is missing MCP reading-order contract"
+  grep -Fq 'Suggested tool executed through MCP `tools/call` | `true`' "$report_doc" ||
+    fail "adoption report document is missing MCP suggested-tool contract"
+}
+
 write_json_summary() {
   local output_file="$1"
   local metadata_summary="$2"
@@ -291,6 +314,13 @@ write_json_summary() {
     MCP_FIRST_CALL_ARTIFACT_NAME="$MCP_FIRST_CALL_ARTIFACT_NAME" \
     MCP_FIRST_CALL_ARTIFACT_URL="$mcp_first_call_artifact_url" \
     MCP_FIRST_CALL_SUMMARY_FILE="$mcp_first_call_summary_file" \
+    ADOPTION_REPORT_NAME="$ADOPTION_REPORT_NAME" \
+    ADOPTION_REPORT_DOC="$ADOPTION_REPORT_DOC" \
+    ADOPTION_REPORT_COMMAND="$ADOPTION_REPORT_COMMAND" \
+    ADOPTION_REPORT_ARCHIVE="$ADOPTION_REPORT_ARCHIVE" \
+    ADOPTION_REPORT_SELECTED_LINES="$ADOPTION_REPORT_SELECTED_LINES" \
+    ADOPTION_REPORT_TOTAL_LINES="$ADOPTION_REPORT_TOTAL_LINES" \
+    ADOPTION_REPORT_LINE_REDUCTION="$ADOPTION_REPORT_LINE_REDUCTION" \
     METADATA_SUMMARY="$metadata_summary" \
     ruby -rjson - "$output_file" <<'RUBY'
 output_file = ARGV.fetch(0)
@@ -318,6 +348,11 @@ release_notes = [
   "- Agent-route summary: `#{ENV.fetch("AGENT_ROUTE_SUMMARY_FILE")}`",
   "- MCP first-call artifact: [#{ENV.fetch("MCP_FIRST_CALL_ARTIFACT_NAME")}](#{ENV.fetch("MCP_FIRST_CALL_ARTIFACT_URL")})",
   "- MCP first-call summary: `#{ENV.fetch("MCP_FIRST_CALL_SUMMARY_FILE")}`",
+  "- Adoption report: [#{ENV.fetch("ADOPTION_REPORT_NAME")}](#{ENV.fetch("ADOPTION_REPORT_DOC")})",
+  "- Adoption report command: `#{ENV.fetch("ADOPTION_REPORT_COMMAND")}`",
+  "- Adoption report archive: `#{ENV.fetch("ADOPTION_REPORT_ARCHIVE")}`",
+  "- Adoption report routed first-read: `#{ENV.fetch("ADOPTION_REPORT_SELECTED_LINES")}/#{ENV.fetch("ADOPTION_REPORT_TOTAL_LINES")}` source lines, `#{ENV.fetch("ADOPTION_REPORT_LINE_REDUCTION")}` reduction",
+  "- Adoption report MCP first-call contract: `reading_order=true`, `suggested_tool_handoff=true`, `continuation_after_selected_context=true`, `suggested_tool_executed=true`",
   *metadata.map { |key, value| "- #{key}: #{value}" }
 ].join("\n")
 
@@ -364,6 +399,23 @@ summary = {
       "name" => ENV.fetch("MCP_FIRST_CALL_ARTIFACT_NAME"),
       "url" => ENV.fetch("MCP_FIRST_CALL_ARTIFACT_URL"),
       "summary" => ENV.fetch("MCP_FIRST_CALL_SUMMARY_FILE")
+    },
+    "adoption_report" => {
+      "name" => ENV.fetch("ADOPTION_REPORT_NAME"),
+      "document" => ENV.fetch("ADOPTION_REPORT_DOC"),
+      "command" => ENV.fetch("ADOPTION_REPORT_COMMAND"),
+      "archive" => ENV.fetch("ADOPTION_REPORT_ARCHIVE"),
+      "metrics" => {
+        "selected_lines" => ENV.fetch("ADOPTION_REPORT_SELECTED_LINES").to_i,
+        "total_lines" => ENV.fetch("ADOPTION_REPORT_TOTAL_LINES").to_i,
+        "line_reduction" => ENV.fetch("ADOPTION_REPORT_LINE_REDUCTION"),
+        "mcp_first_call_contract" => {
+          "reading_order" => true,
+          "suggested_tool_handoff" => true,
+          "continuation_after_selected_context" => true,
+          "suggested_tool_executed" => true
+        }
+      }
     }
   },
   "release_notes_block" => release_notes
@@ -539,6 +591,7 @@ main() {
   context_pack_quality_summary_file="$(validate_context_pack_quality_artifact "$RUN_ID")"
   agent_route_summary_file="$(validate_agent_route_artifact "$RUN_ID")"
   mcp_first_call_summary_file="$(validate_mcp_first_call_artifact "$RUN_ID")"
+  validate_adoption_report_doc
 
   echo "release evidence summary"
   echo "tag: $TAG_NAME"
@@ -563,6 +616,12 @@ main() {
   echo "mcp_first_call_artifact: $MCP_FIRST_CALL_ARTIFACT_NAME"
   echo "mcp_first_call_artifact_url: $mcp_first_call_artifact_url"
   echo "mcp_first_call_summary: $mcp_first_call_summary_file"
+  echo "adoption_report: $ADOPTION_REPORT_NAME"
+  echo "adoption_report_doc: $ADOPTION_REPORT_DOC"
+  echo "adoption_report_archive: $ADOPTION_REPORT_ARCHIVE"
+  echo "adoption_report_command: $ADOPTION_REPORT_COMMAND"
+  echo "adoption_report_selected_lines: $ADOPTION_REPORT_SELECTED_LINES/$ADOPTION_REPORT_TOTAL_LINES"
+  echo "adoption_report_line_reduction: $ADOPTION_REPORT_LINE_REDUCTION"
   echo
   echo "release_notes_block:"
   echo "## $TAG_NAME release evidence"
@@ -582,6 +641,11 @@ main() {
   echo "- Agent-route summary: \`$agent_route_summary_file\`"
   echo "- MCP first-call artifact: [$MCP_FIRST_CALL_ARTIFACT_NAME]($mcp_first_call_artifact_url)"
   echo "- MCP first-call summary: \`$mcp_first_call_summary_file\`"
+  echo "- Adoption report: [$ADOPTION_REPORT_NAME]($ADOPTION_REPORT_DOC)"
+  echo "- Adoption report command: \`$ADOPTION_REPORT_COMMAND\`"
+  echo "- Adoption report archive: \`$ADOPTION_REPORT_ARCHIVE\`"
+  echo "- Adoption report routed first-read: \`$ADOPTION_REPORT_SELECTED_LINES/$ADOPTION_REPORT_TOTAL_LINES\` source lines, \`$ADOPTION_REPORT_LINE_REDUCTION\` reduction"
+  echo "- Adoption report MCP first-call contract: \`reading_order=true\`, \`suggested_tool_handoff=true\`, \`continuation_after_selected_context=true\`, \`suggested_tool_executed=true\`"
   printf "%s\n" "$metadata_summary" | sed 's/^/- /'
 
   if [ -n "$JSON_OUTPUT_FILE" ]; then

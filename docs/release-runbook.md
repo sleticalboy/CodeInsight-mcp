@@ -165,11 +165,14 @@ This resolves the successful `CI` run for the target SHA, validates the
 `codeinsight-benchmark-subset`, `codeinsight-context-pack-quality`,
 `codeinsight-agent-route-smoke`, and `codeinsight-mcp-first-call` artifacts,
 and prints a Markdown block with the commit, workflow run, artifact links,
-local report paths, benchmark routing/line-reduction metrics, and release
-metadata to `release-evidence/vX.Y.Z.md`. Use `--output PATH` for a custom
+local report paths, benchmark routing/line-reduction metrics, release metadata,
+and the [CodeInsight self adoption report](adoption-report-codeinsight.md)
+command, archive path, routed first-read metrics, and MCP first-call contract
+summary to `release-evidence/vX.Y.Z.md`. Use `--output PATH` for a custom
 archive path or `--force` to intentionally overwrite an existing evidence file.
 Use `--json-output PATH` to also write a machine-readable evidence summary; the
-handoff summary and release notes draft read benchmark metrics from that JSON.
+handoff summary and release notes draft read benchmark metrics and adoption
+report fields from that JSON.
 
 ## Publish A Tagged Release
 
