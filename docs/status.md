@@ -52,6 +52,9 @@ MVP workflow is now implemented end to end.
 - `agent_route.execution_plan[0].instruction` carries the first reading file,
   candidate rank, and first reading question so clients can render the first
   checklist item directly.
+- `agent_route.execution_plan[1].instruction` carries the current reading
+  action and question alongside the ready suggested tool, so client follow-up
+  prompts stay aligned with `reading_plan[]`.
 - CLI commands: `index`, `init-config`, `config-status`, `overview`,
   `symbols`, `outline`, `dependency-graph`, `impact-analysis`,
   `find-references`, `semantic-search`, `semantic-index`, `embedding-status`,

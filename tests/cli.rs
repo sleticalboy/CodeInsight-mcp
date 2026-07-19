@@ -6957,6 +6957,20 @@ fn assert_agent_route_execution_plan_matches_context(route: &Value) {
             .contains(first_step["suggested_tool"]["tool"].as_str().unwrap()),
         "current-step instruction should name the suggested tool"
     );
+    assert!(
+        execution_plan[1]["instruction"]
+            .as_str()
+            .unwrap()
+            .contains(first_step["next_action"].as_str().unwrap()),
+        "current-step instruction should name the reading-plan action"
+    );
+    assert!(
+        execution_plan[1]["instruction"]
+            .as_str()
+            .unwrap()
+            .contains(first_step["question"].as_str().unwrap()),
+        "current-step instruction should include the reading-plan question"
+    );
 
     let continuation = &context_pack["continuation_summary"];
     assert!(

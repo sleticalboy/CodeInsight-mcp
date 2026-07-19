@@ -85,6 +85,9 @@ The first execution step names the first reading file with its
 `selection_rank` and first reading question; the continuation step names the
 first omitted candidate, `omission_reason`, and suggested continuation tool
 when one exists.
+The second execution step mirrors the first `reading_plan[]` step's
+`suggested_tool` and names that step's `next_action` and `question`, so clients
+can render the follow-up without reassembling context from separate fields.
 Use `review_impact_before_edits` as a pre-edit checkpoint, not as proof of
 compiler-grade safety.
 

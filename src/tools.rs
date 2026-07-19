@@ -362,8 +362,8 @@ fn agent_route_execution_plan(
             action: "use_current_reading_step_suggested_tool".to_string(),
             status: "available_after_current_file".to_string(),
             instruction: format!(
-                "After reading {}, call {} only if deeper evidence is needed for the current reading step.",
-                step.file, step.suggested_tool.tool
+                "After reading {}, call {} only if deeper evidence is needed for {} to answer: {}",
+                step.file, step.suggested_tool.tool, step.next_action, step.question
             ),
             files: vec![step.file.clone()],
             suggested_tool: Some(step.suggested_tool.clone()),
