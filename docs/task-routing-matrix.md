@@ -9,6 +9,7 @@ This is a route-quality check, not a benchmark suite. It helps answer:
 - Does an authentication task start at auth code?
 - Does a settings task start at config code?
 - Does a startup task preserve the application entrypoint?
+- Does a persistence task start at database, repository, or storage code?
 
 ## Run
 
@@ -26,6 +27,7 @@ scripts/task-routing-matrix.sh /path/to/repo \
   --task "understand authentication behavior" \
   --task "understand application settings" \
   --task "understand startup flow" \
+  --task "understand persistence behavior" \
   --output-dir /tmp/codeinsight-task-routing-matrix
 ```
 
@@ -46,6 +48,7 @@ For longer matrices, put the expectations in a file. Line-based files can use
 ```text
 understand routing behavior	src/router.ts
 understand authentication behavior	src/auth.ts
+understand persistence behavior	src/database.ts
 ```
 
 Then run:

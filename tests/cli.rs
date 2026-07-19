@@ -2202,6 +2202,15 @@ export function bootRouter(settings: Record<string, string>) {
     )
     .unwrap();
     std::fs::write(
+        fixture.path().join("src/database.ts"),
+        r#"export function connectDatabase() {
+  // Persist user records in durable storage.
+  return { repository: "users", storage: "postgres" };
+}
+"#,
+    )
+    .unwrap();
+    std::fs::write(
         fixture.path().join("src/application.ts"),
         r#"export function attach(handler: unknown) {
   // Registers middleware before routes are mounted.
@@ -2285,6 +2294,33 @@ export function bootRouter(settings: Record<string, string>) {
         .unwrap();
     assert!(settings_question.contains("configuration options"));
     assert!(settings_question.contains("environment inputs"));
+
+    let persistence_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand persistence behavior",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(persistence_context["seed_strategy"], "auto_task_match");
+    assert_eq!(
+        persistence_context["selected_seeds"][0]["value"],
+        "src/database.ts"
+    );
+    assert!(
+        persistence_context["selected_seeds"][0]["matched_keywords"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|keyword| keyword == "database")
+    );
+    assert_eq!(persistence_context["files"][0]["file"], "src/database.ts");
+    let persistence_question = persistence_context["reading_plan"][0]["question"]
+        .as_str()
+        .unwrap();
+    assert!(persistence_question.contains("database access"));
+    assert!(persistence_question.contains("storage boundaries"));
 
     let middleware_context = run_json([
         "context-pack",

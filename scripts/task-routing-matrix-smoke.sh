@@ -75,6 +75,10 @@ main();'
   write_file "$repo/src/config.ts" 'export function loadConfig() {
   return { mode: "test" };
 }'
+  write_file "$repo/src/database.ts" 'export function connectDatabase() {
+  // Persist user records in durable storage.
+  return { repository: "users", storage: "postgres" };
+}'
   write_file "$repo/src/startup.ts" 'export function bootStartup(router: unknown, auth: unknown, config: unknown) {
   return { router, auth, config };
 }'
@@ -104,6 +108,7 @@ main() {
 understand authentication behavior	src/auth.ts
 understand application settings	src/config.ts
 understand startup flow	src/startup.ts
+understand persistence behavior	src/database.ts
 understand middleware behavior	src/application.ts'
   write_file "$bad_expectations_json" '[
   {
@@ -117,12 +122,13 @@ understand middleware behavior	src/application.ts'
     --token-budget 1600 \
     --expect-file "$expectations_tsv"
 
-  require_jq "$summary_json" '.status == "pass" and .task_count == 5' "matrix summary should pass"
-  require_jq "$summary_json" '.expectations.status == "pass" and .expectations.count == 5' "matrix expectations should pass"
+  require_jq "$summary_json" '.status == "pass" and .task_count == 6' "matrix summary should pass"
+  require_jq "$summary_json" '.expectations.status == "pass" and .expectations.count == 6' "matrix expectations should pass"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand routing behavior" and .first_file == "src/router.ts")' "routing task should choose router"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand authentication behavior" and .first_file == "src/auth.ts")' "authentication task should choose auth"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand application settings" and .first_file == "src/config.ts")' "settings task should choose config"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand startup flow" and .first_file == "src/startup.ts")' "startup task should choose startup"
+  require_jq "$summary_json" '.tasks[] | select(.task == "understand persistence behavior" and .first_file == "src/database.ts")' "persistence task should choose database"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand middleware behavior" and .first_file == "src/application.ts")' "middleware task should choose application"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand authentication behavior" and (.first_reading_question | contains("authentication decisions")))' "authentication task should report an auth-specific reading question"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand authentication behavior" and (.first_reading_focus | contains("authentication")))' "authentication task should report an auth-specific reading focus"
@@ -130,6 +136,8 @@ understand middleware behavior	src/application.ts'
   require_jq "$summary_json" '.tasks[] | select(.task == "understand application settings" and (.first_reading_focus | contains("configuration")))' "settings task should report a config-specific reading focus"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand startup flow" and (.first_reading_question | contains("startup entrypoint")))' "startup task should report a startup-specific reading question"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand startup flow" and (.first_reading_focus | contains("startup")))' "startup task should report a startup-specific reading focus"
+  require_jq "$summary_json" '.tasks[] | select(.task == "understand persistence behavior" and (.first_reading_question | contains("database access")))' "persistence task should report a database-specific reading question"
+  require_jq "$summary_json" '.tasks[] | select(.task == "understand persistence behavior" and (.first_reading_focus | contains("persistence")))' "persistence task should report a persistence-specific reading focus"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand middleware behavior" and (.first_reading_question | contains("handler boundaries")))' "middleware task should report a middleware-specific reading question"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand middleware behavior" and (.first_reading_focus | contains("middleware")))' "middleware task should report a middleware-specific reading focus"
   grep -Fq '| Task | Seed strategy | First file | Focus | Question |' "$output_dir/task-routing-matrix.md" ||
