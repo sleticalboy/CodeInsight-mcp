@@ -7,6 +7,7 @@ This is a route-quality check, not a benchmark suite. It helps answer:
 
 - Does a routing task start at routing code?
 - Does an authentication task start at auth code?
+- Does an authorization task start at permission or token boundary code?
 - Does a settings task start at config code?
 - Does a startup task preserve the application entrypoint?
 - Does a persistence task start at database, repository, or storage code?
@@ -24,7 +25,7 @@ Run the default matrix:
 scripts/task-routing-matrix.sh /path/to/repo
 ```
 
-The default matrix covers routing, authentication, settings, startup,
+The default matrix covers routing, authentication, authorization, settings, startup,
 persistence, debug/retry/timeout, regression coverage, API handler,
 background job, documentation, and middleware prompts.
 
@@ -34,6 +35,7 @@ Run a custom matrix:
 scripts/task-routing-matrix.sh /path/to/repo \
   --task "understand routing behavior" \
   --task "understand authentication behavior" \
+  --task "understand authorization permissions" \
   --task "understand application settings" \
   --task "understand startup flow" \
   --task "understand persistence behavior" \
@@ -62,6 +64,7 @@ For longer matrices, put the expectations in a file. Line-based files can use
 ```text
 understand routing behavior	src/router.ts
 understand authentication behavior	src/auth.ts
+understand authorization permissions	src/permissions.ts
 understand persistence behavior	src/database.ts
 debug retry timeout handling	src/errors.ts
 find regression coverage	src/router.test.ts

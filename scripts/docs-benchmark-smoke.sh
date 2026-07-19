@@ -116,7 +116,7 @@ main() {
     '93\.3x aggregate read-less ratio' \
     "README adoption cases aggregate read-less ratio"
   require_pattern README.md \
-    'routes the entrypoint task to 439 of 30,538 source lines, a 98\.6% first-read' \
+    'routes the entrypoint task to 439 of 30,601 source lines, a 98\.6% first-read' \
     "README self adoption report metric"
   "$ROOT_DIR/scripts/readme-adoption-summary-smoke.sh" >/dev/null
   require_pattern README.md \
@@ -411,7 +411,7 @@ main() {
     'scripts/task-routing-matrix\.sh /path/to/repo' \
     "task routing matrix doc command"
   require_pattern docs/task-routing-matrix.md \
-    'The default matrix covers routing, authentication, settings, startup,' \
+    'The default matrix covers routing, authentication, authorization, settings, startup,' \
     "task routing matrix default task scope"
   require_pattern docs/task-routing-matrix.md \
     '\-\-expect "understand routing behavior=src/router\.ts"' \
@@ -419,6 +419,9 @@ main() {
   require_pattern docs/task-routing-matrix.md \
     '\-\-expect-file \./route-expectations\.tsv' \
     "task routing matrix expectation file example"
+  require_pattern docs/task-routing-matrix.md \
+    'Does an authorization task start at permission or token boundary code' \
+    "task routing matrix authorization framing"
   require_pattern docs/task-routing-matrix.md \
     'Does a persistence task start at database, repository, or storage code' \
     "task routing matrix persistence framing"
@@ -437,6 +440,9 @@ main() {
   require_pattern docs/task-routing-matrix.md \
     'Does a documentation task start at docs, guide, or usage example code' \
     "task routing matrix documentation framing"
+  require_pattern docs/task-routing-matrix.md \
+    $'understand authorization permissions\tsrc/permissions\\.ts' \
+    "task routing matrix authorization expectation example"
   require_pattern docs/task-routing-matrix.md \
     $'understand persistence behavior\tsrc/database\\.ts' \
     "task routing matrix persistence expectation example"
@@ -999,7 +1005,7 @@ main() {
     '\| Task alias or seed ordering changed \| `scripts/task-routing-matrix-smoke\.sh` \|' \
     "maintenance task routing matrix smoke chooser"
   require_pattern docs/maintenance-commands.md \
-    'routing, authentication, settings, startup, persistence, debug, coverage, API handler, background job, documentation, and middleware prompts choose the matching first file and that `--expect-file` failures are reported' \
+    'routing, authentication, authorization, settings, startup, persistence, debug, coverage, API handler, background job, documentation, and middleware prompts choose the matching first file and that `--expect-file` failures are reported' \
     "maintenance task routing matrix smoke scope"
   require_pattern docs/maintenance-commands.md \
     '\| Installed-binary adoption path changed \| `CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/installed-quickstart-smoke\.sh` \|' \
@@ -1526,6 +1532,9 @@ main() {
   require_pattern scripts/task-routing-matrix.sh \
     'understand authentication behavior' \
     "task routing matrix default authentication task"
+  require_pattern scripts/task-routing-matrix.sh \
+    'understand authorization permissions' \
+    "task routing matrix default authorization task"
   require_pattern scripts/task-routing-matrix.sh \
     'understand persistence behavior' \
     "task routing matrix default persistence task"

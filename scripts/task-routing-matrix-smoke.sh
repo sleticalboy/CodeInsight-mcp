@@ -72,6 +72,10 @@ main();'
   write_file "$repo/src/auth.ts" 'export function authenticate(user: string) {
   return { user, status: "accepted" };
 }'
+  write_file "$repo/src/permissions.ts" 'export function authorizePermission(token: string) {
+  // Authorization permission checks validate the bearer token.
+  return { token, permission: "admin" };
+}'
   write_file "$repo/src/config.ts" 'export function loadConfig() {
   return { mode: "test" };
 }'
@@ -127,8 +131,9 @@ main() {
   expectations_tsv="$TEMP_DIR/expectations.tsv"
   bad_expectations_json="$TEMP_DIR/bad-expectations.json"
   create_fixture "$repo"
-  write_file "$expectations_tsv" 'understand routing behavior	src/router.ts
+write_file "$expectations_tsv" 'understand routing behavior	src/router.ts
 understand authentication behavior	src/auth.ts
+understand authorization permissions	src/permissions.ts
 understand application settings	src/config.ts
 understand startup flow	src/startup.ts
 understand persistence behavior	src/database.ts
@@ -150,10 +155,11 @@ understand middleware behavior	src/application.ts'
     --token-budget 1600 \
     --expect-file "$expectations_tsv"
 
-  require_jq "$summary_json" '.status == "pass" and .task_count == 11' "matrix summary should pass"
-  require_jq "$summary_json" '.expectations.status == "pass" and .expectations.count == 11' "matrix expectations should pass"
+  require_jq "$summary_json" '.status == "pass" and .task_count == 12' "matrix summary should pass"
+  require_jq "$summary_json" '.expectations.status == "pass" and .expectations.count == 12' "matrix expectations should pass"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand routing behavior" and .first_file == "src/router.ts")' "routing task should choose router"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand authentication behavior" and .first_file == "src/auth.ts")' "authentication task should choose auth"
+  require_jq "$summary_json" '.tasks[] | select(.task == "understand authorization permissions" and .first_file == "src/permissions.ts")' "authorization task should choose permissions"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand application settings" and .first_file == "src/config.ts")' "settings task should choose config"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand startup flow" and .first_file == "src/startup.ts")' "startup task should choose startup"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand persistence behavior" and .first_file == "src/database.ts")' "persistence task should choose database"
@@ -165,6 +171,8 @@ understand middleware behavior	src/application.ts'
   require_jq "$summary_json" '.tasks[] | select(.task == "understand middleware behavior" and .first_file == "src/application.ts")' "middleware task should choose application"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand authentication behavior" and (.first_reading_question | contains("authentication decisions")))' "authentication task should report an auth-specific reading question"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand authentication behavior" and (.first_reading_focus | contains("authentication")))' "authentication task should report an auth-specific reading focus"
+  require_jq "$summary_json" '.tasks[] | select(.task == "understand authorization permissions" and (.first_reading_question | contains("authentication decisions")))' "authorization task should report an auth-specific reading question"
+  require_jq "$summary_json" '.tasks[] | select(.task == "understand authorization permissions" and (.first_reading_focus | contains("authentication")))' "authorization task should report an auth-specific reading focus"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand application settings" and (.first_reading_question | contains("configuration options")))' "settings task should report a config-specific reading question"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand application settings" and (.first_reading_focus | contains("configuration")))' "settings task should report a config-specific reading focus"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand startup flow" and (.first_reading_question | contains("startup entrypoint")))' "startup task should report a startup-specific reading question"
@@ -189,7 +197,8 @@ understand middleware behavior	src/application.ts'
   CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/task-routing-matrix.sh" "$repo" \
     --output-dir "$default_output_dir" \
     --token-budget 1600
-  require_jq "$default_summary_json" '.status == "pass" and .task_count == 11' "default matrix summary should include all default tasks"
+  require_jq "$default_summary_json" '.status == "pass" and .task_count == 12' "default matrix summary should include all default tasks"
+  require_jq "$default_summary_json" '.tasks[] | select(.task == "understand authorization permissions" and .first_file == "src/permissions.ts")' "default matrix should include authorization task"
   require_jq "$default_summary_json" '.tasks[] | select(.task == "understand api handler behavior" and .first_file == "src/handler.ts")' "default matrix should include api handler task"
   require_jq "$default_summary_json" '.tasks[] | select(.task == "understand background job queue" and .first_file == "src/worker.ts")' "default matrix should include background task"
   require_jq "$default_summary_json" '.tasks[] | select(.task == "find regression coverage" and .first_file == "src/router.test.ts")' "default matrix should include coverage task"

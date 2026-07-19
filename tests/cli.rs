@@ -2109,7 +2109,6 @@ export function bootRouter() {
 "#,
     )
     .unwrap();
-
     let route = run_json([
         "agent-route",
         fixture.path().to_str().unwrap(),
@@ -2189,6 +2188,15 @@ export function bootRouter(settings: Record<string, string>) {
         fixture.path().join("src/auth.ts"),
         r#"export function authenticate(user: string) {
   return { user, status: "accepted" };
+}
+"#,
+    )
+    .unwrap();
+    std::fs::write(
+        fixture.path().join("src/permissions.ts"),
+        r#"export function authorizePermission(token: string) {
+  // Authorization permission checks validate the bearer token.
+  return { token, permission: "admin" };
 }
 "#,
     )
@@ -2314,6 +2322,36 @@ export function routerRegressionSpec() {
         .unwrap();
     assert!(auth_question.contains("authentication decisions"));
     assert!(auth_question.contains("session boundaries"));
+
+    let authorization_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand authorization permissions",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(authorization_context["seed_strategy"], "auto_task_match");
+    assert_eq!(
+        authorization_context["selected_seeds"][0]["value"],
+        "src/permissions.ts"
+    );
+    assert!(
+        authorization_context["selected_seeds"][0]["matched_keywords"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|keyword| keyword == "permission")
+    );
+    assert_eq!(
+        authorization_context["files"][0]["file"],
+        "src/permissions.ts"
+    );
+    let authorization_question = authorization_context["reading_plan"][0]["question"]
+        .as_str()
+        .unwrap();
+    assert!(authorization_question.contains("authentication decisions"));
+    assert!(authorization_question.contains("session boundaries"));
 
     let settings_context = run_json([
         "context-pack",

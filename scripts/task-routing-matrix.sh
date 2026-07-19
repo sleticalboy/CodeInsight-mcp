@@ -488,6 +488,7 @@ main() {
     TASKS=(
       "understand routing behavior"
       "understand authentication behavior"
+      "understand authorization permissions"
       "understand application settings"
       "understand startup flow"
       "understand persistence behavior"

@@ -2306,13 +2306,23 @@ impl ContextTaskSignals {
                 task,
                 &[
                     "auth",
+                    "authz",
                     "authentication",
                     "authenticate",
+                    "authorization",
+                    "authorize",
                     "login",
                     "signin",
+                    "permission",
+                    "permissions",
                     "session",
                     "cookie",
                     "credential",
+                    "credentials",
+                    "token",
+                    "tokens",
+                    "oauth",
+                    "jwt",
                 ],
             ),
             configuration: context_text_mentions(
@@ -4266,7 +4276,15 @@ fn task_keyword_aliases(keyword: &str) -> &'static [&'static str] {
         "boot" => &["startup", "start"],
         "authentication" => &["auth", "login"],
         "authenticate" => &["auth", "login"],
-        "authorization" => &["auth", "permission"],
+        "authz" => &["authorization", "permission"],
+        "authorization" => &["authorize", "authz", "permission", "permissions"],
+        "authorize" => &["authorization", "authz", "permission"],
+        "permission" => &["permissions", "authorization", "authz"],
+        "permissions" => &["permission", "authorization", "authz"],
+        "token" => &["tokens", "credential", "session"],
+        "tokens" => &["token", "credential", "session"],
+        "oauth" => &["token", "credential"],
+        "jwt" => &["token", "credential"],
         "login" => &["auth", "authentication"],
         "signin" => &["auth", "login"],
         "config" => &["configuration", "settings", "setting"],
@@ -4472,6 +4490,13 @@ mod tests {
         assert!(background_keywords.contains(&"job".to_string()));
         assert!(background_keywords.contains(&"queue".to_string()));
         assert!(background_keywords.contains(&"worker".to_string()));
+
+        let authorization_keywords = task_keywords("understand authorization permissions");
+        assert!(authorization_keywords.contains(&"authorization".to_string()));
+        assert!(authorization_keywords.contains(&"authz".to_string()));
+        assert!(authorization_keywords.contains(&"permission".to_string()));
+        assert!(authorization_keywords.contains(&"permissions".to_string()));
+        assert!(!authorization_keywords.contains(&"auth".to_string()));
     }
 
     #[test]
