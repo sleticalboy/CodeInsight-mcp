@@ -828,6 +828,9 @@ main() {
     'expectations pass `11/11`, selecting 4,936 of 206,337 task source lines' \
     "README public route-quality headline"
   require_pattern README.md \
+    '\[JSON summary\]\(docs/public-task-routing-matrix-summary\.json\)' \
+    "README public route-quality JSON summary link"
+  require_pattern README.md \
     'scripts/update-public-task-routing-matrix\.sh --check' \
     "README public route-quality snapshot check command"
   require_pattern README.md \
@@ -864,6 +867,9 @@ main() {
     '\[Public task routing matrix\]\(public-task-routing-matrix\.md\)' \
     "docs index public task routing matrix link"
   require_pattern docs/README.md \
+    '\[JSON summary\]\(public-task-routing-matrix-summary\.json\)' \
+    "docs index public task routing matrix JSON link"
+  require_pattern docs/README.md \
     'scripts/update-public-task-routing-matrix\.sh' \
     "docs index public task routing matrix update command"
   require_pattern docs/task-routing-matrix.md \
@@ -887,6 +893,21 @@ main() {
   require_pattern docs/public-task-routing-matrix.md \
     'Aggregate line reduction: `97\.6%`' \
     "public task routing matrix aggregate line-reduction summary"
+  require_pattern docs/public-task-routing-matrix.md \
+    '\[`public-task-routing-matrix-summary\.json`\]\(public-task-routing-matrix-summary\.json\)' \
+    "public task routing matrix JSON summary link"
+  require_pattern docs/public-task-routing-matrix-summary.json \
+    '"generated_by": "scripts/update-public-task-routing-matrix\.sh"' \
+    "public task routing matrix JSON generated-by field"
+  require_pattern docs/public-task-routing-matrix-summary.json \
+    '"line_reduction": 97\.6' \
+    "public task routing matrix JSON line reduction"
+  require_pattern docs/public-task-routing-matrix-summary.json \
+    '"repository": "<case-root>/express"' \
+    "public task routing matrix JSON normalized repository path"
+  require_pattern docs/public-task-routing-matrix-summary.json \
+    '"summary_json": "<output-dir>/requests/summary\.json"' \
+    "public task routing matrix JSON normalized summary path"
   require_pattern docs/public-task-routing-matrix.md \
     'express: 4 tasks, first files index\.js, lib/application\.js, lib/express\.js' \
     "public task routing matrix express summary"

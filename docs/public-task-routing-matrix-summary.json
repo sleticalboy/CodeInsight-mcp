@@ -1,0 +1,174 @@
+{
+  "status": "pass",
+  "token_budget": 6000,
+  "output": "<output-dir>/public-task-routing-matrix.md",
+  "output_dir": "<output-dir>",
+  "case_count": 3,
+  "cases": [
+    {
+      "case": "express",
+      "repository": "<case-root>/express",
+      "ref": "ae6dd37680e3a00618d6c8a3e522f0ee4eeba1a4",
+      "expect_file": "docs/task-routing-expectations/express.tsv",
+      "summary_json": "<output-dir>/express/summary.json",
+      "task_count": 4,
+      "expectation_count": 4,
+      "total_task_source_lines": 85912,
+      "total_selected_lines": 1489,
+      "total_estimated_tokens": 9851,
+      "max_impacted_files": 43,
+      "routes": [
+        {
+          "task": "understand express application routing behavior",
+          "first_file": "lib/express.js",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 21478,
+          "line_reduction": "98.9%",
+          "estimated_tokens": 1589,
+          "risk_level": "high",
+          "impacted_files": 27
+        },
+        {
+          "task": "understand middleware behavior",
+          "first_file": "lib/application.js",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 21478,
+          "line_reduction": "98.3%",
+          "estimated_tokens": 2356,
+          "risk_level": "high",
+          "impacted_files": 27
+        },
+        {
+          "task": "understand application settings",
+          "first_file": "lib/application.js",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 21478,
+          "line_reduction": "98.3%",
+          "estimated_tokens": 2356,
+          "risk_level": "high",
+          "impacted_files": 27
+        },
+        {
+          "task": "understand startup flow",
+          "first_file": "index.js",
+          "seed_strategy": "auto_source_fallback",
+          "total_lines": 21478,
+          "line_reduction": "97.5%",
+          "estimated_tokens": 3550,
+          "risk_level": "high",
+          "impacted_files": 43
+        }
+      ]
+    },
+    {
+      "case": "gin",
+      "repository": "<case-root>/gin",
+      "ref": "34dac209ffb6ef85cc78c5d217bbb7ad001d68fd",
+      "expect_file": "docs/task-routing-expectations/gin.tsv",
+      "summary_json": "<output-dir>/gin/summary.json",
+      "task_count": 3,
+      "expectation_count": 3,
+      "total_task_source_lines": 72297,
+      "total_selected_lines": 1030,
+      "total_estimated_tokens": 9458,
+      "max_impacted_files": 20,
+      "routes": [
+        {
+          "task": "understand gin engine routing behavior",
+          "first_file": "routergroup.go",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 24099,
+          "line_reduction": "98.4%",
+          "estimated_tokens": 3596,
+          "risk_level": "high",
+          "impacted_files": 10
+        },
+        {
+          "task": "understand middleware authentication behavior",
+          "first_file": "auth.go",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 24099,
+          "line_reduction": "98.7%",
+          "estimated_tokens": 2685,
+          "risk_level": "high",
+          "impacted_files": 5
+        },
+        {
+          "task": "understand startup flow",
+          "first_file": "gin.go",
+          "seed_strategy": "auto_entrypoint",
+          "total_lines": 24099,
+          "line_reduction": "98.6%",
+          "estimated_tokens": 3177,
+          "risk_level": "high",
+          "impacted_files": 20
+        }
+      ]
+    },
+    {
+      "case": "requests",
+      "repository": "<case-root>/requests",
+      "ref": "f361ead047be5cb873174218582f7d8b9fcd9f49",
+      "expect_file": "docs/task-routing-expectations/requests.tsv",
+      "summary_json": "<output-dir>/requests/summary.json",
+      "task_count": 4,
+      "expectation_count": 4,
+      "total_task_source_lines": 48128,
+      "total_selected_lines": 2417,
+      "total_estimated_tokens": 21796,
+      "max_impacted_files": 17,
+      "routes": [
+        {
+          "task": "understand requests session request flow",
+          "first_file": "src/requests/sessions.py",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 12032,
+          "line_reduction": "94.5%",
+          "estimated_tokens": 5999,
+          "risk_level": "high",
+          "impacted_files": 15
+        },
+        {
+          "task": "understand authentication behavior",
+          "first_file": "src/requests/auth.py",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 12032,
+          "line_reduction": "95.2%",
+          "estimated_tokens": 5149,
+          "risk_level": "high",
+          "impacted_files": 17
+        },
+        {
+          "task": "understand configuration settings",
+          "first_file": "src/requests/sessions.py",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 12032,
+          "line_reduction": "94.6%",
+          "estimated_tokens": 5913,
+          "risk_level": "high",
+          "impacted_files": 15
+        },
+        {
+          "task": "understand package startup flow",
+          "first_file": "src/requests/__init__.py",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 12032,
+          "line_reduction": "95.6%",
+          "estimated_tokens": 4735,
+          "risk_level": "high",
+          "impacted_files": 6
+        }
+      ]
+    }
+  ],
+  "aggregate": {
+    "task_count": 11,
+    "expectation_count": 11,
+    "total_task_source_lines": 206337,
+    "total_selected_lines": 4936,
+    "total_estimated_tokens": 41105,
+    "max_impacted_files": 43,
+    "line_reduction": 97.6
+  },
+  "generated_by": "scripts/update-public-task-routing-matrix.sh"
+}

@@ -79,13 +79,15 @@ main() {
   TEMP_DIR="$(mktemp -d)"
   trap cleanup EXIT INT TERM
 
-  local repo snapshot
+  local repo snapshot summary_snapshot
   repo="$TEMP_DIR/repo"
   snapshot="$TEMP_DIR/public-task-routing-matrix.md"
+  summary_snapshot="$TEMP_DIR/public-task-routing-matrix-summary.json"
   create_express_like_fixture "$repo"
 
   CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/update-public-task-routing-matrix.sh" \
     --output "$snapshot" \
+    --summary-output "$summary_snapshot" \
     --case express \
     --root "express=$repo" \
     --token-budget 1600 >/dev/null
@@ -103,10 +105,23 @@ main() {
   if grep -Fq "$TEMP_DIR" "$snapshot"; then
     fail "snapshot should not include temporary absolute paths"
   fi
+  jq -e \
+    '.generated_by == "scripts/update-public-task-routing-matrix.sh"
+      and .status == "pass"
+      and .aggregate.task_count == 4
+      and .aggregate.expectation_count == 4
+      and .aggregate.total_task_source_lines > .aggregate.total_selected_lines
+      and .aggregate.line_reduction > 0
+      and .cases[0].repository == "<case-root>/express"
+      and .cases[0].summary_json == "<output-dir>/express/summary.json"
+      and .cases[0].expect_file == "docs/task-routing-expectations/express.tsv"' \
+    "$summary_snapshot" >/dev/null ||
+    fail "summary snapshot should be normalized JSON evidence"
 
   CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/update-public-task-routing-matrix.sh" \
     --check \
     --output "$snapshot" \
+    --summary-output "$summary_snapshot" \
     --case express \
     --root "express=$repo" \
     --token-budget 1600 >/dev/null

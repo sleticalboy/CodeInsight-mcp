@@ -57,6 +57,14 @@ jobs:
           if-no-files-found: error
       - run: scripts/agent-route-step-summary.sh /tmp/codeinsight-agent-route-smoke.json codeinsight-agent-route-smoke "${{ steps.agent-route-artifact.outputs.artifact-url }}" "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
       - run: scripts/update-public-task-routing-matrix-smoke.sh
+      - id: public-routing-snapshot-artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: codeinsight-public-routing-snapshot
+          path: |
+            docs/public-task-routing-matrix.md
+            docs/public-task-routing-matrix-summary.json
+          if-no-files-found: error
 
   mcp-first-call-smoke:
     runs-on: ubuntu-latest

@@ -20,7 +20,8 @@ Default adoption path:
 - [Demo output snapshot](demo-output.md)
 - [Adoption cases](adoption-cases.md)
 - [Task routing matrix](task-routing-matrix.md)
-- [Public task routing matrix](public-task-routing-matrix.md)
+- [Public task routing matrix](public-task-routing-matrix.md) and
+  [JSON summary](public-task-routing-matrix-summary.json)
 - Task routing expectations:
   [Express](task-routing-expectations/express.tsv),
   [Gin](task-routing-expectations/gin.tsv),

@@ -39,7 +39,9 @@ type checks, and final verification.
 
 Current public routing snapshot: pinned Express, Gin, and Requests route-quality
 expectations pass `11/11`, selecting 4,936 of 206,337 task source lines for a
-`97.6%` aggregate first-read line reduction. Reproduce the checked-in snapshot:
+`97.6%` aggregate first-read line reduction. See the checked-in
+[Markdown snapshot](docs/public-task-routing-matrix.md) and
+[JSON summary](docs/public-task-routing-matrix-summary.json). Reproduce both:
 
 ```bash
 scripts/update-public-task-routing-matrix.sh --check
@@ -327,6 +329,7 @@ Key docs:
 - [Adoption cases](docs/adoption-cases.md)
 - [Task routing matrix](docs/task-routing-matrix.md)
 - [Public task routing matrix](docs/public-task-routing-matrix.md)
+- [Public task routing matrix JSON](docs/public-task-routing-matrix-summary.json)
 - [CodeInsight self adoption report](docs/adoption-report-codeinsight.md)
 - [Express adoption case](docs/adoption-case-express.md)
 - [Gin adoption case](docs/adoption-case-gin.md)
