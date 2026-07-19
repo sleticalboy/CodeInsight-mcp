@@ -1892,6 +1892,8 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
         "Start with seed file middleware and handler boundaries.".to_string()
     } else if signals.performance_cache {
         "Start with seed file cache, performance, latency, or optimization boundaries.".to_string()
+    } else if signals.observability_logging {
+        "Start with seed file logging, telemetry, metrics, or tracing boundaries.".to_string()
     } else if signals.billing_payment {
         "Start with seed file billing, payment, checkout, or subscription boundaries.".to_string()
     } else if signals.frontend_ui {
@@ -1926,6 +1928,9 @@ fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
         "Read symbol definitions that establish middleware boundaries.".to_string()
     } else if signals.performance_cache {
         "Read symbol definitions that establish cache, performance, or optimization behavior."
+            .to_string()
+    } else if signals.observability_logging {
+        "Read symbol definitions that establish logging, telemetry, metrics, or tracing behavior."
             .to_string()
     } else if signals.billing_payment {
         "Read symbol definitions that establish billing, payment, or subscription behavior."
@@ -1962,6 +1967,8 @@ fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
         "Follow call graph evidence for middleware and handler boundaries.".to_string()
     } else if signals.performance_cache {
         "Follow call graph evidence for cache lookups, latency, or optimization flow.".to_string()
+    } else if signals.observability_logging {
+        "Follow call graph evidence for logs, metrics, telemetry, or trace spans.".to_string()
     } else if signals.billing_payment {
         "Follow call graph evidence for checkout, billing, payment, or subscription flow."
             .to_string()
@@ -1997,6 +2004,9 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
         "Inspect references that attach or call middleware boundaries.".to_string()
     } else if signals.performance_cache {
         "Inspect references that read, write, invalidate, or optimize cached work.".to_string()
+    } else if signals.observability_logging {
+        "Inspect references that emit, record, or propagate logs, metrics, telemetry, or traces."
+            .to_string()
     } else if signals.billing_payment {
         "Inspect references that create checkout, invoice, payment, or subscription flow."
             .to_string()
@@ -2034,6 +2044,9 @@ fn context_semantic_focus(signals: ContextTaskSignals) -> String {
     } else if signals.performance_cache {
         "Review semantic matches for cache behavior, performance, latency, or optimization."
             .to_string()
+    } else if signals.observability_logging {
+        "Review semantic matches for logging, telemetry, metrics, tracing, or monitoring."
+            .to_string()
     } else if signals.billing_payment {
         "Review semantic matches for billing, payment, checkout, invoices, or subscriptions."
             .to_string()
@@ -2067,6 +2080,9 @@ fn context_dependency_focus(signals: ContextTaskSignals) -> String {
         "Check local dependencies that shape middleware or handler dispatch.".to_string()
     } else if signals.performance_cache {
         "Check local dependencies that shape cache, performance, or optimization behavior."
+            .to_string()
+    } else if signals.observability_logging {
+        "Check local dependencies that shape logging, metrics, telemetry, or tracing behavior."
             .to_string()
     } else if signals.billing_payment {
         "Check local dependencies that shape billing, payment, or subscription dispatch."
@@ -2136,6 +2152,8 @@ fn context_seed_file_question(task: &str) -> String {
     } else if signals.performance_cache {
         "Where are cache reads, invalidation, latency, or optimization decisions handled here?"
             .to_string()
+    } else if signals.observability_logging {
+        "Where are logs, metrics, telemetry, or trace spans emitted here?".to_string()
     } else if signals.billing_payment {
         "Where are billing, payment, checkout, invoice, or subscription decisions handled here?"
             .to_string()
@@ -2176,6 +2194,9 @@ fn context_symbol_definition_question(task: &str) -> String {
         "What middleware or handler boundary does this definition establish?".to_string()
     } else if signals.performance_cache {
         "What cache, performance, latency, or optimization behavior does this definition establish?"
+            .to_string()
+    } else if signals.observability_logging {
+        "What logging, telemetry, metrics, or tracing behavior does this definition establish?"
             .to_string()
     } else if signals.billing_payment {
         "What billing, payment, checkout, invoice, or subscription behavior does this definition establish?".to_string()
@@ -2220,6 +2241,9 @@ fn context_call_graph_question(task: &str) -> String {
             .to_string()
     } else if signals.performance_cache {
         "Which callers or callees read, write, invalidate, or optimize cached work?".to_string()
+    } else if signals.observability_logging {
+        "Which callers or callees emit logs, record metrics, or propagate telemetry and traces?"
+            .to_string()
     } else if signals.billing_payment {
         "Which callers or callees create checkout, invoice, payment, or subscription flow?"
             .to_string()
@@ -2261,6 +2285,9 @@ fn context_dependency_question(task: &str) -> String {
         "What imported local dependency behavior shapes middleware or handler dispatch?".to_string()
     } else if signals.performance_cache {
         "What imported local dependency behavior shapes cache, latency, or optimization flow?"
+            .to_string()
+    } else if signals.observability_logging {
+        "What imported local dependency behavior shapes logging, metrics, telemetry, or tracing?"
             .to_string()
     } else if signals.billing_payment {
         "What imported local dependency behavior shapes billing, payment, or subscription flow?"
@@ -2304,6 +2331,9 @@ fn context_reference_question(task: &str) -> String {
         "Which references attach, order, or call middleware and handler boundaries?".to_string()
     } else if signals.performance_cache {
         "Which references read, write, invalidate, measure, or optimize cache behavior?".to_string()
+    } else if signals.observability_logging {
+        "Which references emit logs, record metrics, attach spans, or propagate telemetry?"
+            .to_string()
     } else if signals.billing_payment {
         "Which references create, update, charge, invoice, or cancel billing flows?".to_string()
     } else if signals.frontend_ui {
@@ -2344,6 +2374,9 @@ fn context_semantic_question(task: &str) -> String {
     } else if signals.performance_cache {
         "Which semantic matches describe cache behavior, performance, latency, or optimization?"
             .to_string()
+    } else if signals.observability_logging {
+        "Which semantic matches describe logs, metrics, telemetry, tracing, or monitoring?"
+            .to_string()
     } else if signals.billing_payment {
         "Which semantic matches describe billing, payments, checkout, invoices, or subscriptions?"
             .to_string()
@@ -2380,6 +2413,7 @@ struct ContextTaskSignals {
     startup: bool,
     middleware: bool,
     performance_cache: bool,
+    observability_logging: bool,
     billing_payment: bool,
     frontend_ui: bool,
     background_jobs: bool,
@@ -2442,6 +2476,28 @@ impl ContextTaskSignals {
                     "optimization",
                     "optimise",
                     "optimisation",
+                ],
+            ),
+            observability_logging: context_text_mentions(
+                task,
+                &[
+                    "observability",
+                    "observe",
+                    "telemetry",
+                    "logging",
+                    "log",
+                    "logs",
+                    "logger",
+                    "metric",
+                    "metrics",
+                    "trace",
+                    "traces",
+                    "tracing",
+                    "span",
+                    "spans",
+                    "monitor",
+                    "monitoring",
+                    "instrumentation",
                 ],
             ),
             billing_payment: context_text_mentions(
@@ -4469,6 +4525,23 @@ fn task_keyword_aliases(keyword: &str) -> &'static [&'static str] {
         "optimization" => &["optimize", "performance", "latency"],
         "optimise" => &["optimisation", "performance", "latency"],
         "optimisation" => &["optimise", "performance", "latency"],
+        "observability" => &["telemetry", "logging", "metrics"],
+        "observe" => &["observability", "telemetry", "monitoring"],
+        "telemetry" => &["observability", "logging", "metrics"],
+        "logging" => &["log", "logs", "logger"],
+        "log" => &["logs", "logger", "logging"],
+        "logs" => &["log", "logger", "logging"],
+        "logger" => &["log", "logs", "logging"],
+        "metric" => &["metrics", "telemetry", "monitoring"],
+        "metrics" => &["metric", "telemetry", "monitoring"],
+        "trace" => &["traces", "tracing", "span"],
+        "traces" => &["trace", "tracing", "span"],
+        "tracing" => &["trace", "traces", "span"],
+        "span" => &["spans", "trace", "tracing"],
+        "spans" => &["span", "trace", "tracing"],
+        "monitor" => &["monitoring", "observability", "metrics"],
+        "monitoring" => &["monitor", "observability", "metrics"],
+        "instrumentation" => &["observability", "telemetry", "metrics"],
         "billing" => &["payment", "subscription", "invoice"],
         "bill" => &["billing", "payment", "invoice"],
         "payment" => &["payments", "billing", "checkout"],
@@ -4708,6 +4781,12 @@ mod tests {
         assert!(performance_keywords.contains(&"performance".to_string()));
         assert!(performance_keywords.contains(&"latency".to_string()));
         assert!(performance_keywords.contains(&"optimization".to_string()));
+
+        let observability_keywords = task_keywords("understand observability telemetry logs");
+        assert!(observability_keywords.contains(&"observability".to_string()));
+        assert!(observability_keywords.contains(&"telemetry".to_string()));
+        assert!(observability_keywords.contains(&"logging".to_string()));
+        assert!(observability_keywords.contains(&"metrics".to_string()));
     }
 
     #[test]

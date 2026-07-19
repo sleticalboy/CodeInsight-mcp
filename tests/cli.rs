@@ -2266,6 +2266,15 @@ export function routerRegressionSpec() {
     )
     .unwrap();
     std::fs::write(
+        fixture.path().join("src/telemetry.ts"),
+        r#"export function recordTelemetry(eventName: string) {
+  // Observability telemetry emits logs and metrics for monitoring.
+  return { eventName, logs: true, metrics: "request_count", trace: "span" };
+}
+"#,
+    )
+    .unwrap();
+    std::fs::write(
         fixture.path().join("src/billing.ts"),
         r#"export function createCheckoutSession(subscriptionId: string) {
   // Billing payment checkout creates a subscription invoice.
@@ -2539,6 +2548,36 @@ export function routerRegressionSpec() {
         .unwrap();
     assert!(performance_question.contains("cache reads"));
     assert!(performance_question.contains("latency"));
+
+    let observability_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand observability telemetry logs",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(observability_context["seed_strategy"], "auto_task_match");
+    assert_eq!(
+        observability_context["selected_seeds"][0]["value"],
+        "src/telemetry.ts"
+    );
+    assert!(
+        observability_context["selected_seeds"][0]["matched_keywords"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|keyword| keyword == "telemetry")
+    );
+    assert_eq!(
+        observability_context["files"][0]["file"],
+        "src/telemetry.ts"
+    );
+    let observability_question = observability_context["reading_plan"][0]["question"]
+        .as_str()
+        .unwrap();
+    assert!(observability_question.contains("logs"));
+    assert!(observability_question.contains("metrics"));
 
     let billing_context = run_json([
         "context-pack",
