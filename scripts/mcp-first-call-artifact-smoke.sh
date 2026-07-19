@@ -87,6 +87,17 @@ validate_summary_json() {
       and .first_context_file == "src/main.ts"
       and .first_reading_file == .first_context_file
       and (.first_reading_selection_rank | type == "number")
+      and (.context_pack_read_less | type == "object")
+      and (.context_pack_read_less.baseline_source_lines | type == "number")
+      and (.context_pack_read_less.selected_source_lines | type == "number")
+      and (.context_pack_read_less.source_lines_avoided | type == "number")
+      and (.context_pack_read_less.line_reduction | type == "string" and length > 0)
+      and (.context_pack_read_less.read_less_ratio | type == "string" and length > 0)
+      and .baseline_source_lines == .context_pack_read_less.baseline_source_lines
+      and .selected_source_lines == .context_pack_read_less.selected_source_lines
+      and .source_lines_avoided == .context_pack_read_less.source_lines_avoided
+      and .line_reduction == .context_pack_read_less.line_reduction
+      and .read_less_ratio == .context_pack_read_less.read_less_ratio
       and .current_reading_step_matches_reading_plan == true
       and (.reading_plan | type == "array")
       and (.reading_plan | length) >= 1
@@ -254,6 +265,8 @@ main() {
   echo "first_execution_instruction_has_focus: $(jq -r '.first_execution_instruction_has_focus' "$summary_file")"
   echo "current_step_instruction_has_focus: $(jq -r '.current_step_instruction_has_focus' "$summary_file")"
   echo "first_reading_selection_rank: $(jq -r '.first_reading_selection_rank' "$summary_file")"
+  echo "source_lines_avoided: $(jq -r '.source_lines_avoided' "$summary_file")"
+  echo "read_less_ratio: $(jq -r '.read_less_ratio' "$summary_file")"
   echo "continuation_status: $(jq -r '.continuation_status' "$summary_file")"
   echo "first_omitted_omission_reason: $(jq -r 'if .first_omitted_omission_reason == "" then "-" else .first_omitted_omission_reason end' "$summary_file")"
 }

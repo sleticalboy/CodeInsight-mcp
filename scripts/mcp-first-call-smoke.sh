@@ -426,6 +426,38 @@ try:
         "execution_plan[1].instruction should include reading_plan[0].next_action",
     )
     continuation_summary = context_pack.get("continuation_summary", {})
+    read_less = context_pack.get("read_less", {})
+    expect(isinstance(read_less, dict), "agent_route_contract", "context_pack.read_less is missing")
+    expect(
+        isinstance(read_less.get("baseline_source_lines"), int)
+        and read_less["baseline_source_lines"] >= 0,
+        "agent_route_contract",
+        "context_pack.read_less.baseline_source_lines is missing",
+    )
+    expect(
+        isinstance(read_less.get("selected_source_lines"), int)
+        and read_less["selected_source_lines"] >= 0,
+        "agent_route_contract",
+        "context_pack.read_less.selected_source_lines is missing",
+    )
+    expect(
+        isinstance(read_less.get("source_lines_avoided"), int)
+        and read_less["source_lines_avoided"] >= 0,
+        "agent_route_contract",
+        "context_pack.read_less.source_lines_avoided is missing",
+    )
+    expect(
+        isinstance(read_less.get("line_reduction"), str)
+        and len(read_less["line_reduction"]) > 0,
+        "agent_route_contract",
+        "context_pack.read_less.line_reduction is missing",
+    )
+    expect(
+        isinstance(read_less.get("read_less_ratio"), str)
+        and len(read_less["read_less_ratio"]) > 0,
+        "agent_route_contract",
+        "context_pack.read_less.read_less_ratio is missing",
+    )
     expect(
         continuation_summary.get("next_action"),
         "agent_route_contract",
@@ -500,6 +532,12 @@ try:
         "first_reading_file": first_reading_file,
         "first_reading_selection_rank": reading_plan[0]["selection_rank"],
         "current_reading_step_matches_reading_plan": current_reading_step_matches_reading_plan,
+        "context_pack_read_less": read_less,
+        "baseline_source_lines": read_less["baseline_source_lines"],
+        "selected_source_lines": read_less["selected_source_lines"],
+        "source_lines_avoided": read_less["source_lines_avoided"],
+        "line_reduction": read_less["line_reduction"],
+        "read_less_ratio": read_less["read_less_ratio"],
         "reading_plan": [
             {
                 "file": step["file"],

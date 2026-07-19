@@ -35,6 +35,17 @@ require_summary_contract() {
       and .first_reading_file == .first_context_file
       and (.first_reading_selection_rank | type == "number")
       and .current_reading_step_matches_reading_plan == true
+      and (.context_pack_read_less | type == "object")
+      and (.context_pack_read_less.baseline_source_lines | type == "number")
+      and (.context_pack_read_less.selected_source_lines | type == "number")
+      and (.context_pack_read_less.source_lines_avoided | type == "number")
+      and (.context_pack_read_less.line_reduction | type == "string" and length > 0)
+      and (.context_pack_read_less.read_less_ratio | type == "string" and length > 0)
+      and .baseline_source_lines == .context_pack_read_less.baseline_source_lines
+      and .selected_source_lines == .context_pack_read_less.selected_source_lines
+      and .source_lines_avoided == .context_pack_read_less.source_lines_avoided
+      and .line_reduction == .context_pack_read_less.line_reduction
+      and .read_less_ratio == .context_pack_read_less.read_less_ratio
       and .execution_plan_reads_in_reading_plan_order == true
       and .first_execution_instruction_has_focus == true
       and .first_execution_instruction_has_question == true
@@ -108,6 +119,11 @@ main() {
     printf 'First reading file: `%s`\n\n' "$(value '.first_reading_file')"
     printf 'First reading selection rank: `%s`\n\n' "$(value '.first_reading_selection_rank')"
     printf 'Current reading step mirror contract: `%s`\n\n' "$(value '.current_reading_step_matches_reading_plan')"
+    printf 'Blind first-read baseline: `%s` source lines\n\n' "$(value '.baseline_source_lines')"
+    printf 'Routed first-read: `%s` source lines\n\n' "$(value '.selected_source_lines')"
+    printf 'Source lines avoided: `%s`\n\n' "$(value '.source_lines_avoided')"
+    printf 'First-read line reduction: `%s`\n\n' "$(value '.line_reduction')"
+    printf 'Read less: `%s`\n\n' "$(value '.read_less_ratio')"
     printf 'First next action: `%s`\n\n' "$(value '.reading_plan[0].next_action')"
     printf 'First reading focus: `%s`\n\n' "$(value '.reading_plan[0].focus')"
     printf 'First reading question: `%s`\n\n' "$(value '.reading_plan[0].question')"

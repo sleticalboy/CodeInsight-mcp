@@ -43,6 +43,18 @@ write_summary_json() {
   "first_context_file": "src/main.ts",
   "first_reading_file": "src/main.ts",
   "first_reading_selection_rank": 1,
+  "context_pack_read_less": {
+    "baseline_source_lines": 120,
+    "selected_source_lines": 12,
+    "source_lines_avoided": 108,
+    "line_reduction": "90.0%",
+    "read_less_ratio": "10.0x"
+  },
+  "baseline_source_lines": 120,
+  "selected_source_lines": 12,
+  "source_lines_avoided": 108,
+  "line_reduction": "90.0%",
+  "read_less_ratio": "10.0x",
   "current_reading_step_matches_reading_plan": true,
   "reading_plan": [
     {
@@ -162,6 +174,10 @@ EOF
     fail "missing current-step focus contract output"
   grep -Fq 'first_reading_selection_rank: 1' "$TEMP_DIR/output.log" ||
     fail "missing first reading selection rank output"
+  grep -Fq 'source_lines_avoided: 108' "$TEMP_DIR/output.log" ||
+    fail "missing source lines avoided output"
+  grep -Fq 'read_less_ratio: 10.0x' "$TEMP_DIR/output.log" ||
+    fail "missing read-less ratio output"
   grep -Fq 'continuation_status: complete' "$TEMP_DIR/output.log" ||
     fail "missing continuation status output"
   grep -Fq 'first_omitted_omission_reason: -' "$TEMP_DIR/output.log" ||
@@ -194,6 +210,10 @@ EOF
     fail "missing latest current-step focus contract output"
   grep -Fq 'first_reading_selection_rank: 1' "$TEMP_DIR/latest-output.log" ||
     fail "missing latest first reading selection rank output"
+  grep -Fq 'source_lines_avoided: 108' "$TEMP_DIR/latest-output.log" ||
+    fail "missing latest source lines avoided output"
+  grep -Fq 'read_less_ratio: 10.0x' "$TEMP_DIR/latest-output.log" ||
+    fail "missing latest read-less ratio output"
   grep -Fq 'continuation_status: complete' "$TEMP_DIR/latest-output.log" ||
     fail "missing latest continuation status output"
 

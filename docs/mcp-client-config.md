@@ -239,8 +239,8 @@ omitted-candidate evidence.
 For a shorter copyable check, run `scripts/mcp-first-call-smoke.sh`. It prints
 a JSON summary with `route_tools`, `selected_files`, `execution_plan_actions`,
 the first context file, first reading selection rank, current-reading-step
-mirror check, `reading_plan[]`, continuation summary fields, suggested-tool
-handoff checks, current-step instruction action/question checks,
+mirror check, `context_pack_read_less`, `reading_plan[]`, continuation summary
+fields, suggested-tool handoff checks, current-step instruction action/question checks,
 `suggested_tool_executed`, and
 `impact_status`.
 
@@ -261,6 +261,18 @@ Expected summary shape:
   "first_reading_file": "src/main.ts",
   "first_reading_selection_rank": 1,
   "current_reading_step_matches_reading_plan": true,
+  "context_pack_read_less": {
+    "baseline_source_lines": 18,
+    "selected_source_lines": 15,
+    "source_lines_avoided": 3,
+    "line_reduction": "16.7%",
+    "read_less_ratio": "1.2x"
+  },
+  "baseline_source_lines": 18,
+  "selected_source_lines": 15,
+  "source_lines_avoided": 3,
+  "line_reduction": "16.7%",
+  "read_less_ratio": "1.2x",
   "reading_plan": [
     {
       "file": "src/main.ts",

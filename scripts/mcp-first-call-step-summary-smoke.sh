@@ -45,6 +45,18 @@ main() {
   "first_reading_file": "src/main.ts",
   "first_reading_selection_rank": 1,
   "current_reading_step_matches_reading_plan": true,
+  "context_pack_read_less": {
+    "baseline_source_lines": 120,
+    "selected_source_lines": 12,
+    "source_lines_avoided": 108,
+    "line_reduction": "90.0%",
+    "read_less_ratio": "10.0x"
+  },
+  "baseline_source_lines": 120,
+  "selected_source_lines": 12,
+  "source_lines_avoided": 108,
+  "line_reduction": "90.0%",
+  "read_less_ratio": "10.0x",
   "reading_plan": [
     {
       "file": "src/main.ts",
@@ -105,6 +117,11 @@ EOF
   require_literal "$summary_md" 'First reading file: `src/main.ts`' "first reading file"
   require_literal "$summary_md" 'First reading selection rank: `1`' "first reading selection rank"
   require_literal "$summary_md" 'Current reading step mirror contract: `true`' "current reading step mirror contract"
+  require_literal "$summary_md" 'Blind first-read baseline: `120` source lines' "blind first-read baseline"
+  require_literal "$summary_md" 'Routed first-read: `12` source lines' "routed first-read"
+  require_literal "$summary_md" 'Source lines avoided: `108`' "source lines avoided"
+  require_literal "$summary_md" 'First-read line reduction: `90.0%`' "first-read line reduction"
+  require_literal "$summary_md" 'Read less: `10.0x`' "read-less ratio"
   require_literal "$summary_md" 'First next action: `inspect_seed_file`' "first next action"
   require_literal "$summary_md" 'First reading focus: `Start with seed file context and primary symbols.`' "first reading focus"
   require_literal "$summary_md" 'First reading question: `What entrypoints define the main flow?`' "first reading question"

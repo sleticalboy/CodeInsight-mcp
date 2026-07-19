@@ -879,7 +879,7 @@ main() {
     'CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/mcp-first-call-smoke\.sh' \
     "README MCP first-call smoke command"
   require_pattern README.md \
-    'exposes selection rank and continuation evidence' \
+    'exposes read-less metrics, selection rank, and continuation evidence' \
     "README MCP first-call candidate evidence proof"
   require_pattern README.md \
     'CLI `agent-route`, MCP stdio, and MCP `agent_route`' \
@@ -1125,7 +1125,7 @@ main() {
     '\| First MCP call onboarding changed \| `scripts/mcp-first-call-smoke\.sh --summary-json /tmp/codeinsight-mcp-first-call\.json` \|' \
     "maintenance MCP first-call smoke chooser"
   require_pattern docs/maintenance-commands.md \
-    'first context file, selection rank, reading-question handoff, continuation summary, reading-plan order, suggested-tool handoff, impact status, and saved artifacts' \
+    'first context file, read-less metrics, selection rank, reading-question handoff, continuation summary, reading-plan order, suggested-tool handoff, impact status, and saved artifacts' \
     "maintenance MCP first-call artifact scope"
   require_pattern docs/maintenance-commands.md \
     'scripts/mcp-first-call-step-summary-smoke\.sh' \
@@ -1134,7 +1134,7 @@ main() {
     '\| First MCP call Actions summary changed \| `scripts/mcp-first-call-step-summary-smoke\.sh` \|' \
     "maintenance MCP first-call step summary chooser"
   require_pattern docs/maintenance-commands.md \
-    'Actions Summary section for selected files, first context file, first reading file, selection rank, reading-question handoff, omitted-candidate continuation fields, reading-plan order, suggested-tool handoff, continuation timing, impact status, and artifact link' \
+    'Actions Summary section for selected files, first context file, first reading file, read-less metrics, selection rank, reading-question handoff, omitted-candidate continuation fields, reading-plan order, suggested-tool handoff, continuation timing, impact status, and artifact link' \
     "maintenance MCP first-call step summary scope"
   require_pattern scripts/mcp-first-call-step-summary-smoke.sh \
     'First context file: `src/main\.ts`' \
@@ -1142,6 +1142,9 @@ main() {
   require_pattern scripts/mcp-first-call-step-summary-smoke.sh \
     'First reading selection rank: `1`' \
     "MCP first-call step summary first reading selection rank"
+  require_pattern scripts/mcp-first-call-step-summary-smoke.sh \
+    'Read less: `10\.0x`' \
+    "MCP first-call step summary read-less metric"
   require_pattern scripts/mcp-first-call-step-summary-smoke.sh \
     'Reading order contract: `true`' \
     "MCP first-call step summary reading order contract"
@@ -1287,10 +1290,13 @@ main() {
     'first_reading_selection_rank' \
     "MCP first-call artifact first reading selection rank output"
   require_pattern scripts/mcp-first-call-artifact-smoke.sh \
+    'read_less_ratio' \
+    "MCP first-call artifact read-less output"
+  require_pattern scripts/mcp-first-call-artifact-smoke.sh \
     'first_omitted_omission_reason' \
     "MCP first-call artifact omitted reason output"
   require_pattern docs/maintainer-checklist.md \
-    'the first context file, first reading file, selection rank, first next' \
+    'the first context file, first reading file, read-less metrics, selection' \
     "maintainer MCP first-call route contract summary"
   require_pattern docs/release-readiness.md \
     'first reading file, selection rank, first next action, omitted-candidate' \
@@ -1941,8 +1947,11 @@ main() {
     'first reading selection rank, current-reading-step' \
     "MCP client config first-call selection rank field"
   require_pattern docs/mcp-client-config.md \
-    'mirror check, `reading_plan\[\]`, continuation summary fields' \
+    'mirror check, `context_pack_read_less`, `reading_plan\[\]`, continuation summary' \
     "MCP client config first-call continuation fields"
+  require_pattern docs/mcp-client-config.md \
+    '"context_pack_read_less": \{' \
+    "MCP client config first-call read-less object"
   require_pattern docs/mcp-client-config.md \
     'Expected summary shape:' \
     "MCP client config first-call summary example"

@@ -172,8 +172,9 @@ scripts/mcp-stdio-smoke.sh
 
 `mcp-first-call-smoke.sh` prints a compact JSON summary for the first MCP
 `agent_route` call. Use it when you want to confirm the server, route, selected
-files, selection rank, continuation summary, reading plan order, suggested tool
-handoff, and impact preview without reading the full protocol smoke log.
+files, read-less metrics, selection rank, continuation summary, reading plan
+order, suggested tool handoff, and impact preview without reading the full
+protocol smoke log.
 
 Run `scripts/mcp-first-call-smoke.sh --help` to see the supported environment
 variables for binary path, target repository, task, and token budget.
@@ -198,6 +199,18 @@ Expected output shape:
   "first_reading_file": "src/main.ts",
   "first_reading_selection_rank": 1,
   "current_reading_step_matches_reading_plan": true,
+  "context_pack_read_less": {
+    "baseline_source_lines": 18,
+    "selected_source_lines": 15,
+    "source_lines_avoided": 3,
+    "line_reduction": "16.7%",
+    "read_less_ratio": "1.2x"
+  },
+  "baseline_source_lines": 18,
+  "selected_source_lines": 15,
+  "source_lines_avoided": 3,
+  "line_reduction": "16.7%",
+  "read_less_ratio": "1.2x",
   "reading_plan": [
     {
       "file": "src/main.ts",
