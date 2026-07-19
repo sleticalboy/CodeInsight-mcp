@@ -3607,6 +3607,7 @@ fn seed_file_ranges(
             reason: seed_range_reason(
                 &format!("Seed file header and imports for task: {file}"),
                 &matched_keywords,
+                &seed_request_lifecycle_reasons(file, None, task_keywords),
             ),
             source: "seed_file".to_string(),
             score: CONTEXT_SCORE_SEED_HEADER + seed_file_task_boost(&matched_keywords),
@@ -3632,6 +3633,7 @@ fn seed_file_ranges(
             reason: seed_range_reason(
                 &format!("Seed file defines symbol {}", symbol.qualified_name),
                 &matched_keywords,
+                &seed_request_lifecycle_reasons(file, Some(&symbol.qualified_name), task_keywords),
             ),
             source: "seed_file".to_string(),
             score: CONTEXT_SCORE_SEED_FILE + seed_symbol_task_boost(symbol, task_keywords),
@@ -3646,6 +3648,7 @@ fn seed_file_ranges(
             reason: seed_range_reason(
                 &format!("Seed file requested for task: {file}"),
                 &matched_keywords,
+                &seed_request_lifecycle_reasons(file, None, task_keywords),
             ),
             source: "seed_file".to_string(),
             score: CONTEXT_SCORE_SEED_FILE + seed_file_task_boost(&matched_keywords),
@@ -3655,15 +3658,38 @@ fn seed_file_ranges(
     ranges
 }
 
-fn seed_range_reason(base: &str, matched_keywords: &[String]) -> String {
-    if matched_keywords.is_empty() {
-        base.to_string()
-    } else {
-        format!(
-            "{base}; matched task keywords: {}",
+fn seed_range_reason(base: &str, matched_keywords: &[String], extra_reasons: &[String]) -> String {
+    let mut reasons = vec![base.to_string()];
+    if !matched_keywords.is_empty() {
+        reasons.push(format!(
+            "matched task keywords: {}",
             matched_keywords.join(", ")
-        )
+        ));
     }
+    reasons.extend(extra_reasons.iter().cloned());
+    reasons.join("; ")
+}
+
+fn seed_request_lifecycle_reasons(
+    file: &str,
+    symbol: Option<&str>,
+    task_keywords: &[String],
+) -> Vec<String> {
+    if !auto_seed_request_lifecycle_task(task_keywords) {
+        return Vec::new();
+    }
+
+    let mut reasons = Vec::new();
+    if auto_seed_request_lifecycle_file_matches(file) {
+        reasons.push("request lifecycle task matched app/application seed file".to_string());
+    }
+    if symbol
+        .map(auto_seed_request_lifecycle_symbol_matches)
+        .unwrap_or(false)
+    {
+        reasons.push("request lifecycle task matched request/response dispatch symbol".to_string());
+    }
+    reasons
 }
 
 fn header_range_end(lines: &[&str]) -> Option<usize> {

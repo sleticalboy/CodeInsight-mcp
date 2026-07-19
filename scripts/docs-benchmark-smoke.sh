@@ -15,6 +15,18 @@ require_pattern() {
   fi
 }
 
+require_jq() {
+  local file="$1"
+  local query="$2"
+  local description="$3"
+
+  if ! jq -e "$query" "$ROOT_DIR/$file" >/dev/null; then
+    echo "$file is missing ${description}" >&2
+    echo "query: $query" >&2
+    exit 1
+  fi
+}
+
 require_section_literal() {
   local file="$1"
   local section="$2"
@@ -911,6 +923,12 @@ main() {
   require_pattern docs/public-task-routing-matrix-summary.json \
     '"repository": "<case-root>/flask"' \
     "public task routing matrix JSON normalized Flask repository path"
+  require_pattern docs/public-task-routing-matrix.md \
+    'understand request lifecycle before after request handling.*`src/flask/app\.py`.*Start with seed file request lifecycle, dispatch, and response finalization flow\..*Where do request lifecycle hooks, dispatch, and response finalization happen here\?' \
+    "public task routing matrix Flask lifecycle focus and question"
+  require_jq docs/public-task-routing-matrix-summary.json \
+    '.cases[] | select(.case == "flask") | .routes[] | select(.task == "understand request lifecycle before after request handling" and .first_file == "src/flask/app.py" and (.first_reading_focus | contains("request lifecycle")) and (.first_reading_focus | contains("response finalization")) and (.first_reading_question | contains("request lifecycle hooks")) and (.first_reading_question | contains("response finalization")))' \
+    "public task routing matrix JSON Flask lifecycle first-read focus and question"
   require_pattern docs/public-task-routing-matrix-summary.json \
     '"summary_json": "<output-dir>/requests/summary\.json"' \
     "public task routing matrix JSON normalized summary path"

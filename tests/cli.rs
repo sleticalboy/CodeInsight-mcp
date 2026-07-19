@@ -3068,6 +3068,17 @@ class Flask:
         flask_lifecycle_context["files"][0]["file"],
         "src/flask/app.py"
     );
+    let flask_lifecycle_selection_reason = flask_lifecycle_context["files"][0]["reason"]
+        .as_str()
+        .unwrap();
+    assert!(flask_lifecycle_selection_reason.contains("request lifecycle task"));
+    assert!(flask_lifecycle_selection_reason.contains("app/application seed file"));
+    assert!(
+        flask_lifecycle_context["reading_plan"][0]["selection_reason"]
+            .as_str()
+            .unwrap()
+            .contains("request lifecycle task")
+    );
     let flask_lifecycle_focus = flask_lifecycle_context["reading_plan"][0]["focus"]
         .as_str()
         .unwrap();
