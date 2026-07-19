@@ -2257,6 +2257,15 @@ export function routerRegressionSpec() {
     )
     .unwrap();
     std::fs::write(
+        fixture.path().join("src/billing.ts"),
+        r#"export function createCheckoutSession(subscriptionId: string) {
+  // Billing payment checkout creates a subscription invoice.
+  return { subscription: subscriptionId, payment: "pending", invoice: "draft" };
+}
+"#,
+    )
+    .unwrap();
+    std::fs::write(
         fixture.path().join("src/component.tsx"),
         r#"export function UserCardComponent() {
   // Frontend UI component renders the profile page layout.
@@ -2494,6 +2503,33 @@ export function routerRegressionSpec() {
         .unwrap();
     assert!(handler_question.contains("API requests"));
     assert!(handler_question.contains("controller boundaries"));
+
+    let billing_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand checkout subscription payment",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(billing_context["seed_strategy"], "auto_task_match");
+    assert_eq!(
+        billing_context["selected_seeds"][0]["value"],
+        "src/billing.ts"
+    );
+    assert!(
+        billing_context["selected_seeds"][0]["matched_keywords"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|keyword| keyword == "checkout")
+    );
+    assert_eq!(billing_context["files"][0]["file"], "src/billing.ts");
+    let billing_question = billing_context["reading_plan"][0]["question"]
+        .as_str()
+        .unwrap();
+    assert!(billing_question.contains("billing"));
+    assert!(billing_question.contains("subscription decisions"));
 
     let frontend_context = run_json([
         "context-pack",

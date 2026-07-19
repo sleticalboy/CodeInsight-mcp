@@ -1890,6 +1890,8 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
         "Start with seed file startup and initialization flow.".to_string()
     } else if signals.middleware {
         "Start with seed file middleware and handler boundaries.".to_string()
+    } else if signals.billing_payment {
+        "Start with seed file billing, payment, checkout, or subscription boundaries.".to_string()
     } else if signals.frontend_ui {
         "Start with seed file frontend UI, component, or page boundaries.".to_string()
     } else if signals.background_jobs {
@@ -1920,6 +1922,9 @@ fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
         "Read symbol definitions that establish startup behavior.".to_string()
     } else if signals.middleware {
         "Read symbol definitions that establish middleware boundaries.".to_string()
+    } else if signals.billing_payment {
+        "Read symbol definitions that establish billing, payment, or subscription behavior."
+            .to_string()
     } else if signals.frontend_ui {
         "Read symbol definitions that establish frontend component or page behavior.".to_string()
     } else if signals.background_jobs {
@@ -1950,6 +1955,9 @@ fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
         "Follow call graph evidence for startup and initialization order.".to_string()
     } else if signals.middleware {
         "Follow call graph evidence for middleware and handler boundaries.".to_string()
+    } else if signals.billing_payment {
+        "Follow call graph evidence for checkout, billing, payment, or subscription flow."
+            .to_string()
     } else if signals.frontend_ui {
         "Follow call graph evidence for frontend rendering or component flow.".to_string()
     } else if signals.background_jobs {
@@ -1980,6 +1988,9 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
         "Inspect references that register or trigger startup behavior.".to_string()
     } else if signals.middleware {
         "Inspect references that attach or call middleware boundaries.".to_string()
+    } else if signals.billing_payment {
+        "Inspect references that create checkout, invoice, payment, or subscription flow."
+            .to_string()
     } else if signals.frontend_ui {
         "Inspect references that render, mount, or compose frontend UI.".to_string()
     } else if signals.background_jobs {
@@ -2011,6 +2022,9 @@ fn context_semantic_focus(signals: ContextTaskSignals) -> String {
         "Review semantic matches for startup and initialization behavior.".to_string()
     } else if signals.middleware {
         "Review semantic matches for middleware or handler behavior.".to_string()
+    } else if signals.billing_payment {
+        "Review semantic matches for billing, payment, checkout, invoices, or subscriptions."
+            .to_string()
     } else if signals.frontend_ui {
         "Review semantic matches for frontend UI, pages, forms, or components.".to_string()
     } else if signals.background_jobs {
@@ -2039,6 +2053,9 @@ fn context_dependency_focus(signals: ContextTaskSignals) -> String {
         "Check local dependencies that participate in startup behavior.".to_string()
     } else if signals.middleware {
         "Check local dependencies that shape middleware or handler dispatch.".to_string()
+    } else if signals.billing_payment {
+        "Check local dependencies that shape billing, payment, or subscription dispatch."
+            .to_string()
     } else if signals.frontend_ui {
         "Check local dependencies that shape frontend rendering or component composition."
             .to_string()
@@ -2101,6 +2118,9 @@ fn context_seed_file_question(task: &str) -> String {
         "What startup entrypoint or initialization sequence creates the requested flow?".to_string()
     } else if signals.middleware {
         "Which middleware or handler boundaries shape the requested flow here?".to_string()
+    } else if signals.billing_payment {
+        "Where are billing, payment, checkout, invoice, or subscription decisions handled here?"
+            .to_string()
     } else if signals.frontend_ui {
         "Which frontend component, page, screen, form, or layout behavior is handled here?"
             .to_string()
@@ -2136,6 +2156,8 @@ fn context_symbol_definition_question(task: &str) -> String {
         "What startup or initialization role does this definition establish?".to_string()
     } else if signals.middleware {
         "What middleware or handler boundary does this definition establish?".to_string()
+    } else if signals.billing_payment {
+        "What billing, payment, checkout, invoice, or subscription behavior does this definition establish?".to_string()
     } else if signals.frontend_ui {
         "What frontend component, page, screen, form, or layout behavior does this definition establish?".to_string()
     } else if signals.background_jobs {
@@ -2175,6 +2197,9 @@ fn context_call_graph_question(task: &str) -> String {
     } else if signals.middleware {
         "Which callers or callees enter, wrap, or exit middleware and handler boundaries?"
             .to_string()
+    } else if signals.billing_payment {
+        "Which callers or callees create checkout, invoice, payment, or subscription flow?"
+            .to_string()
     } else if signals.frontend_ui {
         "Which callers or callees render, mount, or compose frontend UI?".to_string()
     } else if signals.background_jobs {
@@ -2211,6 +2236,9 @@ fn context_dependency_question(task: &str) -> String {
             .to_string()
     } else if signals.middleware {
         "What imported local dependency behavior shapes middleware or handler dispatch?".to_string()
+    } else if signals.billing_payment {
+        "What imported local dependency behavior shapes billing, payment, or subscription flow?"
+            .to_string()
     } else if signals.frontend_ui {
         "What imported local dependency behavior shapes frontend rendering or component composition?"
             .to_string()
@@ -2248,6 +2276,8 @@ fn context_reference_question(task: &str) -> String {
         "Which references register or trigger startup and initialization behavior?".to_string()
     } else if signals.middleware {
         "Which references attach, order, or call middleware and handler boundaries?".to_string()
+    } else if signals.billing_payment {
+        "Which references create, update, charge, invoice, or cancel billing flows?".to_string()
     } else if signals.frontend_ui {
         "Which references render, mount, compose, or style frontend UI?".to_string()
     } else if signals.background_jobs {
@@ -2283,6 +2313,9 @@ fn context_semantic_question(task: &str) -> String {
             .to_string()
     } else if signals.middleware {
         "Which semantic matches describe middleware or handler boundary behavior?".to_string()
+    } else if signals.billing_payment {
+        "Which semantic matches describe billing, payments, checkout, invoices, or subscriptions?"
+            .to_string()
     } else if signals.frontend_ui {
         "Which semantic matches describe frontend UI, components, pages, forms, or layout?"
             .to_string()
@@ -2315,6 +2348,7 @@ struct ContextTaskSignals {
     configuration: bool,
     startup: bool,
     middleware: bool,
+    billing_payment: bool,
     frontend_ui: bool,
     background_jobs: bool,
     api_handler: bool,
@@ -2360,6 +2394,24 @@ impl ContextTaskSignals {
             ),
             startup: context_text_mentions(task, &["startup", "bootstrap", "boot"]),
             middleware: context_text_mentions(task, &["middleware"]),
+            billing_payment: context_text_mentions(
+                task,
+                &[
+                    "billing",
+                    "bill",
+                    "payment",
+                    "payments",
+                    "checkout",
+                    "subscription",
+                    "subscriptions",
+                    "subscribe",
+                    "invoice",
+                    "invoices",
+                    "pricing",
+                    "price",
+                    "stripe",
+                ],
+            ),
             frontend_ui: context_text_mentions(
                 task,
                 &[
@@ -4354,6 +4406,18 @@ fn task_keyword_aliases(keyword: &str) -> &'static [&'static str] {
         "responses" => &["response", "api", "handler"],
         "action" => &["actions", "handler", "controller"],
         "actions" => &["action", "handler", "controller"],
+        "billing" => &["payment", "subscription", "invoice"],
+        "bill" => &["billing", "payment", "invoice"],
+        "payment" => &["payments", "billing", "checkout"],
+        "payments" => &["payment", "billing", "checkout"],
+        "checkout" => &["payment", "billing", "subscription"],
+        "subscription" => &["subscriptions", "billing", "payment"],
+        "subscriptions" => &["subscription", "billing", "payment"],
+        "subscribe" => &["subscription", "billing", "payment"],
+        "invoice" => &["invoices", "billing", "payment"],
+        "invoices" => &["invoice", "billing", "payment"],
+        "pricing" => &["price", "billing", "subscription"],
+        "stripe" => &["payment", "billing", "checkout"],
         "frontend" => &["ui", "component", "page"],
         "front-end" => &["frontend", "ui", "component"],
         "ui" => &["frontend", "component", "screen"],
@@ -4569,6 +4633,12 @@ mod tests {
         assert!(frontend_keywords.contains(&"component".to_string()));
         assert!(frontend_keywords.contains(&"components".to_string()));
         assert!(frontend_keywords.contains(&"ui".to_string()));
+
+        let billing_keywords = task_keywords("understand checkout subscription payment");
+        assert!(billing_keywords.contains(&"checkout".to_string()));
+        assert!(billing_keywords.contains(&"subscription".to_string()));
+        assert!(billing_keywords.contains(&"billing".to_string()));
+        assert!(billing_keywords.contains(&"payment".to_string()));
     }
 
     #[test]
