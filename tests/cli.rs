@@ -2275,6 +2275,15 @@ export function routerRegressionSpec() {
     )
     .unwrap();
     std::fs::write(
+        fixture.path().join("src/security.ts"),
+        r#"export function sanitizeSecurityInput(input: string) {
+  // Security sanitization guards against injection vulnerabilities.
+  return input.replace(/[<>]/g, "");
+}
+"#,
+    )
+    .unwrap();
+    std::fs::write(
         fixture.path().join("src/billing.ts"),
         r#"export function createCheckoutSession(subscriptionId: string) {
   // Billing payment checkout creates a subscription invoice.
@@ -2578,6 +2587,33 @@ export function routerRegressionSpec() {
         .unwrap();
     assert!(observability_question.contains("logs"));
     assert!(observability_question.contains("metrics"));
+
+    let security_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand security sanitization vulnerabilities",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(security_context["seed_strategy"], "auto_task_match");
+    assert_eq!(
+        security_context["selected_seeds"][0]["value"],
+        "src/security.ts"
+    );
+    assert!(
+        security_context["selected_seeds"][0]["matched_keywords"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|keyword| keyword == "security")
+    );
+    assert_eq!(security_context["files"][0]["file"], "src/security.ts");
+    let security_question = security_context["reading_plan"][0]["question"]
+        .as_str()
+        .unwrap();
+    assert!(security_question.contains("security checks"));
+    assert!(security_question.contains("vulnerability boundaries"));
 
     let billing_context = run_json([
         "context-pack",

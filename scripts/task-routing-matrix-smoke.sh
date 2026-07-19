@@ -105,6 +105,10 @@ export function routerRegressionSpec() {
   // Observability telemetry emits logs and metrics for monitoring.
   return { eventName, logs: true, metrics: "request_count", trace: "span" };
 }'
+  write_file "$repo/src/security.ts" 'export function sanitizeSecurityInput(input: string) {
+  // Security sanitization guards against injection vulnerabilities.
+  return input.replace(/[<>]/g, "");
+}'
   write_file "$repo/src/billing.ts" 'export function createCheckoutSession(subscriptionId: string) {
   // Billing payment checkout creates a subscription invoice.
   return { subscription: subscriptionId, payment: "pending", invoice: "draft" };
@@ -158,6 +162,7 @@ find regression coverage	src/router.test.ts
 understand api handler behavior	src/handler.ts
 understand cache performance latency	src/cache.ts
 understand observability telemetry logs	src/telemetry.ts
+understand security sanitization vulnerabilities	src/security.ts
 understand checkout subscription payment	src/billing.ts
 understand frontend component rendering	src/component.tsx
 understand background job queue	src/worker.ts
@@ -175,8 +180,8 @@ understand middleware behavior	src/application.ts'
     --token-budget 1600 \
     --expect-file "$expectations_tsv"
 
-  require_jq "$summary_json" '.status == "pass" and .task_count == 16' "matrix summary should pass"
-  require_jq "$summary_json" '.expectations.status == "pass" and .expectations.count == 16' "matrix expectations should pass"
+  require_jq "$summary_json" '.status == "pass" and .task_count == 17' "matrix summary should pass"
+  require_jq "$summary_json" '.expectations.status == "pass" and .expectations.count == 17' "matrix expectations should pass"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand routing behavior" and .first_file == "src/router.ts")' "routing task should choose router"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand authentication behavior" and .first_file == "src/auth.ts")' "authentication task should choose auth"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand authorization permissions" and .first_file == "src/permissions.ts")' "authorization task should choose permissions"
@@ -188,6 +193,7 @@ understand middleware behavior	src/application.ts'
   require_jq "$summary_json" '.tasks[] | select(.task == "understand api handler behavior" and .first_file == "src/handler.ts")' "api handler task should choose handler"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand cache performance latency" and .first_file == "src/cache.ts")' "performance task should choose cache"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand observability telemetry logs" and .first_file == "src/telemetry.ts")' "observability task should choose telemetry"
+  require_jq "$summary_json" '.tasks[] | select(.task == "understand security sanitization vulnerabilities" and .first_file == "src/security.ts")' "security task should choose security"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand checkout subscription payment" and .first_file == "src/billing.ts")' "billing task should choose billing"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand frontend component rendering" and .first_file == "src/component.tsx")' "frontend task should choose component"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand background job queue" and .first_file == "src/worker.ts")' "background task should choose worker"
@@ -213,6 +219,8 @@ understand middleware behavior	src/application.ts'
   require_jq "$summary_json" '.tasks[] | select(.task == "understand cache performance latency" and (.first_reading_focus | contains("cache")))' "performance task should report a cache-specific reading focus"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand observability telemetry logs" and (.first_reading_question | contains("logs")))' "observability task should report a telemetry-specific reading question"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand observability telemetry logs" and (.first_reading_focus | contains("logging")))' "observability task should report a telemetry-specific reading focus"
+  require_jq "$summary_json" '.tasks[] | select(.task == "understand security sanitization vulnerabilities" and (.first_reading_question | contains("security checks")))' "security task should report a security-specific reading question"
+  require_jq "$summary_json" '.tasks[] | select(.task == "understand security sanitization vulnerabilities" and (.first_reading_focus | contains("security")))' "security task should report a security-specific reading focus"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand checkout subscription payment" and (.first_reading_question | contains("subscription decisions")))' "billing task should report a payment-specific reading question"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand checkout subscription payment" and (.first_reading_focus | contains("billing")))' "billing task should report a payment-specific reading focus"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand frontend component rendering" and (.first_reading_question | contains("frontend component")))' "frontend task should report a component-specific reading question"
@@ -229,11 +237,12 @@ understand middleware behavior	src/application.ts'
   CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/task-routing-matrix.sh" "$repo" \
     --output-dir "$default_output_dir" \
     --token-budget 1600
-  require_jq "$default_summary_json" '.status == "pass" and .task_count == 16' "default matrix summary should include all default tasks"
+  require_jq "$default_summary_json" '.status == "pass" and .task_count == 17' "default matrix summary should include all default tasks"
   require_jq "$default_summary_json" '.tasks[] | select(.task == "understand authorization permissions" and .first_file == "src/permissions.ts")' "default matrix should include authorization task"
   require_jq "$default_summary_json" '.tasks[] | select(.task == "understand api handler behavior" and .first_file == "src/handler.ts")' "default matrix should include api handler task"
   require_jq "$default_summary_json" '.tasks[] | select(.task == "understand cache performance latency" and .first_file == "src/cache.ts")' "default matrix should include performance task"
   require_jq "$default_summary_json" '.tasks[] | select(.task == "understand observability telemetry logs" and .first_file == "src/telemetry.ts")' "default matrix should include observability task"
+  require_jq "$default_summary_json" '.tasks[] | select(.task == "understand security sanitization vulnerabilities" and .first_file == "src/security.ts")' "default matrix should include security task"
   require_jq "$default_summary_json" '.tasks[] | select(.task == "understand checkout subscription payment" and .first_file == "src/billing.ts")' "default matrix should include billing task"
   require_jq "$default_summary_json" '.tasks[] | select(.task == "understand frontend component rendering" and .first_file == "src/component.tsx")' "default matrix should include frontend task"
   require_jq "$default_summary_json" '.tasks[] | select(.task == "understand background job queue" and .first_file == "src/worker.ts")' "default matrix should include background task"

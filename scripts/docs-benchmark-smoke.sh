@@ -116,7 +116,7 @@ main() {
     '93\.3x aggregate read-less ratio' \
     "README adoption cases aggregate read-less ratio"
   require_pattern README.md \
-    'routes the entrypoint task to 439 of 31,038 source lines, a 98\.6% first-read' \
+    'routes the entrypoint task to 439 of 31,157 source lines, a 98\.6% first-read' \
     "README self adoption report metric"
   "$ROOT_DIR/scripts/readme-adoption-summary-smoke.sh" >/dev/null
   require_pattern README.md \
@@ -441,6 +441,9 @@ main() {
     'Does an observability task start at logs, metrics, telemetry, or tracing code' \
     "task routing matrix observability framing"
   require_pattern docs/task-routing-matrix.md \
+    'Does a security task start at sanitization, secrets, or vulnerability code' \
+    "task routing matrix security framing"
+  require_pattern docs/task-routing-matrix.md \
     'Does a billing task start at payment, checkout, invoice, or subscription code' \
     "task routing matrix billing framing"
   require_pattern docs/task-routing-matrix.md \
@@ -473,6 +476,9 @@ main() {
   require_pattern docs/task-routing-matrix.md \
     $'understand observability telemetry logs\tsrc/telemetry\\.ts' \
     "task routing matrix observability expectation example"
+  require_pattern docs/task-routing-matrix.md \
+    $'understand security sanitization vulnerabilities\tsrc/security\\.ts' \
+    "task routing matrix security expectation example"
   require_pattern docs/task-routing-matrix.md \
     $'understand checkout subscription payment\tsrc/billing\\.ts' \
     "task routing matrix billing expectation example"
@@ -1029,7 +1035,7 @@ main() {
     '\| Task alias or seed ordering changed \| `scripts/task-routing-matrix-smoke\.sh` \|' \
     "maintenance task routing matrix smoke chooser"
   require_pattern docs/maintenance-commands.md \
-    'routing, authentication, authorization, settings, startup, persistence, debug, coverage, API handler, cache, observability, billing, frontend, background job, documentation, and middleware prompts choose the matching first file and that `--expect-file` failures are reported' \
+    'routing, authentication, authorization, settings, startup, persistence, debug, coverage, API handler, cache, observability, security, billing, frontend, background job, documentation, and middleware prompts choose the matching first file and that `--expect-file` failures are reported' \
     "maintenance task routing matrix smoke scope"
   require_pattern docs/maintenance-commands.md \
     '\| Installed-binary adoption path changed \| `CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/installed-quickstart-smoke\.sh` \|' \
@@ -1577,6 +1583,9 @@ main() {
   require_pattern scripts/task-routing-matrix.sh \
     'understand observability telemetry logs' \
     "task routing matrix default observability task"
+  require_pattern scripts/task-routing-matrix.sh \
+    'understand security sanitization vulnerabilities' \
+    "task routing matrix default security task"
   require_pattern scripts/task-routing-matrix.sh \
     'understand checkout subscription payment' \
     "task routing matrix default billing task"

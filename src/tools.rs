@@ -1894,6 +1894,9 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
         "Start with seed file cache, performance, latency, or optimization boundaries.".to_string()
     } else if signals.observability_logging {
         "Start with seed file logging, telemetry, metrics, or tracing boundaries.".to_string()
+    } else if signals.security_safety {
+        "Start with seed file security, secrets, sanitization, or vulnerability boundaries."
+            .to_string()
     } else if signals.billing_payment {
         "Start with seed file billing, payment, checkout, or subscription boundaries.".to_string()
     } else if signals.frontend_ui {
@@ -1932,6 +1935,9 @@ fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
     } else if signals.observability_logging {
         "Read symbol definitions that establish logging, telemetry, metrics, or tracing behavior."
             .to_string()
+    } else if signals.security_safety {
+        "Read symbol definitions that establish security, sanitization, or vulnerability behavior."
+            .to_string()
     } else if signals.billing_payment {
         "Read symbol definitions that establish billing, payment, or subscription behavior."
             .to_string()
@@ -1969,6 +1975,9 @@ fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
         "Follow call graph evidence for cache lookups, latency, or optimization flow.".to_string()
     } else if signals.observability_logging {
         "Follow call graph evidence for logs, metrics, telemetry, or trace spans.".to_string()
+    } else if signals.security_safety {
+        "Follow call graph evidence for security checks, sanitization, or vulnerability flow."
+            .to_string()
     } else if signals.billing_payment {
         "Follow call graph evidence for checkout, billing, payment, or subscription flow."
             .to_string()
@@ -2007,6 +2016,8 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
     } else if signals.observability_logging {
         "Inspect references that emit, record, or propagate logs, metrics, telemetry, or traces."
             .to_string()
+    } else if signals.security_safety {
+        "Inspect references that validate security, sanitize input, handle secrets, or guard vulnerabilities.".to_string()
     } else if signals.billing_payment {
         "Inspect references that create checkout, invoice, payment, or subscription flow."
             .to_string()
@@ -2047,6 +2058,9 @@ fn context_semantic_focus(signals: ContextTaskSignals) -> String {
     } else if signals.observability_logging {
         "Review semantic matches for logging, telemetry, metrics, tracing, or monitoring."
             .to_string()
+    } else if signals.security_safety {
+        "Review semantic matches for security, sanitization, secrets, or vulnerabilities."
+            .to_string()
     } else if signals.billing_payment {
         "Review semantic matches for billing, payment, checkout, invoices, or subscriptions."
             .to_string()
@@ -2083,6 +2097,9 @@ fn context_dependency_focus(signals: ContextTaskSignals) -> String {
             .to_string()
     } else if signals.observability_logging {
         "Check local dependencies that shape logging, metrics, telemetry, or tracing behavior."
+            .to_string()
+    } else if signals.security_safety {
+        "Check local dependencies that shape security, sanitization, or vulnerability handling."
             .to_string()
     } else if signals.billing_payment {
         "Check local dependencies that shape billing, payment, or subscription dispatch."
@@ -2154,6 +2171,9 @@ fn context_seed_file_question(task: &str) -> String {
             .to_string()
     } else if signals.observability_logging {
         "Where are logs, metrics, telemetry, or trace spans emitted here?".to_string()
+    } else if signals.security_safety {
+        "Where are security checks, secrets, sanitization, or vulnerability boundaries handled here?"
+            .to_string()
     } else if signals.billing_payment {
         "Where are billing, payment, checkout, invoice, or subscription decisions handled here?"
             .to_string()
@@ -2198,6 +2218,8 @@ fn context_symbol_definition_question(task: &str) -> String {
     } else if signals.observability_logging {
         "What logging, telemetry, metrics, or tracing behavior does this definition establish?"
             .to_string()
+    } else if signals.security_safety {
+        "What security check, secret handling, sanitization, or vulnerability behavior does this definition establish?".to_string()
     } else if signals.billing_payment {
         "What billing, payment, checkout, invoice, or subscription behavior does this definition establish?".to_string()
     } else if signals.frontend_ui {
@@ -2244,6 +2266,9 @@ fn context_call_graph_question(task: &str) -> String {
     } else if signals.observability_logging {
         "Which callers or callees emit logs, record metrics, or propagate telemetry and traces?"
             .to_string()
+    } else if signals.security_safety {
+        "Which callers or callees enforce security checks, sanitize data, or handle secrets?"
+            .to_string()
     } else if signals.billing_payment {
         "Which callers or callees create checkout, invoice, payment, or subscription flow?"
             .to_string()
@@ -2288,6 +2313,9 @@ fn context_dependency_question(task: &str) -> String {
             .to_string()
     } else if signals.observability_logging {
         "What imported local dependency behavior shapes logging, metrics, telemetry, or tracing?"
+            .to_string()
+    } else if signals.security_safety {
+        "What imported local dependency behavior shapes security checks, sanitization, or secrets?"
             .to_string()
     } else if signals.billing_payment {
         "What imported local dependency behavior shapes billing, payment, or subscription flow?"
@@ -2334,6 +2362,8 @@ fn context_reference_question(task: &str) -> String {
     } else if signals.observability_logging {
         "Which references emit logs, record metrics, attach spans, or propagate telemetry?"
             .to_string()
+    } else if signals.security_safety {
+        "Which references enforce security checks, sanitize input, handle secrets, or guard vulnerabilities?".to_string()
     } else if signals.billing_payment {
         "Which references create, update, charge, invoice, or cancel billing flows?".to_string()
     } else if signals.frontend_ui {
@@ -2377,6 +2407,9 @@ fn context_semantic_question(task: &str) -> String {
     } else if signals.observability_logging {
         "Which semantic matches describe logs, metrics, telemetry, tracing, or monitoring?"
             .to_string()
+    } else if signals.security_safety {
+        "Which semantic matches describe security, sanitization, secrets, or vulnerabilities?"
+            .to_string()
     } else if signals.billing_payment {
         "Which semantic matches describe billing, payments, checkout, invoices, or subscriptions?"
             .to_string()
@@ -2414,6 +2447,7 @@ struct ContextTaskSignals {
     middleware: bool,
     performance_cache: bool,
     observability_logging: bool,
+    security_safety: bool,
     billing_payment: bool,
     frontend_ui: bool,
     background_jobs: bool,
@@ -2498,6 +2532,30 @@ impl ContextTaskSignals {
                     "monitor",
                     "monitoring",
                     "instrumentation",
+                ],
+            ),
+            security_safety: context_text_mentions(
+                task,
+                &[
+                    "security",
+                    "secure",
+                    "vulnerability",
+                    "vulnerabilities",
+                    "vuln",
+                    "vulns",
+                    "secret",
+                    "secrets",
+                    "encrypt",
+                    "encryption",
+                    "decrypt",
+                    "decryption",
+                    "csrf",
+                    "xss",
+                    "injection",
+                    "sanitize",
+                    "sanitization",
+                    "sanitise",
+                    "sanitisation",
                 ],
             ),
             billing_payment: context_text_mentions(
@@ -4542,6 +4600,25 @@ fn task_keyword_aliases(keyword: &str) -> &'static [&'static str] {
         "monitor" => &["monitoring", "observability", "metrics"],
         "monitoring" => &["monitor", "observability", "metrics"],
         "instrumentation" => &["observability", "telemetry", "metrics"],
+        "security" => &["secure", "vulnerability", "sanitize"],
+        "secure" => &["security", "secret", "encryption"],
+        "vulnerability" => &["vulnerabilities", "security", "vuln"],
+        "vulnerabilities" => &["vulnerability", "security", "vulns"],
+        "vuln" => &["vulnerability", "security"],
+        "vulns" => &["vulnerabilities", "security"],
+        "secret" => &["secrets", "security", "encryption"],
+        "secrets" => &["secret", "security", "encryption"],
+        "encrypt" => &["encryption", "security", "secret"],
+        "encryption" => &["encrypt", "security", "secret"],
+        "decrypt" => &["decryption", "security", "secret"],
+        "decryption" => &["decrypt", "security", "secret"],
+        "csrf" => &["security", "vulnerability"],
+        "xss" => &["security", "vulnerability", "sanitize"],
+        "injection" => &["security", "vulnerability", "sanitize"],
+        "sanitize" => &["sanitization", "security", "vulnerability"],
+        "sanitization" => &["sanitize", "security", "vulnerability"],
+        "sanitise" => &["sanitisation", "security", "vulnerability"],
+        "sanitisation" => &["sanitise", "security", "vulnerability"],
         "billing" => &["payment", "subscription", "invoice"],
         "bill" => &["billing", "payment", "invoice"],
         "payment" => &["payments", "billing", "checkout"],
@@ -4787,6 +4864,12 @@ mod tests {
         assert!(observability_keywords.contains(&"telemetry".to_string()));
         assert!(observability_keywords.contains(&"logging".to_string()));
         assert!(observability_keywords.contains(&"metrics".to_string()));
+
+        let security_keywords = task_keywords("understand security sanitization vulnerabilities");
+        assert!(security_keywords.contains(&"security".to_string()));
+        assert!(security_keywords.contains(&"sanitize".to_string()));
+        assert!(security_keywords.contains(&"sanitization".to_string()));
+        assert!(security_keywords.contains(&"vulnerability".to_string()));
     }
 
     #[test]

@@ -16,6 +16,7 @@ This is a route-quality check, not a benchmark suite. It helps answer:
 - Does an API handler task start at handler, controller, or endpoint code?
 - Does a performance task start at cache, latency, or optimization code?
 - Does an observability task start at logs, metrics, telemetry, or tracing code?
+- Does a security task start at sanitization, secrets, or vulnerability code?
 - Does a billing task start at payment, checkout, invoice, or subscription code?
 - Does a frontend task start at UI, component, page, or layout code?
 - Does a background task start at queue, worker, job, or scheduler code?
@@ -31,8 +32,9 @@ scripts/task-routing-matrix.sh /path/to/repo
 
 The default matrix covers routing, authentication, authorization, settings, startup,
 persistence, debug/retry/timeout, regression coverage, API handler,
-cache/performance, observability/logging, billing/payment, frontend component,
-background job, documentation, and middleware prompts.
+cache/performance, observability/logging, security/sanitization,
+billing/payment, frontend component, background job, documentation, and
+middleware prompts.
 
 Run a custom matrix:
 
@@ -49,6 +51,7 @@ scripts/task-routing-matrix.sh /path/to/repo \
   --task "understand api handler behavior" \
   --task "understand cache performance latency" \
   --task "understand observability telemetry logs" \
+  --task "understand security sanitization vulnerabilities" \
   --task "understand checkout subscription payment" \
   --task "understand frontend component rendering" \
   --task "understand background job queue" \
@@ -80,6 +83,7 @@ find regression coverage	src/router.test.ts
 understand api handler behavior	src/handler.ts
 understand cache performance latency	src/cache.ts
 understand observability telemetry logs	src/telemetry.ts
+understand security sanitization vulnerabilities	src/security.ts
 understand checkout subscription payment	src/billing.ts
 understand frontend component rendering	src/component.tsx
 understand background job queue	src/worker.ts

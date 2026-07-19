@@ -497,6 +497,7 @@ main() {
       "understand api handler behavior"
       "understand cache performance latency"
       "understand observability telemetry logs"
+      "understand security sanitization vulnerabilities"
       "understand checkout subscription payment"
       "understand frontend component rendering"
       "understand background job queue"
