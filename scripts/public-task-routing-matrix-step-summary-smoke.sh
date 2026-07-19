@@ -40,7 +40,7 @@ main() {
   "generated_by": "scripts/update-public-task-routing-matrix.sh",
   "status": "pass",
   "aggregate": {
-    "task_count": 6,
+    "task_count": 7,
     "expectation_count": 6,
     "total_task_source_lines": 1000,
     "total_selected_lines": 125,
@@ -129,8 +129,8 @@ EOF
   require_literal "$step_summary" 'Workflow run: [open run](https://example.com/run)' "run link"
   require_literal "$step_summary" 'Workflow artifact: [`codeinsight-public-routing-snapshot`](https://example.com/artifact)' "artifact link"
   require_literal "$step_summary" '| Cases | `2` |' "case count"
-  require_literal "$step_summary" '| Tasks | `6` |' "task count"
-  require_literal "$step_summary" '| Expectations passed | `6/6` |' "expectations metric"
+  require_literal "$step_summary" '| Tasks | `7` |' "task count"
+  require_literal "$step_summary" '| Expectations passed | `6/7` |' "expectations metric"
   require_literal "$step_summary" '| Source lines | `1000` |' "source lines metric"
   require_literal "$step_summary" '| Selected lines | `125` |' "selected lines metric"
   require_literal "$step_summary" '| First-read line reduction | `87.5%` |' "line reduction metric"

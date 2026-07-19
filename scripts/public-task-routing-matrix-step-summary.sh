@@ -108,7 +108,7 @@ main() {
     printf "| --- | --- |\n"
     printf '| Cases | `%s` |\n' "$(metric '.cases | length')"
     printf '| Tasks | `%s` |\n' "$(metric '.aggregate.task_count')"
-    printf '| Expectations passed | `%s/%s` |\n' "$(metric '.aggregate.expectation_count')" "$(metric '.aggregate.expectation_count')"
+    printf '| Expectations passed | `%s/%s` |\n' "$(metric '.aggregate.expectation_count')" "$(metric '.aggregate.task_count')"
     printf '| Source lines | `%s` |\n' "$(metric '.aggregate.total_task_source_lines')"
     printf '| Selected lines | `%s` |\n' "$(metric '.aggregate.total_selected_lines')"
     printf '| First-read line reduction | `%s%%` |\n' "$(metric '.aggregate.line_reduction')"
