@@ -1,6 +1,6 @@
 # CodeInsight v0.1 Large Repository Benchmark
 
-Generated at: 2026-07-18 14:34:20 UTC
+Generated at: 2026-07-19 05:49:38 UTC
 
 This is a benchmark fixture report, not a controlled performance benchmark. It
 verifies that CodeInsight can index real repositories across the MVP language
@@ -20,18 +20,18 @@ Environment:
 
 | Repository | Focus | Commit | Files | Lines | Symbols | Skipped | Errors | Index ms | Index budget ms | Budget status | DB size | Entrypoints | First entrypoint | Recommended tools | First recommended tool | Context files | Ranges | Context lines | Line reduction | Tokens | Applied budget | Omitted files | Continuation | Truncated | First context file |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |
-| express | JavaScript | `d7462ff` | 141 | 21478 | 2432 | 72 | 0 | 3334 | 10000 | pass | 6.1M | 12 | `examples/auth/index.js` | 4 | `context_pack` | 4 | 13 | 362 | 98.3% | 2360 | 6000 | 0 | complete | false | `lib/application.js` |
-| flask | Python | `36e4a82` | 83 | 18337 | 1620 | 153 | 0 | 406 | 5000 | pass | 1.2M | 6 | `src/flask/cli.py` | 4 | `context_pack` | 12 | 15 | 573 | 96.9% | 5851 | 6000 | 2 | omitted_candidates_available | true | `src/flask/app.py` |
-| gin | Go | `34dac20` | 99 | 24099 | 1857 | 31 | 0 | 458 | 5000 | pass | 1.8M | 3 | `gin.go` | 4 | `context_pack` | 4 | 12 | 305 | 98.7% | 2969 | 6000 | 0 | complete | false | `gin.go` |
-| tokio | Rust | `dac81bf` | 790 | 177641 | 8472 | 75 | 0 | 3193 | 20000 | pass | 6.7M | 12 | `examples/chat.rs` | 4 | `context_pack` | 18 | 23 | 508 | 99.7% | 5054 | 6000 | 0 | complete | false | `tokio/src/lib.rs` |
+| express | JavaScript | `ae6dd37` | 141 | 21478 | 2432 | 72 | 0 | 3307 | 10000 | pass | 6.1M | 12 | `examples/auth/index.js` | 4 | `context_pack` | 4 | 15 | 362 | 98.3% | 2360 | 6000 | 0 | complete | false | `lib/application.js` |
+| flask | Python | `36e4a82` | 83 | 18337 | 1620 | 153 | 0 | 382 | 5000 | pass | 1.2M | 7 | `src/flask/cli.py` | 4 | `context_pack` | 12 | 15 | 573 | 96.9% | 5851 | 6000 | 2 | omitted_candidates_available | true | `src/flask/app.py` |
+| gin | Go | `34dac20` | 99 | 24099 | 1857 | 31 | 0 | 454 | 5000 | pass | 1.8M | 3 | `gin.go` | 4 | `context_pack` | 4 | 13 | 338 | 98.6% | 3181 | 6000 | 0 | complete | false | `gin.go` |
+| tokio | Rust | `be689a3` | 790 | 177810 | 8475 | 75 | 0 | 3085 | 20000 | pass | 6.7M | 12 | `examples/chat.rs` | 4 | `context_pack` | 18 | 23 | 508 | 99.7% | 5054 | 6000 | 0 | complete | false | `tokio/src/lib.rs` |
 
 ## Key Results
 
 - Repositories benchmarked: 4 (`all` subset).
 - Agent routing: `context_pack` was the first recommended tool for 4/4 repositories.
-- Context compression: selected 1748 of 241555 source lines (99.3% reduction) across 38 files and 63 ranges.
-- Token budget: 16234 estimated tokens total, 4058 average tokens per repository, with a 6000 token budget per context pack.
-- Indexing: 7391 ms total, 1848 ms average per repository, with 0 budget failures.
+- Context compression: selected 1781 of 241724 source lines (99.3% reduction) across 38 files and 66 ranges.
+- Token budget: 16446 estimated tokens total, 4112 average tokens per repository, with a 6000 token budget per context pack.
+- Indexing: 7228 ms total, 1807 ms average per repository, with 0 budget failures.
 - Guardrails: 0 context, 0 symbol, 0 call target, and 0 call edge failures.
 - Truncation: 1 context packs reported truncated output.
 
@@ -40,10 +40,10 @@ Environment:
 ## express
 
 - URL: https://github.com/expressjs/express.git
-- Commit: `d7462ffe150d58db23d61d062ffb6de7387782ab`
+- Commit: `ae6dd37680e3a00618d6c8a3e522f0ee4eeba1a4`
 - Indexed files: 141
 - Symbols: 2432
-- Duration: 3334 ms
+- Duration: 3307 ms
 - Index budget: 10000 ms (pass)
 - Entrypoint candidates: 12
 - First entrypoint candidate: `examples/auth/index.js`
@@ -51,7 +51,7 @@ Environment:
 - Context seed file: `lib/application.js`
 - Context task: understand express application routing behavior
 - Context files: 4
-- Context ranges: 13
+- Context ranges: 15
 - Context lines: 362 of 21478 (98.3% reduction)
 - Context estimated tokens: 2360
 - Context applied token budget: 6000
@@ -86,19 +86,19 @@ Context pack files:
 
 | File | Ranges | First range | Importances |
 | --- | ---: | --- | --- |
-| `lib/application.js` | 10 | 1-7 | high |
-| `lib/utils.js` | 1 | 1-40 | high |
-| `lib/view.js` | 1 | 1-40 | high |
+| `lib/application.js` | 12 | 1-7 | high |
+| `lib/utils.js` | 1 | 1-40 | medium |
+| `lib/view.js` | 1 | 1-40 | medium |
 | `index.js` | 1 | 1-11 | medium |
 
 Context reading plan:
 
-| File | Rank | Question | Next action | Suggested tool | Reason | Selection reason |
-| --- | ---: | --- | --- | --- | --- | --- |
-| `lib/application.js` | 1 | What entrypoints, exported symbols, or setup code define the main flow here? | `inspect_seed_file` | `file_outline` | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: lib/application.js; matched task keywords: application | Selected for high relevance via seed_file: Seed file header and imports for task: lib/application.js; matched task keywords: application |
-| `lib/utils.js` | 2 | Which callers or callees explain how control moves through this flow? | `follow_call_graph` | `impact_analysis` | Read this step to answer: Which callers or callees explain how control moves through this flow? If deeper evidence is needed, call impact_analysis. Selection reason: Selected for high relevance via call_graph: Call graph target of set via compileETag; Call graph target of set via compileQueryParser; Call graph target of set via compileTrust; Local dependency of lib/application.js via ./utils | Selected for high relevance via call_graph: Call graph target of set via compileETag; Call graph target of set via compileQueryParser; Call graph target of set via compileTrust; Local dependency of lib/application.js via ./utils |
-| `lib/view.js` | 3 | Which callers or callees explain how control moves through this flow? | `follow_call_graph` | `impact_analysis` | Read this step to answer: Which callers or callees explain how control moves through this flow? If deeper evidence is needed, call impact_analysis. Selection reason: Selected for high relevance via call_graph: Call graph target of defaultConfiguration via debug; Call graph target of defaultConfiguration via resolve; Call graph target of set via debug; Call graph target of tryRender via view.render; Local dependency of lib/application.js via ./view | Selected for high relevance via call_graph: Call graph target of defaultConfiguration via debug; Call graph target of defaultConfiguration via resolve; Call graph target of set via debug; Call graph target of tryRender via view.render; Local dependency of lib/application.js via ./view |
-| `index.js` | 4 | What imported local dependency behavior is required to understand this file? | `inspect_dependency` | `dependency_graph` | Read this step to answer: What imported local dependency behavior is required to understand this file? If deeper evidence is needed, call dependency_graph. Selection reason: Selected for medium relevance via dependency: Local dependency of lib/utils.js via / | Selected for medium relevance via dependency: Local dependency of lib/utils.js via / |
+| File | Rank | Focus | Question | Next action | Suggested tool | Reason | Selection reason |
+| --- | ---: | --- | --- | --- | --- | --- | --- |
+| `lib/application.js` | 1 | Start with seed file context and primary symbols. | What entrypoints, exported symbols, or setup code define the main flow here? | `inspect_seed_file` | `file_outline` | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: lib/application.js; matched task keywords: express, route, router, routes, routing | Selected for high relevance via seed_file: Seed file header and imports for task: lib/application.js; matched task keywords: express, route, router, routes, routing |
+| `lib/utils.js` | 2 | Follow static call graph evidence around the seed flow. | Which callers or callees explain how control moves through this flow? | `follow_call_graph` | `impact_analysis` | Read this step to answer: Which callers or callees explain how control moves through this flow? If deeper evidence is needed, call impact_analysis. Selection reason: Selected for medium relevance via call_graph: Call graph target of set via compileETag; Call graph target of set via compileQueryParser; Call graph target of set via compileTrust; Local dependency of lib/application.js via ./utils | Selected for medium relevance via call_graph: Call graph target of set via compileETag; Call graph target of set via compileQueryParser; Call graph target of set via compileTrust; Local dependency of lib/application.js via ./utils |
+| `lib/view.js` | 3 | Follow static call graph evidence around the seed flow. | Which callers or callees explain how control moves through this flow? | `follow_call_graph` | `impact_analysis` | Read this step to answer: Which callers or callees explain how control moves through this flow? If deeper evidence is needed, call impact_analysis. Selection reason: Selected for medium relevance via call_graph: Call graph target of defaultConfiguration via debug; Call graph target of defaultConfiguration via resolve; Call graph target of set via debug; Call graph target of tryRender via view.render; Local dependency of lib/application.js via ./view | Selected for medium relevance via call_graph: Call graph target of defaultConfiguration via debug; Call graph target of defaultConfiguration via resolve; Call graph target of set via debug; Call graph target of tryRender via view.render; Local dependency of lib/application.js via ./view |
+| `index.js` | 4 | Check local dependency context that supports selected files. | What imported local dependency behavior is required to understand this file? | `inspect_dependency` | `dependency_graph` | Read this step to answer: What imported local dependency behavior is required to understand this file? If deeper evidence is needed, call dependency_graph. Selection reason: Selected for medium relevance via dependency: Local dependency of lib/utils.js via / | Selected for medium relevance via dependency: Local dependency of lib/utils.js via / |
 
 Language breakdown:
 
@@ -112,13 +112,14 @@ Context pack guardrails:
 | --- | --- | --- | --- |
 | `first_recommended_tool` | context_pack | context_pack | pass |
 | `selected_files` | >= 3 | 4 | pass |
-| `selected_ranges` | >= 10 | 13 | pass |
+| `selected_ranges` | >= 10 | 15 | pass |
 | `reading_plan_steps` | >= 3 | 4 | pass |
 | `first_next_action` | present | inspect_seed_file | pass |
+| `first_reading_focus` | present | Start with seed file context and primary symbols. | pass |
 | `first_reading_question` | present | What entrypoints, exported symbols, or setup code define the main flow here? | pass |
-| `first_reading_reason` | present | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: lib/application.js; matched task keywords: application | pass |
+| `first_reading_reason` | present | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: lib/application.js; matched task keywords: express, route, router, routes, routing | pass |
 | `first_selection_rank` | >= 1 | 1 | pass |
-| `first_selection_reason` | present | Selected for high relevance via seed_file: Seed file header and imports for task: lib/application.js; matched task keywords: application | pass |
+| `first_selection_reason` | present | Selected for high relevance via seed_file: Seed file header and imports for task: lib/application.js; matched task keywords: express, route, router, routes, routing | pass |
 | `estimated_tokens` | <= 3000 and applied budget | 2360 / 6000 | pass |
 | `line_reduction` | >= 95% | 98.3% | pass |
 
@@ -158,9 +159,9 @@ Call edge guardrails:
 - Commit: `36e4a824f340fdee7ed50937ba8e7f6bc7d17f81`
 - Indexed files: 83
 - Symbols: 1620
-- Duration: 406 ms
+- Duration: 382 ms
 - Index budget: 5000 ms (pass)
-- Entrypoint candidates: 6
+- Entrypoint candidates: 7
 - First entrypoint candidate: `src/flask/cli.py`
 - Recommended next tools: 4
 - Context seed file: `src/flask/app.py`
@@ -186,9 +187,9 @@ Entrypoint candidates:
 | --- | --- | --- | ---: | --- |
 | `src/flask/cli.py` | `main` | source | 1.0 | entry symbol named main |
 | `src/flask/app.py` | `run` | source | 0.8 | entry-like symbol named run |
+| `tests/test_apps/helloworld/wsgi.py` | `-` | test | 0.72 | Python web framework entrypoint |
 | `tests/test_appctx.py` | `handler` | test | 0.71 | service entry-like symbol named handler |
 | `tests/test_basic.py` | `handler` | test | 0.71 | service entry-like symbol named handler |
-| `src/flask/sansio/app.py` | `-` | source | 0.68 | conventional app file |
 
 Recommended next tools:
 
@@ -218,13 +219,13 @@ Context pack files:
 
 Context reading plan:
 
-| File | Rank | Question | Next action | Suggested tool | Reason | Selection reason |
-| --- | ---: | --- | --- | --- | --- | --- |
-| `src/flask/app.py` | 1 | What entrypoints, exported symbols, or setup code define the main flow here? | `inspect_seed_file` | `file_outline` | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: src/flask/app.py; matched task keywords: flask; Local dependency of src/flask/globals.py via .app; Local dependency of src/flask/globals.py via .app.Flask | Selected for high relevance via seed_file: Seed file header and imports for task: src/flask/app.py; matched task keywords: flask; Local dependency of src/flask/globals.py via .app; Local dependency of src/flask/globals.py via .app.Flask |
-| `src/flask/globals.py` | 2 | Which callers or callees explain how control moves through this flow? | `follow_call_graph` | `impact_analysis` | Read this step to answer: Which callers or callees explain how control moves through this flow? If deeper evidence is needed, call impact_analysis. Selection reason: Selected for high relevance via call_graph: Call graph target of wrapper via app_ctx._get_current_object; Local dependency of src/flask/app.py via .globals; Local dependency of src/flask/app.py via .globals._cv_app; Local dependency of src/flask/app.py via .globals.app_ctx; Local dependency of src/flask/app.py via .globals.g; Local dependency of src/flask/app.py via .globals.request; Local dependency of src/flask/app.py via .globals.session | Selected for high relevance via call_graph: Call graph target of wrapper via app_ctx._get_current_object; Local dependency of src/flask/app.py via .globals; Local dependency of src/flask/app.py via .globals._cv_app; Local dependency of src/flask/app.py via .globals.app_ctx; Local dependency of src/flask/app.py via .globals.g; Local dependency of src/flask/app.py via .globals.request; Local dependency of src/flask/app.py via .globals.session |
-| `src/flask/__init__.py` | 3 | What imported local dependency behavior is required to understand this file? | `inspect_dependency` | `dependency_graph` | Read this step to answer: What imported local dependency behavior is required to understand this file? If deeper evidence is needed, call dependency_graph. Selection reason: Selected for medium relevance via dependency: Local dependency of src/flask/app.py via . | Selected for medium relevance via dependency: Local dependency of src/flask/app.py via . |
-| `src/flask/cli.py` | 4 | What imported local dependency behavior is required to understand this file? | `inspect_dependency` | `dependency_graph` | Read this step to answer: What imported local dependency behavior is required to understand this file? If deeper evidence is needed, call dependency_graph. Selection reason: Selected for medium relevance via dependency: Local dependency of src/flask/app.py via .cli | Selected for medium relevance via dependency: Local dependency of src/flask/app.py via .cli |
-| `src/flask/ctx.py` | 5 | What imported local dependency behavior is required to understand this file? | `inspect_dependency` | `dependency_graph` | Read this step to answer: What imported local dependency behavior is required to understand this file? If deeper evidence is needed, call dependency_graph. Selection reason: Selected for medium relevance via dependency: Local dependency of src/flask/app.py via .ctx; Local dependency of src/flask/app.py via .ctx.AppContext; Local dependency of src/flask/globals.py via .ctx; Local dependency of src/flask/globals.py via .ctx._AppCtxGlobals; Local dependency of src/flask/globals.py via .ctx.AppContext | Selected for medium relevance via dependency: Local dependency of src/flask/app.py via .ctx; Local dependency of src/flask/app.py via .ctx.AppContext; Local dependency of src/flask/globals.py via .ctx; Local dependency of src/flask/globals.py via .ctx._AppCtxGlobals; Local dependency of src/flask/globals.py via .ctx.AppContext |
+| File | Rank | Focus | Question | Next action | Suggested tool | Reason | Selection reason |
+| --- | ---: | --- | --- | --- | --- | --- | --- |
+| `src/flask/app.py` | 1 | Start with seed file context and primary symbols. | What entrypoints, exported symbols, or setup code define the main flow here? | `inspect_seed_file` | `file_outline` | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: src/flask/app.py; matched task keywords: flask; Local dependency of src/flask/globals.py via .app; Local dependency of src/flask/globals.py via .app.Flask | Selected for high relevance via seed_file: Seed file header and imports for task: src/flask/app.py; matched task keywords: flask; Local dependency of src/flask/globals.py via .app; Local dependency of src/flask/globals.py via .app.Flask |
+| `src/flask/globals.py` | 2 | Follow static call graph evidence around the seed flow. | Which callers or callees explain how control moves through this flow? | `follow_call_graph` | `impact_analysis` | Read this step to answer: Which callers or callees explain how control moves through this flow? If deeper evidence is needed, call impact_analysis. Selection reason: Selected for high relevance via call_graph: Call graph target of wrapper via app_ctx._get_current_object; Local dependency of src/flask/app.py via .globals; Local dependency of src/flask/app.py via .globals._cv_app; Local dependency of src/flask/app.py via .globals.app_ctx; Local dependency of src/flask/app.py via .globals.g; Local dependency of src/flask/app.py via .globals.request; Local dependency of src/flask/app.py via .globals.session | Selected for high relevance via call_graph: Call graph target of wrapper via app_ctx._get_current_object; Local dependency of src/flask/app.py via .globals; Local dependency of src/flask/app.py via .globals._cv_app; Local dependency of src/flask/app.py via .globals.app_ctx; Local dependency of src/flask/app.py via .globals.g; Local dependency of src/flask/app.py via .globals.request; Local dependency of src/flask/app.py via .globals.session |
+| `src/flask/__init__.py` | 3 | Check local dependency context that supports selected files. | What imported local dependency behavior is required to understand this file? | `inspect_dependency` | `dependency_graph` | Read this step to answer: What imported local dependency behavior is required to understand this file? If deeper evidence is needed, call dependency_graph. Selection reason: Selected for medium relevance via dependency: Local dependency of src/flask/app.py via . | Selected for medium relevance via dependency: Local dependency of src/flask/app.py via . |
+| `src/flask/cli.py` | 4 | Check local dependency context that supports selected files. | What imported local dependency behavior is required to understand this file? | `inspect_dependency` | `dependency_graph` | Read this step to answer: What imported local dependency behavior is required to understand this file? If deeper evidence is needed, call dependency_graph. Selection reason: Selected for medium relevance via dependency: Local dependency of src/flask/app.py via .cli | Selected for medium relevance via dependency: Local dependency of src/flask/app.py via .cli |
+| `src/flask/ctx.py` | 5 | Check local dependency context that supports selected files. | What imported local dependency behavior is required to understand this file? | `inspect_dependency` | `dependency_graph` | Read this step to answer: What imported local dependency behavior is required to understand this file? If deeper evidence is needed, call dependency_graph. Selection reason: Selected for medium relevance via dependency: Local dependency of src/flask/app.py via .ctx; Local dependency of src/flask/app.py via .ctx.AppContext; Local dependency of src/flask/globals.py via .ctx; Local dependency of src/flask/globals.py via .ctx._AppCtxGlobals; Local dependency of src/flask/globals.py via .ctx.AppContext | Selected for medium relevance via dependency: Local dependency of src/flask/app.py via .ctx; Local dependency of src/flask/app.py via .ctx.AppContext; Local dependency of src/flask/globals.py via .ctx; Local dependency of src/flask/globals.py via .ctx._AppCtxGlobals; Local dependency of src/flask/globals.py via .ctx.AppContext |
 
 Language breakdown:
 
@@ -241,6 +242,7 @@ Context pack guardrails:
 | `selected_ranges` | >= 10 | 15 | pass |
 | `reading_plan_steps` | >= 6 | 8 | pass |
 | `first_next_action` | present | inspect_seed_file | pass |
+| `first_reading_focus` | present | Start with seed file context and primary symbols. | pass |
 | `first_reading_question` | present | What entrypoints, exported symbols, or setup code define the main flow here? | pass |
 | `first_reading_reason` | present | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: src/flask/app.py; matched task keywords: flask; Local dependency of src/flask/globals.py via .app; Local dependency of src/flask/globals.py via .app.Flask | pass |
 | `first_selection_rank` | >= 1 | 1 | pass |
@@ -254,7 +256,7 @@ Context pack guardrails:
 - Commit: `34dac209ffb6ef85cc78c5d217bbb7ad001d68fd`
 - Indexed files: 99
 - Symbols: 1857
-- Duration: 458 ms
+- Duration: 454 ms
 - Index budget: 5000 ms (pass)
 - Entrypoint candidates: 3
 - First entrypoint candidate: `gin.go`
@@ -262,9 +264,9 @@ Context pack guardrails:
 - Context seed file: `gin.go`
 - Context task: understand gin engine routing behavior
 - Context files: 4
-- Context ranges: 12
-- Context lines: 305 of 24099 (98.7% reduction)
-- Context estimated tokens: 2969
+- Context ranges: 13
+- Context lines: 338 of 24099 (98.6% reduction)
+- Context estimated tokens: 3181
 - Context applied token budget: 6000
 - Context omitted files: 0
 - Context omitted ranges: 0
@@ -295,19 +297,19 @@ Context pack files:
 
 | File | Ranges | First range | Importances |
 | --- | ---: | --- | --- |
-| `gin.go` | 9 | 1-7 | high |
+| `gin.go` | 10 | 1-7 | high |
 | `internal/bytesconv/bytesconv.go` | 1 | 1-21 | high |
 | `internal/fs/fs.go` | 1 | 1-21 | medium |
 | `render/bson.go` | 1 | 1-34 | medium |
 
 Context reading plan:
 
-| File | Rank | Question | Next action | Suggested tool | Reason | Selection reason |
-| --- | ---: | --- | --- | --- | --- | --- |
-| `gin.go` | 1 | What entrypoints, exported symbols, or setup code define the main flow here? | `inspect_seed_file` | `file_outline` | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: gin.go; matched task keywords: gin | Selected for high relevance via seed_file: Seed file header and imports for task: gin.go; matched task keywords: gin |
-| `internal/bytesconv/bytesconv.go` | 2 | Which callers or callees explain how control moves through this flow? | `follow_call_graph` | `impact_analysis` | Read this step to answer: Which callers or callees explain how control moves through this flow? If deeper evidence is needed, call impact_analysis. Selection reason: Selected for high relevance via call_graph: Call graph target of redirectFixedPath via bytesconv.BytesToString; Local dependency of gin.go via github.com/gin-gonic/gin/internal/bytesconv | Selected for high relevance via call_graph: Call graph target of redirectFixedPath via bytesconv.BytesToString; Local dependency of gin.go via github.com/gin-gonic/gin/internal/bytesconv |
-| `internal/fs/fs.go` | 3 | What imported local dependency behavior is required to understand this file? | `inspect_dependency` | `dependency_graph` | Read this step to answer: What imported local dependency behavior is required to understand this file? If deeper evidence is needed, call dependency_graph. Selection reason: Selected for medium relevance via dependency: Local dependency of gin.go via github.com/gin-gonic/gin/internal/fs | Selected for medium relevance via dependency: Local dependency of gin.go via github.com/gin-gonic/gin/internal/fs |
-| `render/bson.go` | 4 | What imported local dependency behavior is required to understand this file? | `inspect_dependency` | `dependency_graph` | Read this step to answer: What imported local dependency behavior is required to understand this file? If deeper evidence is needed, call dependency_graph. Selection reason: Selected for medium relevance via dependency: Local dependency of gin.go via github.com/gin-gonic/gin/render | Selected for medium relevance via dependency: Local dependency of gin.go via github.com/gin-gonic/gin/render |
+| File | Rank | Focus | Question | Next action | Suggested tool | Reason | Selection reason |
+| --- | ---: | --- | --- | --- | --- | --- | --- |
+| `gin.go` | 1 | Start with seed file context and primary symbols. | What entrypoints, exported symbols, or setup code define the main flow here? | `inspect_seed_file` | `file_outline` | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: gin.go; matched task keywords: engine, gin, route, router, routes, routing | Selected for high relevance via seed_file: Seed file header and imports for task: gin.go; matched task keywords: engine, gin, route, router, routes, routing |
+| `internal/bytesconv/bytesconv.go` | 2 | Follow static call graph evidence around the seed flow. | Which callers or callees explain how control moves through this flow? | `follow_call_graph` | `impact_analysis` | Read this step to answer: Which callers or callees explain how control moves through this flow? If deeper evidence is needed, call impact_analysis. Selection reason: Selected for high relevance via call_graph: Call graph target of redirectFixedPath via bytesconv.BytesToString; Local dependency of gin.go via github.com/gin-gonic/gin/internal/bytesconv | Selected for high relevance via call_graph: Call graph target of redirectFixedPath via bytesconv.BytesToString; Local dependency of gin.go via github.com/gin-gonic/gin/internal/bytesconv |
+| `internal/fs/fs.go` | 3 | Check local dependency context that supports selected files. | What imported local dependency behavior is required to understand this file? | `inspect_dependency` | `dependency_graph` | Read this step to answer: What imported local dependency behavior is required to understand this file? If deeper evidence is needed, call dependency_graph. Selection reason: Selected for medium relevance via dependency: Local dependency of gin.go via github.com/gin-gonic/gin/internal/fs | Selected for medium relevance via dependency: Local dependency of gin.go via github.com/gin-gonic/gin/internal/fs |
+| `render/bson.go` | 4 | Check local dependency context that supports selected files. | What imported local dependency behavior is required to understand this file? | `inspect_dependency` | `dependency_graph` | Read this step to answer: What imported local dependency behavior is required to understand this file? If deeper evidence is needed, call dependency_graph. Selection reason: Selected for medium relevance via dependency: Local dependency of gin.go via github.com/gin-gonic/gin/render | Selected for medium relevance via dependency: Local dependency of gin.go via github.com/gin-gonic/gin/render |
 
 Language breakdown:
 
@@ -321,23 +323,24 @@ Context pack guardrails:
 | --- | --- | --- | --- |
 | `first_recommended_tool` | context_pack | context_pack | pass |
 | `selected_files` | >= 3 | 4 | pass |
-| `selected_ranges` | >= 10 | 12 | pass |
+| `selected_ranges` | >= 10 | 13 | pass |
 | `reading_plan_steps` | >= 3 | 4 | pass |
 | `first_next_action` | present | inspect_seed_file | pass |
+| `first_reading_focus` | present | Start with seed file context and primary symbols. | pass |
 | `first_reading_question` | present | What entrypoints, exported symbols, or setup code define the main flow here? | pass |
-| `first_reading_reason` | present | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: gin.go; matched task keywords: gin | pass |
+| `first_reading_reason` | present | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: gin.go; matched task keywords: engine, gin, route, router, routes, routing | pass |
 | `first_selection_rank` | >= 1 | 1 | pass |
-| `first_selection_reason` | present | Selected for high relevance via seed_file: Seed file header and imports for task: gin.go; matched task keywords: gin | pass |
-| `estimated_tokens` | <= 3500 and applied budget | 2969 / 6000 | pass |
-| `line_reduction` | >= 95% | 98.7% | pass |
+| `first_selection_reason` | present | Selected for high relevance via seed_file: Seed file header and imports for task: gin.go; matched task keywords: engine, gin, route, router, routes, routing | pass |
+| `estimated_tokens` | <= 3500 and applied budget | 3181 / 6000 | pass |
+| `line_reduction` | >= 95% | 98.6% | pass |
 
 ## tokio
 
 - URL: https://github.com/tokio-rs/tokio.git
-- Commit: `dac81bf8c8de0a3e35f1626643674ba9faf9569c`
+- Commit: `be689a35f5ade5a39e507f79d3ec85cdab27806f`
 - Indexed files: 790
-- Symbols: 8472
-- Duration: 3193 ms
+- Symbols: 8475
+- Duration: 3085 ms
 - Index budget: 20000 ms (pass)
 - Entrypoint candidates: 12
 - First entrypoint candidate: `examples/chat.rs`
@@ -346,7 +349,7 @@ Context pack guardrails:
 - Context task: understand tokio runtime public API
 - Context files: 18
 - Context ranges: 23
-- Context lines: 508 of 177641 (99.7% reduction)
+- Context lines: 508 of 177810 (99.7% reduction)
 - Context estimated tokens: 5054
 - Context applied token budget: 6000
 - Context omitted files: 0
@@ -401,19 +404,19 @@ Context pack files:
 
 Context reading plan:
 
-| File | Rank | Question | Next action | Suggested tool | Reason | Selection reason |
-| --- | ---: | --- | --- | --- | --- | --- |
-| `tokio/src/lib.rs` | 1 | What entrypoints, exported symbols, or setup code define the main flow here? | `inspect_seed_file` | `file_outline` | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: tokio/src/lib.rs; matched task keywords: tokio | Selected for high relevance via seed_file: Seed file header and imports for task: tokio/src/lib.rs; matched task keywords: tokio |
-| `tokio/src/sync/watch.rs` | 2 | Which callers or callees explain how control moves through this flow? | `follow_call_graph` | `impact_analysis` | Read this step to answer: Which callers or callees explain how control moves through this flow? If deeper evidence is needed, call impact_analysis. Selection reason: Selected for high relevance via call_graph: Call graph caller of crate.trace.async_trace_leaf via changed_impl | Selected for high relevance via call_graph: Call graph caller of crate.trace.async_trace_leaf via changed_impl |
-| `tokio/src/sync/once_cell.rs` | 3 | Which callers or callees explain how control moves through this flow? | `follow_call_graph` | `impact_analysis` | Read this step to answer: Which callers or callees explain how control moves through this flow? If deeper evidence is needed, call impact_analysis. Selection reason: Selected for high relevance via call_graph: Call graph caller of crate.trace.async_trace_leaf via get_or_init | Selected for high relevance via call_graph: Call graph caller of crate.trace.async_trace_leaf via get_or_init |
-| `tokio/src/sync/barrier.rs` | 4 | Which callers or callees explain how control moves through this flow? | `follow_call_graph` | `impact_analysis` | Read this step to answer: Which callers or callees explain how control moves through this flow? If deeper evidence is needed, call impact_analysis. Selection reason: Selected for high relevance via call_graph: Call graph caller of crate.trace.async_trace_leaf via wait_internal | Selected for high relevance via call_graph: Call graph caller of crate.trace.async_trace_leaf via wait_internal |
-| `tokio/src/sync/mpsc/bounded.rs` | 5 | Which callers or callees explain how control moves through this flow? | `follow_call_graph` | `impact_analysis` | Read this step to answer: Which callers or callees explain how control moves through this flow? If deeper evidence is needed, call impact_analysis. Selection reason: Selected for high relevance via call_graph: Call graph caller of crate.trace.async_trace_leaf via reserve_inner | Selected for high relevance via call_graph: Call graph caller of crate.trace.async_trace_leaf via reserve_inner |
+| File | Rank | Focus | Question | Next action | Suggested tool | Reason | Selection reason |
+| --- | ---: | --- | --- | --- | --- | --- | --- |
+| `tokio/src/lib.rs` | 1 | Start with seed file context and primary symbols. | What entrypoints, exported symbols, or setup code define the main flow here? | `inspect_seed_file` | `file_outline` | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: tokio/src/lib.rs; matched task keywords: runtime, tokio | Selected for high relevance via seed_file: Seed file header and imports for task: tokio/src/lib.rs; matched task keywords: runtime, tokio |
+| `tokio/src/sync/watch.rs` | 2 | Follow static call graph evidence around the seed flow. | Which callers or callees explain how control moves through this flow? | `follow_call_graph` | `impact_analysis` | Read this step to answer: Which callers or callees explain how control moves through this flow? If deeper evidence is needed, call impact_analysis. Selection reason: Selected for high relevance via call_graph: Call graph caller of crate.trace.async_trace_leaf via changed_impl | Selected for high relevance via call_graph: Call graph caller of crate.trace.async_trace_leaf via changed_impl |
+| `tokio/src/sync/once_cell.rs` | 3 | Follow static call graph evidence around the seed flow. | Which callers or callees explain how control moves through this flow? | `follow_call_graph` | `impact_analysis` | Read this step to answer: Which callers or callees explain how control moves through this flow? If deeper evidence is needed, call impact_analysis. Selection reason: Selected for high relevance via call_graph: Call graph caller of crate.trace.async_trace_leaf via get_or_init | Selected for high relevance via call_graph: Call graph caller of crate.trace.async_trace_leaf via get_or_init |
+| `tokio/src/sync/barrier.rs` | 4 | Follow static call graph evidence around the seed flow. | Which callers or callees explain how control moves through this flow? | `follow_call_graph` | `impact_analysis` | Read this step to answer: Which callers or callees explain how control moves through this flow? If deeper evidence is needed, call impact_analysis. Selection reason: Selected for high relevance via call_graph: Call graph caller of crate.trace.async_trace_leaf via wait_internal | Selected for high relevance via call_graph: Call graph caller of crate.trace.async_trace_leaf via wait_internal |
+| `tokio/src/sync/mpsc/bounded.rs` | 5 | Follow static call graph evidence around the seed flow. | Which callers or callees explain how control moves through this flow? | `follow_call_graph` | `impact_analysis` | Read this step to answer: Which callers or callees explain how control moves through this flow? If deeper evidence is needed, call impact_analysis. Selection reason: Selected for high relevance via call_graph: Call graph caller of crate.trace.async_trace_leaf via reserve_inner | Selected for high relevance via call_graph: Call graph caller of crate.trace.async_trace_leaf via reserve_inner |
 
 Language breakdown:
 
 | Language | Files | Lines |
 | --- | ---: | ---: |
-| rust | 790 | 177641 |
+| rust | 790 | 177810 |
 
 Context pack guardrails:
 
@@ -424,9 +427,10 @@ Context pack guardrails:
 | `selected_ranges` | >= 18 | 23 | pass |
 | `reading_plan_steps` | >= 6 | 8 | pass |
 | `first_next_action` | present | inspect_seed_file | pass |
+| `first_reading_focus` | present | Start with seed file context and primary symbols. | pass |
 | `first_reading_question` | present | What entrypoints, exported symbols, or setup code define the main flow here? | pass |
-| `first_reading_reason` | present | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: tokio/src/lib.rs; matched task keywords: tokio | pass |
+| `first_reading_reason` | present | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: tokio/src/lib.rs; matched task keywords: runtime, tokio | pass |
 | `first_selection_rank` | >= 1 | 1 | pass |
-| `first_selection_reason` | present | Selected for high relevance via seed_file: Seed file header and imports for task: tokio/src/lib.rs; matched task keywords: tokio | pass |
+| `first_selection_reason` | present | Selected for high relevance via seed_file: Seed file header and imports for task: tokio/src/lib.rs; matched task keywords: runtime, tokio | pass |
 | `estimated_tokens` | <= 5500 and applied budget | 5054 / 6000 | pass |
 | `line_reduction` | >= 95% | 99.7% | pass |

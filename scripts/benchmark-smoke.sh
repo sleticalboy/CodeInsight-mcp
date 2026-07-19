@@ -509,7 +509,7 @@ validate_context_guardrails() {
   local context_json="$3"
   local output="$4"
   local specs="$5"
-  local total_lines selected_lines first_recommended_tool context_files ranges reading_plan_steps first_next_action first_reading_question first_reading_reason first_selection_reason first_selection_rank estimated_tokens applied_budget status min_files min_ranges min_reading_plan_steps max_tokens min_line_reduction
+  local total_lines selected_lines first_recommended_tool context_files ranges reading_plan_steps first_next_action first_reading_focus first_reading_question first_reading_reason first_selection_reason first_selection_rank estimated_tokens applied_budget status min_files min_ranges min_reading_plan_steps max_tokens min_line_reduction
 
   : >"$output"
 
@@ -520,6 +520,7 @@ validate_context_guardrails() {
   ranges="$(json_value "$context_json" '[.files[].ranges | length] | add // 0')"
   reading_plan_steps="$(json_value "$context_json" '.reading_plan | length')"
   first_next_action="$(json_value "$context_json" '.reading_plan[0].next_action // "-"')"
+  first_reading_focus="$(json_value "$context_json" '.reading_plan[0].focus // "-"')"
   first_reading_question="$(json_value "$context_json" '.reading_plan[0].question // "-"')"
   first_reading_reason="$(json_value "$context_json" '.reading_plan[0].reason // "-"')"
   first_selection_reason="$(json_value "$context_json" '.reading_plan[0].selection_reason // "-"')"
@@ -561,6 +562,12 @@ validate_context_guardrails() {
     status="fail"
   fi
   write_context_guardrail "$output" "$name" "first_next_action" "present" "$first_next_action" "$status"
+
+  status="pass"
+  if [ -z "$first_reading_focus" ] || [ "$first_reading_focus" = "-" ]; then
+    status="fail"
+  fi
+  write_context_guardrail "$output" "$name" "first_reading_focus" "present" "$first_reading_focus" "$status"
 
   status="pass"
   if [ -z "$first_reading_question" ] || [ "$first_reading_question" = "-" ]; then
@@ -1000,17 +1007,17 @@ append_detail_section() {
     echo
     echo "Context reading plan:"
     echo
-    echo "| File | Rank | Question | Next action | Suggested tool | Reason | Selection reason |"
-    echo "| --- | ---: | --- | --- | --- | --- | --- |"
+    echo "| File | Rank | Focus | Question | Next action | Suggested tool | Reason | Selection reason |"
+    echo "| --- | ---: | --- | --- | --- | --- | --- | --- |"
   } >>"$REPORT_FILE"
 
   jq -r '
     def clean: tostring | gsub("\\|"; "\\|") | gsub("\n"; " ");
     (.reading_plan[:5] // [])
     | if length == 0 then
-        ["| - | 0 | none | - | - | none | none |"]
+        ["| - | 0 | none | none | - | - | none | none |"]
       else
-        map("| `" + (.file // "-" | clean) + "` | " + ((.selection_rank // 0) | tostring) + " | " + (.question // "-" | clean) + " | `" + (.next_action // "-" | clean) + "` | `" + (.suggested_tool.tool // "-" | clean) + "` | " + (.reason // "-" | clean) + " | " + (.selection_reason // "-" | clean) + " |")
+        map("| `" + (.file // "-" | clean) + "` | " + ((.selection_rank // 0) | tostring) + " | " + (.focus // "-" | clean) + " | " + (.question // "-" | clean) + " | `" + (.next_action // "-" | clean) + "` | `" + (.suggested_tool.tool // "-" | clean) + "` | " + (.reason // "-" | clean) + " | " + (.selection_reason // "-" | clean) + " |")
       end
     | .[]
   ' "$context_json" >>"$REPORT_FILE"

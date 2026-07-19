@@ -599,14 +599,17 @@ main() {
     '"tokio"' \
     "tokio fixture"
   require_pattern scripts/benchmark-smoke.sh \
+    'first_reading_focus' \
+    "benchmark first reading focus guardrail"
+  require_pattern scripts/benchmark-smoke.sh \
     'first_reading_question' \
     "benchmark first reading question guardrail"
   require_pattern scripts/benchmark-smoke.sh \
     'first_selection_rank' \
     "benchmark first selection rank guardrail"
   require_pattern scripts/benchmark-smoke.sh \
-    '\| File \| Rank \| Question \| Next action \| Suggested tool \| Reason \| Selection reason \|' \
-    "benchmark reading-plan rank column"
+    '\| File \| Rank \| Focus \| Question \| Next action \| Suggested tool \| Reason \| Selection reason \|' \
+    "benchmark reading-plan rank and focus columns"
 
   require_pattern docs/benchmark-v0.1.md \
     '^# CodeInsight v0\.1 Smoke Benchmark$' \
@@ -639,11 +642,14 @@ main() {
     'Context reading plan:' \
     "smoke context reading plan section"
   require_pattern docs/benchmark-v0.1.md \
-    '\| File \| Rank \| Question \| Next action \| Suggested tool \| Reason \| Selection reason \|' \
-    "smoke context reading plan rank column"
+    '\| File \| Rank \| Focus \| Question \| Next action \| Suggested tool \| Reason \| Selection reason \|' \
+    "smoke context reading plan rank and focus columns"
   require_pattern docs/benchmark-v0.1.md \
     '\| `reading_plan_steps` \| >= [0-9]+' \
     "smoke reading plan guardrail"
+  require_pattern docs/benchmark-v0.1.md \
+    '\| `first_reading_focus` \| present \|' \
+    "smoke reading focus guardrail"
   require_pattern docs/benchmark-v0.1.md \
     '\| `first_reading_question` \| present \|' \
     "smoke reading question guardrail"
@@ -686,11 +692,14 @@ main() {
     'Context reading plan:' \
     "large context reading plan section"
   require_pattern docs/benchmark-large.md \
-    '\| File \| Rank \| Question \| Next action \| Suggested tool \| Reason \| Selection reason \|' \
-    "large context reading plan rank column"
+    '\| File \| Rank \| Focus \| Question \| Next action \| Suggested tool \| Reason \| Selection reason \|' \
+    "large context reading plan rank and focus columns"
   require_pattern docs/benchmark-large.md \
     '\| `reading_plan_steps` \| >= [0-9]+' \
     "large reading plan guardrail"
+  require_pattern docs/benchmark-large.md \
+    '\| `first_reading_focus` \| present \|' \
+    "large reading focus guardrail"
   require_pattern docs/benchmark-large.md \
     '\| `first_reading_question` \| present \|' \
     "large reading question guardrail"

@@ -65,9 +65,9 @@ Context pack files:
 
 Context reading plan:
 
-| File | Rank | Question | Next action | Suggested tool | Reason | Selection reason |
-|---|---:|---|---|---|---|---|
-| `index.js` | 1 | What entrypoints, exported symbols, or setup code define the main flow here? | inspect_seed_file | file_outline | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? | seed file |
+| File | Rank | Focus | Question | Next action | Suggested tool | Reason | Selection reason |
+|---|---:|---|---|---|---|---|---|
+| `index.js` | 1 | Start with seed file context and primary symbols. | What entrypoints, exported symbols, or setup code define the main flow here? | inspect_seed_file | file_outline | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? | seed file |
 
 Context pack guardrails:
 
@@ -76,6 +76,7 @@ Context pack guardrails:
 | `first_recommended_tool` | context_pack | context_pack | pass |
 | `selected_files` | >= 1 | 1 | pass |
 | `reading_plan_steps` | >= 1 | 1 | pass |
+| `first_reading_focus` | present | Start with seed file context and primary symbols. | pass |
 | `first_reading_question` | present | What entrypoints, exported symbols, or setup code define the main flow here? | pass |
 | `first_reading_reason` | present | Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? | pass |
 | `first_selection_rank` | >= 1 | 1 | pass |
