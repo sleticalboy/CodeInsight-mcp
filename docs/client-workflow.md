@@ -89,9 +89,10 @@ When working in a repository with CodeInsight MCP available:
 
 1. Before broad code reading, call agent_route with root, task, and
    token_budget for the default first read.
-2. Read context_pack.files in reading_plan order. Treat reading_plan.reason as
-   the current-step instruction, reading_plan.question as the local reading
-   checklist, reading_plan.selection_rank as the candidate rank audit trail, and
+2. Read context_pack.files in reading_plan order. Treat reading_plan.focus as
+   the compact scan label, reading_plan.reason as the current-step instruction,
+   reading_plan.question as the local reading checklist,
+   reading_plan.selection_rank as the candidate rank audit trail, and
    reading_plan.selection_reason as the selection evidence.
 3. Prefer reading_plan[].suggested_tool for deeper evidence on the current
    file. Prefer continuation_summary.suggested_tool only after the selected

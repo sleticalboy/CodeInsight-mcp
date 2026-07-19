@@ -137,8 +137,9 @@ Minimum policy:
 Before broad repository reading, use CodeInsight:
 1. Call agent_route with root, task, and token_budget for the default first read.
 2. Read context_pack.files in reading_plan order.
-3. Treat reading_plan.question as the local checklist and reading_plan.reason
-   as the current-step instruction.
+3. Use reading_plan.focus as the compact scan label, reading_plan.question as
+   the local checklist, and reading_plan.reason as the current-step
+   instruction.
 4. Use continuation_summary only after selected context is consumed.
 5. Use focused follow-up tools only when the selected context is insufficient.
 6. For custom routing, call index_project, project_overview, context_pack, and
@@ -270,10 +271,10 @@ The installed quickstart smoke prints `installed quickstart smoke passed` after
 the installed binary completes `version`, `index`, `overview`, `context-pack`,
 CLI `agent-route`, MCP stdio, and MCP `agent_route` calls against a temporary
 project. It also checks `agent_route.execution_plan[]`,
-`reading_plan.question`, `reading_plan.reason`, `selection_reason`,
-`selection_rank`, and continuation evidence in both CLI and MCP first-read
-paths. This is the same installed-binary adoption gate referenced by the
-[Adoption checklist](adoption-checklist.md).
+`reading_plan.focus`, `reading_plan.question`, `reading_plan.reason`,
+`selection_reason`, `selection_rank`, and continuation evidence in both CLI and
+MCP first-read paths. This is the same installed-binary adoption gate referenced
+by the [Adoption checklist](adoption-checklist.md).
 
 ## 7. First Agent Task
 

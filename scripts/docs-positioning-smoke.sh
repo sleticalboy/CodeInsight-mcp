@@ -301,8 +301,8 @@ main() {
     'Call agent_route with root, task, and token_budget' \
     "quickstart agent_route policy"
   require_pattern docs/quickstart.md \
-    'Treat reading_plan\.question as the local checklist' \
-    "quickstart reading question policy"
+    'Use reading_plan\.focus as the compact scan label' \
+    "quickstart reading focus policy"
   require_pattern docs/quickstart.md \
     '\[Adoption checklist\]\(adoption-checklist\.md\)' \
     "adoption checklist link"
@@ -313,8 +313,8 @@ main() {
     'CLI `agent-route`, MCP stdio, and MCP `agent_route`' \
     "quickstart installed agent_route coverage"
   require_pattern docs/quickstart.md \
-    '`reading_plan\.question`, `reading_plan\.reason`, `selection_reason`,' \
-    "quickstart installed reading question coverage"
+    '`reading_plan\.focus`, `reading_plan\.question`, `reading_plan\.reason`,' \
+    "quickstart installed reading focus coverage"
   require_pattern docs/quickstart.md \
     '`selection_rank`, and continuation evidence' \
     "quickstart installed rank continuation coverage"
@@ -390,6 +390,9 @@ main() {
     '\[Client integration examples\]\(client-integration-examples\.md\)' \
     "client workflow integration examples link"
   require_pattern docs/client-workflow.md \
+    'Treat reading_plan\.focus as' \
+    "client workflow reading focus policy"
+  require_pattern docs/client-workflow.md \
     'Treat `reading_plan\[\]\.question` as the local' \
     "client workflow reading question checklist"
   require_pattern docs/client-workflow.md \
@@ -411,7 +414,10 @@ main() {
     '\[Client integration examples\]\(client-integration-examples\.md\)' \
     "agent prompt integration examples link"
   require_pattern docs/agent-prompt-template.md \
-    'Treat reading_plan\.reason as' \
+    'Treat reading_plan\.focus as' \
+    "agent prompt reading focus policy"
+  require_pattern docs/agent-prompt-template.md \
+    'reading_plan\.reason as the current-step instruction' \
     "agent prompt reading reason policy"
   require_pattern docs/agent-prompt-template.md \
     'reading_plan\.selection_rank as the candidate rank audit trail' \
@@ -546,6 +552,9 @@ main() {
     'CLI `agent-route`, MCP stdio, and MCP `agent_route`' \
     "adoption CLI and MCP agent_route coverage"
   require_pattern docs/adoption-checklist.md \
+    'first reading focus/question evidence' \
+    "adoption installed quickstart reading focus output"
+  require_pattern docs/adoption-checklist.md \
     '`context_reading_question`' \
     "adoption installed quickstart reading question output"
   require_pattern docs/adoption-checklist.md \
@@ -560,6 +569,9 @@ main() {
   require_pattern docs/adoption-checklist.md \
     'The agent calls `agent_route` with `root`, `task`, and `token_budget` before' \
     "adoption agent_route first-read policy"
+  require_pattern docs/adoption-checklist.md \
+    '`reading_plan\[\]\.focus`, `reading_plan\[\]\.question`, and' \
+    "adoption reading focus policy"
   require_pattern docs/adoption-checklist.md \
     '`reading_plan\[\]\.question` as the local checklist' \
     "adoption reading question policy"

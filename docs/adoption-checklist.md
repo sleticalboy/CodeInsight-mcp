@@ -175,7 +175,8 @@ Pass criteria:
 - Output includes `installed quickstart smoke passed`.
 - The smoke covers `version`, `index`, `overview`, `context-pack`,
   CLI `agent-route`, MCP stdio, and MCP `agent_route`.
-- The smoke output includes `context_reading_question`,
+- The smoke output includes first reading focus/question evidence, including
+  `context_reading_question`,
   `agent_route_reading_question`, `mcp_context_reading_question`,
   `mcp_agent_route_reading_question`, and the matching reading reason and
   selection reason fields.
@@ -372,9 +373,10 @@ CodeInsight is successfully adopted when:
   `agent_route`.
 - The agent follows the `agent_route` first-read policy.
 - `context_pack` returns a bounded reading plan.
-- The agent follows `reading_plan[].question` and `reading_plan[].reason`, can
-  surface `reading_plan[].selection_rank` and `reading_plan[].selection_reason`,
-  and waits to use continuation tools until selected context has been read.
+- The agent follows `reading_plan[].focus`, `reading_plan[].question`, and
+  `reading_plan[].reason`, can surface `reading_plan[].selection_rank` and
+  `reading_plan[].selection_reason`, and waits to use continuation tools until
+  selected context has been read.
 - Suggested-tool and continuation controls are gated behind selected-context
   reading, and impact review is required before edits.
 - `impact_analysis` is used before edits.

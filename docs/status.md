@@ -168,7 +168,8 @@ release:
   stable version mismatches, and fetch/checksum failures.
 - `scripts/verify-release.sh` runs the installed quickstart smoke after public
   install verification, and `--json` records the installed quickstart gate plus
-  the checked coverage list, including CLI `agent-route` and MCP `agent_route`.
+  the checked coverage list, including CLI `agent-route`, MCP `agent_route`,
+  and `reading_plan_focus`.
 - `scripts/post-release-verify.sh` wraps release verification, JSON summary
   persistence, and generated status-summary updates into one post-release
   command.
