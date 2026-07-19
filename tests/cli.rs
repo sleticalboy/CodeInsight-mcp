@@ -2349,6 +2349,121 @@ def merge_setting(request_setting, session_setting):
 }
 
 #[test]
+fn cli_context_pack_prefers_startup_entrypoint_over_generic_server_route() {
+    let fixture = TempDir::new().unwrap();
+    std::fs::create_dir_all(fixture.path().join("lib/streamlit/web/server/starlette")).unwrap();
+    std::fs::write(
+        fixture.path().join("lib/streamlit/web/bootstrap.py"),
+        r#""""Streamlit web bootstrap entrypoint."""
+
+from streamlit.web.server.server import Server
+
+def main():
+    """Start Streamlit's web server."""
+    return Server().start()
+"#,
+    )
+    .unwrap();
+    std::fs::write(
+        fixture
+            .path()
+            .join("lib/streamlit/web/server/starlette/starlette_auth_routes.py"),
+        r#""""Starlette auth routes for the Streamlit server."""
+
+def register_auth_routes(app):
+    return app
+"#,
+    )
+    .unwrap();
+    std::fs::write(
+        fixture.path().join("lib/streamlit/web/server/server.py"),
+        r#"class Server:
+    def start(self):
+        return "started"
+"#,
+    )
+    .unwrap();
+
+    run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+
+    let startup_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand streamlit server startup flow",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(
+        startup_context["selected_seeds"][0]["value"],
+        "lib/streamlit/web/bootstrap.py"
+    );
+    assert_eq!(
+        startup_context["files"][0]["file"],
+        "lib/streamlit/web/bootstrap.py"
+    );
+}
+
+#[test]
+fn cli_context_pack_prefers_core_config_over_ui_settings() {
+    let fixture = TempDir::new().unwrap();
+    std::fs::create_dir_all(fixture.path().join("lib/streamlit")).unwrap();
+    std::fs::create_dir_all(
+        fixture
+            .path()
+            .join("frontend/app/src/components/StreamlitDialog"),
+    )
+    .unwrap();
+    std::fs::write(
+        fixture.path().join("lib/streamlit/config.py"),
+        r#""""Core configuration settings for Streamlit."""
+
+def get_config_options():
+    return {"server.port": 8501}
+"#,
+    )
+    .unwrap();
+    std::fs::write(
+        fixture.path().join("lib/streamlit/config_util.py"),
+        r#""""Helpers for displaying configuration settings."""
+
+def show_config(config_options):
+    return list(config_options)
+"#,
+    )
+    .unwrap();
+    std::fs::write(
+        fixture
+            .path()
+            .join("frontend/app/src/components/StreamlitDialog/UserSettings.ts"),
+        r#"export function UserSettings() {
+  return "settings";
+}
+"#,
+    )
+    .unwrap();
+
+    run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+
+    let settings_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand configuration settings",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(
+        settings_context["selected_seeds"][0]["value"],
+        "lib/streamlit/config.py"
+    );
+    assert_eq!(
+        settings_context["files"][0]["file"],
+        "lib/streamlit/config.py"
+    );
+}
+
+#[test]
 fn cli_resolves_pnpm_workspace_package_exports() {
     let fixture = pnpm_workspace_fixture_project();
 

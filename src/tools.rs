@@ -3247,6 +3247,12 @@ fn auto_context_seed_files(
                 &entrypoint.file,
                 entrypoint.symbol.as_deref(),
                 task_keywords,
+            )
+            + auto_seed_task_focus_boost(
+                &entrypoint.file,
+                entrypoint.symbol.as_deref(),
+                task_keywords,
+                true,
             );
         upsert_auto_seed_candidate(
             &mut candidates,
@@ -3269,9 +3275,18 @@ fn auto_context_seed_files(
             .iter()
             .map(|symbol| {
                 auto_seed_task_match_score(file, Some(&symbol.qualified_name), task_keywords)
+                    + auto_seed_task_focus_boost(
+                        file,
+                        Some(&symbol.qualified_name),
+                        task_keywords,
+                        false,
+                    )
             })
             .max()
-            .unwrap_or_else(|| auto_seed_task_match_score(file, None, task_keywords));
+            .unwrap_or_else(|| {
+                auto_seed_task_match_score(file, None, task_keywords)
+                    + auto_seed_task_focus_boost(file, None, task_keywords, false)
+            });
         let text_match = auto_seed_file_text_match(root, file, task_keywords);
         let task_score = symbol_or_path_score.max(text_match.score);
         if task_score == 0 {
@@ -3448,17 +3463,86 @@ fn auto_seed_task_match_score(file: &str, symbol: Option<&str>, task_keywords: &
     let mut score = 0;
     for (index, keyword) in task_keywords.iter().enumerate() {
         let boost = 70 + (task_keywords.len().saturating_sub(index) as i32 * 3);
-        if auto_seed_field_matches(file, keyword) {
-            score += boost;
-        }
-        if symbol
-            .map(|symbol| auto_seed_field_matches(symbol, keyword))
-            .unwrap_or(false)
-        {
-            score += boost;
-        }
+        let file_weight = auto_seed_field_match_weight(file, keyword);
+        let symbol_weight = symbol
+            .map(|symbol| auto_seed_field_match_weight(symbol, keyword))
+            .unwrap_or(0);
+        score += boost * file_weight.max(symbol_weight);
     }
     score
+}
+
+fn auto_seed_task_focus_boost(
+    file: &str,
+    symbol: Option<&str>,
+    task_keywords: &[String],
+    overview_entrypoint: bool,
+) -> i32 {
+    let mut score = 0;
+
+    if task_keywords
+        .iter()
+        .any(|keyword| auto_seed_lifecycle_keyword(keyword))
+    {
+        let lifecycle_match = task_keywords
+            .iter()
+            .filter(|keyword| auto_seed_lifecycle_keyword(keyword))
+            .any(|keyword| {
+                auto_seed_field_matches(file, keyword)
+                    || symbol
+                        .map(|symbol| auto_seed_field_matches(symbol, keyword))
+                        .unwrap_or(false)
+            });
+        let entrypoint_symbol = symbol
+            .map(|symbol| auto_seed_field_matches(symbol, "main"))
+            .unwrap_or(false)
+            || auto_seed_field_matches(file, "main");
+        let entrypoint_file = auto_seed_entrypoint_file_matches(file);
+
+        score += match (
+            overview_entrypoint,
+            lifecycle_match,
+            entrypoint_symbol || entrypoint_file,
+        ) {
+            (true, true, true) => 760,
+            (true, true, false) => 260,
+            (true, false, true) => 120,
+            (false, true, true) => 360,
+            (false, true, _) => 90,
+            _ => 0,
+        };
+    }
+
+    if task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "config" | "configuration"))
+        && auto_seed_file_stem_matches(file, "config")
+    {
+        score += 260;
+    }
+
+    score
+}
+
+fn auto_seed_entrypoint_file_matches(file: &str) -> bool {
+    auto_seed_field_matches(file, "bootstrap")
+        || auto_seed_field_matches(file, "main")
+        || auto_seed_field_matches(file, "cli")
+}
+
+fn auto_seed_file_stem_matches(file: &str, keyword: &str) -> bool {
+    Path::new(file)
+        .file_stem()
+        .and_then(|stem| stem.to_str())
+        .map(|stem| stem.eq_ignore_ascii_case(keyword))
+        .unwrap_or(false)
+}
+
+fn auto_seed_lifecycle_keyword(keyword: &str) -> bool {
+    matches!(
+        keyword,
+        "startup" | "start" | "boot" | "program" | "entrypoint" | "entrypoints" | "main"
+    )
 }
 
 #[derive(Debug, Default)]
@@ -3504,10 +3588,24 @@ fn auto_seed_file_text_match(
 }
 
 fn auto_seed_field_matches(field: &str, keyword: &str) -> bool {
+    auto_seed_field_match_weight(field, keyword) > 0
+}
+
+fn auto_seed_field_match_weight(field: &str, keyword: &str) -> i32 {
     field
         .split(|ch: char| !ch.is_ascii_alphanumeric())
         .map(str::to_ascii_lowercase)
-        .any(|part| part == keyword || (keyword.len() >= 4 && part.contains(keyword)))
+        .map(|part| {
+            if part == keyword {
+                3
+            } else if keyword.len() >= 4 && part.contains(keyword) {
+                1
+            } else {
+                0
+            }
+        })
+        .max()
+        .unwrap_or(0)
 }
 
 fn auto_seed_text_matches(text: &str, keyword: &str) -> bool {
@@ -3650,6 +3748,7 @@ fn is_task_stop_word(word: &str) -> bool {
             | "code"
             | "file"
             | "module"
+            | "application"
     )
 }
 
