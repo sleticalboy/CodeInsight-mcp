@@ -119,6 +119,21 @@ Checked-in examples:
 - [Requests](task-routing-expectations/requests.tsv)
 - [Streamlit](task-routing-expectations/streamlit.tsv)
 
+Run all checked-in public matrices in one pass:
+
+```bash
+scripts/public-task-routing-matrix.sh
+```
+
+Use local checkouts when you want deterministic or offline reproduction:
+
+```bash
+scripts/public-task-routing-matrix.sh \
+  --case express \
+  --root express=/tmp/codeinsight-case-express \
+  --output-dir /tmp/codeinsight-public-task-routing-matrix
+```
+
 The command writes:
 
 - `task-routing-matrix.md`
