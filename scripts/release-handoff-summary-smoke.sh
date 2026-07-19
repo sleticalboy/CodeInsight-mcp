@@ -132,7 +132,7 @@ EOF
   "installed_quickstart": {
     "binary": "/tmp/codeinsight",
     "skipped": true,
-    "coverage": ["version", "index", "overview", "context-pack", "agent-route", "mcp_stdio", "mcp_agent_route", "agent_route_execution_plan", "reading_plan_focus", "reading_plan_question", "reading_plan_reason", "selection_reason", "selection_rank", "continuation_evidence"]
+    "coverage": ["version", "index", "overview", "context-pack", "agent-route", "mcp_stdio", "mcp_agent_route", "agent_route_execution_plan", "current_reading_step", "reading_plan_focus", "reading_plan_question", "reading_plan_reason", "selection_reason", "selection_rank", "continuation_evidence"]
   }
 }
 EOF
