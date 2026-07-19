@@ -406,7 +406,7 @@ fn tool_definitions() -> Value {
         },
         {
             "name": "agent_route",
-            "description": "Run the first-read agent route in one call: refresh the local index, return project_overview, build context_pack, and include an impact_analysis preview when a seed is available.",
+            "description": "Run the first-read agent route in one call: refresh the local index, return project_overview, build context_pack, expose current_reading_step/execution_plan, and include an impact_analysis preview when a seed is available.",
             "inputSchema": {
                 "type": "object",
                 "properties": {

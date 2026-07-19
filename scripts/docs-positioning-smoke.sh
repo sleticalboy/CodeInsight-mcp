@@ -375,7 +375,7 @@ main() {
     '\[Known limitations\]\(known-limitations\.md\)' \
     "known limitations link"
   require_pattern docs/mcp-tools.md \
-    '`agent_route` \| Run the default first-read path.*include `execution_plan\[\]`' \
+    '`agent_route` \| Run the default first-read path.*expose `current_reading_step` and `execution_plan\[\]`' \
     "MCP tools agent_route execution plan"
   require_pattern docs/mcp-tools.md \
     'Follow `agent_route\.execution_plan\[\]`' \
@@ -634,6 +634,12 @@ main() {
     'Every client should treat `agent_route\.execution_plan\[\]` as the ordered action' \
     "client examples execution plan contract"
   require_pattern docs/client-integration-examples.md \
+    'Use agent_route\.current_reading_step for the first checklist row' \
+    "client examples current reading step policy"
+  require_pattern docs/client-integration-examples.md \
+    'Use reading_plan\[\]\.focus as the compact scan label' \
+    "client examples reading focus policy"
+  require_pattern docs/client-integration-examples.md \
     'Use reading_plan\[\]\.question as the local checklist' \
     "client examples reading question policy"
   require_pattern docs/client-integration-examples.md \
@@ -663,6 +669,12 @@ main() {
   require_pattern docs/client-integration-examples.md \
     'Impact-review controls should be shown after the first read and before edits' \
     "client examples impact review state"
+  require_pattern docs/client-integration-examples.md \
+    '`agent_route\.current_reading_step` as the first checklist row' \
+    "client examples UI current reading step"
+  require_pattern docs/client-integration-examples.md \
+    '`reading_plan\[\]\.focus` beside each selected file' \
+    "client examples UI reading focus"
   require_pattern docs/client-integration-examples.md \
     '`reading_plan\[\]\.question` beside each selected file' \
     "client examples UI reading question"

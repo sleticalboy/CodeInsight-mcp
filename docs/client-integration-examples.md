@@ -16,16 +16,18 @@ plan after the server has completed the first-read route.
 ```text
 1. Call agent_route with root, task, and token_budget.
 2. Read context_pack.files[] in reading_plan[] order.
-3. Use reading_plan[].question as the local checklist for the selected file.
-4. Use reading_plan[].reason as the current-step instruction.
-5. Use reading_plan[].selection_rank as the candidate rank audit trail.
-6. Use reading_plan[].selection_reason only as selection evidence.
-7. Call execution_plan[].suggested_tool only when the current step needs deeper
+3. Use agent_route.current_reading_step for the first checklist row.
+4. Use reading_plan[].focus as the compact scan label.
+5. Use reading_plan[].question as the local checklist for the selected file.
+6. Use reading_plan[].reason as the current-step instruction.
+7. Use reading_plan[].selection_rank as the candidate rank audit trail.
+8. Use reading_plan[].selection_reason only as selection evidence.
+9. Call execution_plan[].suggested_tool only when the current step needs deeper
    evidence.
-8. Use continuation_summary only after selected context has been read.
-9. Use continuation_summary.next_action and omitted_candidates[] to explain any
+10. Use continuation_summary only after selected context has been read.
+11. Use continuation_summary.next_action and omitted_candidates[] to explain any
    follow-up context request.
-10. Review impact_analysis before edits.
+12. Review impact_analysis before edits.
 ```
 
 Do not treat `route[]` and `execution_plan[]` as the same thing:
@@ -49,11 +51,12 @@ selected context is consumed, and review_impact_before_edits before changing
 code.
 
 Read context_pack.files[] in reading_plan[] order. Treat
-reading_plan[].question as the local checklist for the selected file,
-reading_plan[].reason as the instruction for the current file,
-reading_plan[].selection_rank as the candidate rank audit trail, and
-reading_plan[].selection_reason as evidence for why the file was selected, not
-as a replacement for question, reason, or rank.
+agent_route.current_reading_step as the first checklist row,
+reading_plan[].focus as the compact scan label, reading_plan[].question as the
+local checklist for the selected file, reading_plan[].reason as the instruction
+for the current file, reading_plan[].selection_rank as the candidate rank audit
+trail, and reading_plan[].selection_reason as evidence for why the file was
+selected, not as a replacement for focus, question, reason, or rank.
 ```
 
 ## Codex
@@ -74,9 +77,9 @@ reading. Follow agent_route.execution_plan[] exactly:
 4. review_impact_before_edits: review impact_analysis before editing.
 
 Use reading_plan[].question as the local checklist,
-reading_plan[].reason as the current-step instruction, and
-reading_plan[].selection_rank plus reading_plan[].selection_reason as selection
-evidence.
+reading_plan[].focus as the compact scan label, reading_plan[].reason as the
+current-step instruction, and reading_plan[].selection_rank plus
+reading_plan[].selection_reason as selection evidence.
 ```
 
 ## Claude Code
@@ -121,6 +124,8 @@ Clients with a visible tool panel should render:
 - `execution_plan[].instruction` as the agent-facing instruction.
 - `execution_plan[].suggested_tool` as an optional action button that becomes
   active only after the matching selected context file is read.
+- `agent_route.current_reading_step` as the first checklist row.
+- `reading_plan[].focus` beside each selected file as the compact scan label.
 - `reading_plan[].question` beside each selected file as the local checklist.
 - `reading_plan[].reason` beside each selected file.
 - `reading_plan[].selection_rank` as the candidate rank.
@@ -144,6 +149,9 @@ A working integration should pass these checks:
 
 - The first broad task calls `agent_route`.
 - The agent reads selected files in `reading_plan[]` order.
+- The agent can render `agent_route.current_reading_step` as the first
+  checklist row.
+- The agent can show `reading_plan[].focus` for each selected file.
 - The agent can answer `reading_plan[].question` for each selected file.
 - The agent can explain `reading_plan[].selection_rank` and
   `reading_plan[].selection_reason` for selected files.
