@@ -220,7 +220,8 @@ accuracy, or proof that unselected code is irrelevant.
 Current benchmark snapshot:
 
 - The two-minute demo for this repository shows the agent route selecting 423
-  of 31,157 source lines, a 98.6% first-read line reduction, then surfacing
+  of 31,647 source lines, avoiding 31,224 source lines before broad reading
+  for a 98.7% reduction and 74.8x read-less ratio, then surfacing
   candidate rank 1, mirroring `current_reading_step` to `reading_plan[0]`,
   gating `file_outline` behind the selected-context read, and reporting
   continuation status before the impact check.

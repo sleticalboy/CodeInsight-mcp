@@ -130,6 +130,9 @@ main() {
   require_pattern README.md \
     'routes the entrypoint task to 439 of 31,157 source lines, a 98\.6% first-read' \
     "README self adoption report metric"
+  require_pattern README.md \
+    'of 31,647 source lines, avoiding 31,224 source lines before broad reading' \
+    "README two-minute demo read-less metric"
   "$ROOT_DIR/scripts/readme-adoption-summary-smoke.sh" >/dev/null
   require_pattern README.md \
     '\[Benchmark methodology\]\(docs/benchmark-methodology\.md\)' \
@@ -998,6 +1001,15 @@ main() {
   require_pattern docs/demo-script.md \
     'first_next_action' \
     "reading plan next action demo metric"
+  require_pattern docs/demo-script.md \
+    'source_lines_avoided: 31224' \
+    "demo script source lines avoided metric"
+  require_pattern docs/demo-script.md \
+    'read_less_ratio: 74\.8x' \
+    "demo script read-less metric"
+  require_pattern docs/demo-script.md \
+    'Read less: avoided 31224 source lines, 74\.8x less text before follow-up tools\.' \
+    "demo script evidence summary read-less line"
   require_pattern docs/demo-script.md \
     'impact_analysis' \
     "impact_analysis demo stage"
