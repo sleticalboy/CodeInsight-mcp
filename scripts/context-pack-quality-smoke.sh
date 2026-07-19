@@ -114,6 +114,18 @@ record_scenario() {
       name: \$name,
       status: \"pass\",
       metrics: (($metrics_query) + (
+        if (.read_less | type) == \"object\" then
+          {
+            baseline_source_lines: .read_less.baseline_source_lines,
+            selected_source_lines: .read_less.selected_source_lines,
+            source_lines_avoided: .read_less.source_lines_avoided,
+            line_reduction: .read_less.line_reduction,
+            read_less_ratio: .read_less.read_less_ratio
+          }
+        else
+          {}
+        end
+      ) + (
         if (.reading_plan | length) > 0 then
           {
             first_reading_focus: .reading_plan[0].focus,

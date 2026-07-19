@@ -46,6 +46,11 @@ main() {
       "metrics": {
         "candidate_files": 80,
         "selected_files": 12,
+        "baseline_source_lines": 1200,
+        "selected_source_lines": 80,
+        "source_lines_avoided": 1120,
+        "line_reduction": "93.3%",
+        "read_less_ratio": "15.0x",
         "omitted_candidates": 8,
         "first_next_action": "inspect_seed_file",
         "first_suggested_tool": "file_outline",
@@ -112,6 +117,8 @@ EOF
   require_literal "$step_summary" 'Workflow artifact: [`codeinsight-context-pack-quality`](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/1/artifacts/2)' "artifact link"
   require_literal "$step_summary" "| Scenario | Status | Key Metrics |" "scenario table"
   require_literal "$step_summary" '| `budget_continuation` | `pass` | `candidate_files=80`' "budget continuation row"
+  require_literal "$step_summary" '`source_lines_avoided=1120`' "source lines avoided metric"
+  require_literal "$step_summary" '`read_less_ratio=15.0x`' "read-less ratio metric"
   require_literal "$step_summary" '`first_reading_question=Where does the feature route start?`' "first reading question metric"
   require_literal "$step_summary" '`first_reading_reason=Read this step to answer: Where does the feature route start? If deeper evidence is needed, call file_outline.`' "first reading reason metric"
   require_literal "$step_summary" '`first_selection_reason=Matched explicit seed file \\| ranked first`' "escaped selection reason metric"
