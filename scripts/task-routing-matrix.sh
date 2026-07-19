@@ -298,6 +298,7 @@ run_task() {
       line_reduction: .metrics.line_reduction,
       selected_files: .metrics.selected_files,
       estimated_tokens: .metrics.estimated_tokens,
+      first_reading_focus: .metrics.first_reading_focus,
       first_reading_question: .metrics.first_reading_question,
       first_selection_rank: .metrics.first_selection_rank,
       first_selection_reason: .metrics.first_selection_reason,
@@ -342,6 +343,7 @@ write_summary() {
       and (.task_count | type == "number" and . > 0)
       and all(.tasks[]; (.task | type == "string" and length > 0)
         and (.first_file | type == "string" and length > 0)
+        and (.first_reading_focus | type == "string" and length > 0)
         and (.first_reading_question | type == "string" and length > 0)
         and (.seed_strategy | type == "string" and length > 0)
         and (.line_reduction | type == "string" and length > 0))' \
@@ -428,10 +430,10 @@ write_markdown() {
     echo
     echo "## Results"
     echo
-    echo "| Task | Seed strategy | First file | Question | First seed | Companion | Lines | Reduction | Tokens | Impact |"
-    echo "| --- | --- | --- | --- | --- | --- | ---: | ---: | ---: | ---: |"
+    echo "| Task | Seed strategy | First file | Focus | Question | First seed | Companion | Lines | Reduction | Tokens | Impact |"
+    echo "| --- | --- | --- | --- | --- | --- | --- | ---: | ---: | ---: | ---: |"
     jq -r '.tasks[] |
-      "| \(.task) | `\(.seed_strategy)` | `\(.first_file)` | \(.first_reading_question) | `\(.first_seed_value)` | `\((.companion_entrypoint // "") as $value | if $value == "" then "-" else $value end)` | `\(.selected_lines)/\(.total_lines)` | `\(.line_reduction)` | `\(.estimated_tokens)` | `\(.risk_level) / \(.impacted_files)` |"' \
+      "| \(.task) | `\(.seed_strategy)` | `\(.first_file)` | \(.first_reading_focus) | \(.first_reading_question) | `\(.first_seed_value)` | `\((.companion_entrypoint // "") as $value | if $value == "" then "-" else $value end)` | `\(.selected_lines)/\(.total_lines)` | `\(.line_reduction)` | `\(.estimated_tokens)` | `\(.risk_level) / \(.impacted_files)` |"' \
       "$SUMMARY_JSON"
     echo
     echo "## Read Order Evidence"

@@ -74,9 +74,9 @@ Pass criteria:
 - `entrypoints` or `recommended_next_tools` is greater than zero.
 - `context_pack` reports `selected_files`, `selected_ranges`, and
   `estimated_tokens`.
-- The demo prints `first_reading_question`, executable `reading_plan_reason`,
-  `selection_rank`, raw `selection_reason`, and `continuation_next_action` for
-  the first selected context file.
+- The demo prints `first_reading_focus`, `first_reading_question`, executable
+  `reading_plan_reason`, `selection_rank`, raw `selection_reason`, and
+  `continuation_next_action` for the first selected context file.
 - `line_reduction` is present and below 100%.
 - `impact_analysis` reports `risk_level`, `impacted_files`, `paths`, or
   `suggested_checks`.
@@ -84,9 +84,9 @@ Pass criteria:
   includes `project_overview`, `context_pack`, and `impact_analysis` as the
   route internals.
 - `local-repo-evidence.sh` writes a Markdown summary with selected lines,
-  line reduction, first reading question, first selected file, first selection
-  rank/reason, first suggested tool, continuation next action, impact risk, and
-  the raw `agent_route` JSON path when `--json` is used.
+  line reduction, first reading focus/question, first selected file, first
+  selection rank/reason, first suggested tool, continuation next action, impact
+  risk, and the raw `agent_route` JSON path when `--json` is used.
 - `--summary-json` writes the same core metrics in a compact machine-readable
   contract for CI artifacts, README evidence snippets, or benchmark aggregation.
 - `adoption-comparison.sh` writes a blind-read vs routed-first-read Markdown

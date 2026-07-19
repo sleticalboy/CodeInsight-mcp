@@ -190,6 +190,7 @@ write_markdown() {
     echo "- First seed source: \`$(json_value "$route_json" '.context_pack.selected_seeds[0].source // "-"')\`"
     echo "- Companion entrypoint: \`$(json_value "$route_json" '([.context_pack.selected_seeds[1:][]? | select(.source == "overview_entrypoint") | .value] | first) // "-"')\`"
     echo "- First selected file: \`$(json_value "$route_json" '.context_pack.files[0].file // "-"')\`"
+    echo "- First reading focus: $(json_value "$route_json" '.context_pack.reading_plan[0].focus // "-"')"
     echo "- First reading question: $(json_value "$route_json" '.context_pack.reading_plan[0].question // "-"')"
     echo "- First selection rank: \`$(json_value "$route_json" '.context_pack.reading_plan[0].selection_rank // "-"')\`"
     echo "- First selection reason: $(json_value "$route_json" '.context_pack.reading_plan[0].selection_reason // "-"')"
@@ -211,9 +212,10 @@ write_markdown() {
     echo "## Agent Policy"
     echo
     echo "1. Read \`context_pack.files[]\` in \`reading_plan[]\` order."
-    echo "2. Use \`reading_plan[].question\` as the local checklist for each selected file."
-    echo "3. Offer \`reading_plan[].suggested_tool\` only after the current selected file has been read."
-    echo "4. Review \`impact_analysis\` before editing."
+    echo "2. Use \`reading_plan[].focus\` as the compact scan label for each selected file."
+    echo "3. Use \`reading_plan[].question\` as the local checklist for each selected file."
+    echo "4. Offer \`reading_plan[].suggested_tool\` only after the current selected file has been read."
+    echo "5. Review \`impact_analysis\` before editing."
     echo
     echo "## Route Reasons"
     echo
@@ -269,6 +271,7 @@ write_summary_json() {
         first_seed_value: (.context_pack.selected_seeds[0].value // ""),
         companion_entrypoint: (([.context_pack.selected_seeds[1:][]? | select(.source == "overview_entrypoint") | .value] | first) // ""),
         first_file: (.context_pack.files[0].file // ""),
+        first_reading_focus: (.context_pack.reading_plan[0].focus // ""),
         first_reading_question: (.context_pack.reading_plan[0].question // ""),
         first_selection_rank: (.context_pack.reading_plan[0].selection_rank // 0),
         first_selection_reason: (.context_pack.reading_plan[0].selection_reason // ""),
@@ -300,6 +303,7 @@ write_summary_json() {
       and (.metrics.first_seed_source | type == "string")
       and (.metrics.companion_entrypoint | type == "string")
       and (.metrics.first_file | type == "string" and length > 0)
+      and (.metrics.first_reading_focus | type == "string" and length > 0)
       and (.metrics.first_reading_question | type == "string" and length > 0)
       and (.metrics.first_selection_rank | type == "number" and . >= 1)
       and (.metrics.first_selection_reason | type == "string" and length > 0)

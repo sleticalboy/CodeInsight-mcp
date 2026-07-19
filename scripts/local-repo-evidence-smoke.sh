@@ -92,6 +92,7 @@ cat <<'JSON'
         "file": "src/main.ts",
         "selection_rank": 1,
         "next_action": "inspect_seed_file",
+        "focus": "Start with seed file context and primary symbols.",
         "question": "What setup code defines the main application flow?",
         "selection_reason": "Selected for high relevance via seed_file"
       }
@@ -140,6 +141,8 @@ EOF
     fail "missing selected context reduction"
   grep -Fq -- '- First selected file: `src/main.ts`' "$TEMP_DIR/evidence.md" ||
     fail "missing first selected file"
+  grep -Fq -- '- First reading focus: Start with seed file context and primary symbols.' "$TEMP_DIR/evidence.md" ||
+    fail "missing first reading focus"
   grep -Fq -- '- Seed strategy: `auto_task_match`' "$TEMP_DIR/evidence.md" ||
     fail "missing seed strategy"
   grep -Fq -- '- Selected seeds: `2`' "$TEMP_DIR/evidence.md" ||
@@ -156,6 +159,8 @@ EOF
     fail "missing first selection reason"
   grep -Fq -- '- First suggested tool: `file_outline`' "$TEMP_DIR/evidence.md" ||
     fail "missing first suggested tool"
+  grep -Fq -- 'Use `reading_plan[].focus` as the compact scan label' "$TEMP_DIR/evidence.md" ||
+    fail "missing focus policy"
   grep -Fq -- '- Continuation next action: `read_selected_context`' "$TEMP_DIR/evidence.md" ||
     fail "missing continuation next action"
   grep -Fq -- '- First omitted candidate: none' "$TEMP_DIR/evidence.md" ||
@@ -180,6 +185,7 @@ EOF
       and .metrics.first_seed_value == "src/router.ts"
       and .metrics.companion_entrypoint == "src/main.ts"
       and .metrics.first_file == "src/main.ts"
+      and .metrics.first_reading_focus == "Start with seed file context and primary symbols."
       and .metrics.first_reading_question == "What setup code defines the main application flow?"
       and .metrics.first_selection_rank == 1
       and .metrics.first_selection_reason == "Selected for high relevance via seed_file"

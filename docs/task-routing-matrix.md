@@ -91,6 +91,7 @@ Each task row reports:
 - task prompt
 - seed strategy
 - first selected file
+- first reading focus
 - first reading question
 - first seed
 - companion entrypoint
@@ -113,11 +114,11 @@ When `--expect` or `--expect-file` is used, it also includes:
 Against the checked Gin adoption-case checkout, the task matrix routes distinct
 questions to distinct first files:
 
-| Task | First file | Question | Seed strategy | Routed lines | Reduction | Tokens | Impact |
-| --- | --- | --- | --- | ---: | ---: | ---: | ---: |
-| understand gin engine routing behavior | `routergroup.go` | What entrypoints, exported symbols, or setup code define the main flow here? | `auto_task_match` | `248/24099` | `99.0%` | `2122` | `high / 10` |
-| understand middleware authentication behavior | `auth.go` | Where are authentication decisions, credentials, or session boundaries handled here? | `auto_task_match` | `395/24099` | `98.4%` | `3871` | `high / 5` |
-| understand startup flow | `gin.go` | What startup entrypoint or initialization sequence creates the requested flow? | `auto_entrypoint` | `305/24099` | `98.7%` | `2965` | `high / 20` |
+| Task | First file | Focus | Question | Seed strategy | Routed lines | Reduction | Tokens | Impact |
+| --- | --- | --- | --- | --- | ---: | ---: | ---: | ---: |
+| understand gin engine routing behavior | `routergroup.go` | Start with seed file context and primary symbols. | What entrypoints, exported symbols, or setup code define the main flow here? | `auto_task_match` | `248/24099` | `99.0%` | `2122` | `high / 10` |
+| understand middleware authentication behavior | `auth.go` | Start with seed file authentication and session boundaries. | Where are authentication decisions, credentials, or session boundaries handled here? | `auto_task_match` | `395/24099` | `98.4%` | `3871` | `high / 5` |
+| understand startup flow | `gin.go` | Start with seed file startup and initialization flow. | What startup entrypoint or initialization sequence creates the requested flow? | `auto_entrypoint` | `305/24099` | `98.7%` | `2965` | `high / 20` |
 
 Against a Streamlit checkout with Python backend and TypeScript frontend code,
 the same matrix catches broad prompts that previously drifted to plausible but
