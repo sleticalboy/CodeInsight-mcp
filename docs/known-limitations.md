@@ -147,7 +147,7 @@ Limitations:
 
 ### `callers` and `callees`
 
-`callers` and `callees` use a static call graph extracted from call expressions and Java method invocations. Same-file calls are recorded by normalized callee name. JavaScript, TypeScript, Python, Rust, Go, Java, C#, PHP, Ruby, C, and C++ calls can also receive a `callee_file` hint when an obvious local import/export/include edge resolves to an indexed file with a matching symbol.
+`callers` and `callees` use a static call graph extracted from call expressions and Java method invocations. Same-file calls are recorded by normalized callee name; non-JavaScript and non-TypeScript same-file calls can also receive a `callee_file` hint when the callee matches a symbol declared in the current file. JavaScript, TypeScript, Python, Rust, Go, Java, C#, PHP, Ruby, C, and C++ calls can receive a `callee_file` hint when an obvious local import/export/include edge resolves to an indexed file with a matching symbol.
 
 Currently supported JavaScript/TypeScript imported target hints:
 

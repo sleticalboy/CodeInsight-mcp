@@ -30,8 +30,9 @@ MVP workflow is now implemented end to end.
   supported languages, including JavaScript/TypeScript package metadata,
   workspaces, Python relative imports, Rust modules, Go modules, Java/C#/PHP
   namespace imports, Ruby `require_relative`, and C/C++ local includes.
-- Imported `callee_file` hints for obvious local calls in JavaScript/TypeScript,
-  Python, Rust, Go, Java, C#, PHP, and Ruby.
+- Same-file `callee_file` hints for local calls that match symbols in the
+  current file, plus imported `callee_file` hints for obvious local calls in
+  JavaScript/TypeScript, Python, Rust, Go, Java, C#, PHP, and Ruby.
 - Embedding provider interface, provider status reporting, and local semantic
   search paths over local vectors.
 - Local semantic chunk index storage with optional deterministic local-hash

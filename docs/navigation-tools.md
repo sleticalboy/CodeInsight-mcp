@@ -71,7 +71,9 @@ Each call edge contains:
 
 Current behavior:
 
-- Same-file calls are recorded by normalized callee name.
+- Same-file calls are recorded by normalized callee name; non-JavaScript and
+  non-TypeScript same-file calls can include `callee_file` when the callee
+  matches a symbol declared in the current file.
 - Java method invocations and common call expressions are indexed.
 - JavaScript and TypeScript imported targets can include `callee_file` when a
   local import, alias, namespace import, default import, re-export, CommonJS
