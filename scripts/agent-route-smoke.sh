@@ -157,6 +157,11 @@ write_summary_json() {
       first_context_file: (.context_pack.files[0].file // ""),
       first_reading_file: (.context_pack.reading_plan[0].file // ""),
       first_execution_action: (.execution_plan[0].action // ""),
+      first_execution_instruction_has_question: (
+        (.execution_plan[0].instruction // "") as $instruction
+        | (.context_pack.reading_plan[0].question // "") as $question
+        | ($question != "" and ($instruction | contains($question)))
+      ),
       second_execution_action: (.execution_plan[1].action // ""),
       first_execution_suggested_tool: (.execution_plan[1].suggested_tool.tool // ""),
       first_next_action: (.context_pack.reading_plan[0].next_action // ""),
@@ -186,6 +191,7 @@ write_summary_json() {
       and (.metrics.first_seed_source | type == "string")
       and (.metrics.companion_entrypoint | type == "string")
       and .metrics.first_execution_action == "read_selected_context"
+      and .metrics.first_execution_instruction_has_question == true
       and .metrics.second_execution_action == "use_current_reading_step_suggested_tool"
       and (.metrics.first_execution_suggested_tool | type == "string" and length > 0)
       and (.metrics.first_reading_question | type == "string" and length > 0)
@@ -306,6 +312,7 @@ main() {
   require_jq "$route_json" '.route | map(.tool) == ["index_project", "project_overview", "context_pack", "impact_analysis"]' "route should run the first-read pipeline in order"
   require_jq "$route_json" '.execution_plan | map(.action) == ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"]' "execution plan should describe the client follow-up path"
   require_jq "$route_json" '.execution_plan[0].status == "ready" and (.execution_plan[0].files | length >= 1)' "execution plan should start by reading selected context"
+  require_jq "$route_json" '(.execution_plan[0].instruction // "") as $instruction | (.context_pack.reading_plan[0].question // "") as $question | $question != "" and ($instruction | contains($question))' "first execution instruction should include the first reading question"
   require_jq "$route_json" '.execution_plan[1].suggested_tool.tool != null and .execution_plan[1].suggested_tool.tool != ""' "execution plan should expose the current-step suggested tool"
   require_jq "$route_json" 'all(.route[]; .status == "complete")' "all route steps should complete"
   require_jq "$route_json" '.index_report.indexed_files >= 3' "fixture should index source files"
@@ -401,6 +408,7 @@ main() {
   echo "reading_plan_steps: $(json_value "$route_json" '.context_pack.reading_plan | length')"
   echo "execution_plan_steps: $(json_value "$route_json" '.execution_plan | length')"
   echo "first_execution_action: $(json_value "$route_json" '.execution_plan[0].action')"
+  echo "first_execution_instruction_has_question: $(json_value "$route_json" '(.execution_plan[0].instruction // "") as $instruction | (.context_pack.reading_plan[0].question // "") as $question | ($question != "" and ($instruction | contains($question)))')"
   echo "first_context_file: $(json_value "$route_json" '.context_pack.files[0].file')"
   echo "first_reading_file: $(json_value "$route_json" '.context_pack.reading_plan[0].file')"
   echo "first_reading_question: $(json_value "$route_json" '.context_pack.reading_plan[0].question')"

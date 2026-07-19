@@ -58,6 +58,7 @@ main() {
     "first_context_file": "src/main.ts",
     "first_reading_file": "src/main.ts",
     "first_execution_action": "read_selected_context",
+    "first_execution_instruction_has_question": true,
     "second_execution_action": "use_current_reading_step_suggested_tool",
 	    "first_execution_suggested_tool": "file_outline",
 	    "first_next_action": "inspect_seed_file",
@@ -95,6 +96,7 @@ EOF
   require_literal "$summary_md" '| Companion entrypoint | `src/main.ts` |' "companion entrypoint metric"
   require_literal "$summary_md" '| First reading file | `src/main.ts` |' "first reading file metric"
   require_literal "$summary_md" '| First execution action | `read_selected_context` |' "first execution action metric"
+  require_literal "$summary_md" '| First execution instruction has question | `true` |' "first execution instruction question metric"
   require_literal "$summary_md" '| Second execution action | `use_current_reading_step_suggested_tool` |' "second execution action metric"
 	  require_literal "$summary_md" '| First execution suggested tool | `file_outline` |' "first execution suggested tool metric"
 	  require_literal "$summary_md" '| First next action | `inspect_seed_file` |' "next action metric"

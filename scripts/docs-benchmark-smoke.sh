@@ -1521,6 +1521,9 @@ main() {
 	    'First reading question' \
 	    "agent-route step summary first reading question"
 	  require_pattern scripts/agent-route-step-summary-smoke.sh \
+	    'First execution instruction has question' \
+	    "agent-route step summary execution instruction question"
+	  require_pattern scripts/agent-route-step-summary-smoke.sh \
 	    'First selection rank' \
 	    "agent-route step summary first selection rank"
 	  require_pattern scripts/agent-route-step-summary-smoke.sh \
