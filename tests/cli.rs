@@ -1207,6 +1207,9 @@ fn cli_indexes_and_queries_fixture_project() {
         .find(|step| step["file"] == "src/auth_notes.py")
         .unwrap();
     assert_eq!(semantic_step["next_action"], "review_semantic_matches");
+    let semantic_question = semantic_step["question"].as_str().unwrap();
+    assert!(semantic_question.contains("cookie"));
+    assert!(semantic_question.contains("session"));
     assert_eq!(
         semantic_step["suggested_tool"]["suggested_arguments"]["task"],
         "session cookie behavior"
@@ -2528,6 +2531,50 @@ def service():
     let question = context["reading_plan"][0]["question"].as_str().unwrap();
     assert!(question.contains("callers"));
     assert!(question.contains("impact paths"));
+}
+
+#[test]
+fn cli_context_pack_uses_task_specific_reference_question() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        "src/session.ts",
+        r#"
+import { AUTH_TOKEN } from "./tokens";
+
+export const sessionHeader = AUTH_TOKEN;
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/tokens.ts",
+        r#"
+export const AUTH_TOKEN = "x-session";
+"#,
+    );
+
+    run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+
+    let context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand authentication session token usage",
+        "--symbol",
+        "AUTH_TOKEN",
+        "--token-budget",
+        "1600",
+    ]);
+    let reference_step = context["reading_plan"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|step| step["file"] == "src/session.ts")
+        .unwrap();
+    assert_eq!(reference_step["next_action"], "inspect_references");
+    let question = reference_step["question"].as_str().unwrap();
+    assert!(question.contains("authentication decisions"));
+    assert!(question.contains("session state"));
 }
 
 #[test]

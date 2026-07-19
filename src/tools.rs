@@ -1902,12 +1902,8 @@ fn context_reading_question(file: &ContextFile, task: &str) -> String {
         "inspect_seed_file" => context_seed_file_question(task),
         "inspect_symbol_definition" => context_symbol_definition_question(task),
         "follow_call_graph" => context_call_graph_question(task),
-        "inspect_references" => {
-            "How is the seed symbol used by nearby production code?".to_string()
-        }
-        "review_semantic_matches" => {
-            "Which task terms are reflected in this semantically related code?".to_string()
-        }
+        "inspect_references" => context_reference_question(task),
+        "review_semantic_matches" => context_semantic_question(task),
         "inspect_dependency" => context_dependency_question(task),
         _ => "What task-relevant context is present in these selected ranges?".to_string(),
     }
@@ -1916,10 +1912,7 @@ fn context_reading_question(file: &ContextFile, task: &str) -> String {
 fn context_seed_file_question(task: &str) -> String {
     if context_text_mentions(task, &["impact", "call", "caller", "callee", "path"]) {
         "Which local callers, callees, or impact paths in this seed file explain the requested flow?".to_string()
-    } else if context_text_mentions(
-        task,
-        &["auth", "authentication", "authenticate", "login", "signin"],
-    ) {
+    } else if context_text_mentions_auth(task) {
         "Where are authentication decisions, credentials, or session boundaries handled here?"
             .to_string()
     } else if context_text_mentions(task, &["config", "configuration", "setting", "settings"]) {
@@ -1936,10 +1929,7 @@ fn context_seed_file_question(task: &str) -> String {
 fn context_symbol_definition_question(task: &str) -> String {
     if context_text_mentions(task, &["impact", "call", "caller", "callee", "path"]) {
         "What callers, callees, or impact paths does this definition anchor?".to_string()
-    } else if context_text_mentions(
-        task,
-        &["auth", "authentication", "authenticate", "login", "signin"],
-    ) {
+    } else if context_text_mentions_auth(task) {
         "What authentication decisions, credentials, or session boundaries does this definition establish?".to_string()
     } else if context_text_mentions(task, &["config", "configuration", "setting", "settings"]) {
         "What configuration defaults, inputs, or environment behavior does this definition establish?".to_string()
@@ -1953,10 +1943,7 @@ fn context_symbol_definition_question(task: &str) -> String {
 }
 
 fn context_call_graph_question(task: &str) -> String {
-    if context_text_mentions(
-        task,
-        &["auth", "authentication", "authenticate", "login", "signin"],
-    ) {
+    if context_text_mentions_auth(task) {
         "Which callers or callees carry authentication decisions, credentials, or session state through this flow?".to_string()
     } else if context_text_mentions(task, &["config", "configuration", "setting", "settings"]) {
         "Which callers or callees read, transform, or propagate configuration in this flow?"
@@ -1973,10 +1960,7 @@ fn context_call_graph_question(task: &str) -> String {
 }
 
 fn context_dependency_question(task: &str) -> String {
-    if context_text_mentions(
-        task,
-        &["auth", "authentication", "authenticate", "login", "signin"],
-    ) {
+    if context_text_mentions_auth(task) {
         "What imported local dependency behavior affects authentication or session boundaries here?"
             .to_string()
     } else if context_text_mentions(task, &["config", "configuration", "setting", "settings"]) {
@@ -1989,6 +1973,56 @@ fn context_dependency_question(task: &str) -> String {
     } else {
         "What imported local dependency behavior is required to understand this file?".to_string()
     }
+}
+
+fn context_reference_question(task: &str) -> String {
+    if context_text_mentions(task, &["impact", "call", "caller", "callee", "path"]) {
+        "Which references show production usage or impact paths for this seed?".to_string()
+    } else if context_text_mentions_auth(task) {
+        "Which references consume authentication decisions, credentials, or session state?"
+            .to_string()
+    } else if context_text_mentions(task, &["config", "configuration", "setting", "settings"]) {
+        "Which references read, override, or pass configuration values?".to_string()
+    } else if context_text_mentions(task, &["startup", "bootstrap", "boot"]) {
+        "Which references register or trigger startup and initialization behavior?".to_string()
+    } else if context_text_mentions(task, &["middleware"]) {
+        "Which references attach, order, or call middleware and handler boundaries?".to_string()
+    } else {
+        "How is the seed symbol used by nearby production code?".to_string()
+    }
+}
+
+fn context_semantic_question(task: &str) -> String {
+    if context_text_mentions_auth(task) {
+        "Which semantic matches describe authentication, credential, cookie, or session behavior?"
+            .to_string()
+    } else if context_text_mentions(task, &["config", "configuration", "setting", "settings"]) {
+        "Which semantic matches describe configuration defaults, inputs, or environment behavior?"
+            .to_string()
+    } else if context_text_mentions(task, &["startup", "bootstrap", "boot"]) {
+        "Which semantic matches describe startup, bootstrap, or initialization behavior?"
+            .to_string()
+    } else if context_text_mentions(task, &["middleware"]) {
+        "Which semantic matches describe middleware or handler boundary behavior?".to_string()
+    } else {
+        "Which task terms are reflected in this semantically related code?".to_string()
+    }
+}
+
+fn context_text_mentions_auth(text: &str) -> bool {
+    context_text_mentions(
+        text,
+        &[
+            "auth",
+            "authentication",
+            "authenticate",
+            "login",
+            "signin",
+            "session",
+            "cookie",
+            "credential",
+        ],
+    )
 }
 
 fn context_text_mentions(text: &str, terms: &[&str]) -> bool {
