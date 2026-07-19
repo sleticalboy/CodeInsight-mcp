@@ -33,12 +33,12 @@ token_budget: 6000
 
 1. index_project
    indexed_files: 23
-   symbols: 988
+   symbols: 991
    duration_ms: <duration_ms>
    errors: 0
 
 2. project_overview
-   total_lines: 31647
+   total_lines: 31740
    entrypoints: 7
    first_entrypoint: src/main.rs
    recommended_next_tools: 4
@@ -55,13 +55,13 @@ token_budget: 6000
    first_reading_focus: Start with seed file context and primary symbols.
    first_reading_question: What entrypoints, exported symbols, or setup code define the main flow here?
    first_selection_rank: 1
-   blind_first_read_lines: 31647
+   blind_first_read_lines: 31740
    routed_first_read_lines: 423
    selected_lines: 423
-   source_lines_avoided: 31224
+   source_lines_avoided: 31317
    line_reduction: 98.7%
-   read_less_ratio: 74.8x
-   estimated_tokens: 3675
+   read_less_ratio: 75.0x
+   estimated_tokens: 3680
    continuation: complete
    continuation_next_action: read_selected_context
    first_omitted_candidate: none
@@ -89,10 +89,10 @@ Save the raw agent_route JSON:
   CODEINSIGHT_DEMO_SAVE_JSON=/tmp/codeinsight-agent-route.json scripts/two-minute-demo.sh
 
 [Evidence summary]
-Blind first-read baseline: 31647 source lines.
+Blind first-read baseline: 31740 source lines.
 Routed first-read: 423 source lines across 6 files.
-Read less: avoided 31224 source lines, 74.8x less text before follow-up tools.
-agent_route selected 423/31647 source lines (98.7% reduction) across 6 files.
+Read less: avoided 31317 source lines, 75.0x less text before follow-up tools.
+agent_route selected 423/31740 source lines (98.7% reduction) across 6 files.
 First reading focus: Start with seed file context and primary symbols.
 First reading question: What entrypoints, exported symbols, or setup code define the main flow here?
 The first selected file is src/tools.rs; reading_plan starts at src/tools.rs as candidate rank 1.
@@ -116,7 +116,7 @@ Before edits, impact_analysis reports high risk across 7 impacted files.
 10. Current reading step contract is true; agent_route.current_reading_step mirrors reading_plan[0].
 11. Suggested-tool handoff contract is true; execution_plan[1] points to the current reading step.
 12. Continuation timing contract is true; continuation is only considered after selected context is read.
-13. The selected context avoided 31224 source lines (98.7%, 74.8x less text); selected 6 files, 11 ranges, and 6 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context
+13. The selected context avoided 31317 source lines (98.7%, 75.0x less text); selected 6 files, 11 ranges, and 6 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context
 14. Selection evidence: candidate rank 1; Selected for high relevance via seed_file: Seed file header and imports for task: src/tools.rs; matched task keywords: agent, context, route, router, routes
 15. Continuation status is complete; next_action=read_selected_context, so no omitted candidate follow-up is needed before selected context is read.
 16. impact_analysis reports high risk across 7 impacted files with 4 suggested checks; after selected context is read, pre-edit impact check estimated 7 impacted files at high risk, including 5 call-related files, 1 dependency-related files, 38 call paths, and 1 dependency paths

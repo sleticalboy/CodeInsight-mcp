@@ -127,7 +127,7 @@ json_value() {
 
 selected_context_lines() {
   local route_json="$1"
-  jq -r '[.context_pack.files[].ranges[] | (.end_line - .start_line + 1)] | add // 0' "$route_json"
+  jq -r '.context_pack.read_less.selected_source_lines // ([.context_pack.files[].ranges[] | (.end_line - .start_line + 1)] | add // 0)' "$route_json"
 }
 
 line_reduction() {
@@ -183,11 +183,20 @@ write_markdown() {
   local target="$2"
   local total_lines selected_lines avoided_lines reduction read_less risk_level
 
-  total_lines="$(json_value "$route_json" '.overview.total_lines // 0')"
+  total_lines="$(json_value "$route_json" '.context_pack.read_less.baseline_source_lines // .overview.total_lines // 0')"
   selected_lines="$(selected_context_lines "$route_json")"
-  avoided_lines="$(source_lines_avoided "$total_lines" "$selected_lines")"
-  reduction="$(line_reduction "$total_lines" "$selected_lines")"
-  read_less="$(read_less_ratio "$total_lines" "$selected_lines")"
+  avoided_lines="$(json_value "$route_json" '.context_pack.read_less.source_lines_avoided // ""')"
+  if [ -z "$avoided_lines" ]; then
+    avoided_lines="$(source_lines_avoided "$total_lines" "$selected_lines")"
+  fi
+  reduction="$(json_value "$route_json" '.context_pack.read_less.line_reduction // ""')"
+  if [ -z "$reduction" ]; then
+    reduction="$(line_reduction "$total_lines" "$selected_lines")"
+  fi
+  read_less="$(json_value "$route_json" '.context_pack.read_less.read_less_ratio // ""')"
+  if [ -z "$read_less" ]; then
+    read_less="$(read_less_ratio "$total_lines" "$selected_lines")"
+  fi
   risk_level="$(json_value "$route_json" '.impact_analysis.risk_level // "not_available"')"
 
   {
@@ -261,11 +270,20 @@ write_summary_json() {
   local target="$2"
   local total_lines selected_lines avoided_lines reduction read_less
 
-  total_lines="$(json_value "$route_json" '.overview.total_lines // 0')"
+  total_lines="$(json_value "$route_json" '.context_pack.read_less.baseline_source_lines // .overview.total_lines // 0')"
   selected_lines="$(selected_context_lines "$route_json")"
-  avoided_lines="$(source_lines_avoided "$total_lines" "$selected_lines")"
-  reduction="$(line_reduction "$total_lines" "$selected_lines")"
-  read_less="$(read_less_ratio "$total_lines" "$selected_lines")"
+  avoided_lines="$(json_value "$route_json" '.context_pack.read_less.source_lines_avoided // ""')"
+  if [ -z "$avoided_lines" ]; then
+    avoided_lines="$(source_lines_avoided "$total_lines" "$selected_lines")"
+  fi
+  reduction="$(json_value "$route_json" '.context_pack.read_less.line_reduction // ""')"
+  if [ -z "$reduction" ]; then
+    reduction="$(line_reduction "$total_lines" "$selected_lines")"
+  fi
+  read_less="$(json_value "$route_json" '.context_pack.read_less.read_less_ratio // ""')"
+  if [ -z "$read_less" ]; then
+    read_less="$(read_less_ratio "$total_lines" "$selected_lines")"
+  fi
 
   mkdir -p "$(dirname "$target")"
   jq \

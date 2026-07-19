@@ -220,8 +220,8 @@ accuracy, or proof that unselected code is irrelevant.
 Current benchmark snapshot:
 
 - The two-minute demo for this repository shows the agent route selecting 423
-  of 31,647 source lines, avoiding 31,224 source lines before broad reading
-  for a 98.7% reduction and 74.8x read-less ratio, then surfacing
+  of 31,740 source lines, avoiding 31,317 source lines before broad reading
+  for a 98.7% reduction and 75.0x read-less ratio, then surfacing
   candidate rank 1, mirroring `current_reading_step` to `reading_plan[0]`,
   gating `file_outline` behind the selected-context read, and reporting
   continuation status before the impact check.
@@ -233,8 +233,8 @@ Current benchmark snapshot:
   to 1,361 of 126,990 source lines, avoiding 125,629 lines before broad file
   reading, a 98.9% aggregate reduction and 93.3x aggregate read-less ratio.
 - The CodeInsight self adoption report packages a full tar.gz handoff and
-  routes the entrypoint task to 439 of 31,647 source lines, avoiding 31,208
-  source lines before broad reading for a 98.6% reduction and 72.1x read-less
+  routes the entrypoint task to 439 of 31,740 source lines, avoiding 31,301
+  source lines before broad reading for a 98.6% reduction and 72.3x read-less
   ratio, while the MCP first-call contract fields all pass, including the
   `current_reading_step` mirror.
 - The public route-quality snapshot pins Express, Flask, Gin, and Requests and

@@ -26,17 +26,17 @@ first-call contract that a client or issue triage flow needs.
 | Metric | Value |
 | --- | ---: |
 | Indexed files | `23` |
-| Symbols | `988` |
+| Symbols | `991` |
 | Index errors | `0` |
 | Entrypoints | `7` |
-| Blind first-read baseline | `31647` source lines |
+| Blind first-read baseline | `31740` source lines |
 | CodeInsight routed first-read | `439` source lines |
-| Source lines avoided | `31208` |
+| Source lines avoided | `31301` |
 | First-read reduction | `98.6%` |
-| Read less | `72.1x` |
+| Read less | `72.3x` |
 | Selected files | `10` |
 | Selected ranges | `11` |
-| Estimated tokens | `4386` |
+| Estimated tokens | `4390` |
 | Reading plan steps | `8` |
 | Impacted files | `11` |
 
@@ -111,9 +111,9 @@ The `--print-snippet` output from the refreshed report was:
 
 - Status: `pass`
 - Route: `index_project -> project_overview -> context_pack -> impact_analysis`
-- Selected context: `439/31647` source lines, `98.6%` reduction
-- Source lines avoided: `31208`
-- Read less: `72.1x`
+- Selected context: `439/31740` source lines, `98.6%` reduction
+- Source lines avoided: `31301`
+- Read less: `72.3x`
 - Seed strategy: `auto_entrypoint`
 - Selected seeds: `1`
 - First seed source: `overview_entrypoint`
@@ -157,9 +157,9 @@ scripts/adoption-report.sh . \
 Expected summary lines:
 
 ```text
-- Selected context: `439/31647` source lines, `98.6%` reduction
-- Source lines avoided: `31208`
-- Read less: `72.1x`
+- Selected context: `439/31740` source lines, `98.6%` reduction
+- Source lines avoided: `31301`
+- Read less: `72.3x`
 - MCP first-call contract: reading_order=`true`, current_reading_step=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`
 - First-read gating: suggested_tool_after_selected_context=`true`, continuation_after_selected_context=`true`, impact_review_before_edits=`true`
 ```

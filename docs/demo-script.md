@@ -101,7 +101,7 @@ Promise: route the agent through agent_route before edits.
 
 1. index_project
    indexed_files: 23
-   symbols: 988
+   symbols: 991
 
 2. project_overview
    entrypoints: 7
@@ -125,11 +125,11 @@ Promise: route the agent through agent_route before edits.
    current_reading_step_contract: true
    suggested_tool_handoff_contract: true
    continuation_timing_contract: true
-   total_lines: 31647
+   total_lines: 31740
    selected_lines: 423
-   source_lines_avoided: 31224
+   source_lines_avoided: 31317
    line_reduction: 98.7%
-   read_less_ratio: 74.8x
+   read_less_ratio: 75.0x
    continuation: complete
    continuation_next_action: read_selected_context
    first_omitted_candidate: none
@@ -142,10 +142,10 @@ Promise: route the agent through agent_route before edits.
    route_reason: after selected context is read, pre-edit impact check estimated 7 impacted files at high risk, including 5 call-related files, 1 dependency-related files, 38 call paths, and 1 dependency paths
 
 [Evidence summary]
-Blind first-read baseline: 31647 source lines.
+Blind first-read baseline: 31740 source lines.
 Routed first-read: 423 source lines across 6 files.
-Read less: avoided 31224 source lines, 74.8x less text before follow-up tools.
-agent_route selected 423/31647 source lines (98.7% reduction) across 6 files.
+Read less: avoided 31317 source lines, 75.0x less text before follow-up tools.
+agent_route selected 423/31740 source lines (98.7% reduction) across 6 files.
 First reading focus: Start with seed file context and primary symbols.
 First reading question: What entrypoints, exported symbols, or setup code define the main flow here?
 The first selected file is src/tools.rs; reading_plan starts at src/tools.rs as candidate rank 1.
@@ -164,7 +164,7 @@ Before edits, impact_analysis reports high risk across 7 impacted files.
 5. The first execution-plan suggested tool is file_outline; offer it only after the selected file has been read.
 6. The first reading-plan focus is: Start with seed file context and primary symbols.
 7. The first reading-plan question is: What entrypoints, exported symbols, or setup code define the main flow here?
-8. The first reading-plan action is inspect_seed_file; the selected context avoided 31224 source lines (98.7%, 74.8x less text); selected 6 files, 11 ranges, and 6 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context
+8. The first reading-plan action is inspect_seed_file; the selected context avoided 31317 source lines (98.7%, 75.0x less text); selected 6 files, 11 ranges, and 6 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context
 9. Reading order contract is true; execution_plan[0].files follows reading_plan[] order.
 10. Current reading step contract is true; agent_route.current_reading_step mirrors reading_plan[0].
 11. Suggested-tool handoff contract is true; execution_plan[1] points to the current reading step.

@@ -59,7 +59,7 @@ require_json_true() {
 
 selected_context_lines() {
   local route_json="$1"
-  jq -r '[.context_pack.files[].ranges[] | (.end_line - .start_line + 1)] | add // 0' "$route_json"
+  jq -r '.context_pack.read_less.selected_source_lines // ([.context_pack.files[].ranges[] | (.end_line - .start_line + 1)] | add // 0)' "$route_json"
 }
 
 line_reduction() {
@@ -200,11 +200,20 @@ main() {
   local reading_order_contract current_reading_step_contract suggested_tool_handoff_contract continuation_timing_contract
   local continuation risk_level impacted_files suggested_checks impact_seed_file
 
-  total_lines="$(json_value "$route_json" '.overview.total_lines // 0')"
+  total_lines="$(json_value "$route_json" '.context_pack.read_less.baseline_source_lines // .overview.total_lines // 0')"
   selected_lines="$(selected_context_lines "$route_json")"
-  avoided_lines="$(source_lines_avoided "$total_lines" "$selected_lines")"
-  reduction="$(line_reduction "$total_lines" "$selected_lines")"
-  read_less="$(read_less_ratio "$total_lines" "$selected_lines")"
+  avoided_lines="$(json_value "$route_json" '.context_pack.read_less.source_lines_avoided // ""')"
+  if [ -z "$avoided_lines" ]; then
+    avoided_lines="$(source_lines_avoided "$total_lines" "$selected_lines")"
+  fi
+  reduction="$(json_value "$route_json" '.context_pack.read_less.line_reduction // ""')"
+  if [ -z "$reduction" ]; then
+    reduction="$(line_reduction "$total_lines" "$selected_lines")"
+  fi
+  read_less="$(json_value "$route_json" '.context_pack.read_less.read_less_ratio // ""')"
+  if [ -z "$read_less" ]; then
+    read_less="$(read_less_ratio "$total_lines" "$selected_lines")"
+  fi
   first_entrypoint="$(json_value "$route_json" '.overview.entrypoints[0].file // "-"')"
   first_context_file="$(json_value "$route_json" '.context_pack.files[0].file // "-"')"
   first_reading_file="$(json_value "$route_json" '.context_pack.reading_plan[0].file // "-"')"
