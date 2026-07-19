@@ -1167,7 +1167,7 @@ main() {
     '\| Task alias or seed ordering changed \| `scripts/task-routing-matrix-smoke\.sh` \|' \
     "maintenance task routing matrix smoke chooser"
   require_pattern docs/maintenance-commands.md \
-    'routing, authentication, authorization, settings, startup, persistence, debug, coverage, API handler, cache, observability, security, billing, frontend, background job, documentation, and middleware prompts choose the matching first file and that `--expect-file` failures are reported' \
+    'routing, authentication, authorization, settings, startup, persistence, debug, coverage, API handler, cache, observability, security, billing, frontend, background job, documentation, request lifecycle, and middleware prompts choose the matching first file and that `--expect-file` failures are reported' \
     "maintenance task routing matrix smoke scope"
   require_pattern docs/maintenance-commands.md \
     '\| Installed-binary adoption path changed \| `CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/installed-quickstart-smoke\.sh` \|' \
