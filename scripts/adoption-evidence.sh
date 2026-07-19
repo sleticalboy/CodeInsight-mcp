@@ -162,6 +162,7 @@ write_markdown_summary() {
     echo "- First seed source: \`$(json_value "$local_summary" '.metrics.first_seed_source // "-"')\`"
     echo "- Companion entrypoint: \`$(json_value "$local_summary" '(.metrics.companion_entrypoint // "") as $value | if $value == "" then "-" else $value end')\`"
     echo "- First selected file: \`$(json_value "$local_summary" '.metrics.first_file')\`"
+    echo "- First reading focus: $(json_value "$local_summary" '.metrics.first_reading_focus')"
     echo "- First reading question: $(json_value "$local_summary" '.metrics.first_reading_question')"
     echo "- First suggested tool: \`$(json_value "$local_summary" '.metrics.first_suggested_tool')\`"
     echo "- Impact risk: \`$(json_value "$local_summary" '.metrics.risk_level')\`"
@@ -281,6 +282,7 @@ print_snippet() {
 - First seed source: \`$(json_value "$summary_json" '.local_evidence.metrics.first_seed_source // "-"')\`
 - Companion entrypoint: \`$(json_value "$summary_json" '(.local_evidence.metrics.companion_entrypoint // "") as $value | if $value == "" then "-" else $value end')\`
 - First selected file: \`$(json_value "$summary_json" '.local_evidence.metrics.first_file')\`
+- First reading focus: $(json_value "$summary_json" '.local_evidence.metrics.first_reading_focus')
 - First reading question: $(json_value "$summary_json" '.local_evidence.metrics.first_reading_question')
 - MCP server: \`$(json_value "$summary_json" '.mcp_first_call.server')\`
 - MCP first-call contract: reading_order=\`$(json_value "$summary_json" '.mcp_first_call.execution_plan_reads_in_reading_plan_order')\`, suggested_tool_handoff=\`$(json_value "$summary_json" '.mcp_first_call.current_step_suggested_tool_matches_reading_plan')\`, continuation_after_selected_context=\`$(json_value "$summary_json" '.mcp_first_call.continuation_after_selected_context')\`

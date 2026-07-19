@@ -123,6 +123,7 @@ cases = case_paths.map do |path|
   seed_strategy = match_required(content, /^\| Seed strategy \| `([^`]+)` \|$/, relative, "seed strategy")
   first_file = match_required(content, /^\| First selected file \| `([^`]+)` \|$/, relative, "first selected file")
   companion = match_required(content, /^\| Companion entrypoint \| `([^`]+)` \|$/, relative, "companion entrypoint")
+  first_focus = match_required(content, /^\| First reading focus \| ([^|]+) \|$/, relative, "first reading focus").strip
   first_tool = match_required(content, /^\| First suggested tool \| `([^`]+)` \|$/, relative, "first suggested tool")
   risk = match_required(content, /^\| Impact risk \| `([^`]+)` \|$/, relative, "impact risk")
 
@@ -145,6 +146,7 @@ cases = case_paths.map do |path|
     seed_strategy: seed_strategy,
     first_file: first_file,
     companion: companion,
+    first_focus: first_focus,
     first_tool: first_tool,
     risk: risk
   }
@@ -166,7 +168,7 @@ summary_rows = cases.map do |entry|
 end
 
 route_rows = cases.map do |entry|
-  "| #{entry[:title]} | `#{entry[:commit]}` | `#{entry[:seed_strategy]}` | `#{entry[:first_file]}` | `#{entry[:companion]}` | `#{entry[:first_tool]}` | `#{entry[:risk]}` |"
+  "| #{entry[:title]} | `#{entry[:commit]}` | `#{entry[:seed_strategy]}` | `#{entry[:first_file]}` | #{entry[:first_focus]} | `#{entry[:companion]}` | `#{entry[:first_tool]}` | `#{entry[:risk]}` |"
 end
 
 refresh_commands = cases.map do |entry|
@@ -218,8 +220,8 @@ File.write(output, <<~MARKDOWN)
 
   ## Route Evidence
 
-  | Case | Commit | Seed strategy | First selected file | Companion entrypoint | First suggested tool | Impact risk |
-  | --- | --- | --- | --- | --- | --- | --- |
+  | Case | Commit | Seed strategy | First selected file | First reading focus | Companion entrypoint | First suggested tool | Impact risk |
+  | --- | --- | --- | --- | --- | --- | --- | --- |
   #{route_rows.join("\n")}
 
   ## Refresh

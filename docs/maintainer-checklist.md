@@ -84,10 +84,10 @@ optional external checks, see [Maintenance commands](maintenance-commands.md).
   run link, and the `codeinsight-benchmark-subset` artifact link. Download the
   artifact only when you need the full guardrail tables or JSON metrics. Open the
   `context-pack-quality-smoke` job summary and confirm it includes the scenario
-  table, first reading question metrics, and the
+  table, first reading focus/question metrics, and the
   `codeinsight-context-pack-quality` artifact link. Open the
   `agent-route-smoke` job summary and confirm it includes the route line,
-  context-pack metrics, first reading question, selection rank, continuation next
+  context-pack metrics, first reading focus/question, selection rank, continuation next
   action, impact metrics, and the `codeinsight-agent-route-smoke` artifact link.
   Open the
   `mcp-first-call-smoke` job summary and confirm it includes selected files,

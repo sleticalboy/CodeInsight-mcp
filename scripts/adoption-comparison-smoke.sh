@@ -99,6 +99,7 @@ cat >"$summary_json" <<JSON
     "first_seed_value": "src/router.ts",
     "companion_entrypoint": "src/main.ts",
     "first_file": "src/router.ts",
+    "first_reading_focus": "Trace login route ownership.",
     "first_reading_question": "What route owns login?",
     "first_selection_rank": 1,
     "first_selection_reason": "Selected for high relevance via seed_file",
@@ -140,6 +141,8 @@ EOF
     fail "missing read less ratio"
   grep -Fq -- '- Companion entrypoint: `src/main.ts`' "$TEMP_DIR/comparison/adoption-comparison.md" ||
     fail "missing companion entrypoint"
+  grep -Fq -- '- First reading focus: Trace login route ownership.' "$TEMP_DIR/comparison/adoption-comparison.md" ||
+    fail "missing first reading focus"
   grep -Fq -- '- First selection rank: `1`' "$TEMP_DIR/comparison/adoption-comparison.md" ||
     fail "missing first selection rank"
   grep -Fq -- '- First selection reason: Selected for high relevance via seed_file' "$TEMP_DIR/comparison/adoption-comparison.md" ||
@@ -156,6 +159,7 @@ EOF
       and .metrics.source_lines_avoided == 1140
       and .metrics.read_less_ratio == "20.0x"
       and .metrics.first_seed_source == "task_match"
+      and .metrics.first_reading_focus == "Trace login route ownership."
       and .metrics.first_selection_rank == 1
       and .metrics.first_selection_reason == "Selected for high relevance via seed_file"
       and .metrics.continuation_status == "complete"

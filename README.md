@@ -96,7 +96,7 @@ hands the agent to precise local tools when the selected context is not enough.
    | MCP wiring | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/mcp-first-call-smoke.sh` | You want a compact JSON proof that stdio MCP accepts `agent_route`, returns the first context file, follows `reading_plan[]`, exposes selection rank and continuation evidence, runs the current step's suggested tool, and includes `impact_status`. |
    | Installed adoption | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh` | You want the installed binary to pass CLI `agent-route`, MCP stdio, and MCP `agent_route` against a temporary project with selection rank and continuation evidence. |
    | Local evidence | `scripts/adoption-evidence.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-evidence --print-snippet --issue-template` | You want one folder with local first-read evidence, raw route JSON, MCP first-call JSON, aggregate Markdown/JSON summaries, a copyable terminal snippet, and a ready-to-file issue template. |
-   | Adoption comparison | `scripts/adoption-comparison.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-comparison` | You want a shareable blind-read vs routed-first-read comparison showing source lines avoided, read-less ratio, seed strategy, first reading question, selection rank, and continuation next action. |
+   | Adoption comparison | `scripts/adoption-comparison.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-comparison` | You want a shareable blind-read vs routed-first-read comparison showing source lines avoided, read-less ratio, seed strategy, first reading focus/question, selection rank, and continuation next action. |
    | Handoff report | `scripts/adoption-report.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-report --print-snippet` | You want a tar.gz report containing the evidence summaries, issue template, raw JSON, and diagnostic logs for upload or handoff. |
 
 ## Two-Minute Demo
@@ -251,6 +251,7 @@ and `/tmp/codeinsight-adoption-evidence/issue-template.md`, then prints this cop
 - First seed source: `<source>`
 - Companion entrypoint: `<file-or-dash>`
 - First selected file: `<file>`
+- First reading focus: <focus>
 - First reading question: <question>
 - First selection rank: `<rank>`
 - First selection reason: <reason>

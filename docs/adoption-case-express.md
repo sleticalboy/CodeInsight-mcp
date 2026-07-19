@@ -41,6 +41,7 @@ to show what an AI coding agent can read first before opening files broadly.
 | First seed value | `lib/express.js` |
 | Companion entrypoint | `-` |
 | First selected file | `lib/express.js` |
+| First reading focus | Start with seed file context and primary symbols. |
 | First suggested tool | `file_outline` |
 | Impact risk | `high` |
 

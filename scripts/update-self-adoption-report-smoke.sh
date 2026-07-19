@@ -96,6 +96,7 @@ cat >"$summary_path" <<JSON
       "first_seed_value": "src/main.rs",
       "companion_entrypoint": "",
       "first_file": "src/main.rs",
+      "first_reading_focus": "Start with Rust entrypoint wiring.",
       "first_reading_question": "What entrypoints define the main flow here?",
       "first_next_action": "inspect_seed_file",
       "first_suggested_tool": "file_outline",
@@ -180,6 +181,10 @@ EOF
     fail "missing routed first-read metric"
   grep -Fq '| First-read reduction | `93.3%` |' "$TEMP_DIR/adoption-report-codeinsight.md" ||
     fail "missing reduction metric"
+  grep -Fq '| First reading focus | Start with Rust entrypoint wiring. |' "$TEMP_DIR/adoption-report-codeinsight.md" ||
+    fail "missing first reading focus"
+  grep -Fq -- '- First reading focus: Start with Rust entrypoint wiring.' "$TEMP_DIR/adoption-report-codeinsight.md" ||
+    fail "missing generated snippet first reading focus"
   grep -Fq 'The generated manifest reported `status: pass` and listed the same 13 files' "$TEMP_DIR/adoption-report-codeinsight.md" ||
     fail "missing manifest evidence"
   grep -Fq "file_outline\` with an absolute \`$TEMP_DIR/repo/src/main.rs\` path" "$TEMP_DIR/adoption-report-codeinsight.md" ||

@@ -41,6 +41,7 @@ to show what an AI coding agent can read first before opening files broadly.
 | First seed value | `routergroup.go` |
 | Companion entrypoint | `context.go` |
 | First selected file | `routergroup.go` |
+| First reading focus | Start with seed file context and primary symbols. |
 | First suggested tool | `file_outline` |
 | Impact risk | `high` |
 

@@ -41,6 +41,7 @@ to show what an AI coding agent can read first before opening files broadly.
 | First seed value | `src/requests/sessions.py` |
 | Companion entrypoint | `src/requests/help.py` |
 | First selected file | `src/requests/sessions.py` |
+| First reading focus | Start with seed file context and primary symbols. |
 | First suggested tool | `file_outline` |
 | Impact risk | `high` |
 
@@ -83,4 +84,3 @@ Artifacts written by the command:
 - `/tmp/codeinsight-adoption-case-requests/evidence/summary.json`
 - `/tmp/codeinsight-adoption-case-requests/evidence/local-repo-evidence.json`
 - `/tmp/codeinsight-adoption-case-requests/evidence/agent-route.json`
-

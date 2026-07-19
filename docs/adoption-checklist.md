@@ -90,10 +90,10 @@ Pass criteria:
 - `--summary-json` writes the same core metrics in a compact machine-readable
   contract for CI artifacts, README evidence snippets, or benchmark aggregation.
 - `adoption-comparison.sh` writes a blind-read vs routed-first-read Markdown
-  report with source-line savings, read-less ratio, first selection rank/reason,
-  and continuation next action.
-  report and `summary.json` with source lines avoided, read-less ratio, seed
-  strategy, first selected file, first reading question, and artifact paths.
+  report with source-line savings, read-less ratio, first reading focus/question,
+  first selection rank/reason, and continuation next action. Its `summary.json`
+  includes source lines avoided, read-less ratio, seed strategy, first selected
+  file, first reading focus/question, and artifact paths.
 - Use the [Adoption cases](adoption-cases.md) summary plus the
   [Express adoption case](adoption-case-express.md),
   [Gin adoption case](adoption-case-gin.md),

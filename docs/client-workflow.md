@@ -65,6 +65,7 @@ The first call is healthy when the response has:
 - `route[]` with `index_project`, `project_overview`, `context_pack`, and
   `impact_analysis`
 - at least one `context_pack.files[]` entry
+- `context_pack.reading_plan[].focus` for the compact scan label
 - `context_pack.reading_plan[].question` for the local reading checklist
 - `context_pack.reading_plan[].reason` for the current reading instruction
 - `context_pack.reading_plan[].selection_rank` for the candidate rank
@@ -73,7 +74,7 @@ The first call is healthy when the response has:
   continuation decision
 - `execution_plan[0].action` set to `read_selected_context`
 - `execution_plan[0].instruction` naming the first reading file, candidate
-  rank, and first reading question
+  rank, and first reading focus/question
 - a ready `execution_plan[].suggested_tool` for focused follow-up navigation
 - `impact_status` set to `complete` when an impact seed is available
 

@@ -26,10 +26,10 @@ first-call contract that a client or issue triage flow needs.
 | Metric | Value |
 | --- | ---: |
 | Indexed files | `23` |
-| Symbols | `948` |
+| Symbols | `981` |
 | Index errors | `0` |
 | Entrypoints | `7` |
-| Blind first-read baseline | `28997` source lines |
+| Blind first-read baseline | `29931` source lines |
 | CodeInsight routed first-read | `439` source lines |
 | First-read reduction | `98.5%` |
 | Selected files | `10` |
@@ -48,6 +48,7 @@ first-call contract that a client or issue triage flow needs.
 | Companion entrypoint | `-` |
 | First selected file | `src/main.rs` |
 | First next action | `inspect_seed_file` |
+| First reading focus | Start with seed file context and primary symbols. |
 | First suggested tool | `file_outline` |
 | Impact risk | `high` |
 
@@ -107,12 +108,13 @@ The `--print-snippet` output from the refreshed report was:
 
 - Status: `pass`
 - Route: `index_project -> project_overview -> context_pack -> impact_analysis`
-- Selected context: `439/28997` source lines, `98.5%` reduction
+- Selected context: `439/29931` source lines, `98.5%` reduction
 - Seed strategy: `auto_entrypoint`
 - Selected seeds: `1`
 - First seed source: `overview_entrypoint`
 - Companion entrypoint: `-`
 - First selected file: `src/main.rs`
+- First reading focus: Start with seed file context and primary symbols.
 - First reading question: What entrypoints, exported symbols, or setup code define the main flow here?
 - MCP server: `codeinsight`
 - MCP first-call contract: reading_order=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`
@@ -150,7 +152,7 @@ scripts/adoption-report.sh . \
 Expected summary lines:
 
 ```text
-- Selected context: `439/28997` source lines, `98.5%` reduction
+- Selected context: `439/29931` source lines, `98.5%` reduction
 - MCP first-call contract: reading_order=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`
 - First-read gating: suggested_tool_after_selected_context=`true`, continuation_after_selected_context=`true`, impact_review_before_edits=`true`
 ```

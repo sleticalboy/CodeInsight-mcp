@@ -294,6 +294,9 @@ main() {
     'Read less | `92\.6x`' \
     "Express adoption case read-less metric"
   require_pattern docs/adoption-case-express.md \
+    'First reading focus \| Start with seed file context and primary symbols\.' \
+    "Express adoption case first reading focus"
+  require_pattern docs/adoption-case-express.md \
     'Generated with: `scripts/update-adoption-case\.sh express`' \
     "Express adoption case generator"
   require_pattern docs/adoption-case-express.md \
@@ -315,6 +318,9 @@ main() {
     'First selected file \| `routergroup\.go`' \
     "Gin adoption case first selected file"
   require_pattern docs/adoption-case-gin.md \
+    'First reading focus \| Start with seed file context and primary symbols\.' \
+    "Gin adoption case first reading focus"
+  require_pattern docs/adoption-case-gin.md \
     'Generated with: `scripts/update-adoption-case\.sh gin`' \
     "Gin adoption case generator"
   require_pattern docs/adoption-case-gin.md \
@@ -329,6 +335,9 @@ main() {
   require_pattern docs/adoption-case-memchr.md \
     'Read less | `301\.7x`' \
     "Memchr adoption case read-less metric"
+  require_pattern docs/adoption-case-memchr.md \
+    'First reading focus \| Start with seed file context and primary symbols\.' \
+    "Memchr adoption case first reading focus"
   require_pattern docs/adoption-case-memchr.md \
     'Generated with: `scripts/update-adoption-case\.sh memchr`' \
     "Memchr adoption case generator"
@@ -348,6 +357,9 @@ main() {
     'First selected file \| `src/requests/sessions\.py`' \
     "Requests adoption case first selected file"
   require_pattern docs/adoption-case-requests.md \
+    'First reading focus \| Start with seed file context and primary symbols\.' \
+    "Requests adoption case first reading focus"
+  require_pattern docs/adoption-case-requests.md \
     'Generated with: `scripts/update-adoption-case\.sh requests`' \
     "Requests adoption case generator"
   require_pattern docs/adoption-case-requests.md \
@@ -365,6 +377,9 @@ main() {
   require_pattern docs/adoption-cases.md \
     'Aggregate read-less ratio: `93\.3x`' \
     "adoption cases aggregate read-less ratio"
+  require_pattern docs/adoption-cases.md \
+    '\| Case \| Commit \| Seed strategy \| First selected file \| First reading focus \|' \
+    "adoption cases route focus column"
   require_pattern docs/adoption-cases.md \
     '^## How To Read These Numbers$' \
     "adoption cases interpretation section"
@@ -852,7 +867,7 @@ main() {
     'scripts/mcp-first-call-artifact-smoke\.sh <ci-run-id>' \
     "maintenance MCP first-call artifact download"
   require_pattern docs/maintenance-commands.md \
-    'context, first reading question, selection rank, continuation next action' \
+    'context, first reading focus/question, selection rank, continuation next action' \
     "maintenance agent-route first-read evidence summary"
   require_pattern docs/maintenance-commands.md \
     'scripts/release-evidence-summary-artifact-smoke\.sh --repo sleticalboy/CodeInsight-mcp <ci-run-id>' \
@@ -981,14 +996,14 @@ main() {
     'codeinsight-context-pack-quality' \
     "maintenance context-pack quality artifact scope"
   require_pattern docs/maintenance-commands.md \
-    'first reading question metrics for selected context' \
-    "maintenance context-pack quality first reading question scope"
+    'first reading focus/question metrics for selected context' \
+    "maintenance context-pack quality first reading focus/question scope"
   require_pattern docs/maintainer-checklist.md \
     'context-pack quality smoke' \
     "maintainer context-pack quality smoke"
   require_pattern docs/maintainer-checklist.md \
-    'first reading question metrics' \
-    "maintainer context-pack quality first reading question summary"
+    'first reading focus/question metrics' \
+    "maintainer context-pack quality first reading focus/question summary"
   require_pattern docs/maintainer-checklist.md \
     'context-pack-quality-smoke` job summary' \
     "maintainer context-pack quality CI summary guidance"
@@ -999,10 +1014,10 @@ main() {
     'scripts/mcp-first-call-artifact-smoke\.sh <ci-run-id>' \
     "maintainer MCP first-call artifact smoke command"
   require_pattern docs/maintainer-checklist.md \
-    'context-pack metrics, first reading question, selection rank, continuation next' \
+    'context-pack metrics, first reading focus/question, selection rank, continuation next' \
     "maintainer agent-route first-read evidence summary"
   require_pattern docs/maintenance-commands.md \
-    'first reading question, selection rank, continuation next action' \
+    'first reading focus/question, selection rank, continuation next action' \
     "maintenance agent-route summary evidence scope"
   require_pattern scripts/context-pack-quality-step-summary-smoke.sh \
     'codeinsight-context-pack-quality' \

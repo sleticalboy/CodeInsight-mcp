@@ -168,6 +168,7 @@ write_markdown() {
     echo "- First seed source: \`$(json_value "$local_summary" '.metrics.first_seed_source // "-"')\`"
     echo "- Companion entrypoint: \`$(json_value "$local_summary" '(.metrics.companion_entrypoint // "") as $value | if $value == "" then "-" else $value end')\`"
     echo "- First selected file: \`$(json_value "$local_summary" '.metrics.first_file')\`"
+    echo "- First reading focus: $(json_value "$local_summary" '.metrics.first_reading_focus')"
     echo "- First reading question: $(json_value "$local_summary" '.metrics.first_reading_question')"
     echo "- First selection rank: \`$(json_value "$local_summary" '.metrics.first_selection_rank // "-"')\`"
     echo "- First selection reason: $(json_value "$local_summary" '.metrics.first_selection_reason // "-"')"
@@ -240,6 +241,7 @@ write_summary_json() {
         first_seed_value: .metrics.first_seed_value,
         companion_entrypoint: .metrics.companion_entrypoint,
         first_file: .metrics.first_file,
+        first_reading_focus: .metrics.first_reading_focus,
         first_reading_question: .metrics.first_reading_question,
         first_selection_rank: .metrics.first_selection_rank,
         first_selection_reason: .metrics.first_selection_reason,

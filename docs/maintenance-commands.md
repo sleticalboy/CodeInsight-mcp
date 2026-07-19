@@ -106,7 +106,7 @@ after refreshing [Demo output snapshot](demo-output.md).
 `agent-route-smoke.sh --summary-json <path>` writes a reusable JSON evidence
 summary for the one-call first-read route. The remote `agent-route-smoke` job
 uploads it as `codeinsight-agent-route-smoke` and writes the key route,
-context, first reading question, selection rank, continuation next action,
+context, first reading focus/question, selection rank, continuation next action,
 token-budget, and impact metrics to the Actions summary with
 `scripts/agent-route-step-summary.sh`.
 
@@ -126,7 +126,7 @@ writes this summary to a temporary file and validates key scenario names; the
 remote `context-pack-quality-smoke` job uploads the
 `codeinsight-context-pack-quality` JSON artifact and writes the scenario table
 to the Actions summary with `scripts/context-pack-quality-step-summary.sh`,
-including first reading question metrics for selected context and a question
+including first reading focus/question metrics for selected context and a question
 coverage table for seed-file, call-graph, reference, dependency, and semantic
 reading-plan actions.
 

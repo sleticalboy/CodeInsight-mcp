@@ -204,7 +204,7 @@ Java、C/C++、C#、PHP 和 Ruby 已作为语法级基础索引语言纳入当�
 
 - 继续守住 `scripts/docs-positioning-smoke.sh`。
 - 保持 `scripts/mcp-first-call-smoke.sh` 和 `scripts/installed-quickstart-smoke.sh` 作为 adoption gate。
-- 用真实仓库报告展示 selected lines、line reduction、first reading question 和 suggested tool execution。
+- 用真实仓库报告展示 selected lines、line reduction、first reading focus/question 和 suggested tool execution。
 
 ### P1：上下文质量和影响分析可信度
 

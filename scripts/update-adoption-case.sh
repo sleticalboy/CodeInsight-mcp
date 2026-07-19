@@ -241,6 +241,7 @@ write_case_doc() {
   first_seed_value="$(json_value "$summary_json" '.metrics.first_seed_value')"
   companion="$(json_value "$summary_json" '(.metrics.companion_entrypoint // "") as $value | if $value == "" then "-" else $value end')"
   first_file="$(json_value "$summary_json" '.metrics.first_file')"
+  first_focus="$(json_value "$summary_json" '.metrics.first_reading_focus')"
   first_question="$(json_value "$summary_json" '.metrics.first_reading_question')"
   first_tool="$(json_value "$summary_json" '.metrics.first_suggested_tool')"
   risk="$(json_value "$summary_json" '.metrics.risk_level')"
@@ -297,6 +298,7 @@ to show what an AI coding agent can read first before opening files broadly.
 | First seed value | \`$first_seed_value\` |
 | Companion entrypoint | \`$companion\` |
 | First selected file | \`$first_file\` |
+| First reading focus | $first_focus |
 | First suggested tool | \`$first_tool\` |
 | Impact risk | \`$risk\` |
 

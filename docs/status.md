@@ -52,8 +52,8 @@ MVP workflow is now implemented end to end.
 - Focused `context_pack` follow-up suggestions preserve the original task when
   narrowing semantic-match or fallback context to a selected file.
 - `agent_route.execution_plan[0].instruction` carries the first reading file,
-  candidate rank, and first reading question so clients can render the first
-  checklist item directly.
+  candidate rank, and first reading focus/question so clients can render the
+  first checklist item directly.
 - `agent_route.execution_plan[1].instruction` carries the current reading
   action and question alongside the ready suggested tool, so client follow-up
   prompts stay aligned with `reading_plan[]`.

@@ -81,6 +81,7 @@ cat >"$output_dir/summary.json" <<JSON
     "first_seed_value": "lib/express.js",
     "companion_entrypoint": "",
     "first_file": "lib/express.js",
+    "first_reading_focus": "Start with Express export wiring.",
     "first_reading_question": "What entrypoints, exported symbols, or setup code define the main flow here?",
     "first_suggested_tool": "file_outline",
     "risk_level": "high",
@@ -114,6 +115,8 @@ EOF
     fail "missing baseline metric"
   grep -Fq '| Read less | `92.6x` |' "$TEMP_DIR/adoption-case-express.md" ||
     fail "missing read-less metric"
+  grep -Fq '| First reading focus | Start with Express export wiring. |' "$TEMP_DIR/adoption-case-express.md" ||
+    fail "missing first reading focus"
   grep -Fq 'scripts/update-adoption-case.sh express' "$TEMP_DIR/adoption-case-express.md" ||
     fail "missing refresh command"
   grep -Fq "scripts/update-adoption-case.sh express --commit $commit" "$TEMP_DIR/adoption-case-express.md" ||

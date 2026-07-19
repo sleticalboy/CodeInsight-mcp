@@ -45,12 +45,12 @@ compiler, test runner, and language-specific tools.
 
 ## Route Evidence
 
-| Case | Commit | Seed strategy | First selected file | Companion entrypoint | First suggested tool | Impact risk |
-| --- | --- | --- | --- | --- | --- | --- |
-| Express | `ae6dd37680e3a00618d6c8a3e522f0ee4eeba1a4` | `auto_task_match` | `lib/express.js` | `-` | `file_outline` | `high` |
-| Gin | `34dac209ffb6ef85cc78c5d217bbb7ad001d68fd` | `auto_task_match` | `routergroup.go` | `context.go` | `file_outline` | `high` |
-| Memchr | `bce7df7140acff420478a358cde5587904000cb1` | `auto_task_match` | `benchmarks/engines/rust-memchr/main.rs` | `benchmarks/engines/rust-jetscii/main.rs` | `file_outline` | `high` |
-| Requests | `f361ead047be5cb873174218582f7d8b9fcd9f49` | `auto_task_match` | `src/requests/sessions.py` | `src/requests/help.py` | `file_outline` | `high` |
+| Case | Commit | Seed strategy | First selected file | First reading focus | Companion entrypoint | First suggested tool | Impact risk |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Express | `ae6dd37680e3a00618d6c8a3e522f0ee4eeba1a4` | `auto_task_match` | `lib/express.js` | Start with seed file context and primary symbols. | `-` | `file_outline` | `high` |
+| Gin | `34dac209ffb6ef85cc78c5d217bbb7ad001d68fd` | `auto_task_match` | `routergroup.go` | Start with seed file context and primary symbols. | `context.go` | `file_outline` | `high` |
+| Memchr | `bce7df7140acff420478a358cde5587904000cb1` | `auto_task_match` | `benchmarks/engines/rust-memchr/main.rs` | Start with seed file context and primary symbols. | `benchmarks/engines/rust-jetscii/main.rs` | `file_outline` | `high` |
+| Requests | `f361ead047be5cb873174218582f7d8b9fcd9f49` | `auto_task_match` | `src/requests/sessions.py` | Start with seed file context and primary symbols. | `src/requests/help.py` | `file_outline` | `high` |
 
 ## Refresh
 

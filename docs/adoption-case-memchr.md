@@ -41,6 +41,7 @@ to show what an AI coding agent can read first before opening files broadly.
 | First seed value | `benchmarks/engines/rust-memchr/main.rs` |
 | Companion entrypoint | `benchmarks/engines/rust-jetscii/main.rs` |
 | First selected file | `benchmarks/engines/rust-memchr/main.rs` |
+| First reading focus | Start with seed file context and primary symbols. |
 | First suggested tool | `file_outline` |
 | Impact risk | `high` |
 
@@ -83,4 +84,3 @@ Artifacts written by the command:
 - `/tmp/codeinsight-adoption-case-memchr/evidence/summary.json`
 - `/tmp/codeinsight-adoption-case-memchr/evidence/local-repo-evidence.json`
 - `/tmp/codeinsight-adoption-case-memchr/evidence/agent-route.json`
-

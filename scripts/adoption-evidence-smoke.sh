@@ -92,6 +92,7 @@ cat >"$summary_json" <<JSON
     "first_seed_value": "src/router.ts",
     "companion_entrypoint": "src/main.ts",
     "first_file": "src/main.ts",
+    "first_reading_focus": "Start with main application setup.",
     "first_reading_question": "What setup code defines the main application flow?",
     "first_next_action": "inspect_seed_file",
     "first_suggested_tool": "file_outline",
@@ -139,6 +140,7 @@ cat >"$summary_json" <<'JSON'
   "reading_plan": [
     {
       "file": "src/main.ts",
+      "focus": "Start with main application setup.",
       "question": "What setup code defines the main application flow?",
       "reason": "Read this step first.",
       "selection_reason": "Selected for high relevance",
@@ -190,6 +192,8 @@ EOF
     fail "missing first seed source line"
   grep -Fq -- '- Companion entrypoint: `src/main.ts`' "$TEMP_DIR/evidence/adoption-evidence.md" ||
     fail "missing companion entrypoint line"
+  grep -Fq -- '- First reading focus: Start with main application setup.' "$TEMP_DIR/evidence/adoption-evidence.md" ||
+    fail "missing first reading focus line"
   grep -Fq -- '- MCP suggested tool executed: `true`' "$TEMP_DIR/evidence/adoption-evidence.md" ||
     fail "missing MCP suggested tool execution line"
   grep -Fq -- '- MCP first-call contract: reading_order=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`' "$TEMP_DIR/evidence/adoption-evidence.md" ||
@@ -211,6 +215,7 @@ EOF
       and .local_evidence.metrics.seed_strategy == "auto_task_match"
       and .local_evidence.metrics.selected_seed_count == 2
       and .local_evidence.metrics.first_seed_source == "task_match"
+      and .local_evidence.metrics.first_reading_focus == "Start with main application setup."
       and .local_evidence.metrics.companion_entrypoint == "src/main.ts"
       and .mcp_first_call.execution_plan_reads_in_reading_plan_order == true
       and .mcp_first_call.current_step_suggested_tool_matches_reading_plan == true
