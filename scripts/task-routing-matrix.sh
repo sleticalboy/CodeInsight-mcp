@@ -11,6 +11,7 @@ CODEINSIGHT_BIN="${CODEINSIGHT_BIN:-}"
 LOCAL_EVIDENCE_SCRIPT="${CODEINSIGHT_LOCAL_REPO_EVIDENCE_SCRIPT:-$ROOT_DIR/scripts/local-repo-evidence.sh}"
 FORCE_INDEX="${CODEINSIGHT_TASK_MATRIX_FORCE_INDEX:-1}"
 TASKS=()
+EXPECTATIONS=()
 
 usage() {
   cat <<'EOF'
@@ -26,6 +27,7 @@ Options:
   --output-dir PATH     Output directory. Default: /tmp/codeinsight-task-routing-matrix.
   --output PATH         Markdown matrix path. Default: <output-dir>/task-routing-matrix.md.
   --summary-json PATH   Machine-readable summary path. Default: <output-dir>/summary.json.
+  --expect TASK=FILE    Assert that TASK selects FILE as the first file. Can be repeated.
   --bin PATH            Use a specific codeinsight binary.
   --no-force-index      Reuse the existing index for the first task too.
   -h, --help            Show this help text.
@@ -84,6 +86,11 @@ parse_args() {
       --summary-json)
         [ "$#" -ge 2 ] || fail "--summary-json requires a path"
         SUMMARY_JSON="$2"
+        shift 2
+        ;;
+      --expect)
+        [ "$#" -ge 2 ] || fail "--expect requires TASK=FILE"
+        EXPECTATIONS+=("$2")
         shift 2
         ;;
       --bin)
@@ -249,6 +256,74 @@ write_summary() {
     fail "summary JSON does not match the task routing matrix contract"
 }
 
+validate_expectations() {
+  if [ "${#EXPECTATIONS[@]}" -eq 0 ]; then
+    return
+  fi
+
+  local expectations_jsonl expectations_json expectation task expected actual status tmp failures
+  expectations_jsonl="$OUTPUT_DIR/expectations.jsonl"
+  expectations_json="$OUTPUT_DIR/expectations.json"
+  : >"$expectations_jsonl"
+
+  for expectation in "${EXPECTATIONS[@]}"; do
+    case "$expectation" in
+      *=*)
+        task="${expectation%%=*}"
+        expected="${expectation#*=}"
+        ;;
+      *)
+        fail "--expect must use TASK=FILE: $expectation"
+        ;;
+    esac
+    if [ -z "$task" ] || [ -z "$expected" ]; then
+      fail "--expect must include non-empty task and file: $expectation"
+    fi
+
+    actual="$(jq -r --arg task "$task" \
+      '.tasks[] | select(.task == $task) | .first_file' "$SUMMARY_JSON")"
+    if [ -z "$actual" ]; then
+      fail "--expect task was not run: $task"
+    fi
+    if [ "$actual" = "$expected" ]; then
+      status="pass"
+    else
+      status="fail"
+    fi
+    jq -n \
+      --arg task "$task" \
+      --arg expected_first_file "$expected" \
+      --arg actual_first_file "$actual" \
+      --arg status "$status" \
+      '{
+        task: $task,
+        expected_first_file: $expected_first_file,
+        actual_first_file: $actual_first_file,
+        status: $status
+      }' >>"$expectations_jsonl"
+  done
+
+  jq -s '.' "$expectations_jsonl" >"$expectations_json"
+  tmp="$SUMMARY_JSON.tmp"
+  jq --slurpfile checks "$expectations_json" \
+    '. + {
+      expectations: {
+        status: (if ($checks[0] | all(.status == "pass")) then "pass" else "fail" end),
+        count: ($checks[0] | length),
+        checks: $checks[0]
+      }
+    }' "$SUMMARY_JSON" >"$tmp"
+  mv "$tmp" "$SUMMARY_JSON"
+
+  failures="$(jq -r '.expectations.checks[] | select(.status == "fail") |
+    "- " + .task + ": expected `" + .expected_first_file + "`, got `" + .actual_first_file + "`"' \
+    "$SUMMARY_JSON")"
+  if [ -n "$failures" ]; then
+    printf "task routing matrix expectation failures:\n%s\n" "$failures" >&2
+    fail "one or more route expectations failed"
+  fi
+}
+
 write_markdown() {
   {
     echo "# CodeInsight Task Routing Matrix"
@@ -271,6 +346,16 @@ write_markdown() {
     jq -r '.tasks[] |
       "- `\(.task)`: read `\(.first_file)` first (rank \(.first_selection_rank)); \(.first_selection_reason)"' \
       "$SUMMARY_JSON"
+    if jq -e '.expectations? | type == "object"' "$SUMMARY_JSON" >/dev/null; then
+      echo
+      echo "## Expectations"
+      echo
+      echo "| Task | Expected first file | Actual first file | Status |"
+      echo "| --- | --- | --- | --- |"
+      jq -r '.expectations.checks[] |
+        "| \(.task) | `\(.expected_first_file)` | `\(.actual_first_file)` | `\(.status)` |"' \
+        "$SUMMARY_JSON"
+    fi
     echo
     echo "## Artifacts"
     echo
@@ -330,6 +415,7 @@ main() {
   done
 
   write_summary "$rows_file"
+  validate_expectations
   write_markdown
 
   echo "task routing matrix written to $OUTPUT_FILE"

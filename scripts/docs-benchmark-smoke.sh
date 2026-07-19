@@ -384,6 +384,12 @@ main() {
     'scripts/task-routing-matrix\.sh /path/to/repo' \
     "task routing matrix doc command"
   require_pattern docs/task-routing-matrix.md \
+    '\-\-expect "understand routing behavior=src/router\.ts"' \
+    "task routing matrix expectation example"
+  require_pattern docs/task-routing-matrix.md \
+    'expectations\.checks\[\]\.actual_first_file' \
+    "task routing matrix expectation JSON contract"
+  require_pattern docs/task-routing-matrix.md \
     '\| understand gin engine routing behavior \| `routergroup\.go` \|' \
     "task routing matrix Gin routing example"
   require_pattern docs/task-routing-matrix.md \
@@ -864,7 +870,7 @@ main() {
     '\| Task alias or seed ordering changed \| `scripts/task-routing-matrix-smoke\.sh` \|' \
     "maintenance task routing matrix smoke chooser"
   require_pattern docs/maintenance-commands.md \
-    'routing, authentication, settings, and startup prompts choose the matching first file' \
+    'routing, authentication, settings, startup, and middleware prompts choose the matching first file and that `--expect` failures are reported' \
     "maintenance task routing matrix smoke scope"
   require_pattern docs/maintenance-commands.md \
     '\| Installed-binary adoption path changed \| `CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/installed-quickstart-smoke\.sh` \|' \
@@ -1394,9 +1400,18 @@ main() {
   require_pattern scripts/task-routing-matrix.sh \
     'first_selection_reason' \
     "task routing matrix selection reason field"
+  require_pattern scripts/task-routing-matrix.sh \
+    '\-\-expect TASK=FILE' \
+    "task routing matrix expect option"
+  require_pattern scripts/task-routing-matrix.sh \
+    'expectations' \
+    "task routing matrix expectations summary"
   require_pattern scripts/task-routing-matrix-smoke.sh \
     'task routing matrix smoke passed' \
     "task routing matrix smoke success output"
+  require_pattern scripts/task-routing-matrix-smoke.sh \
+    'matrix should fail when an expected first file does not match' \
+    "task routing matrix smoke expectation failure"
   require_pattern scripts/task-routing-matrix-smoke.sh \
     'src/router\.ts' \
     "task routing matrix smoke router assertion"

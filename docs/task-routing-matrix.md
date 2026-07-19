@@ -29,6 +29,20 @@ scripts/task-routing-matrix.sh /path/to/repo \
   --output-dir /tmp/codeinsight-task-routing-matrix
 ```
 
+Use expectations when you already know the intended first-read file and want a
+CI gate:
+
+```bash
+scripts/task-routing-matrix.sh /path/to/repo \
+  --task "understand routing behavior" \
+  --task "understand authentication behavior" \
+  --expect "understand routing behavior=src/router.ts" \
+  --expect "understand authentication behavior=src/auth.ts"
+```
+
+Expectation failures return a non-zero exit code after writing the summary, so
+the failed expected/actual pair is still available as an artifact.
+
 The command writes:
 
 - `task-routing-matrix.md`
@@ -50,6 +64,14 @@ Each task row reports:
 - impact risk and impacted file count
 
 The JSON summary is intended for CI artifacts and regression checks.
+When `--expect` is used, it also includes:
+
+- `expectations.status`
+- `expectations.count`
+- `expectations.checks[].task`
+- `expectations.checks[].expected_first_file`
+- `expectations.checks[].actual_first_file`
+- `expectations.checks[].status`
 
 ## Example
 

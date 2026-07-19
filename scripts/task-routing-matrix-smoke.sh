@@ -91,10 +91,12 @@ main() {
   TEMP_DIR="$(mktemp -d)"
   trap cleanup EXIT INT TERM
 
-  local repo output_dir summary_json
+  local repo output_dir summary_json bad_output_dir bad_summary_json
   repo="$TEMP_DIR/repo"
   output_dir="$TEMP_DIR/matrix"
   summary_json="$output_dir/summary.json"
+  bad_output_dir="$TEMP_DIR/matrix-bad"
+  bad_summary_json="$bad_output_dir/summary.json"
   create_fixture "$repo"
 
   CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/task-routing-matrix.sh" "$repo" \
@@ -104,14 +106,30 @@ main() {
     --task "understand authentication behavior" \
     --task "understand application settings" \
     --task "understand startup flow" \
-    --task "understand middleware behavior"
+    --task "understand middleware behavior" \
+    --expect "understand routing behavior=src/router.ts" \
+    --expect "understand authentication behavior=src/auth.ts" \
+    --expect "understand application settings=src/config.ts" \
+    --expect "understand startup flow=src/startup.ts" \
+    --expect "understand middleware behavior=src/application.ts"
 
   require_jq "$summary_json" '.status == "pass" and .task_count == 5' "matrix summary should pass"
+  require_jq "$summary_json" '.expectations.status == "pass" and .expectations.count == 5' "matrix expectations should pass"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand routing behavior" and .first_file == "src/router.ts")' "routing task should choose router"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand authentication behavior" and .first_file == "src/auth.ts")' "authentication task should choose auth"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand application settings" and .first_file == "src/config.ts")' "settings task should choose config"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand startup flow" and .first_file == "src/startup.ts")' "startup task should choose startup"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand middleware behavior" and .first_file == "src/application.ts")' "middleware task should choose application"
+
+  if CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/task-routing-matrix.sh" "$repo" \
+    --output-dir "$bad_output_dir" \
+    --token-budget 1600 \
+    --task "understand routing behavior" \
+    --expect "understand routing behavior=src/auth.ts" >/dev/null 2>&1; then
+    fail "matrix should fail when an expected first file does not match"
+  fi
+  require_jq "$bad_summary_json" '.expectations.status == "fail"' "failed matrix should report expectation failure"
+  require_jq "$bad_summary_json" '.expectations.checks[] | select(.task == "understand routing behavior" and .expected_first_file == "src/auth.ts" and .actual_first_file == "src/router.ts" and .status == "fail")' "failed matrix should report expected and actual first files"
 
   echo "task routing matrix smoke passed"
   echo "summary: $summary_json"
