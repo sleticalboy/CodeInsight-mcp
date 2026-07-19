@@ -75,6 +75,7 @@ Checked-in examples:
 - [Express](task-routing-expectations/express.tsv)
 - [Gin](task-routing-expectations/gin.tsv)
 - [Requests](task-routing-expectations/requests.tsv)
+- [Streamlit](task-routing-expectations/streamlit.tsv)
 
 The command writes:
 

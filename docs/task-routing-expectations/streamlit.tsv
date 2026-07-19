@@ -1,0 +1,2 @@
+understand streamlit server startup flow	lib/streamlit/web/bootstrap.py
+understand configuration settings	lib/streamlit/config.py

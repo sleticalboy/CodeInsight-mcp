@@ -23,7 +23,8 @@ Default adoption path:
 - Task routing expectations:
   [Express](task-routing-expectations/express.tsv),
   [Gin](task-routing-expectations/gin.tsv),
-  [Requests](task-routing-expectations/requests.tsv)
+  [Requests](task-routing-expectations/requests.tsv),
+  [Streamlit](task-routing-expectations/streamlit.tsv)
 - [CodeInsight self adoption report](adoption-report-codeinsight.md)
 - [Express adoption case](adoption-case-express.md)
 - [Gin adoption case](adoption-case-gin.md)
