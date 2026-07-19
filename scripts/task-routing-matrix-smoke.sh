@@ -91,27 +91,31 @@ main() {
   TEMP_DIR="$(mktemp -d)"
   trap cleanup EXIT INT TERM
 
-  local repo output_dir summary_json bad_output_dir bad_summary_json
+  local repo output_dir summary_json bad_output_dir bad_summary_json expectations_tsv bad_expectations_json
   repo="$TEMP_DIR/repo"
   output_dir="$TEMP_DIR/matrix"
   summary_json="$output_dir/summary.json"
   bad_output_dir="$TEMP_DIR/matrix-bad"
   bad_summary_json="$bad_output_dir/summary.json"
+  expectations_tsv="$TEMP_DIR/expectations.tsv"
+  bad_expectations_json="$TEMP_DIR/bad-expectations.json"
   create_fixture "$repo"
+  write_file "$expectations_tsv" 'understand routing behavior	src/router.ts
+understand authentication behavior	src/auth.ts
+understand application settings	src/config.ts
+understand startup flow	src/startup.ts
+understand middleware behavior	src/application.ts'
+  write_file "$bad_expectations_json" '[
+  {
+    "task": "understand routing behavior",
+    "expected_first_file": "src/auth.ts"
+  }
+]'
 
   CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/task-routing-matrix.sh" "$repo" \
     --output-dir "$output_dir" \
     --token-budget 1600 \
-    --task "understand routing behavior" \
-    --task "understand authentication behavior" \
-    --task "understand application settings" \
-    --task "understand startup flow" \
-    --task "understand middleware behavior" \
-    --expect "understand routing behavior=src/router.ts" \
-    --expect "understand authentication behavior=src/auth.ts" \
-    --expect "understand application settings=src/config.ts" \
-    --expect "understand startup flow=src/startup.ts" \
-    --expect "understand middleware behavior=src/application.ts"
+    --expect-file "$expectations_tsv"
 
   require_jq "$summary_json" '.status == "pass" and .task_count == 5' "matrix summary should pass"
   require_jq "$summary_json" '.expectations.status == "pass" and .expectations.count == 5' "matrix expectations should pass"
@@ -124,8 +128,7 @@ main() {
   if CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/task-routing-matrix.sh" "$repo" \
     --output-dir "$bad_output_dir" \
     --token-budget 1600 \
-    --task "understand routing behavior" \
-    --expect "understand routing behavior=src/auth.ts" >/dev/null 2>&1; then
+    --expect-file "$bad_expectations_json" >/dev/null 2>&1; then
     fail "matrix should fail when an expected first file does not match"
   fi
   require_jq "$bad_summary_json" '.expectations.status == "fail"' "failed matrix should report expectation failure"

@@ -40,6 +40,33 @@ scripts/task-routing-matrix.sh /path/to/repo \
   --expect "understand authentication behavior=src/auth.ts"
 ```
 
+For longer matrices, put the expectations in a file. Line-based files can use
+`TASK=FILE` or tab-separated `TASK<TAB>FILE` rows:
+
+```text
+understand routing behavior	src/router.ts
+understand authentication behavior	src/auth.ts
+```
+
+Then run:
+
+```bash
+scripts/task-routing-matrix.sh /path/to/repo \
+  --expect-file ./route-expectations.tsv
+```
+
+JSON expectation files are also supported:
+
+```json
+[
+  {
+    "task": "understand routing behavior",
+    "expected_first_file": "src/router.ts"
+  }
+]
+```
+
+Expectation files automatically add their tasks to the matrix.
 Expectation failures return a non-zero exit code after writing the summary, so
 the failed expected/actual pair is still available as an artifact.
 
@@ -64,7 +91,7 @@ Each task row reports:
 - impact risk and impacted file count
 
 The JSON summary is intended for CI artifacts and regression checks.
-When `--expect` is used, it also includes:
+When `--expect` or `--expect-file` is used, it also includes:
 
 - `expectations.status`
 - `expectations.count`

@@ -387,6 +387,12 @@ main() {
     '\-\-expect "understand routing behavior=src/router\.ts"' \
     "task routing matrix expectation example"
   require_pattern docs/task-routing-matrix.md \
+    '\-\-expect-file \./route-expectations\.tsv' \
+    "task routing matrix expectation file example"
+  require_pattern docs/task-routing-matrix.md \
+    'Expectation files automatically add their tasks to the matrix' \
+    "task routing matrix expectation file task loading"
+  require_pattern docs/task-routing-matrix.md \
     'expectations\.checks\[\]\.actual_first_file' \
     "task routing matrix expectation JSON contract"
   require_pattern docs/task-routing-matrix.md \
@@ -672,6 +678,9 @@ main() {
     'scripts/task-routing-matrix\.sh /path/to/repo' \
     "README task routing matrix command"
   require_pattern README.md \
+    '\-\-expect-file \./route-expectations\.tsv' \
+    "README task routing matrix expectation file"
+  require_pattern README.md \
     'Pick the validation that matches your adoption stage:' \
     "README validation chooser"
   require_pattern README.md \
@@ -692,6 +701,9 @@ main() {
   require_pattern docs/quickstart.md \
     'scripts/task-routing-matrix\.sh /path/to/repo' \
     "quickstart task routing matrix command"
+  require_pattern docs/quickstart.md \
+    '\-\-expect-file \./route-expectations\.tsv' \
+    "quickstart task routing matrix expectation file"
   require_pattern docs/adoption-checklist.md \
     'scripts/two-minute-demo\.sh' \
     "adoption two-minute demo command"
@@ -870,7 +882,7 @@ main() {
     '\| Task alias or seed ordering changed \| `scripts/task-routing-matrix-smoke\.sh` \|' \
     "maintenance task routing matrix smoke chooser"
   require_pattern docs/maintenance-commands.md \
-    'routing, authentication, settings, startup, and middleware prompts choose the matching first file and that `--expect` failures are reported' \
+    'routing, authentication, settings, startup, and middleware prompts choose the matching first file and that `--expect-file` failures are reported' \
     "maintenance task routing matrix smoke scope"
   require_pattern docs/maintenance-commands.md \
     '\| Installed-binary adoption path changed \| `CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/installed-quickstart-smoke\.sh` \|' \
@@ -1404,8 +1416,14 @@ main() {
     '\-\-expect TASK=FILE' \
     "task routing matrix expect option"
   require_pattern scripts/task-routing-matrix.sh \
+    '\-\-expect-file PATH' \
+    "task routing matrix expect-file option"
+  require_pattern scripts/task-routing-matrix.sh \
     'expectations' \
     "task routing matrix expectations summary"
+  require_pattern scripts/task-routing-matrix-smoke.sh \
+    'bad-expectations\.json' \
+    "task routing matrix smoke JSON expectation file"
   require_pattern scripts/task-routing-matrix-smoke.sh \
     'task routing matrix smoke passed' \
     "task routing matrix smoke success output"

@@ -12,6 +12,7 @@ LOCAL_EVIDENCE_SCRIPT="${CODEINSIGHT_LOCAL_REPO_EVIDENCE_SCRIPT:-$ROOT_DIR/scrip
 FORCE_INDEX="${CODEINSIGHT_TASK_MATRIX_FORCE_INDEX:-1}"
 TASKS=()
 EXPECTATIONS=()
+EXPECTATION_FILES=()
 
 usage() {
   cat <<'EOF'
@@ -28,6 +29,8 @@ Options:
   --output PATH         Markdown matrix path. Default: <output-dir>/task-routing-matrix.md.
   --summary-json PATH   Machine-readable summary path. Default: <output-dir>/summary.json.
   --expect TASK=FILE    Assert that TASK selects FILE as the first file. Can be repeated.
+  --expect-file PATH    Read expectations from PATH and add those tasks to the matrix.
+                        Supports JSON array objects or line-based TASK=FILE / TSV.
   --bin PATH            Use a specific codeinsight binary.
   --no-force-index      Reuse the existing index for the first task too.
   -h, --help            Show this help text.
@@ -65,7 +68,7 @@ parse_args() {
         ;;
       --task)
         [ "$#" -ge 2 ] || fail "--task requires text"
-        TASKS+=("$2")
+        add_task "$2"
         shift 2
         ;;
       --token-budget)
@@ -90,7 +93,12 @@ parse_args() {
         ;;
       --expect)
         [ "$#" -ge 2 ] || fail "--expect requires TASK=FILE"
-        EXPECTATIONS+=("$2")
+        add_expectation "$2"
+        shift 2
+        ;;
+      --expect-file)
+        [ "$#" -ge 2 ] || fail "--expect-file requires a path"
+        EXPECTATION_FILES+=("$2")
         shift 2
         ;;
       --bin)
@@ -118,6 +126,89 @@ parse_args() {
         ;;
     esac
   done
+}
+
+add_task() {
+  local task="$1"
+
+  if [ -z "$task" ]; then
+    fail "task must not be empty"
+  fi
+  local existing
+  if [ "${#TASKS[@]}" -gt 0 ]; then
+    for existing in "${TASKS[@]}"; do
+      if [ "$existing" = "$task" ]; then
+        return
+      fi
+    done
+  fi
+  TASKS+=("$task")
+}
+
+add_expectation() {
+  local expectation="$1"
+  local task expected
+
+  case "$expectation" in
+    *=*)
+      task="${expectation%%=*}"
+      expected="${expectation#*=}"
+      ;;
+    *)
+      fail "expectation must use TASK=FILE: $expectation"
+      ;;
+  esac
+  if [ -z "$task" ] || [ -z "$expected" ]; then
+    fail "expectation must include non-empty task and file: $expectation"
+  fi
+  add_task "$task"
+  EXPECTATIONS+=("$task=$expected")
+}
+
+load_expectation_file() {
+  local file="$1"
+
+  if [ ! -f "$file" ]; then
+    fail "expectation file does not exist: $file"
+  fi
+
+  case "$file" in
+    *.json)
+      jq -e '
+        type == "array"
+        and all(.[]; (.task | type == "string" and length > 0)
+          and (((.expected_first_file // .first_file) | type == "string") and ((.expected_first_file // .first_file) | length > 0)))
+      ' "$file" >/dev/null ||
+        fail "JSON expectation file must be an array of objects with task and expected_first_file or first_file: $file"
+      while IFS= read -r expectation; do
+        add_expectation "$expectation"
+      done < <(jq -r '.[] | .task + "=" + (.expected_first_file // .first_file)' "$file")
+      ;;
+    *)
+      local line task expected
+      while IFS= read -r line || [ -n "$line" ]; do
+        case "$line" in
+          ''|'#'*) continue ;;
+        esac
+        if [[ "$line" == *$'\t'* ]]; then
+          task="${line%%$'\t'*}"
+          expected="${line#*$'\t'}"
+          add_expectation "$task=$expected"
+        else
+          add_expectation "$line"
+        fi
+      done <"$file"
+      ;;
+  esac
+}
+
+load_expectation_files() {
+  local file
+  if [ "${#EXPECTATION_FILES[@]}" -gt 0 ]; then
+    for file in "${EXPECTATION_FILES[@]}"; do
+      load_expectation_file "$file"
+    done
+  fi
 }
 
 slugify_task() {
@@ -386,6 +477,8 @@ main() {
   if [ "$TOKEN_BUDGET" -le 0 ]; then
     fail "--token-budget must be greater than zero"
   fi
+
+  load_expectation_files
 
   if [ "${#TASKS[@]}" -eq 0 ]; then
     TASKS=(
