@@ -177,7 +177,7 @@ main() {
     'MCP suggested tool executed: `true`' \
     "README adoption MCP suggested tool signal"
   require_pattern README.md \
-    'MCP first-call contract: reading_order=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`' \
+    'MCP first-call contract: reading_order=`true`, current_reading_step=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`' \
     "README adoption MCP first-call contract signal"
   require_pattern README.md \
     'First-read gating: suggested_tool_after_selected_context=`true`, continuation_after_selected_context=`true`, impact_review_before_edits=`true`' \

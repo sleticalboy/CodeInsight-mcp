@@ -259,7 +259,7 @@ and `/tmp/codeinsight-adoption-evidence/issue-template.md`, then prints this cop
 - Continuation next action: `<next_action>`
 - First omitted candidate: `<file-or-none>`
 - MCP server: `codeinsight`
-- MCP first-call contract: reading_order=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`
+- MCP first-call contract: reading_order=`true`, current_reading_step=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`
 - First-read gating: suggested_tool_after_selected_context=`true`, continuation_after_selected_context=`true`, impact_review_before_edits=`true`
 - MCP suggested tool executed: `true`
 - MCP impact status: `complete`

@@ -124,6 +124,7 @@ cat >"$output_dir/summary.json" <<JSON
   "task": "$task",
   "mcp_first_call": {
     "execution_plan_reads_in_reading_plan_order": true,
+    "current_reading_step_matches_reading_plan": true,
     "current_step_suggested_tool_matches_reading_plan": true,
     "continuation_after_selected_context": true
   },
@@ -201,6 +202,7 @@ EOF
   jq -e \
     '.status == "pass"
       and .mcp_first_call.execution_plan_reads_in_reading_plan_order == true
+      and .mcp_first_call.current_reading_step_matches_reading_plan == true
       and .mcp_first_call.current_step_suggested_tool_matches_reading_plan == true
       and .mcp_first_call.continuation_after_selected_context == true
       and .first_read_gating.suggested_tool_after_selected_context == true

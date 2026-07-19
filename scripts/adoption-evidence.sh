@@ -168,7 +168,7 @@ write_markdown_summary() {
     echo "- Impact risk: \`$(json_value "$local_summary" '.metrics.risk_level')\`"
     echo "- Impacted files: \`$(json_value "$local_summary" '.metrics.impacted_files')\`"
     echo "- MCP server: \`$(json_value "$mcp_summary" '.server')\`"
-    echo "- MCP first-call contract: reading_order=\`$(json_value "$mcp_summary" '.execution_plan_reads_in_reading_plan_order')\`, suggested_tool_handoff=\`$(json_value "$mcp_summary" '.current_step_suggested_tool_matches_reading_plan')\`, continuation_after_selected_context=\`$(json_value "$mcp_summary" '.continuation_after_selected_context')\`"
+    echo "- MCP first-call contract: reading_order=\`$(json_value "$mcp_summary" '.execution_plan_reads_in_reading_plan_order')\`, current_reading_step=\`$(json_value "$mcp_summary" '.current_reading_step_matches_reading_plan')\`, suggested_tool_handoff=\`$(json_value "$mcp_summary" '.current_step_suggested_tool_matches_reading_plan')\`, continuation_after_selected_context=\`$(json_value "$mcp_summary" '.continuation_after_selected_context')\`"
     echo "- First-read gating: suggested_tool_after_selected_context=\`$(json_value "$mcp_summary" '(.execution_plan_reads_in_reading_plan_order == true and .current_step_suggested_tool_matches_reading_plan == true and .suggested_tool_executed == true)')\`, continuation_after_selected_context=\`$(json_value "$mcp_summary" '.continuation_after_selected_context')\`, impact_review_before_edits=\`$(json_value "$mcp_summary" '((.execution_plan_actions | index("review_impact_before_edits")) != null and .impact_status == "complete")')\`"
     echo "- MCP suggested tool executed: \`$(json_value "$mcp_summary" '.suggested_tool_executed')\`"
     echo "- MCP impact status: \`$(json_value "$mcp_summary" '.impact_status')\`"
@@ -258,6 +258,7 @@ write_summary_json() {
       and .local_evidence.route_tools == ["index_project", "project_overview", "context_pack", "impact_analysis"]
       and .mcp_first_call.route_tools == ["index_project", "project_overview", "context_pack", "impact_analysis"]
       and .mcp_first_call.execution_plan_reads_in_reading_plan_order == true
+      and .mcp_first_call.current_reading_step_matches_reading_plan == true
       and .mcp_first_call.current_step_suggested_tool_matches_reading_plan == true
       and .mcp_first_call.continuation_after_selected_context == true
       and .mcp_first_call.suggested_tool_executed == true
@@ -285,7 +286,7 @@ print_snippet() {
 - First reading focus: $(json_value "$summary_json" '.local_evidence.metrics.first_reading_focus')
 - First reading question: $(json_value "$summary_json" '.local_evidence.metrics.first_reading_question')
 - MCP server: \`$(json_value "$summary_json" '.mcp_first_call.server')\`
-- MCP first-call contract: reading_order=\`$(json_value "$summary_json" '.mcp_first_call.execution_plan_reads_in_reading_plan_order')\`, suggested_tool_handoff=\`$(json_value "$summary_json" '.mcp_first_call.current_step_suggested_tool_matches_reading_plan')\`, continuation_after_selected_context=\`$(json_value "$summary_json" '.mcp_first_call.continuation_after_selected_context')\`
+- MCP first-call contract: reading_order=\`$(json_value "$summary_json" '.mcp_first_call.execution_plan_reads_in_reading_plan_order')\`, current_reading_step=\`$(json_value "$summary_json" '.mcp_first_call.current_reading_step_matches_reading_plan')\`, suggested_tool_handoff=\`$(json_value "$summary_json" '.mcp_first_call.current_step_suggested_tool_matches_reading_plan')\`, continuation_after_selected_context=\`$(json_value "$summary_json" '.mcp_first_call.continuation_after_selected_context')\`
 - First-read gating: suggested_tool_after_selected_context=\`$(json_value "$summary_json" '.first_read_gating.suggested_tool_after_selected_context')\`, continuation_after_selected_context=\`$(json_value "$summary_json" '.first_read_gating.continuation_after_selected_context')\`, impact_review_before_edits=\`$(json_value "$summary_json" '.first_read_gating.impact_review_before_edits')\`
 - MCP suggested tool executed: \`$(json_value "$summary_json" '.mcp_first_call.suggested_tool_executed')\`
 - MCP impact status: \`$(json_value "$summary_json" '.mcp_first_call.impact_status')\`

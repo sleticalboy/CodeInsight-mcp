@@ -155,7 +155,7 @@ main() {
     'executes `agent_route\.execution_plan\[\]\.suggested_tool`' \
     "README MCP suggested tool execution evidence"
   require_pattern README.md \
-    'MCP first-call contract: reading_order=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`' \
+    'MCP first-call contract: reading_order=`true`, current_reading_step=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`' \
     "README MCP first-call contract evidence"
   require_pattern README.md \
     '\[CodeInsight self adoption report\]\(docs/adoption-report-codeinsight\.md\)' \

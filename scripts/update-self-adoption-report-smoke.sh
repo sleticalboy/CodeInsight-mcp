@@ -109,6 +109,7 @@ cat >"$summary_path" <<JSON
     "server": "codeinsight",
     "route_tools": ["index_project", "project_overview", "context_pack", "impact_analysis"],
     "execution_plan_reads_in_reading_plan_order": true,
+    "current_reading_step_matches_reading_plan": true,
     "current_step_suggested_tool_matches_reading_plan": true,
     "continuation_after_selected_context": true,
     "suggested_tool_executed": true,
@@ -183,6 +184,8 @@ EOF
     fail "missing reduction metric"
   grep -Fq '| First reading focus | Start with Rust entrypoint wiring. |' "$TEMP_DIR/adoption-report-codeinsight.md" ||
     fail "missing first reading focus"
+  grep -Fq '| Current reading step mirrors reading plan | `true` |' "$TEMP_DIR/adoption-report-codeinsight.md" ||
+    fail "missing current reading step mirror metric"
   grep -Fq -- '- First reading focus: Start with Rust entrypoint wiring.' "$TEMP_DIR/adoption-report-codeinsight.md" ||
     fail "missing generated snippet first reading focus"
   grep -Fq 'The generated manifest reported `status: pass` and listed the same 13 files' "$TEMP_DIR/adoption-report-codeinsight.md" ||
