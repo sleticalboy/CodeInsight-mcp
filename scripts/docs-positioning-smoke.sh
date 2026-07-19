@@ -161,6 +161,9 @@ main() {
     'MCP first-call contract: reading_order=`true`, current_reading_step=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`' \
     "README MCP first-call contract evidence"
   require_pattern README.md \
+    'Use `agent_route\.current_reading_step` as the first checklist row' \
+    "README MCP tools current reading step flow"
+  require_pattern README.md \
     '\[CodeInsight self adoption report\]\(docs/adoption-report-codeinsight\.md\)' \
     "README self adoption report evidence"
 

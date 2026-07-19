@@ -419,9 +419,11 @@ Recommended MCP first-read flow:
 
 1. Call `agent_route` with `root`, `task`, and `token_budget` for the default
    first-read path.
-2. Read `context_pack.files[]` in `reading_plan[]` order, using
-   `reading_plan[].selection_rank` and `selection_reason` as the audit trail.
-3. Use `continuation_summary` only after selected context has been consumed.
+2. Use `agent_route.current_reading_step` as the first checklist row, then read
+   `context_pack.files[]` in `reading_plan[]` order.
+3. Use `reading_plan[].selection_rank` and `selection_reason` as the audit
+   trail, and use `continuation_summary` only after selected context has been
+   consumed.
 4. Use `index_project`, `project_overview`, `context_pack`, and
    `impact_analysis` directly when the client needs custom routing or partial
    refresh control.
