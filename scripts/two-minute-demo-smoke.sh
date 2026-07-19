@@ -71,6 +71,17 @@ cat <<'JSON'
   "impact_seed_files": ["src/main.rs"],
   "impact_seed_symbols": [],
   "impact_status": "complete",
+  "current_reading_step": {
+    "order": 1,
+    "file": "src/main.rs",
+    "focus": "Start with seed file context and primary symbols.",
+    "next_action": "inspect_seed_file",
+    "question": "What entrypoints or setup code define the main flow here?",
+    "reason": "Read this step to answer: What entrypoints or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: src/main.rs",
+    "selection_rank": 1,
+    "selection_reason": "Selected for high relevance via seed_file: Seed file header and imports for task: src/main.rs",
+    "suggested_tool": {"tool": "file_outline"}
+  },
   "index_report": {
     "root": "/tmp/demo",
     "schema_version": 1,
@@ -195,6 +206,8 @@ EOF
     fail "missing first reading file metric"
   grep -Fq 'reading_order_contract: true' "$TEMP_DIR/output.log" ||
     fail "missing reading order contract metric"
+  grep -Fq 'current_reading_step_contract: true' "$TEMP_DIR/output.log" ||
+    fail "missing current reading step contract metric"
   grep -Fq 'suggested_tool_handoff_contract: true' "$TEMP_DIR/output.log" ||
     fail "missing suggested tool handoff contract metric"
   grep -Fq 'continuation_timing_contract: true' "$TEMP_DIR/output.log" ||
@@ -219,7 +232,7 @@ EOF
     fail "missing evidence summary reading question"
   grep -Fq 'The first selected file is src/main.rs; reading_plan starts at src/main.rs as candidate rank 1.' "$TEMP_DIR/output.log" ||
     fail "missing evidence summary first reading file"
-  grep -Fq 'Execution contract: reading_order=true, suggested_tool_handoff=true, continuation_after_selected_context=true.' "$TEMP_DIR/output.log" ||
+  grep -Fq 'Execution contract: reading_order=true, current_reading_step=true, suggested_tool_handoff=true, continuation_after_selected_context=true.' "$TEMP_DIR/output.log" ||
     fail "missing evidence summary execution contract"
   grep -Fq 'Selection evidence: Selected for high relevance via seed_file: Seed file header and imports for task: src/main.rs' "$TEMP_DIR/output.log" ||
     fail "missing evidence summary selection evidence"
@@ -241,6 +254,8 @@ EOF
     fail "missing reading reason talk track"
   grep -Fq 'Reading order contract is true; execution_plan[0].files follows reading_plan[] order.' "$TEMP_DIR/output.log" ||
     fail "missing reading order contract talk track"
+  grep -Fq 'Current reading step contract is true; agent_route.current_reading_step mirrors reading_plan[0].' "$TEMP_DIR/output.log" ||
+    fail "missing current reading step contract talk track"
   grep -Fq 'Suggested-tool handoff contract is true; execution_plan[1] points to the current reading step.' "$TEMP_DIR/output.log" ||
     fail "missing suggested tool handoff contract talk track"
   grep -Fq 'Continuation timing contract is true; continuation is only considered after selected context is read.' "$TEMP_DIR/output.log" ||

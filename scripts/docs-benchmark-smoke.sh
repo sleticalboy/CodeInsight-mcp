@@ -1749,6 +1749,9 @@ main() {
     'reading_order_contract' \
     "two-minute demo reading order contract metric"
   require_pattern scripts/two-minute-demo.sh \
+    'current_reading_step_contract' \
+    "two-minute demo current reading step contract metric"
+  require_pattern scripts/two-minute-demo.sh \
     'suggested_tool_handoff_contract' \
     "two-minute demo suggested tool handoff contract metric"
   require_pattern scripts/two-minute-demo.sh \
@@ -1757,6 +1760,9 @@ main() {
   require_pattern scripts/two-minute-demo.sh \
     'execution_plan\[0\]\.files follows reading_plan\[\] order' \
     "two-minute demo reading order contract talk track"
+  require_pattern scripts/two-minute-demo.sh \
+    'agent_route\.current_reading_step mirrors reading_plan\[0\]' \
+    "two-minute demo current reading step contract talk track"
   require_pattern scripts/two-minute-demo.sh \
     'execution_plan\[1\] points to the current reading step' \
     "two-minute demo suggested tool handoff talk track"

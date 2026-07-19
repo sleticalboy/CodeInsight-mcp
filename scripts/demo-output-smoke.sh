@@ -77,6 +77,9 @@ main() {
     'reading_order_contract: true' \
     "reading order contract metric"
   require_pattern docs/demo-output.md \
+    'current_reading_step_contract: true' \
+    "current reading step contract metric"
+  require_pattern docs/demo-output.md \
     'suggested_tool_handoff_contract: true' \
     "suggested tool handoff contract metric"
   require_pattern docs/demo-output.md \
@@ -122,7 +125,7 @@ main() {
     'reading_plan starts at .* as candidate rank [0-9]+\.' \
     "evidence summary first reading rank"
   require_pattern docs/demo-output.md \
-    'Execution contract: reading_order=true, suggested_tool_handoff=true, continuation_after_selected_context=true\.' \
+    'Execution contract: reading_order=true, current_reading_step=true, suggested_tool_handoff=true, continuation_after_selected_context=true\.' \
     "evidence summary execution contract"
   require_pattern docs/demo-output.md \
     'Selection evidence: Selected for high relevance' \
@@ -163,6 +166,9 @@ main() {
   require_pattern docs/demo-output.md \
     'Reading order contract is true; execution_plan\[0\]\.files follows reading_plan\[\] order\.' \
     "reading order contract talk track"
+  require_pattern docs/demo-output.md \
+    'Current reading step contract is true; agent_route\.current_reading_step mirrors reading_plan\[0\]\.' \
+    "current reading step contract talk track"
   require_pattern docs/demo-output.md \
     'Suggested-tool handoff contract is true; execution_plan\[1\] points to the current reading step\.' \
     "suggested tool handoff contract talk track"

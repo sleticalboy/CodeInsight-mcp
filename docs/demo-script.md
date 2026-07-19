@@ -122,6 +122,7 @@ Promise: route the agent through agent_route before edits.
    first_context_file: src/tools.rs
    first_reading_file: src/tools.rs
    reading_order_contract: true
+   current_reading_step_contract: true
    suggested_tool_handoff_contract: true
    continuation_timing_contract: true
    line_reduction: 98.6%
@@ -141,7 +142,7 @@ agent_route selected 423/29931 source lines (98.6% reduction) across 6 files.
 First reading focus: Start with seed file context and primary symbols.
 First reading question: What entrypoints, exported symbols, or setup code define the main flow here?
 The first selected file is src/tools.rs; reading_plan starts at src/tools.rs as candidate rank 1.
-Execution contract: reading_order=true, suggested_tool_handoff=true, continuation_after_selected_context=true.
+Execution contract: reading_order=true, current_reading_step=true, suggested_tool_handoff=true, continuation_after_selected_context=true.
 Selection evidence: Selected for high relevance via seed_file: Seed file header and imports for task: src/tools.rs
 Continuation: status=complete, next_action=read_selected_context.
 Next follow-up candidate: none before selected context is read.
@@ -158,8 +159,9 @@ Before edits, impact_analysis reports high risk across 7 impacted files.
 7. The first reading-plan question is: What entrypoints, exported symbols, or setup code define the main flow here?
 8. The first reading-plan action is inspect_seed_file; the selected context reduced source reading by 98.6%; selected 6 files, 11 ranges, and 6 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context
 9. Reading order contract is true; execution_plan[0].files follows reading_plan[] order.
-10. Suggested-tool handoff contract is true; execution_plan[1] points to the current reading step.
-11. Continuation timing contract is true; continuation is only considered after selected context is read.
+10. Current reading step contract is true; agent_route.current_reading_step mirrors reading_plan[0].
+11. Suggested-tool handoff contract is true; execution_plan[1] points to the current reading step.
+12. Continuation timing contract is true; continuation is only considered after selected context is read.
 ```
 
 Exact numbers vary by repository and current source state. The important point
