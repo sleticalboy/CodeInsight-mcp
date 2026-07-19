@@ -10,7 +10,7 @@ source "$ROOT_DIR/scripts/smoke-lib.sh"
 cleanup() {
   local file
 
-  for file in "${TEMP_FILES[@]}"; do
+  for file in ${TEMP_FILES[@]+"${TEMP_FILES[@]}"}; do
     rm -f "$file"
   done
 }
@@ -24,12 +24,20 @@ context_pack_quality_smoke() {
   scripts/context-pack-quality-smoke.sh --summary-json "$summary_json"
   jq -e \
     '.status == "pass"
-      and .scenarios_passed == 8
-      and (.scenarios | length) == 8
+      and .scenarios_passed == 9
+      and (.scenarios | length) == 9
+      and .question_checks_passed == 5
+      and (.question_checks | length) == 5
       and all(.scenarios[]; .status == "pass")
       and (.scenarios[] | select(.name == "budget_continuation"))
       and (.scenarios[] | select(.name == "minimum_budget"))
-      and (.scenarios[] | select(.name == "token_exhaustion"))' \
+      and (.scenarios[] | select(.name == "token_exhaustion"))
+      and (.scenarios[] | select(.name == "task_aware_question_coverage"))
+      and (.question_checks[] | select(.name == "seed_file_auth_question"))
+      and (.question_checks[] | select(.name == "call_graph_auth_question"))
+      and (.question_checks[] | select(.name == "reference_auth_question"))
+      and (.question_checks[] | select(.name == "dependency_auth_question"))
+      and (.question_checks[] | select(.name == "semantic_session_cookie_question"))' \
     "$summary_json" >/dev/null
 }
 

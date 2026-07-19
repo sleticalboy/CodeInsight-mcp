@@ -5,7 +5,9 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CODEINSIGHT_BIN="${CODEINSIGHT_BIN:-}"
 TEMP_DIR=""
 SCENARIOS_PASSED=0
+QUESTION_CHECKS_PASSED=0
 SCENARIO_RESULTS_FILE=""
+QUESTION_CHECKS_FILE=""
 SUMMARY_JSON=""
 
 cleanup() {
@@ -126,28 +128,56 @@ record_scenario() {
     "$file" >>"$SCENARIO_RESULTS_FILE"
 }
 
+record_question_check() {
+  local name="$1"
+  local file="$2"
+  local step_query="$3"
+
+  jq -c \
+    --arg name "$name" \
+    "$step_query as \$step
+      | {
+        name: \$name,
+        status: \"pass\",
+        file: \$step.file,
+        next_action: \$step.next_action,
+        question: \$step.question,
+        suggested_tool: \$step.suggested_tool.tool
+      }" \
+    "$file" >>"$QUESTION_CHECKS_FILE"
+}
+
 write_summary_json() {
   if [ -z "$SUMMARY_JSON" ]; then
     return
   fi
 
   mkdir -p "$(dirname "$SUMMARY_JSON")"
-  jq -s \
+  jq -n \
     --arg status "pass" \
     --argjson scenarios_passed "$SCENARIOS_PASSED" \
+    --argjson question_checks_passed "$QUESTION_CHECKS_PASSED" \
+    --slurpfile scenarios "$SCENARIO_RESULTS_FILE" \
+    --slurpfile question_checks "$QUESTION_CHECKS_FILE" \
     '{
       status: $status,
       scenarios_passed: $scenarios_passed,
-      scenarios: .
+      scenarios: $scenarios,
+      question_checks_passed: $question_checks_passed,
+      question_checks: $question_checks
     }' \
-    "$SCENARIO_RESULTS_FILE" >"$SUMMARY_JSON"
+    >"$SUMMARY_JSON"
 
   if ! jq -e \
     --argjson expected "$SCENARIOS_PASSED" \
+    --argjson expected_question_checks "$QUESTION_CHECKS_PASSED" \
     '.status == "pass"
       and .scenarios_passed == $expected
       and (.scenarios | length) == $expected
-      and all(.scenarios[]; .status == "pass")' \
+      and all(.scenarios[]; .status == "pass")
+      and .question_checks_passed == $expected_question_checks
+      and (.question_checks | length) == $expected_question_checks
+      and all(.question_checks[]; .status == "pass")' \
     "$SUMMARY_JSON" >/dev/null; then
     fail "summary JSON failed contract validation: $SUMMARY_JSON"
   fi
@@ -499,6 +529,153 @@ run_token_exhaustion_scenario() {
   echo "  pass: token exhaustion ($(json_value "$context_json" '.budget.selected_files') files truncated)"
 }
 
+write_question_coverage_fixture() {
+  local root="$1"
+
+  mkdir -p "$root/src" "$root/app"
+  cat >"$root/src/auth.ts" <<'EOF'
+export function authenticate() {
+  return true;
+}
+EOF
+  cat >"$root/src/router.ts" <<'EOF'
+import { authenticate } from "./auth";
+
+export function route() {
+  return authenticate();
+}
+EOF
+  cat >"$root/src/tokens.ts" <<'EOF'
+export const AUTH_TOKEN = "x-session";
+EOF
+  cat >"$root/src/session.ts" <<'EOF'
+import { AUTH_TOKEN } from "./tokens";
+
+export const sessionHeader = AUTH_TOKEN;
+EOF
+  cat >"$root/src/auth_notes.py" <<'EOF'
+# Session cookie behavior note.
+# Refresh cookie expiry should stay aligned with login state.
+EOF
+  cat >"$root/src/auth_service.py" <<'EOF'
+class AuthService:
+    def login(self):
+        return "ok"
+EOF
+  cat >"$root/app/main.py" <<'EOF'
+from . import support
+
+class Entry:
+    def render(self):
+        return support.helper()
+EOF
+  cat >"$root/app/support.py" <<'EOF'
+def helper():
+    return "ok"
+EOF
+}
+
+run_question_coverage_scenario() {
+  local project="$TEMP_DIR/question-coverage"
+  local seed_json="$TEMP_DIR/question-seed-context.json"
+  local call_json="$TEMP_DIR/question-call-context.json"
+  local reference_json="$TEMP_DIR/question-reference-context.json"
+  local dependency_json="$TEMP_DIR/question-dependency-context.json"
+  local semantic_json="$TEMP_DIR/question-semantic-context.json"
+
+  write_question_coverage_fixture "$project"
+  "$CODEINSIGHT_BIN" index "$project" --force >"$TEMP_DIR/question-coverage-index.json"
+  require_jq "$TEMP_DIR/question-coverage-index.json" '.indexed_files == 8' \
+    "question coverage fixture should index eight files"
+
+  "$CODEINSIGHT_BIN" context-pack "$project" \
+    --task "understand authentication session behavior" \
+    --file src/auth.ts \
+    --token-budget 1200 \
+    >"$seed_json"
+  require_jq "$seed_json" \
+    '.reading_plan[0].next_action == "inspect_seed_file"
+      and (.reading_plan[0].question | contains("authentication decisions"))
+      and (.reading_plan[0].question | contains("session boundaries"))' \
+    "seed reading question should be authentication-aware"
+  QUESTION_CHECKS_PASSED=$((QUESTION_CHECKS_PASSED + 1))
+  record_question_check "seed_file_auth_question" "$seed_json" '.reading_plan[0]'
+
+  "$CODEINSIGHT_BIN" context-pack "$project" \
+    --task "understand authentication call path" \
+    --symbol authenticate \
+    --token-budget 1600 \
+    >"$call_json"
+  require_jq "$call_json" \
+    '.reading_plan[]
+      | select(.file == "src/router.ts"
+        and .next_action == "follow_call_graph"
+        and (.question | contains("authentication decisions"))
+        and (.question | contains("session state")))' \
+    "call graph reading question should be authentication-aware"
+  QUESTION_CHECKS_PASSED=$((QUESTION_CHECKS_PASSED + 1))
+  record_question_check "call_graph_auth_question" "$call_json" \
+    '.reading_plan[] | select(.file == "src/router.ts")'
+
+  "$CODEINSIGHT_BIN" context-pack "$project" \
+    --task "understand authentication session token usage" \
+    --symbol AUTH_TOKEN \
+    --token-budget 1600 \
+    >"$reference_json"
+  require_jq "$reference_json" \
+    '.reading_plan[]
+      | select(.file == "src/session.ts"
+        and .next_action == "inspect_references"
+        and (.question | contains("authentication decisions"))
+        and (.question | contains("session state")))' \
+    "reference reading question should be authentication-aware"
+  QUESTION_CHECKS_PASSED=$((QUESTION_CHECKS_PASSED + 1))
+  record_question_check "reference_auth_question" "$reference_json" \
+    '.reading_plan[] | select(.file == "src/session.ts")'
+
+  "$CODEINSIGHT_BIN" context-pack "$project" \
+    --task "understand authentication support dependency" \
+    --file app/main.py \
+    --token-budget 1800 \
+    >"$dependency_json"
+  require_jq "$dependency_json" \
+    '.reading_plan[]
+      | select(.file == "app/support.py"
+        and .next_action == "inspect_dependency"
+        and (.question | contains("authentication"))
+        and (.question | contains("session boundaries")))' \
+    "dependency reading question should be authentication-aware"
+  QUESTION_CHECKS_PASSED=$((QUESTION_CHECKS_PASSED + 1))
+  record_question_check "dependency_auth_question" "$dependency_json" \
+    '.reading_plan[] | select(.file == "app/support.py")'
+
+  "$CODEINSIGHT_BIN" semantic-index "$project" --chunk-lines 20 \
+    >"$TEMP_DIR/question-coverage-semantic-index.json"
+  require_jq "$TEMP_DIR/question-coverage-semantic-index.json" '.chunks > 0' \
+    "question coverage semantic index should generate local chunks"
+
+  "$CODEINSIGHT_BIN" context-pack "$project" \
+    --task "session cookie behavior" \
+    --symbol AuthService \
+    --token-budget 1600 \
+    >"$semantic_json"
+  require_jq "$semantic_json" \
+    '.reading_plan[]
+      | select(.file == "src/auth_notes.py"
+        and .next_action == "review_semantic_matches"
+        and (.question | contains("cookie"))
+        and (.question | contains("session")))' \
+    "semantic reading question should be session-cookie-aware"
+  QUESTION_CHECKS_PASSED=$((QUESTION_CHECKS_PASSED + 1))
+  record_question_check "semantic_session_cookie_question" "$semantic_json" \
+    '.reading_plan[] | select(.file == "src/auth_notes.py")'
+
+  SCENARIOS_PASSED=$((SCENARIOS_PASSED + 1))
+  record_scenario "task_aware_question_coverage" "$semantic_json" \
+    "{question_checks: $QUESTION_CHECKS_PASSED, semantic_file: \"src/auth_notes.py\", semantic_next_action: \"review_semantic_matches\", semantic_question: (.reading_plan[] | select(.file == \"src/auth_notes.py\") | .question)}"
+  echo "  pass: task-aware question coverage ($QUESTION_CHECKS_PASSED checks)"
+}
+
 main() {
   parse_args "$@"
   require_command jq
@@ -506,6 +683,7 @@ main() {
 
   TEMP_DIR="$(mktemp -d)"
   SCENARIO_RESULTS_FILE="$TEMP_DIR/scenarios.jsonl"
+  QUESTION_CHECKS_FILE="$TEMP_DIR/question-checks.jsonl"
   trap cleanup EXIT INT TERM
 
   echo "context_pack quality smoke"
@@ -531,9 +709,11 @@ main() {
   run_budget_continuation_scenario
   run_minimum_budget_scenario
   run_token_exhaustion_scenario
+  run_question_coverage_scenario
 
   echo "context-pack quality smoke passed"
   echo "scenarios: $SCENARIOS_PASSED"
+  echo "question checks: $QUESTION_CHECKS_PASSED"
   write_summary_json
 }
 

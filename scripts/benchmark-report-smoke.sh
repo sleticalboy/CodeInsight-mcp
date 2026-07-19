@@ -79,7 +79,7 @@ main() {
   require_literal "| File | Rank | Question | Next action | Suggested tool | Reason | Selection reason |" "context reading-plan rank column"
   require_literal "- Context continuation next action:" "continuation next action detail"
   require_literal "- First omitted candidate:" "omitted candidate detail"
-  require_literal "What entrypoints, exported symbols, or setup code define the main flow here?" "context reading-plan question text"
+  require_pattern "What (entrypoints, exported symbols, or setup code define the main flow here|startup entrypoint or initialization sequence creates the requested flow)\\?" "context reading-plan question text"
   require_literal "Read this step to answer:" "actionable reading-plan reason"
   require_literal "Context pack guardrails:" "context-pack guardrail section"
   require_literal "| \`first_recommended_tool\` | context_pack | context_pack | pass |" "context_pack guardrail pass"

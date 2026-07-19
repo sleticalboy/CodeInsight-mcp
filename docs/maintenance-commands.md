@@ -126,7 +126,9 @@ writes this summary to a temporary file and validates key scenario names; the
 remote `context-pack-quality-smoke` job uploads the
 `codeinsight-context-pack-quality` JSON artifact and writes the scenario table
 to the Actions summary with `scripts/context-pack-quality-step-summary.sh`,
-including first reading question metrics for selected context.
+including first reading question metrics for selected context and a question
+coverage table for seed-file, call-graph, reference, dependency, and semantic
+reading-plan actions.
 
 ## Benchmark Checks
 
