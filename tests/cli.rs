@@ -1200,6 +1200,17 @@ fn cli_indexes_and_queries_fixture_project() {
             .unwrap()
             > 0
     );
+    let semantic_step = semantic_context["reading_plan"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|step| step["file"] == "src/auth_notes.py")
+        .unwrap();
+    assert_eq!(semantic_step["next_action"], "review_semantic_matches");
+    assert_eq!(
+        semantic_step["suggested_tool"]["suggested_arguments"]["task"],
+        "session cookie behavior"
+    );
 
     let billing_context = run_json([
         "context-pack",
@@ -6485,7 +6496,7 @@ def helper():
         "context-pack",
         fixture.path().to_str().unwrap(),
         "--task",
-        "understand local support dependency",
+        "understand authentication support dependency",
         "--file",
         "app/main.py",
         "--token-budget",
@@ -6510,6 +6521,9 @@ def helper():
         dependency_step["suggested_tool"]["suggested_arguments"]["limit"].as_u64(),
         Some(100)
     );
+    let dependency_question = dependency_step["question"].as_str().unwrap();
+    assert!(dependency_question.contains("authentication"));
+    assert!(dependency_question.contains("session boundaries"));
 }
 
 #[test]
@@ -6552,6 +6566,16 @@ fn cli_context_pack_uses_imported_callee_file_hints() {
                         .is_some_and(|reason| reason.contains("Audit.record"))
             })
     );
+    let audit_step = context["reading_plan"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|step| step["file"] == "lib/support/audit.rb")
+        .unwrap();
+    assert_eq!(audit_step["next_action"], "follow_call_graph");
+    let audit_question = audit_step["question"].as_str().unwrap();
+    assert!(audit_question.contains("authentication decisions"));
+    assert!(audit_question.contains("session state"));
 }
 
 #[test]

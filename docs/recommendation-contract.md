@@ -123,14 +123,18 @@ They do not prove that the related graph, dependency, or semantic view is
 complete.
 
 `context_pack.reading_plan[].question` is the local checklist for what the
-selected file should answer. For seed-file and symbol-definition steps, the
-question is task-aware when the prompt clearly names impact/call-path,
-authentication, configuration, startup, or middleware work; otherwise it uses
-the generic entrypoint/setup or definition checklist.
+selected file should answer. For seed-file, symbol-definition, call-graph, and
+dependency steps, the question is task-aware when the prompt clearly names
+impact/call-path, authentication, configuration, startup, or middleware work;
+otherwise it uses the generic entrypoint/setup, definition, flow, or dependency
+checklist.
 `context_pack.reading_plan[].reason` is the executable client-facing
 explanation for the step: it states the question to answer, when to use the
 suggested tool, and why the file was selected. `selection_reason` preserves
 only the raw selection/ranking rationale from `files[]` for audit displays.
+Focused `context_pack` suggestions from semantic-match and fallback steps keep
+the original task in `suggested_arguments.task` while scoping `files[]` to the
+selected file.
 
 ## Omitted Candidate Recommendations
 

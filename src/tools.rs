@@ -1751,7 +1751,7 @@ fn context_reading_plan(root: &Path, task: &str, files: &[ContextFile]) -> Vec<C
         .map(|(index, file)| {
             let next_action = context_reading_next_action(file).to_string();
             let question = context_reading_question(file, task);
-            let suggested_tool = context_reading_suggested_tool(root, file);
+            let suggested_tool = context_reading_suggested_tool(root, task, file);
             let ranges = file
                 .ranges
                 .iter()
@@ -1792,7 +1792,11 @@ fn context_reading_reason(
     )
 }
 
-fn context_reading_suggested_tool(root: &Path, file: &ContextFile) -> ContextSuggestedTool {
+fn context_reading_suggested_tool(
+    root: &Path,
+    task: &str,
+    file: &ContextFile,
+) -> ContextSuggestedTool {
     let root_arg = root.display().to_string();
     match context_reading_next_action(file) {
         "inspect_seed_file" | "inspect_symbol_definition" => ContextSuggestedTool {
@@ -1825,7 +1829,7 @@ fn context_reading_suggested_tool(root: &Path, file: &ContextFile) -> ContextSug
                 .to_string(),
             suggested_arguments: json!({
                 "root": root_arg,
-                "task": "inspect semantic matches in selected file",
+                "task": task,
                 "files": [file.file.clone()],
                 "token_budget": 4000
             }),
@@ -1847,7 +1851,7 @@ fn context_reading_suggested_tool(root: &Path, file: &ContextFile) -> ContextSug
             reason: "Rebuild context focused on this selected file.".to_string(),
             suggested_arguments: json!({
                 "root": root_arg,
-                "task": "inspect selected context file",
+                "task": task,
                 "files": [file.file.clone()],
                 "token_budget": 4000
             }),
@@ -1897,19 +1901,14 @@ fn context_reading_question(file: &ContextFile, task: &str) -> String {
     match context_reading_next_action(file) {
         "inspect_seed_file" => context_seed_file_question(task),
         "inspect_symbol_definition" => context_symbol_definition_question(task),
-        "follow_call_graph" => {
-            "Which callers or callees explain how control moves through this flow?".to_string()
-        }
+        "follow_call_graph" => context_call_graph_question(task),
         "inspect_references" => {
             "How is the seed symbol used by nearby production code?".to_string()
         }
         "review_semantic_matches" => {
             "Which task terms are reflected in this semantically related code?".to_string()
         }
-        "inspect_dependency" => {
-            "What imported local dependency behavior is required to understand this file?"
-                .to_string()
-        }
+        "inspect_dependency" => context_dependency_question(task),
         _ => "What task-relevant context is present in these selected ranges?".to_string(),
     }
 }
@@ -1950,6 +1949,45 @@ fn context_symbol_definition_question(task: &str) -> String {
         "What middleware or handler boundary does this definition establish?".to_string()
     } else {
         "What behavior or contract does this definition establish for the task?".to_string()
+    }
+}
+
+fn context_call_graph_question(task: &str) -> String {
+    if context_text_mentions(
+        task,
+        &["auth", "authentication", "authenticate", "login", "signin"],
+    ) {
+        "Which callers or callees carry authentication decisions, credentials, or session state through this flow?".to_string()
+    } else if context_text_mentions(task, &["config", "configuration", "setting", "settings"]) {
+        "Which callers or callees read, transform, or propagate configuration in this flow?"
+            .to_string()
+    } else if context_text_mentions(task, &["startup", "bootstrap", "boot"]) {
+        "Which callers or callees order startup, bootstrap, or initialization work in this flow?"
+            .to_string()
+    } else if context_text_mentions(task, &["middleware"]) {
+        "Which callers or callees enter, wrap, or exit middleware and handler boundaries?"
+            .to_string()
+    } else {
+        "Which callers or callees explain how control moves through this flow?".to_string()
+    }
+}
+
+fn context_dependency_question(task: &str) -> String {
+    if context_text_mentions(
+        task,
+        &["auth", "authentication", "authenticate", "login", "signin"],
+    ) {
+        "What imported local dependency behavior affects authentication or session boundaries here?"
+            .to_string()
+    } else if context_text_mentions(task, &["config", "configuration", "setting", "settings"]) {
+        "What imported local dependency behavior supplies configuration defaults, inputs, or environment handling?".to_string()
+    } else if context_text_mentions(task, &["startup", "bootstrap", "boot"]) {
+        "What imported local dependency behavior participates in startup or initialization?"
+            .to_string()
+    } else if context_text_mentions(task, &["middleware"]) {
+        "What imported local dependency behavior shapes middleware or handler dispatch?".to_string()
+    } else {
+        "What imported local dependency behavior is required to understand this file?".to_string()
     }
 }
 
