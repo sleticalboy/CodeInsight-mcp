@@ -74,16 +74,20 @@ validate_summary_json() {
 
   if ! jq -e \
     '.status == "pass"
-      and .scenarios_passed == 8
-      and (.scenarios | length) == 8
+      and .scenarios_passed == 9
+      and (.scenarios | length) == 9
       and all(.scenarios[]; .status == "pass")
       and (.scenarios[] | select(.name == "polyglot_symbol_web_controller" and .metrics.first_file == "src/app.ts"))
+      and (.scenarios[] | select(.name == "polyglot_symbol_web_controller" and (.metrics.first_reading_focus | type == "string" and length > 0)))
       and (.scenarios[] | select(.name == "polyglot_symbol_web_controller" and (.metrics.first_reading_question | type == "string" and length > 0)))
       and (.scenarios[] | select(.name == "polyglot_symbol_php_service_render" and .metrics.first_file == "src/PhpService.php"))
       and (.scenarios[] | select(.name == "dependency_continuation" and .metrics.dependency_file == "app/support.py"))
       and (.scenarios[] | select(.name == "budget_continuation" and .metrics.omitted_candidates > 0 and .metrics.continuation_status == "omitted_candidates_available"))
       and (.scenarios[] | select(.name == "minimum_budget" and .metrics.applied_token_budget == 500 and .metrics.continuation_status == "minimum_budget_applied"))
-      and (.scenarios[] | select(.name == "token_exhaustion" and .metrics.truncated == true and .metrics.continuation_status == "token_budget_exhausted"))' \
+      and (.scenarios[] | select(.name == "token_exhaustion" and .metrics.truncated == true and .metrics.continuation_status == "token_budget_exhausted"))
+      and .question_checks_passed == 5
+      and (.question_checks | length) == 5
+      and all(.question_checks[]; .status == "pass" and (.focus | type == "string" and length > 0) and (.question | type == "string" and length > 0))' \
     "$summary_file" >/dev/null; then
     fail "$summary_file does not match expected context-pack quality metrics"
   fi
@@ -209,7 +213,9 @@ main() {
 
   echo "context-pack quality artifact smoke passed"
   echo "summary: $summary_file"
+  echo "first_reading_focus: $(jq -r '.scenarios[] | select(.name == "polyglot_symbol_web_controller") | .metrics.first_reading_focus' "$summary_file")"
   echo "first_reading_question: $(jq -r '.scenarios[] | select(.name == "polyglot_symbol_web_controller") | .metrics.first_reading_question' "$summary_file")"
+  echo "question_checks_passed: $(jq -r '.question_checks_passed' "$summary_file")"
 }
 
 main "$@"

@@ -116,6 +116,7 @@ record_scenario() {
       metrics: (($metrics_query) + (
         if (.reading_plan | length) > 0 then
           {
+            first_reading_focus: .reading_plan[0].focus,
             first_reading_question: .reading_plan[0].question,
             first_reading_reason: .reading_plan[0].reason,
             first_selection_reason: .reading_plan[0].selection_reason
@@ -141,6 +142,7 @@ record_question_check() {
         status: \"pass\",
         file: \$step.file,
         next_action: \$step.next_action,
+        focus: \$step.focus,
         question: \$step.question,
         suggested_tool: \$step.suggested_tool.tool
       }" \
@@ -595,6 +597,8 @@ run_question_coverage_scenario() {
     >"$seed_json"
   require_jq "$seed_json" \
     '.reading_plan[0].next_action == "inspect_seed_file"
+      and (.reading_plan[0].focus | contains("authentication"))
+      and (.reading_plan[0].focus | contains("session"))
       and (.reading_plan[0].question | contains("authentication decisions"))
       and (.reading_plan[0].question | contains("session boundaries"))' \
     "seed reading question should be authentication-aware"
@@ -610,6 +614,8 @@ run_question_coverage_scenario() {
     '.reading_plan[]
       | select(.file == "src/router.ts"
         and .next_action == "follow_call_graph"
+        and (.focus | contains("authentication"))
+        and (.focus | contains("session"))
         and (.question | contains("authentication decisions"))
         and (.question | contains("session state")))' \
     "call graph reading question should be authentication-aware"
@@ -626,6 +632,8 @@ run_question_coverage_scenario() {
     '.reading_plan[]
       | select(.file == "src/session.ts"
         and .next_action == "inspect_references"
+        and (.focus | contains("authentication"))
+        and (.focus | contains("session state"))
         and (.question | contains("authentication decisions"))
         and (.question | contains("session state")))' \
     "reference reading question should be authentication-aware"
@@ -642,6 +650,8 @@ run_question_coverage_scenario() {
     '.reading_plan[]
       | select(.file == "app/support.py"
         and .next_action == "inspect_dependency"
+        and (.focus | contains("authentication"))
+        and (.focus | contains("session"))
         and (.question | contains("authentication"))
         and (.question | contains("session boundaries")))' \
     "dependency reading question should be authentication-aware"
@@ -663,6 +673,8 @@ run_question_coverage_scenario() {
     '.reading_plan[]
       | select(.file == "src/auth_notes.py"
         and .next_action == "review_semantic_matches"
+        and (.focus | contains("authentication"))
+        and (.focus | contains("session"))
         and (.question | contains("cookie"))
         and (.question | contains("session")))' \
     "semantic reading question should be session-cookie-aware"

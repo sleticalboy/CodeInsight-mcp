@@ -33,7 +33,7 @@ require_summary_contract() {
       and ((.question_checks_passed // 0) | type == "number")
       and ((.question_checks // []) | type == "array")
       and ((.question_checks // []) | length) == (.question_checks_passed // 0)
-      and all((.question_checks // [])[]; .status == "pass" and (.name | type == "string") and (.question | type == "string"))' \
+      and all((.question_checks // [])[]; .status == "pass" and (.name | type == "string") and (.focus | type == "string") and (.question | type == "string"))' \
     "$SUMMARY_JSON" >/dev/null; then
     fail "$SUMMARY_JSON does not match the context-pack quality summary contract"
   fi
@@ -58,7 +58,7 @@ question_check_rows() {
       | gsub("\\|"; "\\\\|")
       | gsub("\n"; " ");
     (.question_checks // [])[]
-    | "| `\(.name)` | `\(.next_action)` | `\(.file)` | \(.question | cell) | `\(.suggested_tool)` |"
+    | "| `\(.name)` | `\(.next_action)` | `\(.file)` | \(.focus | cell) | \(.question | cell) | `\(.suggested_tool)` |"
   ' "$SUMMARY_JSON"
 }
 
@@ -107,8 +107,8 @@ main() {
     printf "\n"
     if [ "$question_checks_passed" -gt 0 ]; then
       printf 'Question checks passed: `%s`\n\n' "$question_checks_passed"
-      printf "| Check | Next Action | File | Question | Suggested Tool |\n"
-      printf "| --- | --- | --- | --- | --- |\n"
+      printf "| Check | Next Action | File | Focus | Question | Suggested Tool |\n"
+      printf "| --- | --- | --- | --- | --- | --- |\n"
       question_check_rows
       printf "\n"
     fi

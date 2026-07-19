@@ -82,6 +82,7 @@ main() {
       "status": "pass",
       "file": "src/auth.ts",
       "next_action": "inspect_seed_file",
+      "focus": "Start with seed file authentication and session boundaries.",
       "question": "Where are authentication decisions, credentials, or session boundaries handled here?",
       "suggested_tool": "file_outline"
     },
@@ -90,6 +91,7 @@ main() {
       "status": "pass",
       "file": "src/auth_notes.py",
       "next_action": "review_semantic_matches",
+      "focus": "Review semantic matches for authentication, cookie, or session behavior.",
       "question": "Which semantic matches describe authentication, credential, cookie, or session behavior?",
       "suggested_tool": "context_pack"
     }
@@ -116,9 +118,9 @@ EOF
   require_literal "$step_summary" '`first_reason_actionable=true`' "reading-plan reason metric"
   require_literal "$step_summary" '`continuation_status=token_budget_exhausted`' "token exhaustion metric"
   require_literal "$step_summary" "Question checks passed: \`2\`" "question checks count"
-  require_literal "$step_summary" "| Check | Next Action | File | Question | Suggested Tool |" "question checks table"
-  require_literal "$step_summary" '| `seed_file_auth_question` | `inspect_seed_file` | `src/auth.ts` | Where are authentication decisions, credentials, or session boundaries handled here? | `file_outline` |' "seed question row"
-  require_literal "$step_summary" '| `semantic_session_cookie_question` | `review_semantic_matches` | `src/auth_notes.py` | Which semantic matches describe authentication, credential, cookie, or session behavior? | `context_pack` |' "semantic question row"
+  require_literal "$step_summary" "| Check | Next Action | File | Focus | Question | Suggested Tool |" "question checks table"
+  require_literal "$step_summary" '| `seed_file_auth_question` | `inspect_seed_file` | `src/auth.ts` | Start with seed file authentication and session boundaries. | Where are authentication decisions, credentials, or session boundaries handled here? | `file_outline` |' "seed question row"
+  require_literal "$step_summary" '| `semantic_session_cookie_question` | `review_semantic_matches` | `src/auth_notes.py` | Review semantic matches for authentication, cookie, or session behavior. | Which semantic matches describe authentication, credential, cookie, or session behavior? | `context_pack` |' "semantic question row"
 
   echo "context-pack quality step summary smoke passed"
 }
