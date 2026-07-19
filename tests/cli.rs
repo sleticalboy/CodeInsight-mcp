@@ -2177,6 +2177,15 @@ export function bootRouter(settings: Record<string, string>) {
 "#,
     )
     .unwrap();
+    std::fs::write(
+        fixture.path().join("src/application.ts"),
+        r#"export function attach(handler: unknown) {
+  // Registers middleware before routes are mounted.
+  return { handler, stage: "middleware" };
+}
+"#,
+    )
+    .unwrap();
 
     run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
 
@@ -2242,6 +2251,101 @@ export function bootRouter(settings: Record<string, string>) {
             .any(|keyword| keyword == "config")
     );
     assert_eq!(settings_context["files"][0]["file"], "src/config.ts");
+
+    let middleware_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand middleware behavior",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(middleware_context["seed_strategy"], "auto_task_match");
+    assert_eq!(
+        middleware_context["selected_seeds"][0]["value"],
+        "src/application.ts"
+    );
+    assert!(
+        middleware_context["selected_seeds"][0]["matched_keywords"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|keyword| keyword == "middleware")
+    );
+    assert_eq!(middleware_context["files"][0]["file"], "src/application.ts");
+
+    let startup_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand startup flow",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_ne!(
+        startup_context["selected_seeds"][0]["value"],
+        "src/application.ts"
+    );
+    assert!(
+        startup_context["selected_seeds"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|seed| seed["value"] == "src/main.ts")
+    );
+    assert_ne!(startup_context["files"][0]["file"], "src/application.ts");
+}
+
+#[test]
+fn cli_context_pack_uses_file_text_for_python_settings_tasks() {
+    let fixture = TempDir::new().unwrap();
+    std::fs::create_dir_all(fixture.path().join("src/requests")).unwrap();
+    std::fs::write(
+        fixture.path().join("src/requests/help.py"),
+        r#""""Implementation metadata entrypoint."""
+
+def _implementation():
+    return "CPython"
+"#,
+    )
+    .unwrap();
+    std::fs::write(
+        fixture.path().join("src/requests/sessions.py"),
+        r#""""Session objects manage persistent settings across requests."""
+
+def merge_setting(request_setting, session_setting):
+    """Merge request and session settings."""
+    return request_setting or session_setting
+"#,
+    )
+    .unwrap();
+
+    run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+
+    let settings_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand configuration settings",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(settings_context["seed_strategy"], "auto_task_match");
+    assert_eq!(
+        settings_context["selected_seeds"][0]["value"],
+        "src/requests/sessions.py"
+    );
+    assert!(
+        settings_context["selected_seeds"][0]["matched_keywords"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|keyword| keyword == "setting")
+    );
+    assert_eq!(
+        settings_context["files"][0]["file"],
+        "src/requests/sessions.py"
+    );
 }
 
 #[test]

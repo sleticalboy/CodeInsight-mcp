@@ -78,6 +78,10 @@ main();'
   write_file "$repo/src/startup.ts" 'export function bootStartup(router: unknown, auth: unknown, config: unknown) {
   return { router, auth, config };
 }'
+  write_file "$repo/src/application.ts" 'export function attach(handler: unknown) {
+  // Registers middleware before routes are mounted.
+  return { handler, stage: "middleware" };
+}'
 }
 
 main() {
@@ -95,13 +99,19 @@ main() {
 
   CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/task-routing-matrix.sh" "$repo" \
     --output-dir "$output_dir" \
-    --token-budget 1600
+    --token-budget 1600 \
+    --task "understand routing behavior" \
+    --task "understand authentication behavior" \
+    --task "understand application settings" \
+    --task "understand startup flow" \
+    --task "understand middleware behavior"
 
-  require_jq "$summary_json" '.status == "pass" and .task_count == 4' "matrix summary should pass"
+  require_jq "$summary_json" '.status == "pass" and .task_count == 5' "matrix summary should pass"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand routing behavior" and .first_file == "src/router.ts")' "routing task should choose router"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand authentication behavior" and .first_file == "src/auth.ts")' "authentication task should choose auth"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand application settings" and .first_file == "src/config.ts")' "settings task should choose config"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand startup flow" and .first_file == "src/startup.ts")' "startup task should choose startup"
+  require_jq "$summary_json" '.tasks[] | select(.task == "understand middleware behavior" and .first_file == "src/application.ts")' "middleware task should choose application"
 
   echo "task routing matrix smoke passed"
   echo "summary: $summary_json"

@@ -46,6 +46,7 @@ const CONTEXT_MAX_SYMBOL_LINES: usize = 80;
 const CONTEXT_MAX_MERGED_RANGE_LINES: usize = 80;
 const CONTEXT_OMITTED_CANDIDATE_LIMIT: usize = 8;
 const CONTEXT_OMITTED_CANDIDATE_RANGE_LIMIT: usize = 4;
+const AUTO_SEED_TEXT_SCAN_LINES: usize = 160;
 
 const IMPACT_SCORE_SEED_FILE: i32 = 100;
 const IMPACT_SCORE_SYMBOL_DEFINITION: i32 = 90;
@@ -2728,7 +2729,7 @@ fn seed_file_ranges(
     let mut ranges = Vec::new();
 
     if let Some(end_line) = header_range_end(&lines) {
-        let matched_keywords = auto_seed_matched_keywords(file, None, task_keywords);
+        let matched_keywords = auto_seed_file_matched_keywords(root, file, None, task_keywords);
         ranges.push(ContextCandidateRange {
             start_line: 1,
             end_line,
@@ -2748,8 +2749,12 @@ fn seed_file_ranges(
     primary_symbols.sort_by_key(|symbol| (symbol.start_line, symbol.end_line));
 
     for symbol in primary_symbols.into_iter().take(12) {
-        let matched_keywords =
-            auto_seed_matched_keywords(file, Some(&symbol.qualified_name), task_keywords);
+        let matched_keywords = auto_seed_file_matched_keywords(
+            root,
+            file,
+            Some(&symbol.qualified_name),
+            task_keywords,
+        );
         ranges.push(ContextCandidateRange {
             start_line: symbol.start_line.saturating_sub(2).max(1),
             end_line: (capped_symbol_end_line(symbol) + 2).min(line_count),
@@ -2763,7 +2768,7 @@ fn seed_file_ranges(
     }
 
     if ranges.is_empty() {
-        let matched_keywords = auto_seed_matched_keywords(file, None, task_keywords);
+        let matched_keywords = auto_seed_file_matched_keywords(root, file, None, task_keywords);
         ranges.push(ContextCandidateRange {
             start_line: 1,
             end_line: line_count.min(80),
@@ -3260,13 +3265,15 @@ fn auto_context_seed_files(
         .filter(|file| auto_seed_role_allowed(auto_seed_file_role(file), task_keywords))
     {
         let symbols = store.symbols_for_files(std::slice::from_ref(file), 12)?;
-        let task_score = symbols
+        let symbol_or_path_score = symbols
             .iter()
             .map(|symbol| {
                 auto_seed_task_match_score(file, Some(&symbol.qualified_name), task_keywords)
             })
             .max()
             .unwrap_or_else(|| auto_seed_task_match_score(file, None, task_keywords));
+        let text_match = auto_seed_file_text_match(root, file, task_keywords);
+        let task_score = symbol_or_path_score.max(text_match.score);
         if task_score == 0 {
             continue;
         }
@@ -3276,6 +3283,7 @@ fn auto_context_seed_files(
                 auto_seed_matched_keywords(file, Some(&symbol.qualified_name), task_keywords)
             })
             .chain(auto_seed_matched_keywords(file, None, task_keywords))
+            .chain(text_match.matched_keywords)
             .collect::<BTreeSet<_>>()
             .into_iter()
             .collect::<Vec<_>>();
@@ -3380,6 +3388,18 @@ fn upsert_auto_seed_candidate(
             score: candidate.score,
             matched_keywords: candidate.matched_keywords.clone(),
         });
+    if entry.source == "overview_entrypoint" && candidate.source == "task_match" {
+        entry.score = entry.score.max(candidate.score);
+        entry.matched_keywords = entry
+            .matched_keywords
+            .iter()
+            .cloned()
+            .chain(candidate.matched_keywords)
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect();
+        return;
+    }
     if candidate.score > entry.score
         || (candidate.score == entry.score && candidate.source == "task_match")
     {
@@ -3406,6 +3426,20 @@ fn auto_seed_matched_keywords(
         .collect()
 }
 
+fn auto_seed_file_matched_keywords(
+    root: &Path,
+    file: &str,
+    symbol: Option<&str>,
+    task_keywords: &[String],
+) -> Vec<String> {
+    auto_seed_matched_keywords(file, symbol, task_keywords)
+        .into_iter()
+        .chain(auto_seed_file_text_match(root, file, task_keywords).matched_keywords)
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect()
+}
+
 fn auto_seed_task_match_score(file: &str, symbol: Option<&str>, task_keywords: &[String]) -> i32 {
     if task_keywords.is_empty() {
         return 0;
@@ -3427,11 +3461,78 @@ fn auto_seed_task_match_score(file: &str, symbol: Option<&str>, task_keywords: &
     score
 }
 
+#[derive(Debug, Default)]
+struct AutoSeedTextMatch {
+    score: i32,
+    matched_keywords: Vec<String>,
+}
+
+fn auto_seed_file_text_match(
+    root: &Path,
+    file: &str,
+    task_keywords: &[String],
+) -> AutoSeedTextMatch {
+    if task_keywords.is_empty() {
+        return AutoSeedTextMatch::default();
+    }
+
+    let Ok(source) = fs::read_to_string(root.join(file)) else {
+        return AutoSeedTextMatch::default();
+    };
+    let searchable = source
+        .lines()
+        .take(AUTO_SEED_TEXT_SCAN_LINES)
+        .collect::<Vec<_>>()
+        .join("\n");
+    let matched_keywords = task_keywords
+        .iter()
+        .filter(|keyword| auto_seed_text_keyword_allowed(keyword))
+        .filter(|keyword| auto_seed_text_matches(&searchable, keyword))
+        .cloned()
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect::<Vec<_>>();
+
+    AutoSeedTextMatch {
+        score: if matched_keywords.is_empty() {
+            0
+        } else {
+            80 + (matched_keywords.len() as i32 * 8)
+        },
+        matched_keywords,
+    }
+}
+
 fn auto_seed_field_matches(field: &str, keyword: &str) -> bool {
     field
         .split(|ch: char| !ch.is_ascii_alphanumeric())
         .map(str::to_ascii_lowercase)
         .any(|part| part == keyword || (keyword.len() >= 4 && part.contains(keyword)))
+}
+
+fn auto_seed_text_matches(text: &str, keyword: &str) -> bool {
+    text.split(|ch: char| !ch.is_ascii_alphanumeric())
+        .map(str::to_ascii_lowercase)
+        .any(|part| {
+            part == keyword
+                || (keyword.len() >= 4 && part.contains(keyword))
+                || (part.len() >= 4 && keyword.contains(&part))
+        })
+}
+
+fn auto_seed_text_keyword_allowed(keyword: &str) -> bool {
+    !matches!(
+        keyword,
+        "app"
+            | "application"
+            | "entrypoint"
+            | "entrypoints"
+            | "main"
+            | "startup"
+            | "start"
+            | "boot"
+            | "program"
+    )
 }
 
 fn explicit_context_seeds(seed_symbols: &[String], seed_files: &[String]) -> Vec<ContextSeed> {
@@ -3525,9 +3626,10 @@ fn task_keyword_aliases(keyword: &str) -> &'static [&'static str] {
         "authorization" => &["auth", "permission"],
         "login" => &["auth", "authentication"],
         "signin" => &["auth", "login"],
-        "config" => &["configuration", "settings"],
-        "configuration" => &["config", "settings"],
-        "settings" => &["config", "configuration"],
+        "config" => &["configuration", "settings", "setting"],
+        "configuration" => &["config", "settings", "setting"],
+        "setting" => &["config", "configuration", "settings"],
+        "settings" => &["config", "configuration", "setting"],
         _ => &[],
     }
 }
@@ -3625,6 +3727,7 @@ mod tests {
         assert!(keywords.contains(&"router".to_string()));
         assert!(keywords.contains(&"auth".to_string()));
         assert!(keywords.contains(&"config".to_string()));
+        assert!(keywords.contains(&"setting".to_string()));
         assert!(keywords.contains(&"startup".to_string()));
         assert!(keywords.contains(&"program".to_string()));
         assert!(!keywords.contains(&"understand".to_string()));
