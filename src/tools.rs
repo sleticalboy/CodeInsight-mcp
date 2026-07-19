@@ -1894,6 +1894,8 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
         "Start with seed file data persistence and storage boundaries.".to_string()
     } else if signals.error_recovery {
         "Start with seed file error handling, retry, and recovery boundaries.".to_string()
+    } else if signals.test_coverage {
+        "Start with seed file test, spec, or regression coverage.".to_string()
     } else if signals.impact_flow {
         "Start with seed file calls, callees, and impact paths.".to_string()
     } else {
@@ -1914,6 +1916,8 @@ fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
         "Read symbol definitions that establish database or storage behavior.".to_string()
     } else if signals.error_recovery {
         "Read symbol definitions that establish error handling or recovery behavior.".to_string()
+    } else if signals.test_coverage {
+        "Read symbol definitions that establish test coverage or regression behavior.".to_string()
     } else if signals.impact_flow {
         "Read symbol definitions that anchor call and impact paths.".to_string()
     } else {
@@ -1934,6 +1938,8 @@ fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
         "Follow call graph evidence for database, repository, or storage flow.".to_string()
     } else if signals.error_recovery {
         "Follow call graph evidence for error propagation, retries, and recovery.".to_string()
+    } else if signals.test_coverage {
+        "Follow call graph evidence from tests, specs, or regression coverage.".to_string()
     } else if signals.impact_flow {
         "Follow call graph evidence for callers, callees, and impact paths.".to_string()
     } else {
@@ -1954,6 +1960,9 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
         "Inspect references that read, write, or persist data.".to_string()
     } else if signals.error_recovery {
         "Inspect references that catch, wrap, retry, or recover from failures.".to_string()
+    } else if signals.test_coverage {
+        "Inspect references that exercise behavior in tests, specs, or regression cases."
+            .to_string()
     } else if signals.impact_flow {
         "Inspect references that show production usage and impact paths.".to_string()
     } else {
@@ -1974,6 +1983,8 @@ fn context_semantic_focus(signals: ContextTaskSignals) -> String {
         "Review semantic matches for database, repository, or storage behavior.".to_string()
     } else if signals.error_recovery {
         "Review semantic matches for error handling, retries, or recovery behavior.".to_string()
+    } else if signals.test_coverage {
+        "Review semantic matches for test, spec, or regression coverage.".to_string()
     } else {
         "Review semantic matches related to the task wording.".to_string()
     }
@@ -1992,6 +2003,8 @@ fn context_dependency_focus(signals: ContextTaskSignals) -> String {
         "Check local dependencies that supply database or storage behavior.".to_string()
     } else if signals.error_recovery {
         "Check local dependencies that shape failure handling or recovery behavior.".to_string()
+    } else if signals.test_coverage {
+        "Check local dependencies that support test setup, fixtures, or assertions.".to_string()
     } else {
         "Check local dependency context that supports selected files.".to_string()
     }
@@ -2044,6 +2057,8 @@ fn context_seed_file_question(task: &str) -> String {
             .to_string()
     } else if signals.error_recovery {
         "Where are errors, retries, timeouts, or recovery decisions handled here?".to_string()
+    } else if signals.test_coverage {
+        "Which behavior, assertions, fixtures, or regression cases are covered here?".to_string()
     } else if signals.impact_flow {
         "Which local callers, callees, or impact paths in this seed file explain the requested flow?".to_string()
     } else {
@@ -2065,6 +2080,9 @@ fn context_symbol_definition_question(task: &str) -> String {
         "What database access, persistence decision, or storage boundary does this definition establish?".to_string()
     } else if signals.error_recovery {
         "What error handling, retry, timeout, or recovery decision does this definition establish?"
+            .to_string()
+    } else if signals.test_coverage {
+        "What test behavior, assertion, fixture, or regression case does this definition establish?"
             .to_string()
     } else if signals.impact_flow {
         "What callers, callees, or impact paths does this definition anchor?".to_string()
@@ -2090,6 +2108,9 @@ fn context_call_graph_question(task: &str) -> String {
         "Which callers or callees read, write, or persist data through this flow?".to_string()
     } else if signals.error_recovery {
         "Which callers or callees propagate errors, trigger retries, or recover from failures?"
+            .to_string()
+    } else if signals.test_coverage {
+        "Which callers or callees exercise behavior through tests, specs, or regression cases?"
             .to_string()
     } else if signals.impact_flow {
         "Which callers, callees, or impact paths explain how control moves through this flow?"
@@ -2117,6 +2138,9 @@ fn context_dependency_question(task: &str) -> String {
     } else if signals.error_recovery {
         "What imported local dependency behavior supplies error handling, retry, or timeout behavior?"
             .to_string()
+    } else if signals.test_coverage {
+        "What imported local dependency behavior supplies test setup, fixtures, or assertions?"
+            .to_string()
     } else {
         "What imported local dependency behavior is required to understand this file?".to_string()
     }
@@ -2137,6 +2161,9 @@ fn context_reference_question(task: &str) -> String {
         "Which references read, write, or persist data through this boundary?".to_string()
     } else if signals.error_recovery {
         "Which references catch, wrap, retry, timeout, or recover from failures?".to_string()
+    } else if signals.test_coverage {
+        "Which references exercise behavior through tests, specs, fixtures, or regression cases?"
+            .to_string()
     } else if signals.impact_flow {
         "Which references show production usage or impact paths for this seed?".to_string()
     } else {
@@ -2162,6 +2189,9 @@ fn context_semantic_question(task: &str) -> String {
     } else if signals.error_recovery {
         "Which semantic matches describe error handling, retry, timeout, or recovery behavior?"
             .to_string()
+    } else if signals.test_coverage {
+        "Which semantic matches describe tests, specs, fixtures, or regression coverage?"
+            .to_string()
     } else {
         "Which task terms are reflected in this semantically related code?".to_string()
     }
@@ -2176,6 +2206,7 @@ struct ContextTaskSignals {
     middleware: bool,
     data_persistence: bool,
     error_recovery: bool,
+    test_coverage: bool,
 }
 
 impl ContextTaskSignals {
@@ -2236,6 +2267,21 @@ impl ContextTaskSignals {
                     "fallback",
                     "recovery",
                     "recover",
+                ],
+            ),
+            test_coverage: context_text_mentions(
+                task,
+                &[
+                    "test",
+                    "tests",
+                    "testing",
+                    "spec",
+                    "specs",
+                    "coverage",
+                    "regression",
+                    "unit",
+                    "integration",
+                    "e2e",
                 ],
             ),
         }
@@ -4110,6 +4156,16 @@ fn task_keyword_aliases(keyword: &str) -> &'static [&'static str] {
         "fallback" => &["error", "recovery"],
         "recovery" => &["recover", "error", "failure"],
         "recover" => &["recovery", "error", "failure"],
+        "test" => &["tests", "testing", "spec", "coverage"],
+        "tests" => &["test", "testing", "spec", "coverage"],
+        "testing" => &["test", "tests", "spec", "coverage"],
+        "spec" => &["test", "tests", "coverage"],
+        "specs" => &["test", "tests", "coverage"],
+        "coverage" => &["test", "tests", "spec", "regression"],
+        "regression" => &["test", "tests", "coverage"],
+        "unit" => &["test", "tests"],
+        "integration" => &["test", "tests"],
+        "e2e" => &["test", "tests"],
         _ => &[],
     }
 }
@@ -4203,7 +4259,7 @@ mod tests {
     #[test]
     fn task_keywords_expand_common_agent_routing_aliases() {
         let keywords = task_keywords(
-            "understand routing authentication settings startup persistence debug timeout flow",
+            "understand routing authentication settings startup persistence debug timeout coverage flow",
         );
 
         assert!(keywords.contains(&"routing".to_string()));
@@ -4219,6 +4275,8 @@ mod tests {
         assert!(keywords.contains(&"error".to_string()));
         assert!(keywords.contains(&"failure".to_string()));
         assert!(keywords.contains(&"timeout".to_string()));
+        assert!(keywords.contains(&"test".to_string()));
+        assert!(keywords.contains(&"regression".to_string()));
         assert!(!keywords.contains(&"understand".to_string()));
         assert!(!keywords.contains(&"flow".to_string()));
     }

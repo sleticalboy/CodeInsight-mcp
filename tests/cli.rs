@@ -2220,6 +2220,17 @@ export function bootRouter(settings: Record<string, string>) {
     )
     .unwrap();
     std::fs::write(
+        fixture.path().join("src/router.test.ts"),
+        r#"import { bootRouter } from "./router";
+
+export function routerRegressionSpec() {
+  // Regression coverage for router behavior.
+  return bootRouter({ user: "demo-user" });
+}
+"#,
+    )
+    .unwrap();
+    std::fs::write(
         fixture.path().join("src/application.ts"),
         r#"export function attach(handler: unknown) {
   // Registers middleware before routes are mounted.
@@ -2355,6 +2366,33 @@ export function bootRouter(settings: Record<string, string>) {
     assert!(error_question.contains("retries"));
     assert!(error_question.contains("timeouts"));
     assert!(error_question.contains("recovery decisions"));
+
+    let coverage_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "find regression coverage",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(coverage_context["seed_strategy"], "auto_task_match");
+    assert_eq!(
+        coverage_context["selected_seeds"][0]["value"],
+        "src/router.test.ts"
+    );
+    assert!(
+        coverage_context["selected_seeds"][0]["matched_keywords"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|keyword| keyword == "regression")
+    );
+    assert_eq!(coverage_context["files"][0]["file"], "src/router.test.ts");
+    let coverage_question = coverage_context["reading_plan"][0]["question"]
+        .as_str()
+        .unwrap();
+    assert!(coverage_question.contains("assertions"));
+    assert!(coverage_question.contains("regression cases"));
 
     let middleware_context = run_json([
         "context-pack",

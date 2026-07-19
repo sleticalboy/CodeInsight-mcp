@@ -11,6 +11,7 @@ This is a route-quality check, not a benchmark suite. It helps answer:
 - Does a startup task preserve the application entrypoint?
 - Does a persistence task start at database, repository, or storage code?
 - Does a debugging task start at error handling, retry, or timeout code?
+- Does a coverage task start at test, spec, or regression code?
 
 ## Run
 
@@ -30,6 +31,7 @@ scripts/task-routing-matrix.sh /path/to/repo \
   --task "understand startup flow" \
   --task "understand persistence behavior" \
   --task "debug retry timeout handling" \
+  --task "find regression coverage" \
   --output-dir /tmp/codeinsight-task-routing-matrix
 ```
 
@@ -52,6 +54,7 @@ understand routing behavior	src/router.ts
 understand authentication behavior	src/auth.ts
 understand persistence behavior	src/database.ts
 debug retry timeout handling	src/errors.ts
+find regression coverage	src/router.test.ts
 ```
 
 Then run:
