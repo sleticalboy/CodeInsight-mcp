@@ -366,6 +366,12 @@ try:
         "agent_route_contract",
         "execution_plan[0].instruction should expose reading_plan[0].selection_rank",
     )
+    first_execution_instruction_has_question = first_question in first_execution.get("instruction", "")
+    expect(
+        first_execution_instruction_has_question,
+        "agent_route_contract",
+        "execution_plan[0].instruction should include reading_plan[0].question",
+    )
 
     suggested_tool = execution_plan[1].get("suggested_tool", {})
     expect(suggested_tool.get("tool"), "suggested_tool", "execution_plan suggested_tool.tool is missing")
@@ -473,6 +479,7 @@ try:
         "execution_plan_actions": execution_plan_actions,
         "execution_plan_reads_in_reading_plan_order": True,
         "first_execution_action": first_execution["action"],
+        "first_execution_instruction_has_question": first_execution_instruction_has_question,
         "current_step_suggested_tool_matches_reading_plan": True,
         "continuation_after_selected_context": True,
         "continuation_status": continuation_summary.get("status", ""),

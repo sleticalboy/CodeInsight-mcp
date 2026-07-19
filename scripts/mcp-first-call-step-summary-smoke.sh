@@ -58,6 +58,7 @@ main() {
   "execution_plan_actions": ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"],
   "execution_plan_reads_in_reading_plan_order": true,
   "first_execution_action": "read_selected_context",
+  "first_execution_instruction_has_question": true,
   "current_step_suggested_tool_matches_reading_plan": true,
   "continuation_after_selected_context": true,
   "continuation_status": "complete",
@@ -100,6 +101,7 @@ EOF
   require_literal "$summary_md" 'First next action: `inspect_seed_file`' "first next action"
   require_literal "$summary_md" 'First reading question: `What entrypoints define the main flow?`' "first reading question"
   require_literal "$summary_md" 'Reading order contract: `true`' "reading order contract"
+  require_literal "$summary_md" 'First execution instruction question contract: `true`' "first execution instruction question contract"
   require_literal "$summary_md" 'Suggested tool handoff contract: `true`' "suggested tool handoff contract"
   require_literal "$summary_md" 'Continuation timing contract: `true`' "continuation timing contract"
   require_literal "$summary_md" 'Continuation status: `complete`' "continuation status"
