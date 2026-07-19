@@ -1895,32 +1895,8 @@ fn context_reading_next_action(file: &ContextFile) -> &'static str {
 
 fn context_reading_question(file: &ContextFile, task: &str) -> String {
     match context_reading_next_action(file) {
-        "inspect_seed_file" => {
-            if context_text_mentions(task, &["impact", "call", "caller", "callee", "path"]) {
-                "Which local callers, callees, or impact paths in this seed file explain the requested flow?".to_string()
-            } else if context_text_mentions(
-                task,
-                &["auth", "authentication", "authenticate", "login", "signin"],
-            ) {
-                "Where are authentication decisions, credentials, or session boundaries handled here?".to_string()
-            } else if context_text_mentions(
-                task,
-                &["config", "configuration", "setting", "settings"],
-            ) {
-                "Which configuration options, defaults, or environment inputs control the requested behavior?".to_string()
-            } else if context_text_mentions(task, &["startup", "bootstrap", "boot"]) {
-                "What startup entrypoint or initialization sequence creates the requested flow?"
-                    .to_string()
-            } else if context_text_mentions(task, &["middleware"]) {
-                "Which middleware or handler boundaries shape the requested flow here?".to_string()
-            } else {
-                "What entrypoints, exported symbols, or setup code define the main flow here?"
-                    .to_string()
-            }
-        }
-        "inspect_symbol_definition" => {
-            "What behavior or contract does this definition establish for the task?".to_string()
-        }
+        "inspect_seed_file" => context_seed_file_question(task),
+        "inspect_symbol_definition" => context_symbol_definition_question(task),
         "follow_call_graph" => {
             "Which callers or callees explain how control moves through this flow?".to_string()
         }
@@ -1935,6 +1911,45 @@ fn context_reading_question(file: &ContextFile, task: &str) -> String {
                 .to_string()
         }
         _ => "What task-relevant context is present in these selected ranges?".to_string(),
+    }
+}
+
+fn context_seed_file_question(task: &str) -> String {
+    if context_text_mentions(task, &["impact", "call", "caller", "callee", "path"]) {
+        "Which local callers, callees, or impact paths in this seed file explain the requested flow?".to_string()
+    } else if context_text_mentions(
+        task,
+        &["auth", "authentication", "authenticate", "login", "signin"],
+    ) {
+        "Where are authentication decisions, credentials, or session boundaries handled here?"
+            .to_string()
+    } else if context_text_mentions(task, &["config", "configuration", "setting", "settings"]) {
+        "Which configuration options, defaults, or environment inputs control the requested behavior?".to_string()
+    } else if context_text_mentions(task, &["startup", "bootstrap", "boot"]) {
+        "What startup entrypoint or initialization sequence creates the requested flow?".to_string()
+    } else if context_text_mentions(task, &["middleware"]) {
+        "Which middleware or handler boundaries shape the requested flow here?".to_string()
+    } else {
+        "What entrypoints, exported symbols, or setup code define the main flow here?".to_string()
+    }
+}
+
+fn context_symbol_definition_question(task: &str) -> String {
+    if context_text_mentions(task, &["impact", "call", "caller", "callee", "path"]) {
+        "What callers, callees, or impact paths does this definition anchor?".to_string()
+    } else if context_text_mentions(
+        task,
+        &["auth", "authentication", "authenticate", "login", "signin"],
+    ) {
+        "What authentication decisions, credentials, or session boundaries does this definition establish?".to_string()
+    } else if context_text_mentions(task, &["config", "configuration", "setting", "settings"]) {
+        "What configuration defaults, inputs, or environment behavior does this definition establish?".to_string()
+    } else if context_text_mentions(task, &["startup", "bootstrap", "boot"]) {
+        "What startup or initialization role does this definition establish?".to_string()
+    } else if context_text_mentions(task, &["middleware"]) {
+        "What middleware or handler boundary does this definition establish?".to_string()
+    } else {
+        "What behavior or contract does this definition establish for the task?".to_string()
     }
 }
 

@@ -1082,12 +1082,10 @@ fn cli_indexes_and_queries_fixture_project() {
         context["reading_plan"][0]["next_action"],
         "inspect_symbol_definition"
     );
-    assert!(
-        context["reading_plan"][0]["question"]
-            .as_str()
-            .unwrap()
-            .contains("definition")
-    );
+    let symbol_question = context["reading_plan"][0]["question"].as_str().unwrap();
+    assert!(symbol_question.contains("authentication decisions"));
+    assert!(symbol_question.contains("session boundaries"));
+    assert!(symbol_question.contains("definition"));
     assert!(
         context["reading_plan"][0]["reason"]
             .as_str()
