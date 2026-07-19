@@ -396,10 +396,13 @@ main() {
     '\[Client integration examples\]\(client-integration-examples\.md\)' \
     "client workflow integration examples link"
   require_pattern docs/client-workflow.md \
-    'Treat reading_plan\.focus as' \
+    'Use `agent_route\.current_reading_step` as the first' \
+    "client workflow current reading step policy"
+  require_pattern docs/client-workflow.md \
+    'Treat `reading_plan\[\]\.focus` as the compact scan label' \
     "client workflow reading focus policy"
   require_pattern docs/client-workflow.md \
-    'Treat `reading_plan\[\]\.question` as the local' \
+    '`reading_plan\[\]\.question` as the local checklist' \
     "client workflow reading question checklist"
   require_pattern docs/client-workflow.md \
     '`reading_plan\[\]\.reason` as the instruction' \
@@ -456,6 +459,12 @@ main() {
     '`impact_analysis` is the pre-edit planning gate' \
     "first-read workflow impact gate"
   require_pattern docs/first-read-workflow.md \
+    'Use `agent_route\.current_reading_step` as the first checklist' \
+    "first-read workflow current reading step"
+  require_pattern docs/first-read-workflow.md \
+    'Treat `reading_plan\[\]\.focus` as the compact scan label' \
+    "first-read workflow reading focus"
+  require_pattern docs/first-read-workflow.md \
     'Use `question` as the local checklist' \
     "first-read workflow question checklist"
   require_pattern docs/first-read-workflow.md \
@@ -507,7 +516,7 @@ main() {
     'Treat `context_pack\.reading_plan\[\]\.focus` as the compact scan label' \
     "MCP client config reading focus client action"
   require_pattern docs/mcp-client-config.md \
-    'Treat `reading_plan\[\]\.question` as the local checklist' \
+    '`reading_plan\[\]\.question` as the local checklist' \
     "MCP client config agent policy reading question"
   require_pattern docs/mcp-client-config.md \
     'Expected first-call signals:' \
@@ -576,7 +585,10 @@ main() {
     'The agent calls `agent_route` with `root`, `task`, and `token_budget` before' \
     "adoption agent_route first-read policy"
   require_pattern docs/adoption-checklist.md \
-    '`reading_plan\[\]\.focus`, `reading_plan\[\]\.question`, and' \
+    '`agent_route\.current_reading_step` for the first checklist row' \
+    "adoption current reading step policy"
+  require_pattern docs/adoption-checklist.md \
+    '`reading_plan\[\]\.focus` as the compact scan label' \
     "adoption reading focus policy"
   require_pattern docs/adoption-checklist.md \
     '`reading_plan\[\]\.question` as the local checklist' \

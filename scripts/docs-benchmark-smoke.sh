@@ -1701,6 +1701,12 @@ main() {
     '\| `route\[\]` \| Includes `index_project`, `project_overview`, `context_pack`, and `impact_analysis`\.' \
     "MCP client config route signal"
   require_pattern docs/mcp-client-config.md \
+    '\| `agent_route\.current_reading_step` \| Mirrors `context_pack\.reading_plan\[0\]`' \
+    "MCP client config current reading step signal"
+  require_pattern docs/mcp-client-config.md \
+    '\| `context_pack\.reading_plan\[\]\.focus` \| Gives the compact scan label' \
+    "MCP client config reading focus signal"
+  require_pattern docs/mcp-client-config.md \
     '\| `execution_plan\[\]` \| Starts with `read_selected_context`, then gates deeper tools and continuation\.' \
     "MCP client config execution plan signal"
   require_pattern docs/client-workflow.md \

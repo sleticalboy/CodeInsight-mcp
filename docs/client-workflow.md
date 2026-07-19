@@ -8,11 +8,13 @@ for a multi-step code-reading task.
 1. Call `agent_route` with `root`, `task`, and `token_budget` for the default
    first read.
 2. Read `context_pack.files[]` by following `reading_plan[]` order in the
-   returned route payload. Treat `reading_plan[].question` as the local
-   checklist for the selected file, `reading_plan[].reason` as the instruction
-   for the current step, `reading_plan[].selection_rank` as the candidate rank
-   audit trail, and `reading_plan[].selection_reason` as the compact evidence
-   for why that file was selected.
+   returned route payload. Use `agent_route.current_reading_step` as the first
+   checklist row. Treat `reading_plan[].focus` as the compact scan label,
+   `reading_plan[].question` as the local checklist for the selected file,
+   `reading_plan[].reason` as the instruction for the current step,
+   `reading_plan[].selection_rank` as the candidate rank audit trail, and
+   `reading_plan[].selection_reason` as the compact evidence for why that file
+   was selected.
 3. Execute `reading_plan[].suggested_tool` when a selected file needs deeper
    local navigation.
 4. Use `continuation_summary` and `omitted_candidates[]` when more context is
@@ -193,13 +195,13 @@ For each `reading_plan[]` step:
 2. Read the matching excerpts from `files[]`.
 3. Offer `suggested_tool` when the user or agent needs deeper evidence.
 
-Use `reading_plan[].question` as the local checklist for what the selected file
-must answer. Use `reading_plan[].reason` as the executable instruction for the
-agent: it combines that question, the suggested follow-up tool, and the
-selection rationale. Use `reading_plan[].selection_rank` to preserve the
-candidate order that produced the selected pack. Use
-`reading_plan[].selection_reason` only when you need the raw ranking reason
-without the action guidance.
+Use `reading_plan[].focus` as the compact scan label for the selected file. Use
+`reading_plan[].question` as the local checklist for what the selected file must
+answer. Use `reading_plan[].reason` as the executable instruction for the agent:
+it combines that question, the suggested follow-up tool, and the selection
+rationale. Use `reading_plan[].selection_rank` to preserve the candidate order
+that produced the selected pack. Use `reading_plan[].selection_reason` only when
+you need the raw ranking reason without the action guidance.
 
 Do not treat `selection_reason` as a replacement for `question` or `reason`: it
 explains why the file made the budgeted pack, while `question` says what the
@@ -258,7 +260,9 @@ A simple client can implement this policy:
 
 1. Run `agent_route`.
 2. Present selected `files[]` in `reading_plan[]` order, using
-   `reading_plan[].question` as the local checklist and
+   `agent_route.current_reading_step` for the first checklist row,
+   `reading_plan[].focus` as the compact scan label,
+   `reading_plan[].question` as the local checklist, and
    `reading_plan[].reason` as the current-step instruction.
 3. Execute the current step's `suggested_tool` when the user asks for detail.
 4. If the selected context is insufficient, execute

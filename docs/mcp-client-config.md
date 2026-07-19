@@ -220,6 +220,8 @@ Expected first-call signals:
 | --- | --- | --- |
 | `route[]` | Includes `index_project`, `project_overview`, `context_pack`, and `impact_analysis`. | Treat the route as already executed; do not rerun those tools unless the repository changed. |
 | `context_pack.files[]` | Contains the bounded files or excerpts to read first. | Read these files before broad `rg` or full-file scans. |
+| `agent_route.current_reading_step` | Mirrors `context_pack.reading_plan[0]` when a reading plan exists. | Use it as the first checklist row without rebuilding it from nested fields. |
+| `context_pack.reading_plan[].focus` | Gives the compact scan label for the selected file. | Show it beside the file path or current step. |
 | `context_pack.reading_plan[].question` | States the concrete question the selected file should answer. | Show it as the local reading checklist. |
 | `context_pack.reading_plan[].reason` | Explains what the agent should learn from the selected file. | Show it as the current reading instruction. |
 | `context_pack.reading_plan[].selection_rank` | Preserves the file's rank from the candidate list that produced the selected pack. | Show it in logs or UI when explaining why this file came first. |
@@ -337,7 +339,9 @@ Recommended first-read flow for agents:
    `continuation_summary` after selected context, then review impact before
    edits.
 3. Read the returned `context_pack.files[]` in `reading_plan[]` order.
-4. Treat `reading_plan[].question` as the local checklist,
+4. Use `agent_route.current_reading_step` for the first checklist row. Treat
+   `reading_plan[].focus` as the compact scan label,
+   `reading_plan[].question` as the local checklist,
    `reading_plan[].reason` as the current-step instruction, and
    `reading_plan[].selection_rank` plus `reading_plan[].selection_reason` as
    display or audit evidence.

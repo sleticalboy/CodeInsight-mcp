@@ -259,7 +259,9 @@ Pass criteria:
 - The agent uses `project_overview` and `context_pack` from the `agent_route`
   response instead of duplicating the first-read path manually.
 - The agent reads selected files in `reading_plan[]` order and uses
-  `reading_plan[].question` as the local checklist and
+  `agent_route.current_reading_step` for the first checklist row,
+  `reading_plan[].focus` as the compact scan label,
+  `reading_plan[].question` as the local checklist, and
   `reading_plan[].reason` as the current-step instruction.
 - The agent preserves `reading_plan[].selection_rank` as the candidate-rank
   audit trail and can explain `reading_plan[].selection_reason` as the evidence
@@ -300,6 +302,8 @@ Pass criteria:
 - `budget.candidate_files` is greater than or equal to
   `budget.selected_files`.
 - `reading_plan[]` is present.
+- `agent_route.current_reading_step` mirrors `reading_plan[0]`.
+- `reading_plan[0].focus` is present and provides a compact scan label.
 - `reading_plan[0].question` is present and states the local reading
   checklist for the first selected file.
 - `reading_plan[0].reason` is present and explains the question, deeper

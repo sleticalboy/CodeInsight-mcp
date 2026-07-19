@@ -38,11 +38,13 @@ Recommended MCP first-read flow:
 
 1. Call `agent_route` with `root`, `task`, and `token_budget`.
 2. Read `context_pack.files[]` in `reading_plan[]` order from the returned
-   route payload. Treat `reading_plan[].question` as the local checklist for
-   the selected file, `reading_plan[].reason` as the executable instruction for
-   the current step, `reading_plan[].selection_rank` as the candidate-rank audit
-   trail, and `reading_plan[].selection_reason` as compact evidence for why the
-   file was selected.
+   route payload. Use `agent_route.current_reading_step` as the first checklist
+   row. Treat `reading_plan[].focus` as the compact scan label,
+   `reading_plan[].question` as the local checklist for the selected file,
+   `reading_plan[].reason` as the executable instruction for the current step,
+   `reading_plan[].selection_rank` as the candidate-rank audit trail, and
+   `reading_plan[].selection_reason` as compact evidence for why the file was
+   selected.
 3. Use `continuation_summary.next_action` only after selected context is
    consumed.
 
@@ -68,6 +70,7 @@ lower-level tools directly: `index_project`, `project_overview`,
 - `index_report`
 - `overview`
 - `context_pack`
+- `current_reading_step` mirroring `context_pack.reading_plan[0]` when present
 - `impact_analysis` when a file or symbol seed is available
 - `route[]` metadata describing the executed tool path and why each stage
   matters for the first read
