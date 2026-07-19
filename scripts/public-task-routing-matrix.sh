@@ -331,6 +331,8 @@ run_case() {
       routes: [.tasks[] | {
         task,
         first_file,
+        first_reading_focus,
+        first_reading_question,
         seed_strategy,
         total_lines,
         line_reduction,
@@ -412,9 +414,11 @@ write_markdown() {
     echo
     jq -r '.cases[] as $case |
       "### " + $case.case + "\n\n" +
-      "| Task | First file | Seed strategy | Reduction | Tokens | Impact |\n" +
-      "| --- | --- | --- | ---: | ---: | ---: |\n" +
-      ($case.routes | map("| \(.task) | `\(.first_file)` | `\(.seed_strategy)` | `\(.line_reduction)` | `\(.estimated_tokens)` | `\(.risk_level) / \(.impacted_files)` |") | join("\n")) +
+      "| Task | First file | Focus | Question | Seed strategy | Reduction | Tokens | Impact |\n" +
+      "| --- | --- | --- | --- | --- | ---: | ---: | ---: |\n" +
+      ($case.routes | map(
+        "| \(.task) | `\(.first_file)` | \(.first_reading_focus | gsub("\\|"; "\\|")) | \(.first_reading_question | gsub("\\|"; "\\|")) | `\(.seed_strategy)` | `\(.line_reduction)` | `\(.estimated_tokens)` | `\(.risk_level) / \(.impacted_files)` |"
+      ) | join("\n")) +
       "\n"' "$SUMMARY_JSON"
     echo "## Artifacts"
     echo

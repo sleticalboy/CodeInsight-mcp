@@ -21,6 +21,8 @@
         {
           "task": "understand express application routing behavior",
           "first_file": "lib/express.js",
+          "first_reading_focus": "Start with seed file context and primary symbols.",
+          "first_reading_question": "What entrypoints, exported symbols, or setup code define the main flow here?",
           "seed_strategy": "auto_task_match",
           "total_lines": 21478,
           "line_reduction": "98.9%",
@@ -31,6 +33,8 @@
         {
           "task": "understand middleware behavior",
           "first_file": "lib/application.js",
+          "first_reading_focus": "Start with seed file middleware and handler boundaries.",
+          "first_reading_question": "Which middleware or handler boundaries shape the requested flow here?",
           "seed_strategy": "auto_task_match",
           "total_lines": 21478,
           "line_reduction": "98.3%",
@@ -41,6 +45,8 @@
         {
           "task": "understand application settings",
           "first_file": "lib/application.js",
+          "first_reading_focus": "Start with seed file configuration defaults and inputs.",
+          "first_reading_question": "Which configuration options, defaults, or environment inputs control the requested behavior?",
           "seed_strategy": "auto_task_match",
           "total_lines": 21478,
           "line_reduction": "98.3%",
@@ -51,6 +57,8 @@
         {
           "task": "understand startup flow",
           "first_file": "index.js",
+          "first_reading_focus": "Start with seed file startup and initialization flow.",
+          "first_reading_question": "What startup entrypoint or initialization sequence creates the requested flow?",
           "seed_strategy": "auto_source_fallback",
           "total_lines": 21478,
           "line_reduction": "97.5%",
@@ -76,6 +84,8 @@
         {
           "task": "understand flask application routing behavior",
           "first_file": "src/flask/sansio/blueprints.py",
+          "first_reading_focus": "Start with seed file context and primary symbols.",
+          "first_reading_question": "What entrypoints, exported symbols, or setup code define the main flow here?",
           "seed_strategy": "auto_task_match",
           "total_lines": 18337,
           "line_reduction": "96.7%",
@@ -86,6 +96,8 @@
         {
           "task": "understand request lifecycle before after request handling",
           "first_file": "src/flask/app.py",
+          "first_reading_focus": "Start with seed file request lifecycle, dispatch, and response finalization flow.",
+          "first_reading_question": "Where do request lifecycle hooks, dispatch, and response finalization happen here?",
           "seed_strategy": "auto_entrypoint",
           "total_lines": 18337,
           "line_reduction": "96.9%",
@@ -96,6 +108,8 @@
         {
           "task": "understand configuration settings",
           "first_file": "src/flask/config.py",
+          "first_reading_focus": "Start with seed file configuration defaults and inputs.",
+          "first_reading_question": "Which configuration options, defaults, or environment inputs control the requested behavior?",
           "seed_strategy": "auto_task_match",
           "total_lines": 18337,
           "line_reduction": "97.0%",
@@ -106,6 +120,8 @@
         {
           "task": "understand cli startup run command",
           "first_file": "src/flask/cli.py",
+          "first_reading_focus": "Start with seed file startup and initialization flow.",
+          "first_reading_question": "What startup entrypoint or initialization sequence creates the requested flow?",
           "seed_strategy": "auto_entrypoint",
           "total_lines": 18337,
           "line_reduction": "96.9%",
@@ -131,6 +147,8 @@
         {
           "task": "understand gin engine routing behavior",
           "first_file": "routergroup.go",
+          "first_reading_focus": "Start with seed file context and primary symbols.",
+          "first_reading_question": "What entrypoints, exported symbols, or setup code define the main flow here?",
           "seed_strategy": "auto_task_match",
           "total_lines": 24099,
           "line_reduction": "98.4%",
@@ -141,6 +159,8 @@
         {
           "task": "understand middleware authentication behavior",
           "first_file": "auth.go",
+          "first_reading_focus": "Start with seed file authentication and session boundaries.",
+          "first_reading_question": "Where are authentication decisions, credentials, or session boundaries handled here?",
           "seed_strategy": "auto_task_match",
           "total_lines": 24099,
           "line_reduction": "98.7%",
@@ -151,6 +171,8 @@
         {
           "task": "understand startup flow",
           "first_file": "gin.go",
+          "first_reading_focus": "Start with seed file startup and initialization flow.",
+          "first_reading_question": "What startup entrypoint or initialization sequence creates the requested flow?",
           "seed_strategy": "auto_entrypoint",
           "total_lines": 24099,
           "line_reduction": "98.6%",
@@ -176,6 +198,8 @@
         {
           "task": "understand requests session request flow",
           "first_file": "src/requests/sessions.py",
+          "first_reading_focus": "Start with seed file authentication and session boundaries.",
+          "first_reading_question": "Where are authentication decisions, credentials, or session boundaries handled here?",
           "seed_strategy": "auto_task_match",
           "total_lines": 12032,
           "line_reduction": "94.5%",
@@ -186,6 +210,8 @@
         {
           "task": "understand authentication behavior",
           "first_file": "src/requests/auth.py",
+          "first_reading_focus": "Start with seed file authentication and session boundaries.",
+          "first_reading_question": "Where are authentication decisions, credentials, or session boundaries handled here?",
           "seed_strategy": "auto_task_match",
           "total_lines": 12032,
           "line_reduction": "95.2%",
@@ -196,6 +222,8 @@
         {
           "task": "understand configuration settings",
           "first_file": "src/requests/sessions.py",
+          "first_reading_focus": "Start with seed file configuration defaults and inputs.",
+          "first_reading_question": "Which configuration options, defaults, or environment inputs control the requested behavior?",
           "seed_strategy": "auto_task_match",
           "total_lines": 12032,
           "line_reduction": "94.6%",
@@ -206,6 +234,8 @@
         {
           "task": "understand package startup flow",
           "first_file": "src/requests/__init__.py",
+          "first_reading_focus": "Start with seed file startup and initialization flow.",
+          "first_reading_question": "What startup entrypoint or initialization sequence creates the requested flow?",
           "seed_strategy": "auto_task_match",
           "total_lines": 12032,
           "line_reduction": "95.6%",

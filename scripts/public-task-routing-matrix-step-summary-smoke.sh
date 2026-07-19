@@ -65,6 +65,8 @@ main() {
         {
           "task": "understand express application routing behavior",
           "first_file": "lib/express.js",
+          "first_reading_focus": "Start with seed file context and primary symbols.",
+          "first_reading_question": "What entrypoints define the main flow?",
           "seed_strategy": "auto_task_match",
           "line_reduction": "90.0%",
           "estimated_tokens": 1000,
@@ -74,6 +76,8 @@ main() {
         {
           "task": "understand middleware behavior",
           "first_file": "lib/application.js",
+          "first_reading_focus": "Start with seed file middleware and handler boundaries.",
+          "first_reading_question": "Which middleware or handler boundaries shape the requested flow here?",
           "seed_strategy": "auto_task_match",
           "line_reduction": "85.0%",
           "estimated_tokens": 800,
@@ -98,6 +102,8 @@ main() {
         {
           "task": "understand gin routing behavior",
           "first_file": "gin.go",
+          "first_reading_focus": "Start with seed file context and primary symbols.",
+          "first_reading_question": "What entrypoints define the main flow?",
           "seed_strategy": "auto_task_match",
           "line_reduction": "87.5%",
           "estimated_tokens": 600,

@@ -100,6 +100,8 @@ main() {
     fail "snapshot should include aggregate line reduction"
   grep -Fq 'Summary JSON: `<output-dir>/summary.json`' "$snapshot" ||
     fail "snapshot should normalize summary path"
+  grep -Fq '| Task | First file | Focus | Question | Seed strategy | Reduction | Tokens | Impact |' "$snapshot" ||
+    fail "snapshot should include first-read focus and question columns"
   grep -Fq 'docs/task-routing-expectations/express.tsv' "$snapshot" ||
     fail "snapshot should normalize expectation file path"
   if grep -Fq "$TEMP_DIR" "$snapshot"; then
@@ -114,7 +116,9 @@ main() {
       and .aggregate.line_reduction > 0
       and .cases[0].repository == "<case-root>/express"
       and .cases[0].summary_json == "<output-dir>/express/summary.json"
-      and .cases[0].expect_file == "docs/task-routing-expectations/express.tsv"' \
+      and .cases[0].expect_file == "docs/task-routing-expectations/express.tsv"
+      and (.cases[0].routes[0].first_reading_focus | type == "string" and length > 0)
+      and (.cases[0].routes[0].first_reading_question | type == "string" and length > 0)' \
     "$summary_snapshot" >/dev/null ||
     fail "summary snapshot should be normalized JSON evidence"
 

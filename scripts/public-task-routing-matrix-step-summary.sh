@@ -53,6 +53,8 @@ require_summary_contract() {
         and all(.routes[];
           (.task | type == "string")
           and (.first_file | type == "string")
+          and (.first_reading_focus | type == "string")
+          and (.first_reading_question | type == "string")
           and (.seed_strategy | type == "string")
           and (.line_reduction | type == "string")
           and (.estimated_tokens | type == "number")
