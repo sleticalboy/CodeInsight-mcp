@@ -76,6 +76,7 @@ scripts/mcp-stdio-smoke.sh
 scripts/semantic-smoke.sh
 scripts/installed-quickstart-smoke.sh
 scripts/public-task-routing-matrix-smoke.sh
+scripts/update-public-task-routing-matrix-smoke.sh
 ```
 
 Choose the narrowest check for the change:
@@ -90,6 +91,7 @@ Choose the narrowest check for the change:
 | Framework entrypoint routing changed | `scripts/framework-entrypoint-demo.sh` | Temporary multi-framework fixture covering Next.js, Rails, Django, and C# web first-context selection. |
 | Task alias or seed ordering changed | `scripts/task-routing-matrix-smoke.sh` | Temporary fixture proving routing, authentication, authorization, settings, startup, persistence, debug, coverage, API handler, cache, observability, security, billing, frontend, background job, documentation, and middleware prompts choose the matching first file and that `--expect-file` failures are reported. |
 | Public route expectations changed | `scripts/public-task-routing-matrix.sh --case express --root express=/path/to/express` | Checked-in public repository expectation files aggregated into one route-quality summary. Defaults use pinned fast public cases; add `--case streamlit` for the larger Streamlit checkout. Use `scripts/public-task-routing-matrix-smoke.sh` for a deterministic no-network contract check. |
+| Public route snapshot changed | `scripts/update-public-task-routing-matrix.sh --check` | Checked-in public route-quality snapshot freshness. Use `scripts/update-public-task-routing-matrix-smoke.sh` for a deterministic no-network contract check. |
 | Installed-binary adoption path changed | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh` | CLI and MCP first-read routes through the installed binary, including selection rank and continuation evidence. |
 | One-call `agent_route` JSON contract changed | `scripts/agent-route-smoke.sh` | Route order, execution plan, context pack, and impact-analysis preview. |
 | Context ranking or continuation changed | `scripts/context-pack-quality-smoke.sh` | Deterministic context-pack quality regressions. |
@@ -103,7 +105,9 @@ changes touch framework routing. Use
 `task-routing-matrix.sh --expect-file route-expectations.tsv` for real
 repository multi-prompt route-quality gates, `public-task-routing-matrix.sh`
 when refreshing all checked-in public route expectation cases, and
-`task-routing-matrix-smoke.sh` for deterministic alias/seed-order regressions.
+`update-public-task-routing-matrix.sh` when refreshing the checked-in public
+snapshot. Use `task-routing-matrix-smoke.sh` for deterministic alias/seed-order
+regressions.
 Use `demo-output-smoke.sh` after refreshing [Demo output snapshot](demo-output.md).
 
 `agent-route-smoke.sh --summary-json <path>` writes a reusable JSON evidence

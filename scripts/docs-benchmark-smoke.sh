@@ -884,6 +884,15 @@ main() {
   require_pattern scripts/update-public-task-routing-matrix.sh \
     'scripts/public-task-routing-matrix\.sh' \
     "public task routing matrix update generator"
+  require_pattern scripts/update-public-task-routing-matrix-smoke.sh \
+    'update public task routing matrix smoke passed' \
+    "public task routing matrix update smoke success output"
+  require_pattern docs/maintenance-commands.md \
+    'scripts/update-public-task-routing-matrix\.sh --check' \
+    "maintenance public task routing matrix snapshot check command"
+  require_pattern docs/maintenance-commands.md \
+    'scripts/update-public-task-routing-matrix-smoke\.sh' \
+    "maintenance public task routing matrix update smoke command"
   require_pattern docs/adoption-checklist.md \
     'scripts/two-minute-demo\.sh' \
     "adoption two-minute demo command"
