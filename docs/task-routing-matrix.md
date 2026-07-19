@@ -118,6 +118,15 @@ questions to distinct first files:
 | understand middleware authentication behavior | `auth.go` | `auto_task_match` | `395/24099` | `98.4%` | `3871` | `high / 5` |
 | understand startup flow | `gin.go` | `auto_entrypoint` | `305/24099` | `98.7%` | `2965` | `high / 20` |
 
+Against a Streamlit checkout with Python backend and TypeScript frontend code,
+the same matrix catches broad prompts that previously drifted to plausible but
+less useful files:
+
+| Task | First file | Seed strategy | Routed lines | Reduction | Tokens | Impact |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| understand streamlit server startup flow | `lib/streamlit/web/bootstrap.py` | `auto_entrypoint` | `272/556097` | `100.0%` | `2810` | `high / 6` |
+| understand configuration settings | `lib/streamlit/config.py` | `auto_task_match` | `610/556097` | `99.9%` | `6000` | `high / 4` |
+
 This complements [Adoption cases](adoption-cases.md): adoption cases compare
 blind first-read size with one routed first read, while this matrix checks
 whether multiple prompts on the same repository pick the expected local start
