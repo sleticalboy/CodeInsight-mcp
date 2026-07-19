@@ -13,6 +13,7 @@ FORCE_CLONE="${CODEINSIGHT_PUBLIC_TASK_MATRIX_FORCE_CLONE:-0}"
 CASES=()
 ROOT_OVERRIDES=()
 EXPECTATION_OVERRIDES=()
+REF_OVERRIDES=()
 
 usage() {
   cat <<'EOF'
@@ -22,9 +23,10 @@ Runs checked-in task-routing expectation files against public repository cases
 and writes one aggregate route-quality summary.
 
 Options:
-  --case NAME          Run one case. Can be repeated. Defaults to all cases.
+  --case NAME          Run one case. Can be repeated. Defaults to pinned fast cases.
                        Supported: express, gin, requests, streamlit.
   --root NAME=PATH     Use an existing checkout for a case. Can be repeated.
+  --ref NAME=REF       Checkout a specific ref for a case. Can be repeated.
   --expect-file NAME=PATH
                        Override the expectation TSV/JSON for a case.
   --work-dir PATH      Clone workspace. Default: /tmp/codeinsight-public-task-routing-matrix.
@@ -113,6 +115,11 @@ parse_args() {
         ROOT_OVERRIDES+=("$(parse_mapping "--root" "$2")")
         shift 2
         ;;
+      --ref)
+        [ "$#" -ge 2 ] || fail "--ref requires NAME=REF"
+        REF_OVERRIDES+=("$(parse_mapping "--ref" "$2")")
+        shift 2
+        ;;
       --expect-file)
         [ "$#" -ge 2 ] || fail "--expect-file requires NAME=PATH"
         EXPECTATION_OVERRIDES+=("$(parse_mapping "--expect-file" "$2")")
@@ -176,6 +183,32 @@ case_repo_url() {
   esac
 }
 
+case_default_ref() {
+  case "$1" in
+    express) printf "ae6dd37680e3a00618d6c8a3e522f0ee4eeba1a4" ;;
+    gin) printf "34dac209ffb6ef85cc78c5d217bbb7ad001d68fd" ;;
+    requests) printf "f361ead047be5cb873174218582f7d8b9fcd9f49" ;;
+    streamlit) printf "" ;;
+    *) fail "unsupported case: $1" ;;
+  esac
+}
+
+case_ref() {
+  local case_name="$1"
+  local override name ref
+
+  for override in ${REF_OVERRIDES[@]+"${REF_OVERRIDES[@]}"}; do
+    name="${override%%=*}"
+    ref="${override#*=}"
+    if [ "$name" = "$case_name" ]; then
+      printf "%s" "$ref"
+      return
+    fi
+  done
+
+  case_default_ref "$case_name"
+}
+
 case_expect_file() {
   local case_name="$1"
   local override name path
@@ -208,7 +241,7 @@ case_root_override() {
 
 prepare_case_repo() {
   local case_name="$1"
-  local override repo_dir repo_url
+  local override repo_dir repo_url ref
 
   override="$(case_root_override "$case_name")"
   if [ -n "$override" ]; then
@@ -219,23 +252,40 @@ prepare_case_repo() {
 
   repo_dir="$WORK_DIR/repos/$case_name"
   repo_url="$(case_repo_url "$case_name")"
+  ref="$(case_ref "$case_name")"
   if [ "$FORCE_CLONE" = "1" ]; then
     rm -rf "$repo_dir"
   fi
   if [ ! -d "$repo_dir/.git" ]; then
     rm -rf "$repo_dir"
     mkdir -p "$(dirname "$repo_dir")"
-    git -c http.version=HTTP/1.1 clone --quiet --depth 1 "$repo_url" "$repo_dir"
+    if [ -n "$ref" ]; then
+      mkdir -p "$repo_dir"
+      git -C "$repo_dir" init --quiet ||
+        fail "failed to initialize repository for $case_name: $repo_dir"
+      git -C "$repo_dir" remote add origin "$repo_url" ||
+        fail "failed to add origin for $case_name: $repo_url"
+    else
+      git -c http.version=HTTP/1.1 clone --quiet --depth 1 "$repo_url" "$repo_dir" ||
+        fail "failed to clone $case_name: $repo_url"
+    fi
+  fi
+  if [ -n "$ref" ]; then
+    git -C "$repo_dir" -c http.version=HTTP/1.1 fetch --quiet --depth 1 origin "$ref" ||
+      fail "failed to fetch $case_name ref: $ref"
+    git -C "$repo_dir" checkout --quiet FETCH_HEAD ||
+      fail "failed to checkout $case_name ref: $ref"
   fi
   printf "%s" "$repo_dir"
 }
 
 run_case() {
   local case_name="$1"
-  local repo_root expect_file case_output_dir case_summary row_json
+  local repo_root expect_file case_ref_value case_output_dir case_summary row_json
 
   repo_root="$(prepare_case_repo "$case_name")"
   expect_file="$(case_expect_file "$case_name")"
+  case_ref_value="$(case_ref "$case_name")"
   [ -f "$expect_file" ] || fail "expectation file does not exist for $case_name: $expect_file"
 
   case_output_dir="$OUTPUT_DIR/$case_name"
@@ -259,11 +309,13 @@ run_case() {
   jq \
     --arg case_name "$case_name" \
     --arg repo_root "$repo_root" \
+    --arg ref "$case_ref_value" \
     --arg expect_file "$expect_file" \
     --arg summary_json "$case_summary" \
     '{
       case: $case_name,
       repository: $repo_root,
+      ref: $ref,
       expect_file: $expect_file,
       summary_json: $summary_json,
       task_count: .task_count,
@@ -330,10 +382,10 @@ write_markdown() {
     echo
     echo "## Cases"
     echo
-    echo "| Case | Tasks | Expectations | Selected lines | Tokens | Max impact | Expect file |"
-    echo "| --- | ---: | ---: | ---: | ---: | ---: | --- |"
+    echo "| Case | Ref | Tasks | Expectations | Selected lines | Tokens | Max impact | Expect file |"
+    echo "| --- | --- | ---: | ---: | ---: | ---: | ---: | --- |"
     jq -r '.cases[] |
-      "| \(.case) | `\(.task_count)` | `\(.expectation_count)` | `\(.total_selected_lines)` | `\(.total_estimated_tokens)` | `\(.max_impacted_files)` | `\(.expect_file)` |"' \
+      "| \(.case) | `\((.ref // "") as $value | if $value == "" then "-" else $value end)` | `\(.task_count)` | `\(.expectation_count)` | `\(.total_selected_lines)` | `\(.total_estimated_tokens)` | `\(.max_impacted_files)` | `\(.expect_file)` |"' \
       "$SUMMARY_JSON"
     echo
     echo "## Routes"
@@ -365,7 +417,7 @@ main() {
     fail "--token-budget must be greater than zero"
   fi
   if [ "${#CASES[@]}" -eq 0 ]; then
-    CASES=(express gin requests streamlit)
+    CASES=(express gin requests)
   fi
 
   OUTPUT_DIR="${OUTPUT_DIR:-$WORK_DIR/matrix}"

@@ -4143,7 +4143,16 @@ fn auto_context_seed_files(
             .then_with(|| left.file.cmp(&right.file))
     });
 
-    if let Some(candidate) = candidates.first() {
+    let selected_candidate = if auto_seed_prefers_entrypoint(task_keywords) {
+        candidates.first()
+    } else {
+        candidates
+            .iter()
+            .find(|candidate| candidate.source == "task_match")
+            .or_else(|| candidates.first())
+    };
+
+    if let Some(candidate) = selected_candidate {
         let file = candidate.file.clone();
         let source = candidate.source.clone();
         let strategy = if source == "task_match" {
@@ -4342,6 +4351,39 @@ fn auto_seed_task_focus_boost(
         score += 260;
     }
 
+    if task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "session" | "sessions"))
+        && (auto_seed_file_stem_matches(file, "session")
+            || auto_seed_file_stem_matches(file, "sessions"))
+    {
+        score += 320;
+    }
+
+    if task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "route" | "routes" | "router" | "routing"))
+    {
+        let file_route_match = auto_seed_field_matches(file, "route")
+            || auto_seed_field_matches(file, "router")
+            || auto_seed_field_matches(file, "routing");
+        let symbol_route_match = symbol
+            .map(|symbol| {
+                auto_seed_field_matches(symbol, "route")
+                    || auto_seed_field_matches(symbol, "router")
+                    || auto_seed_field_matches(symbol, "routing")
+            })
+            .unwrap_or(false);
+
+        score += match (overview_entrypoint, file_route_match, symbol_route_match) {
+            (false, true, _) => 360,
+            (false, false, true) => 120,
+            (true, true, _) => 120,
+            (true, false, true) => 40,
+            _ => 0,
+        };
+    }
+
     score
 }
 
@@ -4349,6 +4391,7 @@ fn auto_seed_entrypoint_file_matches(file: &str) -> bool {
     auto_seed_field_matches(file, "bootstrap")
         || auto_seed_field_matches(file, "main")
         || auto_seed_field_matches(file, "cli")
+        || auto_seed_file_stem_matches(file, "__init__")
 }
 
 fn auto_seed_file_stem_matches(file: &str, keyword: &str) -> bool {
@@ -4364,6 +4407,15 @@ fn auto_seed_lifecycle_keyword(keyword: &str) -> bool {
         keyword,
         "startup" | "start" | "boot" | "program" | "entrypoint" | "entrypoints" | "main"
     )
+}
+
+fn auto_seed_prefers_entrypoint(task_keywords: &[String]) -> bool {
+    task_keywords
+        .iter()
+        .any(|keyword| auto_seed_lifecycle_keyword(keyword))
+        && !task_keywords
+            .iter()
+            .any(|keyword| matches!(keyword.as_str(), "package" | "packages"))
 }
 
 #[derive(Debug, Default)]

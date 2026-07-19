@@ -119,11 +119,15 @@ Checked-in examples:
 - [Requests](task-routing-expectations/requests.tsv)
 - [Streamlit](task-routing-expectations/streamlit.tsv)
 
-Run all checked-in public matrices in one pass:
+Run the pinned fast public matrices in one pass:
 
 ```bash
 scripts/public-task-routing-matrix.sh
 ```
+
+The default set uses pinned Express, Gin, and Requests commits so expectation
+files do not drift with upstream default branches. Add `--case streamlit` when
+you want to include the larger Streamlit checkout.
 
 Use local checkouts when you want deterministic or offline reproduction:
 

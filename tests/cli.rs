@@ -2779,6 +2779,17 @@ fn cli_context_pack_uses_file_text_for_python_settings_tasks() {
     let fixture = TempDir::new().unwrap();
     std::fs::create_dir_all(fixture.path().join("src/requests")).unwrap();
     std::fs::write(
+        fixture.path().join("src/requests/__init__.py"),
+        r#""""Requests package startup exports."""
+
+from .sessions import Session, session
+from .api import request
+
+__all__ = ("Session", "session", "request")
+"#,
+    )
+    .unwrap();
+    std::fs::write(
         fixture.path().join("src/requests/help.py"),
         r#""""Implementation metadata entrypoint."""
 
@@ -2788,8 +2799,26 @@ def _implementation():
     )
     .unwrap();
     std::fs::write(
+        fixture.path().join("src/requests/api.py"),
+        r#""""User-facing request helpers."""
+
+from . import sessions
+
+def request(method, url, **kwargs):
+    with sessions.Session() as session:
+        return session.request(method=method, url=url, **kwargs)
+"#,
+    )
+    .unwrap();
+    std::fs::write(
         fixture.path().join("src/requests/sessions.py"),
         r#""""Session objects manage persistent settings across requests."""
+
+class Session:
+    """Persistent session request flow."""
+
+    def request(self, method, url, **kwargs):
+        return method, url, kwargs
 
 def merge_setting(request_setting, session_setting):
     """Merge request and session settings."""
@@ -2824,6 +2853,112 @@ def merge_setting(request_setting, session_setting):
         settings_context["files"][0]["file"],
         "src/requests/sessions.py"
     );
+
+    let session_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand requests session request flow",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(session_context["seed_strategy"], "auto_task_match");
+    assert_eq!(
+        session_context["selected_seeds"][0]["value"],
+        "src/requests/sessions.py"
+    );
+    assert_eq!(
+        session_context["files"][0]["file"],
+        "src/requests/sessions.py"
+    );
+
+    let startup_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand package startup flow",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(
+        startup_context["selected_seeds"][0]["value"],
+        "src/requests/__init__.py"
+    );
+    assert_eq!(
+        startup_context["files"][0]["file"],
+        "src/requests/__init__.py"
+    );
+}
+
+#[test]
+fn cli_context_pack_prefers_task_match_over_entrypoint_for_specific_routing_tasks() {
+    let fixture = TempDir::new().unwrap();
+    std::fs::write(
+        fixture.path().join("go.mod"),
+        "module github.com/gin-gonic/gin\n",
+    )
+    .unwrap();
+    std::fs::write(
+        fixture.path().join("gin.go"),
+        r#"package gin
+
+// Engine is the framework instance and embeds the router group.
+type Engine struct {
+  RouterGroup
+}
+
+func New() *Engine {
+  return &Engine{}
+}
+"#,
+    )
+    .unwrap();
+    std::fs::write(
+        fixture.path().join("routergroup.go"),
+        r#"package gin
+
+// IRoutes defines router handle behavior.
+type IRoutes interface {
+  Handle(string, string, ...HandlerFunc) IRoutes
+  GET(string, ...HandlerFunc) IRoutes
+}
+
+// RouterGroup defines gin engine routing behavior for route groups.
+type RouterGroup struct {}
+
+func (group *RouterGroup) Handle(method string, path string, handlers ...HandlerFunc) IRoutes {
+  return group
+}
+"#,
+    )
+    .unwrap();
+    std::fs::write(
+        fixture.path().join("context.go"),
+        r#"package gin
+
+type Context struct {}
+type HandlerFunc func(*Context)
+"#,
+    )
+    .unwrap();
+
+    run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+
+    let routing_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand gin engine routing behavior",
+        "--token-budget",
+        "1600",
+    ]);
+
+    assert_eq!(routing_context["seed_strategy"], "auto_task_match");
+    assert_eq!(
+        routing_context["selected_seeds"][0]["value"],
+        "routergroup.go"
+    );
+    assert_eq!(routing_context["files"][0]["file"], "routergroup.go");
 }
 
 #[test]
