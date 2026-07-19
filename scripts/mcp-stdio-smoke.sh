@@ -271,6 +271,12 @@ try:
     agent_route_omitted_candidates = agent_route_context["omitted_candidates"]
     assert agent_route_reading_plan, "agent_route produced no reading plan"
     agent_route_first_reading = agent_route_reading_plan[0]
+    agent_route_current_step_matches_reading_plan = (
+        agent_route_result["current_reading_step"] == agent_route_first_reading
+    )
+    assert agent_route_current_step_matches_reading_plan, (
+        "agent_route current_reading_step must mirror context_pack.reading_plan[0]"
+    )
     assert [step["tool"] for step in agent_route_result["route"]] == [
         "index_project",
         "project_overview",
@@ -560,6 +566,7 @@ try:
     print(f"auto_reading_plan_steps: {len(auto_context_result['reading_plan'])}")
     print(f"agent_route_execution_plan_steps: {len(agent_route_result['execution_plan'])}")
     print(f"agent_route_first_execution_action: {agent_route_result['execution_plan'][0]['action']}")
+    print(f"agent_route_current_reading_step_matches_reading_plan: {str(agent_route_current_step_matches_reading_plan).lower()}")
     print(f"agent_route_first_reading_selection_rank: {agent_route_first_reading['selection_rank']}")
     print(f"agent_route_continuation_status: {agent_route_continuation['status']}")
     print(f"agent_route_continuation_next_action: {agent_route_continuation['next_action']}")

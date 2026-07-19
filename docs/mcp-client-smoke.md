@@ -62,6 +62,8 @@ It also asserts the MCP-facing structured fields that clients commonly render:
 - `agent_route.execution_plan[]` includes `read_selected_context`,
   `use_current_reading_step_suggested_tool`, `use_continuation_if_needed`, and
   `review_impact_before_edits`
+- `agent_route.current_reading_step` mirrors
+  `agent_route.context_pack.reading_plan[0]`
 - first `agent_route.execution_plan[]` step is ready and names selected files
 - second `agent_route.execution_plan[]` step exposes the current-step
   `suggested_tool`
@@ -118,6 +120,7 @@ auto_seed_strategy: auto_entrypoint
 auto_reading_plan_steps: 2
 agent_route_execution_plan_steps: 4
 agent_route_first_execution_action: read_selected_context
+agent_route_current_reading_step_matches_reading_plan: true
 agent_route_first_reading_selection_rank: 1
 agent_route_continuation_status: complete
 agent_route_continuation_next_action: read_selected_context
@@ -143,6 +146,8 @@ and `explicit_omitted_candidates` also vary with the selected first reading
 step, seed symbol, and token budget.
 `agent_route_execution_plan_steps` should remain `4` for the default first-read
 route unless the contract changes deliberately.
+`agent_route_current_reading_step_matches_reading_plan` should remain `true`;
+it verifies the protocol-level shortcut mirrors the first reading-plan row.
 `agent_route_suggested_tool_executed` should remain `true`; it verifies the
 execution-plan suggested tool is a usable MCP call, not only display metadata.
 `agent_route_first_reading_selection_rank` and

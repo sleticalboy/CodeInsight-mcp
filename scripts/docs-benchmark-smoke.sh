@@ -1614,6 +1614,9 @@ main() {
     'agent_route_execution_plan_steps: 4' \
     "MCP client smoke execution plan output"
   require_pattern docs/mcp-client-smoke.md \
+    'agent_route_current_reading_step_matches_reading_plan: true' \
+    "MCP client smoke current reading step mirror output"
+  require_pattern docs/mcp-client-smoke.md \
     'agent_route_suggested_tool_executed: true' \
     "MCP client smoke execution-plan suggested tool output"
   require_pattern docs/mcp-client-smoke.md \
@@ -1625,6 +1628,9 @@ main() {
   require_pattern docs/mcp-client-smoke.md \
     'suggested tool is a usable MCP call' \
     "MCP client smoke execution-plan suggested tool contract"
+  require_pattern docs/mcp-client-smoke.md \
+    'protocol-level shortcut mirrors the first reading-plan row' \
+    "MCP client smoke current reading step mirror contract"
   require_pattern docs/mcp-client-smoke.md \
     'candidate-ranking and continuation evidence' \
     "MCP client smoke candidate evidence contract"
