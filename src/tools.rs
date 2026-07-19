@@ -1890,6 +1890,8 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
         "Start with seed file startup and initialization flow.".to_string()
     } else if signals.middleware {
         "Start with seed file middleware and handler boundaries.".to_string()
+    } else if signals.frontend_ui {
+        "Start with seed file frontend UI, component, or page boundaries.".to_string()
     } else if signals.background_jobs {
         "Start with seed file background jobs, queues, or worker boundaries.".to_string()
     } else if signals.api_handler {
@@ -1918,6 +1920,8 @@ fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
         "Read symbol definitions that establish startup behavior.".to_string()
     } else if signals.middleware {
         "Read symbol definitions that establish middleware boundaries.".to_string()
+    } else if signals.frontend_ui {
+        "Read symbol definitions that establish frontend component or page behavior.".to_string()
     } else if signals.background_jobs {
         "Read symbol definitions that establish background job or worker behavior.".to_string()
     } else if signals.api_handler {
@@ -1946,6 +1950,8 @@ fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
         "Follow call graph evidence for startup and initialization order.".to_string()
     } else if signals.middleware {
         "Follow call graph evidence for middleware and handler boundaries.".to_string()
+    } else if signals.frontend_ui {
+        "Follow call graph evidence for frontend rendering or component flow.".to_string()
     } else if signals.background_jobs {
         "Follow call graph evidence for queued, scheduled, or background work.".to_string()
     } else if signals.api_handler {
@@ -1974,6 +1980,8 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
         "Inspect references that register or trigger startup behavior.".to_string()
     } else if signals.middleware {
         "Inspect references that attach or call middleware boundaries.".to_string()
+    } else if signals.frontend_ui {
+        "Inspect references that render, mount, or compose frontend UI.".to_string()
     } else if signals.background_jobs {
         "Inspect references that enqueue, schedule, or run background work.".to_string()
     } else if signals.api_handler {
@@ -2003,6 +2011,8 @@ fn context_semantic_focus(signals: ContextTaskSignals) -> String {
         "Review semantic matches for startup and initialization behavior.".to_string()
     } else if signals.middleware {
         "Review semantic matches for middleware or handler behavior.".to_string()
+    } else if signals.frontend_ui {
+        "Review semantic matches for frontend UI, pages, forms, or components.".to_string()
     } else if signals.background_jobs {
         "Review semantic matches for background jobs, queues, workers, or schedulers.".to_string()
     } else if signals.api_handler {
@@ -2029,6 +2039,9 @@ fn context_dependency_focus(signals: ContextTaskSignals) -> String {
         "Check local dependencies that participate in startup behavior.".to_string()
     } else if signals.middleware {
         "Check local dependencies that shape middleware or handler dispatch.".to_string()
+    } else if signals.frontend_ui {
+        "Check local dependencies that shape frontend rendering or component composition."
+            .to_string()
     } else if signals.background_jobs {
         "Check local dependencies that shape queue, worker, or scheduler dispatch.".to_string()
     } else if signals.api_handler {
@@ -2088,6 +2101,9 @@ fn context_seed_file_question(task: &str) -> String {
         "What startup entrypoint or initialization sequence creates the requested flow?".to_string()
     } else if signals.middleware {
         "Which middleware or handler boundaries shape the requested flow here?".to_string()
+    } else if signals.frontend_ui {
+        "Which frontend component, page, screen, form, or layout behavior is handled here?"
+            .to_string()
     } else if signals.background_jobs {
         "Where are background jobs, queues, workers, or scheduled runs handled here?".to_string()
     } else if signals.api_handler {
@@ -2120,6 +2136,8 @@ fn context_symbol_definition_question(task: &str) -> String {
         "What startup or initialization role does this definition establish?".to_string()
     } else if signals.middleware {
         "What middleware or handler boundary does this definition establish?".to_string()
+    } else if signals.frontend_ui {
+        "What frontend component, page, screen, form, or layout behavior does this definition establish?".to_string()
     } else if signals.background_jobs {
         "What background job, queue, worker, or scheduler behavior does this definition establish?"
             .to_string()
@@ -2157,6 +2175,8 @@ fn context_call_graph_question(task: &str) -> String {
     } else if signals.middleware {
         "Which callers or callees enter, wrap, or exit middleware and handler boundaries?"
             .to_string()
+    } else if signals.frontend_ui {
+        "Which callers or callees render, mount, or compose frontend UI?".to_string()
     } else if signals.background_jobs {
         "Which callers or callees enqueue, schedule, or execute background work?".to_string()
     } else if signals.api_handler {
@@ -2191,6 +2211,9 @@ fn context_dependency_question(task: &str) -> String {
             .to_string()
     } else if signals.middleware {
         "What imported local dependency behavior shapes middleware or handler dispatch?".to_string()
+    } else if signals.frontend_ui {
+        "What imported local dependency behavior shapes frontend rendering or component composition?"
+            .to_string()
     } else if signals.background_jobs {
         "What imported local dependency behavior shapes queue, worker, or scheduler dispatch?"
             .to_string()
@@ -2225,6 +2248,8 @@ fn context_reference_question(task: &str) -> String {
         "Which references register or trigger startup and initialization behavior?".to_string()
     } else if signals.middleware {
         "Which references attach, order, or call middleware and handler boundaries?".to_string()
+    } else if signals.frontend_ui {
+        "Which references render, mount, compose, or style frontend UI?".to_string()
     } else if signals.background_jobs {
         "Which references enqueue, schedule, trigger, or run background workers?".to_string()
     } else if signals.api_handler {
@@ -2258,6 +2283,9 @@ fn context_semantic_question(task: &str) -> String {
             .to_string()
     } else if signals.middleware {
         "Which semantic matches describe middleware or handler boundary behavior?".to_string()
+    } else if signals.frontend_ui {
+        "Which semantic matches describe frontend UI, components, pages, forms, or layout?"
+            .to_string()
     } else if signals.background_jobs {
         "Which semantic matches describe background jobs, queues, workers, or scheduled runs?"
             .to_string()
@@ -2287,6 +2315,7 @@ struct ContextTaskSignals {
     configuration: bool,
     startup: bool,
     middleware: bool,
+    frontend_ui: bool,
     background_jobs: bool,
     api_handler: bool,
     documentation: bool,
@@ -2331,6 +2360,27 @@ impl ContextTaskSignals {
             ),
             startup: context_text_mentions(task, &["startup", "bootstrap", "boot"]),
             middleware: context_text_mentions(task, &["middleware"]),
+            frontend_ui: context_text_mentions(
+                task,
+                &[
+                    "frontend",
+                    "front-end",
+                    "ui",
+                    "component",
+                    "components",
+                    "page",
+                    "pages",
+                    "screen",
+                    "screens",
+                    "form",
+                    "forms",
+                    "layout",
+                    "layouts",
+                    "style",
+                    "styles",
+                    "css",
+                ],
+            ),
             background_jobs: context_text_mentions(
                 task,
                 &[
@@ -4304,6 +4354,22 @@ fn task_keyword_aliases(keyword: &str) -> &'static [&'static str] {
         "responses" => &["response", "api", "handler"],
         "action" => &["actions", "handler", "controller"],
         "actions" => &["action", "handler", "controller"],
+        "frontend" => &["ui", "component", "page"],
+        "front-end" => &["frontend", "ui", "component"],
+        "ui" => &["frontend", "component", "screen"],
+        "component" => &["components", "frontend", "ui"],
+        "components" => &["component", "frontend", "ui"],
+        "page" => &["pages", "frontend", "component"],
+        "pages" => &["page", "frontend", "component"],
+        "screen" => &["screens", "ui", "component"],
+        "screens" => &["screen", "ui", "component"],
+        "form" => &["forms", "ui", "component"],
+        "forms" => &["form", "ui", "component"],
+        "layout" => &["layouts", "ui", "component"],
+        "layouts" => &["layout", "ui", "component"],
+        "style" => &["styles", "css", "ui"],
+        "styles" => &["style", "css", "ui"],
+        "css" => &["style", "styles", "ui"],
         "background" => &["job", "queue", "worker"],
         "job" => &["jobs", "queue", "worker"],
         "jobs" => &["job", "queue", "worker"],
@@ -4497,6 +4563,12 @@ mod tests {
         assert!(authorization_keywords.contains(&"permission".to_string()));
         assert!(authorization_keywords.contains(&"permissions".to_string()));
         assert!(!authorization_keywords.contains(&"auth".to_string()));
+
+        let frontend_keywords = task_keywords("understand frontend component rendering");
+        assert!(frontend_keywords.contains(&"frontend".to_string()));
+        assert!(frontend_keywords.contains(&"component".to_string()));
+        assert!(frontend_keywords.contains(&"components".to_string()));
+        assert!(frontend_keywords.contains(&"ui".to_string()));
     }
 
     #[test]

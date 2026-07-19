@@ -2257,6 +2257,15 @@ export function routerRegressionSpec() {
     )
     .unwrap();
     std::fs::write(
+        fixture.path().join("src/component.tsx"),
+        r#"export function UserCardComponent() {
+  // Frontend UI component renders the profile page layout.
+  return <section className="profile-card">profile</section>;
+}
+"#,
+    )
+    .unwrap();
+    std::fs::write(
         fixture.path().join("src/worker.ts"),
         r#"export function runBackgroundWorker(queueName: string) {
   // Background job worker drains the scheduled queue.
@@ -2485,6 +2494,33 @@ export function routerRegressionSpec() {
         .unwrap();
     assert!(handler_question.contains("API requests"));
     assert!(handler_question.contains("controller boundaries"));
+
+    let frontend_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand frontend component rendering",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(frontend_context["seed_strategy"], "auto_task_match");
+    assert_eq!(
+        frontend_context["selected_seeds"][0]["value"],
+        "src/component.tsx"
+    );
+    assert!(
+        frontend_context["selected_seeds"][0]["matched_keywords"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|keyword| keyword == "component")
+    );
+    assert_eq!(frontend_context["files"][0]["file"], "src/component.tsx");
+    let frontend_question = frontend_context["reading_plan"][0]["question"]
+        .as_str()
+        .unwrap();
+    assert!(frontend_question.contains("frontend component"));
+    assert!(frontend_question.contains("layout behavior"));
 
     let background_context = run_json([
         "context-pack",
