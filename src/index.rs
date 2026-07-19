@@ -312,15 +312,21 @@ fn visit_call_node(
         let line = node.start_position().row + 1;
         let caller = caller_for_call_node(node, source, language, symbols, line)
             .unwrap_or_else(|| "<module>".to_string());
+        let callee_file = if matches!(language, Language::JavaScript | Language::TypeScript) {
+            None
+        } else {
+            same_file_callee_file(&callee, source_file, symbols)
+        };
+        let confidence = if callee_file.is_some() { 0.72 } else { 0.55 };
         calls.push(CallEdge {
             file: source_file.to_string(),
             caller,
             callee,
-            callee_file: None,
+            callee_file,
             language,
             line,
             column: node.start_position().column + 1,
-            confidence: 0.55,
+            confidence,
         });
     }
 
@@ -328,6 +334,22 @@ fn visit_call_node(
     for child in node_children(&mut cursor) {
         visit_call_node(child, source, language, source_file, symbols, calls);
     }
+}
+
+fn same_file_callee_file(callee: &str, source_file: &str, symbols: &[Symbol]) -> Option<String> {
+    symbols
+        .iter()
+        .any(|symbol| {
+            symbol.name == callee
+                || symbol.qualified_name == callee
+                || symbol
+                    .qualified_name
+                    .rsplit('.')
+                    .next()
+                    .map(|name| name == callee)
+                    .unwrap_or(false)
+        })
+        .then(|| source_file.to_string())
 }
 
 fn should_skip_call_node(node: Node<'_>, language: Language) -> bool {
@@ -7576,6 +7598,12 @@ def helper():
                 .iter()
                 .any(|call| { call.caller == "AuthService.login" && call.callee == "helper" })
         );
+        let helper_call = calls
+            .iter()
+            .find(|call| call.caller == "AuthService.login" && call.callee == "helper")
+            .unwrap();
+        assert_eq!(helper_call.callee_file.as_deref(), Some("auth.py"));
+        assert!(helper_call.confidence >= 0.72);
     }
 
     #[test]
