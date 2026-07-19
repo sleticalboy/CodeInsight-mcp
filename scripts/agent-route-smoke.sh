@@ -165,6 +165,7 @@ write_summary_json() {
       second_execution_action: (.execution_plan[1].action // ""),
       first_execution_suggested_tool: (.execution_plan[1].suggested_tool.tool // ""),
       first_next_action: (.context_pack.reading_plan[0].next_action // ""),
+      first_reading_focus: (.context_pack.reading_plan[0].focus // ""),
       first_reading_question: (.context_pack.reading_plan[0].question // ""),
       first_selection_rank: (.context_pack.reading_plan[0].selection_rank // 0),
       first_selection_reason: (.context_pack.reading_plan[0].selection_reason // ""),
@@ -194,6 +195,7 @@ write_summary_json() {
       and .metrics.first_execution_instruction_has_question == true
       and .metrics.second_execution_action == "use_current_reading_step_suggested_tool"
       and (.metrics.first_execution_suggested_tool | type == "string" and length > 0)
+      and (.metrics.first_reading_focus | type == "string" and length > 0)
       and (.metrics.first_reading_question | type == "string" and length > 0)
       and (.metrics.first_selection_rank | type == "number" and . >= 1)
       and (.metrics.first_selection_reason | type == "string" and length > 0)
@@ -411,6 +413,7 @@ main() {
   echo "first_execution_instruction_has_question: $(json_value "$route_json" '(.execution_plan[0].instruction // "") as $instruction | (.context_pack.reading_plan[0].question // "") as $question | ($question != "" and ($instruction | contains($question)))')"
   echo "first_context_file: $(json_value "$route_json" '.context_pack.files[0].file')"
   echo "first_reading_file: $(json_value "$route_json" '.context_pack.reading_plan[0].file')"
+  echo "first_reading_focus: $(json_value "$route_json" '.context_pack.reading_plan[0].focus')"
   echo "first_reading_question: $(json_value "$route_json" '.context_pack.reading_plan[0].question')"
   echo "first_selection_rank: $(json_value "$route_json" '.context_pack.reading_plan[0].selection_rank')"
   echo "first_selection_reason: $(json_value "$route_json" '.context_pack.reading_plan[0].selection_reason')"

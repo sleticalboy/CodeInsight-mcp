@@ -51,6 +51,7 @@ require_summary_contract() {
       and (.metrics.second_execution_action | type == "string")
       and (.metrics.first_execution_suggested_tool | type == "string")
       and (.metrics.first_next_action | type == "string")
+      and (.metrics.first_reading_focus | type == "string")
       and (.metrics.first_reading_question | type == "string")
       and (.metrics.first_selection_rank | type == "number")
       and (.metrics.first_selection_reason | type == "string")
@@ -130,6 +131,7 @@ main() {
     printf '| Second execution action | `%s` |\n' "$(metric '.metrics.second_execution_action')"
     printf '| First execution suggested tool | `%s` |\n' "$(metric '.metrics.first_execution_suggested_tool')"
     printf '| First next action | `%s` |\n' "$(metric '.metrics.first_next_action')"
+    printf '| First reading focus | `%s` |\n' "$(metric '.metrics.first_reading_focus')"
     printf '| First reading question | `%s` |\n' "$(metric '.metrics.first_reading_question')"
     printf '| First selection rank | `%s` |\n' "$(metric '.metrics.first_selection_rank')"
     printf '| First selection reason | %s |\n' "$(metric '.metrics.first_selection_reason')"

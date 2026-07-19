@@ -62,6 +62,7 @@ main() {
     "second_execution_action": "use_current_reading_step_suggested_tool",
 	    "first_execution_suggested_tool": "file_outline",
 	    "first_next_action": "inspect_seed_file",
+	    "first_reading_focus": "Start with seed file context and primary symbols.",
 	    "first_reading_question": "What entrypoints define the main flow?",
 	    "first_selection_rank": 1,
 	    "first_selection_reason": "Selected for high relevance via seed_file: Seed file header and imports for task: src/main.ts",
@@ -100,6 +101,7 @@ EOF
   require_literal "$summary_md" '| Second execution action | `use_current_reading_step_suggested_tool` |' "second execution action metric"
 	  require_literal "$summary_md" '| First execution suggested tool | `file_outline` |' "first execution suggested tool metric"
 	  require_literal "$summary_md" '| First next action | `inspect_seed_file` |' "next action metric"
+	  require_literal "$summary_md" '| First reading focus | `Start with seed file context and primary symbols.` |' "first reading focus metric"
 	  require_literal "$summary_md" '| First reading question | `What entrypoints define the main flow?` |' "first reading question metric"
 	  require_literal "$summary_md" '| First selection rank | `1` |' "first selection rank metric"
 	  require_literal "$summary_md" '| First selection reason | Selected for high relevance via seed_file: Seed file header and imports for task: src/main.ts |' "first selection reason metric"
