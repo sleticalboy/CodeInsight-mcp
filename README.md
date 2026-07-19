@@ -37,6 +37,20 @@ Use CodeInsight when the agent needs a local reading route. Keep using the IDE,
 LSP, compiler, test runner, and language-specific tools for precise diagnostics,
 type checks, and final verification.
 
+Current public routing snapshot: pinned Express, Gin, and Requests route-quality
+expectations pass `11/11`, selecting 4,936 of 206,337 task source lines for a
+`97.6%` aggregate first-read line reduction. Reproduce the checked-in snapshot:
+
+```bash
+scripts/update-public-task-routing-matrix.sh --check
+```
+
+For a deterministic no-network check of the same snapshot machinery:
+
+```bash
+scripts/update-public-task-routing-matrix-smoke.sh
+```
+
 Best-fit tasks:
 
 - understand a new repository before opening many files
@@ -219,6 +233,9 @@ Current benchmark snapshot:
   routes the entrypoint task to 439 of 31,157 source lines, a 98.6% first-read
   reduction, while the MCP first-call contract fields all pass, including the
   `current_reading_step` mirror.
+- The public route-quality snapshot pins Express, Gin, and Requests and passes
+  11/11 expected first-file checks, selecting 4,936 of 206,337 task source
+  lines, a 97.6% aggregate first-read line reduction.
 - Per-repository adoption metrics, commits, and refresh commands live in
   [Adoption cases](docs/adoption-cases.md).
 - Generated reports include a `Key Results` section with routing,

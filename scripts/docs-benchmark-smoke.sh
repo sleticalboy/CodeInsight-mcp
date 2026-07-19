@@ -825,6 +825,15 @@ main() {
     '\-\-expect-file \./route-expectations\.tsv' \
     "README task routing matrix expectation file"
   require_pattern README.md \
+    'expectations pass `11/11`, selecting 4,936 of 206,337 task source lines' \
+    "README public route-quality headline"
+  require_pattern README.md \
+    'scripts/update-public-task-routing-matrix\.sh --check' \
+    "README public route-quality snapshot check command"
+  require_pattern README.md \
+    'scripts/update-public-task-routing-matrix-smoke\.sh' \
+    "README public route-quality no-network smoke command"
+  require_pattern README.md \
     '\[public routing snapshot\]\(docs/public-task-routing-matrix\.md\)' \
     "README public routing snapshot link"
   require_pattern README.md \
