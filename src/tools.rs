@@ -1767,7 +1767,7 @@ fn context_reading_plan(root: &Path, task: &str, files: &[ContextFile]) -> Vec<C
                 order: index + 1,
                 file: file.file.clone(),
                 selection_rank: file.selection_rank,
-                focus: context_reading_focus(file),
+                focus: context_reading_focus(file, task),
                 next_action,
                 question: question.clone(),
                 reason: context_reading_reason(&question, &suggested_tool, file),
@@ -1859,22 +1859,115 @@ fn context_reading_suggested_tool(
     }
 }
 
-fn context_reading_focus(file: &ContextFile) -> String {
+fn context_reading_focus(file: &ContextFile, task: &str) -> String {
     let sources = context_reading_sources(file);
+    let signals = ContextTaskSignals::from_task(task);
     if sources.contains("seed_file") {
-        "Start with seed file context and primary symbols.".to_string()
+        context_seed_file_focus(signals)
     } else if sources.contains("symbol_definition") {
-        "Read symbol definitions that anchor the requested task.".to_string()
+        context_symbol_definition_focus(signals)
     } else if sources.contains("call_graph") {
-        "Follow static call graph evidence around the seed flow.".to_string()
+        context_call_graph_focus(signals)
     } else if sources.contains("reference") {
-        "Inspect references that show how the seed is used.".to_string()
+        context_reference_focus(signals)
     } else if sources.contains("semantic") {
-        "Review semantic matches related to the task wording.".to_string()
+        context_semantic_focus(signals)
     } else if sources.contains("dependency") {
-        "Check local dependency context that supports selected files.".to_string()
+        context_dependency_focus(signals)
     } else {
         "Review selected ranges for task-relevant context.".to_string()
+    }
+}
+
+fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
+    if signals.auth_session {
+        "Start with seed file authentication and session boundaries.".to_string()
+    } else if signals.configuration {
+        "Start with seed file configuration defaults and inputs.".to_string()
+    } else if signals.startup {
+        "Start with seed file startup and initialization flow.".to_string()
+    } else if signals.middleware {
+        "Start with seed file middleware and handler boundaries.".to_string()
+    } else if signals.impact_flow {
+        "Start with seed file calls, callees, and impact paths.".to_string()
+    } else {
+        "Start with seed file context and primary symbols.".to_string()
+    }
+}
+
+fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
+    if signals.auth_session {
+        "Read symbol definitions that establish authentication or session behavior.".to_string()
+    } else if signals.configuration {
+        "Read symbol definitions that establish configuration behavior.".to_string()
+    } else if signals.startup {
+        "Read symbol definitions that establish startup behavior.".to_string()
+    } else if signals.middleware {
+        "Read symbol definitions that establish middleware boundaries.".to_string()
+    } else if signals.impact_flow {
+        "Read symbol definitions that anchor call and impact paths.".to_string()
+    } else {
+        "Read symbol definitions that anchor the requested task.".to_string()
+    }
+}
+
+fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
+    if signals.auth_session {
+        "Follow call graph evidence for authentication and session flow.".to_string()
+    } else if signals.configuration {
+        "Follow call graph evidence for configuration propagation.".to_string()
+    } else if signals.startup {
+        "Follow call graph evidence for startup and initialization order.".to_string()
+    } else if signals.middleware {
+        "Follow call graph evidence for middleware and handler boundaries.".to_string()
+    } else if signals.impact_flow {
+        "Follow call graph evidence for callers, callees, and impact paths.".to_string()
+    } else {
+        "Follow static call graph evidence around the seed flow.".to_string()
+    }
+}
+
+fn context_reference_focus(signals: ContextTaskSignals) -> String {
+    if signals.auth_session {
+        "Inspect references that consume authentication or session state.".to_string()
+    } else if signals.configuration {
+        "Inspect references that read or pass configuration values.".to_string()
+    } else if signals.startup {
+        "Inspect references that register or trigger startup behavior.".to_string()
+    } else if signals.middleware {
+        "Inspect references that attach or call middleware boundaries.".to_string()
+    } else if signals.impact_flow {
+        "Inspect references that show production usage and impact paths.".to_string()
+    } else {
+        "Inspect references that show how the seed is used.".to_string()
+    }
+}
+
+fn context_semantic_focus(signals: ContextTaskSignals) -> String {
+    if signals.auth_session {
+        "Review semantic matches for authentication, cookie, or session behavior.".to_string()
+    } else if signals.configuration {
+        "Review semantic matches for configuration and environment behavior.".to_string()
+    } else if signals.startup {
+        "Review semantic matches for startup and initialization behavior.".to_string()
+    } else if signals.middleware {
+        "Review semantic matches for middleware or handler behavior.".to_string()
+    } else {
+        "Review semantic matches related to the task wording.".to_string()
+    }
+}
+
+fn context_dependency_focus(signals: ContextTaskSignals) -> String {
+    if signals.auth_session {
+        "Check local dependencies that affect authentication or session boundaries.".to_string()
+    } else if signals.configuration {
+        "Check local dependencies that supply configuration behavior.".to_string()
+    } else if signals.startup {
+        "Check local dependencies that participate in startup behavior.".to_string()
+    } else if signals.middleware {
+        "Check local dependencies that shape middleware or handler dispatch.".to_string()
+    } else {
+        "Check local dependency context that supports selected files.".to_string()
     }
 }
 
@@ -1911,9 +2004,7 @@ fn context_reading_question(file: &ContextFile, task: &str) -> String {
 
 fn context_seed_file_question(task: &str) -> String {
     let signals = ContextTaskSignals::from_task(task);
-    if signals.impact_flow {
-        "Which local callers, callees, or impact paths in this seed file explain the requested flow?".to_string()
-    } else if signals.auth_session {
+    if signals.auth_session {
         "Where are authentication decisions, credentials, or session boundaries handled here?"
             .to_string()
     } else if signals.configuration {
@@ -1922,6 +2013,8 @@ fn context_seed_file_question(task: &str) -> String {
         "What startup entrypoint or initialization sequence creates the requested flow?".to_string()
     } else if signals.middleware {
         "Which middleware or handler boundaries shape the requested flow here?".to_string()
+    } else if signals.impact_flow {
+        "Which local callers, callees, or impact paths in this seed file explain the requested flow?".to_string()
     } else {
         "What entrypoints, exported symbols, or setup code define the main flow here?".to_string()
     }
@@ -1929,9 +2022,7 @@ fn context_seed_file_question(task: &str) -> String {
 
 fn context_symbol_definition_question(task: &str) -> String {
     let signals = ContextTaskSignals::from_task(task);
-    if signals.impact_flow {
-        "What callers, callees, or impact paths does this definition anchor?".to_string()
-    } else if signals.auth_session {
+    if signals.auth_session {
         "What authentication decisions, credentials, or session boundaries does this definition establish?".to_string()
     } else if signals.configuration {
         "What configuration defaults, inputs, or environment behavior does this definition establish?".to_string()
@@ -1939,6 +2030,8 @@ fn context_symbol_definition_question(task: &str) -> String {
         "What startup or initialization role does this definition establish?".to_string()
     } else if signals.middleware {
         "What middleware or handler boundary does this definition establish?".to_string()
+    } else if signals.impact_flow {
+        "What callers, callees, or impact paths does this definition anchor?".to_string()
     } else {
         "What behavior or contract does this definition establish for the task?".to_string()
     }
@@ -1956,6 +2049,9 @@ fn context_call_graph_question(task: &str) -> String {
             .to_string()
     } else if signals.middleware {
         "Which callers or callees enter, wrap, or exit middleware and handler boundaries?"
+            .to_string()
+    } else if signals.impact_flow {
+        "Which callers, callees, or impact paths explain how control moves through this flow?"
             .to_string()
     } else {
         "Which callers or callees explain how control moves through this flow?".to_string()
@@ -1981,9 +2077,7 @@ fn context_dependency_question(task: &str) -> String {
 
 fn context_reference_question(task: &str) -> String {
     let signals = ContextTaskSignals::from_task(task);
-    if signals.impact_flow {
-        "Which references show production usage or impact paths for this seed?".to_string()
-    } else if signals.auth_session {
+    if signals.auth_session {
         "Which references consume authentication decisions, credentials, or session state?"
             .to_string()
     } else if signals.configuration {
@@ -1992,6 +2086,8 @@ fn context_reference_question(task: &str) -> String {
         "Which references register or trigger startup and initialization behavior?".to_string()
     } else if signals.middleware {
         "Which references attach, order, or call middleware and handler boundaries?".to_string()
+    } else if signals.impact_flow {
+        "Which references show production usage or impact paths for this seed?".to_string()
     } else {
         "How is the seed symbol used by nearby production code?".to_string()
     }
@@ -2029,7 +2125,7 @@ impl ContextTaskSignals {
         Self {
             impact_flow: context_text_mentions(
                 task,
-                &["impact", "call", "caller", "callee", "path"],
+                &["impact", "caller", "callee", "call path", "call paths"],
             ),
             auth_session: context_text_mentions(
                 task,

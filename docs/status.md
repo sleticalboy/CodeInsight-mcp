@@ -44,6 +44,8 @@ MVP workflow is now implemented end to end.
 - Task-aware `context_pack.reading_plan[].question` prompts across reading-plan
   actions covering impact/call-path, authentication/session, configuration,
   startup, and middleware tasks.
+- Task-aware `context_pack.reading_plan[].focus` labels mirror the same task
+  signals so compact client rows keep the current reading intent visible.
 - `context_pack` budget metadata, bounded omitted-candidate follow-ups, and a
   `continuation_summary.next_action` that lets MCP clients expose a single next
   action after the initial reading plan.

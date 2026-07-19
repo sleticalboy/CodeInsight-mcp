@@ -406,7 +406,7 @@ Example `context_pack` response shape:
       "order": 1,
       "file": "src/auth.ts",
       "selection_rank": 1,
-      "focus": "Follow static call graph evidence around the seed flow.",
+      "focus": "Follow call graph evidence for authentication and session flow.",
       "next_action": "follow_call_graph",
       "question": "Which callers or callees explain how control moves through this flow?",
       "reason": "Read this step to answer: Which callers or callees explain how control moves through this flow? If deeper evidence is needed, call impact_analysis. Selection reason: Selected for medium relevance via call_graph",

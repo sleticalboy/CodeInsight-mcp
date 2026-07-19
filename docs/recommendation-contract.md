@@ -131,6 +131,9 @@ names impact/call-path, authentication/session, configuration, startup, or
 middleware work; otherwise they use the generic entrypoint/setup, definition,
 flow, reference, semantic-match, dependency, or selected-range checklist for
 the step.
+`context_pack.reading_plan[].focus` is the short scan label for the same step
+and follows the same task-aware signals, so clients can show a compact row
+without losing the task intent carried by `question`.
 `context_pack.reading_plan[].reason` is the executable client-facing
 explanation for the step: it states the question to answer, when to use the
 suggested tool, and why the file was selected. `selection_reason` preserves

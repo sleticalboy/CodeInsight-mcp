@@ -1078,6 +1078,18 @@ fn cli_indexes_and_queries_fixture_project() {
             .unwrap()
             .contains("symbol")
     );
+    assert!(
+        context["reading_plan"][0]["focus"]
+            .as_str()
+            .unwrap()
+            .contains("authentication")
+    );
+    assert!(
+        context["reading_plan"][0]["focus"]
+            .as_str()
+            .unwrap()
+            .contains("session")
+    );
     assert_eq!(
         context["reading_plan"][0]["next_action"],
         "inspect_symbol_definition"
@@ -6571,6 +6583,9 @@ def helper():
     let dependency_question = dependency_step["question"].as_str().unwrap();
     assert!(dependency_question.contains("authentication"));
     assert!(dependency_question.contains("session boundaries"));
+    let dependency_focus = dependency_step["focus"].as_str().unwrap();
+    assert!(dependency_focus.contains("authentication"));
+    assert!(dependency_focus.contains("session"));
 }
 
 #[test]
@@ -6623,6 +6638,32 @@ fn cli_context_pack_uses_imported_callee_file_hints() {
     let audit_question = audit_step["question"].as_str().unwrap();
     assert!(audit_question.contains("authentication decisions"));
     assert!(audit_question.contains("session state"));
+
+    let impact_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "assess call impact paths for audit behavior",
+        "--symbol",
+        "Example.AuthService.login",
+        "--token-budget",
+        "1800",
+    ]);
+    let impact_audit_step = impact_context["reading_plan"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|step| step["file"] == "lib/support/audit.rb")
+        .unwrap();
+    assert_eq!(impact_audit_step["next_action"], "follow_call_graph");
+    let impact_audit_focus = impact_audit_step["focus"].as_str().unwrap();
+    assert!(impact_audit_focus.contains("callers"));
+    assert!(impact_audit_focus.contains("callees"));
+    assert!(impact_audit_focus.contains("impact paths"));
+    let impact_audit_question = impact_audit_step["question"].as_str().unwrap();
+    assert!(impact_audit_question.contains("callers"));
+    assert!(impact_audit_question.contains("callees"));
+    assert!(impact_audit_question.contains("impact paths"));
 }
 
 #[test]
