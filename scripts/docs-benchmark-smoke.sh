@@ -870,6 +870,15 @@ main() {
     'expectations: 11/11' \
     "public task routing matrix expectations evidence"
   require_pattern docs/public-task-routing-matrix.md \
+    'source_lines: 206337' \
+    "public task routing matrix source-line evidence"
+  require_pattern docs/public-task-routing-matrix.md \
+    'line_reduction: 97\.6%' \
+    "public task routing matrix line-reduction evidence"
+  require_pattern docs/public-task-routing-matrix.md \
+    'Aggregate line reduction: `97\.6%`' \
+    "public task routing matrix aggregate line-reduction summary"
+  require_pattern docs/public-task-routing-matrix.md \
     'express: 4 tasks, first files index\.js, lib/application\.js, lib/express\.js' \
     "public task routing matrix express summary"
   require_pattern docs/public-task-routing-matrix.md \

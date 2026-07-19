@@ -322,6 +322,7 @@ run_case() {
       summary_json: $summary_json,
       task_count: .task_count,
       expectation_count: .expectations.count,
+      total_task_source_lines: (.tasks | map(.total_lines) | add // 0),
       total_selected_lines: .aggregate.total_selected_lines,
       total_estimated_tokens: .aggregate.total_estimated_tokens,
       max_impacted_files: .aggregate.max_impacted_files,
@@ -329,6 +330,7 @@ run_case() {
         task,
         first_file,
         seed_strategy,
+        total_lines,
         line_reduction,
         estimated_tokens,
         risk_level,
@@ -355,9 +357,15 @@ write_summary() {
       aggregate: {
         task_count: (map(.task_count) | add // 0),
         expectation_count: (map(.expectation_count) | add // 0),
+        total_task_source_lines: (map(.total_task_source_lines) | add // 0),
         total_selected_lines: (map(.total_selected_lines) | add // 0),
         total_estimated_tokens: (map(.total_estimated_tokens) | add // 0),
-        max_impacted_files: (map(.max_impacted_files) | max // 0)
+        max_impacted_files: (map(.max_impacted_files) | max // 0),
+        line_reduction: (
+          (map(.total_task_source_lines) | add // 0) as $total |
+          (map(.total_selected_lines) | add // 0) as $selected |
+          if $total > 0 then (((($total - $selected) * 10000 / $total) | floor) / 100) else 0 end
+        )
       }
     }' $(cat "$rows_file") >"$SUMMARY_JSON"
 
@@ -365,6 +373,8 @@ write_summary() {
     '.status == "pass"
       and (.case_count | type == "number" and . > 0)
       and (.aggregate.task_count | type == "number" and . > 0)
+      and (.aggregate.total_task_source_lines | type == "number" and . > 0)
+      and (.aggregate.line_reduction | type == "number")
       and all(.cases[]; (.case | type == "string" and length > 0)
         and (.expectation_count | type == "number")
         and (.expectation_count == .task_count)
@@ -380,6 +390,7 @@ write_markdown() {
     echo "- Cases: \`$(jq -r '.case_count' "$SUMMARY_JSON")\`"
     echo "- Tasks: \`$(jq -r '.aggregate.task_count' "$SUMMARY_JSON")\`"
     echo "- Token budget: \`$TOKEN_BUDGET\`"
+    echo "- Aggregate line reduction: \`$(jq -r '.aggregate.line_reduction' "$SUMMARY_JSON")%\`"
     echo "- Summary JSON: \`$SUMMARY_JSON\`"
     echo
     echo "## Evidence Summary"
@@ -388,10 +399,11 @@ write_markdown() {
     echo
     echo "## Cases"
     echo
-    echo "| Case | Ref | Tasks | Expectations | Selected lines | Tokens | Max impact | Expect file |"
-    echo "| --- | --- | ---: | ---: | ---: | ---: | ---: | --- |"
+    echo "| Case | Ref | Tasks | Expectations | Source lines | Selected lines | Reduction | Tokens | Max impact | Expect file |"
+    echo "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |"
     jq -r '.cases[] |
-      "| \(.case) | `\((.ref // "") as $value | if $value == "" then "-" else $value end)` | `\(.task_count)` | `\(.expectation_count)` | `\(.total_selected_lines)` | `\(.total_estimated_tokens)` | `\(.max_impacted_files)` | `\(.expect_file)` |"' \
+      ((if .total_task_source_lines > 0 then (((.total_task_source_lines - .total_selected_lines) * 10000 / .total_task_source_lines | floor) / 100) else 0 end) as $reduction |
+      "| \(.case) | `\((.ref // "") as $value | if $value == "" then "-" else $value end)` | `\(.task_count)` | `\(.expectation_count)` | `\(.total_task_source_lines)` | `\(.total_selected_lines)` | `\($reduction)%` | `\(.total_estimated_tokens)` | `\(.max_impacted_files)` | `\(.expect_file)` |")' \
       "$SUMMARY_JSON"
     echo
     echo "## Routes"
@@ -426,7 +438,9 @@ write_evidence_summary() {
   echo "${prefix}cases: $(jq -r '.case_count' "$SUMMARY_JSON")"
   echo "${prefix}tasks: $(jq -r '.aggregate.task_count' "$SUMMARY_JSON")"
   echo "${prefix}expectations: $(jq -r '.aggregate.expectation_count' "$SUMMARY_JSON")/$(jq -r '.aggregate.task_count' "$SUMMARY_JSON")"
+  echo "${prefix}source_lines: $(jq -r '.aggregate.total_task_source_lines' "$SUMMARY_JSON")"
   echo "${prefix}selected_lines: $(jq -r '.aggregate.total_selected_lines' "$SUMMARY_JSON")"
+  echo "${prefix}line_reduction: $(jq -r '.aggregate.line_reduction' "$SUMMARY_JSON")%"
   echo "${prefix}estimated_tokens: $(jq -r '.aggregate.total_estimated_tokens' "$SUMMARY_JSON")"
   echo "${prefix}max_impacted_files: $(jq -r '.aggregate.max_impacted_files' "$SUMMARY_JSON")"
   jq -r --arg prefix "$case_prefix" '.cases[] |

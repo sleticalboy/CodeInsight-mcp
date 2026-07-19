@@ -94,6 +94,8 @@ main() {
     fail "snapshot should include generation note"
   grep -Fq "expectations: 4/4" "$snapshot" ||
     fail "snapshot should include expectation pass count"
+  grep -Fq "line_reduction:" "$snapshot" ||
+    fail "snapshot should include aggregate line reduction"
   grep -Fq 'Summary JSON: `<output-dir>/summary.json`' "$snapshot" ||
     fail "snapshot should normalize summary path"
   grep -Fq 'docs/task-routing-expectations/express.tsv' "$snapshot" ||
