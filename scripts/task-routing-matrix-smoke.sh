@@ -89,6 +89,10 @@ export function routerRegressionSpec() {
   // Regression coverage for router behavior.
   return createRouter();
 }'
+  write_file "$repo/src/handler.ts" 'export function handleRequest(request: { path: string }) {
+  // API endpoint handler returns the response payload.
+  return { response: request.path };
+}'
   write_file "$repo/src/startup.ts" 'export function bootStartup(router: unknown, auth: unknown, config: unknown) {
   return { router, auth, config };
 }'
@@ -121,6 +125,7 @@ understand startup flow	src/startup.ts
 understand persistence behavior	src/database.ts
 debug retry timeout handling	src/errors.ts
 find regression coverage	src/router.test.ts
+understand api handler behavior	src/handler.ts
 understand middleware behavior	src/application.ts'
   write_file "$bad_expectations_json" '[
   {
@@ -134,8 +139,8 @@ understand middleware behavior	src/application.ts'
     --token-budget 1600 \
     --expect-file "$expectations_tsv"
 
-  require_jq "$summary_json" '.status == "pass" and .task_count == 8' "matrix summary should pass"
-  require_jq "$summary_json" '.expectations.status == "pass" and .expectations.count == 8' "matrix expectations should pass"
+  require_jq "$summary_json" '.status == "pass" and .task_count == 9' "matrix summary should pass"
+  require_jq "$summary_json" '.expectations.status == "pass" and .expectations.count == 9' "matrix expectations should pass"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand routing behavior" and .first_file == "src/router.ts")' "routing task should choose router"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand authentication behavior" and .first_file == "src/auth.ts")' "authentication task should choose auth"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand application settings" and .first_file == "src/config.ts")' "settings task should choose config"
@@ -143,6 +148,7 @@ understand middleware behavior	src/application.ts'
   require_jq "$summary_json" '.tasks[] | select(.task == "understand persistence behavior" and .first_file == "src/database.ts")' "persistence task should choose database"
   require_jq "$summary_json" '.tasks[] | select(.task == "debug retry timeout handling" and .first_file == "src/errors.ts")' "debug task should choose errors"
   require_jq "$summary_json" '.tasks[] | select(.task == "find regression coverage" and .first_file == "src/router.test.ts")' "coverage task should choose test"
+  require_jq "$summary_json" '.tasks[] | select(.task == "understand api handler behavior" and .first_file == "src/handler.ts")' "api handler task should choose handler"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand middleware behavior" and .first_file == "src/application.ts")' "middleware task should choose application"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand authentication behavior" and (.first_reading_question | contains("authentication decisions")))' "authentication task should report an auth-specific reading question"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand authentication behavior" and (.first_reading_focus | contains("authentication")))' "authentication task should report an auth-specific reading focus"
@@ -156,6 +162,8 @@ understand middleware behavior	src/application.ts'
   require_jq "$summary_json" '.tasks[] | select(.task == "debug retry timeout handling" and (.first_reading_focus | contains("error handling")))' "debug task should report an error-specific reading focus"
   require_jq "$summary_json" '.tasks[] | select(.task == "find regression coverage" and (.first_reading_question | contains("regression cases")))' "coverage task should report a test-specific reading question"
   require_jq "$summary_json" '.tasks[] | select(.task == "find regression coverage" and (.first_reading_focus | contains("regression coverage")))' "coverage task should report a test-specific reading focus"
+  require_jq "$summary_json" '.tasks[] | select(.task == "understand api handler behavior" and (.first_reading_question | contains("API requests")))' "api handler task should report a handler-specific reading question"
+  require_jq "$summary_json" '.tasks[] | select(.task == "understand api handler behavior" and (.first_reading_focus | contains("API handler")))' "api handler task should report a handler-specific reading focus"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand middleware behavior" and (.first_reading_question | contains("handler boundaries")))' "middleware task should report a middleware-specific reading question"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand middleware behavior" and (.first_reading_focus | contains("middleware")))' "middleware task should report a middleware-specific reading focus"
   grep -Fq '| Task | Seed strategy | First file | Focus | Question |' "$output_dir/task-routing-matrix.md" ||

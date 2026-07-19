@@ -116,7 +116,7 @@ main() {
     '93\.3x aggregate read-less ratio' \
     "README adoption cases aggregate read-less ratio"
   require_pattern README.md \
-    'routes the entrypoint task to 439 of 30,240 source lines, a 98\.5% first-read' \
+    'routes the entrypoint task to 439 of 30,342 source lines, a 98\.6% first-read' \
     "README self adoption report metric"
   "$ROOT_DIR/scripts/readme-adoption-summary-smoke.sh" >/dev/null
   require_pattern README.md \
@@ -426,6 +426,9 @@ main() {
     'Does a coverage task start at test, spec, or regression code' \
     "task routing matrix coverage framing"
   require_pattern docs/task-routing-matrix.md \
+    'Does an API handler task start at handler, controller, or endpoint code' \
+    "task routing matrix api handler framing"
+  require_pattern docs/task-routing-matrix.md \
     $'understand persistence behavior\tsrc/database\\.ts' \
     "task routing matrix persistence expectation example"
   require_pattern docs/task-routing-matrix.md \
@@ -434,6 +437,9 @@ main() {
   require_pattern docs/task-routing-matrix.md \
     $'find regression coverage\tsrc/router\\.test\\.ts' \
     "task routing matrix coverage expectation example"
+  require_pattern docs/task-routing-matrix.md \
+    $'understand api handler behavior\tsrc/handler\\.ts' \
+    "task routing matrix api handler expectation example"
   require_pattern docs/task-routing-matrix.md \
     'Expectation files automatically add their tasks to the matrix' \
     "task routing matrix expectation file task loading"
@@ -483,7 +489,7 @@ main() {
     'CodeInsight routed first-read \| `439` source lines' \
     "CodeInsight self adoption report routed lines"
   require_pattern docs/adoption-report-codeinsight.md \
-    'First-read reduction \| `98\.5%`' \
+    'First-read reduction \| `98\.6%`' \
     "CodeInsight self adoption report reduction"
   require_pattern docs/adoption-report-codeinsight.md \
     'Reading order starts with selected context \| `true`' \

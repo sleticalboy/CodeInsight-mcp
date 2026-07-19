@@ -2239,6 +2239,15 @@ export function routerRegressionSpec() {
 "#,
     )
     .unwrap();
+    std::fs::write(
+        fixture.path().join("src/handler.ts"),
+        r#"export function handleRequest(request: { path: string }) {
+  // API endpoint handler returns the response payload.
+  return { response: request.path };
+}
+"#,
+    )
+    .unwrap();
 
     run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
 
@@ -2393,6 +2402,33 @@ export function routerRegressionSpec() {
         .unwrap();
     assert!(coverage_question.contains("assertions"));
     assert!(coverage_question.contains("regression cases"));
+
+    let handler_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand api handler behavior",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(handler_context["seed_strategy"], "auto_task_match");
+    assert_eq!(
+        handler_context["selected_seeds"][0]["value"],
+        "src/handler.ts"
+    );
+    assert!(
+        handler_context["selected_seeds"][0]["matched_keywords"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|keyword| keyword == "api")
+    );
+    assert_eq!(handler_context["files"][0]["file"], "src/handler.ts");
+    let handler_question = handler_context["reading_plan"][0]["question"]
+        .as_str()
+        .unwrap();
+    assert!(handler_question.contains("API requests"));
+    assert!(handler_question.contains("controller boundaries"));
 
     let middleware_context = run_json([
         "context-pack",
