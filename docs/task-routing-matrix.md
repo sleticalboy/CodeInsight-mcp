@@ -145,6 +145,10 @@ The command writes:
 - one `local-repo-evidence.md` per task
 - one raw `agent-route.json` per task
 
+`scripts/public-task-routing-matrix.sh` also prints a compact evidence summary
+with case count, expectation pass count, selected lines, estimated tokens, max
+impacted files, and the distinct first files selected for each public case.
+
 ## Output Contract
 
 Each task row reports:

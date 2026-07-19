@@ -283,7 +283,9 @@ run_case() {
   local case_name="$1"
   local repo_root expect_file case_ref_value case_output_dir case_summary row_json
 
-  repo_root="$(prepare_case_repo "$case_name")"
+  repo_root="$(prepare_case_repo "$case_name")" ||
+    fail "failed to prepare case repository: $case_name"
+  [ -d "$repo_root" ] || fail "case repository root does not exist for $case_name: $repo_root"
   expect_file="$(case_expect_file "$case_name")"
   case_ref_value="$(case_ref "$case_name")"
   [ -f "$expect_file" ] || fail "expectation file does not exist for $case_name: $expect_file"
@@ -380,6 +382,10 @@ write_markdown() {
     echo "- Token budget: \`$TOKEN_BUDGET\`"
     echo "- Summary JSON: \`$SUMMARY_JSON\`"
     echo
+    echo "## Evidence Summary"
+    echo
+    write_evidence_summary markdown
+    echo
     echo "## Cases"
     echo
     echo "| Case | Ref | Tasks | Expectations | Selected lines | Tokens | Max impact | Expect file |"
@@ -400,6 +406,32 @@ write_markdown() {
     echo
     jq -r '.cases[] | "- `\(.case)`: `\(.summary_json)`"' "$SUMMARY_JSON"
   } >"$OUTPUT_FILE"
+}
+
+write_evidence_summary() {
+  local mode="$1"
+  local prefix case_prefix
+
+  if [ "$mode" = "markdown" ]; then
+    prefix="- "
+    case_prefix="  - "
+  else
+    prefix="  "
+    case_prefix="  - "
+  fi
+
+  if [ "$mode" != "markdown" ]; then
+    echo "evidence summary"
+  fi
+  echo "${prefix}cases: $(jq -r '.case_count' "$SUMMARY_JSON")"
+  echo "${prefix}tasks: $(jq -r '.aggregate.task_count' "$SUMMARY_JSON")"
+  echo "${prefix}expectations: $(jq -r '.aggregate.expectation_count' "$SUMMARY_JSON")/$(jq -r '.aggregate.task_count' "$SUMMARY_JSON")"
+  echo "${prefix}selected_lines: $(jq -r '.aggregate.total_selected_lines' "$SUMMARY_JSON")"
+  echo "${prefix}estimated_tokens: $(jq -r '.aggregate.total_estimated_tokens' "$SUMMARY_JSON")"
+  echo "${prefix}max_impacted_files: $(jq -r '.aggregate.max_impacted_files' "$SUMMARY_JSON")"
+  jq -r --arg prefix "$case_prefix" '.cases[] |
+    $prefix + .case + ": " + (.task_count | tostring) + " tasks, first files " +
+    ([.routes[].first_file] | unique | join(", "))' "$SUMMARY_JSON"
 }
 
 main() {
@@ -440,6 +472,7 @@ main() {
   echo "public task routing matrix written to $OUTPUT_FILE"
   echo "summary: $SUMMARY_JSON"
   echo "cases: ${#CASES[@]}"
+  write_evidence_summary terminal
 }
 
 main "$@"

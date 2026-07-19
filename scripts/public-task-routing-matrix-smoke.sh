@@ -90,17 +90,18 @@ main() {
   TEMP_DIR="$(mktemp -d)"
   trap cleanup EXIT INT TERM
 
-  local repo output_dir summary_json
+  local repo output_dir summary_json output_log
   repo="$TEMP_DIR/repo"
   output_dir="$TEMP_DIR/output"
   summary_json="$output_dir/summary.json"
+  output_log="$TEMP_DIR/output.log"
   create_express_like_fixture "$repo"
 
   CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/public-task-routing-matrix.sh" \
     --case express \
     --root "express=$repo" \
     --output-dir "$output_dir" \
-    --token-budget 1600
+    --token-budget 1600 | tee "$output_log"
 
   require_jq "$summary_json" '.status == "pass" and .case_count == 1' "aggregate summary should pass"
   require_jq "$summary_json" '.aggregate.task_count == 4 and .aggregate.expectation_count == 4' "express expectation count should be aggregated"
@@ -108,6 +109,14 @@ main() {
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand express application routing behavior" and .first_file == "lib/express.js")' "routing task should choose express entry"
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand middleware behavior" and .first_file == "lib/application.js")' "middleware task should choose application"
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand startup flow" and .first_file == "index.js")' "startup task should choose index"
+  grep -Fq "evidence summary" "$output_log" ||
+    fail "terminal output should include evidence summary"
+  grep -Fq "expectations: 4/4" "$output_log" ||
+    fail "terminal output should include expectation pass count"
+  grep -Fq "express: 4 tasks, first files index.js, lib/application.js, lib/express.js" "$output_log" ||
+    fail "terminal output should include first file summary"
+  grep -Fq "## Evidence Summary" "$output_dir/public-task-routing-matrix.md" ||
+    fail "markdown output should include evidence summary"
 
   echo "public task routing matrix smoke passed"
 }
