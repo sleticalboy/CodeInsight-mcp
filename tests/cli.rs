@@ -5974,6 +5974,34 @@ export function route() {
     assert!(impact["paths"].as_array().unwrap().iter().any(|path| {
         path["kind"] == "dependency" && path["depth"] == 2 && path["to"] == "src/route.ts"
     }));
+
+    let downstream_impact = run_json([
+        "impact-analysis",
+        fixture.path().to_str().unwrap(),
+        "--symbol",
+        "service",
+        "--depth",
+        "2",
+        "--limit",
+        "20",
+        "--format",
+        "summary",
+        "--evidence-limit",
+        "1",
+    ]);
+    assert!(
+        downstream_impact["paths"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|path| {
+                path["kind"] == "call"
+                    && path["depth"] == 1
+                    && path["from"] == "service"
+                    && path["to"] == "leaf"
+                    && path["file"] == "src/core.ts"
+            })
+    );
 }
 
 #[test]

@@ -708,6 +708,11 @@ pub fn impact_analysis_value(
         depth,
         limit,
     )?;
+    let mut seen_call_paths = paths
+        .iter()
+        .filter(|path| path.kind == "call")
+        .map(|path| (path.from.clone(), path.to.clone(), path.depth, path.line))
+        .collect::<BTreeSet<_>>();
     for call in &callees {
         add_impact(
             &mut impact,
@@ -723,6 +728,7 @@ pub fn impact_analysis_value(
                 format!("callee_target:{}->{}", call.caller, call.callee),
             );
         }
+        push_downstream_call_path(&mut paths, &mut seen_call_paths, call, 1, limit);
     }
     dedup_calls(&mut callers);
 
@@ -2536,6 +2542,32 @@ fn push_call_path(
         from: call.callee.clone(),
         to: call.caller.clone(),
         file: call.file.clone(),
+        via: format!("{}->{}", call.caller, call.callee),
+        line: call.line,
+    });
+}
+
+fn push_downstream_call_path(
+    paths: &mut Vec<ImpactPath>,
+    seen_paths: &mut BTreeSet<(String, String, usize, usize)>,
+    call: &CallEdge,
+    depth: usize,
+    limit: usize,
+) {
+    let Some(callee_file) = &call.callee_file else {
+        return;
+    };
+    if paths.len() >= limit
+        || !seen_paths.insert((call.caller.clone(), call.callee.clone(), depth, call.line))
+    {
+        return;
+    }
+    paths.push(ImpactPath {
+        kind: "call".to_string(),
+        depth,
+        from: call.caller.clone(),
+        to: call.callee.clone(),
+        file: callee_file.clone(),
         via: format!("{}->{}", call.caller, call.callee),
         line: call.line,
     });
