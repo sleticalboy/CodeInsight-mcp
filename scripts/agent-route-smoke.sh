@@ -145,6 +145,11 @@ write_summary_json() {
       entrypoints: (.overview.entrypoints | length),
       selected_files: (.context_pack.files | length),
       selected_ranges: .context_pack.budget.selected_ranges,
+      baseline_source_lines: .context_pack.read_less.baseline_source_lines,
+      selected_source_lines: .context_pack.read_less.selected_source_lines,
+      source_lines_avoided: .context_pack.read_less.source_lines_avoided,
+      line_reduction: .context_pack.read_less.line_reduction,
+      read_less_ratio: .context_pack.read_less.read_less_ratio,
       reading_plan_steps: (.context_pack.reading_plan | length),
       execution_plan_steps: (.execution_plan | length),
       requested_token_budget: .context_pack.budget.requested_token_budget,
@@ -198,6 +203,11 @@ write_summary_json() {
       and .execution_plan_actions == ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"]
       and .metrics.indexed_files >= 3
       and .metrics.index_errors == 0
+      and (.metrics.baseline_source_lines | type == "number")
+      and (.metrics.selected_source_lines | type == "number")
+      and (.metrics.source_lines_avoided | type == "number")
+      and (.metrics.line_reduction | type == "string" and length > 0)
+      and (.metrics.read_less_ratio | type == "string" and length > 0)
       and .metrics.reading_plan_steps >= 1
       and .metrics.execution_plan_steps == 4
       and (.metrics.seed_strategy | type == "string" and length > 0)
@@ -340,6 +350,11 @@ main() {
   require_jq "$route_json" '(.index_report.errors | length) == 0' "fixture should index without errors"
   require_jq "$route_json" '.overview.entrypoints | length >= 1' "overview should find entrypoints"
   require_jq "$route_json" '.context_pack.files | length >= 1' "context_pack should select files"
+  require_jq "$route_json" '.context_pack.read_less.baseline_source_lines == .overview.total_lines' "context_pack read_less should expose overview source-line baseline"
+  require_jq "$route_json" '. as $route | [.context_pack.files[].ranges[] | (.end_line - .start_line + 1)] | add as $selected | $route.context_pack.read_less.selected_source_lines == $selected' "context_pack read_less should expose selected source lines"
+  require_jq "$route_json" '.context_pack.read_less.source_lines_avoided == (.context_pack.read_less.baseline_source_lines - .context_pack.read_less.selected_source_lines)' "context_pack read_less should expose avoided source lines"
+  require_jq "$route_json" '.context_pack.read_less.line_reduction | test("^[0-9]+\\.[0-9]%$|^n/a$")' "context_pack read_less should expose line reduction"
+  require_jq "$route_json" '.context_pack.read_less.read_less_ratio | test("^[0-9]+\\.[0-9]x$|^n/a$")' "context_pack read_less should expose read-less ratio"
   require_jq "$route_json" '.context_pack.reading_plan | length >= 1' "context_pack should include a reading plan"
   require_jq "$route_json" '.current_reading_step == .context_pack.reading_plan[0]' "agent_route current_reading_step should mirror reading_plan[0]"
   require_jq "$route_json" '.context_pack.reading_plan[0].next_action != null and .context_pack.reading_plan[0].next_action != ""' "reading plan should include next action"
@@ -426,6 +441,11 @@ main() {
   echo "symbols: $(json_value "$route_json" '.index_report.symbols')"
   echo "entrypoints: $(json_value "$route_json" '.overview.entrypoints | length')"
   echo "selected_files: $(json_value "$route_json" '.context_pack.files | length')"
+  echo "baseline_source_lines: $(json_value "$route_json" '.context_pack.read_less.baseline_source_lines')"
+  echo "selected_source_lines: $(json_value "$route_json" '.context_pack.read_less.selected_source_lines')"
+  echo "source_lines_avoided: $(json_value "$route_json" '.context_pack.read_less.source_lines_avoided')"
+  echo "line_reduction: $(json_value "$route_json" '.context_pack.read_less.line_reduction')"
+  echo "read_less_ratio: $(json_value "$route_json" '.context_pack.read_less.read_less_ratio')"
   echo "reading_plan_steps: $(json_value "$route_json" '.context_pack.reading_plan | length')"
   echo "execution_plan_steps: $(json_value "$route_json" '.execution_plan | length')"
   echo "current_reading_step_matches_reading_plan: $(json_value "$route_json" '.current_reading_step == .context_pack.reading_plan[0]')"

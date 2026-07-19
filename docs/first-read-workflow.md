@@ -26,7 +26,7 @@ It reports:
 - index timing, indexed files, symbols, and errors
 - overview entrypoint and recommendation counts
 - context-pack selected files, selected ranges, estimated tokens, and
-  line-reduction percentage
+  `read_less` source-line reduction metrics
 - first reading-plan question, candidate selection rank, executable reason, and
   raw selection reason for the first selected context file
 - continuation status and next action for follow-up context calls
@@ -175,7 +175,18 @@ to avoid duplicate lines, and are ordered by source line within each file.
 File-level `source` and `reason` values identify the dominant selected source,
 and file-level `score` is the highest selected range score.
 
-`context_pack` returns a `budget` object alongside the legacy top-level
+`context_pack` returns a `read_less` object so clients can display first-read
+compression without recomputing it from ranges:
+
+- `baseline_source_lines`: the indexed repository source-line total.
+- `selected_source_lines`: the source lines included in selected
+  `context_pack.files[].ranges[]`.
+- `source_lines_avoided`: non-negative baseline minus selected lines.
+- `line_reduction`: one-decimal percentage, or `n/a` when no baseline exists.
+- `read_less_ratio`: one-decimal baseline/selected ratio, or `n/a` when the
+  ratio is not meaningful.
+
+`context_pack` also returns a `budget` object alongside the legacy top-level
 `estimated_tokens` and `truncated` fields. Use `requested_token_budget`,
 `applied_token_budget`, `candidate_files`, `selected_files`, `omitted_files`,
 `candidate_ranges`, `selected_ranges`, `omitted_ranges`, and

@@ -35,6 +35,11 @@ require_summary_contract() {
       and (.metrics.entrypoints | type == "number")
       and (.metrics.selected_files | type == "number")
       and (.metrics.selected_ranges | type == "number")
+      and (.metrics.baseline_source_lines | type == "number")
+      and (.metrics.selected_source_lines | type == "number")
+      and (.metrics.source_lines_avoided | type == "number")
+      and (.metrics.line_reduction | type == "string")
+      and (.metrics.read_less_ratio | type == "string")
       and (.metrics.reading_plan_steps | type == "number")
       and (.metrics.execution_plan_steps | type == "number")
       and (.metrics.requested_token_budget | type == "number")
@@ -119,6 +124,11 @@ main() {
     printf '| Entrypoints | `%s` |\n' "$(metric '.metrics.entrypoints')"
     printf '| Selected files | `%s` |\n' "$(metric '.metrics.selected_files')"
     printf '| Selected ranges | `%s` |\n' "$(metric '.metrics.selected_ranges')"
+    printf '| Blind first-read baseline | `%s` source lines |\n' "$(metric '.metrics.baseline_source_lines')"
+    printf '| Routed first-read | `%s` source lines |\n' "$(metric '.metrics.selected_source_lines')"
+    printf '| Source lines avoided | `%s` |\n' "$(metric '.metrics.source_lines_avoided')"
+    printf '| Line reduction | `%s` |\n' "$(metric '.metrics.line_reduction')"
+    printf '| Read less | `%s` |\n' "$(metric '.metrics.read_less_ratio')"
     printf '| Reading-plan steps | `%s` |\n' "$(metric '.metrics.reading_plan_steps')"
     printf '| Execution-plan steps | `%s` |\n' "$(metric '.metrics.execution_plan_steps')"
     printf '| Token budget | `%s/%s` |\n' "$(metric '.metrics.applied_token_budget')" "$(metric '.metrics.requested_token_budget')"

@@ -332,6 +332,7 @@ pub struct ContextPack {
     pub reading_plan: Vec<ContextReadingStep>,
     pub semantic_status: ContextSemanticStatus,
     pub budget: ContextBudget,
+    pub read_less: ContextReadLess,
     pub continuation_summary: ContextContinuationSummary,
     pub omitted_candidates: Vec<ContextOmittedCandidate>,
     pub files: Vec<ContextFile>,
@@ -339,6 +340,15 @@ pub struct ContextPack {
     pub references: Vec<ReferenceMatch>,
     pub estimated_tokens: usize,
     pub truncated: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ContextReadLess {
+    pub baseline_source_lines: usize,
+    pub selected_source_lines: usize,
+    pub source_lines_avoided: usize,
+    pub line_reduction: String,
+    pub read_less_ratio: String,
 }
 
 #[derive(Debug, Clone, Serialize)]

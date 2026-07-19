@@ -46,6 +46,11 @@ main() {
     "entrypoints": 1,
     "selected_files": 2,
     "selected_ranges": 2,
+    "baseline_source_lines": 1200,
+    "selected_source_lines": 80,
+    "source_lines_avoided": 1120,
+    "line_reduction": "93.3%",
+    "read_less_ratio": "15.0x",
     "reading_plan_steps": 2,
     "execution_plan_steps": 4,
     "requested_token_budget": 1600,
@@ -92,6 +97,10 @@ EOF
   require_literal "$summary_md" 'Execution plan: `read_selected_context -> use_current_reading_step_suggested_tool -> use_continuation_if_needed -> review_impact_before_edits`' "execution plan line"
   require_literal "$summary_md" 'Workflow artifact: [`codeinsight-agent-route-smoke`](https://example.com/artifact)' "artifact link"
   require_literal "$summary_md" '| Indexed files | `3` |' "indexed files metric"
+  require_literal "$summary_md" '| Blind first-read baseline | `1200` source lines |' "blind first-read baseline metric"
+  require_literal "$summary_md" '| Routed first-read | `80` source lines |' "routed first-read metric"
+  require_literal "$summary_md" '| Source lines avoided | `1120` |' "source lines avoided metric"
+  require_literal "$summary_md" '| Read less | `15.0x` |' "read-less metric"
   require_literal "$summary_md" '| Execution-plan steps | `4` |' "execution plan steps metric"
   require_literal "$summary_md" '| Seed strategy | `auto_task_match` |' "seed strategy metric"
   require_literal "$summary_md" '| Selected seeds | `2` |' "selected seeds metric"

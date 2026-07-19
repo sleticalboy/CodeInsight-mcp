@@ -7649,6 +7649,47 @@ fn assert_agent_route_execution_plan_matches_context(route: &Value) {
         route["current_reading_step"], reading_plan[0],
         "agent_route should mirror reading_plan[0] at top level for client handoff"
     );
+    let selected_source_lines = context_pack["files"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .flat_map(|file| file["ranges"].as_array().unwrap())
+        .map(|range| {
+            let start = range["start_line"].as_u64().unwrap();
+            let end = range["end_line"].as_u64().unwrap();
+            end.saturating_sub(start) + 1
+        })
+        .sum::<u64>();
+    let baseline_source_lines = route["overview"]["total_lines"].as_u64().unwrap();
+    assert_eq!(
+        context_pack["read_less"]["baseline_source_lines"].as_u64(),
+        Some(baseline_source_lines),
+        "context_pack.read_less should expose the blind first-read baseline"
+    );
+    assert_eq!(
+        context_pack["read_less"]["selected_source_lines"].as_u64(),
+        Some(selected_source_lines),
+        "context_pack.read_less should expose selected source lines"
+    );
+    assert_eq!(
+        context_pack["read_less"]["source_lines_avoided"].as_u64(),
+        Some(baseline_source_lines.saturating_sub(selected_source_lines)),
+        "context_pack.read_less should expose avoided source lines"
+    );
+    assert!(
+        context_pack["read_less"]["line_reduction"]
+            .as_str()
+            .unwrap()
+            .ends_with('%'),
+        "context_pack.read_less should expose a line reduction percentage"
+    );
+    assert!(
+        context_pack["read_less"]["read_less_ratio"]
+            .as_str()
+            .unwrap()
+            .ends_with('x'),
+        "context_pack.read_less should expose a read-less ratio"
+    );
 
     let reading_files = reading_plan
         .iter()

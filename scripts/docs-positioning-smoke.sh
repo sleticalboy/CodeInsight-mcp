@@ -384,6 +384,9 @@ main() {
     '`agent_route` \| Run the default first-read path.*expose `current_reading_step` and `execution_plan\[\]`' \
     "MCP tools agent_route execution plan"
   require_pattern docs/mcp-tools.md \
+    'read-less source-line metrics' \
+    "MCP tools context_pack read-less metrics"
+  require_pattern docs/mcp-tools.md \
     'Follow `agent_route\.execution_plan\[\]`' \
     "MCP tools execution plan first-read guidance"
   require_pattern docs/client-workflow.md \
@@ -467,6 +470,12 @@ main() {
   require_pattern docs/first-read-workflow.md \
     'Use `agent_route\.current_reading_step` as the first checklist' \
     "first-read workflow current reading step"
+  require_pattern docs/first-read-workflow.md \
+    '`context_pack` returns a `read_less` object' \
+    "first-read workflow read-less object"
+  require_pattern docs/first-read-workflow.md \
+    '`source_lines_avoided`: non-negative baseline minus selected lines' \
+    "first-read workflow read-less avoided metric"
   require_pattern docs/first-read-workflow.md \
     'Treat `reading_plan\[\]\.focus` as the compact scan label' \
     "first-read workflow reading focus"

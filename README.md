@@ -448,7 +448,10 @@ Recommended MCP first-read flow:
 3. Use `reading_plan[].selection_rank` and `selection_reason` as the audit
    trail, and use `continuation_summary` only after selected context has been
    consumed.
-4. Use `index_project`, `project_overview`, `context_pack`, and
+4. Show `context_pack.read_less` when the client needs a direct source-line
+   baseline, selected-line count, avoided-line count, reduction percentage, and
+   read-less ratio.
+5. Use `index_project`, `project_overview`, `context_pack`, and
    `impact_analysis` directly when the client needs custom routing or partial
    refresh control.
 

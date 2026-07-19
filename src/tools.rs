@@ -19,7 +19,7 @@ use crate::{
     model::{
         AgentRouteExecutionStep, AgentRouteReport, AgentRouteStep, CallEdge, ConfigInitReport,
         ConfigStatusReport, ContextBudget, ContextContinuationSummary, ContextFile,
-        ContextOmittedCandidate, ContextPack, ContextRange, ContextReadingRange,
+        ContextOmittedCandidate, ContextPack, ContextRange, ContextReadLess, ContextReadingRange,
         ContextReadingStep, ContextSeed, ContextSemanticStatus, ContextSuggestedTool, Dependency,
         DependencyGraph, EmbeddingProviderStatus, ImpactAnalysisReport, ImpactBreakdown,
         ImpactCounts, ImpactFile, ImpactPath, IndexError, Language, OllamaEmbeddingStatus,
@@ -1527,6 +1527,9 @@ pub fn context_pack_value(
     let reading_plan = context_reading_plan(&root, &task, &files);
     let selected_files = files.len();
     let selected_ranges = files.iter().map(|file| file.ranges.len()).sum::<usize>();
+    let selected_source_lines = context_selected_source_lines(&files);
+    let baseline_source_lines = store.overview(&root)?.total_lines;
+    let read_less = context_read_less(baseline_source_lines, selected_source_lines);
     let omitted_candidates = context_omitted_candidates(
         &root,
         &task,
@@ -1566,6 +1569,7 @@ pub fn context_pack_value(
         reading_plan,
         semantic_status: semantic_status.status,
         budget: budget_summary,
+        read_less,
         continuation_summary,
         omitted_candidates,
         files,
@@ -1574,6 +1578,44 @@ pub fn context_pack_value(
         estimated_tokens,
         truncated,
     })
+}
+
+fn context_selected_source_lines(files: &[ContextFile]) -> usize {
+    files
+        .iter()
+        .flat_map(|file| &file.ranges)
+        .map(|range| range.end_line.saturating_sub(range.start_line) + 1)
+        .sum()
+}
+
+fn context_read_less(
+    baseline_source_lines: usize,
+    selected_source_lines: usize,
+) -> ContextReadLess {
+    let source_lines_avoided = baseline_source_lines.saturating_sub(selected_source_lines);
+    let line_reduction = if baseline_source_lines == 0 {
+        "n/a".to_string()
+    } else {
+        let reduction =
+            (1.0 - (selected_source_lines as f64 / baseline_source_lines as f64)) * 100.0;
+        format!("{:.1}%", reduction.max(0.0))
+    };
+    let read_less_ratio = if baseline_source_lines == 0 || selected_source_lines == 0 {
+        "n/a".to_string()
+    } else {
+        format!(
+            "{:.1}x",
+            baseline_source_lines as f64 / selected_source_lines as f64
+        )
+    };
+
+    ContextReadLess {
+        baseline_source_lines,
+        selected_source_lines,
+        source_lines_avoided,
+        line_reduction,
+        read_less_ratio,
+    }
 }
 
 fn context_budget_truncation_reason(

@@ -45,7 +45,7 @@ The stdio server currently exposes 16 tools:
 | `semantic_index` | Build local semantic text chunks and optional embeddings; can report incremental chunk changes. |
 | `embedding_status` | Report provider, batch size, and optional local semantic-index state without network calls. |
 | `version` | Return package version and target platform information. |
-| `context_pack` | Build token-budgeted agent context from explicit seeds or inferred entrypoints, including selected files/ranges, seed strategy, selected seeds, budget metadata, continuation summary, omitted candidate follow-ups, reading plan, semantic status, and follow-up suggestions. |
+| `context_pack` | Build token-budgeted agent context from explicit seeds or inferred entrypoints, including selected files/ranges, seed strategy, selected seeds, read-less source-line metrics, budget metadata, continuation summary, omitted candidate follow-ups, reading plan, semantic status, and follow-up suggestions. |
 | `agent_route` | Run the default first-read path in one call: refresh the local index, return `project_overview`, build `context_pack`, expose `current_reading_step` and `execution_plan[]`, and include an `impact_analysis` preview when a seed is available. |
 | `callers` | Return static call sites that call a function or method, including imported target hints when available. |
 | `callees` | Return static callees for a function or method, including imported target hints when available. |
@@ -61,7 +61,9 @@ Recommended MCP first-read flow:
    context, and review impact before edits.
 3. Use `agent_route.current_reading_step` to render the first checklist row
    without rebuilding it from `context_pack.reading_plan[0]`.
-4. Use the lower-level tools directly when the client needs step-by-step
+4. Display `context_pack.read_less` when users need to see how much source
+   text the first read avoided before follow-up tools.
+5. Use the lower-level tools directly when the client needs step-by-step
    control: `index_project`, `project_overview`, `context_pack`, then
    `impact_analysis`.
 
