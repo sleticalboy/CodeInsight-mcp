@@ -124,6 +124,10 @@ understand middleware behavior	src/application.ts'
   require_jq "$summary_json" '.tasks[] | select(.task == "understand application settings" and .first_file == "src/config.ts")' "settings task should choose config"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand startup flow" and .first_file == "src/startup.ts")' "startup task should choose startup"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand middleware behavior" and .first_file == "src/application.ts")' "middleware task should choose application"
+  require_jq "$summary_json" '.tasks[] | select(.task == "understand authentication behavior" and (.first_reading_question | contains("authentication decisions")))' "authentication task should report an auth-specific reading question"
+  require_jq "$summary_json" '.tasks[] | select(.task == "understand application settings" and (.first_reading_question | contains("configuration options")))' "settings task should report a config-specific reading question"
+  require_jq "$summary_json" '.tasks[] | select(.task == "understand startup flow" and (.first_reading_question | contains("startup entrypoint")))' "startup task should report a startup-specific reading question"
+  require_jq "$summary_json" '.tasks[] | select(.task == "understand middleware behavior" and (.first_reading_question | contains("handler boundaries")))' "middleware task should report a middleware-specific reading question"
 
   if CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/task-routing-matrix.sh" "$repo" \
     --output-dir "$bad_output_dir" \

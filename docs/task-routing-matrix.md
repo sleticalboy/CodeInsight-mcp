@@ -91,6 +91,7 @@ Each task row reports:
 - task prompt
 - seed strategy
 - first selected file
+- first reading question
 - first seed
 - companion entrypoint
 - selected source lines and reduction
@@ -112,20 +113,20 @@ When `--expect` or `--expect-file` is used, it also includes:
 Against the checked Gin adoption-case checkout, the task matrix routes distinct
 questions to distinct first files:
 
-| Task | First file | Seed strategy | Routed lines | Reduction | Tokens | Impact |
-| --- | --- | --- | ---: | ---: | ---: | ---: |
-| understand gin engine routing behavior | `routergroup.go` | `auto_task_match` | `248/24099` | `99.0%` | `2122` | `high / 10` |
-| understand middleware authentication behavior | `auth.go` | `auto_task_match` | `395/24099` | `98.4%` | `3871` | `high / 5` |
-| understand startup flow | `gin.go` | `auto_entrypoint` | `305/24099` | `98.7%` | `2965` | `high / 20` |
+| Task | First file | Question | Seed strategy | Routed lines | Reduction | Tokens | Impact |
+| --- | --- | --- | --- | ---: | ---: | ---: | ---: |
+| understand gin engine routing behavior | `routergroup.go` | What entrypoints, exported symbols, or setup code define the main flow here? | `auto_task_match` | `248/24099` | `99.0%` | `2122` | `high / 10` |
+| understand middleware authentication behavior | `auth.go` | Where are authentication decisions, credentials, or session boundaries handled here? | `auto_task_match` | `395/24099` | `98.4%` | `3871` | `high / 5` |
+| understand startup flow | `gin.go` | What startup entrypoint or initialization sequence creates the requested flow? | `auto_entrypoint` | `305/24099` | `98.7%` | `2965` | `high / 20` |
 
 Against a Streamlit checkout with Python backend and TypeScript frontend code,
 the same matrix catches broad prompts that previously drifted to plausible but
 less useful files:
 
-| Task | First file | Seed strategy | Routed lines | Reduction | Tokens | Impact |
-| --- | --- | --- | ---: | ---: | ---: | ---: |
-| understand streamlit server startup flow | `lib/streamlit/web/bootstrap.py` | `auto_entrypoint` | `272/556097` | `100.0%` | `2810` | `high / 6` |
-| understand configuration settings | `lib/streamlit/config.py` | `auto_task_match` | `610/556097` | `99.9%` | `6000` | `high / 4` |
+| Task | First file | Question | Seed strategy | Routed lines | Reduction | Tokens | Impact |
+| --- | --- | --- | --- | ---: | ---: | ---: | ---: |
+| understand streamlit server startup flow | `lib/streamlit/web/bootstrap.py` | What startup entrypoint or initialization sequence creates the requested flow? | `auto_entrypoint` | `272/556097` | `100.0%` | `2810` | `high / 6` |
+| understand configuration settings | `lib/streamlit/config.py` | Which configuration options, defaults, or environment inputs control the requested behavior? | `auto_task_match` | `610/556097` | `99.9%` | `6000` | `high / 4` |
 
 This complements [Adoption cases](adoption-cases.md): adoption cases compare
 blind first-read size with one routed first read, while this matrix checks
