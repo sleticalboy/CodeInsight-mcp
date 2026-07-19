@@ -1910,16 +1910,17 @@ fn context_reading_question(file: &ContextFile, task: &str) -> String {
 }
 
 fn context_seed_file_question(task: &str) -> String {
-    if context_text_mentions(task, &["impact", "call", "caller", "callee", "path"]) {
+    let signals = ContextTaskSignals::from_task(task);
+    if signals.impact_flow {
         "Which local callers, callees, or impact paths in this seed file explain the requested flow?".to_string()
-    } else if context_text_mentions_auth(task) {
+    } else if signals.auth_session {
         "Where are authentication decisions, credentials, or session boundaries handled here?"
             .to_string()
-    } else if context_text_mentions(task, &["config", "configuration", "setting", "settings"]) {
+    } else if signals.configuration {
         "Which configuration options, defaults, or environment inputs control the requested behavior?".to_string()
-    } else if context_text_mentions(task, &["startup", "bootstrap", "boot"]) {
+    } else if signals.startup {
         "What startup entrypoint or initialization sequence creates the requested flow?".to_string()
-    } else if context_text_mentions(task, &["middleware"]) {
+    } else if signals.middleware {
         "Which middleware or handler boundaries shape the requested flow here?".to_string()
     } else {
         "What entrypoints, exported symbols, or setup code define the main flow here?".to_string()
@@ -1927,15 +1928,16 @@ fn context_seed_file_question(task: &str) -> String {
 }
 
 fn context_symbol_definition_question(task: &str) -> String {
-    if context_text_mentions(task, &["impact", "call", "caller", "callee", "path"]) {
+    let signals = ContextTaskSignals::from_task(task);
+    if signals.impact_flow {
         "What callers, callees, or impact paths does this definition anchor?".to_string()
-    } else if context_text_mentions_auth(task) {
+    } else if signals.auth_session {
         "What authentication decisions, credentials, or session boundaries does this definition establish?".to_string()
-    } else if context_text_mentions(task, &["config", "configuration", "setting", "settings"]) {
+    } else if signals.configuration {
         "What configuration defaults, inputs, or environment behavior does this definition establish?".to_string()
-    } else if context_text_mentions(task, &["startup", "bootstrap", "boot"]) {
+    } else if signals.startup {
         "What startup or initialization role does this definition establish?".to_string()
-    } else if context_text_mentions(task, &["middleware"]) {
+    } else if signals.middleware {
         "What middleware or handler boundary does this definition establish?".to_string()
     } else {
         "What behavior or contract does this definition establish for the task?".to_string()
@@ -1943,15 +1945,16 @@ fn context_symbol_definition_question(task: &str) -> String {
 }
 
 fn context_call_graph_question(task: &str) -> String {
-    if context_text_mentions_auth(task) {
+    let signals = ContextTaskSignals::from_task(task);
+    if signals.auth_session {
         "Which callers or callees carry authentication decisions, credentials, or session state through this flow?".to_string()
-    } else if context_text_mentions(task, &["config", "configuration", "setting", "settings"]) {
+    } else if signals.configuration {
         "Which callers or callees read, transform, or propagate configuration in this flow?"
             .to_string()
-    } else if context_text_mentions(task, &["startup", "bootstrap", "boot"]) {
+    } else if signals.startup {
         "Which callers or callees order startup, bootstrap, or initialization work in this flow?"
             .to_string()
-    } else if context_text_mentions(task, &["middleware"]) {
+    } else if signals.middleware {
         "Which callers or callees enter, wrap, or exit middleware and handler boundaries?"
             .to_string()
     } else {
@@ -1960,15 +1963,16 @@ fn context_call_graph_question(task: &str) -> String {
 }
 
 fn context_dependency_question(task: &str) -> String {
-    if context_text_mentions_auth(task) {
+    let signals = ContextTaskSignals::from_task(task);
+    if signals.auth_session {
         "What imported local dependency behavior affects authentication or session boundaries here?"
             .to_string()
-    } else if context_text_mentions(task, &["config", "configuration", "setting", "settings"]) {
+    } else if signals.configuration {
         "What imported local dependency behavior supplies configuration defaults, inputs, or environment handling?".to_string()
-    } else if context_text_mentions(task, &["startup", "bootstrap", "boot"]) {
+    } else if signals.startup {
         "What imported local dependency behavior participates in startup or initialization?"
             .to_string()
-    } else if context_text_mentions(task, &["middleware"]) {
+    } else if signals.middleware {
         "What imported local dependency behavior shapes middleware or handler dispatch?".to_string()
     } else {
         "What imported local dependency behavior is required to understand this file?".to_string()
@@ -1976,16 +1980,17 @@ fn context_dependency_question(task: &str) -> String {
 }
 
 fn context_reference_question(task: &str) -> String {
-    if context_text_mentions(task, &["impact", "call", "caller", "callee", "path"]) {
+    let signals = ContextTaskSignals::from_task(task);
+    if signals.impact_flow {
         "Which references show production usage or impact paths for this seed?".to_string()
-    } else if context_text_mentions_auth(task) {
+    } else if signals.auth_session {
         "Which references consume authentication decisions, credentials, or session state?"
             .to_string()
-    } else if context_text_mentions(task, &["config", "configuration", "setting", "settings"]) {
+    } else if signals.configuration {
         "Which references read, override, or pass configuration values?".to_string()
-    } else if context_text_mentions(task, &["startup", "bootstrap", "boot"]) {
+    } else if signals.startup {
         "Which references register or trigger startup and initialization behavior?".to_string()
-    } else if context_text_mentions(task, &["middleware"]) {
+    } else if signals.middleware {
         "Which references attach, order, or call middleware and handler boundaries?".to_string()
     } else {
         "How is the seed symbol used by nearby production code?".to_string()
@@ -1993,36 +1998,60 @@ fn context_reference_question(task: &str) -> String {
 }
 
 fn context_semantic_question(task: &str) -> String {
-    if context_text_mentions_auth(task) {
+    let signals = ContextTaskSignals::from_task(task);
+    if signals.auth_session {
         "Which semantic matches describe authentication, credential, cookie, or session behavior?"
             .to_string()
-    } else if context_text_mentions(task, &["config", "configuration", "setting", "settings"]) {
+    } else if signals.configuration {
         "Which semantic matches describe configuration defaults, inputs, or environment behavior?"
             .to_string()
-    } else if context_text_mentions(task, &["startup", "bootstrap", "boot"]) {
+    } else if signals.startup {
         "Which semantic matches describe startup, bootstrap, or initialization behavior?"
             .to_string()
-    } else if context_text_mentions(task, &["middleware"]) {
+    } else if signals.middleware {
         "Which semantic matches describe middleware or handler boundary behavior?".to_string()
     } else {
         "Which task terms are reflected in this semantically related code?".to_string()
     }
 }
 
-fn context_text_mentions_auth(text: &str) -> bool {
-    context_text_mentions(
-        text,
-        &[
-            "auth",
-            "authentication",
-            "authenticate",
-            "login",
-            "signin",
-            "session",
-            "cookie",
-            "credential",
-        ],
-    )
+#[derive(Debug, Clone, Copy)]
+struct ContextTaskSignals {
+    impact_flow: bool,
+    auth_session: bool,
+    configuration: bool,
+    startup: bool,
+    middleware: bool,
+}
+
+impl ContextTaskSignals {
+    fn from_task(task: &str) -> Self {
+        Self {
+            impact_flow: context_text_mentions(
+                task,
+                &["impact", "call", "caller", "callee", "path"],
+            ),
+            auth_session: context_text_mentions(
+                task,
+                &[
+                    "auth",
+                    "authentication",
+                    "authenticate",
+                    "login",
+                    "signin",
+                    "session",
+                    "cookie",
+                    "credential",
+                ],
+            ),
+            configuration: context_text_mentions(
+                task,
+                &["config", "configuration", "setting", "settings"],
+            ),
+            startup: context_text_mentions(task, &["startup", "bootstrap", "boot"]),
+            middleware: context_text_mentions(task, &["middleware"]),
+        }
+    }
 }
 
 fn context_text_mentions(text: &str, terms: &[&str]) -> bool {
