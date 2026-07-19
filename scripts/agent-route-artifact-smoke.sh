@@ -94,8 +94,10 @@ validate_summary_json() {
       and (.metrics.first_context_file | type == "string" and length > 0)
       and (.metrics.first_reading_file | type == "string" and length > 0)
       and .metrics.first_execution_action == "read_selected_context"
+      and .metrics.first_execution_instruction_has_focus == true
       and .metrics.second_execution_action == "use_current_reading_step_suggested_tool"
       and (.metrics.first_execution_suggested_tool | type == "string" and length > 0)
+      and .metrics.current_step_instruction_has_focus == true
       and (.metrics.first_next_action | type == "string" and length > 0)
       and (.metrics.first_reading_focus | type == "string" and length > 0)
       and (.metrics.first_reading_question | type == "string" and length > 0)
@@ -233,6 +235,8 @@ main() {
   echo "summary: $summary_file"
   echo "first_reading_focus: $(jq -r '.metrics.first_reading_focus' "$summary_file")"
   echo "first_reading_question: $(jq -r '.metrics.first_reading_question' "$summary_file")"
+  echo "first_execution_instruction_has_focus: $(jq -r '.metrics.first_execution_instruction_has_focus' "$summary_file")"
+  echo "current_step_instruction_has_focus: $(jq -r '.metrics.current_step_instruction_has_focus' "$summary_file")"
   echo "first_selection_rank: $(jq -r '.metrics.first_selection_rank' "$summary_file")"
   echo "continuation_next_action: $(jq -r '.metrics.continuation_next_action' "$summary_file")"
 }

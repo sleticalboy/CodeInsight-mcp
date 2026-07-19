@@ -27,6 +27,8 @@ write_summary_json() {
     "review_impact_before_edits"
   ],
   "first_execution_action": "read_selected_context",
+  "first_execution_instruction_has_focus": true,
+  "first_execution_instruction_has_question": true,
   "impact_counts": {
     "callees": 1,
     "callers": 1,
@@ -62,6 +64,9 @@ write_summary_json() {
   ],
   "execution_plan_reads_in_reading_plan_order": true,
   "current_step_suggested_tool_matches_reading_plan": true,
+  "current_step_instruction_has_focus": true,
+  "current_step_instruction_has_question": true,
+  "current_step_instruction_has_action": true,
   "continuation_after_selected_context": true,
   "continuation_status": "complete",
   "continuation_next_action": "read_selected_context",
@@ -148,6 +153,10 @@ EOF
     fail "missing first reading focus output"
   grep -Fq 'first_reading_question: What entrypoints define the main flow?' "$TEMP_DIR/output.log" ||
     fail "missing first reading question output"
+  grep -Fq 'first_execution_instruction_has_focus: true' "$TEMP_DIR/output.log" ||
+    fail "missing first execution focus contract output"
+  grep -Fq 'current_step_instruction_has_focus: true' "$TEMP_DIR/output.log" ||
+    fail "missing current-step focus contract output"
   grep -Fq 'first_reading_selection_rank: 1' "$TEMP_DIR/output.log" ||
     fail "missing first reading selection rank output"
   grep -Fq 'continuation_status: complete' "$TEMP_DIR/output.log" ||
@@ -174,6 +183,10 @@ EOF
     fail "missing latest first reading question output"
   grep -Fq 'first_reading_focus: Start with seed file context and primary symbols.' "$TEMP_DIR/latest-output.log" ||
     fail "missing latest first reading focus output"
+  grep -Fq 'first_execution_instruction_has_focus: true' "$TEMP_DIR/latest-output.log" ||
+    fail "missing latest first execution focus contract output"
+  grep -Fq 'current_step_instruction_has_focus: true' "$TEMP_DIR/latest-output.log" ||
+    fail "missing latest current-step focus contract output"
   grep -Fq 'first_reading_selection_rank: 1' "$TEMP_DIR/latest-output.log" ||
     fail "missing latest first reading selection rank output"
   grep -Fq 'continuation_status: complete' "$TEMP_DIR/latest-output.log" ||

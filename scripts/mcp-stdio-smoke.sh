@@ -291,6 +291,7 @@ try:
         f"candidate rank {agent_route_first_reading['selection_rank']}"
         in agent_route_result["execution_plan"][0]["instruction"]
     )
+    assert agent_route_first_reading["focus"] in agent_route_result["execution_plan"][0]["instruction"]
     assert agent_route_result["execution_plan"][1]["suggested_tool"]["tool"]
     assert agent_route_result["execution_plan"][1]["suggested_tool"]["suggested_arguments"]
     assert agent_route_continuation["status"]

@@ -86,6 +86,8 @@ def assert_actionable_reading_plan(payload, label):
         raise AssertionError({label: first_step})
     if not first_step.get("next_action"):
         raise AssertionError({label: first_step})
+    if not first_step.get("focus"):
+        raise AssertionError({label: first_step})
     if not first_step.get("question"):
         raise AssertionError({label: first_step})
 
@@ -141,6 +143,8 @@ def assert_continuation_summary(payload, label):
 def assert_agent_route_execution_evidence(route, reading_step, label):
     first_execution = route["execution_plan"][0]
     if f"candidate rank {reading_step['selection_rank']}" not in first_execution.get("instruction", ""):
+        raise AssertionError({label: first_execution})
+    if reading_step["focus"] not in first_execution.get("instruction", ""):
         raise AssertionError({label: first_execution})
     continuation = assert_continuation_summary(route["context_pack"], label)
     continuation_instruction = route["execution_plan"][2].get("instruction", "")
@@ -219,6 +223,8 @@ if agent_route["execution_plan"][0]["status"] != "ready":
 if not agent_route["execution_plan"][0]["files"]:
     raise AssertionError(agent_route["execution_plan"])
 if "reading_plan[] order" not in agent_route["execution_plan"][0]["instruction"]:
+    raise AssertionError(agent_route["execution_plan"])
+if agent_route["context_pack"]["reading_plan"][0]["focus"] not in agent_route["execution_plan"][0]["instruction"]:
     raise AssertionError(agent_route["execution_plan"])
 if not agent_route["execution_plan"][1]["suggested_tool"]["tool"]:
     raise AssertionError(agent_route["execution_plan"])
@@ -370,6 +376,11 @@ try:
         raise AssertionError(mcp_agent_route["execution_plan"])
     if not mcp_agent_route["context_pack"]["reading_plan"]:
         raise AssertionError(mcp_agent_route["context_pack"])
+    if (
+        mcp_agent_route["context_pack"]["reading_plan"][0]["focus"]
+        not in mcp_agent_route["execution_plan"][0]["instruction"]
+    ):
+        raise AssertionError(mcp_agent_route["execution_plan"])
     mcp_agent_route_reading_step = assert_actionable_reading_plan(
         mcp_agent_route["context_pack"],
         "mcp_agent_route_context_pack",

@@ -59,8 +59,10 @@ main() {
   "execution_plan_actions": ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"],
   "execution_plan_reads_in_reading_plan_order": true,
   "first_execution_action": "read_selected_context",
+  "first_execution_instruction_has_focus": true,
   "first_execution_instruction_has_question": true,
   "current_step_suggested_tool_matches_reading_plan": true,
+  "current_step_instruction_has_focus": true,
   "current_step_instruction_has_question": true,
   "current_step_instruction_has_action": true,
   "continuation_after_selected_context": true,
@@ -105,8 +107,10 @@ EOF
   require_literal "$summary_md" 'First reading focus: `Start with seed file context and primary symbols.`' "first reading focus"
   require_literal "$summary_md" 'First reading question: `What entrypoints define the main flow?`' "first reading question"
   require_literal "$summary_md" 'Reading order contract: `true`' "reading order contract"
+  require_literal "$summary_md" 'First execution instruction focus contract: `true`' "first execution instruction focus contract"
   require_literal "$summary_md" 'First execution instruction question contract: `true`' "first execution instruction question contract"
   require_literal "$summary_md" 'Suggested tool handoff contract: `true`' "suggested tool handoff contract"
+  require_literal "$summary_md" 'Current-step instruction focus contract: `true`' "current-step instruction focus contract"
   require_literal "$summary_md" 'Current-step instruction question contract: `true`' "current-step instruction question contract"
   require_literal "$summary_md" 'Current-step instruction action contract: `true`' "current-step instruction action contract"
   require_literal "$summary_md" 'Continuation timing contract: `true`' "continuation timing contract"

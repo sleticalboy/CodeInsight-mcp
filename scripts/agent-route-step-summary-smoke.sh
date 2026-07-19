@@ -58,9 +58,11 @@ main() {
     "first_context_file": "src/main.ts",
     "first_reading_file": "src/main.ts",
     "first_execution_action": "read_selected_context",
+    "first_execution_instruction_has_focus": true,
     "first_execution_instruction_has_question": true,
     "second_execution_action": "use_current_reading_step_suggested_tool",
 	    "first_execution_suggested_tool": "file_outline",
+	    "current_step_instruction_has_focus": true,
 	    "first_next_action": "inspect_seed_file",
 	    "first_reading_focus": "Start with seed file context and primary symbols.",
 	    "first_reading_question": "What entrypoints define the main flow?",
@@ -97,9 +99,11 @@ EOF
   require_literal "$summary_md" '| Companion entrypoint | `src/main.ts` |' "companion entrypoint metric"
   require_literal "$summary_md" '| First reading file | `src/main.ts` |' "first reading file metric"
   require_literal "$summary_md" '| First execution action | `read_selected_context` |' "first execution action metric"
+  require_literal "$summary_md" '| First execution instruction has focus | `true` |' "first execution instruction focus metric"
   require_literal "$summary_md" '| First execution instruction has question | `true` |' "first execution instruction question metric"
   require_literal "$summary_md" '| Second execution action | `use_current_reading_step_suggested_tool` |' "second execution action metric"
 	  require_literal "$summary_md" '| First execution suggested tool | `file_outline` |' "first execution suggested tool metric"
+	  require_literal "$summary_md" '| Current-step instruction has focus | `true` |' "current-step instruction focus metric"
 	  require_literal "$summary_md" '| First next action | `inspect_seed_file` |' "next action metric"
 	  require_literal "$summary_md" '| First reading focus | `Start with seed file context and primary symbols.` |' "first reading focus metric"
 	  require_literal "$summary_md" '| First reading question | `What entrypoints define the main flow?` |' "first reading question metric"

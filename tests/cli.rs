@@ -6983,6 +6983,13 @@ fn assert_agent_route_execution_plan_matches_context(route: &Value) {
         execution_plan[0]["instruction"]
             .as_str()
             .unwrap()
+            .contains(first_step["focus"].as_str().unwrap()),
+        "first execution step should include the first reading-plan focus"
+    );
+    assert!(
+        execution_plan[0]["instruction"]
+            .as_str()
+            .unwrap()
             .contains(first_step["question"].as_str().unwrap()),
         "first execution step should include the first reading-plan question"
     );
@@ -7004,6 +7011,13 @@ fn assert_agent_route_execution_plan_matches_context(route: &Value) {
             .unwrap()
             .contains(first_step["next_action"].as_str().unwrap()),
         "current-step instruction should name the reading-plan action"
+    );
+    assert!(
+        execution_plan[1]["instruction"]
+            .as_str()
+            .unwrap()
+            .contains(first_step["focus"].as_str().unwrap()),
+        "current-step instruction should include the reading-plan focus"
     );
     assert!(
         execution_plan[1]["instruction"]

@@ -265,8 +265,20 @@ main() {
     '"execution_plan_reads_in_reading_plan_order": true' \
     "quickstart MCP first-call reading order contract"
   require_pattern docs/quickstart.md \
+    '"first_execution_instruction_has_focus": true' \
+    "quickstart MCP first-call first execution focus contract"
+  require_pattern docs/quickstart.md \
+    '"first_execution_instruction_has_question": true' \
+    "quickstart MCP first-call first execution question contract"
+  require_pattern docs/quickstart.md \
     '"current_step_suggested_tool_matches_reading_plan": true' \
     "quickstart MCP first-call suggested tool contract"
+  require_pattern docs/quickstart.md \
+    '"current_step_instruction_has_focus": true' \
+    "quickstart MCP first-call current-step focus contract"
+  require_pattern docs/quickstart.md \
+    '"current_step_instruction_has_question": true' \
+    "quickstart MCP first-call current-step question contract"
   require_pattern docs/quickstart.md \
     '"continuation_after_selected_context": true' \
     "quickstart MCP first-call continuation contract"

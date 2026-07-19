@@ -921,11 +921,17 @@ main() {
     'Reading order contract: `true`' \
     "MCP first-call step summary reading order contract"
   require_pattern scripts/mcp-first-call-step-summary-smoke.sh \
+    'First execution instruction focus contract: `true`' \
+    "MCP first-call step summary execution instruction focus contract"
+  require_pattern scripts/mcp-first-call-step-summary-smoke.sh \
     'First execution instruction question contract: `true`' \
     "MCP first-call step summary execution instruction question contract"
   require_pattern scripts/mcp-first-call-step-summary-smoke.sh \
     'Suggested tool handoff contract: `true`' \
     "MCP first-call step summary suggested tool handoff contract"
+  require_pattern scripts/mcp-first-call-step-summary-smoke.sh \
+    'Current-step instruction focus contract: `true`' \
+    "MCP first-call step summary current-step instruction focus contract"
   require_pattern scripts/mcp-first-call-step-summary-smoke.sh \
     'Continuation timing contract: `true`' \
     "MCP first-call step summary continuation timing contract"
@@ -1548,8 +1554,14 @@ main() {
 	    'First reading question' \
 	    "agent-route step summary first reading question"
 	  require_pattern scripts/agent-route-step-summary-smoke.sh \
+	    'First execution instruction has focus' \
+	    "agent-route step summary execution instruction focus"
+	  require_pattern scripts/agent-route-step-summary-smoke.sh \
 	    'First execution instruction has question' \
 	    "agent-route step summary execution instruction question"
+	  require_pattern scripts/agent-route-step-summary-smoke.sh \
+	    'Current-step instruction has focus' \
+	    "agent-route step summary current-step instruction focus"
 	  require_pattern scripts/agent-route-step-summary-smoke.sh \
 	    'First selection rank' \
 	    "agent-route step summary first selection rank"
@@ -1559,6 +1571,12 @@ main() {
   require_pattern scripts/agent-route-artifact-smoke.sh \
     'first_reading_question' \
     "agent-route artifact first reading question output"
+  require_pattern scripts/agent-route-artifact-smoke.sh \
+    'first_execution_instruction_has_focus' \
+    "agent-route artifact first execution instruction focus output"
+  require_pattern scripts/agent-route-artifact-smoke.sh \
+    'current_step_instruction_has_focus' \
+    "agent-route artifact current-step instruction focus output"
   require_pattern scripts/agent-route-artifact-smoke.sh \
     'first_selection_rank' \
     "agent-route artifact first selection rank output"
@@ -1655,6 +1673,12 @@ main() {
   require_pattern docs/mcp-client-config.md \
     '"use_current_reading_step_suggested_tool"' \
     "MCP client config first-call execution action example"
+  require_pattern docs/mcp-client-config.md \
+    '"first_execution_instruction_has_focus": true' \
+    "MCP client config first execution focus contract example"
+  require_pattern docs/mcp-client-config.md \
+    '"current_step_instruction_has_focus": true' \
+    "MCP client config current-step focus contract example"
   require_pattern docs/mcp-client-config.md \
     '"tool": "file_outline"' \
     "MCP client config first-call suggested tool example"

@@ -325,6 +325,7 @@ try:
         f"reading_plan[0].file should match context_pack.files[0].file: {first_reading_file!r} != {first_context_file!r}",
     )
     first_reason = reading_plan[0]["reason"]
+    first_focus = reading_plan[0]["focus"]
     first_question = reading_plan[0]["question"]
     first_reading_tool = reading_plan[0]["suggested_tool"]["tool"]
     expect(
@@ -367,7 +368,14 @@ try:
         "agent_route_contract",
         "execution_plan[0].instruction should expose reading_plan[0].selection_rank",
     )
-    first_execution_instruction_has_question = first_question in first_execution.get("instruction", "")
+    first_execution_instruction = first_execution.get("instruction", "")
+    first_execution_instruction_has_focus = first_focus in first_execution_instruction
+    expect(
+        first_execution_instruction_has_focus,
+        "agent_route_contract",
+        "execution_plan[0].instruction should include reading_plan[0].focus",
+    )
+    first_execution_instruction_has_question = first_question in first_execution_instruction
     expect(
         first_execution_instruction_has_question,
         "agent_route_contract",
@@ -392,6 +400,12 @@ try:
         "execution_plan[1].suggested_tool should match reading_plan[0].suggested_tool",
     )
     current_step_instruction = execution_plan[1].get("instruction", "")
+    current_step_instruction_has_focus = first_focus in current_step_instruction
+    expect(
+        current_step_instruction_has_focus,
+        "suggested_tool",
+        "execution_plan[1].instruction should include reading_plan[0].focus",
+    )
     current_step_instruction_has_question = first_question in current_step_instruction
     expect(
         current_step_instruction_has_question,
@@ -494,8 +508,10 @@ try:
         "execution_plan_actions": execution_plan_actions,
         "execution_plan_reads_in_reading_plan_order": True,
         "first_execution_action": first_execution["action"],
+        "first_execution_instruction_has_focus": first_execution_instruction_has_focus,
         "first_execution_instruction_has_question": first_execution_instruction_has_question,
         "current_step_suggested_tool_matches_reading_plan": True,
+        "current_step_instruction_has_focus": current_step_instruction_has_focus,
         "current_step_instruction_has_question": current_step_instruction_has_question,
         "current_step_instruction_has_action": current_step_instruction_has_action,
         "continuation_after_selected_context": True,

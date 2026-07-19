@@ -103,6 +103,8 @@ validate_summary_json() {
         and ($step.reason | contains($step.suggested_tool))
         and ($step.reason | contains("Selection reason:")))
       and .execution_plan_reads_in_reading_plan_order == true
+      and .first_execution_instruction_has_focus == true
+      and .current_step_instruction_has_focus == true
       and .current_step_suggested_tool_matches_reading_plan == true
       and .continuation_after_selected_context == true
       and (.continuation_status | type == "string")
@@ -247,6 +249,8 @@ main() {
   echo "summary: $summary_file"
   echo "first_reading_focus: $(jq -r '.reading_plan[0].focus' "$summary_file")"
   echo "first_reading_question: $(jq -r '.reading_plan[0].question' "$summary_file")"
+  echo "first_execution_instruction_has_focus: $(jq -r '.first_execution_instruction_has_focus' "$summary_file")"
+  echo "current_step_instruction_has_focus: $(jq -r '.current_step_instruction_has_focus' "$summary_file")"
   echo "first_reading_selection_rank: $(jq -r '.first_reading_selection_rank' "$summary_file")"
   echo "continuation_status: $(jq -r '.continuation_status' "$summary_file")"
   echo "first_omitted_omission_reason: $(jq -r 'if .first_omitted_omission_reason == "" then "-" else .first_omitted_omission_reason end' "$summary_file")"

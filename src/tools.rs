@@ -344,8 +344,8 @@ fn agent_route_execution_plan(
         },
         instruction: match first_step {
             Some(step) => format!(
-                "Read context_pack.files[] in reading_plan[] order, starting with {} (candidate rank {}) to answer: {} Treat reading_plan[].reason as the current-step instruction and selection_reason as evidence for why each file was selected.",
-                step.file, step.selection_rank, step.question
+                "Read context_pack.files[] in reading_plan[] order, starting with {} (candidate rank {}) with focus: {} Answer: {} Treat reading_plan[].reason as the current-step instruction and selection_reason as evidence for why each file was selected.",
+                step.file, step.selection_rank, step.focus, step.question
             ),
             None => {
                 "No reading_plan was produced; narrow the task or provide seed files before broad reading."
@@ -362,8 +362,8 @@ fn agent_route_execution_plan(
             action: "use_current_reading_step_suggested_tool".to_string(),
             status: "available_after_current_file".to_string(),
             instruction: format!(
-                "After reading {}, call {} only if deeper evidence is needed for {} to answer: {}",
-                step.file, step.suggested_tool.tool, step.next_action, step.question
+                "After reading {}, call {} only if deeper evidence is needed for {} with focus: {} Answer: {}",
+                step.file, step.suggested_tool.tool, step.next_action, step.focus, step.question
             ),
             files: vec![step.file.clone()],
             suggested_tool: Some(step.suggested_tool.clone()),

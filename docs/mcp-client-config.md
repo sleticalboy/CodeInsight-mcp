@@ -274,7 +274,12 @@ Expected summary shape:
     "review_impact_before_edits"
   ],
   "execution_plan_reads_in_reading_plan_order": true,
+  "first_execution_instruction_has_focus": true,
+  "first_execution_instruction_has_question": true,
   "current_step_suggested_tool_matches_reading_plan": true,
+  "current_step_instruction_has_focus": true,
+  "current_step_instruction_has_question": true,
+  "current_step_instruction_has_action": true,
   "continuation_after_selected_context": true,
   "continuation_status": "complete",
   "continuation_next_action": "read_selected_context",

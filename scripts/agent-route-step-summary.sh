@@ -47,9 +47,11 @@ require_summary_contract() {
       and (.metrics.first_context_file | type == "string")
       and (.metrics.first_reading_file | type == "string")
       and (.metrics.first_execution_action | type == "string")
+      and (.metrics.first_execution_instruction_has_focus | type == "boolean")
       and (.metrics.first_execution_instruction_has_question | type == "boolean")
       and (.metrics.second_execution_action | type == "string")
       and (.metrics.first_execution_suggested_tool | type == "string")
+      and (.metrics.current_step_instruction_has_focus | type == "boolean")
       and (.metrics.first_next_action | type == "string")
       and (.metrics.first_reading_focus | type == "string")
       and (.metrics.first_reading_question | type == "string")
@@ -127,9 +129,11 @@ main() {
     printf '| First context file | `%s` |\n' "$(metric '.metrics.first_context_file')"
     printf '| First reading file | `%s` |\n' "$(metric '.metrics.first_reading_file')"
     printf '| First execution action | `%s` |\n' "$(metric '.metrics.first_execution_action')"
+    printf '| First execution instruction has focus | `%s` |\n' "$(metric '.metrics.first_execution_instruction_has_focus')"
     printf '| First execution instruction has question | `%s` |\n' "$(metric '.metrics.first_execution_instruction_has_question')"
     printf '| Second execution action | `%s` |\n' "$(metric '.metrics.second_execution_action')"
     printf '| First execution suggested tool | `%s` |\n' "$(metric '.metrics.first_execution_suggested_tool')"
+    printf '| Current-step instruction has focus | `%s` |\n' "$(metric '.metrics.current_step_instruction_has_focus')"
     printf '| First next action | `%s` |\n' "$(metric '.metrics.first_next_action')"
     printf '| First reading focus | `%s` |\n' "$(metric '.metrics.first_reading_focus')"
     printf '| First reading question | `%s` |\n' "$(metric '.metrics.first_reading_question')"
