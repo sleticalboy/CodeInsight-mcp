@@ -116,7 +116,7 @@ main() {
     '93\.3x aggregate read-less ratio' \
     "README adoption cases aggregate read-less ratio"
   require_pattern README.md \
-    'routes the entrypoint task to 439 of 28,433 source lines, a 98\.5% first-read' \
+    'routes the entrypoint task to 439 of 29,954 source lines, a 98\.5% first-read' \
     "README self adoption report metric"
   "$ROOT_DIR/scripts/readme-adoption-summary-smoke.sh" >/dev/null
   require_pattern README.md \

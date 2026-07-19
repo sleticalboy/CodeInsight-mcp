@@ -149,7 +149,10 @@ main() {
     '`file_outline` behind the selected-context read' \
     "README demo suggested tool gating evidence"
   require_pattern README.md \
-    'reporting continuation status before the impact check' \
+    'mirroring `current_reading_step` to `reading_plan\[0\]`' \
+    "README demo current reading step evidence"
+  require_pattern README.md \
+    'continuation status before the impact check' \
     "README demo continuation evidence"
   require_pattern README.md \
     'executes `agent_route\.execution_plan\[\]\.suggested_tool`' \
