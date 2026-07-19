@@ -148,6 +148,18 @@ The command writes:
 `scripts/public-task-routing-matrix.sh` also prints a compact evidence summary
 with case count, expectation pass count, selected lines, estimated tokens, max
 impacted files, and the distinct first files selected for each public case.
+The checked-in [public task routing matrix](public-task-routing-matrix.md)
+captures the current pinned Express, Gin, and Requests result. Refresh it with:
+
+```bash
+scripts/update-public-task-routing-matrix.sh
+```
+
+Before a PR, check whether the snapshot is current:
+
+```bash
+scripts/update-public-task-routing-matrix.sh --check
+```
 
 ## Output Contract
 

@@ -20,6 +20,7 @@ Default adoption path:
 - [Demo output snapshot](demo-output.md)
 - [Adoption cases](adoption-cases.md)
 - [Task routing matrix](task-routing-matrix.md)
+- [Public task routing matrix](public-task-routing-matrix.md)
 - Task routing expectations:
   [Express](task-routing-expectations/express.tsv),
   [Gin](task-routing-expectations/gin.tsv),
@@ -73,6 +74,7 @@ Choose the check by adoption stage:
 | Installed-binary adoption gate | `scripts/installed-quickstart-smoke.sh` |
 | Adoption comparison evidence | `scripts/adoption-comparison.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-comparison` |
 | Uploadable adoption report | `scripts/adoption-report.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-report` |
+| Public route-quality snapshot | `scripts/update-public-task-routing-matrix.sh` |
 | Local repository benchmark | `CODEINSIGHT_BENCH_PROFILE=local ... scripts/benchmark-smoke.sh` |
 
 - [Maintenance commands](maintenance-commands.md)
