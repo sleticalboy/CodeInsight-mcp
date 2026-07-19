@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SMOKE_TOTAL=19
+SMOKE_TOTAL=20
 TEMP_FILES=()
 
 source "$ROOT_DIR/scripts/smoke-lib.sh"
@@ -55,7 +55,8 @@ main() {
   smoke_run_step "$SMOKE_TOTAL" 16 "MCP first-call failure smoke" scripts/mcp-first-call-failure-smoke.sh
   smoke_run_step "$SMOKE_TOTAL" 17 "agent router demo" scripts/agent-router-demo.sh
   smoke_run_step "$SMOKE_TOTAL" 18 "framework entrypoint demo" scripts/framework-entrypoint-demo.sh
-  smoke_run_step "$SMOKE_TOTAL" 19 "git diff whitespace check" git diff --check
+  smoke_run_step "$SMOKE_TOTAL" 19 "task routing matrix smoke" scripts/task-routing-matrix-smoke.sh
+  smoke_run_step "$SMOKE_TOTAL" 20 "git diff whitespace check" git diff --check
 
   echo "local CI smoke passed"
 }

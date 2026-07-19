@@ -19,6 +19,7 @@ Default adoption path:
 - [Demo script](demo-script.md)
 - [Demo output snapshot](demo-output.md)
 - [Adoption cases](adoption-cases.md)
+- [Task routing matrix](task-routing-matrix.md)
 - [CodeInsight self adoption report](adoption-report-codeinsight.md)
 - [Express adoption case](adoption-case-express.md)
 - [Gin adoption case](adoption-case-gin.md)

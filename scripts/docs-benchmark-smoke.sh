@@ -104,6 +104,9 @@ main() {
     '\[Adoption cases\]\(docs/adoption-cases\.md\)' \
     "README adoption cases summary link"
   require_pattern README.md \
+    '\[Task routing matrix\]\(docs/task-routing-matrix\.md\)' \
+    "README task routing matrix link"
+  require_pattern README.md \
     '\[CodeInsight self adoption report\]\(docs/adoption-report-codeinsight\.md\)' \
     "README self adoption report link"
   require_pattern README.md \
@@ -249,6 +252,9 @@ main() {
     '\[Adoption cases\]\(adoption-cases\.md\)' \
     "docs index adoption cases summary link"
   require_pattern docs/README.md \
+    '\[Task routing matrix\]\(task-routing-matrix\.md\)' \
+    "docs index task routing matrix link"
+  require_pattern docs/README.md \
     '\[CodeInsight self adoption report\]\(adoption-report-codeinsight\.md\)' \
     "docs index self adoption report link"
   require_pattern docs/README.md \
@@ -371,6 +377,18 @@ main() {
   require_pattern docs/adoption-cases.md \
     '\[case\]\(adoption-case-requests\.md\)' \
     "adoption cases Requests detail link"
+  require_pattern docs/task-routing-matrix.md \
+    '^# Task Routing Matrix$' \
+    "task routing matrix doc title"
+  require_pattern docs/task-routing-matrix.md \
+    'scripts/task-routing-matrix\.sh /path/to/repo' \
+    "task routing matrix doc command"
+  require_pattern docs/task-routing-matrix.md \
+    '\| understand gin engine routing behavior \| `routergroup\.go` \|' \
+    "task routing matrix Gin routing example"
+  require_pattern docs/task-routing-matrix.md \
+    '\| understand middleware authentication behavior \| `auth\.go` \|' \
+    "task routing matrix Gin auth example"
   require_pattern docs/adoption-report-codeinsight.md \
     'CodeInsight routed first-read \| `439` source lines' \
     "CodeInsight self adoption report routed lines"
@@ -645,6 +663,9 @@ main() {
     'scripts/framework-entrypoint-demo\.sh' \
     "README framework entrypoint demo command"
   require_pattern README.md \
+    'scripts/task-routing-matrix\.sh /path/to/repo' \
+    "README task routing matrix command"
+  require_pattern README.md \
     'Pick the validation that matches your adoption stage:' \
     "README validation chooser"
   require_pattern README.md \
@@ -662,6 +683,9 @@ main() {
   require_pattern docs/quickstart.md \
     'scripts/framework-entrypoint-demo\.sh' \
     "quickstart framework entrypoint demo command"
+  require_pattern docs/quickstart.md \
+    'scripts/task-routing-matrix\.sh /path/to/repo' \
+    "quickstart task routing matrix command"
   require_pattern docs/adoption-checklist.md \
     'scripts/two-minute-demo\.sh' \
     "adoption two-minute demo command"
@@ -836,6 +860,12 @@ main() {
   require_pattern docs/maintenance-commands.md \
     'Temporary multi-framework fixture covering Next\.js, Rails, Django, and C# web first-context selection' \
     "maintenance framework entrypoint smoke scope"
+  require_pattern docs/maintenance-commands.md \
+    '\| Task alias or seed ordering changed \| `scripts/task-routing-matrix-smoke\.sh` \|' \
+    "maintenance task routing matrix smoke chooser"
+  require_pattern docs/maintenance-commands.md \
+    'routing, authentication, settings, and startup prompts choose the matching first file' \
+    "maintenance task routing matrix smoke scope"
   require_pattern docs/maintenance-commands.md \
     '\| Installed-binary adoption path changed \| `CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/installed-quickstart-smoke\.sh` \|' \
     "maintenance installed binary smoke chooser"
@@ -1352,6 +1382,27 @@ main() {
   require_pattern scripts/framework-entrypoint-demo.sh \
     'csharp_first_context' \
     "framework entrypoint demo csharp-first output"
+  require_pattern scripts/task-routing-matrix.sh \
+    'CodeInsight Task Routing Matrix' \
+    "task routing matrix markdown title"
+  require_pattern scripts/task-routing-matrix.sh \
+    'understand routing behavior' \
+    "task routing matrix default routing task"
+  require_pattern scripts/task-routing-matrix.sh \
+    'understand authentication behavior' \
+    "task routing matrix default authentication task"
+  require_pattern scripts/task-routing-matrix.sh \
+    'first_selection_reason' \
+    "task routing matrix selection reason field"
+  require_pattern scripts/task-routing-matrix-smoke.sh \
+    'task routing matrix smoke passed' \
+    "task routing matrix smoke success output"
+  require_pattern scripts/task-routing-matrix-smoke.sh \
+    'src/router\.ts' \
+    "task routing matrix smoke router assertion"
+  require_pattern scripts/task-routing-matrix-smoke.sh \
+    'src/config\.ts' \
+    "task routing matrix smoke config assertion"
   require_pattern tests/cli.rs \
     'context\["reading_plan"\]\[0\]\["selection_rank"\]' \
     "CLI context-pack reading-plan selection rank assertion"

@@ -90,6 +90,7 @@ hands the agent to precise local tools when the selected context is not enough.
    | --- | --- | --- |
    | First look | `scripts/two-minute-demo.sh` | You want a visible `agent_route -> context_pack -> impact_analysis` walkthrough with an `[Evidence summary]`. |
    | Framework entrypoints | `scripts/framework-entrypoint-demo.sh` | You want local proof that Next.js, Rails, Django, and C# web entrypoints can be detected and routed as first context for matching tasks. |
+   | Task routing matrix | `scripts/task-routing-matrix.sh /path/to/repo --task "understand routing behavior" --task "understand authentication behavior" --task "understand application settings"` | You want a multi-task first-read matrix showing first selected file, seed strategy, line reduction, token estimate, and impact preview for one repository. |
    | MCP wiring | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/mcp-first-call-smoke.sh` | You want a compact JSON proof that stdio MCP accepts `agent_route`, returns the first context file, follows `reading_plan[]`, exposes selection rank and continuation evidence, runs the current step's suggested tool, and includes `impact_status`. |
    | Installed adoption | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh` | You want the installed binary to pass CLI `agent-route`, MCP stdio, and MCP `agent_route` against a temporary project with selection rank and continuation evidence. |
    | Local evidence | `scripts/adoption-evidence.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-evidence --print-snippet --issue-template` | You want one folder with local first-read evidence, raw route JSON, MCP first-call JSON, aggregate Markdown/JSON summaries, a copyable terminal snippet, and a ready-to-file issue template. |
@@ -301,6 +302,7 @@ Key docs:
 - [Demo script](docs/demo-script.md)
 - [Demo output snapshot](docs/demo-output.md)
 - [Adoption cases](docs/adoption-cases.md)
+- [Task routing matrix](docs/task-routing-matrix.md)
 - [CodeInsight self adoption report](docs/adoption-report-codeinsight.md)
 - [Express adoption case](docs/adoption-case-express.md)
 - [Gin adoption case](docs/adoption-case-gin.md)
