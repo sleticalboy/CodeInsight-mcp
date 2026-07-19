@@ -76,6 +76,28 @@ line_reduction() {
   }'
 }
 
+source_lines_avoided() {
+  local total_lines="$1"
+  local selected_lines="$2"
+  local avoided=$((total_lines - selected_lines))
+  if [ "$avoided" -lt 0 ]; then
+    avoided=0
+  fi
+  printf "%s" "$avoided"
+}
+
+read_less_ratio() {
+  local total_lines="$1"
+  local selected_lines="$2"
+  awk -v total="$total_lines" -v selected="$selected_lines" 'BEGIN {
+    if (total <= 0 || selected <= 0) {
+      printf "n/a"
+    } else {
+      printf "%.1fx", total / selected
+    }
+  }'
+}
+
 cleanup() {
   if [ -n "$TEMP_DIR" ]; then
     rm -rf "$TEMP_DIR"
@@ -170,7 +192,7 @@ main() {
     cp "$route_json" "$SAVE_JSON"
   fi
 
-  local total_lines selected_lines reduction first_entrypoint first_context_file first_reading_file
+  local total_lines selected_lines avoided_lines reduction read_less first_entrypoint first_context_file first_reading_file
   local entrypoints recommended_tools selected_files selected_ranges reading_plan_steps
   local execution_plan_steps first_execution_action second_execution_action
   local first_execution_suggested_tool first_next_action first_reading_focus first_reading_question first_reading_reason first_selection_reason
@@ -180,7 +202,9 @@ main() {
 
   total_lines="$(json_value "$route_json" '.overview.total_lines // 0')"
   selected_lines="$(selected_context_lines "$route_json")"
+  avoided_lines="$(source_lines_avoided "$total_lines" "$selected_lines")"
   reduction="$(line_reduction "$total_lines" "$selected_lines")"
+  read_less="$(read_less_ratio "$total_lines" "$selected_lines")"
   first_entrypoint="$(json_value "$route_json" '.overview.entrypoints[0].file // "-"')"
   first_context_file="$(json_value "$route_json" '.context_pack.files[0].file // "-"')"
   first_reading_file="$(json_value "$route_json" '.context_pack.reading_plan[0].file // "-"')"
@@ -242,8 +266,12 @@ main() {
   echo "   first_reading_focus: $first_reading_focus"
   echo "   first_reading_question: $first_reading_question"
   echo "   first_selection_rank: $first_selection_rank"
+  echo "   blind_first_read_lines: $total_lines"
+  echo "   routed_first_read_lines: $selected_lines"
   echo "   selected_lines: $selected_lines"
+  echo "   source_lines_avoided: $avoided_lines"
   echo "   line_reduction: $reduction"
+  echo "   read_less_ratio: $read_less"
   echo "   estimated_tokens: $(json_value "$route_json" '.context_pack.estimated_tokens')"
   echo "   continuation: $continuation"
   echo "   continuation_next_action: $continuation_next_action"
@@ -287,6 +315,9 @@ main() {
   fi
   echo
   echo "[Evidence summary]"
+  echo "Blind first-read baseline: ${total_lines} source lines."
+  echo "Routed first-read: ${selected_lines} source lines across ${selected_files} files."
+  echo "Read less: avoided ${avoided_lines} source lines, ${read_less} less text before follow-up tools."
   echo "agent_route selected ${selected_lines}/${total_lines} source lines (${reduction} reduction) across ${selected_files} files."
   echo "First reading focus: ${first_reading_focus}"
   echo "First reading question: ${first_reading_question}"
@@ -319,7 +350,7 @@ main() {
   echo "10. Current reading step contract is ${current_reading_step_contract}; agent_route.current_reading_step mirrors reading_plan[0]."
   echo "11. Suggested-tool handoff contract is ${suggested_tool_handoff_contract}; execution_plan[1] points to the current reading step."
   echo "12. Continuation timing contract is ${continuation_timing_contract}; continuation is only considered after selected context is read."
-  echo "13. The selected context reduced source reading by ${reduction}; ${context_route_reason}"
+  echo "13. The selected context avoided ${avoided_lines} source lines (${reduction}, ${read_less} less text); ${context_route_reason}"
   echo "14. Selection evidence: candidate rank ${first_selection_rank}; ${first_selection_reason}"
   if [ -n "$first_omitted_file" ]; then
     echo "15. Continuation status is ${continuation}; next follow-up is ${first_omitted_file} at candidate rank ${first_omitted_rank} because ${first_omitted_reason}; next_action=${first_omitted_next_action}."

@@ -2022,6 +2022,15 @@ main() {
     '\[Evidence summary\]' \
     "two-minute demo evidence summary section"
   require_pattern scripts/two-minute-demo.sh \
+    'Blind first-read baseline: \$\{total_lines\} source lines' \
+    "two-minute demo blind baseline evidence summary"
+  require_pattern scripts/two-minute-demo.sh \
+    'Routed first-read: \$\{selected_lines\} source lines across \$\{selected_files\} files' \
+    "two-minute demo routed first-read evidence summary"
+  require_pattern scripts/two-minute-demo.sh \
+    'Read less: avoided \$\{avoided_lines\} source lines, \$\{read_less\} less text before follow-up tools' \
+    "two-minute demo read-less evidence summary"
+  require_pattern scripts/two-minute-demo.sh \
     'agent_route selected \$\{selected_lines\}/\$\{total_lines\} source lines' \
     "two-minute demo line-reduction evidence summary"
   require_pattern scripts/two-minute-demo.sh \

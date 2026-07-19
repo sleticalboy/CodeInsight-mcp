@@ -202,8 +202,16 @@ EOF
     fail "missing first reading question metric"
   grep -Fq 'first_selection_rank: 1' "$TEMP_DIR/output.log" ||
     fail "missing first selection rank metric"
+  grep -Fq 'blind_first_read_lines: 27681' "$TEMP_DIR/output.log" ||
+    fail "missing blind first-read line baseline"
+  grep -Fq 'routed_first_read_lines: 439' "$TEMP_DIR/output.log" ||
+    fail "missing routed first-read line metric"
   grep -Fq 'first_reading_file: src/main.rs' "$TEMP_DIR/output.log" ||
     fail "missing first reading file metric"
+  grep -Fq 'source_lines_avoided: 27242' "$TEMP_DIR/output.log" ||
+    fail "missing source lines avoided metric"
+  grep -Fq 'read_less_ratio: 63.1x' "$TEMP_DIR/output.log" ||
+    fail "missing read-less ratio metric"
   grep -Fq 'reading_order_contract: true' "$TEMP_DIR/output.log" ||
     fail "missing reading order contract metric"
   grep -Fq 'current_reading_step_contract: true' "$TEMP_DIR/output.log" ||
@@ -222,10 +230,16 @@ EOF
     fail "missing reading plan reason"
   grep -Fq 'selection_reason: Selected for high relevance via seed_file: Seed file header and imports for task: src/main.rs' "$TEMP_DIR/output.log" ||
     fail "missing selection reason"
-  grep -Fq 'selected context reduced source reading by' "$TEMP_DIR/output.log" ||
+  grep -Fq 'selected context avoided 27242 source lines (98.4%, 63.1x less text)' "$TEMP_DIR/output.log" ||
     fail "missing line reduction talk track"
   grep -Fq '[Evidence summary]' "$TEMP_DIR/output.log" ||
     fail "missing evidence summary"
+  grep -Fq 'Blind first-read baseline: 27681 source lines.' "$TEMP_DIR/output.log" ||
+    fail "missing evidence summary blind baseline"
+  grep -Fq 'Routed first-read: 439 source lines across 1 files.' "$TEMP_DIR/output.log" ||
+    fail "missing evidence summary routed first-read"
+  grep -Fq 'Read less: avoided 27242 source lines, 63.1x less text before follow-up tools.' "$TEMP_DIR/output.log" ||
+    fail "missing evidence summary read-less line"
   grep -Fq 'agent_route selected 439/27681 source lines (98.4% reduction) across 1 files.' "$TEMP_DIR/output.log" ||
     fail "missing evidence summary line reduction"
   grep -Fq 'First reading question: What entrypoints or setup code define the main flow here?' "$TEMP_DIR/output.log" ||

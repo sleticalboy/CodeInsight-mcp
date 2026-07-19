@@ -95,8 +95,20 @@ main() {
     'selection_reason: Selected for high relevance' \
     "selection reason metric"
   require_pattern docs/demo-output.md \
+    'blind_first_read_lines: [0-9]+' \
+    "blind first-read line baseline metric"
+  require_pattern docs/demo-output.md \
+    'routed_first_read_lines: [0-9]+' \
+    "routed first-read line metric"
+  require_pattern docs/demo-output.md \
+    'source_lines_avoided: [0-9]+' \
+    "source lines avoided metric"
+  require_pattern docs/demo-output.md \
     'line_reduction: [0-9]+\.[0-9]%' \
     "line reduction metric"
+  require_pattern docs/demo-output.md \
+    'read_less_ratio: [0-9]+\.[0-9]x' \
+    "read-less ratio metric"
   require_pattern docs/demo-output.md \
     'continuation: complete' \
     "continuation status"
@@ -112,6 +124,15 @@ main() {
   require_pattern docs/demo-output.md \
     '\[Evidence summary\]' \
     "evidence summary section"
+  require_pattern docs/demo-output.md \
+    'Blind first-read baseline: [0-9]+ source lines\.' \
+    "evidence summary blind baseline"
+  require_pattern docs/demo-output.md \
+    'Routed first-read: [0-9]+ source lines across [0-9]+ files\.' \
+    "evidence summary routed first-read"
+  require_pattern docs/demo-output.md \
+    'Read less: avoided [0-9]+ source lines, [0-9]+\.[0-9]x less text before follow-up tools\.' \
+    "evidence summary read-less ratio"
   require_pattern docs/demo-output.md \
     'agent_route selected [0-9]+/[0-9]+ source lines \([0-9]+\.[0-9]% reduction\) across [0-9]+ files\.' \
     "evidence summary line reduction"

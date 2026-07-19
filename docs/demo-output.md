@@ -33,12 +33,12 @@ token_budget: 6000
 
 1. index_project
    indexed_files: 23
-   symbols: 981
+   symbols: 988
    duration_ms: <duration_ms>
    errors: 0
 
 2. project_overview
-   total_lines: 29931
+   total_lines: 31647
    entrypoints: 7
    first_entrypoint: src/main.rs
    recommended_next_tools: 4
@@ -55,8 +55,12 @@ token_budget: 6000
    first_reading_focus: Start with seed file context and primary symbols.
    first_reading_question: What entrypoints, exported symbols, or setup code define the main flow here?
    first_selection_rank: 1
+   blind_first_read_lines: 31647
+   routed_first_read_lines: 423
    selected_lines: 423
-   line_reduction: 98.6%
+   source_lines_avoided: 31224
+   line_reduction: 98.7%
+   read_less_ratio: 74.8x
    estimated_tokens: 3675
    continuation: complete
    continuation_next_action: read_selected_context
@@ -85,7 +89,10 @@ Save the raw agent_route JSON:
   CODEINSIGHT_DEMO_SAVE_JSON=/tmp/codeinsight-agent-route.json scripts/two-minute-demo.sh
 
 [Evidence summary]
-agent_route selected 423/29931 source lines (98.6% reduction) across 6 files.
+Blind first-read baseline: 31647 source lines.
+Routed first-read: 423 source lines across 6 files.
+Read less: avoided 31224 source lines, 74.8x less text before follow-up tools.
+agent_route selected 423/31647 source lines (98.7% reduction) across 6 files.
 First reading focus: Start with seed file context and primary symbols.
 First reading question: What entrypoints, exported symbols, or setup code define the main flow here?
 The first selected file is src/tools.rs; reading_plan starts at src/tools.rs as candidate rank 1.
@@ -109,7 +116,7 @@ Before edits, impact_analysis reports high risk across 7 impacted files.
 10. Current reading step contract is true; agent_route.current_reading_step mirrors reading_plan[0].
 11. Suggested-tool handoff contract is true; execution_plan[1] points to the current reading step.
 12. Continuation timing contract is true; continuation is only considered after selected context is read.
-13. The selected context reduced source reading by 98.6%; selected 6 files, 11 ranges, and 6 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context
+13. The selected context avoided 31224 source lines (98.7%, 74.8x less text); selected 6 files, 11 ranges, and 6 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context
 14. Selection evidence: candidate rank 1; Selected for high relevance via seed_file: Seed file header and imports for task: src/tools.rs; matched task keywords: agent, context, route, router, routes
 15. Continuation status is complete; next_action=read_selected_context, so no omitted candidate follow-up is needed before selected context is read.
 16. impact_analysis reports high risk across 7 impacted files with 4 suggested checks; after selected context is read, pre-edit impact check estimated 7 impacted files at high risk, including 5 call-related files, 1 dependency-related files, 38 call paths, and 1 dependency paths
@@ -136,7 +143,8 @@ Run this walkthrough against another repository:
 - `impact_analysis` includes its route reason so the demo frames it as the
   pre-edit impact check after selected context is read.
 - The evidence summary gives a compact copyable result for README videos or
-  project introductions.
+  project introductions, including blind first-read baseline, routed first-read
+  lines, avoided source lines, and read-less ratio.
 - The talk track explains the same path a user should show in a recording.
 - The agent policy matches the MCP client workflow.
 - `CODEINSIGHT_DEMO_SAVE_JSON` can persist the raw `agent_route` payload for
