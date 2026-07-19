@@ -495,6 +495,7 @@ main() {
       "debug retry timeout handling"
       "find regression coverage"
       "understand api handler behavior"
+      "understand cache performance latency"
       "understand checkout subscription payment"
       "understand frontend component rendering"
       "understand background job queue"

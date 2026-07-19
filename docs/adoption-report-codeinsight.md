@@ -29,7 +29,7 @@ first-call contract that a client or issue triage flow needs.
 | Symbols | `981` |
 | Index errors | `0` |
 | Entrypoints | `7` |
-| Blind first-read baseline | `30815` source lines |
+| Blind first-read baseline | `30920` source lines |
 | CodeInsight routed first-read | `439` source lines |
 | First-read reduction | `98.6%` |
 | Selected files | `10` |
@@ -109,7 +109,7 @@ The `--print-snippet` output from the refreshed report was:
 
 - Status: `pass`
 - Route: `index_project -> project_overview -> context_pack -> impact_analysis`
-- Selected context: `439/30815` source lines, `98.6%` reduction
+- Selected context: `439/30920` source lines, `98.6%` reduction
 - Seed strategy: `auto_entrypoint`
 - Selected seeds: `1`
 - First seed source: `overview_entrypoint`
@@ -153,7 +153,7 @@ scripts/adoption-report.sh . \
 Expected summary lines:
 
 ```text
-- Selected context: `439/30815` source lines, `98.6%` reduction
+- Selected context: `439/30920` source lines, `98.6%` reduction
 - MCP first-call contract: reading_order=`true`, current_reading_step=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`
 - First-read gating: suggested_tool_after_selected_context=`true`, continuation_after_selected_context=`true`, impact_review_before_edits=`true`
 ```

@@ -1890,6 +1890,8 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
         "Start with seed file startup and initialization flow.".to_string()
     } else if signals.middleware {
         "Start with seed file middleware and handler boundaries.".to_string()
+    } else if signals.performance_cache {
+        "Start with seed file cache, performance, latency, or optimization boundaries.".to_string()
     } else if signals.billing_payment {
         "Start with seed file billing, payment, checkout, or subscription boundaries.".to_string()
     } else if signals.frontend_ui {
@@ -1922,6 +1924,9 @@ fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
         "Read symbol definitions that establish startup behavior.".to_string()
     } else if signals.middleware {
         "Read symbol definitions that establish middleware boundaries.".to_string()
+    } else if signals.performance_cache {
+        "Read symbol definitions that establish cache, performance, or optimization behavior."
+            .to_string()
     } else if signals.billing_payment {
         "Read symbol definitions that establish billing, payment, or subscription behavior."
             .to_string()
@@ -1955,6 +1960,8 @@ fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
         "Follow call graph evidence for startup and initialization order.".to_string()
     } else if signals.middleware {
         "Follow call graph evidence for middleware and handler boundaries.".to_string()
+    } else if signals.performance_cache {
+        "Follow call graph evidence for cache lookups, latency, or optimization flow.".to_string()
     } else if signals.billing_payment {
         "Follow call graph evidence for checkout, billing, payment, or subscription flow."
             .to_string()
@@ -1988,6 +1995,8 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
         "Inspect references that register or trigger startup behavior.".to_string()
     } else if signals.middleware {
         "Inspect references that attach or call middleware boundaries.".to_string()
+    } else if signals.performance_cache {
+        "Inspect references that read, write, invalidate, or optimize cached work.".to_string()
     } else if signals.billing_payment {
         "Inspect references that create checkout, invoice, payment, or subscription flow."
             .to_string()
@@ -2022,6 +2031,9 @@ fn context_semantic_focus(signals: ContextTaskSignals) -> String {
         "Review semantic matches for startup and initialization behavior.".to_string()
     } else if signals.middleware {
         "Review semantic matches for middleware or handler behavior.".to_string()
+    } else if signals.performance_cache {
+        "Review semantic matches for cache behavior, performance, latency, or optimization."
+            .to_string()
     } else if signals.billing_payment {
         "Review semantic matches for billing, payment, checkout, invoices, or subscriptions."
             .to_string()
@@ -2053,6 +2065,9 @@ fn context_dependency_focus(signals: ContextTaskSignals) -> String {
         "Check local dependencies that participate in startup behavior.".to_string()
     } else if signals.middleware {
         "Check local dependencies that shape middleware or handler dispatch.".to_string()
+    } else if signals.performance_cache {
+        "Check local dependencies that shape cache, performance, or optimization behavior."
+            .to_string()
     } else if signals.billing_payment {
         "Check local dependencies that shape billing, payment, or subscription dispatch."
             .to_string()
@@ -2118,6 +2133,9 @@ fn context_seed_file_question(task: &str) -> String {
         "What startup entrypoint or initialization sequence creates the requested flow?".to_string()
     } else if signals.middleware {
         "Which middleware or handler boundaries shape the requested flow here?".to_string()
+    } else if signals.performance_cache {
+        "Where are cache reads, invalidation, latency, or optimization decisions handled here?"
+            .to_string()
     } else if signals.billing_payment {
         "Where are billing, payment, checkout, invoice, or subscription decisions handled here?"
             .to_string()
@@ -2156,6 +2174,9 @@ fn context_symbol_definition_question(task: &str) -> String {
         "What startup or initialization role does this definition establish?".to_string()
     } else if signals.middleware {
         "What middleware or handler boundary does this definition establish?".to_string()
+    } else if signals.performance_cache {
+        "What cache, performance, latency, or optimization behavior does this definition establish?"
+            .to_string()
     } else if signals.billing_payment {
         "What billing, payment, checkout, invoice, or subscription behavior does this definition establish?".to_string()
     } else if signals.frontend_ui {
@@ -2197,6 +2218,8 @@ fn context_call_graph_question(task: &str) -> String {
     } else if signals.middleware {
         "Which callers or callees enter, wrap, or exit middleware and handler boundaries?"
             .to_string()
+    } else if signals.performance_cache {
+        "Which callers or callees read, write, invalidate, or optimize cached work?".to_string()
     } else if signals.billing_payment {
         "Which callers or callees create checkout, invoice, payment, or subscription flow?"
             .to_string()
@@ -2236,6 +2259,9 @@ fn context_dependency_question(task: &str) -> String {
             .to_string()
     } else if signals.middleware {
         "What imported local dependency behavior shapes middleware or handler dispatch?".to_string()
+    } else if signals.performance_cache {
+        "What imported local dependency behavior shapes cache, latency, or optimization flow?"
+            .to_string()
     } else if signals.billing_payment {
         "What imported local dependency behavior shapes billing, payment, or subscription flow?"
             .to_string()
@@ -2276,6 +2302,8 @@ fn context_reference_question(task: &str) -> String {
         "Which references register or trigger startup and initialization behavior?".to_string()
     } else if signals.middleware {
         "Which references attach, order, or call middleware and handler boundaries?".to_string()
+    } else if signals.performance_cache {
+        "Which references read, write, invalidate, measure, or optimize cache behavior?".to_string()
     } else if signals.billing_payment {
         "Which references create, update, charge, invoice, or cancel billing flows?".to_string()
     } else if signals.frontend_ui {
@@ -2313,6 +2341,9 @@ fn context_semantic_question(task: &str) -> String {
             .to_string()
     } else if signals.middleware {
         "Which semantic matches describe middleware or handler boundary behavior?".to_string()
+    } else if signals.performance_cache {
+        "Which semantic matches describe cache behavior, performance, latency, or optimization?"
+            .to_string()
     } else if signals.billing_payment {
         "Which semantic matches describe billing, payments, checkout, invoices, or subscriptions?"
             .to_string()
@@ -2348,6 +2379,7 @@ struct ContextTaskSignals {
     configuration: bool,
     startup: bool,
     middleware: bool,
+    performance_cache: bool,
     billing_payment: bool,
     frontend_ui: bool,
     background_jobs: bool,
@@ -2394,6 +2426,24 @@ impl ContextTaskSignals {
             ),
             startup: context_text_mentions(task, &["startup", "bootstrap", "boot"]),
             middleware: context_text_mentions(task, &["middleware"]),
+            performance_cache: context_text_mentions(
+                task,
+                &[
+                    "cache",
+                    "caches",
+                    "cached",
+                    "caching",
+                    "performance",
+                    "perf",
+                    "latency",
+                    "slow",
+                    "slowness",
+                    "optimize",
+                    "optimization",
+                    "optimise",
+                    "optimisation",
+                ],
+            ),
             billing_payment: context_text_mentions(
                 task,
                 &[
@@ -4406,6 +4456,19 @@ fn task_keyword_aliases(keyword: &str) -> &'static [&'static str] {
         "responses" => &["response", "api", "handler"],
         "action" => &["actions", "handler", "controller"],
         "actions" => &["action", "handler", "controller"],
+        "cache" => &["caches", "cached", "performance"],
+        "caches" => &["cache", "cached", "performance"],
+        "cached" => &["cache", "caching", "performance"],
+        "caching" => &["cache", "cached", "performance"],
+        "performance" => &["perf", "latency", "optimization"],
+        "perf" => &["performance", "latency", "optimization"],
+        "latency" => &["performance", "slow", "optimization"],
+        "slow" => &["latency", "performance", "optimization"],
+        "slowness" => &["slow", "latency", "performance"],
+        "optimize" => &["optimization", "performance", "latency"],
+        "optimization" => &["optimize", "performance", "latency"],
+        "optimise" => &["optimisation", "performance", "latency"],
+        "optimisation" => &["optimise", "performance", "latency"],
         "billing" => &["payment", "subscription", "invoice"],
         "bill" => &["billing", "payment", "invoice"],
         "payment" => &["payments", "billing", "checkout"],
@@ -4639,6 +4702,12 @@ mod tests {
         assert!(billing_keywords.contains(&"subscription".to_string()));
         assert!(billing_keywords.contains(&"billing".to_string()));
         assert!(billing_keywords.contains(&"payment".to_string()));
+
+        let performance_keywords = task_keywords("understand cache performance latency");
+        assert!(performance_keywords.contains(&"cache".to_string()));
+        assert!(performance_keywords.contains(&"performance".to_string()));
+        assert!(performance_keywords.contains(&"latency".to_string()));
+        assert!(performance_keywords.contains(&"optimization".to_string()));
     }
 
     #[test]

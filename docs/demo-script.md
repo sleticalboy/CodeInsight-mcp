@@ -138,7 +138,7 @@ Promise: route the agent through agent_route before edits.
    route_reason: after selected context is read, pre-edit impact check estimated 7 impacted files at high risk, including 5 call-related files, 1 dependency-related files, 38 call paths, and 1 dependency paths
 
 [Evidence summary]
-agent_route selected 423/29931 source lines (98.6% reduction) across 6 files.
+agent_route selected 423/30920 source lines (98.6% reduction) across 6 files.
 First reading focus: Start with seed file context and primary symbols.
 First reading question: What entrypoints, exported symbols, or setup code define the main flow here?
 The first selected file is src/tools.rs; reading_plan starts at src/tools.rs as candidate rank 1.

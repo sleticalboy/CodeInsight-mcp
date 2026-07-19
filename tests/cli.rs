@@ -2257,6 +2257,15 @@ export function routerRegressionSpec() {
     )
     .unwrap();
     std::fs::write(
+        fixture.path().join("src/cache.ts"),
+        r#"export function readCachedProfile(cacheKey: string) {
+  // Cache performance path optimizes latency for repeated reads.
+  return { cacheKey, latency: "low", optimization: "memory-cache" };
+}
+"#,
+    )
+    .unwrap();
+    std::fs::write(
         fixture.path().join("src/billing.ts"),
         r#"export function createCheckoutSession(subscriptionId: string) {
   // Billing payment checkout creates a subscription invoice.
@@ -2503,6 +2512,33 @@ export function routerRegressionSpec() {
         .unwrap();
     assert!(handler_question.contains("API requests"));
     assert!(handler_question.contains("controller boundaries"));
+
+    let performance_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand cache performance latency",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(performance_context["seed_strategy"], "auto_task_match");
+    assert_eq!(
+        performance_context["selected_seeds"][0]["value"],
+        "src/cache.ts"
+    );
+    assert!(
+        performance_context["selected_seeds"][0]["matched_keywords"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|keyword| keyword == "cache")
+    );
+    assert_eq!(performance_context["files"][0]["file"], "src/cache.ts");
+    let performance_question = performance_context["reading_plan"][0]["question"]
+        .as_str()
+        .unwrap();
+    assert!(performance_question.contains("cache reads"));
+    assert!(performance_question.contains("latency"));
 
     let billing_context = run_json([
         "context-pack",
