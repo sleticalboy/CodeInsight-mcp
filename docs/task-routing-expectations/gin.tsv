@@ -1,0 +1,3 @@
+understand gin engine routing behavior	routergroup.go
+understand middleware authentication behavior	auth.go
+understand startup flow	gin.go

@@ -255,6 +255,15 @@ main() {
     '\[Task routing matrix\]\(task-routing-matrix\.md\)' \
     "docs index task routing matrix link"
   require_pattern docs/README.md \
+    '\[Express\]\(task-routing-expectations/express\.tsv\)' \
+    "docs index Express task routing expectation link"
+  require_pattern docs/README.md \
+    '\[Gin\]\(task-routing-expectations/gin\.tsv\)' \
+    "docs index Gin task routing expectation link"
+  require_pattern docs/README.md \
+    '\[Requests\]\(task-routing-expectations/requests\.tsv\)' \
+    "docs index Requests task routing expectation link"
+  require_pattern docs/README.md \
     '\[CodeInsight self adoption report\]\(adoption-report-codeinsight\.md\)' \
     "docs index self adoption report link"
   require_pattern docs/README.md \
@@ -393,8 +402,26 @@ main() {
     'Expectation files automatically add their tasks to the matrix' \
     "task routing matrix expectation file task loading"
   require_pattern docs/task-routing-matrix.md \
+    '\[Express\]\(task-routing-expectations/express\.tsv\)' \
+    "task routing matrix Express expectation example link"
+  require_pattern docs/task-routing-matrix.md \
+    '\[Gin\]\(task-routing-expectations/gin\.tsv\)' \
+    "task routing matrix Gin expectation example link"
+  require_pattern docs/task-routing-matrix.md \
+    '\[Requests\]\(task-routing-expectations/requests\.tsv\)' \
+    "task routing matrix Requests expectation example link"
+  require_pattern docs/task-routing-matrix.md \
     'expectations\.checks\[\]\.actual_first_file' \
     "task routing matrix expectation JSON contract"
+  require_pattern docs/task-routing-expectations/express.tsv \
+    $'understand middleware behavior\tlib/application\\.js' \
+    "Express task routing expectation middleware row"
+  require_pattern docs/task-routing-expectations/gin.tsv \
+    $'understand gin engine routing behavior\troutergroup\\.go' \
+    "Gin task routing expectation routing row"
+  require_pattern docs/task-routing-expectations/requests.tsv \
+    $'understand configuration settings\tsrc/requests/sessions\\.py' \
+    "Requests task routing expectation settings row"
   require_pattern docs/task-routing-matrix.md \
     '\| understand gin engine routing behavior \| `routergroup\.go` \|' \
     "task routing matrix Gin routing example"

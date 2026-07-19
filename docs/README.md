@@ -20,6 +20,10 @@ Default adoption path:
 - [Demo output snapshot](demo-output.md)
 - [Adoption cases](adoption-cases.md)
 - [Task routing matrix](task-routing-matrix.md)
+- Task routing expectations:
+  [Express](task-routing-expectations/express.tsv),
+  [Gin](task-routing-expectations/gin.tsv),
+  [Requests](task-routing-expectations/requests.tsv)
 - [CodeInsight self adoption report](adoption-report-codeinsight.md)
 - [Express adoption case](adoption-case-express.md)
 - [Gin adoption case](adoption-case-gin.md)

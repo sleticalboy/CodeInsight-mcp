@@ -1,0 +1,4 @@
+understand express application routing behavior	lib/express.js
+understand middleware behavior	lib/application.js
+understand application settings	lib/application.js
+understand startup flow	index.js

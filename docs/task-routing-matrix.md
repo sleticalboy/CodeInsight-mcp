@@ -70,6 +70,12 @@ Expectation files automatically add their tasks to the matrix.
 Expectation failures return a non-zero exit code after writing the summary, so
 the failed expected/actual pair is still available as an artifact.
 
+Checked-in examples:
+
+- [Express](task-routing-expectations/express.tsv)
+- [Gin](task-routing-expectations/gin.tsv)
+- [Requests](task-routing-expectations/requests.tsv)
+
 The command writes:
 
 - `task-routing-matrix.md`
