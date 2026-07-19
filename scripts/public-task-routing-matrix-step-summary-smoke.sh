@@ -139,6 +139,9 @@ EOF
   require_literal "$step_summary" '| Case | Ref | Tasks | Expectations | Lines | Reduction | First Files |' "case table heading"
   require_literal "$step_summary" '| `express` | `ae6dd37680e3` | `4` | `4` | `100/800` | `87.5%` | lib/application.js, lib/express.js |' "express row"
   require_literal "$step_summary" '| `gin` | `1d2ce092565e` | `2` | `2` | `25/200` | `87.5%` | gin.go |' "gin row"
+  require_literal "$step_summary" "### Representative Routes" "representative route heading"
+  require_literal "$step_summary" '| Case | Task | First File | Focus | Question |' "route table heading"
+  require_literal "$step_summary" '| `express` | understand middleware behavior | `lib/application.js` | Start with seed file middleware and handler boundaries. | Which middleware or handler boundaries shape the requested flow here? |' "route focus and question row"
 
   echo "public task routing matrix step summary smoke passed"
 }

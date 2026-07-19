@@ -124,6 +124,25 @@ main() {
       | "| `\(.case)` | `\(.ref[0:12])` | `\(.task_count)` | `\(.expectation_count)` | `\(.total_selected_lines)/\(.total_task_source_lines)` | `\(((1 - (.total_selected_lines / .total_task_source_lines)) * 1000 | round / 10))%` | " + (first_files | gsub("\\|"; "\\|")) + " |"
     ' "$SUMMARY_JSON"
     printf "\n"
+
+    printf "### Representative Routes\n\n"
+    printf "| Case | Task | First File | Focus | Question |\n"
+    printf "| --- | --- | --- | --- | --- |\n"
+    jq -r '
+      [
+        .cases[] as $case
+        | $case.routes[]
+        | {
+            case: $case.case,
+            task,
+            first_file,
+            first_reading_focus,
+            first_reading_question
+          }
+      ][0:6][]
+      | "| `\(.case)` | \(.task | gsub("\\|"; "\\|")) | `\(.first_file)` | \(.first_reading_focus | gsub("\\|"; "\\|")) | \(.first_reading_question | gsub("\\|"; "\\|")) |"
+    ' "$SUMMARY_JSON"
+    printf "\n"
   } >>"$SUMMARY_FILE"
 
   echo "public task routing matrix step summary written to $SUMMARY_FILE"
