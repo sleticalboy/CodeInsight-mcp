@@ -65,6 +65,7 @@ jobs:
             docs/public-task-routing-matrix.md
             docs/public-task-routing-matrix-summary.json
           if-no-files-found: error
+      - run: scripts/public-task-routing-matrix-step-summary.sh docs/public-task-routing-matrix-summary.json codeinsight-public-routing-snapshot "${{ steps.public-routing-snapshot-artifact.outputs.artifact-url }}" "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
   mcp-first-call-smoke:
     runs-on: ubuntu-latest

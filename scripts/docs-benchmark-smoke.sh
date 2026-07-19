@@ -908,6 +908,18 @@ main() {
   require_pattern docs/public-task-routing-matrix-summary.json \
     '"summary_json": "<output-dir>/requests/summary\.json"' \
     "public task routing matrix JSON normalized summary path"
+  require_pattern .github/workflows/ci.yml \
+    'public-task-routing-matrix-step-summary\.sh docs/public-task-routing-matrix-summary\.json codeinsight-public-routing-snapshot' \
+    "public task routing matrix step summary CI command"
+  require_pattern scripts/public-task-routing-matrix-step-summary.sh \
+    'Public Task Routing Matrix' \
+    "public task routing matrix step summary heading"
+  require_pattern scripts/public-task-routing-matrix-step-summary.sh \
+    'Workflow artifact: \[`%s`\]\(%s\)' \
+    "public task routing matrix step summary artifact link"
+  require_pattern scripts/public-task-routing-matrix-step-summary-smoke.sh \
+    'Workflow artifact: \[`codeinsight-public-routing-snapshot`\]\(https://example\.com/artifact\)' \
+    "public task routing matrix step summary smoke artifact link"
   require_pattern docs/public-task-routing-matrix.md \
     'express: 4 tasks, first files index\.js, lib/application\.js, lib/express\.js' \
     "public task routing matrix express summary"

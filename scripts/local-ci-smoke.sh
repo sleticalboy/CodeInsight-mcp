@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SMOKE_TOTAL=22
+SMOKE_TOTAL=23
 TEMP_FILES=()
 
 source "$ROOT_DIR/scripts/smoke-lib.sh"
@@ -55,18 +55,19 @@ main() {
   smoke_run_step "$SMOKE_TOTAL" 8 "context pack quality step summary smoke" scripts/context-pack-quality-step-summary-smoke.sh
   smoke_run_step "$SMOKE_TOTAL" 9 "agent route step summary smoke" scripts/agent-route-step-summary-smoke.sh
   smoke_run_step "$SMOKE_TOTAL" 10 "MCP first-call step summary smoke" scripts/mcp-first-call-step-summary-smoke.sh
-  smoke_run_step "$SMOKE_TOTAL" 11 "release tooling smoke" scripts/release-tooling-smoke.sh
-  smoke_run_step "$SMOKE_TOTAL" 12 "docs smoke" scripts/docs-smoke.sh
-  smoke_run_step "$SMOKE_TOTAL" 13 "context pack quality smoke" context_pack_quality_smoke
-  smoke_run_step "$SMOKE_TOTAL" 14 "agent route smoke" scripts/agent-route-smoke.sh
-  smoke_run_step "$SMOKE_TOTAL" 15 "MCP first-call smoke" scripts/mcp-first-call-smoke.sh
-  smoke_run_step "$SMOKE_TOTAL" 16 "MCP first-call failure smoke" scripts/mcp-first-call-failure-smoke.sh
-  smoke_run_step "$SMOKE_TOTAL" 17 "agent router demo" scripts/agent-router-demo.sh
-  smoke_run_step "$SMOKE_TOTAL" 18 "framework entrypoint demo" scripts/framework-entrypoint-demo.sh
-  smoke_run_step "$SMOKE_TOTAL" 19 "task routing matrix smoke" scripts/task-routing-matrix-smoke.sh
-  smoke_run_step "$SMOKE_TOTAL" 20 "public task routing matrix smoke" scripts/public-task-routing-matrix-smoke.sh
-  smoke_run_step "$SMOKE_TOTAL" 21 "update public task routing matrix smoke" scripts/update-public-task-routing-matrix-smoke.sh
-  smoke_run_step "$SMOKE_TOTAL" 22 "git diff whitespace check" git diff --check
+  smoke_run_step "$SMOKE_TOTAL" 11 "public task routing matrix step summary smoke" scripts/public-task-routing-matrix-step-summary-smoke.sh
+  smoke_run_step "$SMOKE_TOTAL" 12 "release tooling smoke" scripts/release-tooling-smoke.sh
+  smoke_run_step "$SMOKE_TOTAL" 13 "docs smoke" scripts/docs-smoke.sh
+  smoke_run_step "$SMOKE_TOTAL" 14 "context pack quality smoke" context_pack_quality_smoke
+  smoke_run_step "$SMOKE_TOTAL" 15 "agent route smoke" scripts/agent-route-smoke.sh
+  smoke_run_step "$SMOKE_TOTAL" 16 "MCP first-call smoke" scripts/mcp-first-call-smoke.sh
+  smoke_run_step "$SMOKE_TOTAL" 17 "MCP first-call failure smoke" scripts/mcp-first-call-failure-smoke.sh
+  smoke_run_step "$SMOKE_TOTAL" 18 "agent router demo" scripts/agent-router-demo.sh
+  smoke_run_step "$SMOKE_TOTAL" 19 "framework entrypoint demo" scripts/framework-entrypoint-demo.sh
+  smoke_run_step "$SMOKE_TOTAL" 20 "task routing matrix smoke" scripts/task-routing-matrix-smoke.sh
+  smoke_run_step "$SMOKE_TOTAL" 21 "public task routing matrix smoke" scripts/public-task-routing-matrix-smoke.sh
+  smoke_run_step "$SMOKE_TOTAL" 22 "update public task routing matrix smoke" scripts/update-public-task-routing-matrix-smoke.sh
+  smoke_run_step "$SMOKE_TOTAL" 23 "git diff whitespace check" git diff --check
 
   echo "local CI smoke passed"
 }
