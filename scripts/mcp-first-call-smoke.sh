@@ -328,6 +328,13 @@ try:
     first_focus = reading_plan[0]["focus"]
     first_question = reading_plan[0]["question"]
     first_reading_tool = reading_plan[0]["suggested_tool"]["tool"]
+    current_reading_step = route.get("current_reading_step", {})
+    current_reading_step_matches_reading_plan = current_reading_step == reading_plan[0]
+    expect(
+        current_reading_step_matches_reading_plan,
+        "agent_route_contract",
+        "agent_route.current_reading_step should mirror context_pack.reading_plan[0]",
+    )
     expect(
         first_question in first_reason,
         "agent_route_contract",
@@ -492,6 +499,7 @@ try:
         "first_context_file": first_context_file,
         "first_reading_file": first_reading_file,
         "first_reading_selection_rank": reading_plan[0]["selection_rank"],
+        "current_reading_step_matches_reading_plan": current_reading_step_matches_reading_plan,
         "reading_plan": [
             {
                 "file": step["file"],

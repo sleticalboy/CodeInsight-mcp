@@ -6945,6 +6945,11 @@ fn assert_agent_route_execution_plan_matches_context(route: &Value) {
         "agent_route should expose the full first-read execution plan"
     );
 
+    assert_eq!(
+        route["current_reading_step"], reading_plan[0],
+        "agent_route should mirror reading_plan[0] at top level for client handoff"
+    );
+
     let reading_files = reading_plan
         .iter()
         .map(|step| step["file"].as_str().unwrap())

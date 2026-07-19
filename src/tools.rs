@@ -305,6 +305,7 @@ pub fn agent_route_value(
     ];
     let execution_plan =
         agent_route_execution_plan(&context_pack, &impact_status, impact_analysis.as_ref());
+    let current_reading_step = context_pack.reading_plan.first().cloned();
 
     Ok(AgentRouteReport {
         root: root.display().to_string(),
@@ -312,6 +313,7 @@ pub fn agent_route_value(
         token_budget,
         route,
         execution_plan,
+        current_reading_step,
         impact_seed_files,
         impact_seed_symbols,
         impact_status,

@@ -156,6 +156,9 @@ write_summary_json() {
       companion_entrypoint: (([.context_pack.selected_seeds[1:][]? | select(.source == "overview_entrypoint") | .value] | first) // ""),
       first_context_file: (.context_pack.files[0].file // ""),
       first_reading_file: (.context_pack.reading_plan[0].file // ""),
+      current_reading_step_matches_reading_plan: (
+        .current_reading_step == .context_pack.reading_plan[0]
+      ),
       first_execution_action: (.execution_plan[0].action // ""),
       first_execution_instruction_has_focus: (
         (.execution_plan[0].instruction // "") as $instruction
@@ -202,6 +205,7 @@ write_summary_json() {
       and (.metrics.first_seed_source | type == "string")
       and (.metrics.companion_entrypoint | type == "string")
       and .metrics.first_execution_action == "read_selected_context"
+      and .metrics.current_reading_step_matches_reading_plan == true
       and .metrics.first_execution_instruction_has_focus == true
       and .metrics.first_execution_instruction_has_question == true
       and .metrics.second_execution_action == "use_current_reading_step_suggested_tool"
@@ -337,6 +341,7 @@ main() {
   require_jq "$route_json" '.overview.entrypoints | length >= 1' "overview should find entrypoints"
   require_jq "$route_json" '.context_pack.files | length >= 1' "context_pack should select files"
   require_jq "$route_json" '.context_pack.reading_plan | length >= 1' "context_pack should include a reading plan"
+  require_jq "$route_json" '.current_reading_step == .context_pack.reading_plan[0]' "agent_route current_reading_step should mirror reading_plan[0]"
   require_jq "$route_json" '.context_pack.reading_plan[0].next_action != null and .context_pack.reading_plan[0].next_action != ""' "reading plan should include next action"
   require_jq "$route_json" '.context_pack.reading_plan[0].question != null and .context_pack.reading_plan[0].question != ""' "reading plan should include a question"
   require_jq "$route_json" '.context_pack.reading_plan[0].selection_rank >= 1' "reading plan should include candidate selection rank"
@@ -423,6 +428,7 @@ main() {
   echo "selected_files: $(json_value "$route_json" '.context_pack.files | length')"
   echo "reading_plan_steps: $(json_value "$route_json" '.context_pack.reading_plan | length')"
   echo "execution_plan_steps: $(json_value "$route_json" '.execution_plan | length')"
+  echo "current_reading_step_matches_reading_plan: $(json_value "$route_json" '.current_reading_step == .context_pack.reading_plan[0]')"
   echo "first_execution_action: $(json_value "$route_json" '.execution_plan[0].action')"
   echo "first_execution_instruction_has_focus: $(json_value "$route_json" '(.execution_plan[0].instruction // "") as $instruction | (.context_pack.reading_plan[0].focus // "") as $focus | ($focus != "" and ($instruction | contains($focus)))')"
   echo "first_execution_instruction_has_question: $(json_value "$route_json" '(.execution_plan[0].instruction // "") as $instruction | (.context_pack.reading_plan[0].question // "") as $question | ($question != "" and ($instruction | contains($question)))')"

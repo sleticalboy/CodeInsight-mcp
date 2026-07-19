@@ -141,6 +141,8 @@ def assert_continuation_summary(payload, label):
 
 
 def assert_agent_route_execution_evidence(route, reading_step, label):
+    if route.get("current_reading_step") != reading_step:
+        raise AssertionError({label: route.get("current_reading_step"), "reading_step": reading_step})
     first_execution = route["execution_plan"][0]
     if f"candidate rank {reading_step['selection_rank']}" not in first_execution.get("instruction", ""):
         raise AssertionError({label: first_execution})
@@ -423,6 +425,9 @@ print(json.dumps({
     "agent_route_tools": [step["tool"] for step in agent_route["route"]],
     "agent_route_execution_plan": [step["action"] for step in agent_route["execution_plan"]],
     "agent_route_context_files": len(agent_route["context_pack"]["files"]),
+    "agent_route_current_reading_step_matches_reading_plan": (
+        agent_route["current_reading_step"] == agent_route_reading_step
+    ),
     "agent_route_reading_question": agent_route_reading_step["question"],
     "agent_route_reading_reason": agent_route_reading_step["reason"],
     "agent_route_selection_rank": agent_route_reading_step["selection_rank"],
@@ -435,6 +440,9 @@ print(json.dumps({
     "agent_route_impact_status": agent_route["impact_status"],
     "mcp_agent_route_impact_status": mcp_agent_route["impact_status"],
     "mcp_agent_route_execution_plan": [step["action"] for step in mcp_agent_route["execution_plan"]],
+    "mcp_agent_route_current_reading_step_matches_reading_plan": (
+        mcp_agent_route["current_reading_step"] == mcp_agent_route_reading_step
+    ),
     "mcp_context_reading_question": mcp_context_reading_step["question"],
     "mcp_context_reading_reason": mcp_context_reading_step["reason"],
     "mcp_context_selection_rank": mcp_context_reading_step["selection_rank"],

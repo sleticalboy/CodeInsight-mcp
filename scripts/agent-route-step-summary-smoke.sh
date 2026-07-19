@@ -57,6 +57,7 @@ main() {
     "companion_entrypoint": "src/main.ts",
     "first_context_file": "src/main.ts",
     "first_reading_file": "src/main.ts",
+    "current_reading_step_matches_reading_plan": true,
     "first_execution_action": "read_selected_context",
     "first_execution_instruction_has_focus": true,
     "first_execution_instruction_has_question": true,
@@ -98,6 +99,7 @@ EOF
   require_literal "$summary_md" '| First seed value | `src/router.ts` |' "first seed value metric"
   require_literal "$summary_md" '| Companion entrypoint | `src/main.ts` |' "companion entrypoint metric"
   require_literal "$summary_md" '| First reading file | `src/main.ts` |' "first reading file metric"
+  require_literal "$summary_md" '| Current reading step mirrors reading plan | `true` |' "current reading step mirror metric"
   require_literal "$summary_md" '| First execution action | `read_selected_context` |' "first execution action metric"
   require_literal "$summary_md" '| First execution instruction has focus | `true` |' "first execution instruction focus metric"
   require_literal "$summary_md" '| First execution instruction has question | `true` |' "first execution instruction question metric"

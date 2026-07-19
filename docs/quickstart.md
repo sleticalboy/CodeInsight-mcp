@@ -197,11 +197,13 @@ Expected output shape:
   "first_context_file": "src/main.ts",
   "first_reading_file": "src/main.ts",
   "first_reading_selection_rank": 1,
+  "current_reading_step_matches_reading_plan": true,
   "reading_plan": [
     {
       "file": "src/main.ts",
       "selection_rank": 1,
       "next_action": "inspect_seed_file",
+      "focus": "Start with seed file context and primary symbols.",
       "question": "What entrypoints, exported symbols, or setup code define the main flow here?",
       "reason": "Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file",
       "selection_reason": "Selected for high relevance via seed_file",

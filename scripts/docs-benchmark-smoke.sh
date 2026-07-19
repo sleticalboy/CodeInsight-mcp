@@ -1572,6 +1572,9 @@ main() {
     'first_reading_question' \
     "agent-route artifact first reading question output"
   require_pattern scripts/agent-route-artifact-smoke.sh \
+    'current_reading_step_matches_reading_plan' \
+    "agent-route artifact current reading step mirror output"
+  require_pattern scripts/agent-route-artifact-smoke.sh \
     'first_execution_instruction_has_focus' \
     "agent-route artifact first execution instruction focus output"
   require_pattern scripts/agent-route-artifact-smoke.sh \
@@ -1650,6 +1653,9 @@ main() {
     'Offer `execution_plan\[\]\.suggested_tool` only after the selected file has' \
     "MCP client config suggested tool ordering"
   require_pattern docs/mcp-client-config.md \
+    'Treat `context_pack\.reading_plan\[\]\.focus` as the compact scan label' \
+    "MCP client config reading focus guidance"
+  require_pattern docs/mcp-client-config.md \
     'checks that `agent_route\.execution_plan\[\]\.suggested_tool` executes through MCP' \
     "MCP client config suggested tool execution smoke"
   require_pattern docs/mcp-client-config.md \
@@ -1659,10 +1665,10 @@ main() {
     '`route_tools`, `selected_files`, `execution_plan_actions`' \
     "MCP client config first-call JSON fields"
   require_pattern docs/mcp-client-config.md \
-    'first reading selection rank, `reading_plan\[\]`' \
+    'first reading selection rank, current-reading-step' \
     "MCP client config first-call selection rank field"
   require_pattern docs/mcp-client-config.md \
-    'continuation summary fields, suggested-tool handoff checks' \
+    'mirror check, `reading_plan\[\]`, continuation summary fields' \
     "MCP client config first-call continuation fields"
   require_pattern docs/mcp-client-config.md \
     'Expected summary shape:' \
@@ -1676,6 +1682,12 @@ main() {
   require_pattern docs/mcp-client-config.md \
     '"first_execution_instruction_has_focus": true' \
     "MCP client config first execution focus contract example"
+  require_pattern docs/mcp-client-config.md \
+    '"current_reading_step_matches_reading_plan": true' \
+    "MCP client config current reading step mirror example"
+  require_pattern docs/mcp-client-config.md \
+    '"focus": "Start with seed file context' \
+    "MCP client config reading focus example"
   require_pattern docs/mcp-client-config.md \
     '"current_step_instruction_has_focus": true' \
     "MCP client config current-step focus contract example"

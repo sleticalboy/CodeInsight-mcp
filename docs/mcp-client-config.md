@@ -196,7 +196,8 @@ After the MCP server is configured, the first broad repository task should call
 The response is the default first-read bundle. A minimal client should:
 
 1. Read `context_pack.files[]` in `context_pack.reading_plan[]` order.
-2. Treat `context_pack.reading_plan[].question` as the local checklist for the
+2. Treat `context_pack.reading_plan[].focus` as the compact scan label and
+   `context_pack.reading_plan[].question` as the local checklist for the
    selected file.
 3. Follow `agent_route.execution_plan[]` as the UI or agent checklist.
 4. Offer `execution_plan[].suggested_tool` only after the selected file has
@@ -235,9 +236,10 @@ omitted-candidate evidence.
 
 For a shorter copyable check, run `scripts/mcp-first-call-smoke.sh`. It prints
 a JSON summary with `route_tools`, `selected_files`, `execution_plan_actions`,
-the first context file, first reading selection rank, `reading_plan[]`,
-continuation summary fields, suggested-tool handoff checks, current-step
-instruction action/question checks, `suggested_tool_executed`, and
+the first context file, first reading selection rank, current-reading-step
+mirror check, `reading_plan[]`, continuation summary fields, suggested-tool
+handoff checks, current-step instruction action/question checks,
+`suggested_tool_executed`, and
 `impact_status`.
 
 Expected summary shape:
@@ -256,11 +258,13 @@ Expected summary shape:
   "first_context_file": "src/main.ts",
   "first_reading_file": "src/main.ts",
   "first_reading_selection_rank": 1,
+  "current_reading_step_matches_reading_plan": true,
   "reading_plan": [
     {
       "file": "src/main.ts",
       "selection_rank": 1,
       "next_action": "inspect_seed_file",
+      "focus": "Start with seed file context and primary symbols.",
       "question": "What entrypoints, exported symbols, or setup code define the main flow here?",
       "reason": "Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file",
       "selection_reason": "Selected for high relevance via seed_file",

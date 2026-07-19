@@ -247,6 +247,8 @@ pub struct AgentRouteReport {
     pub token_budget: usize,
     pub route: Vec<AgentRouteStep>,
     pub execution_plan: Vec<AgentRouteExecutionStep>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub current_reading_step: Option<ContextReadingStep>,
     pub impact_seed_files: Vec<String>,
     pub impact_seed_symbols: Vec<String>,
     pub impact_status: String,

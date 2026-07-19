@@ -87,6 +87,7 @@ validate_summary_json() {
       and .first_context_file == "src/main.ts"
       and .first_reading_file == .first_context_file
       and (.first_reading_selection_rank | type == "number")
+      and .current_reading_step_matches_reading_plan == true
       and (.reading_plan | type == "array")
       and (.reading_plan | length) >= 1
       and (.reading_plan[0].file == "src/main.ts")
@@ -249,6 +250,7 @@ main() {
   echo "summary: $summary_file"
   echo "first_reading_focus: $(jq -r '.reading_plan[0].focus' "$summary_file")"
   echo "first_reading_question: $(jq -r '.reading_plan[0].question' "$summary_file")"
+  echo "current_reading_step_matches_reading_plan: $(jq -r '.current_reading_step_matches_reading_plan' "$summary_file")"
   echo "first_execution_instruction_has_focus: $(jq -r '.first_execution_instruction_has_focus' "$summary_file")"
   echo "current_step_instruction_has_focus: $(jq -r '.current_step_instruction_has_focus' "$summary_file")"
   echo "first_reading_selection_rank: $(jq -r '.first_reading_selection_rank' "$summary_file")"

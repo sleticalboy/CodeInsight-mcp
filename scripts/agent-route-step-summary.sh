@@ -46,6 +46,7 @@ require_summary_contract() {
       and (.metrics.companion_entrypoint | type == "string")
       and (.metrics.first_context_file | type == "string")
       and (.metrics.first_reading_file | type == "string")
+      and (.metrics.current_reading_step_matches_reading_plan | type == "boolean")
       and (.metrics.first_execution_action | type == "string")
       and (.metrics.first_execution_instruction_has_focus | type == "boolean")
       and (.metrics.first_execution_instruction_has_question | type == "boolean")
@@ -128,6 +129,7 @@ main() {
     printf '| Companion entrypoint | `%s` |\n' "$(metric '(.metrics.companion_entrypoint // "") as $value | if $value == "" then "-" else $value end')"
     printf '| First context file | `%s` |\n' "$(metric '.metrics.first_context_file')"
     printf '| First reading file | `%s` |\n' "$(metric '.metrics.first_reading_file')"
+    printf '| Current reading step mirrors reading plan | `%s` |\n' "$(metric '.metrics.current_reading_step_matches_reading_plan')"
     printf '| First execution action | `%s` |\n' "$(metric '.metrics.first_execution_action')"
     printf '| First execution instruction has focus | `%s` |\n' "$(metric '.metrics.first_execution_instruction_has_focus')"
     printf '| First execution instruction has question | `%s` |\n' "$(metric '.metrics.first_execution_instruction_has_question')"

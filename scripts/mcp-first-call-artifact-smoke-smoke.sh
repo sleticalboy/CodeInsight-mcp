@@ -43,6 +43,7 @@ write_summary_json() {
   "first_context_file": "src/main.ts",
   "first_reading_file": "src/main.ts",
   "first_reading_selection_rank": 1,
+  "current_reading_step_matches_reading_plan": true,
   "reading_plan": [
     {
       "file": "src/main.ts",
@@ -153,6 +154,8 @@ EOF
     fail "missing first reading focus output"
   grep -Fq 'first_reading_question: What entrypoints define the main flow?' "$TEMP_DIR/output.log" ||
     fail "missing first reading question output"
+  grep -Fq 'current_reading_step_matches_reading_plan: true' "$TEMP_DIR/output.log" ||
+    fail "missing current reading step mirror output"
   grep -Fq 'first_execution_instruction_has_focus: true' "$TEMP_DIR/output.log" ||
     fail "missing first execution focus contract output"
   grep -Fq 'current_step_instruction_has_focus: true' "$TEMP_DIR/output.log" ||
@@ -183,6 +186,8 @@ EOF
     fail "missing latest first reading question output"
   grep -Fq 'first_reading_focus: Start with seed file context and primary symbols.' "$TEMP_DIR/latest-output.log" ||
     fail "missing latest first reading focus output"
+  grep -Fq 'current_reading_step_matches_reading_plan: true' "$TEMP_DIR/latest-output.log" ||
+    fail "missing latest current reading step mirror output"
   grep -Fq 'first_execution_instruction_has_focus: true' "$TEMP_DIR/latest-output.log" ||
     fail "missing latest first execution focus contract output"
   grep -Fq 'current_step_instruction_has_focus: true' "$TEMP_DIR/latest-output.log" ||

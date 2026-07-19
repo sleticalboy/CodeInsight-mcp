@@ -44,6 +44,7 @@ main() {
   "first_context_file": "src/main.ts",
   "first_reading_file": "src/main.ts",
   "first_reading_selection_rank": 1,
+  "current_reading_step_matches_reading_plan": true,
   "reading_plan": [
     {
       "file": "src/main.ts",
@@ -103,6 +104,7 @@ EOF
   require_literal "$summary_md" 'First context file: `src/main.ts`' "first context file"
   require_literal "$summary_md" 'First reading file: `src/main.ts`' "first reading file"
   require_literal "$summary_md" 'First reading selection rank: `1`' "first reading selection rank"
+  require_literal "$summary_md" 'Current reading step mirror contract: `true`' "current reading step mirror contract"
   require_literal "$summary_md" 'First next action: `inspect_seed_file`' "first next action"
   require_literal "$summary_md" 'First reading focus: `Start with seed file context and primary symbols.`' "first reading focus"
   require_literal "$summary_md" 'First reading question: `What entrypoints define the main flow?`' "first reading question"

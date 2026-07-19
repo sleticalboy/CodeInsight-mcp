@@ -259,6 +259,12 @@ main() {
     '"next_action": "inspect_seed_file"' \
     "quickstart MCP first-call next action"
   require_pattern docs/quickstart.md \
+    '"current_reading_step_matches_reading_plan": true' \
+    "quickstart MCP first-call current reading step mirror"
+  require_pattern docs/quickstart.md \
+    '"focus": "Start with seed file context' \
+    "quickstart MCP first-call reading focus"
+  require_pattern docs/quickstart.md \
     '"question": "What entrypoints' \
     "quickstart MCP first-call reading question"
   require_pattern docs/quickstart.md \
@@ -498,8 +504,8 @@ main() {
     '`selection_reason` is the compact raw ranking reason' \
     "MCP client config selection reason contract"
   require_pattern docs/mcp-client-config.md \
-    'Treat `context_pack\.reading_plan\[\]\.question` as the local checklist' \
-    "MCP client config reading question client action"
+    'Treat `context_pack\.reading_plan\[\]\.focus` as the compact scan label' \
+    "MCP client config reading focus client action"
   require_pattern docs/mcp-client-config.md \
     'Treat `reading_plan\[\]\.question` as the local checklist' \
     "MCP client config agent policy reading question"

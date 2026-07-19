@@ -34,6 +34,7 @@ require_summary_contract() {
       and (.first_context_file | type == "string" and length > 0)
       and .first_reading_file == .first_context_file
       and (.first_reading_selection_rank | type == "number")
+      and .current_reading_step_matches_reading_plan == true
       and .execution_plan_reads_in_reading_plan_order == true
       and .first_execution_instruction_has_focus == true
       and .first_execution_instruction_has_question == true
@@ -106,6 +107,7 @@ main() {
     printf 'First context file: `%s`\n\n' "$(value '.first_context_file')"
     printf 'First reading file: `%s`\n\n' "$(value '.first_reading_file')"
     printf 'First reading selection rank: `%s`\n\n' "$(value '.first_reading_selection_rank')"
+    printf 'Current reading step mirror contract: `%s`\n\n' "$(value '.current_reading_step_matches_reading_plan')"
     printf 'First next action: `%s`\n\n' "$(value '.reading_plan[0].next_action')"
     printf 'First reading focus: `%s`\n\n' "$(value '.reading_plan[0].focus')"
     printf 'First reading question: `%s`\n\n' "$(value '.reading_plan[0].question')"
