@@ -3,7 +3,7 @@
   "token_budget": 6000,
   "output": "<output-dir>/public-task-routing-matrix.md",
   "output_dir": "<output-dir>",
-  "case_count": 3,
+  "case_count": 4,
   "cases": [
     {
       "case": "express",
@@ -57,6 +57,61 @@
           "estimated_tokens": 3550,
           "risk_level": "high",
           "impacted_files": 43
+        }
+      ]
+    },
+    {
+      "case": "flask",
+      "repository": "<case-root>/flask",
+      "ref": "36e4a824f340fdee7ed50937ba8e7f6bc7d17f81",
+      "expect_file": "docs/task-routing-expectations/flask.tsv",
+      "summary_json": "<output-dir>/flask/summary.json",
+      "task_count": 4,
+      "expectation_count": 4,
+      "total_task_source_lines": 73348,
+      "total_selected_lines": 2292,
+      "total_estimated_tokens": 23204,
+      "max_impacted_files": 29,
+      "routes": [
+        {
+          "task": "understand flask application routing behavior",
+          "first_file": "src/flask/sansio/blueprints.py",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 18337,
+          "line_reduction": "96.7%",
+          "estimated_tokens": 5985,
+          "risk_level": "high",
+          "impacted_files": 22
+        },
+        {
+          "task": "understand request lifecycle before after request handling",
+          "first_file": "src/flask/ctx.py",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 18337,
+          "line_reduction": "96.9%",
+          "estimated_tokens": 5841,
+          "risk_level": "high",
+          "impacted_files": 29
+        },
+        {
+          "task": "understand configuration settings",
+          "first_file": "src/flask/config.py",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 18337,
+          "line_reduction": "97.0%",
+          "estimated_tokens": 5767,
+          "risk_level": "high",
+          "impacted_files": 24
+        },
+        {
+          "task": "understand cli startup run command",
+          "first_file": "src/flask/cli.py",
+          "seed_strategy": "auto_entrypoint",
+          "total_lines": 18337,
+          "line_reduction": "96.9%",
+          "estimated_tokens": 5611,
+          "risk_level": "high",
+          "impacted_files": 17
         }
       ]
     },
@@ -162,13 +217,13 @@
     }
   ],
   "aggregate": {
-    "task_count": 11,
-    "expectation_count": 11,
-    "total_task_source_lines": 206337,
-    "total_selected_lines": 4936,
-    "total_estimated_tokens": 41105,
+    "task_count": 15,
+    "expectation_count": 15,
+    "total_task_source_lines": 279685,
+    "total_selected_lines": 7228,
+    "total_estimated_tokens": 64309,
     "max_impacted_files": 43,
-    "line_reduction": 97.6
+    "line_reduction": 97.41
   },
   "generated_by": "scripts/update-public-task-routing-matrix.sh"
 }

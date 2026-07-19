@@ -37,9 +37,9 @@ Use CodeInsight when the agent needs a local reading route. Keep using the IDE,
 LSP, compiler, test runner, and language-specific tools for precise diagnostics,
 type checks, and final verification.
 
-Current public routing snapshot: pinned Express, Gin, and Requests route-quality
-expectations pass `11/11`, selecting 4,936 of 206,337 task source lines for a
-`97.6%` aggregate first-read line reduction. See the checked-in
+Current public routing snapshot: pinned Express, Flask, Gin, and Requests
+route-quality expectations pass `15/15`, selecting 7,228 of 279,685 task source
+lines for a `97.4%` aggregate first-read line reduction. See the checked-in
 [Markdown snapshot](docs/public-task-routing-matrix.md) and
 [JSON summary](docs/public-task-routing-matrix-summary.json). Reproduce both:
 
@@ -109,7 +109,7 @@ hands the agent to precise local tools when the selected context is not enough.
    | First look | `scripts/two-minute-demo.sh` | You want a visible `agent_route -> context_pack -> impact_analysis` walkthrough with an `[Evidence summary]`. |
    | Framework entrypoints | `scripts/framework-entrypoint-demo.sh` | You want local proof that Next.js, Rails, Django, and C# web entrypoints can be detected and routed as first context for matching tasks. |
    | Task routing matrix | `scripts/task-routing-matrix.sh /path/to/repo --expect-file ./route-expectations.tsv` | You want a multi-task first-read matrix showing first selected file, seed strategy, line reduction, token estimate, impact preview, and optional expected-file gates for one repository. |
-   | Public route matrix | `scripts/public-task-routing-matrix.sh` | You want one aggregate route-quality summary across pinned checked-in Express, Gin, and Requests expectation files. See the checked-in [public routing snapshot](docs/public-task-routing-matrix.md); add `--case streamlit` when you want the larger Streamlit case. |
+   | Public route matrix | `scripts/public-task-routing-matrix.sh` | You want one aggregate route-quality summary across pinned checked-in Express, Flask, Gin, and Requests expectation files. See the checked-in [public routing snapshot](docs/public-task-routing-matrix.md); add `--case streamlit` when you want the larger Streamlit case. |
    | MCP wiring | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/mcp-first-call-smoke.sh` | You want a compact JSON proof that stdio MCP accepts `agent_route`, returns the first context file, follows `reading_plan[]`, exposes selection rank and continuation evidence, runs the current step's suggested tool, and includes `impact_status`. |
    | Installed adoption | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh` | You want the installed binary to pass CLI `agent-route`, MCP stdio, and MCP `agent_route` against a temporary project with selection rank and continuation evidence. |
    | Local evidence | `scripts/adoption-evidence.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-evidence --print-snippet --issue-template` | You want one folder with local first-read evidence, raw route JSON, MCP first-call JSON, aggregate Markdown/JSON summaries, a copyable terminal snippet, and a ready-to-file issue template. |
@@ -235,9 +235,9 @@ Current benchmark snapshot:
   routes the entrypoint task to 439 of 31,157 source lines, a 98.6% first-read
   reduction, while the MCP first-call contract fields all pass, including the
   `current_reading_step` mirror.
-- The public route-quality snapshot pins Express, Gin, and Requests and passes
-  11/11 expected first-file checks, selecting 4,936 of 206,337 task source
-  lines, a 97.6% aggregate first-read line reduction.
+- The public route-quality snapshot pins Express, Flask, Gin, and Requests and
+  passes 15/15 expected first-file checks, selecting 7,228 of 279,685 task
+  source lines, a 97.4% aggregate first-read line reduction.
 - Per-repository adoption metrics, commits, and refresh commands live in
   [Adoption cases](docs/adoption-cases.md).
 - Generated reports include a `Key Results` section with routing,

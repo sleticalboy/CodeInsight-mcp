@@ -4364,6 +4364,10 @@ fn auto_seed_task_focus_boost(
         .iter()
         .any(|keyword| matches!(keyword.as_str(), "route" | "routes" | "router" | "routing"))
     {
+        let file_route_registration_match = auto_seed_route_registration_matches(file);
+        let symbol_route_registration_match = symbol
+            .map(auto_seed_route_registration_matches)
+            .unwrap_or(false);
         let file_route_match = auto_seed_field_matches(file, "route")
             || auto_seed_field_matches(file, "router")
             || auto_seed_field_matches(file, "routing");
@@ -4375,6 +4379,18 @@ fn auto_seed_task_focus_boost(
             })
             .unwrap_or(false);
 
+        score += match (
+            overview_entrypoint,
+            file_route_registration_match,
+            symbol_route_registration_match,
+        ) {
+            (false, _, true) => 620,
+            (false, true, _) => 520,
+            (true, true, _) => 180,
+            (true, false, true) => 160,
+            _ => 0,
+        };
+
         score += match (overview_entrypoint, file_route_match, symbol_route_match) {
             (false, true, _) => 360,
             (false, false, true) => 120,
@@ -4385,6 +4401,22 @@ fn auto_seed_task_focus_boost(
     }
 
     score
+}
+
+fn auto_seed_route_registration_matches(field: &str) -> bool {
+    let parts = field
+        .split(|ch: char| !ch.is_ascii_alphanumeric())
+        .map(str::to_ascii_lowercase)
+        .collect::<Vec<_>>();
+
+    let has_exact = |needle: &str| parts.iter().any(|part| part == needle);
+    has_exact("route")
+        || has_exact("routes")
+        || has_exact("router")
+        || has_exact("urls")
+        || has_exact("routergroup")
+        || has_exact("iroutes")
+        || (has_exact("add") && has_exact("url") && has_exact("rule"))
 }
 
 fn auto_seed_entrypoint_file_matches(file: &str) -> bool {

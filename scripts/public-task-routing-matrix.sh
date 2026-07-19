@@ -24,7 +24,7 @@ and writes one aggregate route-quality summary.
 
 Options:
   --case NAME          Run one case. Can be repeated. Defaults to pinned fast cases.
-                       Supported: express, gin, requests, streamlit.
+                       Supported: express, flask, gin, requests, streamlit.
   --root NAME=PATH     Use an existing checkout for a case. Can be repeated.
   --ref NAME=REF       Checkout a specific ref for a case. Can be repeated.
   --expect-file NAME=PATH
@@ -76,7 +76,7 @@ add_case() {
 
 validate_case() {
   case "$1" in
-    express|gin|requests|streamlit) ;;
+    express|flask|gin|requests|streamlit) ;;
     *) fail "unsupported case: $1" ;;
   esac
 }
@@ -176,6 +176,7 @@ parse_args() {
 case_repo_url() {
   case "$1" in
     express) printf "https://github.com/expressjs/express.git" ;;
+    flask) printf "https://github.com/pallets/flask.git" ;;
     gin) printf "https://github.com/gin-gonic/gin.git" ;;
     requests) printf "https://github.com/psf/requests.git" ;;
     streamlit) printf "https://github.com/streamlit/streamlit.git" ;;
@@ -186,6 +187,7 @@ case_repo_url() {
 case_default_ref() {
   case "$1" in
     express) printf "ae6dd37680e3a00618d6c8a3e522f0ee4eeba1a4" ;;
+    flask) printf "36e4a824f340fdee7ed50937ba8e7f6bc7d17f81" ;;
     gin) printf "34dac209ffb6ef85cc78c5d217bbb7ad001d68fd" ;;
     requests) printf "f361ead047be5cb873174218582f7d8b9fcd9f49" ;;
     streamlit) printf "" ;;
@@ -463,7 +465,7 @@ main() {
     fail "--token-budget must be greater than zero"
   fi
   if [ "${#CASES[@]}" -eq 0 ]; then
-    CASES=(express gin requests)
+    CASES=(express flask gin requests)
   fi
 
   OUTPUT_DIR="${OUTPUT_DIR:-$WORK_DIR/matrix}"

@@ -2959,6 +2959,60 @@ type HandlerFunc func(*Context)
         "routergroup.go"
     );
     assert_eq!(routing_context["files"][0]["file"], "routergroup.go");
+
+    let flask_fixture = TempDir::new().unwrap();
+    std::fs::create_dir_all(flask_fixture.path().join("src/flask/sansio")).unwrap();
+    write_file(
+        &flask_fixture,
+        "src/flask/debughelpers.py",
+        r#""""Debug helpers for routing redirects."""
+
+from werkzeug.routing import RequestRedirect
+
+class FormDataRoutingRedirect(RequestRedirect):
+    pass
+"#,
+    );
+    write_file(
+        &flask_fixture,
+        "src/flask/sansio/scaffold.py",
+        r#""""Route registration helpers."""
+
+class Scaffold:
+    def route(self, rule, **options):
+        return self.add_url_rule(rule, **options)
+
+    def add_url_rule(self, rule, **options):
+        return rule
+"#,
+    );
+    write_file(
+        &flask_fixture,
+        "src/flask/cli.py",
+        r#"def main():
+    return "cli"
+"#,
+    );
+
+    run_json(["index", flask_fixture.path().to_str().unwrap(), "--force"]);
+
+    let flask_routing_context = run_json([
+        "context-pack",
+        flask_fixture.path().to_str().unwrap(),
+        "--task",
+        "understand flask application routing behavior",
+        "--token-budget",
+        "1600",
+    ]);
+
+    assert_eq!(
+        flask_routing_context["selected_seeds"][0]["value"],
+        "src/flask/sansio/scaffold.py"
+    );
+    assert_eq!(
+        flask_routing_context["files"][0]["file"],
+        "src/flask/sansio/scaffold.py"
+    );
 }
 
 #[test]

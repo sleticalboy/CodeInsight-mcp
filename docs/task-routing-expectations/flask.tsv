@@ -1,0 +1,4 @@
+understand flask application routing behavior	src/flask/sansio/blueprints.py
+understand request lifecycle before after request handling	src/flask/ctx.py
+understand configuration settings	src/flask/config.py
+understand cli startup run command	src/flask/cli.py

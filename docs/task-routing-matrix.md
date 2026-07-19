@@ -125,9 +125,9 @@ Run the pinned fast public matrices in one pass:
 scripts/public-task-routing-matrix.sh
 ```
 
-The default set uses pinned Express, Gin, and Requests commits so expectation
-files do not drift with upstream default branches. Add `--case streamlit` when
-you want to include the larger Streamlit checkout.
+The default set uses pinned Express, Flask, Gin, and Requests commits so
+expectation files do not drift with upstream default branches. Add
+`--case streamlit` when you want to include the larger Streamlit checkout.
 
 Use local checkouts when you want deterministic or offline reproduction:
 
@@ -149,7 +149,8 @@ The command writes:
 with case count, expectation pass count, selected lines, estimated tokens, max
 impacted files, and the distinct first files selected for each public case.
 The checked-in [public task routing matrix](public-task-routing-matrix.md)
-captures the current pinned Express, Gin, and Requests result. Refresh it with:
+captures the current pinned Express, Flask, Gin, and Requests result. Refresh
+it with:
 
 ```bash
 scripts/update-public-task-routing-matrix.sh
