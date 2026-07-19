@@ -16,7 +16,9 @@ The MCP tool accepts the same core arguments through `impact_analysis`: `root`, 
 The report includes:
 
 - `impacted_files`: ranked files with an aggregate `score` and up to 8 `reasons` per file.
-- `paths`: explanatory multi-hop call/dependency paths, limited by `limit`.
+- `paths`: explanatory call/dependency paths, limited by `limit`. Call paths
+  include upstream caller propagation and direct downstream callees when the
+  call has a local `callee_file` target.
 - `risk_level`: one of `low`, `medium`, or `high`.
 - `impact_counts`: counts from the full analysis before summary evidence truncation.
 - `impact_breakdown`: summary counts grouped by seed, symbol, reference, call, dependency, call-path, dependency-path, and error signals.
@@ -31,9 +33,9 @@ evidence arrays up to `limit`.
 
 Use `impact_breakdown` when an agent needs a compact explanation before
 opening detailed evidence. For example, non-zero `call_related_files` and
-`call_paths` mean control-flow callers/callees contributed to the impact.
-Non-zero `dependency_related_files` and `dependency_paths` mean local imports or
-importers contributed to the impact.
+`call_paths` mean static caller or locally resolved callee evidence contributed
+to the impact. Non-zero `dependency_related_files` and `dependency_paths` mean
+local imports or importers contributed to the impact.
 
 ## Score Weights
 
@@ -176,6 +178,9 @@ Review checks are emitted for medium/high risk, multi-hop propagation paths, ana
 ## Current Limits
 
 - Calls are derived from static syntax extraction and name matching.
+- Direct downstream call paths are emitted only when the call has a local
+  `callee_file` hint; unresolved library, built-in, or dynamic calls remain in
+  `callees` evidence but are not promoted to navigation paths.
 - Text references can include non-semantic matches.
 - Dependency paths depend on locally resolved imports only.
 - `limit` can cap `impacted_files`, `paths`, and full evidence arrays, so very large repositories should use a generous limit for review planning.
