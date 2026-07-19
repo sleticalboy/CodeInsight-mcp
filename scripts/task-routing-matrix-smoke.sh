@@ -93,6 +93,10 @@ export function routerRegressionSpec() {
   // API endpoint handler returns the response payload.
   return { response: request.path };
 }'
+  write_file "$repo/src/worker.ts" 'export function runBackgroundWorker(queueName: string) {
+  // Background job worker drains the scheduled queue.
+  return { queue: queueName, job: "scheduled-refresh" };
+}'
   write_file "$repo/docs/usage.ts" 'export const usageGuide = {
   documentation: "setup examples and usage workflows",
 };'
@@ -131,6 +135,7 @@ understand persistence behavior	src/database.ts
 debug retry timeout handling	src/errors.ts
 find regression coverage	src/router.test.ts
 understand api handler behavior	src/handler.ts
+understand background job queue	src/worker.ts
 understand documentation usage	docs/usage.ts
 understand middleware behavior	src/application.ts'
   write_file "$bad_expectations_json" '[
@@ -145,8 +150,8 @@ understand middleware behavior	src/application.ts'
     --token-budget 1600 \
     --expect-file "$expectations_tsv"
 
-  require_jq "$summary_json" '.status == "pass" and .task_count == 10' "matrix summary should pass"
-  require_jq "$summary_json" '.expectations.status == "pass" and .expectations.count == 10' "matrix expectations should pass"
+  require_jq "$summary_json" '.status == "pass" and .task_count == 11' "matrix summary should pass"
+  require_jq "$summary_json" '.expectations.status == "pass" and .expectations.count == 11' "matrix expectations should pass"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand routing behavior" and .first_file == "src/router.ts")' "routing task should choose router"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand authentication behavior" and .first_file == "src/auth.ts")' "authentication task should choose auth"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand application settings" and .first_file == "src/config.ts")' "settings task should choose config"
@@ -155,6 +160,7 @@ understand middleware behavior	src/application.ts'
   require_jq "$summary_json" '.tasks[] | select(.task == "debug retry timeout handling" and .first_file == "src/errors.ts")' "debug task should choose errors"
   require_jq "$summary_json" '.tasks[] | select(.task == "find regression coverage" and .first_file == "src/router.test.ts")' "coverage task should choose test"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand api handler behavior" and .first_file == "src/handler.ts")' "api handler task should choose handler"
+  require_jq "$summary_json" '.tasks[] | select(.task == "understand background job queue" and .first_file == "src/worker.ts")' "background task should choose worker"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand documentation usage" and .first_file == "docs/usage.ts")' "documentation task should choose docs"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand middleware behavior" and .first_file == "src/application.ts")' "middleware task should choose application"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand authentication behavior" and (.first_reading_question | contains("authentication decisions")))' "authentication task should report an auth-specific reading question"
@@ -171,6 +177,8 @@ understand middleware behavior	src/application.ts'
   require_jq "$summary_json" '.tasks[] | select(.task == "find regression coverage" and (.first_reading_focus | contains("regression coverage")))' "coverage task should report a test-specific reading focus"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand api handler behavior" and (.first_reading_question | contains("API requests")))' "api handler task should report a handler-specific reading question"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand api handler behavior" and (.first_reading_focus | contains("API handler")))' "api handler task should report a handler-specific reading focus"
+  require_jq "$summary_json" '.tasks[] | select(.task == "understand background job queue" and (.first_reading_question | contains("scheduled runs")))' "background task should report a worker-specific reading question"
+  require_jq "$summary_json" '.tasks[] | select(.task == "understand background job queue" and (.first_reading_focus | contains("background jobs")))' "background task should report a worker-specific reading focus"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand documentation usage" and (.first_reading_question | contains("documented workflow")))' "documentation task should report a docs-specific reading question"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand documentation usage" and (.first_reading_focus | contains("documentation")))' "documentation task should report a docs-specific reading focus"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand middleware behavior" and (.first_reading_question | contains("handler boundaries")))' "middleware task should report a middleware-specific reading question"
@@ -181,8 +189,9 @@ understand middleware behavior	src/application.ts'
   CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/task-routing-matrix.sh" "$repo" \
     --output-dir "$default_output_dir" \
     --token-budget 1600
-  require_jq "$default_summary_json" '.status == "pass" and .task_count == 10' "default matrix summary should include all default tasks"
+  require_jq "$default_summary_json" '.status == "pass" and .task_count == 11' "default matrix summary should include all default tasks"
   require_jq "$default_summary_json" '.tasks[] | select(.task == "understand api handler behavior" and .first_file == "src/handler.ts")' "default matrix should include api handler task"
+  require_jq "$default_summary_json" '.tasks[] | select(.task == "understand background job queue" and .first_file == "src/worker.ts")' "default matrix should include background task"
   require_jq "$default_summary_json" '.tasks[] | select(.task == "find regression coverage" and .first_file == "src/router.test.ts")' "default matrix should include coverage task"
   require_jq "$default_summary_json" '.tasks[] | select(.task == "understand documentation usage" and .first_file == "docs/usage.ts")' "default matrix should include documentation task"
 

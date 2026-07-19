@@ -1890,6 +1890,8 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
         "Start with seed file startup and initialization flow.".to_string()
     } else if signals.middleware {
         "Start with seed file middleware and handler boundaries.".to_string()
+    } else if signals.background_jobs {
+        "Start with seed file background jobs, queues, or worker boundaries.".to_string()
     } else if signals.api_handler {
         "Start with seed file API handler, controller, or endpoint boundaries.".to_string()
     } else if signals.documentation {
@@ -1916,6 +1918,8 @@ fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
         "Read symbol definitions that establish startup behavior.".to_string()
     } else if signals.middleware {
         "Read symbol definitions that establish middleware boundaries.".to_string()
+    } else if signals.background_jobs {
+        "Read symbol definitions that establish background job or worker behavior.".to_string()
     } else if signals.api_handler {
         "Read symbol definitions that establish API handler or controller behavior.".to_string()
     } else if signals.documentation {
@@ -1942,6 +1946,8 @@ fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
         "Follow call graph evidence for startup and initialization order.".to_string()
     } else if signals.middleware {
         "Follow call graph evidence for middleware and handler boundaries.".to_string()
+    } else if signals.background_jobs {
+        "Follow call graph evidence for queued, scheduled, or background work.".to_string()
     } else if signals.api_handler {
         "Follow call graph evidence for API request, response, or controller flow.".to_string()
     } else if signals.documentation {
@@ -1968,6 +1974,8 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
         "Inspect references that register or trigger startup behavior.".to_string()
     } else if signals.middleware {
         "Inspect references that attach or call middleware boundaries.".to_string()
+    } else if signals.background_jobs {
+        "Inspect references that enqueue, schedule, or run background work.".to_string()
     } else if signals.api_handler {
         "Inspect references that register, route, or invoke API handlers.".to_string()
     } else if signals.documentation {
@@ -1995,6 +2003,8 @@ fn context_semantic_focus(signals: ContextTaskSignals) -> String {
         "Review semantic matches for startup and initialization behavior.".to_string()
     } else if signals.middleware {
         "Review semantic matches for middleware or handler behavior.".to_string()
+    } else if signals.background_jobs {
+        "Review semantic matches for background jobs, queues, workers, or schedulers.".to_string()
     } else if signals.api_handler {
         "Review semantic matches for API handlers, controllers, or endpoints.".to_string()
     } else if signals.documentation {
@@ -2019,6 +2029,8 @@ fn context_dependency_focus(signals: ContextTaskSignals) -> String {
         "Check local dependencies that participate in startup behavior.".to_string()
     } else if signals.middleware {
         "Check local dependencies that shape middleware or handler dispatch.".to_string()
+    } else if signals.background_jobs {
+        "Check local dependencies that shape queue, worker, or scheduler dispatch.".to_string()
     } else if signals.api_handler {
         "Check local dependencies that shape API handler or controller dispatch.".to_string()
     } else if signals.documentation {
@@ -2076,6 +2088,8 @@ fn context_seed_file_question(task: &str) -> String {
         "What startup entrypoint or initialization sequence creates the requested flow?".to_string()
     } else if signals.middleware {
         "Which middleware or handler boundaries shape the requested flow here?".to_string()
+    } else if signals.background_jobs {
+        "Where are background jobs, queues, workers, or scheduled runs handled here?".to_string()
     } else if signals.api_handler {
         "Where are API requests, responses, handlers, or controller boundaries handled here?"
             .to_string()
@@ -2106,6 +2120,9 @@ fn context_symbol_definition_question(task: &str) -> String {
         "What startup or initialization role does this definition establish?".to_string()
     } else if signals.middleware {
         "What middleware or handler boundary does this definition establish?".to_string()
+    } else if signals.background_jobs {
+        "What background job, queue, worker, or scheduler behavior does this definition establish?"
+            .to_string()
     } else if signals.api_handler {
         "What API handler, request, response, or controller boundary does this definition establish?"
             .to_string()
@@ -2140,6 +2157,8 @@ fn context_call_graph_question(task: &str) -> String {
     } else if signals.middleware {
         "Which callers or callees enter, wrap, or exit middleware and handler boundaries?"
             .to_string()
+    } else if signals.background_jobs {
+        "Which callers or callees enqueue, schedule, or execute background work?".to_string()
     } else if signals.api_handler {
         "Which callers or callees route API requests through handlers or controllers?".to_string()
     } else if signals.documentation {
@@ -2172,6 +2191,9 @@ fn context_dependency_question(task: &str) -> String {
             .to_string()
     } else if signals.middleware {
         "What imported local dependency behavior shapes middleware or handler dispatch?".to_string()
+    } else if signals.background_jobs {
+        "What imported local dependency behavior shapes queue, worker, or scheduler dispatch?"
+            .to_string()
     } else if signals.api_handler {
         "What imported local dependency behavior shapes API handler or controller dispatch?"
             .to_string()
@@ -2203,6 +2225,8 @@ fn context_reference_question(task: &str) -> String {
         "Which references register or trigger startup and initialization behavior?".to_string()
     } else if signals.middleware {
         "Which references attach, order, or call middleware and handler boundaries?".to_string()
+    } else if signals.background_jobs {
+        "Which references enqueue, schedule, trigger, or run background workers?".to_string()
     } else if signals.api_handler {
         "Which references register, route, or invoke API handlers and controllers?".to_string()
     } else if signals.documentation {
@@ -2234,6 +2258,9 @@ fn context_semantic_question(task: &str) -> String {
             .to_string()
     } else if signals.middleware {
         "Which semantic matches describe middleware or handler boundary behavior?".to_string()
+    } else if signals.background_jobs {
+        "Which semantic matches describe background jobs, queues, workers, or scheduled runs?"
+            .to_string()
     } else if signals.api_handler {
         "Which semantic matches describe API handlers, controllers, endpoints, or request flow?"
             .to_string()
@@ -2260,6 +2287,7 @@ struct ContextTaskSignals {
     configuration: bool,
     startup: bool,
     middleware: bool,
+    background_jobs: bool,
     api_handler: bool,
     documentation: bool,
     data_persistence: bool,
@@ -2293,6 +2321,25 @@ impl ContextTaskSignals {
             ),
             startup: context_text_mentions(task, &["startup", "bootstrap", "boot"]),
             middleware: context_text_mentions(task, &["middleware"]),
+            background_jobs: context_text_mentions(
+                task,
+                &[
+                    "background",
+                    "job",
+                    "jobs",
+                    "queue",
+                    "queues",
+                    "worker",
+                    "workers",
+                    "scheduler",
+                    "schedulers",
+                    "schedule",
+                    "scheduled",
+                    "cron",
+                    "async",
+                    "asynchronous",
+                ],
+            ),
             api_handler: context_text_mentions(
                 task,
                 &[
@@ -4239,6 +4286,20 @@ fn task_keyword_aliases(keyword: &str) -> &'static [&'static str] {
         "responses" => &["response", "api", "handler"],
         "action" => &["actions", "handler", "controller"],
         "actions" => &["action", "handler", "controller"],
+        "background" => &["job", "queue", "worker"],
+        "job" => &["jobs", "queue", "worker"],
+        "jobs" => &["job", "queue", "worker"],
+        "queue" => &["queues", "job", "worker"],
+        "queues" => &["queue", "job", "worker"],
+        "worker" => &["workers", "queue", "job"],
+        "workers" => &["worker", "queue", "job"],
+        "scheduler" => &["schedulers", "schedule", "cron"],
+        "schedulers" => &["scheduler", "schedule", "cron"],
+        "schedule" => &["scheduler", "scheduled", "cron"],
+        "scheduled" => &["schedule", "scheduler", "cron"],
+        "cron" => &["scheduler", "schedule", "job"],
+        "async" => &["asynchronous", "background", "job"],
+        "asynchronous" => &["async", "background", "job"],
         "doc" => &["docs", "documentation", "readme"],
         "docs" => &["doc", "documentation", "readme"],
         "documentation" => &["doc", "docs", "readme"],
@@ -4405,6 +4466,12 @@ mod tests {
         assert!(docs_keywords.contains(&"docs".to_string()));
         assert!(docs_keywords.contains(&"documentation".to_string()));
         assert!(docs_keywords.contains(&"guide".to_string()));
+
+        let background_keywords = task_keywords("understand background job queue");
+        assert!(background_keywords.contains(&"background".to_string()));
+        assert!(background_keywords.contains(&"job".to_string()));
+        assert!(background_keywords.contains(&"queue".to_string()));
+        assert!(background_keywords.contains(&"worker".to_string()));
     }
 
     #[test]

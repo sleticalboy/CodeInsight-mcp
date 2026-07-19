@@ -2248,6 +2248,15 @@ export function routerRegressionSpec() {
 "#,
     )
     .unwrap();
+    std::fs::write(
+        fixture.path().join("src/worker.ts"),
+        r#"export function runBackgroundWorker(queueName: string) {
+  // Background job worker drains the scheduled queue.
+  return { queue: queueName, job: "scheduled-refresh" };
+}
+"#,
+    )
+    .unwrap();
     std::fs::create_dir_all(fixture.path().join("docs")).unwrap();
     std::fs::write(
         fixture.path().join("docs/usage.ts"),
@@ -2438,6 +2447,33 @@ export function routerRegressionSpec() {
         .unwrap();
     assert!(handler_question.contains("API requests"));
     assert!(handler_question.contains("controller boundaries"));
+
+    let background_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand background job queue",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(background_context["seed_strategy"], "auto_task_match");
+    assert_eq!(
+        background_context["selected_seeds"][0]["value"],
+        "src/worker.ts"
+    );
+    assert!(
+        background_context["selected_seeds"][0]["matched_keywords"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|keyword| keyword == "worker")
+    );
+    assert_eq!(background_context["files"][0]["file"], "src/worker.ts");
+    let background_question = background_context["reading_plan"][0]["question"]
+        .as_str()
+        .unwrap();
+    assert!(background_question.contains("background jobs"));
+    assert!(background_question.contains("scheduled runs"));
 
     let docs_context = run_json([
         "context-pack",
