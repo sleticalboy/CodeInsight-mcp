@@ -1890,6 +1890,9 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
         "Start with seed file startup and initialization flow.".to_string()
     } else if signals.middleware {
         "Start with seed file middleware and handler boundaries.".to_string()
+    } else if signals.request_lifecycle {
+        "Start with seed file request lifecycle, dispatch, and response finalization flow."
+            .to_string()
     } else if signals.performance_cache {
         "Start with seed file cache, performance, latency, or optimization boundaries.".to_string()
     } else if signals.observability_logging {
@@ -1929,6 +1932,9 @@ fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
         "Read symbol definitions that establish startup behavior.".to_string()
     } else if signals.middleware {
         "Read symbol definitions that establish middleware boundaries.".to_string()
+    } else if signals.request_lifecycle {
+        "Read symbol definitions that establish request lifecycle or response finalization behavior."
+            .to_string()
     } else if signals.performance_cache {
         "Read symbol definitions that establish cache, performance, or optimization behavior."
             .to_string()
@@ -1971,6 +1977,9 @@ fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
         "Follow call graph evidence for startup and initialization order.".to_string()
     } else if signals.middleware {
         "Follow call graph evidence for middleware and handler boundaries.".to_string()
+    } else if signals.request_lifecycle {
+        "Follow call graph evidence for request dispatch, hooks, and response finalization."
+            .to_string()
     } else if signals.performance_cache {
         "Follow call graph evidence for cache lookups, latency, or optimization flow.".to_string()
     } else if signals.observability_logging {
@@ -2011,6 +2020,8 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
         "Inspect references that register or trigger startup behavior.".to_string()
     } else if signals.middleware {
         "Inspect references that attach or call middleware boundaries.".to_string()
+    } else if signals.request_lifecycle {
+        "Inspect references that enter, hook into, or finalize request lifecycle flow.".to_string()
     } else if signals.performance_cache {
         "Inspect references that read, write, invalidate, or optimize cached work.".to_string()
     } else if signals.observability_logging {
@@ -2052,6 +2063,9 @@ fn context_semantic_focus(signals: ContextTaskSignals) -> String {
         "Review semantic matches for startup and initialization behavior.".to_string()
     } else if signals.middleware {
         "Review semantic matches for middleware or handler behavior.".to_string()
+    } else if signals.request_lifecycle {
+        "Review semantic matches for request lifecycle, dispatch, hooks, or response finalization."
+            .to_string()
     } else if signals.performance_cache {
         "Review semantic matches for cache behavior, performance, latency, or optimization."
             .to_string()
@@ -2092,6 +2106,9 @@ fn context_dependency_focus(signals: ContextTaskSignals) -> String {
         "Check local dependencies that participate in startup behavior.".to_string()
     } else if signals.middleware {
         "Check local dependencies that shape middleware or handler dispatch.".to_string()
+    } else if signals.request_lifecycle {
+        "Check local dependencies that shape request dispatch, hooks, or response finalization."
+            .to_string()
     } else if signals.performance_cache {
         "Check local dependencies that shape cache, performance, or optimization behavior."
             .to_string()
@@ -2166,6 +2183,9 @@ fn context_seed_file_question(task: &str) -> String {
         "What startup entrypoint or initialization sequence creates the requested flow?".to_string()
     } else if signals.middleware {
         "Which middleware or handler boundaries shape the requested flow here?".to_string()
+    } else if signals.request_lifecycle {
+        "Where do request lifecycle hooks, dispatch, and response finalization happen here?"
+            .to_string()
     } else if signals.performance_cache {
         "Where are cache reads, invalidation, latency, or optimization decisions handled here?"
             .to_string()
@@ -2212,6 +2232,8 @@ fn context_symbol_definition_question(task: &str) -> String {
         "What startup or initialization role does this definition establish?".to_string()
     } else if signals.middleware {
         "What middleware or handler boundary does this definition establish?".to_string()
+    } else if signals.request_lifecycle {
+        "What request lifecycle, dispatch, or response finalization behavior does this definition establish?".to_string()
     } else if signals.performance_cache {
         "What cache, performance, latency, or optimization behavior does this definition establish?"
             .to_string()
@@ -2261,6 +2283,9 @@ fn context_call_graph_question(task: &str) -> String {
     } else if signals.middleware {
         "Which callers or callees enter, wrap, or exit middleware and handler boundaries?"
             .to_string()
+    } else if signals.request_lifecycle {
+        "Which callers or callees move requests through dispatch, hooks, and response finalization?"
+            .to_string()
     } else if signals.performance_cache {
         "Which callers or callees read, write, invalidate, or optimize cached work?".to_string()
     } else if signals.observability_logging {
@@ -2308,6 +2333,8 @@ fn context_dependency_question(task: &str) -> String {
             .to_string()
     } else if signals.middleware {
         "What imported local dependency behavior shapes middleware or handler dispatch?".to_string()
+    } else if signals.request_lifecycle {
+        "What imported local dependency behavior shapes request lifecycle, dispatch, or response finalization?".to_string()
     } else if signals.performance_cache {
         "What imported local dependency behavior shapes cache, latency, or optimization flow?"
             .to_string()
@@ -2357,6 +2384,8 @@ fn context_reference_question(task: &str) -> String {
         "Which references register or trigger startup and initialization behavior?".to_string()
     } else if signals.middleware {
         "Which references attach, order, or call middleware and handler boundaries?".to_string()
+    } else if signals.request_lifecycle {
+        "Which references enter, hook into, or finalize the request lifecycle?".to_string()
     } else if signals.performance_cache {
         "Which references read, write, invalidate, measure, or optimize cache behavior?".to_string()
     } else if signals.observability_logging {
@@ -2401,6 +2430,9 @@ fn context_semantic_question(task: &str) -> String {
             .to_string()
     } else if signals.middleware {
         "Which semantic matches describe middleware or handler boundary behavior?".to_string()
+    } else if signals.request_lifecycle {
+        "Which semantic matches describe request lifecycle hooks, dispatch, or response finalization?"
+            .to_string()
     } else if signals.performance_cache {
         "Which semantic matches describe cache behavior, performance, latency, or optimization?"
             .to_string()
@@ -2451,6 +2483,7 @@ struct ContextTaskSignals {
     billing_payment: bool,
     frontend_ui: bool,
     background_jobs: bool,
+    request_lifecycle: bool,
     api_handler: bool,
     documentation: bool,
     data_persistence: bool,
@@ -2460,6 +2493,22 @@ struct ContextTaskSignals {
 
 impl ContextTaskSignals {
     fn from_task(task: &str) -> Self {
+        let request_lifecycle =
+            context_text_mentions(task, &["request", "requests", "response", "responses"])
+                && context_text_mentions(
+                    task,
+                    &[
+                        "lifecycle",
+                        "before",
+                        "after",
+                        "dispatch",
+                        "handling",
+                        "handle",
+                        "handler",
+                        "handlers",
+                    ],
+                );
+
         Self {
             impact_flow: context_text_mentions(
                 task,
@@ -2616,6 +2665,7 @@ impl ContextTaskSignals {
                     "asynchronous",
                 ],
             ),
+            request_lifecycle,
             api_handler: context_text_mentions(
                 task,
                 &[

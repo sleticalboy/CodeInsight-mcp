@@ -3068,6 +3068,17 @@ class Flask:
         flask_lifecycle_context["files"][0]["file"],
         "src/flask/app.py"
     );
+    let flask_lifecycle_focus = flask_lifecycle_context["reading_plan"][0]["focus"]
+        .as_str()
+        .unwrap();
+    assert!(flask_lifecycle_focus.contains("request lifecycle"));
+    assert!(flask_lifecycle_focus.contains("response finalization"));
+    let flask_lifecycle_question = flask_lifecycle_context["reading_plan"][0]["question"]
+        .as_str()
+        .unwrap();
+    assert!(flask_lifecycle_question.contains("request lifecycle"));
+    assert!(flask_lifecycle_question.contains("dispatch"));
+    assert!(flask_lifecycle_question.contains("response finalization"));
 }
 
 #[test]
