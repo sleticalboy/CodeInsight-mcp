@@ -116,7 +116,7 @@ main() {
     '93\.3x aggregate read-less ratio' \
     "README adoption cases aggregate read-less ratio"
   require_pattern README.md \
-    'routes the entrypoint task to 439 of 30,342 source lines, a 98\.6% first-read' \
+    'routes the entrypoint task to 439 of 30,435 source lines, a 98\.6% first-read' \
     "README self adoption report metric"
   "$ROOT_DIR/scripts/readme-adoption-summary-smoke.sh" >/dev/null
   require_pattern README.md \
@@ -432,6 +432,9 @@ main() {
     'Does an API handler task start at handler, controller, or endpoint code' \
     "task routing matrix api handler framing"
   require_pattern docs/task-routing-matrix.md \
+    'Does a documentation task start at docs, guide, or usage example code' \
+    "task routing matrix documentation framing"
+  require_pattern docs/task-routing-matrix.md \
     $'understand persistence behavior\tsrc/database\\.ts' \
     "task routing matrix persistence expectation example"
   require_pattern docs/task-routing-matrix.md \
@@ -443,6 +446,9 @@ main() {
   require_pattern docs/task-routing-matrix.md \
     $'understand api handler behavior\tsrc/handler\\.ts' \
     "task routing matrix api handler expectation example"
+  require_pattern docs/task-routing-matrix.md \
+    $'understand documentation usage\tdocs/usage\\.ts' \
+    "task routing matrix documentation expectation example"
   require_pattern docs/task-routing-matrix.md \
     'Expectation files automatically add their tasks to the matrix' \
     "task routing matrix expectation file task loading"
@@ -987,7 +993,7 @@ main() {
     '\| Task alias or seed ordering changed \| `scripts/task-routing-matrix-smoke\.sh` \|' \
     "maintenance task routing matrix smoke chooser"
   require_pattern docs/maintenance-commands.md \
-    'routing, authentication, settings, startup, persistence, debug, coverage, API handler, and middleware prompts choose the matching first file and that `--expect-file` failures are reported' \
+    'routing, authentication, settings, startup, persistence, debug, coverage, API handler, documentation, and middleware prompts choose the matching first file and that `--expect-file` failures are reported' \
     "maintenance task routing matrix smoke scope"
   require_pattern docs/maintenance-commands.md \
     '\| Installed-binary adoption path changed \| `CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/installed-quickstart-smoke\.sh` \|' \
@@ -1526,6 +1532,9 @@ main() {
   require_pattern scripts/task-routing-matrix.sh \
     'understand api handler behavior' \
     "task routing matrix default api handler task"
+  require_pattern scripts/task-routing-matrix.sh \
+    'understand documentation usage' \
+    "task routing matrix default documentation task"
   require_pattern scripts/task-routing-matrix.sh \
     'understand middleware behavior' \
     "task routing matrix default middleware task"

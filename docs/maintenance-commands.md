@@ -87,7 +87,7 @@ Choose the narrowest check for the change:
 | First MCP call help or failure messaging changed | `scripts/mcp-first-call-failure-smoke.sh` | Fast checks for `--help`, `[usage]`, `[binary]`, and `[mcp_server]` output. |
 | MCP protocol or tool payload changed | `scripts/mcp-stdio-smoke.sh` | Stdio MCP handshake, `agent_route`, `context_pack`, executable suggested-tool calls, selection rank, and continuation evidence. |
 | Framework entrypoint routing changed | `scripts/framework-entrypoint-demo.sh` | Temporary multi-framework fixture covering Next.js, Rails, Django, and C# web first-context selection. |
-| Task alias or seed ordering changed | `scripts/task-routing-matrix-smoke.sh` | Temporary fixture proving routing, authentication, settings, startup, persistence, debug, coverage, API handler, and middleware prompts choose the matching first file and that `--expect-file` failures are reported. |
+| Task alias or seed ordering changed | `scripts/task-routing-matrix-smoke.sh` | Temporary fixture proving routing, authentication, settings, startup, persistence, debug, coverage, API handler, documentation, and middleware prompts choose the matching first file and that `--expect-file` failures are reported. |
 | Installed-binary adoption path changed | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh` | CLI and MCP first-read routes through the installed binary, including selection rank and continuation evidence. |
 | One-call `agent_route` JSON contract changed | `scripts/agent-route-smoke.sh` | Route order, execution plan, context pack, and impact-analysis preview. |
 | Context ranking or continuation changed | `scripts/context-pack-quality-smoke.sh` | Deterministic context-pack quality regressions. |

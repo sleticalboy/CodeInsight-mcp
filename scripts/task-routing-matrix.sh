@@ -494,6 +494,7 @@ main() {
       "debug retry timeout handling"
       "find regression coverage"
       "understand api handler behavior"
+      "understand documentation usage"
       "understand middleware behavior"
     )
   fi

@@ -13,6 +13,7 @@ This is a route-quality check, not a benchmark suite. It helps answer:
 - Does a debugging task start at error handling, retry, or timeout code?
 - Does a coverage task start at test, spec, or regression code?
 - Does an API handler task start at handler, controller, or endpoint code?
+- Does a documentation task start at docs, guide, or usage example code?
 
 ## Run
 
@@ -23,8 +24,8 @@ scripts/task-routing-matrix.sh /path/to/repo
 ```
 
 The default matrix covers routing, authentication, settings, startup,
-persistence, debug/retry/timeout, regression coverage, API handler, and
-middleware prompts.
+persistence, debug/retry/timeout, regression coverage, API handler,
+documentation, and middleware prompts.
 
 Run a custom matrix:
 
@@ -38,6 +39,7 @@ scripts/task-routing-matrix.sh /path/to/repo \
   --task "debug retry timeout handling" \
   --task "find regression coverage" \
   --task "understand api handler behavior" \
+  --task "understand documentation usage" \
   --output-dir /tmp/codeinsight-task-routing-matrix
 ```
 
@@ -62,6 +64,7 @@ understand persistence behavior	src/database.ts
 debug retry timeout handling	src/errors.ts
 find regression coverage	src/router.test.ts
 understand api handler behavior	src/handler.ts
+understand documentation usage	docs/usage.ts
 ```
 
 Then run:

@@ -1892,6 +1892,8 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
         "Start with seed file middleware and handler boundaries.".to_string()
     } else if signals.api_handler {
         "Start with seed file API handler, controller, or endpoint boundaries.".to_string()
+    } else if signals.documentation {
+        "Start with seed file documentation, guide, or usage notes.".to_string()
     } else if signals.data_persistence {
         "Start with seed file data persistence and storage boundaries.".to_string()
     } else if signals.error_recovery {
@@ -1916,6 +1918,8 @@ fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
         "Read symbol definitions that establish middleware boundaries.".to_string()
     } else if signals.api_handler {
         "Read symbol definitions that establish API handler or controller behavior.".to_string()
+    } else if signals.documentation {
+        "Read definitions or examples that documentation describes.".to_string()
     } else if signals.data_persistence {
         "Read symbol definitions that establish database or storage behavior.".to_string()
     } else if signals.error_recovery {
@@ -1940,6 +1944,8 @@ fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
         "Follow call graph evidence for middleware and handler boundaries.".to_string()
     } else if signals.api_handler {
         "Follow call graph evidence for API request, response, or controller flow.".to_string()
+    } else if signals.documentation {
+        "Follow call graph evidence that supports documented usage.".to_string()
     } else if signals.data_persistence {
         "Follow call graph evidence for database, repository, or storage flow.".to_string()
     } else if signals.error_recovery {
@@ -1964,6 +1970,8 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
         "Inspect references that attach or call middleware boundaries.".to_string()
     } else if signals.api_handler {
         "Inspect references that register, route, or invoke API handlers.".to_string()
+    } else if signals.documentation {
+        "Inspect references that connect documented usage to implementation.".to_string()
     } else if signals.data_persistence {
         "Inspect references that read, write, or persist data.".to_string()
     } else if signals.error_recovery {
@@ -1989,6 +1997,8 @@ fn context_semantic_focus(signals: ContextTaskSignals) -> String {
         "Review semantic matches for middleware or handler behavior.".to_string()
     } else if signals.api_handler {
         "Review semantic matches for API handlers, controllers, or endpoints.".to_string()
+    } else if signals.documentation {
+        "Review semantic matches for documentation, guides, or usage examples.".to_string()
     } else if signals.data_persistence {
         "Review semantic matches for database, repository, or storage behavior.".to_string()
     } else if signals.error_recovery {
@@ -2011,6 +2021,8 @@ fn context_dependency_focus(signals: ContextTaskSignals) -> String {
         "Check local dependencies that shape middleware or handler dispatch.".to_string()
     } else if signals.api_handler {
         "Check local dependencies that shape API handler or controller dispatch.".to_string()
+    } else if signals.documentation {
+        "Check local dependencies referenced by documentation or examples.".to_string()
     } else if signals.data_persistence {
         "Check local dependencies that supply database or storage behavior.".to_string()
     } else if signals.error_recovery {
@@ -2067,6 +2079,9 @@ fn context_seed_file_question(task: &str) -> String {
     } else if signals.api_handler {
         "Where are API requests, responses, handlers, or controller boundaries handled here?"
             .to_string()
+    } else if signals.documentation {
+        "What setup, usage, examples, or documented workflow should the agent follow here?"
+            .to_string()
     } else if signals.data_persistence {
         "Where are database access, persistence decisions, or storage boundaries handled here?"
             .to_string()
@@ -2093,6 +2108,9 @@ fn context_symbol_definition_question(task: &str) -> String {
         "What middleware or handler boundary does this definition establish?".to_string()
     } else if signals.api_handler {
         "What API handler, request, response, or controller boundary does this definition establish?"
+            .to_string()
+    } else if signals.documentation {
+        "What documented setup, usage, or example behavior does this definition support?"
             .to_string()
     } else if signals.data_persistence {
         "What database access, persistence decision, or storage boundary does this definition establish?".to_string()
@@ -2124,6 +2142,8 @@ fn context_call_graph_question(task: &str) -> String {
             .to_string()
     } else if signals.api_handler {
         "Which callers or callees route API requests through handlers or controllers?".to_string()
+    } else if signals.documentation {
+        "Which callers or callees implement the documented workflow or usage example?".to_string()
     } else if signals.data_persistence {
         "Which callers or callees read, write, or persist data through this flow?".to_string()
     } else if signals.error_recovery {
@@ -2155,6 +2175,9 @@ fn context_dependency_question(task: &str) -> String {
     } else if signals.api_handler {
         "What imported local dependency behavior shapes API handler or controller dispatch?"
             .to_string()
+    } else if signals.documentation {
+        "What imported local dependency behavior supports the documented workflow or examples?"
+            .to_string()
     } else if signals.data_persistence {
         "What imported local dependency behavior supplies database, repository, or storage access?"
             .to_string()
@@ -2182,6 +2205,8 @@ fn context_reference_question(task: &str) -> String {
         "Which references attach, order, or call middleware and handler boundaries?".to_string()
     } else if signals.api_handler {
         "Which references register, route, or invoke API handlers and controllers?".to_string()
+    } else if signals.documentation {
+        "Which references connect documentation, examples, or guides to implementation?".to_string()
     } else if signals.data_persistence {
         "Which references read, write, or persist data through this boundary?".to_string()
     } else if signals.error_recovery {
@@ -2212,6 +2237,9 @@ fn context_semantic_question(task: &str) -> String {
     } else if signals.api_handler {
         "Which semantic matches describe API handlers, controllers, endpoints, or request flow?"
             .to_string()
+    } else if signals.documentation {
+        "Which semantic matches describe documentation, guides, examples, or usage workflows?"
+            .to_string()
     } else if signals.data_persistence {
         "Which semantic matches describe database, repository, or storage behavior?".to_string()
     } else if signals.error_recovery {
@@ -2233,6 +2261,7 @@ struct ContextTaskSignals {
     startup: bool,
     middleware: bool,
     api_handler: bool,
+    documentation: bool,
     data_persistence: bool,
     error_recovery: bool,
     test_coverage: bool,
@@ -2280,6 +2309,22 @@ impl ContextTaskSignals {
                     "responses",
                     "action",
                     "actions",
+                ],
+            ),
+            documentation: context_text_mentions(
+                task,
+                &[
+                    "doc",
+                    "docs",
+                    "documentation",
+                    "readme",
+                    "guide",
+                    "guides",
+                    "usage",
+                    "tutorial",
+                    "tutorials",
+                    "example",
+                    "examples",
                 ],
             ),
             data_persistence: context_text_mentions(
@@ -4194,6 +4239,15 @@ fn task_keyword_aliases(keyword: &str) -> &'static [&'static str] {
         "responses" => &["response", "api", "handler"],
         "action" => &["actions", "handler", "controller"],
         "actions" => &["action", "handler", "controller"],
+        "doc" => &["docs", "documentation", "readme"],
+        "docs" => &["doc", "documentation", "readme"],
+        "documentation" => &["doc", "docs", "readme"],
+        "readme" => &["docs", "documentation", "guide"],
+        "guide" => &["guides", "docs", "usage"],
+        "guides" => &["guide", "docs", "usage"],
+        "usage" => &["docs", "guide", "example"],
+        "tutorial" => &["tutorials", "docs", "guide"],
+        "tutorials" => &["tutorial", "docs", "guide"],
         "database" => &["db", "persistence", "storage", "repository"],
         "persistence" => &["database", "storage", "repository"],
         "persist" => &["persistence", "database", "storage"],
@@ -4319,7 +4373,7 @@ mod tests {
     #[test]
     fn task_keywords_expand_common_agent_routing_aliases() {
         let keywords = task_keywords(
-            "understand routing authentication settings startup api handler persistence debug timeout coverage flow",
+            "understand routing authentication settings startup api handler persistence flow",
         );
 
         assert!(keywords.contains(&"routing".to_string()));
@@ -4334,17 +4388,23 @@ mod tests {
         assert!(keywords.contains(&"database".to_string()));
         assert!(keywords.contains(&"storage".to_string()));
         assert!(keywords.contains(&"repository".to_string()));
-        assert!(keywords.contains(&"error".to_string()));
-        assert!(keywords.contains(&"failure".to_string()));
-        assert!(keywords.contains(&"timeout".to_string()));
-        assert!(keywords.contains(&"test".to_string()));
         assert!(!keywords.contains(&"understand".to_string()));
         assert!(!keywords.contains(&"flow".to_string()));
+
+        let debug_keywords = task_keywords("debug retry timeout handling");
+        assert!(debug_keywords.contains(&"error".to_string()));
+        assert!(debug_keywords.contains(&"failure".to_string()));
+        assert!(debug_keywords.contains(&"timeout".to_string()));
 
         let coverage_keywords = task_keywords("find regression coverage");
         assert!(coverage_keywords.contains(&"regression".to_string()));
         assert!(coverage_keywords.contains(&"coverage".to_string()));
         assert!(coverage_keywords.contains(&"test".to_string()));
+
+        let docs_keywords = task_keywords("understand documentation usage");
+        assert!(docs_keywords.contains(&"docs".to_string()));
+        assert!(docs_keywords.contains(&"documentation".to_string()));
+        assert!(docs_keywords.contains(&"guide".to_string()));
     }
 
     #[test]

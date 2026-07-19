@@ -2248,6 +2248,15 @@ export function routerRegressionSpec() {
 "#,
     )
     .unwrap();
+    std::fs::create_dir_all(fixture.path().join("docs")).unwrap();
+    std::fs::write(
+        fixture.path().join("docs/usage.ts"),
+        r#"export const usageGuide = {
+  documentation: "setup examples and usage workflows",
+};
+"#,
+    )
+    .unwrap();
 
     run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
 
@@ -2429,6 +2438,30 @@ export function routerRegressionSpec() {
         .unwrap();
     assert!(handler_question.contains("API requests"));
     assert!(handler_question.contains("controller boundaries"));
+
+    let docs_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand documentation usage",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(docs_context["seed_strategy"], "auto_task_match");
+    assert_eq!(docs_context["selected_seeds"][0]["value"], "docs/usage.ts");
+    assert!(
+        docs_context["selected_seeds"][0]["matched_keywords"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|keyword| keyword == "docs")
+    );
+    assert_eq!(docs_context["files"][0]["file"], "docs/usage.ts");
+    let docs_question = docs_context["reading_plan"][0]["question"]
+        .as_str()
+        .unwrap();
+    assert!(docs_question.contains("usage"));
+    assert!(docs_question.contains("documented workflow"));
 
     let middleware_context = run_json([
         "context-pack",
