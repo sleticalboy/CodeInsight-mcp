@@ -72,6 +72,8 @@ The first call is healthy when the response has:
 - `context_pack.continuation_summary.next_action` for the post-read
   continuation decision
 - `execution_plan[0].action` set to `read_selected_context`
+- `execution_plan[0].instruction` naming the first reading file, candidate
+  rank, and first reading question
 - a ready `execution_plan[].suggested_tool` for focused follow-up navigation
 - `impact_status` set to `complete` when an impact seed is available
 

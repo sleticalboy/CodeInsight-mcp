@@ -6867,6 +6867,13 @@ fn assert_agent_route_execution_plan_matches_context(route: &Value) {
             )),
         "first execution step should expose the first reading-plan candidate rank"
     );
+    assert!(
+        execution_plan[0]["instruction"]
+            .as_str()
+            .unwrap()
+            .contains(first_step["question"].as_str().unwrap()),
+        "first execution step should include the first reading-plan question"
+    );
     assert_eq!(execution_plan[1]["files"][0], first_step["file"]);
     assert_eq!(
         execution_plan[1]["suggested_tool"], first_step["suggested_tool"],

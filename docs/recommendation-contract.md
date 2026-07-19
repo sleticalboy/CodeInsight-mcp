@@ -82,8 +82,9 @@ Clients should read selected `context_pack.files[]` before enabling or
 executing `use_current_reading_step_suggested_tool`, and should not use
 `continuation_summary.suggested_tool` until selected context has been consumed.
 The first execution step names the first reading file with its
-`selection_rank`; the continuation step names the first omitted candidate,
-`omission_reason`, and suggested continuation tool when one exists.
+`selection_rank` and first reading question; the continuation step names the
+first omitted candidate, `omission_reason`, and suggested continuation tool
+when one exists.
 Use `review_impact_before_edits` as a pre-edit checkpoint, not as proof of
 compiler-grade safety.
 
