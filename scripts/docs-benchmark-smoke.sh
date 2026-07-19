@@ -411,6 +411,9 @@ main() {
     'scripts/task-routing-matrix\.sh /path/to/repo' \
     "task routing matrix doc command"
   require_pattern docs/task-routing-matrix.md \
+    'The default matrix covers routing, authentication, settings, startup,' \
+    "task routing matrix default task scope"
+  require_pattern docs/task-routing-matrix.md \
     '\-\-expect "understand routing behavior=src/router\.ts"' \
     "task routing matrix expectation example"
   require_pattern docs/task-routing-matrix.md \
@@ -984,7 +987,7 @@ main() {
     '\| Task alias or seed ordering changed \| `scripts/task-routing-matrix-smoke\.sh` \|' \
     "maintenance task routing matrix smoke chooser"
   require_pattern docs/maintenance-commands.md \
-    'routing, authentication, settings, startup, and middleware prompts choose the matching first file and that `--expect-file` failures are reported' \
+    'routing, authentication, settings, startup, persistence, debug, coverage, API handler, and middleware prompts choose the matching first file and that `--expect-file` failures are reported' \
     "maintenance task routing matrix smoke scope"
   require_pattern docs/maintenance-commands.md \
     '\| Installed-binary adoption path changed \| `CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/installed-quickstart-smoke\.sh` \|' \
@@ -1511,6 +1514,21 @@ main() {
   require_pattern scripts/task-routing-matrix.sh \
     'understand authentication behavior' \
     "task routing matrix default authentication task"
+  require_pattern scripts/task-routing-matrix.sh \
+    'understand persistence behavior' \
+    "task routing matrix default persistence task"
+  require_pattern scripts/task-routing-matrix.sh \
+    'debug retry timeout handling' \
+    "task routing matrix default debug task"
+  require_pattern scripts/task-routing-matrix.sh \
+    'find regression coverage' \
+    "task routing matrix default coverage task"
+  require_pattern scripts/task-routing-matrix.sh \
+    'understand api handler behavior' \
+    "task routing matrix default api handler task"
+  require_pattern scripts/task-routing-matrix.sh \
+    'understand middleware behavior' \
+    "task routing matrix default middleware task"
   require_pattern scripts/task-routing-matrix.sh \
     'first_selection_reason' \
     "task routing matrix selection reason field"

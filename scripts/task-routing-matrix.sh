@@ -490,6 +490,11 @@ main() {
       "understand authentication behavior"
       "understand application settings"
       "understand startup flow"
+      "understand persistence behavior"
+      "debug retry timeout handling"
+      "find regression coverage"
+      "understand api handler behavior"
+      "understand middleware behavior"
     )
   fi
 

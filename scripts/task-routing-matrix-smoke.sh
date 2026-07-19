@@ -109,10 +109,12 @@ main() {
   TEMP_DIR="$(mktemp -d)"
   trap cleanup EXIT INT TERM
 
-  local repo output_dir summary_json bad_output_dir bad_summary_json expectations_tsv bad_expectations_json
+  local repo output_dir summary_json default_output_dir default_summary_json bad_output_dir bad_summary_json expectations_tsv bad_expectations_json
   repo="$TEMP_DIR/repo"
   output_dir="$TEMP_DIR/matrix"
   summary_json="$output_dir/summary.json"
+  default_output_dir="$TEMP_DIR/matrix-default"
+  default_summary_json="$default_output_dir/summary.json"
   bad_output_dir="$TEMP_DIR/matrix-bad"
   bad_summary_json="$bad_output_dir/summary.json"
   expectations_tsv="$TEMP_DIR/expectations.tsv"
@@ -168,6 +170,13 @@ understand middleware behavior	src/application.ts'
   require_jq "$summary_json" '.tasks[] | select(.task == "understand middleware behavior" and (.first_reading_focus | contains("middleware")))' "middleware task should report a middleware-specific reading focus"
   grep -Fq '| Task | Seed strategy | First file | Focus | Question |' "$output_dir/task-routing-matrix.md" ||
     fail "matrix markdown should include the Focus column"
+
+  CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/task-routing-matrix.sh" "$repo" \
+    --output-dir "$default_output_dir" \
+    --token-budget 1600
+  require_jq "$default_summary_json" '.status == "pass" and .task_count == 9' "default matrix summary should include all default tasks"
+  require_jq "$default_summary_json" '.tasks[] | select(.task == "understand api handler behavior" and .first_file == "src/handler.ts")' "default matrix should include api handler task"
+  require_jq "$default_summary_json" '.tasks[] | select(.task == "find regression coverage" and .first_file == "src/router.test.ts")' "default matrix should include coverage task"
 
   if CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/task-routing-matrix.sh" "$repo" \
     --output-dir "$bad_output_dir" \

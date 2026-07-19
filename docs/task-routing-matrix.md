@@ -22,6 +22,10 @@ Run the default matrix:
 scripts/task-routing-matrix.sh /path/to/repo
 ```
 
+The default matrix covers routing, authentication, settings, startup,
+persistence, debug/retry/timeout, regression coverage, API handler, and
+middleware prompts.
+
 Run a custom matrix:
 
 ```bash
