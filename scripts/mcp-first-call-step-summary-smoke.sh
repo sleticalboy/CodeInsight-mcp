@@ -49,6 +49,7 @@ main() {
       "file": "src/main.ts",
       "selection_rank": 1,
       "next_action": "inspect_seed_file",
+      "focus": "Start with seed file context and primary symbols.",
       "question": "What entrypoints define the main flow?",
       "reason": "Read this step to answer: What entrypoints define the main flow? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file",
       "selection_reason": "Selected for high relevance via seed_file",
@@ -101,6 +102,7 @@ EOF
   require_literal "$summary_md" 'First reading file: `src/main.ts`' "first reading file"
   require_literal "$summary_md" 'First reading selection rank: `1`' "first reading selection rank"
   require_literal "$summary_md" 'First next action: `inspect_seed_file`' "first next action"
+  require_literal "$summary_md" 'First reading focus: `Start with seed file context and primary symbols.`' "first reading focus"
   require_literal "$summary_md" 'First reading question: `What entrypoints define the main flow?`' "first reading question"
   require_literal "$summary_md" 'Reading order contract: `true`' "reading order contract"
   require_literal "$summary_md" 'First execution instruction question contract: `true`' "first execution instruction question contract"

@@ -101,21 +101,22 @@ Promise: route the agent through agent_route before edits.
 
 1. index_project
    indexed_files: 23
-   symbols: 934
+   symbols: 981
 
 2. project_overview
    entrypoints: 7
    recommended_next_tools: 4
 
 3. context_pack
-   selected_files: 10
-   selected_ranges: 14
-   reading_plan_steps: 8
+   selected_files: 6
+   selected_ranges: 11
+   reading_plan_steps: 6
    execution_plan_steps: 4
    first_execution_action: read_selected_context
    second_execution_action: use_current_reading_step_suggested_tool
    first_execution_suggested_tool: file_outline
    first_next_action: inspect_seed_file
+   first_reading_focus: Start with seed file context and primary symbols.
    first_reading_question: What entrypoints, exported symbols, or setup code define the main flow here?
    first_selection_rank: 1
    first_context_file: src/tools.rs
@@ -123,20 +124,21 @@ Promise: route the agent through agent_route before edits.
    reading_order_contract: true
    suggested_tool_handoff_contract: true
    continuation_timing_contract: true
-   line_reduction: 98.2%
+   line_reduction: 98.6%
    continuation: complete
    continuation_next_action: read_selected_context
    first_omitted_candidate: none
-   route_reason: selected 10 files, 14 ranges, and 8 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context
+   route_reason: selected 6 files, 11 ranges, and 6 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context
 
 4. impact_analysis
    risk_level: high
    impacted_files: 7
    suggested_checks: 4
-   route_reason: after selected context is read, pre-edit impact check estimated 7 impacted files at high risk, including 5 call-related files, 1 dependency-related files, 27 call paths, and 1 dependency paths
+   route_reason: after selected context is read, pre-edit impact check estimated 7 impacted files at high risk, including 5 call-related files, 1 dependency-related files, 38 call paths, and 1 dependency paths
 
 [Evidence summary]
-agent_route selected 521/28553 source lines (98.2% reduction) across 10 files.
+agent_route selected 423/29931 source lines (98.6% reduction) across 6 files.
+First reading focus: Start with seed file context and primary symbols.
 First reading question: What entrypoints, exported symbols, or setup code define the main flow here?
 The first selected file is src/tools.rs; reading_plan starts at src/tools.rs as candidate rank 1.
 Execution contract: reading_order=true, suggested_tool_handoff=true, continuation_after_selected_context=true.
@@ -149,14 +151,15 @@ Before edits, impact_analysis reports high risk across 7 impacted files.
 [Talk track]
 1. agent_route ran index_project, project_overview, context_pack, and impact_analysis in one call.
 2. project_overview found 7 entrypoints and 4 recommended next tools.
-3. context_pack selected 10 files and 14 ranges, then produced 8 reading-plan steps.
+3. context_pack selected 6 files and 11 ranges, then produced 6 reading-plan steps.
 4. execution_plan starts with read_selected_context, then use_current_reading_step_suggested_tool; this keeps suggested tools behind selected-context reading.
 5. The first execution-plan suggested tool is file_outline; offer it only after the selected file has been read.
-6. The first reading-plan question is: What entrypoints, exported symbols, or setup code define the main flow here?
-7. The first reading-plan action is inspect_seed_file; the selected context reduced source reading by 98.2%; selected 10 files, 14 ranges, and 8 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context
-8. Reading order contract is true; execution_plan[0].files follows reading_plan[] order.
-9. Suggested-tool handoff contract is true; execution_plan[1] points to the current reading step.
-10. Continuation timing contract is true; continuation is only considered after selected context is read.
+6. The first reading-plan focus is: Start with seed file context and primary symbols.
+7. The first reading-plan question is: What entrypoints, exported symbols, or setup code define the main flow here?
+8. The first reading-plan action is inspect_seed_file; the selected context reduced source reading by 98.6%; selected 6 files, 11 ranges, and 6 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context
+9. Reading order contract is true; execution_plan[0].files follows reading_plan[] order.
+10. Suggested-tool handoff contract is true; execution_plan[1] points to the current reading step.
+11. Continuation timing contract is true; continuation is only considered after selected context is read.
 ```
 
 Exact numbers vary by repository and current source state. The important point
@@ -170,6 +173,10 @@ entrypoint candidates, directory roles, summaries, and recommended next tools.
 `context_pack` answers "what should fit into the model context now?" It returns
 selected files, line ranges, excerpts, a reading plan, budget metadata, and a
 continuation strategy if more context is needed.
+
+`first_reading_focus` is the compact scan label for the first reading step. It
+gives demo viewers a shorter cue than the full reading question while preserving
+the same task intent.
 
 `route_reason` turns the route into an executable explanation: it says which
 file to read first, which action to take, which tool to use for deeper evidence,

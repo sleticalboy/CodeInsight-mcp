@@ -112,6 +112,7 @@ cat <<'JSON'
       {
         "order": 1,
         "file": "src/main.rs",
+        "focus": "Start with seed file context and primary symbols.",
         "next_action": "inspect_seed_file",
         "question": "What entrypoints or setup code define the main flow here?",
         "reason": "Read this step to answer: What entrypoints or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: src/main.rs",

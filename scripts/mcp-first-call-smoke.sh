@@ -304,6 +304,7 @@ try:
         "reading_plan[0].selection_rank is missing",
     )
     expect(reading_plan[0].get("next_action"), "agent_route_contract", "reading_plan[0].next_action is missing")
+    expect(reading_plan[0].get("focus"), "agent_route_contract", "reading_plan[0].focus is missing")
     expect(reading_plan[0].get("question"), "agent_route_contract", "reading_plan[0].question is missing")
     expect(reading_plan[0].get("reason"), "agent_route_contract", "reading_plan[0].reason is missing")
     expect(
@@ -482,6 +483,7 @@ try:
                 "file": step["file"],
                 "selection_rank": step["selection_rank"],
                 "next_action": step["next_action"],
+                "focus": step["focus"],
                 "question": step["question"],
                 "reason": step["reason"],
                 "selection_reason": step["selection_reason"],

@@ -49,6 +49,7 @@ require_summary_contract() {
       and (.reading_plan[0].file == .first_reading_file)
       and (.reading_plan[0].selection_rank == .first_reading_selection_rank)
       and (.reading_plan[0].next_action | type == "string" and length > 0)
+      and (.reading_plan[0].focus | type == "string" and length > 0)
       and (.reading_plan[0].question | type == "string" and length > 0)
       and (.reading_plan[0].selection_reason | type == "string" and length > 0)
       and (.reading_plan[0] as $step
@@ -104,6 +105,7 @@ main() {
     printf 'First reading file: `%s`\n\n' "$(value '.first_reading_file')"
     printf 'First reading selection rank: `%s`\n\n' "$(value '.first_reading_selection_rank')"
     printf 'First next action: `%s`\n\n' "$(value '.reading_plan[0].next_action')"
+    printf 'First reading focus: `%s`\n\n' "$(value '.reading_plan[0].focus')"
     printf 'First reading question: `%s`\n\n' "$(value '.reading_plan[0].question')"
     printf 'Reading order contract: `%s`\n\n' "$(value '.execution_plan_reads_in_reading_plan_order')"
     printf 'First execution instruction question contract: `%s`\n\n' "$(value '.first_execution_instruction_has_question')"

@@ -46,6 +46,7 @@ write_summary_json() {
       "file": "src/main.ts",
       "selection_rank": 1,
       "next_action": "inspect_seed_file",
+      "focus": "Start with seed file context and primary symbols.",
       "question": "What entrypoints define the main flow?",
       "reason": "Read this step to answer: What entrypoints define the main flow? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file",
       "selection_reason": "Selected for high relevance via seed_file",
@@ -143,6 +144,8 @@ EOF
     fail "missing artifact smoke success output"
   grep -Fq "summary: $TEMP_DIR/download/mcp-first-call.json" "$TEMP_DIR/output.log" ||
     fail "missing summary path output"
+  grep -Fq 'first_reading_focus: Start with seed file context and primary symbols.' "$TEMP_DIR/output.log" ||
+    fail "missing first reading focus output"
   grep -Fq 'first_reading_question: What entrypoints define the main flow?' "$TEMP_DIR/output.log" ||
     fail "missing first reading question output"
   grep -Fq 'first_reading_selection_rank: 1' "$TEMP_DIR/output.log" ||
@@ -169,6 +172,8 @@ EOF
     fail "missing latest successful artifact download"
   grep -Fq 'first_reading_question: What entrypoints define the main flow?' "$TEMP_DIR/latest-output.log" ||
     fail "missing latest first reading question output"
+  grep -Fq 'first_reading_focus: Start with seed file context and primary symbols.' "$TEMP_DIR/latest-output.log" ||
+    fail "missing latest first reading focus output"
   grep -Fq 'first_reading_selection_rank: 1' "$TEMP_DIR/latest-output.log" ||
     fail "missing latest first reading selection rank output"
   grep -Fq 'continuation_status: complete' "$TEMP_DIR/latest-output.log" ||

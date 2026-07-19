@@ -115,6 +115,7 @@ main() {
   require_json_number_gt_zero "$context_json" '.files | length' "context_pack selected files"
   require_json_number_gt_zero "$context_json" '.reading_plan | length' "context_pack reading plan steps"
   require_json_string "$context_json" '.reading_plan[0].next_action' "first reading-plan next action"
+  require_json_string "$context_json" '.reading_plan[0].focus' "first reading-plan focus"
   require_json_string "$context_json" '.reading_plan[0].question' "first reading-plan question"
   require_json_string "$context_json" '.reading_plan[0].reason' "first reading-plan reason"
   require_json_number_gt_zero "$context_json" '.reading_plan[0].selection_rank' "first reading-plan selection rank"
@@ -134,7 +135,7 @@ main() {
   fi
 
   local total_lines selected_lines reduction first_entrypoint first_context_file
-  local first_next_action first_reading_question first_reading_plan_reason first_selection_rank
+  local first_next_action first_reading_focus first_reading_question first_reading_plan_reason first_selection_rank
   local first_selection_reason continuation_next_action
   total_lines="$(json_value "$overview_json" '.total_lines // 0')"
   selected_lines="$(selected_context_lines "$context_json")"
@@ -142,6 +143,7 @@ main() {
   first_entrypoint="$(json_value "$overview_json" '.entrypoints[0].file // "-"')"
   first_context_file="$(json_value "$context_json" '.files[0].file // "-"')"
   first_next_action="$(json_value "$context_json" '.reading_plan[0].next_action // "-"')"
+  first_reading_focus="$(json_value "$context_json" '.reading_plan[0].focus // "-"')"
   first_reading_question="$(json_value "$context_json" '.reading_plan[0].question // "-"')"
   first_reading_plan_reason="$(json_value "$context_json" '.reading_plan[0].reason // "-"')"
   first_selection_rank="$(json_value "$context_json" '.reading_plan[0].selection_rank // 0')"
@@ -167,6 +169,7 @@ main() {
   echo "   selected_ranges: $(json_value "$context_json" '[.files[].ranges | length] | add // 0')"
   echo "   reading_plan_steps: $(json_value "$context_json" '.reading_plan | length')"
   echo "   first_next_action: $first_next_action"
+  echo "   first_reading_focus: $first_reading_focus"
   echo "   first_reading_question: $first_reading_question"
   echo "   selected_lines: $selected_lines"
   echo "   line_reduction: $reduction"

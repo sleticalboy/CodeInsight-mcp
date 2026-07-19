@@ -20,6 +20,7 @@ agent_route -> selected context -> executable suggested_tool -> impact check
 That route gives the agent:
 
 - selected files and line ranges instead of a broad repository scan
+- `reading_plan[].focus` as the compact scan label for each selected file
 - `reading_plan[].question` as the local checklist for the current file
 - `reading_plan[].reason` instructions that explain what to read first and why
 - `execution_plan[]` actions that keep focused follow-up tools behind the
@@ -76,6 +77,7 @@ hands the agent to precise local tools when the selected context is not enough.
    ```text
    Call agent_route with root, task, and token_budget 6000 before reading files directly.
    Read selected files in reading_plan order and use selection_rank as the audit trail.
+   Use reading_plan.focus as the compact scan label for the selected file.
    Treat reading_plan.question as the local checklist for the selected file.
    Use continuation_summary only after selected context is consumed.
    Follow agent_route.execution_plan[] in order.
@@ -360,8 +362,8 @@ This smoke proves the installed binary can run `version`, `index`, `overview`,
 `context-pack`, CLI `agent-route`, MCP stdio, and MCP `agent_route` against a
 temporary project outside the source checkout. It also verifies the returned
 agent-route execution plan, reading-plan question, reading-plan reason,
-selection rank, selection reason, and continuation evidence that agents use to
-read files in the right order.
+reading-plan focus, selection rank, selection reason, and continuation evidence
+that agents use to read files in the right order.
 
 For the complete adoption checklist, see
 [Adoption checklist](docs/adoption-checklist.md).

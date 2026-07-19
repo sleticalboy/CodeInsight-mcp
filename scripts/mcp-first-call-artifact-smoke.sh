@@ -92,6 +92,7 @@ validate_summary_json() {
       and (.reading_plan[0].file == "src/main.ts")
       and (.reading_plan[0].selection_rank == .first_reading_selection_rank)
       and (.reading_plan[0].next_action == "inspect_seed_file")
+      and (.reading_plan[0].focus | type == "string" and length > 0)
       and (.reading_plan[0].question | type == "string" and length > 0)
       and (.reading_plan[0].selection_reason | type == "string" and length > 0)
       and (.reading_plan[0].suggested_tool | type == "string" and length > 0)
@@ -244,6 +245,7 @@ main() {
 
   echo "MCP first-call artifact smoke passed"
   echo "summary: $summary_file"
+  echo "first_reading_focus: $(jq -r '.reading_plan[0].focus' "$summary_file")"
   echo "first_reading_question: $(jq -r '.reading_plan[0].question' "$summary_file")"
   echo "first_reading_selection_rank: $(jq -r '.first_reading_selection_rank' "$summary_file")"
   echo "continuation_status: $(jq -r '.continuation_status' "$summary_file")"

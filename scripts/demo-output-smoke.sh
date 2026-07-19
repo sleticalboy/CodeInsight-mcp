@@ -62,6 +62,9 @@ main() {
     'first_next_action: inspect_seed_file' \
     "first next action metric"
   require_pattern docs/demo-output.md \
+    'first_reading_focus: Start with seed file' \
+    "first reading focus metric"
+  require_pattern docs/demo-output.md \
     'first_reading_question: What entrypoints' \
     "first reading question metric"
   require_pattern docs/demo-output.md \
@@ -110,6 +113,9 @@ main() {
     'agent_route selected [0-9]+/[0-9]+ source lines \([0-9]+\.[0-9]% reduction\) across [0-9]+ files\.' \
     "evidence summary line reduction"
   require_pattern docs/demo-output.md \
+    'First reading focus: Start with seed file' \
+    "evidence summary first reading focus"
+  require_pattern docs/demo-output.md \
     'First reading question: What entrypoints' \
     "evidence summary first reading question"
   require_pattern docs/demo-output.md \
@@ -148,6 +154,9 @@ main() {
   require_pattern docs/demo-output.md \
     'The first execution-plan suggested tool is file_outline; offer it only after the selected file has been read\.' \
     "execution suggested tool talk track"
+  require_pattern docs/demo-output.md \
+    'The first reading-plan focus is: Start with seed file' \
+    "reading focus talk track"
   require_pattern docs/demo-output.md \
     'The first reading-plan question is: What entrypoints' \
     "reading question talk track"
