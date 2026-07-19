@@ -69,9 +69,9 @@
       "task_count": 4,
       "expectation_count": 4,
       "total_task_source_lines": 73348,
-      "total_selected_lines": 2292,
-      "total_estimated_tokens": 23204,
-      "max_impacted_files": 29,
+      "total_selected_lines": 2300,
+      "total_estimated_tokens": 23243,
+      "max_impacted_files": 32,
       "routes": [
         {
           "task": "understand flask application routing behavior",
@@ -85,13 +85,13 @@
         },
         {
           "task": "understand request lifecycle before after request handling",
-          "first_file": "src/flask/ctx.py",
-          "seed_strategy": "auto_task_match",
+          "first_file": "src/flask/app.py",
+          "seed_strategy": "auto_entrypoint",
           "total_lines": 18337,
           "line_reduction": "96.9%",
-          "estimated_tokens": 5841,
+          "estimated_tokens": 5880,
           "risk_level": "high",
-          "impacted_files": 29
+          "impacted_files": 32
         },
         {
           "task": "understand configuration settings",
@@ -220,8 +220,8 @@
     "task_count": 15,
     "expectation_count": 15,
     "total_task_source_lines": 279685,
-    "total_selected_lines": 7228,
-    "total_estimated_tokens": 64309,
+    "total_selected_lines": 7236,
+    "total_estimated_tokens": 64348,
     "max_impacted_files": 43,
     "line_reduction": 97.41
   },

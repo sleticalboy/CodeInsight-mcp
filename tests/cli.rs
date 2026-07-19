@@ -2988,6 +2988,43 @@ class Scaffold:
     );
     write_file(
         &flask_fixture,
+        "src/flask/ctx.py",
+        r#""""Request context helpers."""
+
+def after_this_request(f):
+    return f
+"#,
+    );
+    write_file(
+        &flask_fixture,
+        "src/flask/app.py",
+        r#""""Flask request lifecycle."""
+
+class Flask:
+    def dispatch_request(self, ctx):
+        return ctx.request
+
+    def full_dispatch_request(self, ctx):
+        response = self.preprocess_request(ctx)
+        if response is None:
+            response = self.dispatch_request(ctx)
+        return self.finalize_request(ctx, response)
+
+    def finalize_request(self, ctx, response):
+        return self.process_response(ctx, response)
+
+    def preprocess_request(self, ctx):
+        return None
+
+    def process_response(self, ctx, response):
+        return response
+
+    def do_teardown_request(self, ctx, exc):
+        return exc
+"#,
+    );
+    write_file(
+        &flask_fixture,
         "src/flask/cli.py",
         r#"def main():
     return "cli"
@@ -3012,6 +3049,24 @@ class Scaffold:
     assert_eq!(
         flask_routing_context["files"][0]["file"],
         "src/flask/sansio/scaffold.py"
+    );
+
+    let flask_lifecycle_context = run_json([
+        "context-pack",
+        flask_fixture.path().to_str().unwrap(),
+        "--task",
+        "understand request lifecycle before after request handling",
+        "--token-budget",
+        "1600",
+    ]);
+
+    assert_eq!(
+        flask_lifecycle_context["selected_seeds"][0]["value"],
+        "src/flask/app.py"
+    );
+    assert_eq!(
+        flask_lifecycle_context["files"][0]["file"],
+        "src/flask/app.py"
     );
 }
 

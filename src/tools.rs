@@ -4360,6 +4360,26 @@ fn auto_seed_task_focus_boost(
         score += 320;
     }
 
+    if auto_seed_request_lifecycle_task(task_keywords) {
+        let file_lifecycle_match = auto_seed_request_lifecycle_file_matches(file);
+        let symbol_lifecycle_match = symbol
+            .map(auto_seed_request_lifecycle_symbol_matches)
+            .unwrap_or(false);
+
+        score += match (
+            overview_entrypoint,
+            file_lifecycle_match,
+            symbol_lifecycle_match,
+        ) {
+            (true, true, true) => 2200,
+            (false, true, true) => 1800,
+            (_, _, true) => 700,
+            (true, true, _) => 1800,
+            (false, true, _) => 1400,
+            _ => 0,
+        };
+    }
+
     if task_keywords
         .iter()
         .any(|keyword| matches!(keyword.as_str(), "route" | "routes" | "router" | "routing"))
@@ -4403,6 +4423,49 @@ fn auto_seed_task_focus_boost(
     score
 }
 
+fn auto_seed_request_lifecycle_task(task_keywords: &[String]) -> bool {
+    let request_or_response = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "request" | "requests" | "response" | "responses"
+        )
+    });
+    let lifecycle = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "lifecycle"
+                | "before"
+                | "after"
+                | "dispatch"
+                | "handling"
+                | "handle"
+                | "handler"
+                | "handlers"
+        )
+    });
+
+    request_or_response && lifecycle
+}
+
+fn auto_seed_request_lifecycle_file_matches(file: &str) -> bool {
+    auto_seed_file_stem_matches(file, "app") || auto_seed_file_stem_matches(file, "application")
+}
+
+fn auto_seed_request_lifecycle_symbol_matches(symbol: &str) -> bool {
+    let parts = symbol
+        .split(|ch: char| !ch.is_ascii_alphanumeric())
+        .map(str::to_ascii_lowercase)
+        .collect::<Vec<_>>();
+
+    let has_exact = |needle: &str| parts.iter().any(|part| part == needle);
+    (has_exact("request") || has_exact("response"))
+        && (has_exact("dispatch")
+            || has_exact("preprocess")
+            || has_exact("process")
+            || has_exact("finalize")
+            || has_exact("teardown"))
+}
+
 fn auto_seed_route_registration_matches(field: &str) -> bool {
     let parts = field
         .split(|ch: char| !ch.is_ascii_alphanumeric())
@@ -4442,9 +4505,10 @@ fn auto_seed_lifecycle_keyword(keyword: &str) -> bool {
 }
 
 fn auto_seed_prefers_entrypoint(task_keywords: &[String]) -> bool {
-    task_keywords
+    (task_keywords
         .iter()
         .any(|keyword| auto_seed_lifecycle_keyword(keyword))
+        || auto_seed_request_lifecycle_task(task_keywords))
         && !task_keywords
             .iter()
             .any(|keyword| matches!(keyword.as_str(), "package" | "packages"))

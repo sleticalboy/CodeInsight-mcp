@@ -825,7 +825,7 @@ main() {
     '\-\-expect-file \./route-expectations\.tsv' \
     "README task routing matrix expectation file"
   require_pattern README.md \
-    'selecting 7,228 of 279,685 task source' \
+    'selecting 7,236 of 279,685 task source' \
     "README public route-quality headline"
   require_pattern README.md \
     '\[JSON summary\]\(docs/public-task-routing-matrix-summary\.json\)' \
@@ -888,7 +888,7 @@ main() {
     'source_lines: 279685' \
     "public task routing matrix source-line evidence"
   require_pattern docs/public-task-routing-matrix.md \
-    'selected_lines: 7228' \
+    'selected_lines: 7236' \
     "public task routing matrix selected-line evidence"
   require_pattern docs/public-task-routing-matrix.md \
     'line_reduction: 97\.41%' \

@@ -38,7 +38,7 @@ LSP, compiler, test runner, and language-specific tools for precise diagnostics,
 type checks, and final verification.
 
 Current public routing snapshot: pinned Express, Flask, Gin, and Requests
-route-quality expectations pass `15/15`, selecting 7,228 of 279,685 task source
+route-quality expectations pass `15/15`, selecting 7,236 of 279,685 task source
 lines for a `97.4%` aggregate first-read line reduction. See the checked-in
 [Markdown snapshot](docs/public-task-routing-matrix.md) and
 [JSON summary](docs/public-task-routing-matrix-summary.json). Reproduce both:
@@ -236,7 +236,7 @@ Current benchmark snapshot:
   reduction, while the MCP first-call contract fields all pass, including the
   `current_reading_step` mirror.
 - The public route-quality snapshot pins Express, Flask, Gin, and Requests and
-  passes 15/15 expected first-file checks, selecting 7,228 of 279,685 task
+  passes 15/15 expected first-file checks, selecting 7,236 of 279,685 task
   source lines, a 97.4% aggregate first-read line reduction.
 - Per-repository adoption metrics, commits, and refresh commands live in
   [Adoption cases](docs/adoption-cases.md).
