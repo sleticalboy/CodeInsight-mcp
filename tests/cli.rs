@@ -2211,6 +2211,15 @@ export function bootRouter(settings: Record<string, string>) {
     )
     .unwrap();
     std::fs::write(
+        fixture.path().join("src/errors.ts"),
+        r#"export function handleError(error: Error) {
+  // Retry timeout failures before falling back to the caller.
+  return { retry: true, timeout: error.message.includes("timeout") };
+}
+"#,
+    )
+    .unwrap();
+    std::fs::write(
         fixture.path().join("src/application.ts"),
         r#"export function attach(handler: unknown) {
   // Registers middleware before routes are mounted.
@@ -2321,6 +2330,31 @@ export function bootRouter(settings: Record<string, string>) {
         .unwrap();
     assert!(persistence_question.contains("database access"));
     assert!(persistence_question.contains("storage boundaries"));
+
+    let error_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "debug retry timeout handling",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(error_context["seed_strategy"], "auto_task_match");
+    assert_eq!(error_context["selected_seeds"][0]["value"], "src/errors.ts");
+    assert!(
+        error_context["selected_seeds"][0]["matched_keywords"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|keyword| keyword == "error")
+    );
+    assert_eq!(error_context["files"][0]["file"], "src/errors.ts");
+    let error_question = error_context["reading_plan"][0]["question"]
+        .as_str()
+        .unwrap();
+    assert!(error_question.contains("retries"));
+    assert!(error_question.contains("timeouts"));
+    assert!(error_question.contains("recovery decisions"));
 
     let middleware_context = run_json([
         "context-pack",

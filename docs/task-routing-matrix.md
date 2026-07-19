@@ -10,6 +10,7 @@ This is a route-quality check, not a benchmark suite. It helps answer:
 - Does a settings task start at config code?
 - Does a startup task preserve the application entrypoint?
 - Does a persistence task start at database, repository, or storage code?
+- Does a debugging task start at error handling, retry, or timeout code?
 
 ## Run
 
@@ -28,6 +29,7 @@ scripts/task-routing-matrix.sh /path/to/repo \
   --task "understand application settings" \
   --task "understand startup flow" \
   --task "understand persistence behavior" \
+  --task "debug retry timeout handling" \
   --output-dir /tmp/codeinsight-task-routing-matrix
 ```
 
@@ -49,6 +51,7 @@ For longer matrices, put the expectations in a file. Line-based files can use
 understand routing behavior	src/router.ts
 understand authentication behavior	src/auth.ts
 understand persistence behavior	src/database.ts
+debug retry timeout handling	src/errors.ts
 ```
 
 Then run:

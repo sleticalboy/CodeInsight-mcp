@@ -116,7 +116,7 @@ main() {
     '93\.3x aggregate read-less ratio' \
     "README adoption cases aggregate read-less ratio"
   require_pattern README.md \
-    'routes the entrypoint task to 439 of 30,042 source lines, a 98\.5% first-read' \
+    'routes the entrypoint task to 439 of 30,144 source lines, a 98\.5% first-read' \
     "README self adoption report metric"
   "$ROOT_DIR/scripts/readme-adoption-summary-smoke.sh" >/dev/null
   require_pattern README.md \
@@ -420,8 +420,14 @@ main() {
     'Does a persistence task start at database, repository, or storage code' \
     "task routing matrix persistence framing"
   require_pattern docs/task-routing-matrix.md \
+    'Does a debugging task start at error handling, retry, or timeout code' \
+    "task routing matrix debug framing"
+  require_pattern docs/task-routing-matrix.md \
     $'understand persistence behavior\tsrc/database\\.ts' \
     "task routing matrix persistence expectation example"
+  require_pattern docs/task-routing-matrix.md \
+    $'debug retry timeout handling\tsrc/errors\\.ts' \
+    "task routing matrix debug expectation example"
   require_pattern docs/task-routing-matrix.md \
     'Expectation files automatically add their tasks to the matrix' \
     "task routing matrix expectation file task loading"
