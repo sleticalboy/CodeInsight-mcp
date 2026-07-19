@@ -264,6 +264,9 @@ main() {
     '\[Requests\]\(task-routing-expectations/requests\.tsv\)' \
     "docs index Requests task routing expectation link"
   require_pattern docs/README.md \
+    '\[Streamlit\]\(task-routing-expectations/streamlit\.tsv\)' \
+    "docs index Streamlit task routing expectation link"
+  require_pattern docs/README.md \
     '\[CodeInsight self adoption report\]\(adoption-report-codeinsight\.md\)' \
     "docs index self adoption report link"
   require_pattern docs/README.md \
@@ -411,6 +414,9 @@ main() {
     '\[Requests\]\(task-routing-expectations/requests\.tsv\)' \
     "task routing matrix Requests expectation example link"
   require_pattern docs/task-routing-matrix.md \
+    '\[Streamlit\]\(task-routing-expectations/streamlit\.tsv\)' \
+    "task routing matrix Streamlit expectation example link"
+  require_pattern docs/task-routing-matrix.md \
     'expectations\.checks\[\]\.actual_first_file' \
     "task routing matrix expectation JSON contract"
   require_pattern docs/task-routing-expectations/express.tsv \
@@ -422,12 +428,24 @@ main() {
   require_pattern docs/task-routing-expectations/requests.tsv \
     $'understand configuration settings\tsrc/requests/sessions\\.py' \
     "Requests task routing expectation settings row"
+  require_pattern docs/task-routing-expectations/streamlit.tsv \
+    $'understand streamlit server startup flow\tlib/streamlit/web/bootstrap\\.py' \
+    "Streamlit task routing expectation startup row"
+  require_pattern docs/task-routing-expectations/streamlit.tsv \
+    $'understand configuration settings\tlib/streamlit/config\\.py' \
+    "Streamlit task routing expectation settings row"
   require_pattern docs/task-routing-matrix.md \
     '\| understand gin engine routing behavior \| `routergroup\.go` \|' \
     "task routing matrix Gin routing example"
   require_pattern docs/task-routing-matrix.md \
     '\| understand middleware authentication behavior \| `auth\.go` \|' \
     "task routing matrix Gin auth example"
+  require_pattern docs/task-routing-matrix.md \
+    '\| understand streamlit server startup flow \| `lib/streamlit/web/bootstrap\.py` \|' \
+    "task routing matrix Streamlit startup example"
+  require_pattern docs/task-routing-matrix.md \
+    '\| understand configuration settings \| `lib/streamlit/config\.py` \|' \
+    "task routing matrix Streamlit settings example"
   require_pattern docs/adoption-report-codeinsight.md \
     'CodeInsight routed first-read \| `439` source lines' \
     "CodeInsight self adoption report routed lines"
