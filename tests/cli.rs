@@ -2464,6 +2464,44 @@ def show_config(config_options):
 }
 
 #[test]
+fn cli_context_pack_uses_task_specific_seed_file_question() {
+    let fixture = TempDir::new().unwrap();
+    std::fs::create_dir_all(fixture.path().join("src")).unwrap();
+    std::fs::write(
+        fixture.path().join("src/flow.py"),
+        r#"
+def leaf():
+    return "ok"
+
+def service():
+    return leaf()
+"#,
+    )
+    .unwrap();
+
+    run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+
+    let context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand impact call path behavior",
+        "--file",
+        "src/flow.py",
+        "--token-budget",
+        "1200",
+    ]);
+    assert_eq!(context["reading_plan"][0]["file"], "src/flow.py");
+    assert_eq!(
+        context["reading_plan"][0]["next_action"],
+        "inspect_seed_file"
+    );
+    let question = context["reading_plan"][0]["question"].as_str().unwrap();
+    assert!(question.contains("callers"));
+    assert!(question.contains("impact paths"));
+}
+
+#[test]
 fn cli_resolves_pnpm_workspace_package_exports() {
     let fixture = pnpm_workspace_fixture_project();
 

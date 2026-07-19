@@ -1522,7 +1522,7 @@ pub fn context_pack_value(
         count_selected_ranges_with_reason(&files, "Semantic chunk match");
     semantic_status.status.recommendation =
         context_semantic_recommendation(&semantic_status.status);
-    let reading_plan = context_reading_plan(&root, &files);
+    let reading_plan = context_reading_plan(&root, &task, &files);
     let selected_files = files.len();
     let selected_ranges = files.iter().map(|file| file.ranges.len()).sum::<usize>();
     let omitted_candidates = context_omitted_candidates(
@@ -1743,14 +1743,14 @@ fn context_omitted_candidate(
     })
 }
 
-fn context_reading_plan(root: &Path, files: &[ContextFile]) -> Vec<ContextReadingStep> {
+fn context_reading_plan(root: &Path, task: &str, files: &[ContextFile]) -> Vec<ContextReadingStep> {
     files
         .iter()
         .take(8)
         .enumerate()
         .map(|(index, file)| {
             let next_action = context_reading_next_action(file).to_string();
-            let question = context_reading_question(file);
+            let question = context_reading_question(file, task);
             let suggested_tool = context_reading_suggested_tool(root, file);
             let ranges = file
                 .ranges
@@ -1893,11 +1893,15 @@ fn context_reading_next_action(file: &ContextFile) -> &'static str {
     }
 }
 
-fn context_reading_question(file: &ContextFile) -> String {
+fn context_reading_question(file: &ContextFile, task: &str) -> String {
     match context_reading_next_action(file) {
         "inspect_seed_file" => {
-            "What entrypoints, exported symbols, or setup code define the main flow here?"
-                .to_string()
+            if context_text_mentions(task, &["impact", "call", "caller", "callee", "path"]) {
+                "Which local callers, callees, or impact paths in this seed file explain the requested flow?".to_string()
+            } else {
+                "What entrypoints, exported symbols, or setup code define the main flow here?"
+                    .to_string()
+            }
         }
         "inspect_symbol_definition" => {
             "What behavior or contract does this definition establish for the task?".to_string()
@@ -1917,6 +1921,11 @@ fn context_reading_question(file: &ContextFile) -> String {
         }
         _ => "What task-relevant context is present in these selected ranges?".to_string(),
     }
+}
+
+fn context_text_mentions(text: &str, terms: &[&str]) -> bool {
+    let text = text.to_ascii_lowercase();
+    terms.iter().any(|term| text.contains(term))
 }
 
 fn context_reading_sources(file: &ContextFile) -> BTreeSet<&str> {
