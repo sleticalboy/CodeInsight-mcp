@@ -390,6 +390,19 @@ try:
         "suggested_tool",
         "execution_plan[1].suggested_tool should match reading_plan[0].suggested_tool",
     )
+    current_step_instruction = execution_plan[1].get("instruction", "")
+    current_step_instruction_has_question = first_question in current_step_instruction
+    expect(
+        current_step_instruction_has_question,
+        "suggested_tool",
+        "execution_plan[1].instruction should include reading_plan[0].question",
+    )
+    current_step_instruction_has_action = reading_plan[0]["next_action"] in current_step_instruction
+    expect(
+        current_step_instruction_has_action,
+        "suggested_tool",
+        "execution_plan[1].instruction should include reading_plan[0].next_action",
+    )
     continuation_summary = context_pack.get("continuation_summary", {})
     expect(
         continuation_summary.get("next_action"),
@@ -481,6 +494,8 @@ try:
         "first_execution_action": first_execution["action"],
         "first_execution_instruction_has_question": first_execution_instruction_has_question,
         "current_step_suggested_tool_matches_reading_plan": True,
+        "current_step_instruction_has_question": current_step_instruction_has_question,
+        "current_step_instruction_has_action": current_step_instruction_has_action,
         "continuation_after_selected_context": True,
         "continuation_status": continuation_summary.get("status", ""),
         "continuation_next_action": continuation_summary.get("next_action", ""),

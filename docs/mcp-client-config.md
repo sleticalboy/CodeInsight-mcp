@@ -236,8 +236,9 @@ omitted-candidate evidence.
 For a shorter copyable check, run `scripts/mcp-first-call-smoke.sh`. It prints
 a JSON summary with `route_tools`, `selected_files`, `execution_plan_actions`,
 the first context file, first reading selection rank, `reading_plan[]`,
-continuation summary fields, suggested-tool handoff checks,
-`suggested_tool_executed`, and `impact_status`.
+continuation summary fields, suggested-tool handoff checks, current-step
+instruction action/question checks, `suggested_tool_executed`, and
+`impact_status`.
 
 Expected summary shape:
 

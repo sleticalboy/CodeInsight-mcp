@@ -37,6 +37,8 @@ require_summary_contract() {
       and .execution_plan_reads_in_reading_plan_order == true
       and .first_execution_instruction_has_question == true
       and .current_step_suggested_tool_matches_reading_plan == true
+      and .current_step_instruction_has_question == true
+      and .current_step_instruction_has_action == true
       and .continuation_after_selected_context == true
       and (.continuation_status | type == "string")
       and (.continuation_next_action | type == "string" and length > 0)
@@ -106,6 +108,8 @@ main() {
     printf 'Reading order contract: `%s`\n\n' "$(value '.execution_plan_reads_in_reading_plan_order')"
     printf 'First execution instruction question contract: `%s`\n\n' "$(value '.first_execution_instruction_has_question')"
     printf 'Suggested tool handoff contract: `%s`\n\n' "$(value '.current_step_suggested_tool_matches_reading_plan')"
+    printf 'Current-step instruction question contract: `%s`\n\n' "$(value '.current_step_instruction_has_question')"
+    printf 'Current-step instruction action contract: `%s`\n\n' "$(value '.current_step_instruction_has_action')"
     printf 'Continuation timing contract: `%s`\n\n' "$(value '.continuation_after_selected_context')"
     printf 'Continuation status: `%s`\n\n' "$(value '.continuation_status')"
     printf 'Continuation next action: `%s`\n\n' "$(value '.continuation_next_action')"
