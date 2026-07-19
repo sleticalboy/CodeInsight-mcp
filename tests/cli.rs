@@ -2229,6 +2229,11 @@ export function bootRouter(settings: Record<string, string>) {
             .any(|keyword| keyword == "auth")
     );
     assert_eq!(auth_context["files"][0]["file"], "src/auth.ts");
+    let auth_question = auth_context["reading_plan"][0]["question"]
+        .as_str()
+        .unwrap();
+    assert!(auth_question.contains("authentication decisions"));
+    assert!(auth_question.contains("session boundaries"));
 
     let settings_context = run_json([
         "context-pack",
@@ -2251,6 +2256,11 @@ export function bootRouter(settings: Record<string, string>) {
             .any(|keyword| keyword == "config")
     );
     assert_eq!(settings_context["files"][0]["file"], "src/config.ts");
+    let settings_question = settings_context["reading_plan"][0]["question"]
+        .as_str()
+        .unwrap();
+    assert!(settings_question.contains("configuration options"));
+    assert!(settings_question.contains("environment inputs"));
 
     let middleware_context = run_json([
         "context-pack",
@@ -2273,6 +2283,11 @@ export function bootRouter(settings: Record<string, string>) {
             .any(|keyword| keyword == "middleware")
     );
     assert_eq!(middleware_context["files"][0]["file"], "src/application.ts");
+    let middleware_question = middleware_context["reading_plan"][0]["question"]
+        .as_str()
+        .unwrap();
+    assert!(middleware_question.contains("middleware"));
+    assert!(middleware_question.contains("handler boundaries"));
 
     let startup_context = run_json([
         "context-pack",
@@ -2294,6 +2309,11 @@ export function bootRouter(settings: Record<string, string>) {
             .any(|seed| seed["value"] == "src/main.ts")
     );
     assert_ne!(startup_context["files"][0]["file"], "src/application.ts");
+    let startup_question = startup_context["reading_plan"][0]["question"]
+        .as_str()
+        .unwrap();
+    assert!(startup_question.contains("startup entrypoint"));
+    assert!(startup_question.contains("initialization sequence"));
 }
 
 #[test]

@@ -1898,6 +1898,21 @@ fn context_reading_question(file: &ContextFile, task: &str) -> String {
         "inspect_seed_file" => {
             if context_text_mentions(task, &["impact", "call", "caller", "callee", "path"]) {
                 "Which local callers, callees, or impact paths in this seed file explain the requested flow?".to_string()
+            } else if context_text_mentions(
+                task,
+                &["auth", "authentication", "authenticate", "login", "signin"],
+            ) {
+                "Where are authentication decisions, credentials, or session boundaries handled here?".to_string()
+            } else if context_text_mentions(
+                task,
+                &["config", "configuration", "setting", "settings"],
+            ) {
+                "Which configuration options, defaults, or environment inputs control the requested behavior?".to_string()
+            } else if context_text_mentions(task, &["startup", "bootstrap", "boot"]) {
+                "What startup entrypoint or initialization sequence creates the requested flow?"
+                    .to_string()
+            } else if context_text_mentions(task, &["middleware"]) {
+                "Which middleware or handler boundaries shape the requested flow here?".to_string()
             } else {
                 "What entrypoints, exported symbols, or setup code define the main flow here?"
                     .to_string()
