@@ -223,6 +223,13 @@ companion = "-" if companion.empty?
 suggested_args = mcp.fetch("suggested_tool").fetch("arguments")
 suggested_path = suggested_args.fetch("path")
 files = manifest.fetch("files")
+total_lines = metrics.fetch("total_lines").to_i
+selected_lines = metrics.fetch("selected_lines").to_i
+source_lines_avoided = metrics.fetch("source_lines_avoided", [total_lines - selected_lines, 0].max)
+read_less_ratio = metrics.fetch(
+  "read_less_ratio",
+  selected_lines.positive? ? format("%.1fx", total_lines.to_f / selected_lines) : "n/a"
+)
 
 def line(text = "")
   "#{text}\n"
@@ -262,7 +269,9 @@ content << line("| Index errors | `#{metrics.fetch("index_errors")}` |")
 content << line("| Entrypoints | `#{metrics.fetch("entrypoints")}` |")
 content << line("| Blind first-read baseline | `#{metrics.fetch("total_lines")}` source lines |")
 content << line("| CodeInsight routed first-read | `#{metrics.fetch("selected_lines")}` source lines |")
+content << line("| Source lines avoided | `#{source_lines_avoided}` |")
 content << line("| First-read reduction | `#{metrics.fetch("line_reduction")}` |")
+content << line("| Read less | `#{read_less_ratio}` |")
 content << line("| Selected files | `#{metrics.fetch("selected_files")}` |")
 content << line("| Selected ranges | `#{metrics.fetch("selected_ranges")}` |")
 content << line("| Estimated tokens | `#{metrics.fetch("estimated_tokens")}` |")
@@ -331,6 +340,8 @@ content << line
 content << line("- Status: `#{summary.fetch("status")}`")
 content << line("- Route: `#{route}`")
 content << line("- Selected context: `#{metrics.fetch("selected_lines")}/#{metrics.fetch("total_lines")}` source lines, `#{metrics.fetch("line_reduction")}` reduction")
+content << line("- Source lines avoided: `#{source_lines_avoided}`")
+content << line("- Read less: `#{read_less_ratio}`")
 content << line("- Seed strategy: `#{metrics.fetch("seed_strategy")}`")
 content << line("- Selected seeds: `#{metrics.fetch("selected_seed_count")}`")
 content << line("- First seed source: `#{metrics.fetch("first_seed_source")}`")
@@ -375,6 +386,8 @@ content << line("Expected summary lines:")
 content << line
 content << line("```text")
 content << line("- Selected context: `#{metrics.fetch("selected_lines")}/#{metrics.fetch("total_lines")}` source lines, `#{metrics.fetch("line_reduction")}` reduction")
+content << line("- Source lines avoided: `#{source_lines_avoided}`")
+content << line("- Read less: `#{read_less_ratio}`")
 content << line("- MCP first-call contract: reading_order=`#{mcp.fetch("execution_plan_reads_in_reading_plan_order")}`, current_reading_step=`#{mcp.fetch("current_reading_step_matches_reading_plan")}`, suggested_tool_handoff=`#{mcp.fetch("current_step_suggested_tool_matches_reading_plan")}`, continuation_after_selected_context=`#{mcp.fetch("continuation_after_selected_context")}`")
 content << line("- First-read gating: suggested_tool_after_selected_context=`#{summary.fetch("first_read_gating").fetch("suggested_tool_after_selected_context")}`, continuation_after_selected_context=`#{summary.fetch("first_read_gating").fetch("continuation_after_selected_context")}`, impact_review_before_edits=`#{summary.fetch("first_read_gating").fetch("impact_review_before_edits")}`")
 content << line("```")

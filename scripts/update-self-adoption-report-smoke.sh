@@ -85,7 +85,9 @@ cat >"$summary_path" <<JSON
       "entrypoints": 1,
       "total_lines": 1200,
       "selected_lines": 80,
+      "source_lines_avoided": 1120,
       "line_reduction": "93.3%",
+      "read_less_ratio": "15.0x",
       "selected_files": 2,
       "selected_ranges": 2,
       "estimated_tokens": 900,
@@ -182,12 +184,20 @@ EOF
     fail "missing routed first-read metric"
   grep -Fq '| First-read reduction | `93.3%` |' "$TEMP_DIR/adoption-report-codeinsight.md" ||
     fail "missing reduction metric"
+  grep -Fq '| Source lines avoided | `1120` |' "$TEMP_DIR/adoption-report-codeinsight.md" ||
+    fail "missing source lines avoided metric"
+  grep -Fq '| Read less | `15.0x` |' "$TEMP_DIR/adoption-report-codeinsight.md" ||
+    fail "missing read-less metric"
   grep -Fq '| First reading focus | Start with Rust entrypoint wiring. |' "$TEMP_DIR/adoption-report-codeinsight.md" ||
     fail "missing first reading focus"
   grep -Fq '| Current reading step mirrors reading plan | `true` |' "$TEMP_DIR/adoption-report-codeinsight.md" ||
     fail "missing current reading step mirror metric"
   grep -Fq -- '- First reading focus: Start with Rust entrypoint wiring.' "$TEMP_DIR/adoption-report-codeinsight.md" ||
     fail "missing generated snippet first reading focus"
+  grep -Fq -- '- Source lines avoided: `1120`' "$TEMP_DIR/adoption-report-codeinsight.md" ||
+    fail "missing generated snippet source lines avoided"
+  grep -Fq -- '- Read less: `15.0x`' "$TEMP_DIR/adoption-report-codeinsight.md" ||
+    fail "missing generated snippet read less"
   grep -Fq 'The generated manifest reported `status: pass` and listed the same 13 files' "$TEMP_DIR/adoption-report-codeinsight.md" ||
     fail "missing manifest evidence"
   grep -Fq "file_outline\` with an absolute \`$TEMP_DIR/repo/src/main.rs\` path" "$TEMP_DIR/adoption-report-codeinsight.md" ||

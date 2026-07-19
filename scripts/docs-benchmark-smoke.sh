@@ -128,7 +128,7 @@ main() {
     '93\.3x aggregate read-less ratio' \
     "README adoption cases aggregate read-less ratio"
   require_pattern README.md \
-    'routes the entrypoint task to 439 of 31,157 source lines, a 98\.6% first-read' \
+    'routes the entrypoint task to 439 of 31,647 source lines, avoiding 31,208' \
     "README self adoption report metric"
   require_pattern README.md \
     'of 31,647 source lines, avoiding 31,224 source lines before broad reading' \
@@ -567,8 +567,14 @@ main() {
     'CodeInsight routed first-read \| `439` source lines' \
     "CodeInsight self adoption report routed lines"
   require_pattern docs/adoption-report-codeinsight.md \
+    'Source lines avoided \| `31208`' \
+    "CodeInsight self adoption report avoided lines"
+  require_pattern docs/adoption-report-codeinsight.md \
     'First-read reduction \| `98\.6%`' \
     "CodeInsight self adoption report reduction"
+  require_pattern docs/adoption-report-codeinsight.md \
+    'Read less \| `72\.1x`' \
+    "CodeInsight self adoption report read-less ratio"
   require_pattern docs/adoption-report-codeinsight.md \
     'Reading order starts with selected context \| `true`' \
     "CodeInsight self adoption report reading order contract"
