@@ -21,6 +21,8 @@ This is a route-quality check, not a benchmark suite. It helps answer:
 - Does a frontend task start at UI, component, page, or layout code?
 - Does a background task start at queue, worker, job, or scheduler code?
 - Does a documentation task start at docs, guide, or usage example code?
+- Does a request lifecycle task start at app dispatch, hooks, or response finalization code?
+- Does a middleware task start at middleware registration or handler boundary code?
 
 ## Run
 
@@ -33,8 +35,8 @@ scripts/task-routing-matrix.sh /path/to/repo
 The default matrix covers routing, authentication, authorization, settings, startup,
 persistence, debug/retry/timeout, regression coverage, API handler,
 cache/performance, observability/logging, security/sanitization,
-billing/payment, frontend component, background job, documentation, and
-middleware prompts.
+billing/payment, frontend component, background job, documentation,
+request lifecycle, and middleware prompts.
 
 Run a custom matrix:
 
@@ -56,6 +58,8 @@ scripts/task-routing-matrix.sh /path/to/repo \
   --task "understand frontend component rendering" \
   --task "understand background job queue" \
   --task "understand documentation usage" \
+  --task "understand request lifecycle before after request handling" \
+  --task "understand middleware behavior" \
   --output-dir /tmp/codeinsight-task-routing-matrix
 ```
 
@@ -88,6 +92,8 @@ understand checkout subscription payment	src/billing.ts
 understand frontend component rendering	src/component.tsx
 understand background job queue	src/worker.ts
 understand documentation usage	docs/usage.ts
+understand request lifecycle before after request handling	src/application.ts
+understand middleware behavior	src/middleware.ts
 ```
 
 Then run:

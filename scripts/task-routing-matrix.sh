@@ -502,6 +502,7 @@ main() {
       "understand frontend component rendering"
       "understand background job queue"
       "understand documentation usage"
+      "understand request lifecycle before after request handling"
       "understand middleware behavior"
     )
   fi

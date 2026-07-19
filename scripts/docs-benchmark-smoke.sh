@@ -468,6 +468,12 @@ main() {
     'Does a documentation task start at docs, guide, or usage example code' \
     "task routing matrix documentation framing"
   require_pattern docs/task-routing-matrix.md \
+    'Does a request lifecycle task start at app dispatch, hooks, or response finalization code' \
+    "task routing matrix request lifecycle framing"
+  require_pattern docs/task-routing-matrix.md \
+    'Does a middleware task start at middleware registration or handler boundary code' \
+    "task routing matrix middleware framing"
+  require_pattern docs/task-routing-matrix.md \
     $'understand authorization permissions\tsrc/permissions\\.ts' \
     "task routing matrix authorization expectation example"
   require_pattern docs/task-routing-matrix.md \
@@ -503,6 +509,12 @@ main() {
   require_pattern docs/task-routing-matrix.md \
     $'understand documentation usage\tdocs/usage\\.ts' \
     "task routing matrix documentation expectation example"
+  require_pattern docs/task-routing-matrix.md \
+    $'understand request lifecycle before after request handling\tsrc/application\\.ts' \
+    "task routing matrix request lifecycle expectation example"
+  require_pattern docs/task-routing-matrix.md \
+    $'understand middleware behavior\tsrc/middleware\\.ts' \
+    "task routing matrix middleware expectation example"
   require_pattern docs/task-routing-matrix.md \
     'Expectation files automatically add their tasks to the matrix' \
     "task routing matrix expectation file task loading"
@@ -1718,6 +1730,9 @@ main() {
   require_pattern scripts/task-routing-matrix.sh \
     'understand documentation usage' \
     "task routing matrix default documentation task"
+  require_pattern scripts/task-routing-matrix.sh \
+    'understand request lifecycle before after request handling' \
+    "task routing matrix default request lifecycle task"
   require_pattern scripts/task-routing-matrix.sh \
     'understand middleware behavior' \
     "task routing matrix default middleware task"

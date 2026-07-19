@@ -128,6 +128,18 @@ export function routerRegressionSpec() {
   return { router, auth, config };
 }'
   write_file "$repo/src/application.ts" 'export function attach(handler: unknown) {
+  return dispatchRequest(handler, { path: "/health" });
+}
+
+export function dispatchRequest(handler: unknown, request: { path: string }) {
+  // Request lifecycle dispatch runs before hooks and response finalization.
+  return finalizeResponse(handler, request);
+}
+
+export function finalizeResponse(handler: unknown, request: { path: string }) {
+  return { handler, request, response: "ok" };
+}'
+  write_file "$repo/src/middleware.ts" 'export function attachMiddleware(handler: unknown) {
   // Registers middleware before routes are mounted.
   return { handler, stage: "middleware" };
 }'
@@ -167,7 +179,8 @@ understand checkout subscription payment	src/billing.ts
 understand frontend component rendering	src/component.tsx
 understand background job queue	src/worker.ts
 understand documentation usage	docs/usage.ts
-understand middleware behavior	src/application.ts'
+understand request lifecycle before after request handling	src/application.ts
+understand middleware behavior	src/middleware.ts'
   write_file "$bad_expectations_json" '[
   {
     "task": "understand routing behavior",
@@ -180,8 +193,8 @@ understand middleware behavior	src/application.ts'
     --token-budget 1600 \
     --expect-file "$expectations_tsv"
 
-  require_jq "$summary_json" '.status == "pass" and .task_count == 17' "matrix summary should pass"
-  require_jq "$summary_json" '.expectations.status == "pass" and .expectations.count == 17' "matrix expectations should pass"
+  require_jq "$summary_json" '.status == "pass" and .task_count == 18' "matrix summary should pass"
+  require_jq "$summary_json" '.expectations.status == "pass" and .expectations.count == 18' "matrix expectations should pass"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand routing behavior" and .first_file == "src/router.ts")' "routing task should choose router"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand authentication behavior" and .first_file == "src/auth.ts")' "authentication task should choose auth"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand authorization permissions" and .first_file == "src/permissions.ts")' "authorization task should choose permissions"
@@ -198,7 +211,8 @@ understand middleware behavior	src/application.ts'
   require_jq "$summary_json" '.tasks[] | select(.task == "understand frontend component rendering" and .first_file == "src/component.tsx")' "frontend task should choose component"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand background job queue" and .first_file == "src/worker.ts")' "background task should choose worker"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand documentation usage" and .first_file == "docs/usage.ts")' "documentation task should choose docs"
-  require_jq "$summary_json" '.tasks[] | select(.task == "understand middleware behavior" and .first_file == "src/application.ts")' "middleware task should choose application"
+  require_jq "$summary_json" '.tasks[] | select(.task == "understand request lifecycle before after request handling" and .first_file == "src/application.ts")' "request lifecycle task should choose application"
+  require_jq "$summary_json" '.tasks[] | select(.task == "understand middleware behavior" and .first_file == "src/middleware.ts")' "middleware task should choose middleware"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand authentication behavior" and (.first_reading_question | contains("authentication decisions")))' "authentication task should report an auth-specific reading question"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand authentication behavior" and (.first_reading_focus | contains("authentication")))' "authentication task should report an auth-specific reading focus"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand authorization permissions" and (.first_reading_question | contains("authentication decisions")))' "authorization task should report an auth-specific reading question"
@@ -229,6 +243,9 @@ understand middleware behavior	src/application.ts'
   require_jq "$summary_json" '.tasks[] | select(.task == "understand background job queue" and (.first_reading_focus | contains("background jobs")))' "background task should report a worker-specific reading focus"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand documentation usage" and (.first_reading_question | contains("documented workflow")))' "documentation task should report a docs-specific reading question"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand documentation usage" and (.first_reading_focus | contains("documentation")))' "documentation task should report a docs-specific reading focus"
+  require_jq "$summary_json" '.tasks[] | select(.task == "understand request lifecycle before after request handling" and (.first_reading_question | contains("request lifecycle hooks")))' "request lifecycle task should report a lifecycle-specific reading question"
+  require_jq "$summary_json" '.tasks[] | select(.task == "understand request lifecycle before after request handling" and (.first_reading_focus | contains("request lifecycle")))' "request lifecycle task should report a lifecycle-specific reading focus"
+  require_jq "$summary_json" '.tasks[] | select(.task == "understand request lifecycle before after request handling" and (.first_selection_reason | contains("request lifecycle task")))' "request lifecycle task should report lifecycle selection evidence"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand middleware behavior" and (.first_reading_question | contains("handler boundaries")))' "middleware task should report a middleware-specific reading question"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand middleware behavior" and (.first_reading_focus | contains("middleware")))' "middleware task should report a middleware-specific reading focus"
   grep -Fq '| Task | Seed strategy | First file | Focus | Question |' "$output_dir/task-routing-matrix.md" ||
@@ -237,7 +254,7 @@ understand middleware behavior	src/application.ts'
   CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/task-routing-matrix.sh" "$repo" \
     --output-dir "$default_output_dir" \
     --token-budget 1600
-  require_jq "$default_summary_json" '.status == "pass" and .task_count == 17' "default matrix summary should include all default tasks"
+  require_jq "$default_summary_json" '.status == "pass" and .task_count == 18' "default matrix summary should include all default tasks"
   require_jq "$default_summary_json" '.tasks[] | select(.task == "understand authorization permissions" and .first_file == "src/permissions.ts")' "default matrix should include authorization task"
   require_jq "$default_summary_json" '.tasks[] | select(.task == "understand api handler behavior" and .first_file == "src/handler.ts")' "default matrix should include api handler task"
   require_jq "$default_summary_json" '.tasks[] | select(.task == "understand cache performance latency" and .first_file == "src/cache.ts")' "default matrix should include performance task"
@@ -248,6 +265,8 @@ understand middleware behavior	src/application.ts'
   require_jq "$default_summary_json" '.tasks[] | select(.task == "understand background job queue" and .first_file == "src/worker.ts")' "default matrix should include background task"
   require_jq "$default_summary_json" '.tasks[] | select(.task == "find regression coverage" and .first_file == "src/router.test.ts")' "default matrix should include coverage task"
   require_jq "$default_summary_json" '.tasks[] | select(.task == "understand documentation usage" and .first_file == "docs/usage.ts")' "default matrix should include documentation task"
+  require_jq "$default_summary_json" '.tasks[] | select(.task == "understand request lifecycle before after request handling" and .first_file == "src/application.ts")' "default matrix should include request lifecycle task"
+  require_jq "$default_summary_json" '.tasks[] | select(.task == "understand middleware behavior" and .first_file == "src/middleware.ts")' "default matrix should include middleware task"
 
   if CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/task-routing-matrix.sh" "$repo" \
     --output-dir "$bad_output_dir" \
