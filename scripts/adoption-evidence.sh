@@ -157,6 +157,8 @@ write_markdown_summary() {
     echo
     echo "- Route: \`$(json_value "$local_summary" '.route_tools | join(" -> ")')\`"
     echo "- Selected context: \`$(json_value "$local_summary" '.metrics.selected_lines')/$(json_value "$local_summary" '.metrics.total_lines')\` source lines, \`$(json_value "$local_summary" '.metrics.line_reduction')\` reduction"
+    echo "- Source lines avoided: \`$(json_value "$local_summary" '.metrics.source_lines_avoided // 0')\`"
+    echo "- Read less: \`$(json_value "$local_summary" '.metrics.read_less_ratio // "n/a"')\`"
     echo "- Seed strategy: \`$(json_value "$local_summary" '.metrics.seed_strategy // "-"')\`"
     echo "- Selected seeds: \`$(json_value "$local_summary" '.metrics.selected_seed_count // 0')\`"
     echo "- First seed source: \`$(json_value "$local_summary" '.metrics.first_seed_source // "-"')\`"
@@ -278,6 +280,8 @@ print_snippet() {
 - Status: \`$(json_value "$summary_json" '.status')\`
 - Route: \`$(json_value "$summary_json" '.local_evidence.route_tools | join(" -> ")')\`
 - Selected context: \`$(json_value "$summary_json" '.local_evidence.metrics.selected_lines')/$(json_value "$summary_json" '.local_evidence.metrics.total_lines')\` source lines, \`$(json_value "$summary_json" '.local_evidence.metrics.line_reduction')\` reduction
+- Source lines avoided: \`$(json_value "$summary_json" '.local_evidence.metrics.source_lines_avoided // 0')\`
+- Read less: \`$(json_value "$summary_json" '.local_evidence.metrics.read_less_ratio // "n/a"')\`
 - Seed strategy: \`$(json_value "$summary_json" '.local_evidence.metrics.seed_strategy // "-"')\`
 - Selected seeds: \`$(json_value "$summary_json" '.local_evidence.metrics.selected_seed_count // 0')\`
 - First seed source: \`$(json_value "$summary_json" '.local_evidence.metrics.first_seed_source // "-"')\`

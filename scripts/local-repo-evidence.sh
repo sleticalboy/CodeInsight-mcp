@@ -144,6 +144,28 @@ line_reduction() {
   }'
 }
 
+source_lines_avoided() {
+  local total_lines="$1"
+  local selected_lines="$2"
+  local avoided=$((total_lines - selected_lines))
+  if [ "$avoided" -lt 0 ]; then
+    avoided=0
+  fi
+  printf "%s" "$avoided"
+}
+
+read_less_ratio() {
+  local total_lines="$1"
+  local selected_lines="$2"
+  awk -v total="$total_lines" -v selected="$selected_lines" 'BEGIN {
+    if (total <= 0 || selected <= 0) {
+      printf "n/a"
+    } else {
+      printf "%.1fx", total / selected
+    }
+  }'
+}
+
 build_binary_if_needed() {
   if [ -z "$CODEINSIGHT_BIN" ]; then
     require_command cargo
@@ -159,11 +181,13 @@ build_binary_if_needed() {
 write_markdown() {
   local route_json="$1"
   local target="$2"
-  local total_lines selected_lines reduction risk_level
+  local total_lines selected_lines avoided_lines reduction read_less risk_level
 
   total_lines="$(json_value "$route_json" '.overview.total_lines // 0')"
   selected_lines="$(selected_context_lines "$route_json")"
+  avoided_lines="$(source_lines_avoided "$total_lines" "$selected_lines")"
   reduction="$(line_reduction "$total_lines" "$selected_lines")"
+  read_less="$(read_less_ratio "$total_lines" "$selected_lines")"
   risk_level="$(json_value "$route_json" '.impact_analysis.risk_level // "not_available"')"
 
   {
@@ -180,6 +204,10 @@ write_markdown() {
     echo "- Symbols: \`$(json_value "$route_json" '.index_report.symbols')\`"
     echo "- Entrypoints: \`$(json_value "$route_json" '.overview.entrypoints | length')\`"
     echo "- Recommended next tools: \`$(json_value "$route_json" '.overview.recommended_next_tools | length')\`"
+    echo "- Blind first-read baseline: \`${total_lines}\` source lines"
+    echo "- Routed first-read: \`${selected_lines}\` source lines across \`$(json_value "$route_json" '.context_pack.files | length')\` files"
+    echo "- Source lines avoided: \`${avoided_lines}\`"
+    echo "- Read less: \`${read_less}\`"
     echo "- Selected context: \`${selected_lines}/${total_lines}\` source lines, \`${reduction}\` reduction"
     echo "- Selected files: \`$(json_value "$route_json" '.context_pack.files | length')\`"
     echo "- Selected ranges: \`$(json_value "$route_json" '.context_pack.budget.selected_ranges')\`"
@@ -231,11 +259,13 @@ write_markdown() {
 write_summary_json() {
   local route_json="$1"
   local target="$2"
-  local total_lines selected_lines reduction
+  local total_lines selected_lines avoided_lines reduction read_less
 
   total_lines="$(json_value "$route_json" '.overview.total_lines // 0')"
   selected_lines="$(selected_context_lines "$route_json")"
+  avoided_lines="$(source_lines_avoided "$total_lines" "$selected_lines")"
   reduction="$(line_reduction "$total_lines" "$selected_lines")"
+  read_less="$(read_less_ratio "$total_lines" "$selected_lines")"
 
   mkdir -p "$(dirname "$target")"
   jq \
@@ -243,7 +273,9 @@ write_summary_json() {
     --arg markdown "$OUTPUT_FILE" \
     --arg raw_agent_route_json "$JSON_FILE" \
     --argjson selected_lines "$selected_lines" \
+    --argjson source_lines_avoided "$avoided_lines" \
     --arg line_reduction "$reduction" \
+    --arg read_less_ratio "$read_less" \
     '{
       status: "pass",
       repository: $repository,
@@ -259,7 +291,9 @@ write_summary_json() {
         recommended_next_tools: (.overview.recommended_next_tools | length),
         total_lines: (.overview.total_lines // 0),
         selected_lines: $selected_lines,
+        source_lines_avoided: $source_lines_avoided,
         line_reduction: $line_reduction,
+        read_less_ratio: $read_less_ratio,
         selected_files: (.context_pack.files | length),
         selected_ranges: .context_pack.budget.selected_ranges,
         estimated_tokens: .context_pack.estimated_tokens,
@@ -298,7 +332,9 @@ write_summary_json() {
       and .route_tools == ["index_project", "project_overview", "context_pack", "impact_analysis"]
       and (.metrics.total_lines | type == "number")
       and (.metrics.selected_lines | type == "number")
+      and (.metrics.source_lines_avoided | type == "number")
       and (.metrics.line_reduction | type == "string" and length > 0)
+      and (.metrics.read_less_ratio | type == "string" and length > 0)
       and (.metrics.selected_seed_count | type == "number")
       and (.metrics.first_seed_source | type == "string")
       and (.metrics.companion_entrypoint | type == "string")

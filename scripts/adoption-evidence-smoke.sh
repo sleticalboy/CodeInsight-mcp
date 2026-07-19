@@ -80,7 +80,9 @@ cat >"$summary_json" <<JSON
     "recommended_next_tools": 2,
     "total_lines": 120,
     "selected_lines": 12,
+    "source_lines_avoided": 108,
     "line_reduction": "90.0%",
+    "read_less_ratio": "10.0x",
     "selected_files": 1,
     "selected_ranges": 1,
     "estimated_tokens": 180,
@@ -185,6 +187,10 @@ EOF
     fail "missing adoption evidence title"
   grep -Fq -- '- Selected context: `12/120` source lines, `90.0%` reduction' "$TEMP_DIR/evidence/adoption-evidence.md" ||
     fail "missing selected context line"
+  grep -Fq -- '- Source lines avoided: `108`' "$TEMP_DIR/evidence/adoption-evidence.md" ||
+    fail "missing source lines avoided line"
+  grep -Fq -- '- Read less: `10.0x`' "$TEMP_DIR/evidence/adoption-evidence.md" ||
+    fail "missing read-less line"
   grep -Fq -- '- Seed strategy: `auto_task_match`' "$TEMP_DIR/evidence/adoption-evidence.md" ||
     fail "missing seed strategy line"
   grep -Fq -- '- Selected seeds: `2`' "$TEMP_DIR/evidence/adoption-evidence.md" ||
@@ -213,6 +219,8 @@ EOF
       and .local_evidence.status == "pass"
       and .mcp_first_call.status == "pass"
       and .local_evidence.metrics.line_reduction == "90.0%"
+      and .local_evidence.metrics.source_lines_avoided == 108
+      and .local_evidence.metrics.read_less_ratio == "10.0x"
       and .local_evidence.metrics.seed_strategy == "auto_task_match"
       and .local_evidence.metrics.selected_seed_count == 2
       and .local_evidence.metrics.first_seed_source == "task_match"
@@ -272,6 +280,10 @@ EOF
     fail "missing printed snippet title"
   grep -Fq -- '- Selected context: `12/120` source lines, `90.0%` reduction' "$TEMP_DIR/snippet.log" ||
     fail "missing printed selected context line"
+  grep -Fq -- '- Source lines avoided: `108`' "$TEMP_DIR/snippet.log" ||
+    fail "missing printed source lines avoided line"
+  grep -Fq -- '- Read less: `10.0x`' "$TEMP_DIR/snippet.log" ||
+    fail "missing printed read-less line"
   grep -Fq -- '- Companion entrypoint: `src/main.ts`' "$TEMP_DIR/snippet.log" ||
     fail "missing printed companion entrypoint line"
   grep -Fq -- '- MCP suggested tool executed: `true`' "$TEMP_DIR/snippet.log" ||

@@ -139,6 +139,14 @@ EOF
     fail "missing route"
   grep -Fq -- '- Selected context: `12/120` source lines, `90.0%` reduction' "$TEMP_DIR/evidence.md" ||
     fail "missing selected context reduction"
+  grep -Fq -- '- Blind first-read baseline: `120` source lines' "$TEMP_DIR/evidence.md" ||
+    fail "missing blind first-read baseline"
+  grep -Fq -- '- Routed first-read: `12` source lines across `1` files' "$TEMP_DIR/evidence.md" ||
+    fail "missing routed first-read line"
+  grep -Fq -- '- Source lines avoided: `108`' "$TEMP_DIR/evidence.md" ||
+    fail "missing source lines avoided"
+  grep -Fq -- '- Read less: `10.0x`' "$TEMP_DIR/evidence.md" ||
+    fail "missing read-less ratio"
   grep -Fq -- '- First selected file: `src/main.ts`' "$TEMP_DIR/evidence.md" ||
     fail "missing first selected file"
   grep -Fq -- '- First reading focus: Start with seed file context and primary symbols.' "$TEMP_DIR/evidence.md" ||
@@ -178,7 +186,9 @@ EOF
       and .route_tools == ["index_project", "project_overview", "context_pack", "impact_analysis"]
       and .metrics.total_lines == 120
       and .metrics.selected_lines == 12
+      and .metrics.source_lines_avoided == 108
       and .metrics.line_reduction == "90.0%"
+      and .metrics.read_less_ratio == "10.0x"
       and .metrics.seed_strategy == "auto_task_match"
       and .metrics.selected_seed_count == 2
       and .metrics.first_seed_source == "task_match"
