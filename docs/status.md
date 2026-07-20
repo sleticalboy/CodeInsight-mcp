@@ -54,6 +54,9 @@ MVP workflow is now implemented end to end.
 - `context_pack` budget metadata, bounded omitted-candidate follow-ups, and a
   `continuation_summary.next_action` that lets MCP clients expose a single next
   action after the initial reading plan.
+- Structured `blocked_no_seed` first-read responses for empty or unsupported
+  repositories, with client policy documentation that asks for a seed file or
+  symbol instead of falling back to broad repository reads.
 - Focused `context_pack` follow-up suggestions preserve the original task when
   narrowing semantic-match or fallback context to a selected file.
 - `agent_route.execution_plan[0].instruction` carries the first reading file,
@@ -205,8 +208,8 @@ Known local environment caveats on the current development machine:
 - Keep benchmark evidence current when context-pack ranking or continuation
   behavior changes.
 - Keep prompt templates, client examples, and adoption checks aligned with
-  `selection_rank`, `selection_reason`, and `continuation_summary.next_action`
-  when the first-read contract changes.
+  `selection_rank`, `selection_reason`, `continuation_summary.next_action`, and
+  `blocked_no_seed` when the first-read contract changes.
 - Keep `scripts/installed-quickstart-smoke.sh` green after install, MCP, or
   first-read workflow changes.
 
