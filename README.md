@@ -93,6 +93,7 @@ hands the agent to precise local tools when the selected context is not enough.
 
    ```text
    Call agent_route with root, task, and token_budget 6000 before reading files directly.
+   If continuation_summary.status is blocked_no_seed, ask for a seed file or symbol instead of broad-reading.
    Read selected files in reading_plan order and use selection_rank as the audit trail.
    Use reading_plan.focus as the compact scan label for the selected file.
    Treat reading_plan.question as the local checklist for the selected file.
@@ -444,15 +445,18 @@ Recommended MCP first-read flow:
 
 1. Call `agent_route` with `root`, `task`, and `token_budget` for the default
    first-read path.
-2. Use `agent_route.current_reading_step` as the first checklist row, then read
+2. If `context_pack.continuation_summary.status` is `blocked_no_seed`, ask for
+   a seed file or symbol and retry `agent_route` instead of broad-reading the
+   repository.
+3. Use `agent_route.current_reading_step` as the first checklist row, then read
    `context_pack.files[]` in `reading_plan[]` order.
-3. Use `reading_plan[].selection_rank` and `selection_reason` as the audit
+4. Use `reading_plan[].selection_rank` and `selection_reason` as the audit
    trail, and use `continuation_summary` only after selected context has been
    consumed.
-4. Show `context_pack.read_less` when the client needs a direct source-line
+5. Show `context_pack.read_less` when the client needs a direct source-line
    baseline, selected-line count, avoided-line count, reduction percentage, and
    read-less ratio.
-5. Use `index_project`, `project_overview`, `context_pack`, and
+6. Use `index_project`, `project_overview`, `context_pack`, and
    `impact_analysis` directly when the client needs custom routing or partial
    refresh control.
 

@@ -71,6 +71,9 @@ main() {
     'Call agent_route with root, task, and token_budget 6000 before reading files directly' \
     "README fast path agent_route prompt"
   require_pattern README.md \
+    'If continuation_summary.status is blocked_no_seed, ask for a seed file or symbol instead of broad-reading' \
+    "README fast path blocked no-seed prompt"
+  require_pattern README.md \
     'Treat reading_plan\.question as the local checklist for the selected file' \
     "README fast path reading question prompt"
   require_pattern README.md \
@@ -85,6 +88,9 @@ main() {
   require_pattern README.md \
     'Follow agent_route\.execution_plan\[\] in order' \
     "README fast path execution plan policy"
+  require_pattern README.md \
+    'If `context_pack\.continuation_summary\.status` is `blocked_no_seed`, ask for' \
+    "README MCP tools blocked no-seed policy"
   require_pattern README.md \
     '\[First Agent Route Call\]\(docs/mcp-client-config\.md#first-agent-route-call\)' \
     "README first agent route call link"
