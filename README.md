@@ -23,6 +23,7 @@ That route gives the agent:
 - `reading_plan[].focus` as the compact scan label for each selected file
 - `reading_plan[].question` as the local checklist for the current file
 - `reading_plan[].reason` instructions that explain what to read first and why
+- `context_pack.read_less` metrics that show first-read source-line reduction
 - `execution_plan[]` actions that keep focused follow-up tools behind the
   selected-context read
 - an executable `suggested_tool` such as `file_outline` for deeper local
@@ -95,6 +96,7 @@ hands the agent to precise local tools when the selected context is not enough.
    Read selected files in reading_plan order and use selection_rank as the audit trail.
    Use reading_plan.focus as the compact scan label for the selected file.
    Treat reading_plan.question as the local checklist for the selected file.
+   Use context_pack.read_less only as first-read reduction evidence.
    Use continuation_summary only after selected context is consumed.
    Follow agent_route.execution_plan[] in order.
    ```

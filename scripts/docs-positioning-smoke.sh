@@ -35,6 +35,9 @@ main() {
     '`execution_plan\[\]` actions that keep focused follow-up tools behind the' \
     "README execution-plan gating"
   require_pattern README.md \
+    '`context_pack\.read_less` metrics that show first-read source-line reduction' \
+    "README read-less value"
+  require_pattern README.md \
     'an executable `suggested_tool` such as `file_outline`' \
     "README executable suggested tool positioning"
   require_pattern README.md \
@@ -73,6 +76,9 @@ main() {
   require_pattern README.md \
     'Read selected files in reading_plan order and use selection_rank as the audit trail' \
     "README fast path selection rank prompt"
+  require_pattern README.md \
+    'Use context_pack.read_less only as first-read reduction evidence' \
+    "README fast path read-less prompt"
   require_pattern README.md \
     'Use continuation_summary only after selected context is consumed' \
     "README fast path continuation prompt"
