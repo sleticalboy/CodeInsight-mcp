@@ -21,18 +21,20 @@ When CodeInsight MCP is available for a repository:
    reading_plan.question as the local reading checklist,
    reading_plan.selection_rank as the candidate rank audit trail, and
    reading_plan.selection_reason as the selection evidence.
-3. Prefer reading_plan[].suggested_tool for deeper evidence on the current
+3. Use context_pack.read_less as reporting evidence for first-read source-line
+   reduction; do not use it as a substitute for reading selected context.
+4. Prefer reading_plan[].suggested_tool for deeper evidence on the current
    selected file.
-4. Use continuation_summary.suggested_tool only after the selected context has
+5. Use continuation_summary.suggested_tool only after the selected context has
    been consumed and the task still needs more evidence.
-5. Before editing, review the included impact_analysis preview. If the edit
+6. Before editing, review the included impact_analysis preview. If the edit
    target differs from the first-read seed, call impact_analysis with the
    selected files or symbols and run or report the suggested_checks that apply.
-6. Use index_project, project_overview, context_pack, and impact_analysis
+7. Use index_project, project_overview, context_pack, and impact_analysis
    directly only when custom routing or partial refresh control is needed.
-7. Treat CodeInsight call graphs and references as best-effort navigation
+8. Treat CodeInsight call graphs and references as best-effort navigation
    evidence, not compiler-grade proof.
-8. Do not use suggested_tool or continuation as a shortcut around reading the
+9. Do not use suggested_tool or continuation as a shortcut around reading the
    selected context first.
 ```
 
@@ -57,6 +59,7 @@ Workflow:
 4. Summarize:
    - primary purpose
    - likely entrypoints
+   - first-read source lines avoided from context_pack.read_less
    - important directories
    - files already inspected
    - remaining unknowns
@@ -146,9 +149,9 @@ instruction:
 ```text
 Use CodeInsight before broad repository reading: call agent_route with
 root/task/token_budget. Read selected files in reading_plan order before
-suggested_tool or continuation. Review impact_analysis before edits. Treat call
-graphs and references as best-effort navigation evidence, not compiler-grade
-proof.
+suggested_tool or continuation. Use context_pack.read_less only as read-less
+reporting evidence. Review impact_analysis before edits. Treat call graphs and
+references as best-effort navigation evidence, not compiler-grade proof.
 ```
 
 ## Recommended Defaults

@@ -2018,6 +2018,15 @@ main() {
   require_pattern docs/client-workflow.md \
     '`execution_plan\[0\]\.action` set to `read_selected_context`' \
     "client workflow first execution action health check"
+  require_pattern docs/client-workflow.md \
+    '`context_pack\.read_less` for first-read source-line reduction evidence' \
+    "client workflow read-less health check"
+  require_pattern docs/client-integration-examples.md \
+    'Show context_pack.read_less as first-read source-line reduction evidence' \
+    "client integration read-less consumption"
+  require_pattern docs/agent-prompt-template.md \
+    'Use context_pack.read_less only as read-less' \
+    "agent prompt minimal read-less policy"
   require_pattern scripts/two-minute-demo.sh \
     'Problem: AI agents waste the first read' \
     "two-minute demo problem statement"

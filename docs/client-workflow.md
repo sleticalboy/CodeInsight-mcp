@@ -15,11 +15,13 @@ for a multi-step code-reading task.
    `reading_plan[].selection_rank` as the candidate rank audit trail, and
    `reading_plan[].selection_reason` as the compact evidence for why that file
    was selected.
-3. Execute `reading_plan[].suggested_tool` when a selected file needs deeper
+3. Use `context_pack.read_less` as reporting evidence for the source-line
+   baseline, selected-line count, avoided-line count, reduction, and ratio.
+4. Execute `reading_plan[].suggested_tool` when a selected file needs deeper
    local navigation.
-4. Use `continuation_summary` and `omitted_candidates[]` when more context is
+5. Use `continuation_summary` and `omitted_candidates[]` when more context is
    needed after the first selected pack.
-5. Use the included `impact_analysis` preview before edits or refactors, then
+6. Use the included `impact_analysis` preview before edits or refactors, then
    run focused `impact_analysis` calls when the target changes.
 
 When a client needs custom routing or partial refresh control, it can call the
@@ -34,6 +36,8 @@ Client invariants:
   has been consumed.
 - Always treat `impact_analysis` as the pre-edit planning gate, then verify
   changes with normal local checks.
+- Never use `context_pack.read_less` as permission to skip selected files; it is
+  display and reporting evidence.
 - Use raw broad file search only after CodeInsight has pointed to a file, the
   selected context is insufficient, or the user named a specific location.
 
@@ -60,7 +64,9 @@ Then apply the returned payload in this order:
    selected file.
 3. Use `agent_route.execution_plan[]` as the client checklist.
 4. Run the current step's `suggested_tool` only after selected context is read.
-5. Use the included `impact_analysis` preview before edits.
+5. Display `context_pack.read_less` when users need first-read source-line
+   reduction evidence.
+6. Use the included `impact_analysis` preview before edits.
 
 The first call is healthy when the response has:
 
@@ -72,6 +78,7 @@ The first call is healthy when the response has:
 - `context_pack.reading_plan[].reason` for the current reading instruction
 - `context_pack.reading_plan[].selection_rank` for the candidate rank
 - `context_pack.reading_plan[].selection_reason` for selection evidence
+- `context_pack.read_less` for first-read source-line reduction evidence
 - `context_pack.continuation_summary.next_action` for the post-read
   continuation decision
 - `execution_plan[0].action` set to `read_selected_context`
@@ -96,18 +103,20 @@ When working in a repository with CodeInsight MCP available:
    reading_plan.question as the local reading checklist,
    reading_plan.selection_rank as the candidate rank audit trail, and
    reading_plan.selection_reason as the selection evidence.
-3. Prefer reading_plan[].suggested_tool for deeper evidence on the current
+3. Use context_pack.read_less as reporting evidence for first-read source-line
+   reduction; do not use it as a substitute for selected context.
+4. Prefer reading_plan[].suggested_tool for deeper evidence on the current
    file. Prefer continuation_summary.suggested_tool only after the selected
    context has been consumed.
-4. If continuation_summary.status is complete, do not fetch more context unless
+5. If continuation_summary.status is complete, do not fetch more context unless
    the user asks a narrower follow-up or the selected context does not answer
    the task.
-5. Before editing, review the included impact_analysis preview. If the edit
+6. Before editing, review the included impact_analysis preview. If the edit
    target differs from the first-read seed, call impact_analysis with the
    selected files or symbols and run or report the suggested_checks that apply.
-6. Use index_project, project_overview, context_pack, and impact_analysis
+7. Use index_project, project_overview, context_pack, and impact_analysis
    directly only when custom routing or partial refresh control is needed.
-7. Treat CodeInsight call graphs and references as best-effort navigation
+8. Treat CodeInsight call graphs and references as best-effort navigation
    evidence, not compiler-grade proof.
 ```
 
@@ -264,10 +273,11 @@ A simple client can implement this policy:
    `reading_plan[].focus` as the compact scan label,
    `reading_plan[].question` as the local checklist, and
    `reading_plan[].reason` as the current-step instruction.
-3. Execute the current step's `suggested_tool` when the user asks for detail.
-4. If the selected context is insufficient, execute
+3. Display `context_pack.read_less` as optional source-line reduction evidence.
+4. Execute the current step's `suggested_tool` when the user asks for detail.
+5. If the selected context is insufficient, execute
    `continuation_summary.suggested_tool` when present.
-5. Use the included `impact_analysis` preview before edits, and rerun
+6. Use the included `impact_analysis` preview before edits, and rerun
    `impact_analysis` for changed targets.
 
 For field-level contracts, see [First-read workflow](first-read-workflow.md)

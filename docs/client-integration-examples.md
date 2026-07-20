@@ -22,12 +22,13 @@ plan after the server has completed the first-read route.
 6. Use reading_plan[].reason as the current-step instruction.
 7. Use reading_plan[].selection_rank as the candidate rank audit trail.
 8. Use reading_plan[].selection_reason only as selection evidence.
-9. Call execution_plan[].suggested_tool only when the current step needs deeper
+9. Show context_pack.read_less as first-read source-line reduction evidence.
+10. Call execution_plan[].suggested_tool only when the current step needs deeper
    evidence.
-10. Use continuation_summary only after selected context has been read.
-11. Use continuation_summary.next_action and omitted_candidates[] to explain any
+11. Use continuation_summary only after selected context has been read.
+12. Use continuation_summary.next_action and omitted_candidates[] to explain any
    follow-up context request.
-12. Review impact_analysis before edits.
+13. Review impact_analysis before edits.
 ```
 
 Do not treat `route[]` and `execution_plan[]` as the same thing:
@@ -57,6 +58,8 @@ local checklist for the selected file, reading_plan[].reason as the instruction
 for the current file, reading_plan[].selection_rank as the candidate rank audit
 trail, and reading_plan[].selection_reason as evidence for why the file was
 selected, not as a replacement for focus, question, reason, or rank.
+Use context_pack.read_less only to report source-line reduction for the first
+read; it is not permission to skip selected context.
 ```
 
 ## Codex
@@ -80,6 +83,8 @@ Use reading_plan[].question as the local checklist,
 reading_plan[].focus as the compact scan label, reading_plan[].reason as the
 current-step instruction, and reading_plan[].selection_rank plus
 reading_plan[].selection_reason as selection evidence.
+Use context_pack.read_less as reporting evidence for how much source text the
+first read avoided.
 ```
 
 ## Claude Code
@@ -130,6 +135,8 @@ Clients with a visible tool panel should render:
 - `reading_plan[].reason` beside each selected file.
 - `reading_plan[].selection_rank` as the candidate rank.
 - `reading_plan[].selection_reason` as compact evidence text.
+- `context_pack.read_less` as source-line baseline, selected-line,
+  avoided-line, reduction, and ratio evidence.
 - `continuation_summary.next_action` as the post-read continuation decision.
 - `continuation_summary.suggested_tool` as a continue action only after the
   selected context is insufficient for the current task.
@@ -155,6 +162,8 @@ A working integration should pass these checks:
 - The agent can answer `reading_plan[].question` for each selected file.
 - The agent can explain `reading_plan[].selection_rank` and
   `reading_plan[].selection_reason` for selected files.
+- The client can display `context_pack.read_less` without using it as a
+  shortcut around selected context.
 - `read_selected_context` happens before `use_current_reading_step_suggested_tool`.
 - `continuation_summary.suggested_tool` is not used before selected context.
 - `impact_analysis` is reviewed before edits.

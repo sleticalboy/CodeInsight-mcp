@@ -423,6 +423,9 @@ main() {
     '`reading_plan\[\]\.selection_reason` as the compact' \
     "client workflow selection reason evidence"
   require_pattern docs/client-workflow.md \
+    '`context_pack\.read_less` for first-read source-line reduction evidence' \
+    "client workflow read-less evidence"
+  require_pattern docs/client-workflow.md \
     'Continuation actions should wait until the selected `files\[\]` excerpts' \
     "client workflow continuation ordering"
   require_pattern docs/agent-prompt-template.md \
@@ -441,6 +444,9 @@ main() {
     'reading_plan\.selection_rank as the candidate rank audit trail' \
     "agent prompt selection rank policy"
   require_pattern docs/agent-prompt-template.md \
+    'context_pack.read_less as reporting evidence' \
+    "agent prompt read-less reporting policy"
+  require_pattern docs/agent-prompt-template.md \
     'Use each reading_plan\.question as the local checklist' \
     "agent prompt first read question policy"
   require_pattern docs/agent-prompt-template.md \
@@ -455,6 +461,9 @@ main() {
   require_pattern docs/agent-prompt-template.md \
     'Read selected files in reading_plan order before' \
     "agent prompt minimal ordering"
+  require_pattern docs/client-integration-examples.md \
+    'Show context_pack.read_less as first-read source-line reduction evidence' \
+    "client integration read-less consumption"
   require_pattern docs/first-read-workflow.md \
     '`agent_route` is the default first-read contract' \
     "first-read workflow agent_route contract"
@@ -500,6 +509,9 @@ main() {
   require_pattern docs/client-workflow.md \
     'Always treat `impact_analysis` as the pre-edit planning gate' \
     "client workflow impact invariant"
+  require_pattern docs/client-workflow.md \
+    'Never use `context_pack\.read_less` as permission to skip selected files' \
+    "client workflow read-less invariant"
   require_pattern docs/mcp-client-config.md \
     'Call `agent_route` with `root`, `task`, and `token_budget`' \
     "MCP client config agent_route flow"
