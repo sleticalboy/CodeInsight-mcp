@@ -428,6 +428,7 @@ pub struct ContextReadingStep {
     pub selection_reason: String,
     pub source: String,
     pub score: i32,
+    pub source_mix: Vec<ContextSourceCount>,
     pub ranges: Vec<ContextReadingRange>,
 }
 
@@ -448,12 +449,19 @@ pub struct ContextReadingRange {
 }
 
 #[derive(Debug, Clone, Serialize)]
+pub struct ContextSourceCount {
+    pub source: String,
+    pub count: usize,
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct ContextFile {
     pub file: String,
     pub source: String,
     pub score: i32,
     pub selection_rank: usize,
     pub reason: String,
+    pub source_mix: Vec<ContextSourceCount>,
     pub ranges: Vec<ContextRange>,
 }
 

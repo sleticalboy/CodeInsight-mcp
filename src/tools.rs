@@ -20,12 +20,13 @@ use crate::{
         AgentRouteExecutionStep, AgentRouteReport, AgentRouteStep, CallEdge, ConfigInitReport,
         ConfigStatusReport, ContextBudget, ContextContinuationSummary, ContextFile,
         ContextOmittedCandidate, ContextPack, ContextRange, ContextReadLess, ContextReadingRange,
-        ContextReadingStep, ContextSeed, ContextSemanticStatus, ContextSuggestedTool, Dependency,
-        DependencyGraph, EmbeddingProviderStatus, ImpactAnalysisReport, ImpactBreakdown,
-        ImpactCounts, ImpactFile, ImpactPath, IndexError, Language, OllamaEmbeddingStatus,
-        OpenAiEmbeddingStatus, ProjectIndexReport, ProjectOverview, ReferenceMatch, SemanticChunk,
-        SemanticChunkInput, SemanticEmbeddingInput, SemanticEmbeddingMatch, SemanticIndexReport,
-        SemanticIndexStatus, SemanticSearchResult, SuggestedCheck, Symbol, SymbolKind, VersionInfo,
+        ContextReadingStep, ContextSeed, ContextSemanticStatus, ContextSourceCount,
+        ContextSuggestedTool, Dependency, DependencyGraph, EmbeddingProviderStatus,
+        ImpactAnalysisReport, ImpactBreakdown, ImpactCounts, ImpactFile, ImpactPath, IndexError,
+        Language, OllamaEmbeddingStatus, OpenAiEmbeddingStatus, ProjectIndexReport,
+        ProjectOverview, ReferenceMatch, SemanticChunk, SemanticChunkInput, SemanticEmbeddingInput,
+        SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus, SemanticSearchResult,
+        SuggestedCheck, Symbol, SymbolKind, VersionInfo,
     },
     storage::Store,
 };
@@ -1510,6 +1511,7 @@ pub fn context_pack_value(
                         .unwrap_or_else(|| "selected range matched the task".to_string()),
                     context_range_source_mix(&context_ranges)
                 ),
+                source_mix: context_range_source_counts(&context_ranges),
                 ranges: context_ranges,
             });
         }
@@ -1839,6 +1841,7 @@ fn context_reading_plan(root: &Path, task: &str, files: &[ContextFile]) -> Vec<C
                 selection_reason: file.reason.clone(),
                 source: file.source.clone(),
                 score: file.score,
+                source_mix: context_range_source_counts(&file.ranges),
                 ranges,
             }
         })
@@ -2831,13 +2834,13 @@ fn context_reading_sources(file: &ContextFile) -> BTreeSet<&str> {
     sources
 }
 
-fn context_range_source_mix(ranges: &[ContextRange]) -> String {
+fn context_range_source_counts(ranges: &[ContextRange]) -> Vec<ContextSourceCount> {
     let mut counts = BTreeMap::<&str, usize>::new();
     for range in ranges {
         *counts.entry(range.source.as_str()).or_default() += 1;
     }
 
-    let mut parts = Vec::new();
+    let mut mix = Vec::new();
     for source in [
         "seed_file",
         "symbol_definition",
@@ -2847,8 +2850,20 @@ fn context_range_source_mix(ranges: &[ContextRange]) -> String {
         "semantic",
     ] {
         if let Some(count) = counts.get(source) {
-            parts.push(format!("{} x{}", context_source_label(source), count));
+            mix.push(ContextSourceCount {
+                source: context_source_label(source).to_string(),
+                count: *count,
+            });
         }
+    }
+    mix
+}
+
+fn context_range_source_mix(ranges: &[ContextRange]) -> String {
+    let counts = context_range_source_counts(ranges);
+    let mut parts = Vec::new();
+    for count in counts {
+        parts.push(format!("{} x{}", count.source, count.count));
     }
 
     if parts.is_empty() {
@@ -2856,6 +2871,21 @@ fn context_range_source_mix(ranges: &[ContextRange]) -> String {
     } else {
         format!("evidence mix: {}", parts.join(", "))
     }
+}
+
+fn context_range_source_mix_score(ranges: &[ContextCandidateRange]) -> i32 {
+    ranges
+        .iter()
+        .map(|range| match range.source.as_str() {
+            "seed_file" => 12,
+            "symbol_definition" => 10,
+            "call_graph" => 8,
+            "reference" => 6,
+            "dependency" => 5,
+            "semantic" => 3,
+            _ => 1,
+        })
+        .sum()
 }
 
 fn context_source_label(source: &str) -> &'static str {
@@ -2880,13 +2910,6 @@ fn context_source_priority(source: &str) -> i32 {
         "semantic" => 1,
         _ => 0,
     }
-}
-
-fn context_range_source_mix_score(ranges: &[ContextCandidateRange]) -> i32 {
-    ranges
-        .iter()
-        .map(|range| context_source_priority(range.source.as_str()) * 2)
-        .sum()
 }
 
 #[derive(Debug)]

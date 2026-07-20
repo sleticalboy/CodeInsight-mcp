@@ -7193,6 +7193,8 @@ export function spec() {
             .unwrap()
             .contains("evidence mix")
     );
+    assert_eq!(route_file["source_mix"][0]["source"], "call graph");
+    assert_eq!(route_file["source_mix"][0]["count"].as_u64(), Some(1));
 
     let fallback_context = run_json([
         "context-pack",
@@ -7304,6 +7306,10 @@ export function spec() {
             .unwrap()
             .contains("evidence mix")
     );
+    assert_eq!(
+        seed_test_context["files"][0]["source_mix"][0]["source"],
+        "seed file"
+    );
 }
 
 #[test]
@@ -7414,6 +7420,7 @@ fn cli_context_pack_uses_imported_callee_file_hints() {
             .unwrap()
             .contains("evidence mix")
     );
+    assert_eq!(audit_file["source_mix"][0]["source"], "call graph");
     let audit_step = context["reading_plan"]
         .as_array()
         .unwrap()
