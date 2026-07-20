@@ -7375,6 +7375,66 @@ def helper():
 }
 
 #[test]
+fn cli_context_pack_routes_csharp_base_type_relations() {
+    let fixture = csharp_using_fixture_project();
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 14);
+
+    let context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand inherited authentication controller behavior",
+        "--file",
+        "src/App/Controllers/AuthController.cs",
+        "--token-budget",
+        "6000",
+    ]);
+
+    let base_file = context["files"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|file| file["file"] == "src/App/Controllers/BaseController.cs")
+        .expect("base controller should be selected through type relation evidence");
+    assert!(
+        base_file["source_mix"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|source| source["source"] == "type relation")
+    );
+    assert!(base_file["ranges"].as_array().unwrap().iter().any(|range| {
+        range["source"] == "type_relation"
+            && range["reason"]
+                .as_str()
+                .is_some_and(|reason| reason.contains("base type App.Controllers.BaseController"))
+    }));
+
+    let base_step = context["reading_plan"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|step| step["file"] == "src/App/Controllers/BaseController.cs")
+        .expect("base controller should have a reading step");
+    assert_eq!(base_step["next_action"], "inspect_type_relation");
+    assert_eq!(base_step["suggested_tool"]["tool"], "dependency_graph");
+    assert!(
+        base_step["question"]
+            .as_str()
+            .unwrap()
+            .contains("base types")
+    );
+    assert!(
+        base_step["focus"]
+            .as_str()
+            .unwrap()
+            .contains("authentication")
+    );
+}
+
+#[test]
 fn cli_context_pack_uses_imported_callee_file_hints() {
     let fixture = ruby_require_relative_fixture_project();
 

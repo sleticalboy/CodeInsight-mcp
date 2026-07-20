@@ -34,6 +34,7 @@ use crate::{
 const CONTEXT_SCORE_SEED_FILE: i32 = 130;
 const CONTEXT_SCORE_SEED_HEADER: i32 = 140;
 const CONTEXT_SCORE_SYMBOL_DEFINITION: i32 = 90;
+const CONTEXT_SCORE_TYPE_RELATION: i32 = 82;
 const CONTEXT_SCORE_CALL_GRAPH: i32 = 75;
 const CONTEXT_SCORE_REFERENCE_BASE: i32 = 60;
 const CONTEXT_SCORE_SEMANTIC_CHUNK: i32 = 50;
@@ -47,6 +48,7 @@ const CONTEXT_MAX_SYMBOL_LINES: usize = 80;
 const CONTEXT_MAX_MERGED_RANGE_LINES: usize = 80;
 const CONTEXT_OMITTED_CANDIDATE_LIMIT: usize = 8;
 const CONTEXT_OMITTED_CANDIDATE_RANGE_LIMIT: usize = 4;
+const CONTEXT_TYPE_RELATION_DEPENDENCY_LIMIT: usize = 80;
 const AUTO_SEED_TEXT_SCAN_LINES: usize = 160;
 
 const IMPACT_SCORE_SEED_FILE: i32 = 100;
@@ -1356,6 +1358,54 @@ pub fn context_pack_value(
             );
         }
     }
+    let selected_file_set = selected_files.iter().cloned().collect::<BTreeSet<_>>();
+    let mut seen_type_relations = BTreeSet::new();
+    for dependency in store
+        .dependencies_touching_files(&selected_files, CONTEXT_TYPE_RELATION_DEPENDENCY_LIMIT)?
+    {
+        if !selected_file_set.contains(&dependency.source_file)
+            || !is_type_relation_dependency(&dependency)
+        {
+            continue;
+        }
+        for symbol in context_type_relation_symbols(&store, &dependency)? {
+            if symbol.file == dependency.source_file {
+                continue;
+            }
+            let key = (
+                dependency.source_file.clone(),
+                dependency.target.clone(),
+                symbol.file.clone(),
+                symbol.qualified_name.clone(),
+            );
+            if !seen_type_relations.insert(key) {
+                continue;
+            }
+            push_context_range(
+                &mut ranges_by_file,
+                symbol.file.clone(),
+                symbol.start_line.saturating_sub(2).max(1),
+                capped_symbol_end_line(&symbol) + 2,
+                format!(
+                    "Type relation target of {} via {} {}",
+                    dependency
+                        .local_alias
+                        .as_deref()
+                        .unwrap_or(&dependency.source_file),
+                    dependency.kind.replace('_', " "),
+                    dependency.target
+                ),
+                "type_relation",
+                context_score_for_file(
+                    &symbol.file,
+                    CONTEXT_SCORE_TYPE_RELATION
+                        + dependency_task_boost(&dependency, &task_keywords)
+                        + symbol_task_boost(&symbol, &task_keywords),
+                    &scoring_policy,
+                ),
+            );
+        }
+    }
     let mut semantic_status = semantic_vector_context_matches(&store, &task, 20);
     let vector_matches = std::mem::take(&mut semantic_status.matches);
     for result in vector_matches {
@@ -1879,6 +1929,17 @@ fn context_reading_suggested_tool(
                 "path": root.join(&file.file).display().to_string()
             }),
         },
+        "inspect_type_relation" => ContextSuggestedTool {
+            tool: "dependency_graph".to_string(),
+            priority: 35,
+            reason: "Inspect inheritance or interface relationships around selected type context."
+                .to_string(),
+            suggested_arguments: json!({
+                "root": root_arg,
+                "files": [file.file.clone()],
+                "limit": 100
+            }),
+        },
         "follow_call_graph" | "inspect_references" => ContextSuggestedTool {
             tool: "impact_analysis".to_string(),
             priority: 30,
@@ -1937,6 +1998,8 @@ fn context_reading_focus(file: &ContextFile, task: &str) -> String {
         context_seed_file_focus(signals)
     } else if sources.contains("symbol_definition") {
         context_symbol_definition_focus(signals)
+    } else if sources.contains("type_relation") {
+        context_type_relation_focus(signals)
     } else if sources.contains("call_graph") {
         context_call_graph_focus(signals)
     } else if sources.contains("reference") {
@@ -2034,6 +2097,23 @@ fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
         "Read symbol definitions that anchor call and impact paths.".to_string()
     } else {
         "Read symbol definitions that anchor the requested task.".to_string()
+    }
+}
+
+fn context_type_relation_focus(signals: ContextTaskSignals) -> String {
+    if signals.auth_session {
+        "Check inherited contracts or base behavior that can affect authentication and session boundaries."
+            .to_string()
+    } else if signals.api_handler {
+        "Check inherited controller or interface contracts that shape API handler behavior."
+            .to_string()
+    } else if signals.security_safety {
+        "Check inherited contracts or base behavior that can affect security boundaries."
+            .to_string()
+    } else if signals.impact_flow {
+        "Check base types or interfaces that can widen the impact path.".to_string()
+    } else {
+        "Check base types or interfaces that shape this selected type.".to_string()
     }
 }
 
@@ -2216,6 +2296,8 @@ fn context_reading_next_action(file: &ContextFile) -> &'static str {
         "inspect_seed_file"
     } else if sources.contains("symbol_definition") {
         "inspect_symbol_definition"
+    } else if sources.contains("type_relation") {
+        "inspect_type_relation"
     } else if sources.contains("call_graph") {
         "follow_call_graph"
     } else if sources.contains("reference") {
@@ -2233,6 +2315,7 @@ fn context_reading_question(file: &ContextFile, task: &str) -> String {
     match context_reading_next_action(file) {
         "inspect_seed_file" => context_seed_file_question(task),
         "inspect_symbol_definition" => context_symbol_definition_question(task),
+        "inspect_type_relation" => context_type_relation_question(task),
         "follow_call_graph" => context_call_graph_question(task),
         "inspect_references" => context_reference_question(task),
         "review_semantic_matches" => context_semantic_question(task),
@@ -2336,6 +2419,23 @@ fn context_symbol_definition_question(task: &str) -> String {
         "What callers, callees, or impact paths does this definition anchor?".to_string()
     } else {
         "What behavior or contract does this definition establish for the task?".to_string()
+    }
+}
+
+fn context_type_relation_question(task: &str) -> String {
+    let signals = ContextTaskSignals::from_task(task);
+    if signals.auth_session {
+        "Which base types or interfaces can change authentication decisions or session boundaries?"
+            .to_string()
+    } else if signals.api_handler {
+        "Which base controller or interface contract shapes this API handler behavior?".to_string()
+    } else if signals.security_safety {
+        "Which inherited contract or base behavior affects this security boundary?".to_string()
+    } else if signals.impact_flow {
+        "Which base types or interfaces widen the caller, callee, or impact path?".to_string()
+    } else {
+        "Which inherited contract or base type behavior is required to understand this type?"
+            .to_string()
     }
 }
 
@@ -2846,6 +2946,7 @@ fn context_range_source_counts(ranges: &[ContextRange]) -> Vec<ContextSourceCoun
     for source in [
         "seed_file",
         "symbol_definition",
+        "type_relation",
         "call_graph",
         "reference",
         "dependency",
@@ -2881,6 +2982,7 @@ fn context_range_source_mix_score(ranges: &[ContextCandidateRange]) -> i32 {
         .map(|range| match range.source.as_str() {
             "seed_file" => 12,
             "symbol_definition" => 10,
+            "type_relation" => 9,
             "call_graph" => 8,
             "reference" => 6,
             "dependency" => 5,
@@ -2919,6 +3021,7 @@ fn context_source_label(source: &str) -> &'static str {
     match source {
         "seed_file" => "seed file",
         "symbol_definition" => "symbol definition",
+        "type_relation" => "type relation",
         "call_graph" => "call graph",
         "reference" => "reference",
         "dependency" => "dependency",
@@ -2931,12 +3034,92 @@ fn context_source_priority(source: &str) -> i32 {
     match source {
         "seed_file" => 6,
         "symbol_definition" => 5,
+        "type_relation" => 4,
         "call_graph" => 4,
         "reference" => 3,
         "dependency" => 2,
         "semantic" => 1,
         _ => 0,
     }
+}
+
+fn is_type_relation_dependency(dependency: &Dependency) -> bool {
+    matches!(dependency.kind.as_str(), "base_type")
+}
+
+fn context_type_relation_symbols(store: &Store, dependency: &Dependency) -> Result<Vec<Symbol>> {
+    let mut symbols = Vec::new();
+    for query in type_relation_target_queries(&dependency.target) {
+        symbols.extend(store.search_symbols(&query, 8)?);
+    }
+    dedup_symbols(&mut symbols);
+    symbols.retain(|symbol| {
+        matches!(
+            symbol.kind,
+            SymbolKind::Class | SymbolKind::Interface | SymbolKind::Struct
+        ) && symbol_matches_type_relation_target(symbol, &dependency.target)
+    });
+    symbols.sort_by(|left, right| {
+        type_relation_symbol_rank(left, dependency)
+            .cmp(&type_relation_symbol_rank(right, dependency))
+            .then_with(|| left.file.cmp(&right.file))
+            .then_with(|| left.start_line.cmp(&right.start_line))
+    });
+    symbols.truncate(4);
+    Ok(symbols)
+}
+
+fn type_relation_target_queries(target: &str) -> Vec<String> {
+    let mut queries = Vec::new();
+    let target = target.trim();
+    if !target.is_empty() {
+        queries.push(target.to_string());
+    }
+    if let Some(simple) = simple_type_relation_target(target)
+        && !queries.iter().any(|query| query == simple)
+    {
+        queries.push(simple.to_string());
+    }
+    queries
+}
+
+fn simple_type_relation_target(target: &str) -> Option<&str> {
+    let trimmed = target.trim();
+    let without_generic = trimmed.split(['<', '[']).next().unwrap_or(trimmed).trim();
+    let simple = without_generic
+        .rsplit(['.', ':', '\\'])
+        .next()
+        .unwrap_or(without_generic)
+        .trim();
+    (!simple.is_empty()).then_some(simple)
+}
+
+fn symbol_matches_type_relation_target(symbol: &Symbol, target: &str) -> bool {
+    let simple = simple_type_relation_target(target).unwrap_or(target);
+    symbol.name == simple
+        || symbol.qualified_name == target
+        || symbol.qualified_name == simple
+        || symbol
+            .qualified_name
+            .strip_suffix(simple)
+            .is_some_and(|prefix| prefix.ends_with('.'))
+}
+
+fn type_relation_symbol_rank(symbol: &Symbol, dependency: &Dependency) -> (i32, usize) {
+    let simple = simple_type_relation_target(&dependency.target).unwrap_or(&dependency.target);
+    let exact_name_rank = if symbol.name == simple { 0 } else { 1 };
+    let source_dir = Path::new(&dependency.source_file)
+        .parent()
+        .and_then(|path| path.to_str())
+        .filter(|path| !path.is_empty());
+    let locality_rank = if symbol.file == dependency.source_file {
+        2
+    } else if source_dir.is_some_and(|path| symbol.file.starts_with(path)) {
+        0
+    } else {
+        1
+    };
+    (exact_name_rank + locality_rank, symbol.qualified_name.len())
 }
 
 #[derive(Debug)]
