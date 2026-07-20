@@ -493,6 +493,7 @@ main() {
     "understand application settings"
     "understand feature flag rollout"
     "understand proxy redirect transport"
+    "understand ssl certificate verification"
     "understand json binding validation"
     "understand startup flow"
       "understand persistence behavior"

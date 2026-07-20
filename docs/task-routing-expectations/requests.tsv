@@ -5,3 +5,5 @@ understand package startup flow	src/requests/__init__.py
 understand proxy behavior	src/requests/adapters.py
 understand redirect behavior	src/requests/sessions.py
 debug retry timeout handling	src/requests/adapters.py
+understand ssl certificate verification behavior	src/requests/adapters.py
+debug certificate verification failure	src/requests/adapters.py

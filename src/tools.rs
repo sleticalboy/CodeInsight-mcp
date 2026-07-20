@@ -2191,6 +2191,8 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
         "Start with seed file authentication and session boundaries.".to_string()
     } else if signals.network_http {
         "Start with seed file network client, proxy, redirect, or transport boundaries.".to_string()
+    } else if signals.tls_certificate {
+        "Start with seed file TLS, SSL, certificate, or verification boundaries.".to_string()
     } else if signals.validation_binding {
         "Start with seed file validation, schema, binding, or serialization boundaries.".to_string()
     } else if signals.feature_flags {
@@ -2239,6 +2241,9 @@ fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
         "Read symbol definitions that establish authentication or session behavior.".to_string()
     } else if signals.network_http {
         "Read symbol definitions that establish network client, proxy, redirect, or transport behavior."
+            .to_string()
+    } else if signals.tls_certificate {
+        "Read symbol definitions that establish TLS, SSL, certificate, or verification behavior."
             .to_string()
     } else if signals.validation_binding {
         "Read symbol definitions that establish validation, schema, binding, or serialization behavior."
@@ -2311,6 +2316,9 @@ fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
     } else if signals.network_http {
         "Follow call graph evidence for network client requests, proxies, redirects, or transport flow."
             .to_string()
+    } else if signals.tls_certificate {
+        "Follow call graph evidence for TLS verification, certificates, CA bundles, or SSL context flow."
+            .to_string()
     } else if signals.validation_binding {
         "Follow call graph evidence for validation, binding, parsing, or serialization flow."
             .to_string()
@@ -2362,6 +2370,9 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
         "Inspect references that consume authentication or session state.".to_string()
     } else if signals.network_http {
         "Inspect references that send requests, select proxies, follow redirects, or configure transports."
+            .to_string()
+    } else if signals.tls_certificate {
+        "Inspect references that verify TLS certificates, configure SSL, or pass CA/cert inputs."
             .to_string()
     } else if signals.validation_binding {
         "Inspect references that validate inputs, bind payloads, parse schemas, or serialize data."
@@ -2415,6 +2426,9 @@ fn context_semantic_focus(signals: ContextTaskSignals) -> String {
     } else if signals.network_http {
         "Review semantic matches for network clients, proxies, redirects, adapters, or transports."
             .to_string()
+    } else if signals.tls_certificate {
+        "Review semantic matches for TLS, SSL, certificates, CA bundles, or verification."
+            .to_string()
     } else if signals.validation_binding {
         "Review semantic matches for validation, schemas, bindings, parsers, or serializers."
             .to_string()
@@ -2466,6 +2480,9 @@ fn context_dependency_focus(signals: ContextTaskSignals) -> String {
         "Check local dependencies that affect authentication or session boundaries.".to_string()
     } else if signals.network_http {
         "Check local dependencies that shape network client, proxy, redirect, or transport behavior."
+            .to_string()
+    } else if signals.tls_certificate {
+        "Check local dependencies that shape TLS verification, SSL context, certificates, or CA bundles."
             .to_string()
     } else if signals.validation_binding {
         "Check local dependencies that shape validation, binding, parsing, or serialization behavior."
@@ -2556,6 +2573,9 @@ fn context_seed_file_question(task: &str) -> String {
     } else if signals.network_http {
         "Where are network requests, proxies, redirects, adapters, or transports handled here?"
             .to_string()
+    } else if signals.tls_certificate {
+        "Where are TLS certificates, SSL settings, CA bundles, or verification decisions handled here?"
+            .to_string()
     } else if signals.validation_binding {
         "Where are inputs validated, payloads bound, schemas applied, or data serialized here?"
             .to_string()
@@ -2613,6 +2633,8 @@ fn context_symbol_definition_question(task: &str) -> String {
         "What authentication decisions, credentials, or session boundaries does this definition establish?".to_string()
     } else if signals.network_http {
         "What network client, proxy, redirect, adapter, or transport behavior does this definition establish?".to_string()
+    } else if signals.tls_certificate {
+        "What TLS, SSL, certificate, CA bundle, or verification behavior does this definition establish?".to_string()
     } else if signals.validation_binding {
         "What validation, schema, binding, parser, or serialization behavior does this definition establish?".to_string()
     } else if signals.feature_flags {
@@ -2684,6 +2706,9 @@ fn context_call_graph_question(task: &str) -> String {
         "Which callers or callees carry authentication decisions, credentials, or session state through this flow?".to_string()
     } else if signals.network_http {
         "Which callers or callees send requests, select proxies, follow redirects, or configure transports?".to_string()
+    } else if signals.tls_certificate {
+        "Which callers or callees verify TLS certificates, configure SSL, or pass CA/cert inputs?"
+            .to_string()
     } else if signals.validation_binding {
         "Which callers or callees validate inputs, bind payloads, parse schemas, or serialize data?"
             .to_string()
@@ -2744,6 +2769,8 @@ fn context_dependency_question(task: &str) -> String {
             .to_string()
     } else if signals.network_http {
         "What imported local dependency behavior supplies network client, proxy, redirect, adapter, or transport behavior?".to_string()
+    } else if signals.tls_certificate {
+        "What imported local dependency behavior supplies TLS verification, SSL context, certificates, or CA bundles?".to_string()
     } else if signals.validation_binding {
         "What imported local dependency behavior supplies validation, binding, parsing, or serialization?".to_string()
     } else if signals.feature_flags {
@@ -2803,6 +2830,9 @@ fn context_reference_question(task: &str) -> String {
     } else if signals.network_http {
         "Which references send requests, select proxies, follow redirects, or configure transports?"
             .to_string()
+    } else if signals.tls_certificate {
+        "Which references verify TLS certificates, configure SSL, or pass CA/cert inputs?"
+            .to_string()
     } else if signals.validation_binding {
         "Which references validate inputs, bind payloads, parse schemas, or serialize data?"
             .to_string()
@@ -2855,6 +2885,9 @@ fn context_semantic_question(task: &str) -> String {
             .to_string()
     } else if signals.network_http {
         "Which semantic matches describe network clients, proxies, redirects, adapters, or transports?"
+            .to_string()
+    } else if signals.tls_certificate {
+        "Which semantic matches describe TLS, SSL, certificates, CA bundles, or verification?"
             .to_string()
     } else if signals.validation_binding {
         "Which semantic matches describe validation, schemas, bindings, parsers, or serializers?"
@@ -2915,6 +2948,7 @@ struct ContextTaskSignals {
     impact_flow: bool,
     auth_session: bool,
     network_http: bool,
+    tls_certificate: bool,
     validation_binding: bool,
     feature_flags: bool,
     configuration: bool,
@@ -3000,6 +3034,25 @@ impl ContextTaskSignals {
                     "transports",
                     "adapter",
                     "adapters",
+                ],
+            ),
+            tls_certificate: context_text_mentions(
+                task,
+                &[
+                    "tls",
+                    "ssl",
+                    "certificate",
+                    "certificates",
+                    "cert",
+                    "certs",
+                    "ca bundle",
+                    "ca bundles",
+                    "verify",
+                    "verification",
+                    "trust",
+                    "trusted",
+                    "truststore",
+                    "ssl context",
                 ],
             ),
             validation_binding: context_text_mentions(
@@ -5272,6 +5325,20 @@ fn auto_seed_task_focus_boost(
         };
     }
 
+    if auto_seed_tls_certificate_task(task_keywords) {
+        let file_action_match = auto_seed_tls_certificate_action_file_matches(file);
+        let symbol_action_match = symbol
+            .map(auto_seed_tls_certificate_action_symbol_matches)
+            .unwrap_or(false);
+
+        score += match (file_action_match, symbol_action_match) {
+            (true, true) => 1900,
+            (true, false) => 1400,
+            (false, true) => 800,
+            _ => 0,
+        };
+    }
+
     if task_keywords
         .iter()
         .any(|keyword| matches!(keyword.as_str(), "route" | "routes" | "router" | "routing"))
@@ -5410,6 +5477,55 @@ fn auto_seed_error_recovery_action_symbol_matches(symbol: &str) -> bool {
         || has_exact("client")
         || has_exact("connection")
         || (has_exact("get") && has_exact("connection"))
+}
+
+fn auto_seed_tls_certificate_task(task_keywords: &[String]) -> bool {
+    task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "tls"
+                | "ssl"
+                | "certificate"
+                | "certificates"
+                | "cert"
+                | "certs"
+                | "verify"
+                | "verification"
+                | "trust"
+                | "trusted"
+                | "truststore"
+        )
+    })
+}
+
+fn auto_seed_tls_certificate_action_file_matches(file: &str) -> bool {
+    auto_seed_file_stem_matches(file, "adapter")
+        || auto_seed_file_stem_matches(file, "adapters")
+        || auto_seed_file_stem_matches(file, "transport")
+        || auto_seed_file_stem_matches(file, "transports")
+        || auto_seed_file_stem_matches(file, "client")
+        || auto_seed_file_stem_matches(file, "clients")
+        || auto_seed_file_stem_matches(file, "connection")
+        || auto_seed_file_stem_matches(file, "connections")
+        || auto_seed_file_stem_matches(file, "session")
+        || auto_seed_file_stem_matches(file, "sessions")
+}
+
+fn auto_seed_tls_certificate_action_symbol_matches(symbol: &str) -> bool {
+    let parts = symbol
+        .split(|ch: char| !ch.is_ascii_alphanumeric())
+        .map(str::to_ascii_lowercase)
+        .collect::<Vec<_>>();
+
+    let has_exact = |needle: &str| parts.iter().any(|part| part == needle);
+    has_exact("cert")
+        || has_exact("certificate")
+        || has_exact("verify")
+        || has_exact("tls")
+        || has_exact("ssl")
+        || has_exact("adapter")
+        || has_exact("transport")
+        || has_exact("connection")
 }
 
 fn auto_seed_route_registration_matches(field: &str) -> bool {
@@ -5661,6 +5777,17 @@ fn task_keyword_aliases(keyword: &str) -> &'static [&'static str] {
         "transports" => &["transport", "adapter", "network"],
         "adapter" => &["adapters", "transport", "network"],
         "adapters" => &["adapter", "transport", "network"],
+        "tls" => &["ssl", "certificate", "verify"],
+        "ssl" => &["tls", "certificate", "verify"],
+        "certificate" => &["cert", "certificates", "tls"],
+        "certificates" => &["certificate", "certs", "tls"],
+        "cert" => &["certificate", "certs", "tls"],
+        "certs" => &["cert", "certificate", "tls"],
+        "verify" => &["verification", "certificate", "tls"],
+        "verification" => &["verify", "certificate", "tls"],
+        "trust" => &["trusted", "certificate", "tls"],
+        "trusted" => &["trust", "certificate", "tls"],
+        "truststore" => &["certificate", "tls", "verify"],
         "validation" => &["validate", "validator", "schema"],
         "validate" => &["validation", "validator", "schema"],
         "validated" => &["validate", "validation", "validator"],
@@ -6048,6 +6175,13 @@ mod tests {
         assert!(validation_keywords.contains(&"validation".to_string()));
         assert!(validation_keywords.contains(&"schema".to_string()));
         assert!(validation_keywords.contains(&"deserialize".to_string()));
+
+        let tls_keywords = task_keywords("understand ssl certificate verification behavior");
+        assert!(tls_keywords.contains(&"ssl".to_string()));
+        assert!(tls_keywords.contains(&"certificate".to_string()));
+        assert!(tls_keywords.contains(&"verification".to_string()));
+        assert!(tls_keywords.contains(&"tls".to_string()));
+        assert!(tls_keywords.contains(&"verify".to_string()));
 
         let rbac_keywords = task_keywords("audit rbac acl policy");
         assert!(rbac_keywords.contains(&"rbac".to_string()));

@@ -2382,6 +2382,15 @@ export function bootRouter(settings: Record<string, string>) {
     )
     .unwrap();
     std::fs::write(
+        fixture.path().join("src/tls_transport.ts"),
+        r#"export function verifyTlsCertificate(certPath: string) {
+  // TLS SSL certificate verification configures the trusted CA bundle.
+  return { certPath, verify: true, tls: "required" };
+}
+"#,
+    )
+    .unwrap();
+    std::fs::write(
         fixture.path().join("src/validation.ts"),
         r#"export function bindJsonValidationSchema(payload: unknown) {
   // JSON binding validates payloads against the request schema.
@@ -2702,6 +2711,31 @@ export function routerRegressionSpec() {
     assert!(network_question.contains("network requests"));
     assert!(network_question.contains("proxies"));
     assert!(network_question.contains("redirects"));
+
+    let tls_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand ssl certificate verification",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(tls_context["seed_strategy"], "auto_task_match");
+    assert_eq!(
+        tls_context["selected_seeds"][0]["value"],
+        "src/tls_transport.ts"
+    );
+    assert!(
+        tls_context["selected_seeds"][0]["matched_keywords"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|keyword| keyword == "certificate")
+    );
+    assert_eq!(tls_context["files"][0]["file"], "src/tls_transport.ts");
+    let tls_question = tls_context["reading_plan"][0]["question"].as_str().unwrap();
+    assert!(tls_question.contains("TLS certificates"));
+    assert!(tls_question.contains("verification decisions"));
 
     let validation_context = run_json([
         "context-pack",
