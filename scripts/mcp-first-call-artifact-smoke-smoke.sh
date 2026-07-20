@@ -101,6 +101,28 @@ write_summary_json() {
     "tool": "file_outline"
   },
   "suggested_tool_executed": true,
+  "blocked_no_seed": {
+    "route_step_status": "blocked_no_seed",
+    "seed_strategy": "auto_no_seed",
+    "continuation_status": "blocked_no_seed",
+    "continuation_next_action": "provide_seed_file_or_symbol",
+    "context_files": 0,
+    "reading_plan_steps": 0,
+    "has_current_reading_step": false,
+    "impact_status": "skipped_no_seed",
+    "execution_plan_actions": [
+      "read_selected_context",
+      "use_current_reading_step_suggested_tool",
+      "use_continuation_if_needed",
+      "review_impact_before_edits"
+    ],
+    "execution_plan_statuses": [
+      "blocked_no_reading_plan",
+      "blocked_no_current_reading_step",
+      "manual_after_selected_context",
+      "skipped_no_seed"
+    ]
+  },
   "task": "understand app entrypoint flow",
   "token_budget": 1600
 }
@@ -185,6 +207,12 @@ EOF
     fail "missing continuation status output"
   grep -Fq 'first_omitted_omission_reason: -' "$TEMP_DIR/output.log" ||
     fail "missing omitted omission reason output"
+  grep -Fq 'blocked_no_seed_status: blocked_no_seed' "$TEMP_DIR/output.log" ||
+    fail "missing blocked no-seed status output"
+  grep -Fq 'blocked_no_seed_next_action: provide_seed_file_or_symbol' "$TEMP_DIR/output.log" ||
+    fail "missing blocked no-seed next action output"
+  grep -Fq 'blocked_no_seed_impact_status: skipped_no_seed' "$TEMP_DIR/output.log" ||
+    fail "missing blocked no-seed impact status output"
   grep -Fq 'gh run download 123456 --repo sleticalboy/CodeInsight-mcp --name codeinsight-mcp-first-call --dir '"$TEMP_DIR/download" "$TEMP_DIR/calls.log" ||
     fail "missing fixed-run artifact download"
 
@@ -221,6 +249,12 @@ EOF
     fail "missing latest read-less ratio output"
   grep -Fq 'continuation_status: complete' "$TEMP_DIR/latest-output.log" ||
     fail "missing latest continuation status output"
+  grep -Fq 'blocked_no_seed_status: blocked_no_seed' "$TEMP_DIR/latest-output.log" ||
+    fail "missing latest blocked no-seed status output"
+  grep -Fq 'blocked_no_seed_next_action: provide_seed_file_or_symbol' "$TEMP_DIR/latest-output.log" ||
+    fail "missing latest blocked no-seed next action output"
+  grep -Fq 'blocked_no_seed_impact_status: skipped_no_seed' "$TEMP_DIR/latest-output.log" ||
+    fail "missing latest blocked no-seed impact status output"
 
   echo "MCP first-call artifact smoke smoke passed"
 }

@@ -281,6 +281,9 @@ main() {
   echo "read_less_ratio: $(jq -r '.read_less_ratio' "$summary_file")"
   echo "continuation_status: $(jq -r '.continuation_status' "$summary_file")"
   echo "first_omitted_omission_reason: $(jq -r 'if .first_omitted_omission_reason == "" then "-" else .first_omitted_omission_reason end' "$summary_file")"
+  echo "blocked_no_seed_status: $(jq -r '.blocked_no_seed.continuation_status' "$summary_file")"
+  echo "blocked_no_seed_next_action: $(jq -r '.blocked_no_seed.continuation_next_action' "$summary_file")"
+  echo "blocked_no_seed_impact_status: $(jq -r '.blocked_no_seed.impact_status' "$summary_file")"
 }
 
 main "$@"
