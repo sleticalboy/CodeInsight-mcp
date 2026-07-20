@@ -148,6 +148,54 @@ end
 RUBY
 }
 
+require_self_adoption_summary_sync() {
+  ruby - "$ROOT_DIR" <<'RUBY'
+root = ARGV.fetch(0)
+readme = File.read(File.join(root, "README.md"))
+release_commands = File.read(File.join(root, "docs", "release-commands.md"))
+self_report = File.read(File.join(root, "docs", "adoption-report-codeinsight.md"))
+
+def fetch_metric(content, label)
+  match = content.match(/^\| #{Regexp.escape(label)} \| `([^`]+)`(?: source lines)? \|$/)
+  unless match
+    warn "docs/adoption-report-codeinsight.md is missing #{label}"
+    exit 1
+  end
+  match[1]
+end
+
+def with_commas(value)
+  value.to_s.gsub(",", "").reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse
+end
+
+selected = fetch_metric(self_report, "CodeInsight routed first-read")
+total = fetch_metric(self_report, "Blind first-read baseline")
+avoided = fetch_metric(self_report, "Source lines avoided")
+reduction = fetch_metric(self_report, "First-read reduction")
+read_less = fetch_metric(self_report, "Read less")
+
+expected_readme = "- The CodeInsight self adoption report packages a full tar.gz handoff and\n" \
+  "  routes the entrypoint task to #{with_commas(selected)} of #{with_commas(total)} source lines, avoiding #{with_commas(avoided)}\n" \
+  "  source lines before broad reading for a #{reduction} reduction and #{read_less} read-less\n" \
+  "  ratio, with 7 type-relation edges surfaced through the `base_type` graph"
+unless readme.include?(expected_readme)
+  warn "README self adoption summary is out of sync with docs/adoption-report-codeinsight.md"
+  warn "expected:"
+  warn expected_readme
+  exit 1
+end
+
+expected_release_metric = "`/tmp/codeinsight-self-adoption-report.tar.gz` archive path, `#{selected}/#{total}`\n" \
+  "routed first-read metric"
+unless release_commands.include?(expected_release_metric)
+  warn "docs/release-commands.md self adoption metric is out of sync"
+  warn "expected:"
+  warn expected_release_metric
+  exit 1
+end
+RUBY
+}
+
 main() {
   require_pattern README.md \
     '\[two-minute demo script\]\(docs/demo-script\.md\)' \
@@ -173,9 +221,7 @@ main() {
   require_pattern README.md \
     '93\.3x aggregate read-less ratio' \
     "README adoption cases aggregate read-less ratio"
-  require_pattern README.md \
-    'routes the entrypoint task to 440 of 33,945 source lines, avoiding 33,505' \
-    "README self adoption report metric"
+  require_self_adoption_summary_sync
   require_pattern README.md \
     '7 type-relation edges surfaced through the `base_type` graph' \
     "README self adoption report type-relation metric"
@@ -183,7 +229,7 @@ main() {
     '`current_reading_step` mirror and read-less instruction evidence' \
     "README self adoption report read-less instruction evidence"
   require_pattern README.md \
-    'of 33,945 source lines, avoiding 33,507 source lines before broad reading' \
+    'of 34,151 source lines, avoiding 33,713 source lines before broad reading' \
     "README two-minute demo read-less metric"
   "$ROOT_DIR/scripts/readme-adoption-summary-smoke.sh" >/dev/null
   require_pattern README.md \
@@ -619,13 +665,13 @@ main() {
     'CodeInsight routed first-read \| `440` source lines' \
     "CodeInsight self adoption report routed lines"
   require_pattern docs/adoption-report-codeinsight.md \
-    'Source lines avoided \| `33505`' \
+    'Source lines avoided \| `[0-9]+`' \
     "CodeInsight self adoption report avoided lines"
   require_pattern docs/adoption-report-codeinsight.md \
     'First-read reduction \| `98\.7%`' \
     "CodeInsight self adoption report reduction"
   require_pattern docs/adoption-report-codeinsight.md \
-    'Read less \| `77\.1x`' \
+    'Read less \| `[0-9.]+x`' \
     "CodeInsight self adoption report read-less ratio"
   require_pattern docs/adoption-report-codeinsight.md \
     'Type-relation graph filter \| `base_type`' \
@@ -1067,13 +1113,13 @@ main() {
     'first_next_action' \
     "reading plan next action demo metric"
   require_pattern docs/demo-script.md \
-    'source_lines_avoided: 33507' \
+    'source_lines_avoided: 33713' \
     "demo script source lines avoided metric"
   require_pattern docs/demo-script.md \
-    'read_less_ratio: 77\.5x' \
+    'read_less_ratio: 78\.0x' \
     "demo script read-less metric"
   require_pattern docs/demo-script.md \
-    'Read less: avoided 33507 source lines, 77\.5x less text before follow-up tools\.' \
+    'Read less: avoided 33713 source lines, 78\.0x less text before follow-up tools\.' \
     "demo script evidence summary read-less line"
   require_pattern docs/demo-script.md \
     'impact_analysis' \
@@ -1399,9 +1445,6 @@ main() {
   require_pattern docs/release-commands.md \
     '/tmp/codeinsight-self-adoption-report\.tar\.gz' \
     "release commands adoption report archive"
-  require_pattern docs/release-commands.md \
-    '440/33945' \
-    "release commands adoption report metric"
   require_pattern docs/release-commands.md \
     'type-relation routing fields' \
     "release commands adoption report type-relation fields"

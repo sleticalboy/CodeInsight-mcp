@@ -33,12 +33,12 @@ token_budget: 6000
 
 1. index_project
    indexed_files: 23
-   symbols: 1048
+   symbols: 1053
    duration_ms: <duration_ms>
    errors: 0
 
 2. project_overview
-   total_lines: 33945
+   total_lines: 34151
    entrypoints: 7
    first_entrypoint: src/main.rs
    recommended_next_tools: 5
@@ -55,12 +55,12 @@ token_budget: 6000
    first_reading_focus: Start with seed file context and primary symbols.
    first_reading_question: What entrypoints, exported symbols, or setup code define the main flow here?
    first_selection_rank: 1
-   blind_first_read_lines: 33945
+   blind_first_read_lines: 34151
    routed_first_read_lines: 438
    selected_lines: 438
-   source_lines_avoided: 33507
+   source_lines_avoided: 33713
    line_reduction: 98.7%
-   read_less_ratio: 77.5x
+   read_less_ratio: 78.0x
    estimated_tokens: 3786
    continuation: complete
    continuation_next_action: read_selected_context
@@ -80,9 +80,9 @@ token_budget: 6000
    seed_file: src/tools.rs
    risk_level: high
    impacted_files: 6
-   paths: 34
+   paths: 33
    suggested_checks: 4
-   route_reason: after selected context is read, pre-edit impact check estimated 6 impacted files at high risk, including 5 call-related files, 1 dependency-related files, 33 call paths, and 1 dependency paths
+   route_reason: after selected context is read, pre-edit impact check estimated 6 impacted files at high risk, including 5 call-related files, 1 dependency-related files, 32 call paths, and 1 dependency paths
 
 Run against another repository:
   CODEINSIGHT_DEMO_ROOT=/path/to/repo scripts/two-minute-demo.sh
@@ -90,10 +90,10 @@ Save the raw agent_route JSON:
   CODEINSIGHT_DEMO_SAVE_JSON=/tmp/codeinsight-agent-route.json scripts/two-minute-demo.sh
 
 [Evidence summary]
-Blind first-read baseline: 33945 source lines.
+Blind first-read baseline: 34151 source lines.
 Routed first-read: 438 source lines across 7 files.
-Read less: avoided 33507 source lines, 77.5x less text before follow-up tools.
-agent_route selected 438/33945 source lines (98.7% reduction) across 7 files.
+Read less: avoided 33713 source lines, 78.0x less text before follow-up tools.
+agent_route selected 438/34151 source lines (98.7% reduction) across 7 files.
 First reading focus: Start with seed file context and primary symbols.
 First reading question: What entrypoints, exported symbols, or setup code define the main flow here?
 The first selected file is src/tools.rs; reading_plan starts at src/tools.rs as candidate rank 1.
@@ -118,10 +118,10 @@ Before edits, impact_analysis reports high risk across 6 impacted files.
 11. Current reading step contract is true; agent_route.current_reading_step mirrors reading_plan[0].
 12. Suggested-tool handoff contract is true; execution_plan[1] points to the current reading step.
 13. Continuation timing contract is true; continuation is only considered after selected context is read.
-14. The selected context avoided 33507 source lines (98.7%, 77.5x less text); selected 7 files, 12 ranges, and 7 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context
+14. The selected context avoided 33713 source lines (98.7%, 78.0x less text); selected 7 files, 12 ranges, and 7 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context
 15. Selection evidence: candidate rank 1; Selected for high relevance via seed_file: Seed file header and imports for task: src/tools.rs; matched task keywords: agent, context, route, router, routes; evidence mix: seed file x3, call graph x1
 16. Continuation status is complete; next_action=read_selected_context, so no omitted candidate follow-up is needed before selected context is read.
-17. impact_analysis reports high risk across 6 impacted files with 4 suggested checks; after selected context is read, pre-edit impact check estimated 6 impacted files at high risk, including 5 call-related files, 1 dependency-related files, 33 call paths, and 1 dependency paths
+17. impact_analysis reports high risk across 6 impacted files with 4 suggested checks; after selected context is read, pre-edit impact check estimated 6 impacted files at high risk, including 5 call-related files, 1 dependency-related files, 32 call paths, and 1 dependency paths
 
 [Agent policy]
 Call agent_route with root, task, and token_budget for the default first read.
