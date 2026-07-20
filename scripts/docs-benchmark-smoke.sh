@@ -102,6 +102,52 @@ require_context_guardrail_report_sync() {
   done <<<"$config"
 }
 
+require_readme_benchmark_summary_sync() {
+  ruby - "$ROOT_DIR" <<'RUBY'
+root = ARGV.fetch(0)
+readme = File.read(File.join(root, "README.md"))
+
+def fetch_context_compression(root, report)
+  content = File.read(File.join(root, report))
+  match = content.match(/^- Context compression: selected ([0-9,]+) of ([0-9,]+) source lines \(([0-9.]+)% reduction\)/)
+  unless match
+    warn "#{report} is missing context compression key result"
+    exit 1
+  end
+
+  [match[1], match[2], match[3]]
+end
+
+def with_commas(value)
+  value.to_s.gsub(",", "").reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse
+end
+
+smoke_selected, smoke_total, smoke_reduction =
+  fetch_context_compression(root, "docs/benchmark-v0.1.md")
+large_selected, large_total, large_reduction =
+  fetch_context_compression(root, "docs/benchmark-large.md")
+
+expected_smoke = "- Smoke repositories route `context_pack` first for 4/4 repositories and\n" \
+  "  select #{with_commas(smoke_selected)} of #{with_commas(smoke_total)} source lines, a #{smoke_reduction}% aggregate line reduction."
+expected_large = "- Large repositories route `context_pack` first for 4/4 repositories and\n" \
+  "  select #{with_commas(large_selected)} of #{with_commas(large_total)} source lines, a #{large_reduction}% aggregate line reduction."
+
+unless readme.include?(expected_smoke)
+  warn "README smoke benchmark summary is out of sync with docs/benchmark-v0.1.md"
+  warn "expected:"
+  warn expected_smoke
+  exit 1
+end
+
+unless readme.include?(expected_large)
+  warn "README large benchmark summary is out of sync with docs/benchmark-large.md"
+  warn "expected:"
+  warn expected_large
+  exit 1
+end
+RUBY
+}
+
 main() {
   require_pattern README.md \
     '\[two-minute demo script\]\(docs/demo-script\.md\)' \
@@ -630,6 +676,7 @@ main() {
   require_pattern README.md \
     'route `context_pack` first for 4/4 repositories' \
     "context_pack benchmark claim"
+  require_readme_benchmark_summary_sync
   require_pattern README.md \
     'Generated reports include a `Key Results` section' \
     "benchmark key results claim"

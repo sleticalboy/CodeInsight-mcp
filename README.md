@@ -223,9 +223,9 @@ Current benchmark snapshot:
 
 - The two-minute demo for this repository shows the agent route selecting 438 of 33,945 source lines, avoiding 33,507 source lines before broad reading for a 98.7% reduction and 77.5x read-less ratio, then surfacing candidate rank 1, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
 - Smoke repositories route `context_pack` first for 4/4 repositories and
-  select 629 of 75,753 source lines, a 99.2% aggregate line reduction.
+  select 709 of 75,753 source lines, a 99.1% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and
-  select 1,748 of 241,555 source lines, a 99.3% aggregate line reduction.
+  select 1,781 of 241,724 source lines, a 99.3% aggregate line reduction.
 - The adoption case summary covers 4 public repositories and routes a first read
   to 1,361 of 126,990 source lines, avoiding 125,629 lines before broad file
   reading, a 98.9% aggregate reduction and 93.3x aggregate read-less ratio.
