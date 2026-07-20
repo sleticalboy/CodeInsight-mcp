@@ -49,6 +49,9 @@ EOF
 | --- | ---: |
 | Blind first-read baseline | `1200` source lines |
 | CodeInsight routed first-read | `80` source lines |
+| Type-relation edges | `7` |
+| Top type-relation target | `EmbeddingProvider` |
+| Type-relation graph filter | `base_type` |
 | First-read reduction | `93.3%` |
 
 | Contract | Value |
@@ -264,6 +267,12 @@ EOF
     fail "missing adoption report routed first-read output"
   grep -Fq 'adoption_report_line_reduction: 93.3%' "$TEMP_DIR/output.log" ||
     fail "missing adoption report reduction output"
+  grep -Fq 'adoption_report_type_relation_edges: 7' "$TEMP_DIR/output.log" ||
+    fail "missing adoption report type-relation edge output"
+  grep -Fq 'adoption_report_top_type_relation_target: EmbeddingProvider' "$TEMP_DIR/output.log" ||
+    fail "missing adoption report top type-relation target output"
+  grep -Fq 'adoption_report_type_relation_filter: base_type' "$TEMP_DIR/output.log" ||
+    fail "missing adoption report type-relation filter output"
   grep -Fq 'adoption_report_contract_reading_order: true' "$TEMP_DIR/output.log" ||
     fail "missing adoption report reading order contract output"
   grep -Fq 'adoption_report_contract_suggested_tool_handoff: true' "$TEMP_DIR/output.log" ||
@@ -294,6 +303,8 @@ EOF
     fail "missing release notes adoption report link"
   grep -Fq -- '- Adoption report routed first-read: `80/1200` source lines, `93.3%` reduction' "$TEMP_DIR/output.log" ||
     fail "missing release notes adoption report metrics"
+  grep -Fq -- '- Adoption report type-relation routing: `7` edges, top target `EmbeddingProvider`, graph filter `base_type`' "$TEMP_DIR/output.log" ||
+    fail "missing release notes adoption report type-relation routing"
   grep -Fq -- '- Adoption report MCP first-call contract: `reading_order=true`, `suggested_tool_handoff=true`, `continuation_after_selected_context=true`, `suggested_tool_executed=true`' "$TEMP_DIR/output.log" ||
     fail "missing release notes adoption report contract"
   jq -e --arg summary_path "$TEMP_DIR/benchmark-summary.json" '
@@ -335,6 +346,9 @@ EOF
     .artifacts.adoption_report.metrics.selected_lines == 80 and
     .artifacts.adoption_report.metrics.total_lines == 1200 and
     .artifacts.adoption_report.metrics.line_reduction == "93.3%" and
+    .artifacts.adoption_report.metrics.type_relation_edges == 7 and
+    .artifacts.adoption_report.metrics.top_type_relation_target == "EmbeddingProvider" and
+    .artifacts.adoption_report.metrics.type_relation_recommendation_kinds == ["base_type"] and
     .artifacts.adoption_report.metrics.mcp_first_call_contract.reading_order == true and
     .artifacts.adoption_report.metrics.mcp_first_call_contract.suggested_tool_handoff == true and
     .artifacts.adoption_report.metrics.mcp_first_call_contract.continuation_after_selected_context == true and
@@ -343,6 +357,7 @@ EOF
     (.release_notes_block | contains("- Agent-route first selection: rank `1`, Selected for high relevance")) and
     (.release_notes_block | contains("- Agent-route continuation: `lower_ranked_context_omitted`, next action `narrow_task_or_seed`")) and
     (.release_notes_block | contains("- Adoption report routed first-read: `80/1200` source lines")) and
+    (.release_notes_block | contains("- Adoption report type-relation routing: `7` edges")) and
     (.release_notes_block | contains("- metadata_cargo: 99.88.77"))
   ' "$TEMP_DIR/evidence.json" >/dev/null ||
     fail "invalid evidence JSON output"

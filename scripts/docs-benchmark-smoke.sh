@@ -128,8 +128,11 @@ main() {
     '93\.3x aggregate read-less ratio' \
     "README adoption cases aggregate read-less ratio"
   require_pattern README.md \
-    'routes the entrypoint task to 439 of 31,782 source lines, avoiding 31,343' \
+    'routes the entrypoint task to 440 of 33,928 source lines, avoiding 33,488' \
     "README self adoption report metric"
+  require_pattern README.md \
+    '7 type-relation edges surfaced through the `base_type` graph' \
+    "README self adoption report type-relation metric"
   require_pattern README.md \
     '`current_reading_step` mirror and read-less instruction evidence' \
     "README self adoption report read-less instruction evidence"
@@ -567,17 +570,20 @@ main() {
     '\| understand configuration settings \| `lib/streamlit/config\.py` \|' \
     "task routing matrix Streamlit settings example"
   require_pattern docs/adoption-report-codeinsight.md \
-    'CodeInsight routed first-read \| `439` source lines' \
+    'CodeInsight routed first-read \| `440` source lines' \
     "CodeInsight self adoption report routed lines"
   require_pattern docs/adoption-report-codeinsight.md \
-    'Source lines avoided \| `31343`' \
+    'Source lines avoided \| `33488`' \
     "CodeInsight self adoption report avoided lines"
   require_pattern docs/adoption-report-codeinsight.md \
-    'First-read reduction \| `98\.6%`' \
+    'First-read reduction \| `98\.7%`' \
     "CodeInsight self adoption report reduction"
   require_pattern docs/adoption-report-codeinsight.md \
-    'Read less \| `72\.4x`' \
+    'Read less \| `77\.1x`' \
     "CodeInsight self adoption report read-less ratio"
+  require_pattern docs/adoption-report-codeinsight.md \
+    'Type-relation graph filter \| `base_type`' \
+    "CodeInsight self adoption report type-relation graph filter"
   require_pattern docs/adoption-report-codeinsight.md \
     'Reading order starts with selected context \| `true`' \
     "CodeInsight self adoption report reading order contract"
@@ -1347,8 +1353,11 @@ main() {
     '/tmp/codeinsight-self-adoption-report\.tar\.gz' \
     "release commands adoption report archive"
   require_pattern docs/release-commands.md \
-    '439/28433' \
+    '440/33928' \
     "release commands adoption report metric"
+  require_pattern docs/release-commands.md \
+    'type-relation routing fields' \
+    "release commands adoption report type-relation fields"
   require_pattern docs/release-commands.md \
     'machine-readable JSON' \
     "release commands machine-readable evidence JSON"

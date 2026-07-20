@@ -123,6 +123,9 @@ EOF
         "selected_lines": 439,
         "total_lines": 28433,
         "line_reduction": "98.5%",
+        "type_relation_edges": 7,
+        "top_type_relation_target": "EmbeddingProvider",
+        "type_relation_recommendation_kinds": ["base_type"],
         "mcp_first_call_contract": {
           "reading_order": true,
           "suggested_tool_handoff": true,
@@ -158,6 +161,9 @@ adoption_report_archive: /tmp/codeinsight-self-adoption-report.tar.gz
 adoption_report_command: scripts/adoption-report.sh . --task "understand the main application entrypoint" --token-budget 6000 --output-dir /tmp/codeinsight-self-adoption-report --archive /tmp/codeinsight-self-adoption-report.tar.gz --print-snippet
 adoption_report_selected_lines: 439/28433
 adoption_report_line_reduction: 98.5%
+adoption_report_type_relation_edges: 7
+adoption_report_top_type_relation_target: EmbeddingProvider
+adoption_report_type_relation_filter: base_type
 EOF
 
   CODEINSIGHT_STATUS_DATE=2026-07-14 \
@@ -189,6 +195,7 @@ EOF
   grep -q -- '  - Adoption report: \[CodeInsight self adoption report\](docs/adoption-report-codeinsight.md)' "$status_doc"
   grep -q -- '  - Adoption report archive: `/tmp/codeinsight-self-adoption-report.tar.gz`' "$status_doc"
   grep -q -- '  - Adoption report routed first-read: `439/28433` source lines, `98.5%` reduction' "$status_doc"
+  grep -q -- '  - Adoption report type-relation routing: `7` edges, top target `EmbeddingProvider`, graph filter `base_type`' "$status_doc"
   grep -q -- '  - Adoption report MCP first-call contract: `reading_order=true`, `suggested_tool_handoff=true`, `continuation_after_selected_context=true`, `suggested_tool_executed=true`' "$status_doc"
   grep -q '## Current Release Tooling State' "$status_doc"
 
@@ -203,6 +210,7 @@ EOF
   grep -q -- '  - MCP first-call artifact: \[codeinsight-mcp-first-call\](https://github.com/sleticalboy/CodeInsight-mcp/actions/runs/654321/artifacts/4)' "$fallback_status_doc"
   grep -q -- '  - Adoption report: \[CodeInsight self adoption report\](docs/adoption-report-codeinsight.md)' "$fallback_status_doc"
   grep -q -- '  - Adoption report routed first-read: `439/28433` source lines, `98.5%` reduction' "$fallback_status_doc"
+  grep -q -- '  - Adoption report type-relation routing: `7` edges, top target `EmbeddingProvider`, graph filter `base_type`' "$fallback_status_doc"
 
   echo "update release status smoke passed"
 }

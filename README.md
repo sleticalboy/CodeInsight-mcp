@@ -230,9 +230,10 @@ Current benchmark snapshot:
   to 1,361 of 126,990 source lines, avoiding 125,629 lines before broad file
   reading, a 98.9% aggregate reduction and 93.3x aggregate read-less ratio.
 - The CodeInsight self adoption report packages a full tar.gz handoff and
-  routes the entrypoint task to 439 of 31,782 source lines, avoiding 31,343
-  source lines before broad reading for a 98.6% reduction and 72.4x read-less
-  ratio, while the MCP first-call contract fields all pass, including the
+  routes the entrypoint task to 440 of 33,928 source lines, avoiding 33,488
+  source lines before broad reading for a 98.7% reduction and 77.1x read-less
+  ratio, with 7 type-relation edges surfaced through the `base_type` graph
+  filter, while the MCP first-call contract fields all pass, including the
   `current_reading_step` mirror and read-less instruction evidence.
 - The public route-quality snapshot pins Express, Flask, Gin, and Requests and
   passes 15/15 expected first-file checks, selecting 7,236 of 279,685 task

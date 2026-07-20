@@ -62,6 +62,12 @@ json_field() {
   jq -er "$query" "$EVIDENCE_JSON_FILE"
 }
 
+optional_evidence_json_field() {
+  local query="$1"
+
+  jq -er "$query" "$EVIDENCE_JSON_FILE" 2>/dev/null || true
+}
+
 require_evidence_field() {
   local key="$1"
   local description="$2"
@@ -122,6 +128,9 @@ main() {
   local evidence_adoption_report_archive=""
   local evidence_adoption_report_selected_lines=""
   local evidence_adoption_report_line_reduction=""
+  local evidence_adoption_report_type_relation_edges=""
+  local evidence_adoption_report_top_type_relation_target=""
+  local evidence_adoption_report_type_relation_filter=""
   local evidence_adoption_report_reading_order=""
   local evidence_adoption_report_suggested_tool_handoff=""
   local evidence_adoption_report_continuation_after_selected_context=""
@@ -214,6 +223,9 @@ main() {
       evidence_adoption_report_archive="$(require_evidence_json_field '.artifacts.adoption_report.archive' "adoption report archive")"
       evidence_adoption_report_selected_lines="$(require_evidence_json_field '(.artifacts.adoption_report.metrics.selected_lines | tostring) + "/" + (.artifacts.adoption_report.metrics.total_lines | tostring)' "adoption report selected lines")"
       evidence_adoption_report_line_reduction="$(require_evidence_json_field '.artifacts.adoption_report.metrics.line_reduction' "adoption report line reduction")"
+      evidence_adoption_report_type_relation_edges="$(optional_evidence_json_field '(.artifacts.adoption_report.metrics.type_relation_edges // "") | tostring')"
+      evidence_adoption_report_top_type_relation_target="$(optional_evidence_json_field '.artifacts.adoption_report.metrics.top_type_relation_target // ""')"
+      evidence_adoption_report_type_relation_filter="$(optional_evidence_json_field '(.artifacts.adoption_report.metrics.type_relation_recommendation_kinds // []) | join(",")')"
       evidence_adoption_report_reading_order="$(require_evidence_json_field '(.artifacts.adoption_report.metrics.mcp_first_call_contract.reading_order | tostring)' "adoption report reading-order contract")"
       evidence_adoption_report_suggested_tool_handoff="$(require_evidence_json_field '(.artifacts.adoption_report.metrics.mcp_first_call_contract.suggested_tool_handoff | tostring)' "adoption report suggested-tool contract")"
       evidence_adoption_report_continuation_after_selected_context="$(require_evidence_json_field '(.artifacts.adoption_report.metrics.mcp_first_call_contract.continuation_after_selected_context | tostring)' "adoption report continuation contract")"
@@ -245,6 +257,9 @@ main() {
       evidence_adoption_report_archive="$(require_evidence_field adoption_report_archive "adoption report archive")"
       evidence_adoption_report_selected_lines="$(require_evidence_field adoption_report_selected_lines "adoption report selected lines")"
       evidence_adoption_report_line_reduction="$(require_evidence_field adoption_report_line_reduction "adoption report line reduction")"
+      evidence_adoption_report_type_relation_edges="$(evidence_field adoption_report_type_relation_edges)"
+      evidence_adoption_report_top_type_relation_target="$(evidence_field adoption_report_top_type_relation_target)"
+      evidence_adoption_report_type_relation_filter="$(evidence_field adoption_report_type_relation_filter)"
       evidence_adoption_report_reading_order="true"
       evidence_adoption_report_suggested_tool_handoff="true"
       evidence_adoption_report_continuation_after_selected_context="true"
@@ -321,6 +336,12 @@ main() {
         printf '  - Adoption report command: `%s`\n' "$evidence_adoption_report_command"
         printf '  - Adoption report archive: `%s`\n' "$evidence_adoption_report_archive"
         printf '  - Adoption report routed first-read: `%s` source lines, `%s` reduction\n' "$evidence_adoption_report_selected_lines" "$evidence_adoption_report_line_reduction"
+        if [ -n "$evidence_adoption_report_type_relation_edges" ]; then
+          printf '  - Adoption report type-relation routing: `%s` edges, top target `%s`, graph filter `%s`\n' \
+            "$evidence_adoption_report_type_relation_edges" \
+            "${evidence_adoption_report_top_type_relation_target:--}" \
+            "${evidence_adoption_report_type_relation_filter:--}"
+        fi
         printf '  - Adoption report MCP first-call contract: `reading_order=%s`, `suggested_tool_handoff=%s`, `continuation_after_selected_context=%s`, `suggested_tool_executed=%s`\n' \
           "$evidence_adoption_report_reading_order" \
           "$evidence_adoption_report_suggested_tool_handoff" \

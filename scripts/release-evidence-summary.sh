@@ -19,6 +19,9 @@ ADOPTION_REPORT_ARCHIVE="/tmp/codeinsight-self-adoption-report.tar.gz"
 ADOPTION_REPORT_SELECTED_LINES=""
 ADOPTION_REPORT_TOTAL_LINES=""
 ADOPTION_REPORT_LINE_REDUCTION=""
+ADOPTION_REPORT_TYPE_RELATION_EDGES=""
+ADOPTION_REPORT_TOP_TYPE_RELATION_TARGET=""
+ADOPTION_REPORT_TYPE_RELATION_FILTER=""
 ADOPTION_REPORT_READING_ORDER=""
 ADOPTION_REPORT_SUGGESTED_TOOL_HANDOFF=""
 ADOPTION_REPORT_CONTINUATION_AFTER_SELECTED_CONTEXT=""
@@ -275,6 +278,9 @@ load_adoption_report_doc() {
   local selected_lines
   local total_lines
   local line_reduction
+  local type_relation_edges
+  local top_type_relation_target
+  local type_relation_filter
   local reading_order
   local suggested_tool_handoff
   local continuation_after_selected_context
@@ -287,6 +293,9 @@ load_adoption_report_doc() {
   selected_lines="$(adoption_report_table_value "$report_doc" "CodeInsight routed first-read" | sed 's/ source lines$//')"
   total_lines="$(adoption_report_table_value "$report_doc" "Blind first-read baseline" | sed 's/ source lines$//')"
   line_reduction="$(adoption_report_table_value "$report_doc" "First-read reduction")"
+  type_relation_edges="$(adoption_report_table_value "$report_doc" "Type-relation edges")"
+  top_type_relation_target="$(adoption_report_table_value "$report_doc" "Top type-relation target")"
+  type_relation_filter="$(adoption_report_table_value "$report_doc" "Type-relation graph filter")"
   reading_order="$(adoption_report_table_value "$report_doc" "Reading order starts with selected context")"
   suggested_tool_handoff="$(adoption_report_table_value "$report_doc" "Current-step suggested tool matches the reading plan")"
   continuation_after_selected_context="$(adoption_report_table_value "$report_doc" "Continuation is checked after selected context")"
@@ -302,10 +311,18 @@ load_adoption_report_doc() {
       fail "adoption report document has non-numeric blind first-read baseline"
       ;;
   esac
+  case "$type_relation_edges" in
+    ''|*[!0-9]*)
+      fail "adoption report document has non-numeric type-relation edges"
+      ;;
+  esac
 
   ADOPTION_REPORT_SELECTED_LINES="$selected_lines"
   ADOPTION_REPORT_TOTAL_LINES="$total_lines"
   ADOPTION_REPORT_LINE_REDUCTION="$line_reduction"
+  ADOPTION_REPORT_TYPE_RELATION_EDGES="$type_relation_edges"
+  ADOPTION_REPORT_TOP_TYPE_RELATION_TARGET="$top_type_relation_target"
+  ADOPTION_REPORT_TYPE_RELATION_FILTER="$type_relation_filter"
   ADOPTION_REPORT_READING_ORDER="$reading_order"
   ADOPTION_REPORT_SUGGESTED_TOOL_HANDOFF="$suggested_tool_handoff"
   ADOPTION_REPORT_CONTINUATION_AFTER_SELECTED_CONTEXT="$continuation_after_selected_context"
@@ -313,6 +330,10 @@ load_adoption_report_doc() {
 
   [ -n "$ADOPTION_REPORT_LINE_REDUCTION" ] ||
     fail "adoption report document is missing line reduction"
+  [ -n "$ADOPTION_REPORT_TOP_TYPE_RELATION_TARGET" ] ||
+    fail "adoption report document is missing top type-relation target"
+  [ -n "$ADOPTION_REPORT_TYPE_RELATION_FILTER" ] ||
+    fail "adoption report document is missing type-relation graph filter"
   [ "$ADOPTION_REPORT_READING_ORDER" = "true" ] ||
     fail "adoption report MCP reading-order contract did not pass"
   [ "$ADOPTION_REPORT_SUGGESTED_TOOL_HANDOFF" = "true" ] ||
@@ -414,6 +435,9 @@ write_json_summary() {
     ADOPTION_REPORT_SELECTED_LINES="$ADOPTION_REPORT_SELECTED_LINES" \
     ADOPTION_REPORT_TOTAL_LINES="$ADOPTION_REPORT_TOTAL_LINES" \
     ADOPTION_REPORT_LINE_REDUCTION="$ADOPTION_REPORT_LINE_REDUCTION" \
+    ADOPTION_REPORT_TYPE_RELATION_EDGES="$ADOPTION_REPORT_TYPE_RELATION_EDGES" \
+    ADOPTION_REPORT_TOP_TYPE_RELATION_TARGET="$ADOPTION_REPORT_TOP_TYPE_RELATION_TARGET" \
+    ADOPTION_REPORT_TYPE_RELATION_FILTER="$ADOPTION_REPORT_TYPE_RELATION_FILTER" \
     ADOPTION_REPORT_READING_ORDER="$ADOPTION_REPORT_READING_ORDER" \
     ADOPTION_REPORT_SUGGESTED_TOOL_HANDOFF="$ADOPTION_REPORT_SUGGESTED_TOOL_HANDOFF" \
     ADOPTION_REPORT_CONTINUATION_AFTER_SELECTED_CONTEXT="$ADOPTION_REPORT_CONTINUATION_AFTER_SELECTED_CONTEXT" \
@@ -451,6 +475,7 @@ release_notes = [
   "- Adoption report command: `#{ENV.fetch("ADOPTION_REPORT_COMMAND")}`",
   "- Adoption report archive: `#{ENV.fetch("ADOPTION_REPORT_ARCHIVE")}`",
   "- Adoption report routed first-read: `#{ENV.fetch("ADOPTION_REPORT_SELECTED_LINES")}/#{ENV.fetch("ADOPTION_REPORT_TOTAL_LINES")}` source lines, `#{ENV.fetch("ADOPTION_REPORT_LINE_REDUCTION")}` reduction",
+  "- Adoption report type-relation routing: `#{ENV.fetch("ADOPTION_REPORT_TYPE_RELATION_EDGES")}` edges, top target `#{ENV.fetch("ADOPTION_REPORT_TOP_TYPE_RELATION_TARGET")}`, graph filter `#{ENV.fetch("ADOPTION_REPORT_TYPE_RELATION_FILTER")}`",
   "- Adoption report MCP first-call contract: `reading_order=#{ENV.fetch("ADOPTION_REPORT_READING_ORDER")}`, `suggested_tool_handoff=#{ENV.fetch("ADOPTION_REPORT_SUGGESTED_TOOL_HANDOFF")}`, `continuation_after_selected_context=#{ENV.fetch("ADOPTION_REPORT_CONTINUATION_AFTER_SELECTED_CONTEXT")}`, `suggested_tool_executed=#{ENV.fetch("ADOPTION_REPORT_SUGGESTED_TOOL_EXECUTED")}`",
   *metadata.map { |key, value| "- #{key}: #{value}" }
 ].join("\n")
@@ -514,6 +539,9 @@ summary = {
         "selected_lines" => ENV.fetch("ADOPTION_REPORT_SELECTED_LINES").to_i,
         "total_lines" => ENV.fetch("ADOPTION_REPORT_TOTAL_LINES").to_i,
         "line_reduction" => ENV.fetch("ADOPTION_REPORT_LINE_REDUCTION"),
+        "type_relation_edges" => ENV.fetch("ADOPTION_REPORT_TYPE_RELATION_EDGES").to_i,
+        "top_type_relation_target" => ENV.fetch("ADOPTION_REPORT_TOP_TYPE_RELATION_TARGET"),
+        "type_relation_recommendation_kinds" => ENV.fetch("ADOPTION_REPORT_TYPE_RELATION_FILTER").split(",").reject(&:empty?),
         "mcp_first_call_contract" => {
           "reading_order" => ENV.fetch("ADOPTION_REPORT_READING_ORDER") == "true",
           "suggested_tool_handoff" => ENV.fetch("ADOPTION_REPORT_SUGGESTED_TOOL_HANDOFF") == "true",
@@ -739,6 +767,9 @@ main() {
   echo "adoption_report_command: $ADOPTION_REPORT_COMMAND"
   echo "adoption_report_selected_lines: $ADOPTION_REPORT_SELECTED_LINES/$ADOPTION_REPORT_TOTAL_LINES"
   echo "adoption_report_line_reduction: $ADOPTION_REPORT_LINE_REDUCTION"
+  echo "adoption_report_type_relation_edges: $ADOPTION_REPORT_TYPE_RELATION_EDGES"
+  echo "adoption_report_top_type_relation_target: $ADOPTION_REPORT_TOP_TYPE_RELATION_TARGET"
+  echo "adoption_report_type_relation_filter: $ADOPTION_REPORT_TYPE_RELATION_FILTER"
   echo "adoption_report_contract_reading_order: $ADOPTION_REPORT_READING_ORDER"
   echo "adoption_report_contract_suggested_tool_handoff: $ADOPTION_REPORT_SUGGESTED_TOOL_HANDOFF"
   echo "adoption_report_contract_continuation_after_selected_context: $ADOPTION_REPORT_CONTINUATION_AFTER_SELECTED_CONTEXT"
@@ -768,6 +799,7 @@ main() {
   echo "- Adoption report command: \`$ADOPTION_REPORT_COMMAND\`"
   echo "- Adoption report archive: \`$ADOPTION_REPORT_ARCHIVE\`"
   echo "- Adoption report routed first-read: \`$ADOPTION_REPORT_SELECTED_LINES/$ADOPTION_REPORT_TOTAL_LINES\` source lines, \`$ADOPTION_REPORT_LINE_REDUCTION\` reduction"
+  echo "- Adoption report type-relation routing: \`$ADOPTION_REPORT_TYPE_RELATION_EDGES\` edges, top target \`$ADOPTION_REPORT_TOP_TYPE_RELATION_TARGET\`, graph filter \`$ADOPTION_REPORT_TYPE_RELATION_FILTER\`"
   echo "- Adoption report MCP first-call contract: \`reading_order=$ADOPTION_REPORT_READING_ORDER\`, \`suggested_tool_handoff=$ADOPTION_REPORT_SUGGESTED_TOOL_HANDOFF\`, \`continuation_after_selected_context=$ADOPTION_REPORT_CONTINUATION_AFTER_SELECTED_CONTEXT\`, \`suggested_tool_executed=$ADOPTION_REPORT_SUGGESTED_TOOL_EXECUTED\`"
   printf "%s\n" "$metadata_summary" | sed 's/^/- /'
 
