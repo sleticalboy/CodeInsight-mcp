@@ -124,7 +124,7 @@ Current ranking order:
 - File seeds have the highest priority.
 - File seed ranges include header/import context plus primary top-level symbols. Task-matching seed files and seed symbols get a small same-file ordering boost, large same-score merged ranges are capped, oversized seed ranges can be shortened to fit small budgets, and selected output ranges are trimmed to avoid duplicate lines before being returned in source order. If no primary symbols are found, `context_pack` falls back to the first 80 lines.
 - Symbol definition ranges are next.
-- Direct type-relation ranges are included for recognized local inheritance or interface edges, currently focused on C# `base_type` dependencies that can be mapped back to an indexed class, interface, or struct symbol.
+- Direct type-relation ranges are included for recognized local inheritance or interface edges, currently covering C# `base_type` dependencies plus Java and TypeScript/JavaScript declaration-level `extends` / `implements` dependencies that can be mapped back to an indexed class, interface, or struct symbol.
 - Static call graph target files from seed symbols and seed file primary symbols are ranked after definitions. Bounded caller files are also included for seed symbols and small seed files.
 - Text references are ranked after call graph targets, with reference confidence as a small boost.
 - Semantic vector matches are ranked after references when a configured provider/model has indexed vectors. Local semantic chunks remain available as deterministic fallback matches when their text matches task or seed symbol terms.
@@ -141,7 +141,7 @@ Limitations:
 
 - Without a configured embedding provider, it remains deterministic and local-only.
 - It uses vector embeddings only when the selected provider/model already has local indexed vectors; otherwise it keeps the deterministic fallback path.
-- It does not yet build a full type graph, rank by test relevance, rank by semantic similarity, or use a full edit history signal. Type-relation routing is a best-effort context hint and does not model compiler-grade inheritance, interface dispatch, generics, or language-server type resolution.
+- It does not yet build a full type graph, rank by test relevance, rank by semantic similarity, or use a full edit history signal. Type-relation routing is a best-effort context hint and does not model compiler-grade inheritance, interface dispatch, generics, JavaScript mixin expressions, or language-server type resolution.
 - Task relevance is lexical only and uses simple ASCII keyword matching.
 - Token estimation is approximate and based on character count.
 - It may include noisy references when the seed symbol is common.

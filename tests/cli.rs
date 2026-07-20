@@ -4139,8 +4139,8 @@ fn cli_resolves_java_source_imports() {
     let fixture = java_source_import_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 5);
-    assert_eq!(index["changed_files"], 5);
+    assert_eq!(index["indexed_files"], 6);
+    assert_eq!(index["changed_files"], 6);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -4199,6 +4199,18 @@ fn cli_resolves_java_source_imports() {
                     && dependency["resolved_file"].is_null()
             })
     );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "BaseApp"
+                    && dependency["kind"] == "base_type"
+                    && dependency["local_alias"] == "App"
+                    && dependency["imported_symbol"] == "extends"
+            })
+    );
     let callees = run_json([
         "callees",
         fixture.path().to_str().unwrap(),
@@ -4229,6 +4241,111 @@ fn cli_resolves_java_source_imports() {
             .iter()
             .all(|call| { call["callee"] != "remote.id" || call["callee_file"].is_null() })
     );
+}
+
+#[test]
+fn cli_context_pack_routes_java_base_type_relations() {
+    let fixture = java_source_import_fixture_project();
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 6);
+
+    let context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand inherited application startup behavior",
+        "--file",
+        "src/main/java/com/example/app/App.java",
+        "--token-budget",
+        "5000",
+    ]);
+
+    let base_file = context["files"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|file| file["file"] == "src/main/java/com/example/app/BaseApp.java")
+        .expect("java base type should be selected through type relation evidence");
+    assert!(
+        base_file["source_mix"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|source| source["source"] == "type relation")
+    );
+    let base_step = context["reading_plan"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|step| step["file"] == "src/main/java/com/example/app/BaseApp.java")
+        .expect("java base type should have a reading step");
+    assert_eq!(base_step["next_action"], "inspect_type_relation");
+    assert_eq!(base_step["suggested_tool"]["tool"], "dependency_graph");
+}
+
+#[test]
+fn cli_context_pack_routes_typescript_base_type_relations() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        "src/auth.ts",
+        r#"
+export interface AuthContract {}
+
+export class AuthController extends BaseController implements AuthContract {
+  login() {
+    return this.session();
+  }
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/base.ts",
+        r#"
+export class BaseController {
+  session() {
+    return "active";
+  }
+}
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 2);
+
+    let context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand inherited authentication controller behavior",
+        "--file",
+        "src/auth.ts",
+        "--token-budget",
+        "4000",
+    ]);
+
+    let base_file = context["files"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|file| file["file"] == "src/base.ts")
+        .expect("typescript base type should be selected through type relation evidence");
+    assert!(base_file["ranges"].as_array().unwrap().iter().any(|range| {
+        range["source"] == "type_relation"
+            && range["reason"]
+                .as_str()
+                .is_some_and(|reason| reason.contains("base type BaseController"))
+    }));
+    let base_step = context["reading_plan"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|step| step["file"] == "src/base.ts")
+        .expect("typescript base type should have a reading step");
+    assert_eq!(base_step["next_action"], "inspect_type_relation");
+    assert_eq!(base_step["suggested_tool"]["tool"], "dependency_graph");
 }
 
 #[test]
@@ -9811,7 +9928,7 @@ import com.example.reporting.*;
 import static com.example.util.Names.defaultName;
 import java.util.List;
 
-public class App {
+public class App extends BaseApp {
     private final List<String> names;
 
     public App(List<String> names) {
@@ -9821,6 +9938,19 @@ public class App {
     public String run(RemoteClient remote) {
         Report.log();
         return LocalFormatter.decorate(AuthService.login(defaultName(), names.size(), remote.id()));
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/main/java/com/example/app/BaseApp.java",
+        r#"
+package com.example.app;
+
+public class BaseApp {
+    protected String bootName() {
+        return "app";
     }
 }
 "#,

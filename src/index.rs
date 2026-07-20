@@ -1290,6 +1290,15 @@ fn java_dependencies(
             "package",
             java_package_targets,
         ),
+        "class_declaration" | "interface_declaration" | "record_declaration" => {
+            type_relation_dependencies(
+                node,
+                source,
+                language,
+                source_file,
+                &["extends", "implements"],
+            )
+        }
         _ => Vec::new(),
     }
 }
@@ -1715,8 +1724,158 @@ fn javascript_like_dependencies(
             source_file,
             javascript_bindings,
         ),
+        "class_declaration" | "interface_declaration" | "abstract_class_declaration" => {
+            type_relation_dependencies(
+                node,
+                source,
+                language,
+                source_file,
+                &["extends", "implements"],
+            )
+        }
         _ => Vec::new(),
     }
+}
+
+fn type_relation_dependencies(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+    relation_keywords: &[&'static str],
+) -> Vec<Dependency> {
+    let Some(local_alias) = child_text(node, "name", source) else {
+        return Vec::new();
+    };
+    let text = node.utf8_text(source).unwrap_or_default();
+    type_relation_targets(text, relation_keywords)
+        .into_iter()
+        .map(|(target, relation)| Dependency {
+            source_file: source_file.to_string(),
+            resolved_file: None,
+            target,
+            local_alias: Some(local_alias.clone()),
+            imported_symbol: Some(relation.to_string()),
+            kind: "base_type".to_string(),
+            language,
+            line: node.start_position().row + 1,
+        })
+        .collect()
+}
+
+fn type_relation_targets(
+    text: &str,
+    relation_keywords: &[&'static str],
+) -> Vec<(String, &'static str)> {
+    let header_end = top_level_index(text, '{').unwrap_or(text.len());
+    let header = &text[..header_end];
+    let positions = relation_keyword_positions(header, relation_keywords);
+    let mut targets = Vec::new();
+
+    for (index, (start, relation)) in positions.iter().enumerate() {
+        let relation_end = start + relation.len();
+        let section_end = positions
+            .get(index + 1)
+            .map(|(next_start, _)| *next_start)
+            .unwrap_or(header.len());
+        let section = header[relation_end..section_end].trim();
+        for raw_target in split_type_relation_targets(section) {
+            if let Some(target) = clean_type_relation_target(raw_target) {
+                targets.push((target, *relation));
+            }
+        }
+    }
+
+    targets
+}
+
+fn relation_keyword_positions<'a>(
+    text: &str,
+    relation_keywords: &[&'a str],
+) -> Vec<(usize, &'a str)> {
+    let mut positions = Vec::new();
+    for relation in relation_keywords {
+        let mut search_start = 0;
+        while let Some(relative_index) = text[search_start..].find(relation) {
+            let start = search_start + relative_index;
+            let end = start + relation.len();
+            if is_relation_keyword_boundary(text, start, end) {
+                positions.push((start, *relation));
+            }
+            search_start = end;
+        }
+    }
+    positions.sort_by_key(|(start, _)| *start);
+    positions
+}
+
+fn split_type_relation_targets(raw: &str) -> Vec<&str> {
+    let mut parts = Vec::new();
+    let mut start = 0;
+    let mut angle_depth = 0;
+    let mut paren_depth = 0;
+    let mut bracket_depth = 0;
+    let mut quote = None;
+    let mut escaped = false;
+
+    for (index, ch) in raw.char_indices() {
+        if let Some(active_quote) = quote {
+            if escaped {
+                escaped = false;
+            } else if ch == '\\' {
+                escaped = true;
+            } else if ch == active_quote {
+                quote = None;
+            }
+            continue;
+        }
+
+        match ch {
+            '"' | '\'' | '`' => quote = Some(ch),
+            '<' => angle_depth += 1,
+            '>' if angle_depth > 0 => angle_depth -= 1,
+            '(' => paren_depth += 1,
+            ')' if paren_depth > 0 => paren_depth -= 1,
+            '[' => bracket_depth += 1,
+            ']' if bracket_depth > 0 => bracket_depth -= 1,
+            ',' if angle_depth == 0 && paren_depth == 0 && bracket_depth == 0 => {
+                parts.push(&raw[start..index]);
+                start = index + 1;
+            }
+            _ => {}
+        }
+    }
+
+    parts.push(&raw[start..]);
+    parts
+}
+
+fn is_relation_keyword_boundary(text: &str, start: usize, end: usize) -> bool {
+    let before = text[..start].chars().next_back();
+    let after = text[end..].chars().next();
+    !before.is_some_and(is_type_identifier_char) && !after.is_some_and(is_type_identifier_char)
+}
+
+fn is_type_identifier_char(ch: char) -> bool {
+    ch == '_' || ch == '$' || ch.is_ascii_alphanumeric()
+}
+
+fn clean_type_relation_target(raw: &str) -> Option<String> {
+    let mut target = raw
+        .trim()
+        .trim_end_matches(';')
+        .trim_start_matches("public ")
+        .trim_start_matches("private ")
+        .trim_start_matches("protected ")
+        .trim();
+    if target.is_empty() || top_level_index(target, '(').is_some() {
+        return None;
+    }
+    if let Some(open) = top_level_index(target, '<') {
+        target = target[..open].trim();
+    }
+    let target = target.trim_end_matches("[]").trim();
+    (!target.is_empty()).then(|| target.to_string())
 }
 
 fn text_dependencies(
@@ -6314,7 +6473,8 @@ def helper():
     fn extracts_typescript_symbols() {
         let source = r#"
 export interface UserRepo {}
-export class AuthService {
+export interface DetailedRepo extends UserRepo, Cache<User, Role> {}
+export class AuthService extends BaseAuthService implements UserRepo {
   login() {}
 }
 export function helper() {}
@@ -6330,6 +6490,33 @@ const token = "x";
         assert!(names.contains(&"AuthService.login"));
         assert!(names.contains(&"helper"));
         assert!(names.contains(&"token"));
+
+        let deps = extract_dependencies(source, Language::TypeScript, "auth.ts").unwrap();
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "UserRepo"
+                && dependency.kind == "base_type"
+                && dependency.local_alias.as_deref() == Some("DetailedRepo")
+                && dependency.imported_symbol.as_deref() == Some("extends")
+        }));
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "Cache"
+                && dependency.kind == "base_type"
+                && dependency.local_alias.as_deref() == Some("DetailedRepo")
+                && dependency.imported_symbol.as_deref() == Some("extends")
+        }));
+        assert!(deps.iter().all(|dependency| dependency.target != "Role>"));
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "BaseAuthService"
+                && dependency.kind == "base_type"
+                && dependency.local_alias.as_deref() == Some("AuthService")
+                && dependency.imported_symbol.as_deref() == Some("extends")
+        }));
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "UserRepo"
+                && dependency.kind == "base_type"
+                && dependency.local_alias.as_deref() == Some("AuthService")
+                && dependency.imported_symbol.as_deref() == Some("implements")
+        }));
     }
 
     #[test]
@@ -7432,7 +7619,7 @@ package com.example.auth;
 import java.util.List;
 import static java.util.Collections.emptyList;
 
-public class AuthService {
+public class AuthService extends BaseAuthService implements UserRepository, Auditable<User, Role> {
     private String token;
 
     public AuthService() {}
@@ -7448,6 +7635,10 @@ public class AuthService {
 interface UserRepository {
     User find(String id);
 }
+
+interface Auditable<T, R> {}
+
+class BaseAuthService {}
 "#;
         let symbols = extract_symbols(source, Language::Java, "AuthService.java").unwrap();
         let names = symbols
@@ -7470,6 +7661,25 @@ interface UserRepository {
         assert!(targets.contains(&"com.example.auth"));
         assert!(targets.contains(&"java.util.List"));
         assert!(targets.contains(&"java.util.Collections.emptyList"));
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "BaseAuthService"
+                && dependency.kind == "base_type"
+                && dependency.local_alias.as_deref() == Some("AuthService")
+                && dependency.imported_symbol.as_deref() == Some("extends")
+        }));
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "UserRepository"
+                && dependency.kind == "base_type"
+                && dependency.local_alias.as_deref() == Some("AuthService")
+                && dependency.imported_symbol.as_deref() == Some("implements")
+        }));
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "Auditable"
+                && dependency.kind == "base_type"
+                && dependency.local_alias.as_deref() == Some("AuthService")
+                && dependency.imported_symbol.as_deref() == Some("implements")
+        }));
+        assert!(deps.iter().all(|dependency| dependency.target != "Role>"));
 
         let calls = extract_calls(source, Language::Java, "AuthService.java", &symbols);
         assert!(
