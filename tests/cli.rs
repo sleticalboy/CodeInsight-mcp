@@ -2998,6 +2998,38 @@ export function routerRegressionSpec() {
 }
 
 #[test]
+fn cli_context_pack_uses_task_signal_word_boundaries() {
+    let fixture = TempDir::new().unwrap();
+    std::fs::create_dir_all(fixture.path().join("src")).unwrap();
+    std::fs::write(
+        fixture.path().join("src/catalog.ts"),
+        r#"export function loadCatalog() {
+  return { catalog: ["alpha", "beta"] };
+}
+"#,
+    )
+    .unwrap();
+
+    run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+
+    let context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand catalog behavior",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(context["seed_strategy"], "auto_task_match");
+    assert_eq!(context["selected_seeds"][0]["value"], "src/catalog.ts");
+    assert_eq!(context["files"][0]["file"], "src/catalog.ts");
+    let question = context["reading_plan"][0]["question"].as_str().unwrap();
+    assert!(question.contains("entrypoints"));
+    assert!(!question.contains("logs"));
+    assert!(!question.contains("metrics"));
+}
+
+#[test]
 fn cli_context_pack_uses_file_text_for_python_settings_tasks() {
     let fixture = TempDir::new().unwrap();
     std::fs::create_dir_all(fixture.path().join("src/requests")).unwrap();
