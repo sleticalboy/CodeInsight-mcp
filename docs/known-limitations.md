@@ -132,7 +132,7 @@ Current ranking order:
 - Inferred ranges from test and fixture files receive a low-value penalty across symbol, reference, dependency, and call-graph candidates by default. They are promoted instead when the task asks for tests, specs, coverage, regression, or when an explicit seed file is test-like.
 - `reading_plan` is derived from the final selected files after token-budget selection. It is an ordered client hint, not a separate ranking pass. Its `next_action` values and `suggested_tool` calls are heuristic routing hints, not proof that the corresponding graph or dependency view is complete.
 - `budget`, `omitted_candidates`, and `continuation_summary` explain how the selected context was budgeted and how a client can continue. They are continuation hints, not proof that every relevant file or range has been discovered.
-- Ties are broken by source mix score, total file score, and then stable file path order.
+- Ties are broken by source mix score, recent edit score, total file score, and then stable file path order.
 - File-level `source`, `reason`, and `source_mix` report the dominant selected source among `seed_file`, `symbol_definition`, `reference`, `call_graph`, `semantic`, and `dependency`, preferring stronger structural evidence over weaker semantic evidence when both are present, and `reason` also includes a compact evidence mix summary. File-level `score` is the highest selected range score, and range-level `source` and `score` report each selected range's source and score.
 - `semantic_status` reports semantic candidate counts, selected semantic range counts, provider/model status, and a client-facing recommendation.
 
@@ -140,7 +140,7 @@ Limitations:
 
 - Without a configured embedding provider, it remains deterministic and local-only.
 - It uses vector embeddings only when the selected provider/model already has local indexed vectors; otherwise it keeps the deterministic fallback path.
-- It does not yet rank by type graph, test relevance, semantic similarity, or edit history.
+- It does not yet rank by type graph, test relevance, semantic similarity, or a full edit history signal.
 - Task relevance is lexical only and uses simple ASCII keyword matching.
 - Token estimation is approximate and based on character count.
 - It may include noisy references when the seed symbol is common.

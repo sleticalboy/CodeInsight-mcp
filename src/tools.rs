@@ -1402,12 +1402,14 @@ pub fn context_pack_value(
             ranges.sort_by(compare_context_ranges_for_budget);
             let max_score = ranges.iter().map(|range| range.score).max().unwrap_or(0);
             let source_mix_score = context_range_source_mix_score(&ranges);
+            let recent_edit_score = context_file_recent_edit_score(&root.join(&file));
             ContextFileCandidate {
                 seed_order: seed_file_order.get(&file).copied(),
                 file,
                 ranges,
                 max_score,
                 source_mix_score,
+                recent_edit_score,
                 total_score,
             }
         })
@@ -2888,6 +2890,31 @@ fn context_range_source_mix_score(ranges: &[ContextCandidateRange]) -> i32 {
         .sum()
 }
 
+fn context_file_recent_edit_score(path: &Path) -> i32 {
+    use std::time::SystemTime;
+
+    let Ok(metadata) = fs::metadata(path) else {
+        return 0;
+    };
+    let Ok(modified) = metadata.modified() else {
+        return 0;
+    };
+    let Ok(age) = SystemTime::now().duration_since(modified) else {
+        return 0;
+    };
+
+    let age_secs = age.as_secs();
+    if age_secs <= 3 * 24 * 60 * 60 {
+        12
+    } else if age_secs <= 14 * 24 * 60 * 60 {
+        8
+    } else if age_secs <= 60 * 24 * 60 * 60 {
+        4
+    } else {
+        0
+    }
+}
+
 fn context_source_label(source: &str) -> &'static str {
     match source {
         "seed_file" => "seed file",
@@ -3725,6 +3752,7 @@ struct ContextFileCandidate {
     ranges: Vec<ContextCandidateRange>,
     max_score: i32,
     source_mix_score: i32,
+    recent_edit_score: i32,
     total_score: i32,
 }
 
@@ -3947,6 +3975,7 @@ fn compare_context_file_candidates(
             .max_score
             .cmp(&left.max_score)
             .then_with(|| right.source_mix_score.cmp(&left.source_mix_score))
+            .then_with(|| right.recent_edit_score.cmp(&left.recent_edit_score))
             .then_with(|| right.total_score.cmp(&left.total_score))
             .then_with(|| left.file.cmp(&right.file)),
     }
@@ -3955,6 +3984,7 @@ fn compare_context_file_candidates(
             .max_score
             .cmp(&left.max_score)
             .then_with(|| right.source_mix_score.cmp(&left.source_mix_score))
+            .then_with(|| right.recent_edit_score.cmp(&left.recent_edit_score))
             .then_with(|| right.total_score.cmp(&left.total_score))
             .then_with(|| left.file.cmp(&right.file))
     })
@@ -5265,6 +5295,7 @@ mod tests {
             file: "src/call.ts".to_string(),
             max_score: 70,
             source_mix_score: context_range_source_mix_score(&call_graph_ranges),
+            recent_edit_score: 0,
             total_score: 70,
             ranges: call_graph_ranges,
         };
@@ -5273,6 +5304,7 @@ mod tests {
             file: "src/semantic.ts".to_string(),
             max_score: 70,
             source_mix_score: context_range_source_mix_score(&semantic_ranges),
+            recent_edit_score: 0,
             total_score: 70,
             ranges: semantic_ranges,
         };
