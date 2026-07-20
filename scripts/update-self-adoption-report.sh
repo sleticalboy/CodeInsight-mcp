@@ -180,6 +180,7 @@ validate_report() {
       and .local_evidence.route_tools == ["index_project", "project_overview", "context_pack", "impact_analysis"]
       and .mcp_first_call.execution_plan_reads_in_reading_plan_order == true
       and .mcp_first_call.current_reading_step_matches_reading_plan == true
+      and .mcp_first_call.first_execution_instruction_has_read_less == true
       and .mcp_first_call.current_step_suggested_tool_matches_reading_plan == true
       and .mcp_first_call.continuation_after_selected_context == true
       and .mcp_first_call.suggested_tool_executed == true
@@ -304,6 +305,7 @@ content << line("| Contract | Value |")
 content << line("| --- | --- |")
 content << line("| Reading order starts with selected context | `#{mcp.fetch("execution_plan_reads_in_reading_plan_order")}` |")
 content << line("| Current reading step mirrors reading plan | `#{mcp.fetch("current_reading_step_matches_reading_plan")}` |")
+content << line("| First execution instruction carries read-less evidence | `#{mcp.fetch("first_execution_instruction_has_read_less")}` |")
 content << line("| Current-step suggested tool matches the reading plan | `#{mcp.fetch("current_step_suggested_tool_matches_reading_plan")}` |")
 content << line("| Continuation is checked after selected context | `#{mcp.fetch("continuation_after_selected_context")}` |")
 content << line("| Suggested tool executed through MCP `tools/call` | `#{mcp.fetch("suggested_tool_executed")}` |")
@@ -350,7 +352,7 @@ content << line("- First selected file: `#{metrics.fetch("first_file")}`")
 content << line("- First reading focus: #{metrics.fetch("first_reading_focus")}")
 content << line("- First reading question: #{metrics.fetch("first_reading_question")}")
 content << line("- MCP server: `#{mcp.fetch("server")}`")
-content << line("- MCP first-call contract: reading_order=`#{mcp.fetch("execution_plan_reads_in_reading_plan_order")}`, current_reading_step=`#{mcp.fetch("current_reading_step_matches_reading_plan")}`, suggested_tool_handoff=`#{mcp.fetch("current_step_suggested_tool_matches_reading_plan")}`, continuation_after_selected_context=`#{mcp.fetch("continuation_after_selected_context")}`")
+content << line("- MCP first-call contract: reading_order=`#{mcp.fetch("execution_plan_reads_in_reading_plan_order")}`, current_reading_step=`#{mcp.fetch("current_reading_step_matches_reading_plan")}`, read_less_instruction=`#{mcp.fetch("first_execution_instruction_has_read_less")}`, suggested_tool_handoff=`#{mcp.fetch("current_step_suggested_tool_matches_reading_plan")}`, continuation_after_selected_context=`#{mcp.fetch("continuation_after_selected_context")}`")
 content << line("- First-read gating: suggested_tool_after_selected_context=`#{summary.fetch("first_read_gating").fetch("suggested_tool_after_selected_context")}`, continuation_after_selected_context=`#{summary.fetch("first_read_gating").fetch("continuation_after_selected_context")}`, impact_review_before_edits=`#{summary.fetch("first_read_gating").fetch("impact_review_before_edits")}`")
 content << line("- MCP suggested tool executed: `#{mcp.fetch("suggested_tool_executed")}`")
 content << line("- MCP impact status: `#{mcp.fetch("impact_status")}`")
@@ -388,7 +390,7 @@ content << line("```text")
 content << line("- Selected context: `#{metrics.fetch("selected_lines")}/#{metrics.fetch("total_lines")}` source lines, `#{metrics.fetch("line_reduction")}` reduction")
 content << line("- Source lines avoided: `#{source_lines_avoided}`")
 content << line("- Read less: `#{read_less_ratio}`")
-content << line("- MCP first-call contract: reading_order=`#{mcp.fetch("execution_plan_reads_in_reading_plan_order")}`, current_reading_step=`#{mcp.fetch("current_reading_step_matches_reading_plan")}`, suggested_tool_handoff=`#{mcp.fetch("current_step_suggested_tool_matches_reading_plan")}`, continuation_after_selected_context=`#{mcp.fetch("continuation_after_selected_context")}`")
+content << line("- MCP first-call contract: reading_order=`#{mcp.fetch("execution_plan_reads_in_reading_plan_order")}`, current_reading_step=`#{mcp.fetch("current_reading_step_matches_reading_plan")}`, read_less_instruction=`#{mcp.fetch("first_execution_instruction_has_read_less")}`, suggested_tool_handoff=`#{mcp.fetch("current_step_suggested_tool_matches_reading_plan")}`, continuation_after_selected_context=`#{mcp.fetch("continuation_after_selected_context")}`")
 content << line("- First-read gating: suggested_tool_after_selected_context=`#{summary.fetch("first_read_gating").fetch("suggested_tool_after_selected_context")}`, continuation_after_selected_context=`#{summary.fetch("first_read_gating").fetch("continuation_after_selected_context")}`, impact_review_before_edits=`#{summary.fetch("first_read_gating").fetch("impact_review_before_edits")}`")
 content << line("```")
 

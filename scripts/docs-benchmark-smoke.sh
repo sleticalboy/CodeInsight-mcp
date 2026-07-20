@@ -128,8 +128,11 @@ main() {
     '93\.3x aggregate read-less ratio' \
     "README adoption cases aggregate read-less ratio"
   require_pattern README.md \
-    'routes the entrypoint task to 439 of 31,740 source lines, avoiding 31,301' \
+    'routes the entrypoint task to 439 of 31,782 source lines, avoiding 31,343' \
     "README self adoption report metric"
+  require_pattern README.md \
+    '`current_reading_step` mirror and read-less instruction evidence' \
+    "README self adoption report read-less instruction evidence"
   require_pattern README.md \
     'of 31,740 source lines, avoiding 31,317 source lines before broad reading' \
     "README two-minute demo read-less metric"
@@ -567,17 +570,20 @@ main() {
     'CodeInsight routed first-read \| `439` source lines' \
     "CodeInsight self adoption report routed lines"
   require_pattern docs/adoption-report-codeinsight.md \
-    'Source lines avoided \| `31301`' \
+    'Source lines avoided \| `31343`' \
     "CodeInsight self adoption report avoided lines"
   require_pattern docs/adoption-report-codeinsight.md \
     'First-read reduction \| `98\.6%`' \
     "CodeInsight self adoption report reduction"
   require_pattern docs/adoption-report-codeinsight.md \
-    'Read less \| `72\.3x`' \
+    'Read less \| `72\.4x`' \
     "CodeInsight self adoption report read-less ratio"
   require_pattern docs/adoption-report-codeinsight.md \
     'Reading order starts with selected context \| `true`' \
     "CodeInsight self adoption report reading order contract"
+  require_pattern docs/adoption-report-codeinsight.md \
+    'First execution instruction carries read-less evidence \| `true`' \
+    "CodeInsight self adoption report read-less instruction contract"
   require_pattern docs/adoption-report-codeinsight.md \
     'Suggested tool executed through MCP `tools/call` \| `true`' \
     "CodeInsight self adoption report suggested tool contract"

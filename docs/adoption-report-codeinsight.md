@@ -29,11 +29,11 @@ first-call contract that a client or issue triage flow needs.
 | Symbols | `991` |
 | Index errors | `0` |
 | Entrypoints | `7` |
-| Blind first-read baseline | `31740` source lines |
+| Blind first-read baseline | `31782` source lines |
 | CodeInsight routed first-read | `439` source lines |
-| Source lines avoided | `31301` |
+| Source lines avoided | `31343` |
 | First-read reduction | `98.6%` |
-| Read less | `72.3x` |
+| Read less | `72.4x` |
 | Selected files | `10` |
 | Selected ranges | `11` |
 | Estimated tokens | `4390` |
@@ -66,6 +66,7 @@ What entrypoints, exported symbols, or setup code define the main flow here?
 | --- | --- |
 | Reading order starts with selected context | `true` |
 | Current reading step mirrors reading plan | `true` |
+| First execution instruction carries read-less evidence | `true` |
 | Current-step suggested tool matches the reading plan | `true` |
 | Continuation is checked after selected context | `true` |
 | Suggested tool executed through MCP `tools/call` | `true` |
@@ -111,9 +112,9 @@ The `--print-snippet` output from the refreshed report was:
 
 - Status: `pass`
 - Route: `index_project -> project_overview -> context_pack -> impact_analysis`
-- Selected context: `439/31740` source lines, `98.6%` reduction
-- Source lines avoided: `31301`
-- Read less: `72.3x`
+- Selected context: `439/31782` source lines, `98.6%` reduction
+- Source lines avoided: `31343`
+- Read less: `72.4x`
 - Seed strategy: `auto_entrypoint`
 - Selected seeds: `1`
 - First seed source: `overview_entrypoint`
@@ -122,7 +123,7 @@ The `--print-snippet` output from the refreshed report was:
 - First reading focus: Start with seed file context and primary symbols.
 - First reading question: What entrypoints, exported symbols, or setup code define the main flow here?
 - MCP server: `codeinsight`
-- MCP first-call contract: reading_order=`true`, current_reading_step=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`
+- MCP first-call contract: reading_order=`true`, current_reading_step=`true`, read_less_instruction=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`
 - First-read gating: suggested_tool_after_selected_context=`true`, continuation_after_selected_context=`true`, impact_review_before_edits=`true`
 - MCP suggested tool executed: `true`
 - MCP impact status: `complete`
@@ -157,9 +158,9 @@ scripts/adoption-report.sh . \
 Expected summary lines:
 
 ```text
-- Selected context: `439/31740` source lines, `98.6%` reduction
-- Source lines avoided: `31301`
-- Read less: `72.3x`
-- MCP first-call contract: reading_order=`true`, current_reading_step=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`
+- Selected context: `439/31782` source lines, `98.6%` reduction
+- Source lines avoided: `31343`
+- Read less: `72.4x`
+- MCP first-call contract: reading_order=`true`, current_reading_step=`true`, read_less_instruction=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`
 - First-read gating: suggested_tool_after_selected_context=`true`, continuation_after_selected_context=`true`, impact_review_before_edits=`true`
 ```

@@ -153,6 +153,7 @@ cat >"$summary_json" <<'JSON'
   "execution_plan_reads_in_reading_plan_order": true,
   "first_execution_action": "read_selected_context",
   "current_reading_step_matches_reading_plan": true,
+  "first_execution_instruction_has_read_less": true,
   "current_step_suggested_tool_matches_reading_plan": true,
   "continuation_after_selected_context": true,
   "suggested_tool": {
@@ -203,7 +204,7 @@ EOF
     fail "missing first reading focus line"
   grep -Fq -- '- MCP suggested tool executed: `true`' "$TEMP_DIR/evidence/adoption-evidence.md" ||
     fail "missing MCP suggested tool execution line"
-  grep -Fq -- '- MCP first-call contract: reading_order=`true`, current_reading_step=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`' "$TEMP_DIR/evidence/adoption-evidence.md" ||
+  grep -Fq -- '- MCP first-call contract: reading_order=`true`, current_reading_step=`true`, read_less_instruction=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`' "$TEMP_DIR/evidence/adoption-evidence.md" ||
     fail "missing MCP first-call contract line"
   grep -Fq -- '- First-read gating: suggested_tool_after_selected_context=`true`, continuation_after_selected_context=`true`, impact_review_before_edits=`true`' "$TEMP_DIR/evidence/adoption-evidence.md" ||
     fail "missing first-read gating line"
@@ -228,6 +229,7 @@ EOF
       and .local_evidence.metrics.companion_entrypoint == "src/main.ts"
       and .mcp_first_call.execution_plan_reads_in_reading_plan_order == true
       and .mcp_first_call.current_reading_step_matches_reading_plan == true
+      and .mcp_first_call.first_execution_instruction_has_read_less == true
       and .mcp_first_call.current_step_suggested_tool_matches_reading_plan == true
       and .mcp_first_call.continuation_after_selected_context == true
       and .mcp_first_call.suggested_tool_executed == true
@@ -288,7 +290,7 @@ EOF
     fail "missing printed companion entrypoint line"
   grep -Fq -- '- MCP suggested tool executed: `true`' "$TEMP_DIR/snippet.log" ||
     fail "missing printed MCP suggested tool execution line"
-  grep -Fq -- '- MCP first-call contract: reading_order=`true`, current_reading_step=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`' "$TEMP_DIR/snippet.log" ||
+  grep -Fq -- '- MCP first-call contract: reading_order=`true`, current_reading_step=`true`, read_less_instruction=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`' "$TEMP_DIR/snippet.log" ||
     fail "missing printed MCP first-call contract line"
   grep -Fq -- '- First-read gating: suggested_tool_after_selected_context=`true`, continuation_after_selected_context=`true`, impact_review_before_edits=`true`' "$TEMP_DIR/snippet.log" ||
     fail "missing printed first-read gating line"
