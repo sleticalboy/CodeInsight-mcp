@@ -150,6 +150,7 @@ jobs:
       - uses: actions/checkout@v7
       - run: scripts/release-notes-smoke.sh
       - run: scripts/script-syntax-smoke.sh
+      - run: scripts/benchmark-reuse-checkout-smoke.sh
       - run: scripts/workflow-actions-smoke.sh
       - run: scripts/mcp-first-call-failure-smoke.sh
       - run: scripts/release-tooling-smoke.sh
