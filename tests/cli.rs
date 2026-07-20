@@ -6431,6 +6431,16 @@ fn cli_overview_reports_type_relation_signals() {
                         .is_some_and(|reason| reason.contains("type-relation edges"))
             })
     );
+    let priorities = overview["recommended_next_tools"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|tool| tool["priority"].as_u64().unwrap())
+        .collect::<Vec<_>>();
+    assert!(
+        priorities.windows(2).all(|window| window[0] <= window[1]),
+        "recommended_next_tools must be sorted by priority: {priorities:?}"
+    );
 }
 
 #[test]

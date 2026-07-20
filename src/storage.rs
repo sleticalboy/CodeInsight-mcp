@@ -2941,6 +2941,7 @@ fn recommended_next_tools(
         }),
     });
 
+    tools.sort_by_key(|tool| tool.priority);
     tools
 }
 
