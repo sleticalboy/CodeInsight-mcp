@@ -1781,6 +1781,23 @@ fn cli_indexes_and_queries_fixture_project() {
             })
     );
 
+    let variable_template_require_member_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "variableTemplateRequireMemberMain",
+        "--limit",
+        "5",
+    ]);
+    assert!(
+        variable_template_require_member_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| {
+                call["callee"] == "require.render" && call["callee_file"] == "src/ui.ts"
+            })
+    );
+
     let dynamic_import_callees = run_json([
         "callees",
         fixture.path().to_str().unwrap(),
@@ -8051,6 +8068,9 @@ const computedUiModule = require("./" + "ui");
 const modalPath = "./ui";
 const modalModule = require(modalPath);
 const modalLoaded = await import(modalPath);
+const templateRoot = "./";
+const templatePath = `${templateRoot}ui`;
+const templateModule = require(templatePath);
 
 export function main() {
   render();
@@ -8122,6 +8142,10 @@ export function computedRequireMemberMain() {
 
 export function variableRequireMemberMain() {
   require(modalPath).render();
+}
+
+export function variableTemplateRequireMemberMain() {
+  require(templatePath).render();
 }
 
 export async function dynamicImportMain() {

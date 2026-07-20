@@ -2309,6 +2309,10 @@ fn javascript_static_string_operand_value(
         return Some(value);
     }
 
+    if let Some(value) = javascript_template_literal_value(raw, javascript_bindings, seen) {
+        return Some(value);
+    }
+
     if let Some(bindings) = javascript_bindings
         && is_js_identifier(raw)
         && let Some(value) = bindings.get(raw)
@@ -2321,6 +2325,39 @@ fn javascript_static_string_operand_value(
     }
 
     None
+}
+
+fn javascript_template_literal_value(
+    raw: &str,
+    javascript_bindings: Option<&HashMap<String, String>>,
+    seen: &mut HashSet<String>,
+) -> Option<String> {
+    let trimmed = raw.trim();
+    if !trimmed.starts_with('`') || !trimmed.ends_with('`') || trimmed.len() < 2 {
+        return None;
+    }
+
+    let body = &trimmed[1..trimmed.len() - 1];
+    let mut value = String::new();
+    let mut start = 0;
+
+    while let Some(relative_start) = body[start..].find("${") {
+        let expression_start = start + relative_start;
+        value.push_str(&body[start..expression_start]);
+
+        let open = expression_start + 1;
+        let close = matching_delimiter(body, open, '{', '}')?;
+        let expression = &body[expression_start + 2..close];
+        value.push_str(&javascript_static_string_expression_value_inner(
+            expression,
+            javascript_bindings,
+            seen,
+        )?);
+        start = close + 1;
+    }
+
+    value.push_str(&body[start..]);
+    Some(value)
 }
 
 fn has_js_identifier_boundaries(raw: &str, start: usize, end: usize) -> bool {
@@ -7752,7 +7789,8 @@ const chainedModule = require(path);
         }));
 
         let interpolated_template = r#"
-const templatePath = `./${"ui"}`;
+const templateRoot = "./";
+const templatePath = `${templateRoot}ui`;
 const templateModule = require(templatePath);
 "#;
         let deps = extract_dependencies(
@@ -7761,10 +7799,11 @@ const templateModule = require(templatePath);
             "src/template.ts",
         )
         .unwrap();
-        assert!(
-            deps.iter()
-                .all(|dependency| { dependency.local_alias.as_deref() != Some("templateModule") })
-        );
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "./ui"
+                && dependency.kind == "import_namespace"
+                && dependency.local_alias.as_deref() == Some("templateModule")
+        }));
 
         let py = "from app.auth import service\nimport os, sys\n";
         let deps = extract_dependencies(py, Language::Python, "app/main.py").unwrap();
