@@ -307,6 +307,14 @@ write_summary_json() {
         index_errors: (.index_report.errors | length),
         entrypoints: (.overview.entrypoints | length),
         recommended_next_tools: (.overview.recommended_next_tools | length),
+        type_relation_edges: (.overview.dependency_summary.type_relation_edges // 0),
+        top_type_relation_target: (.overview.dependency_summary.top_type_relation_targets[0].target // ""),
+        type_relation_recommendation_kinds: (
+          [.overview.recommended_next_tools[]?
+            | select(.tool == "dependency_graph")
+            | select((.suggested_arguments.kinds // []) == ["base_type"])
+            | .suggested_arguments.kinds] | first // []
+        ),
         total_lines: (.overview.total_lines // 0),
         selected_lines: $selected_lines,
         source_lines_avoided: $source_lines_avoided,
@@ -354,6 +362,9 @@ write_summary_json() {
       and (.metrics.line_reduction | type == "string" and length > 0)
       and (.metrics.read_less_ratio | type == "string" and length > 0)
       and (.metrics.selected_seed_count | type == "number")
+      and (.metrics.type_relation_edges | type == "number")
+      and (.metrics.top_type_relation_target | type == "string")
+      and (.metrics.type_relation_recommendation_kinds | type == "array")
       and (.metrics.first_seed_source | type == "string")
       and (.metrics.companion_entrypoint | type == "string")
       and (.metrics.first_file | type == "string" and length > 0)

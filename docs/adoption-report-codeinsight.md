@@ -26,17 +26,20 @@ first-call contract that a client or issue triage flow needs.
 | Metric | Value |
 | --- | ---: |
 | Indexed files | `23` |
-| Symbols | `991` |
+| Symbols | `1048` |
 | Index errors | `0` |
 | Entrypoints | `7` |
-| Blind first-read baseline | `31782` source lines |
-| CodeInsight routed first-read | `439` source lines |
-| Source lines avoided | `31343` |
-| First-read reduction | `98.6%` |
-| Read less | `72.4x` |
+| Type-relation edges | `7` |
+| Top type-relation target | `EmbeddingProvider` |
+| Type-relation graph filter | `base_type` |
+| Blind first-read baseline | `33928` source lines |
+| CodeInsight routed first-read | `440` source lines |
+| Source lines avoided | `33488` |
+| First-read reduction | `98.7%` |
+| Read less | `77.1x` |
 | Selected files | `10` |
 | Selected ranges | `11` |
-| Estimated tokens | `4390` |
+| Estimated tokens | `4397` |
 | Reading plan steps | `8` |
 | Impacted files | `11` |
 
@@ -112,13 +115,16 @@ The `--print-snippet` output from the refreshed report was:
 
 - Status: `pass`
 - Route: `index_project -> project_overview -> context_pack -> impact_analysis`
-- Selected context: `439/31782` source lines, `98.6%` reduction
-- Source lines avoided: `31343`
-- Read less: `72.4x`
+- Selected context: `440/33928` source lines, `98.7%` reduction
+- Source lines avoided: `33488`
+- Read less: `77.1x`
 - Seed strategy: `auto_entrypoint`
 - Selected seeds: `1`
 - First seed source: `overview_entrypoint`
 - Companion entrypoint: `-`
+- Type-relation edges: `7`
+- Top type-relation target: `EmbeddingProvider`
+- Type-relation graph filter: `base_type`
 - First selected file: `src/main.rs`
 - First reading focus: Start with seed file context and primary symbols.
 - First reading question: What entrypoints, exported symbols, or setup code define the main flow here?
@@ -158,9 +164,9 @@ scripts/adoption-report.sh . \
 Expected summary lines:
 
 ```text
-- Selected context: `439/31782` source lines, `98.6%` reduction
-- Source lines avoided: `31343`
-- Read less: `72.4x`
+- Selected context: `440/33928` source lines, `98.7%` reduction
+- Source lines avoided: `33488`
+- Read less: `77.1x`
 - MCP first-call contract: reading_order=`true`, current_reading_step=`true`, read_less_instruction=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`
 - First-read gating: suggested_tool_after_selected_context=`true`, continuation_after_selected_context=`true`, impact_review_before_edits=`true`
 ```

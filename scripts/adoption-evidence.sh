@@ -287,6 +287,9 @@ print_snippet() {
 - Selected seeds: \`$(json_value "$summary_json" '.local_evidence.metrics.selected_seed_count // 0')\`
 - First seed source: \`$(json_value "$summary_json" '.local_evidence.metrics.first_seed_source // "-"')\`
 - Companion entrypoint: \`$(json_value "$summary_json" '(.local_evidence.metrics.companion_entrypoint // "") as $value | if $value == "" then "-" else $value end')\`
+- Type-relation edges: \`$(json_value "$summary_json" '.local_evidence.metrics.type_relation_edges // 0')\`
+- Top type-relation target: \`$(json_value "$summary_json" '(.local_evidence.metrics.top_type_relation_target // "") as $value | if $value == "" then "-" else $value end')\`
+- Type-relation graph filter: \`$(json_value "$summary_json" '(.local_evidence.metrics.type_relation_recommendation_kinds // []) | join(",") | if . == "" then "-" else . end')\`
 - First selected file: \`$(json_value "$summary_json" '.local_evidence.metrics.first_file')\`
 - First reading focus: $(json_value "$summary_json" '.local_evidence.metrics.first_reading_focus')
 - First reading question: $(json_value "$summary_json" '.local_evidence.metrics.first_reading_question')

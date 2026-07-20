@@ -83,6 +83,9 @@ cat >"$summary_path" <<JSON
       "symbols": 17,
       "index_errors": 0,
       "entrypoints": 1,
+      "type_relation_edges": 2,
+      "top_type_relation_target": "EmbeddingProvider",
+      "type_relation_recommendation_kinds": ["base_type"],
       "total_lines": 1200,
       "selected_lines": 80,
       "source_lines_avoided": 1120,
@@ -183,6 +186,12 @@ EOF
     fail "missing refreshed date"
   grep -Fq '| CodeInsight routed first-read | `80` source lines |' "$TEMP_DIR/adoption-report-codeinsight.md" ||
     fail "missing routed first-read metric"
+  grep -Fq '| Type-relation edges | `2` |' "$TEMP_DIR/adoption-report-codeinsight.md" ||
+    fail "missing type-relation edge metric"
+  grep -Fq '| Top type-relation target | `EmbeddingProvider` |' "$TEMP_DIR/adoption-report-codeinsight.md" ||
+    fail "missing top type-relation target metric"
+  grep -Fq '| Type-relation graph filter | `base_type` |' "$TEMP_DIR/adoption-report-codeinsight.md" ||
+    fail "missing type-relation graph filter metric"
   grep -Fq '| First-read reduction | `93.3%` |' "$TEMP_DIR/adoption-report-codeinsight.md" ||
     fail "missing reduction metric"
   grep -Fq '| Source lines avoided | `1120` |' "$TEMP_DIR/adoption-report-codeinsight.md" ||
@@ -201,6 +210,10 @@ EOF
     fail "missing generated snippet source lines avoided"
   grep -Fq -- '- Read less: `15.0x`' "$TEMP_DIR/adoption-report-codeinsight.md" ||
     fail "missing generated snippet read less"
+  grep -Fq -- '- Type-relation edges: `2`' "$TEMP_DIR/adoption-report-codeinsight.md" ||
+    fail "missing generated snippet type-relation edges"
+  grep -Fq -- '- Type-relation graph filter: `base_type`' "$TEMP_DIR/adoption-report-codeinsight.md" ||
+    fail "missing generated snippet type-relation filter"
   grep -Fq -- '- MCP first-call contract: reading_order=`true`, current_reading_step=`true`, read_less_instruction=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`' "$TEMP_DIR/adoption-report-codeinsight.md" ||
     fail "missing generated snippet read-less instruction contract"
   grep -Fq 'The generated manifest reported `status: pass` and listed the same 13 files' "$TEMP_DIR/adoption-report-codeinsight.md" ||
