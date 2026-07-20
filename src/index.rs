@@ -7738,6 +7738,19 @@ export * as uiApi from "./ui";
             })
         );
 
+        let chained_bindings = r#"
+const root = "./";
+const path = root + "modal";
+const chainedModule = require(path);
+"#;
+        let deps =
+            extract_dependencies(chained_bindings, Language::TypeScript, "src/chained.ts").unwrap();
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "./modal"
+                && dependency.kind == "import_namespace"
+                && dependency.local_alias.as_deref() == Some("chainedModule")
+        }));
+
         let interpolated_template = r#"
 const templatePath = `./${"ui"}`;
 const templateModule = require(templatePath);
