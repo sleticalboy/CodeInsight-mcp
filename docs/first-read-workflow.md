@@ -47,6 +47,8 @@ Recommended MCP first-read flow:
    selected.
 3. Use `continuation_summary.next_action` only after selected context is
    consumed.
+4. If `continuation_summary.status` is `blocked_no_seed`, ask for a seed file
+   or symbol and retry with that seed instead of broad-reading the repository.
 
 The first-read ordering contract is strict:
 
@@ -78,6 +80,15 @@ lower-level tools directly: `index_project`, `project_overview`,
   current-step `suggested_tool` only when needed, inspect continuation after
   selected context, then review impact before edits
 - `impact_seed_files` and `impact_seed_symbols`
+
+If no source seed can be inferred, `agent_route` still returns a structured
+blocked route instead of failing the MCP call. In that state,
+`context_pack.seed_strategy` is `auto_no_seed`,
+`context_pack.continuation_summary.status` is `blocked_no_seed`,
+`context_pack.continuation_summary.next_action` is
+`provide_seed_file_or_symbol`, `current_reading_step` is omitted, and
+`impact_status` is `skipped_no_seed`. Clients should surface the blocked
+execution-plan rows and ask for a seed file or symbol.
 
 Use `agent_route` for broad repository understanding and first-pass planning.
 Use the lower-level tools when the user named a specific file, symbol, module,
@@ -141,8 +152,10 @@ matches into a token-budgeted context bundle for agents.
 If no `symbols` or `files` are provided, it combines `project_overview`
 entrypoint candidates with task-matching indexed source files, then auto-selects
 the strongest seed. If no entrypoint or task match exists, it falls back to
-indexed source files. Test, fixture, vendor, docs, and example files are not
-auto-selected unless the task explicitly asks for those roles.
+indexed source files. If no source file is available, it returns
+`seed_strategy: "auto_no_seed"` with a blocked continuation summary instead of
+inventing broad file reads. Test, fixture, vendor, docs, and example files are
+not auto-selected unless the task explicitly asks for those roles.
 
 Common agent task aliases are expanded before auto-selection. For example,
 `routing` can match `route`, `routes`, or `router`; `authentication` can match

@@ -68,7 +68,10 @@ Then apply the returned payload in this order:
    reduction evidence.
 6. Use the included `impact_analysis` preview before edits.
 
-The first call is healthy when the response has:
+The first call is healthy when the response has either selected context or an
+explicit blocked state.
+
+For repositories where CodeInsight can infer a source seed, expect:
 
 - `route[]` with `index_project`, `project_overview`, `context_pack`, and
   `impact_analysis`
@@ -86,6 +89,20 @@ The first call is healthy when the response has:
   rank, and first reading focus/question
 - a ready `execution_plan[].suggested_tool` for focused follow-up navigation
 - `impact_status` set to `complete` when an impact seed is available
+
+For empty repositories or repositories where no source seed can be inferred,
+`agent_route` should still return a structured response instead of a JSON-RPC
+tool failure. In that case, expect:
+
+- `route[]` with the `context_pack` step status set to `blocked_no_seed`
+- `context_pack.seed_strategy` set to `auto_no_seed`
+- no `context_pack.files[]` entries and no `current_reading_step`
+- `context_pack.continuation_summary.status` set to `blocked_no_seed`
+- `context_pack.continuation_summary.next_action` set to
+  `provide_seed_file_or_symbol`
+- `execution_plan[]` preserving the normal action order with blocked or manual
+  statuses
+- `impact_status` set to `skipped_no_seed`
 
 ## Agent Policy Prompt
 
@@ -244,6 +261,8 @@ context is read.
 Important statuses:
 
 - `complete`: read the selected context first; no continuation is required.
+- `blocked_no_seed`: provide a seed file or symbol, then retry `context_pack`
+  or `agent_route`.
 - `omitted_candidates_available`: offer the included `suggested_tool` as a
   "continue" action.
 - `token_budget_exhausted`: ask for a larger budget or a narrower task.
@@ -276,16 +295,18 @@ Recommendation priority does not imply safety. Risk comes from
 A simple client can implement this policy:
 
 1. Run `agent_route`.
-2. Present selected `files[]` in `reading_plan[]` order, using
+2. If `context_pack.continuation_summary.status` is `blocked_no_seed`, ask for
+   a seed file or symbol and do not broad-read the repository.
+3. Present selected `files[]` in `reading_plan[]` order, using
    `agent_route.current_reading_step` for the first checklist row,
    `reading_plan[].focus` as the compact scan label,
    `reading_plan[].question` as the local checklist, and
    `reading_plan[].reason` as the current-step instruction.
-3. Display `context_pack.read_less` as optional source-line reduction evidence.
-4. Execute the current step's `suggested_tool` when the user asks for detail.
-5. If the selected context is insufficient, execute
+4. Display `context_pack.read_less` as optional source-line reduction evidence.
+5. Execute the current step's `suggested_tool` when the user asks for detail.
+6. If the selected context is insufficient, execute
    `continuation_summary.suggested_tool` when present.
-6. Use the included `impact_analysis` preview before edits, and rerun
+7. Use the included `impact_analysis` preview before edits, and rerun
    `impact_analysis` for changed targets.
 
 For field-level contracts, see [First-read workflow](first-read-workflow.md)

@@ -2139,7 +2139,7 @@ main() {
     '\| `execution_plan\[\]` \| Starts with `read_selected_context`, then gates deeper tools and continuation\.' \
     "MCP client config execution plan signal"
   require_pattern docs/client-workflow.md \
-    'The first call is healthy when the response has:' \
+    'The first call is healthy when the response has either selected context or an' \
     "client workflow first-call health checklist"
   require_pattern docs/client-workflow.md \
     '`execution_plan\[0\]\.action` set to `read_selected_context`' \
@@ -2147,6 +2147,12 @@ main() {
   require_pattern docs/client-workflow.md \
     '`context_pack\.read_less` for first-read source-line reduction evidence' \
     "client workflow read-less health check"
+  require_pattern docs/client-workflow.md \
+    '`context_pack\.continuation_summary\.status` set to `blocked_no_seed`' \
+    "client workflow blocked no-seed health check"
+  require_pattern docs/first-read-workflow.md \
+    '`context_pack\.seed_strategy` is `auto_no_seed`' \
+    "first-read workflow blocked no-seed contract"
   require_pattern docs/client-integration-examples.md \
     'Show context_pack.read_less as first-read source-line reduction evidence' \
     "client integration read-less consumption"
