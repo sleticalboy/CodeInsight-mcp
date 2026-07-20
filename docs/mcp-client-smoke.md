@@ -132,12 +132,16 @@ agent_route_first_omitted_omission_reason: -
 agent_route_suggested_tool: file_outline
 agent_route_suggested_tool_executed: true
 explicit_first_reading_selection_rank: 1
+explicit_source_lines_avoided: 146
+explicit_read_less_ratio: 9.1x
 explicit_continuation_status: omitted_candidates_available
 explicit_continuation_next_action: run_omitted_candidate_context_pack
 explicit_first_omitted_file: src/consumer_14.py
 explicit_first_omitted_selection_rank: 7
 explicit_first_omitted_omission_reason: token_budget_exhausted
 explicit_suggested_tool: file_outline
+auto_source_lines_avoided: 156
+auto_read_less_ratio: 20.5x
 auto_suggested_tool: file_outline
 explicit_omitted_candidates: 8
 ```
@@ -153,6 +157,9 @@ it verifies the protocol-level shortcut mirrors the first reading-plan row.
 `agent_route_source_lines_avoided` and `agent_route_read_less_ratio` should
 remain present so MCP client smoke output exposes the same source-line
 compression evidence as the compact first-call summary.
+`explicit_read_less_ratio` and `auto_read_less_ratio` should also remain
+present because the protocol smoke exercises direct `context_pack` calls as
+well as `agent_route`.
 `agent_route_suggested_tool_executed` should remain `true`; it verifies the
 execution-plan suggested tool is a usable MCP call, not only display metadata.
 `agent_route_first_reading_selection_rank` and

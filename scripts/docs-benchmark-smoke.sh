@@ -1824,6 +1824,12 @@ main() {
     'agent_route_read_less_ratio' \
     "MCP stdio agent-route read-less output"
   require_pattern scripts/mcp-stdio-smoke.sh \
+    'explicit_read_less_ratio' \
+    "MCP stdio explicit context read-less output"
+  require_pattern scripts/mcp-stdio-smoke.sh \
+    'auto_read_less_ratio' \
+    "MCP stdio auto context read-less output"
+  require_pattern scripts/mcp-stdio-smoke.sh \
     'agent_route_continuation_status' \
     "MCP stdio agent-route continuation status output"
   require_pattern scripts/mcp-stdio-smoke.sh \
@@ -1898,6 +1904,12 @@ main() {
   require_pattern docs/mcp-client-smoke.md \
     'agent_route_read_less_ratio: 20\.5x' \
     "MCP client smoke read-less output"
+  require_pattern docs/mcp-client-smoke.md \
+    'explicit_read_less_ratio: 9\.1x' \
+    "MCP client smoke explicit read-less output"
+  require_pattern docs/mcp-client-smoke.md \
+    'auto_read_less_ratio: 20\.5x' \
+    "MCP client smoke auto read-less output"
   require_pattern docs/mcp-client-smoke.md \
     'agent_route_suggested_tool_executed: true' \
     "MCP client smoke execution-plan suggested tool output"

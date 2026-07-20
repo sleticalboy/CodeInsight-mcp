@@ -139,6 +139,15 @@ def call_suggested_tool(suggested_tool, request_id):
     )["result"]["structuredContent"]
 
 
+def assert_read_less(payload, label):
+    read_less = payload["read_less"]
+    assert read_less["baseline_source_lines"] >= read_less["selected_source_lines"], label
+    assert read_less["source_lines_avoided"] >= 0, label
+    assert read_less["line_reduction"], label
+    assert read_less["read_less_ratio"], label
+    return read_less
+
+
 try:
     initialize = request({"jsonrpc": "2.0", "id": 1, "method": "initialize"})
     assert initialize["result"]["serverInfo"]["name"] == "codeinsight"
@@ -269,12 +278,8 @@ try:
     agent_route_reading_plan = agent_route_context["reading_plan"]
     agent_route_continuation = agent_route_context["continuation_summary"]
     agent_route_omitted_candidates = agent_route_context["omitted_candidates"]
-    agent_route_read_less = agent_route_context["read_less"]
+    agent_route_read_less = assert_read_less(agent_route_context, "agent_route read_less")
     assert agent_route_reading_plan, "agent_route produced no reading plan"
-    assert agent_route_read_less["baseline_source_lines"] >= agent_route_read_less["selected_source_lines"]
-    assert agent_route_read_less["source_lines_avoided"] >= 0
-    assert agent_route_read_less["line_reduction"]
-    assert agent_route_read_less["read_less_ratio"]
     agent_route_first_reading = agent_route_reading_plan[0]
     agent_route_current_step_matches_reading_plan = (
         agent_route_result["current_reading_step"] == agent_route_first_reading
@@ -450,6 +455,7 @@ try:
     assert context_result["budget"]["omitted_ranges"] == (
         context_result["budget"]["candidate_ranges"] - context_result["budget"]["selected_ranges"]
     )
+    explicit_read_less = assert_read_less(context_result, "explicit context_pack read_less")
     assert context_result["budget"]["truncation_reason"]
     assert "omitted_candidates" in context_result
     assert context_result["continuation_summary"]["status"]
@@ -527,6 +533,7 @@ try:
     )
     auto_context_result = auto_context["result"]["structuredContent"]
     assert auto_context_result["seed_strategy"] == "auto_entrypoint"
+    auto_read_less = assert_read_less(auto_context_result, "auto context_pack read_less")
     assert any(
         seed["kind"] == "file"
         and seed["value"] == "src/main.ts"
@@ -583,12 +590,16 @@ try:
     print(f"agent_route_suggested_tool: {agent_route_result['execution_plan'][1]['suggested_tool']['tool']}")
     print(f"agent_route_suggested_tool_executed: true")
     print(f"explicit_first_reading_selection_rank: {explicit_reading_plan[0]['selection_rank']}")
+    print(f"explicit_source_lines_avoided: {explicit_read_less['source_lines_avoided']}")
+    print(f"explicit_read_less_ratio: {explicit_read_less['read_less_ratio']}")
     print(f"explicit_continuation_status: {context_result['continuation_summary']['status']}")
     print(f"explicit_continuation_next_action: {context_result['continuation_summary']['next_action']}")
     print(f"explicit_first_omitted_file: {omitted_candidate.get('file', '-')}")
     print(f"explicit_first_omitted_selection_rank: {omitted_candidate.get('selection_rank', '-')}")
     print(f"explicit_first_omitted_omission_reason: {omitted_candidate.get('omission_reason', '-')}")
     print(f"explicit_suggested_tool: {explicit_reading_plan[0]['suggested_tool']['tool']}")
+    print(f"auto_source_lines_avoided: {auto_read_less['source_lines_avoided']}")
+    print(f"auto_read_less_ratio: {auto_read_less['read_less_ratio']}")
     print(f"auto_suggested_tool: {auto_context_result['reading_plan'][0]['suggested_tool']['tool']}")
     print(f"explicit_omitted_candidates: {len(context_result['omitted_candidates'])}")
 finally:
