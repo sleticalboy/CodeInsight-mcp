@@ -3153,8 +3153,21 @@ impl ContextTaskSignals {
 }
 
 fn context_text_mentions(text: &str, terms: &[&str]) -> bool {
-    let text = text.to_ascii_lowercase();
-    terms.iter().any(|term| text.contains(term))
+    let text_tokens = ascii_word_tokens(text);
+    terms.iter().any(|term| {
+        let term_tokens = ascii_word_tokens(term);
+        !term_tokens.is_empty()
+            && text_tokens
+                .windows(term_tokens.len())
+                .any(|window| window == term_tokens.as_slice())
+    })
+}
+
+fn ascii_word_tokens(text: &str) -> Vec<String> {
+    text.split(|ch: char| !ch.is_ascii_alphanumeric())
+        .map(str::to_ascii_lowercase)
+        .filter(|token| !token.is_empty())
+        .collect()
 }
 
 fn context_reading_sources(file: &ContextFile) -> BTreeSet<&str> {
@@ -5838,6 +5851,27 @@ mod tests {
         assert!(security_keywords.contains(&"sanitize".to_string()));
         assert!(security_keywords.contains(&"sanitization".to_string()));
         assert!(security_keywords.contains(&"vulnerability".to_string()));
+    }
+
+    #[test]
+    fn context_text_mentions_matches_words_and_phrases_without_substrings() {
+        assert!(context_text_mentions("understand log behavior", &["log"]));
+        assert!(context_text_mentions(
+            "understand access-control rules",
+            &["access control"]
+        ));
+        assert!(context_text_mentions(
+            "understand feature-flag rollout",
+            &["feature flag"]
+        ));
+        assert!(!context_text_mentions(
+            "understand catalog behavior",
+            &["log"]
+        ));
+        assert!(!context_text_mentions(
+            "understand asyncatalog behavior",
+            &["async"]
+        ));
     }
 
     #[test]
