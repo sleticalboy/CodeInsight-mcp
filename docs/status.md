@@ -23,13 +23,18 @@ MVP workflow is now implemented end to end.
   routes, Java application roots, Python web framework roots, and C# web
   application roots.
 - Dependency graph with local resolution, source/target file filters, language
-  filters, summaries, top source stats, and top target stats.
+  filters, dependency kind filters, summaries, type-relation edge counts, top
+  source stats, and top target stats.
 - Text reference search, impact analysis, token-budgeted context packs, reading
   plans, and call graph tools with imported target hints.
 - Local dependency resolution for common import/include/use forms across the
   supported languages, including JavaScript/TypeScript package metadata,
   workspaces, Python relative imports, Rust modules, Go modules, Java/C#/PHP
   namespace imports, Ruby `require_relative`, and C/C++ local includes.
+- Direct type-relation extraction and routing for C#, Java,
+  TypeScript/JavaScript, PHP, Ruby, and Rust trait implementations, exposed in
+  `project_overview`, `dependency_graph`, `context_pack`, and
+  `impact_analysis`.
 - Same-file `callee_file` hints for local calls that match symbols in the
   current file, plus imported `callee_file` hints for obvious local calls in
   JavaScript/TypeScript, Python, Rust, Go, Java, C#, PHP, and Ruby.
