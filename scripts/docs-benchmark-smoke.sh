@@ -371,6 +371,9 @@ main() {
     '\[Express\]\(task-routing-expectations/express\.tsv\)' \
     "docs index Express task routing expectation link"
   require_pattern docs/README.md \
+    '\[Flask\]\(task-routing-expectations/flask\.tsv\)' \
+    "docs index Flask task routing expectation link"
+  require_pattern docs/README.md \
     '\[Gin\]\(task-routing-expectations/gin\.tsv\)' \
     "docs index Gin task routing expectation link"
   require_pattern docs/README.md \
@@ -622,6 +625,9 @@ main() {
   require_pattern docs/task-routing-matrix.md \
     '\[Express\]\(task-routing-expectations/express\.tsv\)' \
     "task routing matrix Express expectation example link"
+  require_pattern docs/task-routing-matrix.md \
+    '\[Flask\]\(task-routing-expectations/flask\.tsv\)' \
+    "task routing matrix Flask expectation example link"
   require_pattern docs/task-routing-matrix.md \
     '\[Gin\]\(task-routing-expectations/gin\.tsv\)' \
     "task routing matrix Gin expectation example link"

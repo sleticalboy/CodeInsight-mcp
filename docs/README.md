@@ -24,6 +24,7 @@ Default adoption path:
   [JSON summary](public-task-routing-matrix-summary.json)
 - Task routing expectations:
   [Express](task-routing-expectations/express.tsv),
+  [Flask](task-routing-expectations/flask.tsv),
   [Gin](task-routing-expectations/gin.tsv),
   [Requests](task-routing-expectations/requests.tsv),
   [Streamlit](task-routing-expectations/streamlit.tsv)
