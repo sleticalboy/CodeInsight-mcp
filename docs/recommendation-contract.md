@@ -75,6 +75,11 @@ Each execution step includes:
 client can render the first file, focus, question, reason, rank, selection
 evidence, and suggested tool without digging through the nested context pack.
 When no reading plan is available, the field is omitted.
+If `context_pack` cannot infer a source seed from an empty or unsupported
+repository, `agent_route` still returns a structured report: the context step
+uses `blocked_no_seed`, `context_pack.seed_strategy` is `auto_no_seed`, and
+`execution_plan[]` keeps the normal action order with blocked/manual statuses
+that tell the client to provide a seed file or symbol.
 
 The default action order is:
 

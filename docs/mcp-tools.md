@@ -46,7 +46,7 @@ The stdio server currently exposes 16 tools:
 | `embedding_status` | Report provider, batch size, and optional local semantic-index state without network calls. |
 | `version` | Return package version and target platform information. |
 | `context_pack` | Build token-budgeted agent context from explicit seeds or inferred entrypoints, including selected files/ranges, source mix counts, seed strategy, selected seeds, read-less source-line metrics, budget metadata, continuation summary, omitted candidate follow-ups, reading plan, semantic status, and follow-up suggestions. |
-| `agent_route` | Run the default first-read path in one call: refresh the local index, return `project_overview`, build `context_pack`, expose `current_reading_step` and `execution_plan[]`, and include an `impact_analysis` preview when a seed is available. |
+| `agent_route` | Run the default first-read path in one call: refresh the local index, return `project_overview`, build `context_pack`, expose `current_reading_step` and `execution_plan[]`, include an `impact_analysis` preview when a seed is available, and return a structured blocked plan when no source seed can be inferred. |
 | `callers` | Return static call sites that call a function or method, including imported target hints when available. |
 | `callees` | Return static callees for a function or method, including imported target hints when available. |
 
@@ -61,6 +61,9 @@ Recommended MCP first-read flow:
    context, and review impact before edits.
 3. Use `agent_route.current_reading_step` to render the first checklist row
    without rebuilding it from `context_pack.reading_plan[0]`.
+   If it is omitted, inspect `execution_plan[]` statuses such as
+   `blocked_no_reading_plan` or `blocked_no_current_reading_step` and ask for a
+   seed file or symbol instead of broad-reading the repository.
 4. Display `context_pack.read_less` when users need to see how much source
    text the first read avoided before follow-up tools.
 5. Use the lower-level tools directly when the client needs step-by-step

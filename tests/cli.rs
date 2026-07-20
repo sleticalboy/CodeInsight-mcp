@@ -2142,6 +2142,83 @@ fn cli_agent_route_runs_first_read_pipeline() {
 }
 
 #[test]
+fn cli_agent_route_returns_blocked_plan_for_empty_repository() {
+    let fixture = TempDir::new().unwrap();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand this repository",
+        "--token-budget",
+        "1000",
+        "--force-index",
+    ]);
+
+    assert_eq!(route["impact_status"], "skipped_no_seed");
+    assert_eq!(route["route"][2]["status"], "blocked_no_seed");
+    assert_eq!(route["route"][3]["status"], "skipped_no_seed");
+    assert_eq!(route["context_pack"]["seed_strategy"], "auto_no_seed");
+    assert_eq!(route["context_pack"]["files"].as_array().unwrap().len(), 0);
+    assert_eq!(
+        route["context_pack"]["reading_plan"]
+            .as_array()
+            .unwrap()
+            .len(),
+        0
+    );
+    assert_eq!(
+        route["context_pack"]["continuation_summary"]["status"],
+        "blocked_no_seed"
+    );
+    assert_eq!(
+        route["context_pack"]["continuation_summary"]["next_action"],
+        "provide_seed_file_or_symbol"
+    );
+    assert!(route["current_reading_step"].is_null());
+    let actions = route["execution_plan"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|step| step["action"].as_str().unwrap())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        actions,
+        vec![
+            "read_selected_context",
+            "use_current_reading_step_suggested_tool",
+            "use_continuation_if_needed",
+            "review_impact_before_edits"
+        ]
+    );
+    assert_eq!(
+        route["execution_plan"][0]["status"],
+        "blocked_no_reading_plan"
+    );
+    assert_eq!(
+        route["execution_plan"][1]["status"],
+        "blocked_no_current_reading_step"
+    );
+    assert_eq!(
+        route["execution_plan"][2]["status"],
+        "manual_after_selected_context"
+    );
+    assert_eq!(route["execution_plan"][3]["status"], "skipped_no_seed");
+    assert!(
+        route["execution_plan"][0]["instruction"]
+            .as_str()
+            .unwrap()
+            .contains("provide seed files")
+    );
+    assert!(
+        route["execution_plan"][1]["instruction"]
+            .as_str()
+            .unwrap()
+            .contains("provide a seed file or symbol")
+    );
+}
+
+#[test]
 fn cli_agent_route_keeps_entrypoint_companion_for_task_match() {
     let fixture = TempDir::new().unwrap();
     std::fs::create_dir_all(fixture.path().join("src")).unwrap();

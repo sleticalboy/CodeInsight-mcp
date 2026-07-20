@@ -43,6 +43,8 @@ const CONTEXT_SCORE_LOCAL_DEPENDENCY: i32 = 40;
 const CONTEXT_SCORE_TASK_MATCH_BOOST: i32 = 30;
 const CONTEXT_SCORE_SEED_SYMBOL_TASK_MATCH_BOOST: i32 = 5;
 const CONTEXT_SCORE_LOW_VALUE_FILE_PENALTY: i32 = 35;
+const CONTEXT_PACK_NO_SEED_ERROR: &str =
+    "context_pack could not infer source seed files from the current index";
 const CONTEXT_SCORE_LOW_VALUE_FILE_TEST_BOOST: i32 = 35;
 const CONTEXT_MAX_SYMBOL_LINES: usize = 80;
 const CONTEXT_MAX_MERGED_RANGE_LINES: usize = 80;
@@ -231,13 +233,19 @@ pub fn agent_route_value(
     let token_budget = token_budget.max(500);
     let index_report = index_project_value(root.clone(), force_index)?;
     let overview = project_overview_value(root.clone())?;
-    let context_pack = context_pack_value(
+    let context_pack = match context_pack_value(
         root.clone(),
         task.clone(),
         symbols.clone(),
         files.clone(),
         token_budget,
-    )?;
+    ) {
+        Ok(context_pack) => context_pack,
+        Err(error) if is_context_pack_no_seed_error(&error) => {
+            empty_context_pack_for_blocked_route(task.clone(), token_budget, overview.total_lines)
+        }
+        Err(error) => return Err(error),
+    };
 
     let mut impact_seed_files = files
         .iter()
@@ -296,7 +304,11 @@ pub fn agent_route_value(
         AgentRouteStep {
             order: 3,
             tool: "context_pack".to_string(),
-            status: "complete".to_string(),
+            status: if context_pack.reading_plan.is_empty() {
+                "blocked_no_seed".to_string()
+            } else {
+                "complete".to_string()
+            },
             reason: agent_route_context_reason(&context_pack),
         },
         AgentRouteStep {
@@ -383,6 +395,15 @@ fn agent_route_execution_plan(
             ),
             files: vec![step.file.clone()],
             suggested_tool: Some(step.suggested_tool.clone()),
+        });
+    } else {
+        plan.push(AgentRouteExecutionStep {
+            order: 2,
+            action: "use_current_reading_step_suggested_tool".to_string(),
+            status: "blocked_no_current_reading_step".to_string(),
+            instruction: "No current_reading_step is available; provide a seed file or symbol, or add source files before requesting a suggested follow-up tool.".to_string(),
+            files: Vec::new(),
+            suggested_tool: None,
         });
     }
 
@@ -506,6 +527,65 @@ fn agent_route_impact_reason(report: &ImpactAnalysisReport) -> String {
         report.impact_breakdown.call_paths,
         report.impact_breakdown.dependency_paths
     )
+}
+
+fn is_context_pack_no_seed_error(error: &anyhow::Error) -> bool {
+    error.to_string().contains(CONTEXT_PACK_NO_SEED_ERROR)
+}
+
+fn empty_context_pack_for_blocked_route(
+    task: String,
+    requested_token_budget: usize,
+    baseline_source_lines: usize,
+) -> ContextPack {
+    let applied_token_budget = requested_token_budget.max(500);
+    let estimated_tokens = estimate_tokens(&task);
+    ContextPack {
+        task,
+        summary: "Context pack could not infer source seed files; provide --file/--symbol or add source files before broad reading.".to_string(),
+        seed_strategy: "auto_no_seed".to_string(),
+        selected_seeds: Vec::new(),
+        reading_plan: Vec::new(),
+        semantic_status: ContextSemanticStatus {
+            provider: "disabled".to_string(),
+            model: "disabled".to_string(),
+            provider_configured: false,
+            vector_status: "skipped_no_seed".to_string(),
+            vector_candidates: 0,
+            fallback_candidates: 0,
+            selected_vector_ranges: 0,
+            selected_fallback_ranges: 0,
+            recommendation: "provide a source seed before semantic context expansion".to_string(),
+        },
+        budget: ContextBudget {
+            requested_token_budget,
+            applied_token_budget,
+            estimated_tokens,
+            candidate_files: 0,
+            selected_files: 0,
+            omitted_files: 0,
+            candidate_ranges: 0,
+            selected_ranges: 0,
+            omitted_ranges: 0,
+            truncated: false,
+            truncation_reason: "no_seed_available".to_string(),
+        },
+        read_less: context_read_less(baseline_source_lines, 0),
+        continuation_summary: ContextContinuationSummary {
+            status: "blocked_no_seed".to_string(),
+            message: "No source seed was available for context selection; provide --file/--symbol or add source files.".to_string(),
+            next_action: "provide_seed_file_or_symbol".to_string(),
+            omitted_candidate_count: 0,
+            first_omitted_file: None,
+            suggested_tool: None,
+        },
+        omitted_candidates: Vec::new(),
+        files: Vec::new(),
+        symbols: Vec::new(),
+        references: Vec::new(),
+        estimated_tokens,
+        truncated: false,
+    }
 }
 
 pub fn init_config_value(root: PathBuf, force: bool) -> Result<ConfigInitReport> {
