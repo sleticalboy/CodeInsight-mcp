@@ -7739,6 +7739,40 @@ fn assert_agent_route_execution_plan_matches_context(route: &Value) {
             .contains(first_step["question"].as_str().unwrap()),
         "first execution step should include the first reading-plan question"
     );
+    let first_instruction = execution_plan[0]["instruction"].as_str().unwrap();
+    assert!(
+        first_instruction.contains("Read-less evidence: selected"),
+        "first execution step should expose read-less evidence"
+    );
+    assert!(
+        first_instruction.contains(&format!(
+            "selected {} of {} source lines",
+            context_pack["read_less"]["selected_source_lines"]
+                .as_u64()
+                .unwrap(),
+            context_pack["read_less"]["baseline_source_lines"]
+                .as_u64()
+                .unwrap()
+        )),
+        "first execution step should expose selected and baseline source lines"
+    );
+    assert!(
+        first_instruction.contains(&format!(
+            "avoided {}",
+            context_pack["read_less"]["source_lines_avoided"]
+                .as_u64()
+                .unwrap()
+        )),
+        "first execution step should expose avoided source lines"
+    );
+    assert!(
+        first_instruction.contains(
+            context_pack["read_less"]["read_less_ratio"]
+                .as_str()
+                .unwrap()
+        ),
+        "first execution step should expose read-less ratio"
+    );
     assert_eq!(execution_plan[1]["files"][0], first_step["file"]);
     assert_eq!(
         execution_plan[1]["suggested_tool"], first_step["suggested_tool"],

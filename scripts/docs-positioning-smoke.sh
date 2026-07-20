@@ -594,6 +594,9 @@ main() {
     '`review_impact_before_edits`' \
     "recommendation contract impact checkpoint"
   require_pattern docs/recommendation-contract.md \
+    'source-line reduction evidence; the continuation step names' \
+    "recommendation contract execution plan read-less evidence"
+  require_pattern docs/recommendation-contract.md \
     '^## Read-Less Metrics$' \
     "recommendation contract read-less section"
   require_pattern docs/recommendation-contract.md \

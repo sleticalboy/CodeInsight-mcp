@@ -1218,6 +1218,9 @@ main() {
     '`source_lines_avoided`: non-negative baseline minus selected lines' \
     "recommendation contract read-less avoided metric"
   require_pattern docs/recommendation-contract.md \
+    'source-line reduction evidence; the continuation step names' \
+    "recommendation contract execution plan read-less evidence"
+  require_pattern docs/recommendation-contract.md \
     'They must still read selected context before using `suggested_tool`' \
     "recommendation contract read-less selected-context boundary"
   require_pattern docs/first-read-workflow.md \
@@ -1841,24 +1844,27 @@ main() {
   require_pattern scripts/mcp-stdio-smoke.sh \
     'explicit_first_omitted_omission_reason' \
     "MCP stdio explicit omitted reason output"
-	  require_pattern scripts/agent-route-step-summary-smoke.sh \
-	    'First reading question' \
-	    "agent-route step summary first reading question"
-	  require_pattern scripts/agent-route-step-summary-smoke.sh \
-	    'First execution instruction has focus' \
-	    "agent-route step summary execution instruction focus"
-	  require_pattern scripts/agent-route-step-summary-smoke.sh \
-	    'First execution instruction has question' \
-	    "agent-route step summary execution instruction question"
-	  require_pattern scripts/agent-route-step-summary-smoke.sh \
-	    'Current-step instruction has focus' \
-	    "agent-route step summary current-step instruction focus"
-	  require_pattern scripts/agent-route-step-summary-smoke.sh \
-	    'First selection rank' \
-	    "agent-route step summary first selection rank"
-	  require_pattern scripts/agent-route-step-summary-smoke.sh \
-	    'Continuation next action' \
-	    "agent-route step summary continuation next action"
+  require_pattern scripts/agent-route-step-summary-smoke.sh \
+    'First reading question' \
+    "agent-route step summary first reading question"
+  require_pattern scripts/agent-route-step-summary-smoke.sh \
+    'First execution instruction has focus' \
+    "agent-route step summary execution instruction focus"
+  require_pattern scripts/agent-route-step-summary-smoke.sh \
+    'First execution instruction has question' \
+    "agent-route step summary execution instruction question"
+  require_pattern scripts/agent-route-step-summary-smoke.sh \
+    'First execution instruction has read less' \
+    "agent-route step summary execution instruction read-less"
+  require_pattern scripts/agent-route-step-summary-smoke.sh \
+    'Current-step instruction has focus' \
+    "agent-route step summary current-step instruction focus"
+  require_pattern scripts/agent-route-step-summary-smoke.sh \
+    'First selection rank' \
+    "agent-route step summary first selection rank"
+  require_pattern scripts/agent-route-step-summary-smoke.sh \
+    'Continuation next action' \
+    "agent-route step summary continuation next action"
   require_pattern scripts/agent-route-artifact-smoke.sh \
     'first_reading_question' \
     "agent-route artifact first reading question output"
@@ -1868,6 +1874,9 @@ main() {
   require_pattern scripts/agent-route-artifact-smoke.sh \
     'first_execution_instruction_has_focus' \
     "agent-route artifact first execution instruction focus output"
+  require_pattern scripts/agent-route-artifact-smoke.sh \
+    'first_execution_instruction_has_read_less' \
+    "agent-route artifact first execution instruction read-less output"
   require_pattern scripts/agent-route-artifact-smoke.sh \
     'current_step_instruction_has_focus' \
     "agent-route artifact current-step instruction focus output"

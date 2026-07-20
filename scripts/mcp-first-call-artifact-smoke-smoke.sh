@@ -29,6 +29,7 @@ write_summary_json() {
   "first_execution_action": "read_selected_context",
   "first_execution_instruction_has_focus": true,
   "first_execution_instruction_has_question": true,
+  "first_execution_instruction_has_read_less": true,
   "impact_counts": {
     "callees": 1,
     "callers": 1,
@@ -170,6 +171,8 @@ EOF
     fail "missing current reading step mirror output"
   grep -Fq 'first_execution_instruction_has_focus: true' "$TEMP_DIR/output.log" ||
     fail "missing first execution focus contract output"
+  grep -Fq 'first_execution_instruction_has_read_less: true' "$TEMP_DIR/output.log" ||
+    fail "missing first execution read-less contract output"
   grep -Fq 'current_step_instruction_has_focus: true' "$TEMP_DIR/output.log" ||
     fail "missing current-step focus contract output"
   grep -Fq 'first_reading_selection_rank: 1' "$TEMP_DIR/output.log" ||
@@ -206,6 +209,8 @@ EOF
     fail "missing latest current reading step mirror output"
   grep -Fq 'first_execution_instruction_has_focus: true' "$TEMP_DIR/latest-output.log" ||
     fail "missing latest first execution focus contract output"
+  grep -Fq 'first_execution_instruction_has_read_less: true' "$TEMP_DIR/latest-output.log" ||
+    fail "missing latest first execution read-less contract output"
   grep -Fq 'current_step_instruction_has_focus: true' "$TEMP_DIR/latest-output.log" ||
     fail "missing latest current-step focus contract output"
   grep -Fq 'first_reading_selection_rank: 1' "$TEMP_DIR/latest-output.log" ||

@@ -49,6 +49,7 @@ require_summary_contract() {
       and .execution_plan_reads_in_reading_plan_order == true
       and .first_execution_instruction_has_focus == true
       and .first_execution_instruction_has_question == true
+      and .first_execution_instruction_has_read_less == true
       and .current_step_suggested_tool_matches_reading_plan == true
       and .current_step_instruction_has_focus == true
       and .current_step_instruction_has_question == true
@@ -130,6 +131,7 @@ main() {
     printf 'Reading order contract: `%s`\n\n' "$(value '.execution_plan_reads_in_reading_plan_order')"
     printf 'First execution instruction focus contract: `%s`\n\n' "$(value '.first_execution_instruction_has_focus')"
     printf 'First execution instruction question contract: `%s`\n\n' "$(value '.first_execution_instruction_has_question')"
+    printf 'First execution instruction read-less contract: `%s`\n\n' "$(value '.first_execution_instruction_has_read_less')"
     printf 'Suggested tool handoff contract: `%s`\n\n' "$(value '.current_step_suggested_tool_matches_reading_plan')"
     printf 'Current-step instruction focus contract: `%s`\n\n' "$(value '.current_step_instruction_has_focus')"
     printf 'Current-step instruction question contract: `%s`\n\n' "$(value '.current_step_instruction_has_question')"

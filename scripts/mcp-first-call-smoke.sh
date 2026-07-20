@@ -388,6 +388,50 @@ try:
         "agent_route_contract",
         "execution_plan[0].instruction should include reading_plan[0].question",
     )
+    read_less = context_pack.get("read_less", {})
+    expect(isinstance(read_less, dict), "agent_route_contract", "context_pack.read_less is missing")
+    expect(
+        isinstance(read_less.get("baseline_source_lines"), int)
+        and read_less["baseline_source_lines"] >= 0,
+        "agent_route_contract",
+        "context_pack.read_less.baseline_source_lines is missing",
+    )
+    expect(
+        isinstance(read_less.get("selected_source_lines"), int)
+        and read_less["selected_source_lines"] >= 0,
+        "agent_route_contract",
+        "context_pack.read_less.selected_source_lines is missing",
+    )
+    expect(
+        isinstance(read_less.get("source_lines_avoided"), int)
+        and read_less["source_lines_avoided"] >= 0,
+        "agent_route_contract",
+        "context_pack.read_less.source_lines_avoided is missing",
+    )
+    expect(
+        isinstance(read_less.get("line_reduction"), str)
+        and len(read_less["line_reduction"]) > 0,
+        "agent_route_contract",
+        "context_pack.read_less.line_reduction is missing",
+    )
+    expect(
+        isinstance(read_less.get("read_less_ratio"), str)
+        and len(read_less["read_less_ratio"]) > 0,
+        "agent_route_contract",
+        "context_pack.read_less.read_less_ratio is missing",
+    )
+    first_execution_instruction_has_read_less = (
+        "Read-less evidence: selected" in first_execution_instruction
+        and f"selected {read_less['selected_source_lines']} of {read_less['baseline_source_lines']} source lines"
+        in first_execution_instruction
+        and f"avoided {read_less['source_lines_avoided']}" in first_execution_instruction
+        and read_less["read_less_ratio"] in first_execution_instruction
+    )
+    expect(
+        first_execution_instruction_has_read_less,
+        "agent_route_contract",
+        "execution_plan[0].instruction should include context_pack.read_less evidence",
+    )
 
     suggested_tool = execution_plan[1].get("suggested_tool", {})
     expect(suggested_tool.get("tool"), "suggested_tool", "execution_plan suggested_tool.tool is missing")
@@ -426,38 +470,6 @@ try:
         "execution_plan[1].instruction should include reading_plan[0].next_action",
     )
     continuation_summary = context_pack.get("continuation_summary", {})
-    read_less = context_pack.get("read_less", {})
-    expect(isinstance(read_less, dict), "agent_route_contract", "context_pack.read_less is missing")
-    expect(
-        isinstance(read_less.get("baseline_source_lines"), int)
-        and read_less["baseline_source_lines"] >= 0,
-        "agent_route_contract",
-        "context_pack.read_less.baseline_source_lines is missing",
-    )
-    expect(
-        isinstance(read_less.get("selected_source_lines"), int)
-        and read_less["selected_source_lines"] >= 0,
-        "agent_route_contract",
-        "context_pack.read_less.selected_source_lines is missing",
-    )
-    expect(
-        isinstance(read_less.get("source_lines_avoided"), int)
-        and read_less["source_lines_avoided"] >= 0,
-        "agent_route_contract",
-        "context_pack.read_less.source_lines_avoided is missing",
-    )
-    expect(
-        isinstance(read_less.get("line_reduction"), str)
-        and len(read_less["line_reduction"]) > 0,
-        "agent_route_contract",
-        "context_pack.read_less.line_reduction is missing",
-    )
-    expect(
-        isinstance(read_less.get("read_less_ratio"), str)
-        and len(read_less["read_less_ratio"]) > 0,
-        "agent_route_contract",
-        "context_pack.read_less.read_less_ratio is missing",
-    )
     expect(
         continuation_summary.get("next_action"),
         "agent_route_contract",
@@ -556,6 +568,7 @@ try:
         "first_execution_action": first_execution["action"],
         "first_execution_instruction_has_focus": first_execution_instruction_has_focus,
         "first_execution_instruction_has_question": first_execution_instruction_has_question,
+        "first_execution_instruction_has_read_less": first_execution_instruction_has_read_less,
         "current_step_suggested_tool_matches_reading_plan": True,
         "current_step_instruction_has_focus": current_step_instruction_has_focus,
         "current_step_instruction_has_question": current_step_instruction_has_question,

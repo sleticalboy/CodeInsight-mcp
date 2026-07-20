@@ -116,6 +116,7 @@ validate_summary_json() {
         and ($step.reason | contains("Selection reason:")))
       and .execution_plan_reads_in_reading_plan_order == true
       and .first_execution_instruction_has_focus == true
+      and .first_execution_instruction_has_read_less == true
       and .current_step_instruction_has_focus == true
       and .current_step_suggested_tool_matches_reading_plan == true
       and .continuation_after_selected_context == true
@@ -263,6 +264,7 @@ main() {
   echo "first_reading_question: $(jq -r '.reading_plan[0].question' "$summary_file")"
   echo "current_reading_step_matches_reading_plan: $(jq -r '.current_reading_step_matches_reading_plan' "$summary_file")"
   echo "first_execution_instruction_has_focus: $(jq -r '.first_execution_instruction_has_focus' "$summary_file")"
+  echo "first_execution_instruction_has_read_less: $(jq -r '.first_execution_instruction_has_read_less' "$summary_file")"
   echo "current_step_instruction_has_focus: $(jq -r '.current_step_instruction_has_focus' "$summary_file")"
   echo "first_reading_selection_rank: $(jq -r '.first_reading_selection_rank' "$summary_file")"
   echo "source_lines_avoided: $(jq -r '.source_lines_avoided' "$summary_file")"

@@ -55,6 +55,7 @@ require_summary_contract() {
       and (.metrics.first_execution_action | type == "string")
       and (.metrics.first_execution_instruction_has_focus | type == "boolean")
       and (.metrics.first_execution_instruction_has_question | type == "boolean")
+      and (.metrics.first_execution_instruction_has_read_less | type == "boolean")
       and (.metrics.second_execution_action | type == "string")
       and (.metrics.first_execution_suggested_tool | type == "string")
       and (.metrics.current_step_instruction_has_focus | type == "boolean")
@@ -143,6 +144,7 @@ main() {
     printf '| First execution action | `%s` |\n' "$(metric '.metrics.first_execution_action')"
     printf '| First execution instruction has focus | `%s` |\n' "$(metric '.metrics.first_execution_instruction_has_focus')"
     printf '| First execution instruction has question | `%s` |\n' "$(metric '.metrics.first_execution_instruction_has_question')"
+    printf '| First execution instruction has read less | `%s` |\n' "$(metric '.metrics.first_execution_instruction_has_read_less')"
     printf '| Second execution action | `%s` |\n' "$(metric '.metrics.second_execution_action')"
     printf '| First execution suggested tool | `%s` |\n' "$(metric '.metrics.first_execution_suggested_tool')"
     printf '| Current-step instruction has focus | `%s` |\n' "$(metric '.metrics.current_step_instruction_has_focus')"

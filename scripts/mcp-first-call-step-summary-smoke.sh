@@ -74,6 +74,7 @@ main() {
   "first_execution_action": "read_selected_context",
   "first_execution_instruction_has_focus": true,
   "first_execution_instruction_has_question": true,
+  "first_execution_instruction_has_read_less": true,
   "current_step_suggested_tool_matches_reading_plan": true,
   "current_step_instruction_has_focus": true,
   "current_step_instruction_has_question": true,
@@ -128,6 +129,7 @@ EOF
   require_literal "$summary_md" 'Reading order contract: `true`' "reading order contract"
   require_literal "$summary_md" 'First execution instruction focus contract: `true`' "first execution instruction focus contract"
   require_literal "$summary_md" 'First execution instruction question contract: `true`' "first execution instruction question contract"
+  require_literal "$summary_md" 'First execution instruction read-less contract: `true`' "first execution instruction read-less contract"
   require_literal "$summary_md" 'Suggested tool handoff contract: `true`' "suggested tool handoff contract"
   require_literal "$summary_md" 'Current-step instruction focus contract: `true`' "current-step instruction focus contract"
   require_literal "$summary_md" 'Current-step instruction question contract: `true`' "current-step instruction question contract"

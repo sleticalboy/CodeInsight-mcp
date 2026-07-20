@@ -66,6 +66,7 @@ main() {
     "first_execution_action": "read_selected_context",
     "first_execution_instruction_has_focus": true,
     "first_execution_instruction_has_question": true,
+    "first_execution_instruction_has_read_less": true,
     "second_execution_action": "use_current_reading_step_suggested_tool",
 	    "first_execution_suggested_tool": "file_outline",
 	    "current_step_instruction_has_focus": true,
@@ -112,6 +113,7 @@ EOF
   require_literal "$summary_md" '| First execution action | `read_selected_context` |' "first execution action metric"
   require_literal "$summary_md" '| First execution instruction has focus | `true` |' "first execution instruction focus metric"
   require_literal "$summary_md" '| First execution instruction has question | `true` |' "first execution instruction question metric"
+  require_literal "$summary_md" '| First execution instruction has read less | `true` |' "first execution instruction read-less metric"
   require_literal "$summary_md" '| Second execution action | `use_current_reading_step_suggested_tool` |' "second execution action metric"
 	  require_literal "$summary_md" '| First execution suggested tool | `file_outline` |' "first execution suggested tool metric"
 	  require_literal "$summary_md" '| Current-step instruction has focus | `true` |' "current-step instruction focus metric"

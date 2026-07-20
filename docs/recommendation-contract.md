@@ -87,9 +87,9 @@ Clients should read selected `context_pack.files[]` before enabling or
 executing `use_current_reading_step_suggested_tool`, and should not use
 `continuation_summary.suggested_tool` until selected context has been consumed.
 The first execution step names the first reading file with its
-`selection_rank` and first reading focus/question; the continuation step names
-the first omitted candidate, `omission_reason`, and suggested continuation tool
-when one exists.
+`selection_rank`, first reading focus/question, and `context_pack.read_less`
+source-line reduction evidence; the continuation step names the first omitted
+candidate, `omission_reason`, and suggested continuation tool when one exists.
 The second execution step mirrors the first `reading_plan[]` step's
 `suggested_tool` and names that step's `next_action`, focus, and question, so
 clients can render the follow-up without reassembling context from separate

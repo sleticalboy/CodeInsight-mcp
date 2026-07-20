@@ -167,6 +167,18 @@ def assert_agent_route_execution_evidence(route, reading_step, label):
         raise AssertionError({label: first_execution})
     if reading_step["focus"] not in first_execution.get("instruction", ""):
         raise AssertionError({label: first_execution})
+    read_less = assert_read_less(route["context_pack"], label)
+    if "Read-less evidence: selected" not in first_execution.get("instruction", ""):
+        raise AssertionError({label: first_execution})
+    if (
+        f"selected {read_less['selected_source_lines']} of {read_less['baseline_source_lines']} source lines"
+        not in first_execution.get("instruction", "")
+    ):
+        raise AssertionError({label: first_execution})
+    if f"avoided {read_less['source_lines_avoided']}" not in first_execution.get("instruction", ""):
+        raise AssertionError({label: first_execution})
+    if read_less["read_less_ratio"] not in first_execution.get("instruction", ""):
+        raise AssertionError({label: first_execution})
     continuation = assert_continuation_summary(route["context_pack"], label)
     continuation_instruction = route["execution_plan"][2].get("instruction", "")
     if continuation["next_action"] not in continuation_instruction:

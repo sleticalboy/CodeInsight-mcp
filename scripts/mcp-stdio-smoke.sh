@@ -308,6 +308,16 @@ try:
         in agent_route_result["execution_plan"][0]["instruction"]
     )
     assert agent_route_first_reading["focus"] in agent_route_result["execution_plan"][0]["instruction"]
+    assert "Read-less evidence: selected" in agent_route_result["execution_plan"][0]["instruction"]
+    assert (
+        f"selected {agent_route_read_less['selected_source_lines']} of {agent_route_read_less['baseline_source_lines']} source lines"
+        in agent_route_result["execution_plan"][0]["instruction"]
+    )
+    assert (
+        f"avoided {agent_route_read_less['source_lines_avoided']}"
+        in agent_route_result["execution_plan"][0]["instruction"]
+    )
+    assert agent_route_read_less["read_less_ratio"] in agent_route_result["execution_plan"][0]["instruction"]
     assert agent_route_result["execution_plan"][1]["suggested_tool"]["tool"]
     assert agent_route_result["execution_plan"][1]["suggested_tool"]["suggested_arguments"]
     assert agent_route_continuation["status"]

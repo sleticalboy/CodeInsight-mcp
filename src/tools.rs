@@ -346,8 +346,16 @@ fn agent_route_execution_plan(
         },
         instruction: match first_step {
             Some(step) => format!(
-                "Read context_pack.files[] in reading_plan[] order, starting with {} (candidate rank {}) with focus: {} Answer: {} Treat reading_plan[].reason as the current-step instruction and selection_reason as evidence for why each file was selected.",
-                step.file, step.selection_rank, step.focus, step.question
+                "Read context_pack.files[] in reading_plan[] order, starting with {} (candidate rank {}) with focus: {} Answer: {} Read-less evidence: selected {} of {} source lines, avoided {} ({} reduction, {} read-less ratio). Treat reading_plan[].reason as the current-step instruction and selection_reason as evidence for why each file was selected.",
+                step.file,
+                step.selection_rank,
+                step.focus,
+                step.question,
+                context_pack.read_less.selected_source_lines,
+                context_pack.read_less.baseline_source_lines,
+                context_pack.read_less.source_lines_avoided,
+                context_pack.read_less.line_reduction,
+                context_pack.read_less.read_less_ratio,
             ),
             None => {
                 "No reading_plan was produced; narrow the task or provide seed files before broad reading."
