@@ -74,6 +74,9 @@ It also asserts the MCP-facing structured fields that clients commonly render:
   MCP `tools/call`
 - suggested-tool execution is proof the follow-up call is usable, not permission
   to run it before selected context is read
+- an empty repository returns a structured `blocked_no_seed` route with
+  `provide_seed_file_or_symbol`, no selected context, no current reading step,
+  and `skipped_no_seed` impact status
 - continuation follow-ups remain gated behind selected-context reading even
   when omitted candidates expose ready MCP calls
 - `review_impact_before_edits` remains the pre-edit planning checkpoint, not a
@@ -134,6 +137,9 @@ agent_route_first_omitted_selection_rank: -
 agent_route_first_omitted_omission_reason: -
 agent_route_suggested_tool: file_outline
 agent_route_suggested_tool_executed: true
+agent_route_blocked_no_seed_status: blocked_no_seed
+agent_route_blocked_no_seed_next_action: provide_seed_file_or_symbol
+agent_route_blocked_no_seed_impact_status: skipped_no_seed
 explicit_first_reading_selection_rank: 1
 explicit_source_lines_avoided: 146
 explicit_read_less_ratio: 9.1x
@@ -165,6 +171,9 @@ present because the protocol smoke exercises direct `context_pack` calls as
 well as `agent_route`.
 `agent_route_suggested_tool_executed` should remain `true`; it verifies the
 execution-plan suggested tool is a usable MCP call, not only display metadata.
+`agent_route_blocked_no_seed_status` and
+`agent_route_blocked_no_seed_next_action` should remain present so MCP clients
+can handle empty or unsupported repositories without broad file reads.
 `agent_route_first_reading_selection_rank` and
 `explicit_first_omitted_omission_reason` should remain present so protocol
 smoke output exposes the same candidate-ranking and continuation evidence as

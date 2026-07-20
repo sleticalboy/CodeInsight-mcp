@@ -77,7 +77,17 @@ require_summary_contract() {
       and .suggested_tool.tool == .reading_plan[0].suggested_tool
       and .suggested_tool_executed == true
       and .impact_status == "complete"
-      and (.impact_counts.impacted_files | type == "number")' \
+      and (.impact_counts.impacted_files | type == "number")
+      and .blocked_no_seed.route_step_status == "blocked_no_seed"
+      and .blocked_no_seed.seed_strategy == "auto_no_seed"
+      and .blocked_no_seed.continuation_status == "blocked_no_seed"
+      and .blocked_no_seed.continuation_next_action == "provide_seed_file_or_symbol"
+      and .blocked_no_seed.context_files == 0
+      and .blocked_no_seed.reading_plan_steps == 0
+      and .blocked_no_seed.has_current_reading_step == false
+      and .blocked_no_seed.impact_status == "skipped_no_seed"
+      and .blocked_no_seed.execution_plan_actions == ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"]
+      and .blocked_no_seed.execution_plan_statuses == ["blocked_no_reading_plan", "blocked_no_current_reading_step", "manual_after_selected_context", "skipped_no_seed"]' \
     "$SUMMARY_JSON" >/dev/null; then
     fail "$SUMMARY_JSON does not match the MCP first-call summary contract"
   fi
@@ -146,6 +156,9 @@ main() {
     printf 'Suggested tool executed: `%s`\n\n' "$(value '.suggested_tool_executed')"
     printf 'Impact status: `%s`\n\n' "$(value '.impact_status')"
     printf 'Impacted files: `%s`\n\n' "$(value '.impact_counts.impacted_files')"
+    printf 'Blocked no-seed status: `%s`\n\n' "$(value '.blocked_no_seed.continuation_status')"
+    printf 'Blocked no-seed next action: `%s`\n\n' "$(value '.blocked_no_seed.continuation_next_action')"
+    printf 'Blocked no-seed execution statuses: `%s`\n\n' "$(value '.blocked_no_seed.execution_plan_statuses | join(" -> ")')"
     printf 'Full JSON summary: `%s`\n\n' "$SUMMARY_JSON"
     if [ -n "$RUN_URL" ]; then
       printf 'Workflow run: [open run](%s)\n\n' "$RUN_URL"

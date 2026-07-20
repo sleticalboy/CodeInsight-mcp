@@ -112,7 +112,7 @@ hands the agent to precise local tools when the selected context is not enough.
    | Framework entrypoints | `scripts/framework-entrypoint-demo.sh` | You want local proof that Next.js, Rails, Django, and C# web entrypoints can be detected and routed as first context for matching tasks. |
    | Task routing matrix | `scripts/task-routing-matrix.sh /path/to/repo --expect-file ./route-expectations.tsv` | You want a multi-task first-read matrix showing first selected file, seed strategy, line reduction, token estimate, impact preview, and optional expected-file gates for one repository. |
    | Public route matrix | `scripts/public-task-routing-matrix.sh` | You want one aggregate route-quality summary across pinned checked-in Express, Flask, Gin, and Requests expectation files. See the checked-in [public routing snapshot](docs/public-task-routing-matrix.md); add `--case streamlit` when you want the larger Streamlit case. |
-   | MCP wiring | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/mcp-first-call-smoke.sh` | You want a compact JSON proof that stdio MCP accepts `agent_route`, returns the first context file, follows `reading_plan[]`, exposes read-less metrics, selection rank, and continuation evidence, runs the current step's suggested tool, and includes `impact_status`. |
+   | MCP wiring | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/mcp-first-call-smoke.sh` | You want a compact JSON proof that stdio MCP accepts `agent_route`, returns the first context file, follows `reading_plan[]`, exposes read-less metrics, selection rank, and continuation evidence, runs the current step's suggested tool, includes `impact_status`, and returns a structured `blocked_no_seed` route for empty repositories. |
    | Installed adoption | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh` | You want the installed binary to pass CLI `agent-route`, MCP stdio, and MCP `agent_route` against a temporary project with read-less, selection-rank, and continuation evidence. |
    | Local evidence | `scripts/adoption-evidence.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-evidence --print-snippet --issue-template` | You want one folder with local first-read evidence, raw route JSON, MCP first-call JSON, aggregate Markdown/JSON summaries, a copyable terminal snippet, and a ready-to-file issue template. |
    | Adoption comparison | `scripts/adoption-comparison.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-comparison` | You want a shareable blind-read vs routed-first-read comparison showing source lines avoided, read-less ratio, seed strategy, first reading focus/question, selection rank, and continuation next action. |
@@ -249,6 +249,9 @@ Current benchmark snapshot:
 - The MCP stdio smoke executes `agent_route.execution_plan[].suggested_tool`
   through `tools/call`, proving the follow-up is usable by clients instead of
   only display metadata.
+- The MCP first-call smoke also verifies the empty-repository path returns
+  `blocked_no_seed` with `provide_seed_file_or_symbol`, so clients can ask for a
+  seed instead of falling back to blind reads.
 
 Adoption evidence snippet for your own repository:
 

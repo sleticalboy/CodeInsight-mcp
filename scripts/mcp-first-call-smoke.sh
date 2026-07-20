@@ -156,6 +156,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 
 codeinsight_bin = os.environ["CODEINSIGHT_BIN"]
 root = os.environ["FIRST_CALL_ROOT"]
@@ -532,6 +533,88 @@ try:
     impact_counts = route.get("impact_analysis", {}).get("impact_counts")
     expect(impact_counts is not None, "agent_route_contract", "impact_analysis.impact_counts is missing")
 
+    with tempfile.TemporaryDirectory(prefix="codeinsight-empty-first-call-") as empty_root:
+        blocked_route = call_tool(
+            5,
+            "agent_route",
+            {
+                "root": empty_root,
+                "task": "understand this empty repository",
+                "token_budget": token_budget,
+                "impact_limit": 10,
+                "impact_depth": 2,
+                "impact_evidence_limit": 3,
+            },
+            "agent_route_blocked_contract",
+        )
+
+    blocked_context_pack = blocked_route.get("context_pack", {})
+    blocked_continuation = blocked_context_pack.get("continuation_summary", {})
+    blocked_execution_plan = blocked_route.get("execution_plan", [])
+    blocked_route_steps = blocked_route.get("route", [])
+    expect(
+        [step.get("tool") for step in blocked_route_steps] == expected_route_tools,
+        "agent_route_blocked_contract",
+        "blocked route should preserve the default route tool order",
+    )
+    expect(
+        blocked_route_steps[2].get("status") == "blocked_no_seed",
+        "agent_route_blocked_contract",
+        f"blocked context route step should be blocked_no_seed: {blocked_route_steps}",
+    )
+    expect(
+        blocked_route.get("impact_status") == "skipped_no_seed",
+        "agent_route_blocked_contract",
+        f"blocked impact_status should be skipped_no_seed: {blocked_route.get('impact_status')!r}",
+    )
+    expect(
+        blocked_context_pack.get("seed_strategy") == "auto_no_seed",
+        "agent_route_blocked_contract",
+        f"blocked seed_strategy should be auto_no_seed: {blocked_context_pack.get('seed_strategy')!r}",
+    )
+    expect(
+        blocked_context_pack.get("files") == [],
+        "agent_route_blocked_contract",
+        "blocked context_pack.files should be empty",
+    )
+    expect(
+        blocked_context_pack.get("reading_plan") == [],
+        "agent_route_blocked_contract",
+        "blocked context_pack.reading_plan should be empty",
+    )
+    expect(
+        "current_reading_step" not in blocked_route,
+        "agent_route_blocked_contract",
+        "blocked agent_route should omit current_reading_step",
+    )
+    expect(
+        blocked_continuation.get("status") == "blocked_no_seed",
+        "agent_route_blocked_contract",
+        f"blocked continuation status should be blocked_no_seed: {blocked_continuation}",
+    )
+    expect(
+        blocked_continuation.get("next_action") == "provide_seed_file_or_symbol",
+        "agent_route_blocked_contract",
+        f"blocked continuation next_action should ask for a seed: {blocked_continuation}",
+    )
+    expect(
+        [step.get("action") for step in blocked_execution_plan] == expected_execution_plan_actions,
+        "agent_route_blocked_contract",
+        f"blocked execution_plan actions should preserve client order: {blocked_execution_plan}",
+    )
+    expected_blocked_statuses = [
+        "blocked_no_reading_plan",
+        "blocked_no_current_reading_step",
+        "manual_after_selected_context",
+        "skipped_no_seed",
+    ]
+    blocked_execution_statuses = [step.get("status") for step in blocked_execution_plan]
+    expect(
+        blocked_execution_statuses == expected_blocked_statuses,
+        "agent_route_blocked_contract",
+        f"unexpected blocked execution statuses: {blocked_execution_statuses}",
+    )
+
     summary = {
         "status": "pass",
         "server": server_name,
@@ -587,6 +670,18 @@ try:
         "suggested_tool_executed": suggested_tool_executed,
         "impact_status": route["impact_status"],
         "impact_counts": impact_counts,
+        "blocked_no_seed": {
+            "route_step_status": blocked_route_steps[2]["status"],
+            "seed_strategy": blocked_context_pack["seed_strategy"],
+            "continuation_status": blocked_continuation["status"],
+            "continuation_next_action": blocked_continuation["next_action"],
+            "context_files": len(blocked_context_pack["files"]),
+            "reading_plan_steps": len(blocked_context_pack["reading_plan"]),
+            "has_current_reading_step": "current_reading_step" in blocked_route,
+            "impact_status": blocked_route["impact_status"],
+            "execution_plan_actions": [step["action"] for step in blocked_execution_plan],
+            "execution_plan_statuses": blocked_execution_statuses,
+        },
     }
     summary_json = json.dumps(summary, indent=2, sort_keys=True)
     print(summary_json)

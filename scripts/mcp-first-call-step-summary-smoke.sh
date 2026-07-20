@@ -97,6 +97,18 @@ main() {
   "impact_counts": {
     "impacted_files": 2,
     "paths": 1
+  },
+  "blocked_no_seed": {
+    "route_step_status": "blocked_no_seed",
+    "seed_strategy": "auto_no_seed",
+    "continuation_status": "blocked_no_seed",
+    "continuation_next_action": "provide_seed_file_or_symbol",
+    "context_files": 0,
+    "reading_plan_steps": 0,
+    "has_current_reading_step": false,
+    "impact_status": "skipped_no_seed",
+    "execution_plan_actions": ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"],
+    "execution_plan_statuses": ["blocked_no_reading_plan", "blocked_no_current_reading_step", "manual_after_selected_context", "skipped_no_seed"]
   }
 }
 EOF
@@ -144,6 +156,9 @@ EOF
   require_literal "$summary_md" 'Suggested tool executed: `true`' "suggested tool execution"
   require_literal "$summary_md" 'Impact status: `complete`' "impact status"
   require_literal "$summary_md" 'Impacted files: `2`' "impacted files"
+  require_literal "$summary_md" 'Blocked no-seed status: `blocked_no_seed`' "blocked no-seed status"
+  require_literal "$summary_md" 'Blocked no-seed next action: `provide_seed_file_or_symbol`' "blocked no-seed next action"
+  require_literal "$summary_md" 'Blocked no-seed execution statuses: `blocked_no_reading_plan -> blocked_no_current_reading_step -> manual_after_selected_context -> skipped_no_seed`' "blocked no-seed execution statuses"
   require_literal "$summary_md" 'Workflow artifact: [`codeinsight-mcp-first-call`](https://example.com/artifact)' "artifact link"
 
   echo "mcp first-call step summary smoke passed"

@@ -93,7 +93,7 @@ optional external checks, see [Maintenance commands](maintenance-commands.md).
   `mcp-first-call-smoke` job summary and confirm it includes selected files,
   the first context file, first reading file, read-less metrics, selection
   rank, first next action, omitted-candidate continuation fields, reading-order and
-  suggested-tool handoff contracts, impact status, and the
+  suggested-tool handoff contracts, impact status, blocked no-seed handling, and the
   `codeinsight-mcp-first-call` artifact link.
 
   ```bash

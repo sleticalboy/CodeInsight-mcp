@@ -134,7 +134,17 @@ validate_summary_json() {
       and (.impact_counts | type == "object")
       and (.impact_counts.impacted_files | type == "number")
       and .impact_counts.impacted_files >= 1
-      and (.impact_counts.paths | type == "number")' \
+      and (.impact_counts.paths | type == "number")
+      and .blocked_no_seed.route_step_status == "blocked_no_seed"
+      and .blocked_no_seed.seed_strategy == "auto_no_seed"
+      and .blocked_no_seed.continuation_status == "blocked_no_seed"
+      and .blocked_no_seed.continuation_next_action == "provide_seed_file_or_symbol"
+      and .blocked_no_seed.context_files == 0
+      and .blocked_no_seed.reading_plan_steps == 0
+      and .blocked_no_seed.has_current_reading_step == false
+      and .blocked_no_seed.impact_status == "skipped_no_seed"
+      and .blocked_no_seed.execution_plan_actions == ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"]
+      and .blocked_no_seed.execution_plan_statuses == ["blocked_no_reading_plan", "blocked_no_current_reading_step", "manual_after_selected_context", "skipped_no_seed"]' \
     "$summary_file" >/dev/null; then
     fail "$summary_file does not match expected MCP first-call summary"
   fi

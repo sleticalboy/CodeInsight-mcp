@@ -1230,7 +1230,7 @@ main() {
     '\| First MCP call onboarding changed \| `scripts/mcp-first-call-smoke\.sh --summary-json /tmp/codeinsight-mcp-first-call\.json` \|' \
     "maintenance MCP first-call smoke chooser"
   require_pattern docs/maintenance-commands.md \
-    'first context file, read-less metrics, selection rank, reading-question handoff, continuation summary, reading-plan order, suggested-tool handoff, impact status, and saved artifacts' \
+    'first context file, read-less metrics, selection rank, reading-question handoff, continuation summary, reading-plan order, suggested-tool handoff, impact status, blocked no-seed handling, and saved artifacts' \
     "maintenance MCP first-call artifact scope"
   require_pattern docs/maintenance-commands.md \
     'scripts/mcp-first-call-step-summary-smoke\.sh' \
@@ -1239,7 +1239,7 @@ main() {
     '\| First MCP call Actions summary changed \| `scripts/mcp-first-call-step-summary-smoke\.sh` \|' \
     "maintenance MCP first-call step summary chooser"
   require_pattern docs/maintenance-commands.md \
-    'Actions Summary section for selected files, first context file, first reading file, read-less metrics, selection rank, reading-question handoff, omitted-candidate continuation fields, reading-plan order, suggested-tool handoff, continuation timing, impact status, and artifact link' \
+    'Actions Summary section for selected files, first context file, first reading file, read-less metrics, selection rank, reading-question handoff, omitted-candidate continuation fields, reading-plan order, suggested-tool handoff, continuation timing, impact status, blocked no-seed handling, and artifact link' \
     "maintenance MCP first-call step summary scope"
   require_pattern scripts/mcp-first-call-step-summary-smoke.sh \
     'First context file: `src/main\.ts`' \
@@ -1250,6 +1250,9 @@ main() {
   require_pattern scripts/mcp-first-call-step-summary-smoke.sh \
     'Read less: `10\.0x`' \
     "MCP first-call step summary read-less metric"
+  require_pattern scripts/mcp-first-call-step-summary-smoke.sh \
+    'Blocked no-seed next action: `provide_seed_file_or_symbol`' \
+    "MCP first-call step summary blocked no-seed next action"
   require_pattern scripts/mcp-first-call-step-summary-smoke.sh \
     'Reading order contract: `true`' \
     "MCP first-call step summary reading order contract"
