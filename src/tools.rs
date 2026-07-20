@@ -1492,11 +1492,12 @@ pub fn context_pack_value(
                 score: selected_max_score,
                 selection_rank: candidate_index + 1,
                 reason: format!(
-                    "Selected for {} relevance via {}: {}",
+                    "Selected for {} relevance via {}: {}; {}",
                     importance_for_score(selected_max_score),
                     source,
                     selected_reason
-                        .unwrap_or_else(|| "selected range matched the task".to_string())
+                        .unwrap_or_else(|| "selected range matched the task".to_string()),
+                    context_range_source_mix(&context_ranges)
                 ),
                 ranges: context_ranges,
             });
@@ -1839,8 +1840,10 @@ fn context_reading_reason(
     file: &ContextFile,
 ) -> String {
     format!(
-        "Read this step to answer: {question} If deeper evidence is needed, call {}. Selection reason: {}",
-        suggested_tool.tool, file.reason
+        "Read this step to answer: {question} If deeper evidence is needed, call {}. Selection reason: {}; {}",
+        suggested_tool.tool,
+        file.reason,
+        context_range_source_mix(&file.ranges)
     )
 }
 
@@ -2815,6 +2818,45 @@ fn context_reading_sources(file: &ContextFile) -> BTreeSet<&str> {
         .map(|range| range.source.as_str())
         .collect::<BTreeSet<_>>();
     sources
+}
+
+fn context_range_source_mix(ranges: &[ContextRange]) -> String {
+    let mut counts = BTreeMap::<&str, usize>::new();
+    for range in ranges {
+        *counts.entry(range.source.as_str()).or_default() += 1;
+    }
+
+    let mut parts = Vec::new();
+    for source in [
+        "seed_file",
+        "symbol_definition",
+        "call_graph",
+        "reference",
+        "dependency",
+        "semantic",
+    ] {
+        if let Some(count) = counts.get(source) {
+            parts.push(format!("{} x{}", context_source_label(source), count));
+        }
+    }
+
+    if parts.is_empty() {
+        "evidence mix unavailable".to_string()
+    } else {
+        format!("evidence mix: {}", parts.join(", "))
+    }
+}
+
+fn context_source_label(source: &str) -> &'static str {
+    match source {
+        "seed_file" => "seed file",
+        "symbol_definition" => "symbol definition",
+        "call_graph" => "call graph",
+        "reference" => "reference",
+        "dependency" => "dependency",
+        "semantic" => "semantic",
+        _ => "selected",
+    }
 }
 
 #[derive(Debug)]

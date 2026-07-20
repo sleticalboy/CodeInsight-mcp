@@ -7187,6 +7187,12 @@ export function spec() {
             .unwrap()
             .contains("via call_graph")
     );
+    assert!(
+        route_file["reason"]
+            .as_str()
+            .unwrap()
+            .contains("evidence mix")
+    );
 
     let fallback_context = run_json([
         "context-pack",
@@ -7292,6 +7298,12 @@ export function spec() {
             .unwrap()
             .contains("via seed_file")
     );
+    assert!(
+        seed_test_context["files"][0]["reason"]
+            .as_str()
+            .unwrap()
+            .contains("evidence mix")
+    );
 }
 
 #[test]
@@ -7395,6 +7407,12 @@ fn cli_context_pack_uses_imported_callee_file_hints() {
                         .as_str()
                         .is_some_and(|reason| reason.contains("Audit.record"))
             })
+    );
+    assert!(
+        audit_file["reason"]
+            .as_str()
+            .unwrap()
+            .contains("evidence mix")
     );
     let audit_step = context["reading_plan"]
         .as_array()
