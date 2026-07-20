@@ -310,6 +310,17 @@ markdown_lines = [
    end),
   (if adoption_report
      metrics = adoption_report.fetch("metrics")
+     if metrics.key?("type_relation_edges")
+       top_target = metrics.fetch("top_type_relation_target", "")
+       top_target = "-" if top_target.empty?
+       kinds = metrics.fetch("type_relation_recommendation_kinds", [])
+       graph_filter = kinds.is_a?(Array) ? kinds.join(",") : ""
+       graph_filter = "-" if graph_filter.empty?
+       "- Adoption report type-relation routing: `#{metrics.fetch("type_relation_edges")}` edges, top target `#{top_target}`, graph filter `#{graph_filter}`"
+     end
+   end),
+  (if adoption_report
+     metrics = adoption_report.fetch("metrics")
      contract = metrics.fetch("mcp_first_call_contract")
      "- Adoption report MCP first-call contract: `reading_order=#{contract.fetch("reading_order")}`, `suggested_tool_handoff=#{contract.fetch("suggested_tool_handoff")}`, `continuation_after_selected_context=#{contract.fetch("continuation_after_selected_context")}`, `suggested_tool_executed=#{contract.fetch("suggested_tool_executed")}`"
    end)

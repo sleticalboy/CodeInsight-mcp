@@ -249,6 +249,14 @@ if adoption_report
   lines << "- Archive: `#{adoption_report.fetch("archive")}`"
   lines << "- Routed first-read: `#{metrics.fetch("selected_lines")}/#{metrics.fetch("total_lines")}` source lines"
   lines << "- Line reduction: `#{metrics.fetch("line_reduction")}`"
+  if metrics.key?("type_relation_edges")
+    top_target = metrics.fetch("top_type_relation_target", "")
+    top_target = "-" if top_target.empty?
+    kinds = metrics.fetch("type_relation_recommendation_kinds", [])
+    graph_filter = kinds.is_a?(Array) ? kinds.join(",") : ""
+    graph_filter = "-" if graph_filter.empty?
+    lines << "- Type-relation routing: `#{metrics.fetch("type_relation_edges")}` edges, top target `#{top_target}`, graph filter `#{graph_filter}`"
+  end
   lines << "- MCP first-call contract: `reading_order=#{contract.fetch("reading_order")}`, `suggested_tool_handoff=#{contract.fetch("suggested_tool_handoff")}`, `continuation_after_selected_context=#{contract.fetch("continuation_after_selected_context")}`, `suggested_tool_executed=#{contract.fetch("suggested_tool_executed")}`"
 end
 

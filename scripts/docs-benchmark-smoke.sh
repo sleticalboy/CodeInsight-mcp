@@ -1583,9 +1583,15 @@ main() {
   require_pattern scripts/release-handoff-summary.sh \
     'Adoption report routed first-read' \
     "release handoff adoption report metrics"
+  require_pattern scripts/release-handoff-summary.sh \
+    'Adoption report type-relation routing' \
+    "release handoff adoption report type-relation routing"
   require_pattern scripts/release-notes-draft.sh \
     'Adoption Report Evidence' \
     "release notes adoption report evidence section"
+  require_pattern scripts/release-notes-draft.sh \
+    'Type-relation routing' \
+    "release notes adoption report type-relation routing"
   require_pattern scripts/archive-release-evidence.sh \
     'release-evidence/\$TAG_NAME\.md' \
     "archive release evidence default path"

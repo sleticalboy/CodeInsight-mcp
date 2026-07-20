@@ -80,6 +80,9 @@ main() {
           "selected_lines": 439,
           "total_lines": 28433,
           "line_reduction": "98.5%",
+          "type_relation_edges": 7,
+          "top_type_relation_target": "EmbeddingProvider",
+          "type_relation_recommendation_kinds": ["base_type"],
           "mcp_first_call_contract": {
             "reading_order": true,
             "suggested_tool_handoff": true,
@@ -166,6 +169,8 @@ EOF
     fail "missing adoption report evidence section"
   grep -Fq -- '- Routed first-read: `439/28433` source lines' "$draft_md" ||
     fail "missing adoption report routed first-read"
+  grep -Fq -- '- Type-relation routing: `7` edges, top target `EmbeddingProvider`, graph filter `base_type`' "$draft_md" ||
+    fail "missing adoption report type-relation routing"
   grep -Fq -- '- MCP first-call contract: `reading_order=true`, `suggested_tool_handoff=true`, `continuation_after_selected_context=true`, `suggested_tool_executed=true`' "$draft_md" ||
     fail "missing adoption report MCP contract"
 

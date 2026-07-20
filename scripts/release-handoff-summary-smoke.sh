@@ -87,6 +87,9 @@ main() {
         "selected_lines": 439,
         "total_lines": 28433,
         "line_reduction": "98.5%",
+        "type_relation_edges": 7,
+        "top_type_relation_target": "EmbeddingProvider",
+        "type_relation_recommendation_kinds": ["base_type"],
         "mcp_first_call_contract": {
           "reading_order": true,
           "suggested_tool_handoff": true,
@@ -168,6 +171,8 @@ EOF
     fail "missing adoption report link"
   grep -Fq -- '- Adoption report routed first-read: `439/28433` source lines, `98.5%` reduction' "$TEMP_DIR/stdout.md" ||
     fail "missing adoption report metrics"
+  grep -Fq -- '- Adoption report type-relation routing: `7` edges, top target `EmbeddingProvider`, graph filter `base_type`' "$TEMP_DIR/stdout.md" ||
+    fail "missing adoption report type-relation routing"
   grep -Fq -- '- Adoption report MCP first-call contract: `reading_order=true`, `suggested_tool_handoff=true`, `continuation_after_selected_context=true`, `suggested_tool_executed=true`' "$TEMP_DIR/stdout.md" ||
     fail "missing adoption report contract"
 
@@ -192,6 +197,7 @@ EOF
     .pre_release.ci.run_id == "123456" and
     .pre_release.artifacts.benchmark.metrics.line_reduction == "99.0%" and
     .pre_release.artifacts.adoption_report.metrics.line_reduction == "98.5%" and
+    .pre_release.artifacts.adoption_report.metrics.type_relation_edges == 7 and
     .pre_release.artifacts.adoption_report.metrics.mcp_first_call_contract.reading_order == true and
     .post_release.gates.github_asset_downloads == "metadata_only" and
     (.post_release.expected_assets | length) == 2 and

@@ -107,8 +107,8 @@ optional external checks, see [Maintenance commands](maintenance-commands.md).
   generated evidence JSON carries benchmark metrics and adoption report fields,
   and that `release-handoff-summary.sh`, `release-notes-draft.sh`, and
   `update-release-status.sh` show the benchmark routing, line-reduction lines,
-  adoption report routed first-read metric, and MCP first-call contract
-  booleans.
+  adoption report routed first-read metric, type-relation routing fields, and
+  MCP first-call contract booleans.
 
 ## Before Tagging A Release
 
