@@ -1,6 +1,6 @@
 # Impact Analysis
 
-`impact_analysis` estimates a local change radius from indexed symbols, text references, static call edges, and resolved local dependencies. It is designed for AI-agent triage and review planning, not for language-server-grade type checking.
+`impact_analysis` estimates a local change radius from indexed symbols, text references, static call edges, resolved local dependencies, and direct type-relation importers. It is designed for AI-agent triage and review planning, not for language-server-grade type checking.
 
 Run `index` first:
 
@@ -16,9 +16,11 @@ The MCP tool accepts the same core arguments through `impact_analysis`: `root`, 
 The report includes:
 
 - `impacted_files`: ranked files with an aggregate `score` and up to 8 `reasons` per file.
-- `paths`: explanatory call/dependency paths, limited by `limit`. Call paths
-  include upstream caller propagation and direct downstream callees when the
-  call has a local `callee_file` target.
+- `paths`: explanatory call, dependency, and type-relation paths, limited by
+  `limit`. Call paths include upstream caller propagation and direct downstream
+  callees when the call has a local `callee_file` target. Type-relation paths
+  are reported with `kind: "type_relation"` for direct inheritance or interface
+  edges.
 - `risk_level`: one of `low`, `medium`, or `high`.
 - `impact_counts`: counts from the full analysis before summary evidence truncation.
 - `impact_breakdown`: summary counts grouped by seed, symbol, reference, call, dependency, call-path, dependency-path, and error signals.
@@ -35,7 +37,8 @@ Use `impact_breakdown` when an agent needs a compact explanation before
 opening detailed evidence. For example, non-zero `call_related_files` and
 `call_paths` mean static caller or locally resolved callee evidence contributed
 to the impact. Non-zero `dependency_related_files` and `dependency_paths` mean
-local imports or importers contributed to the impact.
+local imports, importers, or direct type-relation importers contributed to the
+impact.
 
 ## Score Weights
 
@@ -52,6 +55,7 @@ File scores are additive. A file can receive multiple reasons from different evi
 | Callee target file | 65 |
 | Dependency source file | 55 |
 | Dependency target file | 60 |
+| Type-relation source file | 68 |
 
 Multi-hop expansion decays with depth:
 

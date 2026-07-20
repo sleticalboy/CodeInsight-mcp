@@ -7016,6 +7016,62 @@ export function route() {
 }
 
 #[test]
+fn cli_impact_analysis_reports_type_relation_paths() {
+    let fixture = java_source_import_fixture_project();
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 6);
+
+    let impact = run_json([
+        "impact-analysis",
+        fixture.path().to_str().unwrap(),
+        "--file",
+        "src/main/java/com/example/app/BaseApp.java",
+        "--depth",
+        "2",
+        "--limit",
+        "20",
+        "--format",
+        "summary",
+        "--evidence-limit",
+        "3",
+    ]);
+
+    assert!(
+        impact["impacted_files"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(
+                |file| file["file"] == "src/main/java/com/example/app/App.java"
+                    && file["reasons"].as_array().unwrap().iter().any(|reason| {
+                        reason
+                            .as_str()
+                            .is_some_and(|reason| reason.starts_with("type_relation_source:App"))
+                    })
+            )
+    );
+    assert!(impact["paths"].as_array().unwrap().iter().any(|path| {
+        path["kind"] == "type_relation"
+            && path["from"] == "src/main/java/com/example/app/BaseApp.java"
+            && path["to"] == "src/main/java/com/example/app/App.java"
+            && path["via"] == "extends:BaseApp"
+    }));
+    assert!(
+        impact["impact_breakdown"]["dependency_related_files"]
+            .as_u64()
+            .unwrap()
+            >= 1
+    );
+    assert!(
+        impact["impact_breakdown"]["dependency_paths"]
+            .as_u64()
+            .unwrap()
+            >= 1
+    );
+}
+
+#[test]
 fn cli_impact_analysis_prefers_configured_suggested_checks() {
     let fixture = TempDir::new().unwrap();
     write_file(

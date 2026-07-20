@@ -60,6 +60,7 @@ const IMPACT_SCORE_CALLEE_SOURCE: i32 = 45;
 const IMPACT_SCORE_CALLEE_TARGET: i32 = 65;
 const IMPACT_SCORE_DEPENDENCY_SOURCE: i32 = 55;
 const IMPACT_SCORE_DEPENDENCY_TARGET: i32 = 60;
+const IMPACT_SCORE_TYPE_RELATION_SOURCE: i32 = 68;
 const IMPACT_SCORE_CALLER_DEPTH_BASE: i32 = 70;
 const IMPACT_SCORE_CALLER_DEPTH_DECAY: i32 = 15;
 const IMPACT_SCORE_DEPENDENCY_DEPTH_BASE: i32 = 60;
@@ -764,6 +765,43 @@ pub fn impact_analysis_value(
                 IMPACT_SCORE_DEPENDENCY_TARGET,
                 format!("dependency_target:{}", dependency.source_file),
             );
+        }
+    }
+    let type_relation_terms = symbol_terms.iter().cloned().collect::<Vec<_>>();
+    let type_relation_importers =
+        store.type_relation_importers_for_symbols(&type_relation_terms, limit)?;
+    let mut seen_type_relation_paths = BTreeSet::new();
+    for dependency in &type_relation_importers {
+        if !is_type_relation_dependency(dependency) {
+            continue;
+        }
+        let relation = dependency.imported_symbol.as_deref().unwrap_or("extends");
+        let target_file = impact_type_relation_target_file(&symbols, dependency)
+            .unwrap_or_else(|| dependency.target.clone());
+        add_impact(
+            &mut impact,
+            &dependency.source_file,
+            IMPACT_SCORE_TYPE_RELATION_SOURCE,
+            format!(
+                "type_relation_source:{}:{}",
+                dependency
+                    .local_alias
+                    .as_deref()
+                    .unwrap_or(&dependency.source_file),
+                dependency.target
+            ),
+        );
+        push_type_relation_path(
+            &mut paths,
+            &mut seen_type_relation_paths,
+            dependency,
+            &target_file,
+            relation,
+            1,
+            limit,
+        );
+        if dependencies.len() < limit {
+            dependencies.push(dependency.clone());
         }
     }
     let mut dependency_paths = impact_dependency_paths(
@@ -3414,6 +3452,7 @@ fn impact_breakdown(
             reason.starts_with("dependency_source:")
                 || reason.starts_with("dependency_target:")
                 || reason.starts_with("dependency_importer_depth_")
+                || reason.starts_with("type_relation_source:")
         }) {
             dependency_related_files += 1;
         }
@@ -3428,7 +3467,7 @@ fn impact_breakdown(
         call_paths: paths.iter().filter(|path| path.kind == "call").count(),
         dependency_paths: paths
             .iter()
-            .filter(|path| path.kind == "dependency")
+            .filter(|path| path.kind == "dependency" || path.kind == "type_relation")
             .count(),
         errors,
     }
@@ -3829,6 +3868,43 @@ fn impact_dependency_paths(
     }
 
     Ok(paths)
+}
+
+fn impact_type_relation_target_file(symbols: &[Symbol], dependency: &Dependency) -> Option<String> {
+    symbols
+        .iter()
+        .find(|symbol| symbol_matches_type_relation_target(symbol, &dependency.target))
+        .map(|symbol| symbol.file.clone())
+}
+
+fn push_type_relation_path(
+    paths: &mut Vec<ImpactPath>,
+    seen_paths: &mut BTreeSet<(String, String, usize, usize)>,
+    dependency: &Dependency,
+    target_file: &str,
+    relation: &str,
+    depth: usize,
+    limit: usize,
+) {
+    if paths.len() >= limit
+        || !seen_paths.insert((
+            target_file.to_string(),
+            dependency.source_file.clone(),
+            depth,
+            dependency.line,
+        ))
+    {
+        return;
+    }
+    paths.push(ImpactPath {
+        kind: "type_relation".to_string(),
+        depth,
+        from: target_file.to_string(),
+        to: dependency.source_file.clone(),
+        file: dependency.source_file.clone(),
+        via: format!("{relation}:{}", dependency.target),
+        line: dependency.line,
+    });
 }
 
 fn push_dependency_path(
