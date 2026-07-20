@@ -593,6 +593,12 @@ main() {
   require_pattern docs/recommendation-contract.md \
     '`review_impact_before_edits`' \
     "recommendation contract impact checkpoint"
+  require_pattern docs/recommendation-contract.md \
+    '^## Read-Less Metrics$' \
+    "recommendation contract read-less section"
+  require_pattern docs/recommendation-contract.md \
+    '`context_pack\.read_less` is display and reporting evidence' \
+    "recommendation contract read-less boundary"
   require_pattern docs/adoption-checklist.md \
     'scripts/installed-quickstart-smoke\.sh' \
     "adoption installed quickstart gate"

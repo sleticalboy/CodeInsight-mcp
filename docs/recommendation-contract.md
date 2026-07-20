@@ -148,6 +148,26 @@ Focused `context_pack` suggestions from semantic-match and fallback steps keep
 the original task in `suggested_arguments.task` while scoping `files[]` to the
 selected file.
 
+## Read-Less Metrics
+
+`context_pack.read_less` is display and reporting evidence for the selected
+first-read pack. It is not a recommendation and should not change execution
+ordering.
+
+The object includes:
+
+- `baseline_source_lines`: repository source-line baseline from
+  `project_overview`.
+- `selected_source_lines`: selected source lines from `context_pack.files[]`
+  ranges.
+- `source_lines_avoided`: non-negative baseline minus selected lines.
+- `line_reduction`: formatted first-read reduction percentage.
+- `read_less_ratio`: formatted baseline/selected ratio.
+
+Clients can show these metrics beside `reading_plan[]` or in run summaries.
+They must still read selected context before using `suggested_tool` or
+continuation actions.
+
 ## Omitted Candidate Recommendations
 
 `context_pack.continuation_summary` is the compact client-facing view of the
@@ -183,6 +203,8 @@ Recommended client behavior:
 - Execute suggested calls through MCP `tools/call`.
 - Keep original response order for equal priority values.
 - Follow `agent_route.execution_plan[]` for one-call first-read clients.
+- Display `context_pack.read_less` as source-line reduction evidence when
+  users need to understand why the first read is bounded.
 - Prefer `reading_plan[].suggested_tool` while reading selected context, then
   use `omitted_candidates[].suggested_tool` when more context is needed.
 

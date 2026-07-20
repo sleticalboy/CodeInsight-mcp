@@ -1214,6 +1214,12 @@ main() {
   require_pattern docs/recommendation-contract.md \
     '`selection_rank`, `omission_reason`, and `next_action` for machine-readable' \
     "recommendation contract omitted candidate explanation fields"
+  require_pattern docs/recommendation-contract.md \
+    '`source_lines_avoided`: non-negative baseline minus selected lines' \
+    "recommendation contract read-less avoided metric"
+  require_pattern docs/recommendation-contract.md \
+    'They must still read selected context before using `suggested_tool`' \
+    "recommendation contract read-less selected-context boundary"
   require_pattern docs/first-read-workflow.md \
     '`omitted_candidates\[\]\.selection_rank`, `omission_reason`, and' \
     "first-read omitted candidate explanation fields"
