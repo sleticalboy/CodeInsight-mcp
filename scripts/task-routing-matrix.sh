@@ -491,6 +491,7 @@ main() {
       "understand authorization permissions"
       "understand access control rules"
       "understand application settings"
+      "understand feature flag rollout"
       "understand startup flow"
       "understand persistence behavior"
       "debug retry timeout handling"

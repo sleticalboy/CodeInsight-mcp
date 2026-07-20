@@ -9,6 +9,7 @@ This is a route-quality check, not a benchmark suite. It helps answer:
 - Does an authentication task start at auth code?
 - Does an authorization task start at permission or token boundary code?
 - Does a settings task start at config code?
+- Does a feature flag task start at rollout, toggle, or experiment code?
 - Does a startup task preserve the application entrypoint?
 - Does a persistence task start at database, repository, or storage code?
 - Does a debugging task start at error handling, retry, or timeout code?
@@ -33,10 +34,10 @@ scripts/task-routing-matrix.sh /path/to/repo
 ```
 
 The default matrix covers routing, authentication, authorization/access-control,
-settings, startup, persistence, debug/retry/timeout, regression coverage,
-API handler, cache/performance, observability/logging, security/sanitization,
-billing/payment, frontend component, background job, documentation,
-request lifecycle, and middleware prompts.
+settings, feature flag/rollout, startup, persistence, debug/retry/timeout,
+regression coverage, API handler, cache/performance, observability/logging,
+security/sanitization, billing/payment, frontend component, background job,
+documentation, request lifecycle, and middleware prompts.
 
 Run a custom matrix:
 
@@ -45,7 +46,9 @@ scripts/task-routing-matrix.sh /path/to/repo \
   --task "understand routing behavior" \
   --task "understand authentication behavior" \
   --task "understand authorization permissions" \
+  --task "understand access control rules" \
   --task "understand application settings" \
+  --task "understand feature flag rollout" \
   --task "understand startup flow" \
   --task "understand persistence behavior" \
   --task "debug retry timeout handling" \
@@ -82,6 +85,7 @@ understand routing behavior	src/router.ts
 understand authentication behavior	src/auth.ts
 understand authorization permissions	src/permissions.ts
 understand access control rules	src/permissions.ts
+understand feature flag rollout	src/feature_flags.ts
 understand persistence behavior	src/database.ts
 debug retry timeout handling	src/errors.ts
 find regression coverage	src/router.test.ts

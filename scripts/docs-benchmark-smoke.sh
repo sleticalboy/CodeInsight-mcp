@@ -539,6 +539,9 @@ main() {
     'Does an authorization task start at permission or token boundary code' \
     "task routing matrix authorization framing"
   require_pattern docs/task-routing-matrix.md \
+    'Does a feature flag task start at rollout, toggle, or experiment code' \
+    "task routing matrix feature flag framing"
+  require_pattern docs/task-routing-matrix.md \
     'Does a persistence task start at database, repository, or storage code' \
     "task routing matrix persistence framing"
   require_pattern docs/task-routing-matrix.md \
@@ -583,6 +586,9 @@ main() {
   require_pattern docs/task-routing-matrix.md \
     $'understand access control rules\tsrc/permissions\\.ts' \
     "task routing matrix access control expectation example"
+  require_pattern docs/task-routing-matrix.md \
+    $'understand feature flag rollout\tsrc/feature_flags\\.ts' \
+    "task routing matrix feature flag expectation example"
   require_pattern docs/task-routing-matrix.md \
     $'understand persistence behavior\tsrc/database\\.ts' \
     "task routing matrix persistence expectation example"
@@ -1305,7 +1311,7 @@ main() {
     '\| Task alias or seed ordering changed \| `scripts/task-routing-matrix-smoke\.sh` \|' \
     "maintenance task routing matrix smoke chooser"
   require_pattern docs/maintenance-commands.md \
-    'routing, authentication, authorization, access-control, settings, startup, persistence, debug, coverage, API handler, cache, observability, security, billing, frontend, background job, documentation, request lifecycle, and middleware prompts choose the matching first file and that `--expect-file` failures are reported' \
+    'routing, authentication, authorization, access-control, settings, feature flag, startup, persistence, debug, coverage, API handler, cache, observability, security, billing, frontend, background job, documentation, request lifecycle, and middleware prompts choose the matching first file and that `--expect-file` failures are reported' \
     "maintenance task routing matrix smoke scope"
   require_pattern docs/maintenance-commands.md \
     '\| Installed-binary adoption path changed \| `CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/installed-quickstart-smoke\.sh` \|' \
@@ -1857,6 +1863,9 @@ main() {
     'understand access control rules' \
     "task routing matrix default access control task"
   require_pattern scripts/task-routing-matrix.sh \
+    'understand feature flag rollout' \
+    "task routing matrix default feature flag task"
+  require_pattern scripts/task-routing-matrix.sh \
     'understand persistence behavior' \
     "task routing matrix default persistence task"
   require_pattern scripts/task-routing-matrix.sh \
@@ -1922,6 +1931,9 @@ main() {
   require_pattern scripts/task-routing-matrix-smoke.sh \
     'src/config\.ts' \
     "task routing matrix smoke config assertion"
+  require_pattern scripts/task-routing-matrix-smoke.sh \
+    'src/feature_flags\.ts' \
+    "task routing matrix smoke feature flag assertion"
   require_pattern tests/cli.rs \
     'context\["reading_plan"\]\[0\]\["selection_rank"\]' \
     "CLI context-pack reading-plan selection rank assertion"

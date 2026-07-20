@@ -2189,6 +2189,8 @@ fn context_reading_focus(file: &ContextFile, task: &str) -> String {
 fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
     if signals.auth_session {
         "Start with seed file authentication and session boundaries.".to_string()
+    } else if signals.feature_flags {
+        "Start with seed file feature flag, rollout, toggle, or experiment boundaries.".to_string()
     } else if signals.configuration {
         "Start with seed file configuration defaults and inputs.".to_string()
     } else if signals.startup {
@@ -2231,6 +2233,9 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
 fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
     if signals.auth_session {
         "Read symbol definitions that establish authentication or session behavior.".to_string()
+    } else if signals.feature_flags {
+        "Read symbol definitions that establish feature flag, rollout, toggle, or experiment behavior."
+            .to_string()
     } else if signals.configuration {
         "Read symbol definitions that establish configuration behavior.".to_string()
     } else if signals.startup {
@@ -2293,6 +2298,9 @@ fn context_type_relation_focus(signals: ContextTaskSignals) -> String {
 fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
     if signals.auth_session {
         "Follow call graph evidence for authentication and session flow.".to_string()
+    } else if signals.feature_flags {
+        "Follow call graph evidence for feature flag evaluation, rollout, toggle, or experiment flow."
+            .to_string()
     } else if signals.configuration {
         "Follow call graph evidence for configuration propagation.".to_string()
     } else if signals.startup {
@@ -2336,6 +2344,9 @@ fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
 fn context_reference_focus(signals: ContextTaskSignals) -> String {
     if signals.auth_session {
         "Inspect references that consume authentication or session state.".to_string()
+    } else if signals.feature_flags {
+        "Inspect references that evaluate, override, or consume feature flags and rollout state."
+            .to_string()
     } else if signals.configuration {
         "Inspect references that read or pass configuration values.".to_string()
     } else if signals.startup {
@@ -2379,6 +2390,9 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
 fn context_semantic_focus(signals: ContextTaskSignals) -> String {
     if signals.auth_session {
         "Review semantic matches for authentication, cookie, or session behavior.".to_string()
+    } else if signals.feature_flags {
+        "Review semantic matches for feature flags, rollouts, toggles, variants, or experiments."
+            .to_string()
     } else if signals.configuration {
         "Review semantic matches for configuration and environment behavior.".to_string()
     } else if signals.startup {
@@ -2422,6 +2436,9 @@ fn context_semantic_focus(signals: ContextTaskSignals) -> String {
 fn context_dependency_focus(signals: ContextTaskSignals) -> String {
     if signals.auth_session {
         "Check local dependencies that affect authentication or session boundaries.".to_string()
+    } else if signals.feature_flags {
+        "Check local dependencies that shape feature flag, rollout, toggle, or experiment behavior."
+            .to_string()
     } else if signals.configuration {
         "Check local dependencies that supply configuration behavior.".to_string()
     } else if signals.startup {
@@ -2502,6 +2519,9 @@ fn context_seed_file_question(task: &str) -> String {
     if signals.auth_session {
         "Where are authentication decisions, credentials, or session boundaries handled here?"
             .to_string()
+    } else if signals.feature_flags {
+        "Where are feature flags, rollouts, toggles, variants, or experiments evaluated here?"
+            .to_string()
     } else if signals.configuration {
         "Which configuration options, defaults, or environment inputs control the requested behavior?".to_string()
     } else if signals.startup {
@@ -2551,6 +2571,8 @@ fn context_symbol_definition_question(task: &str) -> String {
     let signals = ContextTaskSignals::from_task(task);
     if signals.auth_session {
         "What authentication decisions, credentials, or session boundaries does this definition establish?".to_string()
+    } else if signals.feature_flags {
+        "What feature flag, rollout, toggle, variant, or experiment behavior does this definition establish?".to_string()
     } else if signals.configuration {
         "What configuration defaults, inputs, or environment behavior does this definition establish?".to_string()
     } else if signals.startup {
@@ -2616,6 +2638,9 @@ fn context_call_graph_question(task: &str) -> String {
     let signals = ContextTaskSignals::from_task(task);
     if signals.auth_session {
         "Which callers or callees carry authentication decisions, credentials, or session state through this flow?".to_string()
+    } else if signals.feature_flags {
+        "Which callers or callees evaluate, override, or consume feature flags and rollout state?"
+            .to_string()
     } else if signals.configuration {
         "Which callers or callees read, transform, or propagate configuration in this flow?"
             .to_string()
@@ -2668,6 +2693,8 @@ fn context_dependency_question(task: &str) -> String {
     if signals.auth_session {
         "What imported local dependency behavior affects authentication or session boundaries here?"
             .to_string()
+    } else if signals.feature_flags {
+        "What imported local dependency behavior supplies feature flag, rollout, toggle, or experiment state?".to_string()
     } else if signals.configuration {
         "What imported local dependency behavior supplies configuration defaults, inputs, or environment handling?".to_string()
     } else if signals.startup {
@@ -2720,6 +2747,9 @@ fn context_reference_question(task: &str) -> String {
     if signals.auth_session {
         "Which references consume authentication decisions, credentials, or session state?"
             .to_string()
+    } else if signals.feature_flags {
+        "Which references evaluate, override, or consume feature flags, variants, or rollout state?"
+            .to_string()
     } else if signals.configuration {
         "Which references read, override, or pass configuration values?".to_string()
     } else if signals.startup {
@@ -2763,6 +2793,9 @@ fn context_semantic_question(task: &str) -> String {
     let signals = ContextTaskSignals::from_task(task);
     if signals.auth_session {
         "Which semantic matches describe authentication, credential, cookie, or session behavior?"
+            .to_string()
+    } else if signals.feature_flags {
+        "Which semantic matches describe feature flags, rollouts, toggles, variants, or experiments?"
             .to_string()
     } else if signals.configuration {
         "Which semantic matches describe configuration defaults, inputs, or environment behavior?"
@@ -2816,6 +2849,7 @@ fn context_semantic_question(task: &str) -> String {
 struct ContextTaskSignals {
     impact_flow: bool,
     auth_session: bool,
+    feature_flags: bool,
     configuration: bool,
     startup: bool,
     middleware: bool,
@@ -2881,6 +2915,25 @@ impl ContextTaskSignals {
                     "tokens",
                     "oauth",
                     "jwt",
+                ],
+            ),
+            feature_flags: context_text_mentions(
+                task,
+                &[
+                    "feature flag",
+                    "feature flags",
+                    "feature-flag",
+                    "feature-flags",
+                    "flag",
+                    "flags",
+                    "toggle",
+                    "toggles",
+                    "rollout",
+                    "rollouts",
+                    "experiment",
+                    "experiments",
+                    "variant",
+                    "variants",
                 ],
             ),
             configuration: context_text_mentions(
@@ -5401,6 +5454,16 @@ fn task_keyword_aliases(keyword: &str) -> &'static [&'static str] {
         "jwt" => &["token", "credential"],
         "login" => &["auth", "authentication"],
         "signin" => &["auth", "login"],
+        "flag" => &["flags", "toggle", "rollout"],
+        "flags" => &["flag", "toggle", "rollout"],
+        "toggle" => &["toggles", "flag", "rollout"],
+        "toggles" => &["toggle", "flag", "rollout"],
+        "rollout" => &["rollouts", "flag", "experiment"],
+        "rollouts" => &["rollout", "flag", "experiment"],
+        "experiment" => &["experiments", "variant", "rollout"],
+        "experiments" => &["experiment", "variant", "rollout"],
+        "variant" => &["variants", "experiment", "flag"],
+        "variants" => &["variant", "experiment", "flag"],
         "config" => &["configuration", "settings", "setting"],
         "configuration" => &["config", "settings", "setting"],
         "setting" => &["config", "configuration", "settings"],
@@ -5732,6 +5795,13 @@ mod tests {
         assert!(access_control_keywords.contains(&"authorization".to_string()));
         assert!(access_control_keywords.contains(&"permission".to_string()));
         assert!(access_control_keywords.contains(&"permissions".to_string()));
+
+        let feature_flag_keywords = task_keywords("understand feature flag rollout experiments");
+        assert!(feature_flag_keywords.contains(&"flag".to_string()));
+        assert!(feature_flag_keywords.contains(&"toggle".to_string()));
+        assert!(feature_flag_keywords.contains(&"rollout".to_string()));
+        assert!(feature_flag_keywords.contains(&"experiment".to_string()));
+        assert!(feature_flag_keywords.contains(&"variant".to_string()));
 
         let rbac_keywords = task_keywords("audit rbac acl policy");
         assert!(rbac_keywords.contains(&"rbac".to_string()));

@@ -2364,6 +2364,15 @@ export function bootRouter(settings: Record<string, string>) {
     )
     .unwrap();
     std::fs::write(
+        fixture.path().join("src/feature_flags.ts"),
+        r#"export function evaluateFeatureFlag(flagKey: string) {
+  // Feature flag rollout toggles experiment variants for selected users.
+  return { flagKey, rollout: "gradual", variant: "enabled" };
+}
+"#,
+    )
+    .unwrap();
+    std::fs::write(
         fixture.path().join("src/database.ts"),
         r#"export function connectDatabase() {
   // Persist user records in durable storage.
@@ -2608,6 +2617,36 @@ export function routerRegressionSpec() {
         .unwrap();
     assert!(settings_question.contains("configuration options"));
     assert!(settings_question.contains("environment inputs"));
+
+    let feature_flag_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand feature flag rollout",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(feature_flag_context["seed_strategy"], "auto_task_match");
+    assert_eq!(
+        feature_flag_context["selected_seeds"][0]["value"],
+        "src/feature_flags.ts"
+    );
+    assert!(
+        feature_flag_context["selected_seeds"][0]["matched_keywords"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|keyword| keyword == "flag")
+    );
+    assert_eq!(
+        feature_flag_context["files"][0]["file"],
+        "src/feature_flags.ts"
+    );
+    let feature_flag_question = feature_flag_context["reading_plan"][0]["question"]
+        .as_str()
+        .unwrap();
+    assert!(feature_flag_question.contains("feature flags"));
+    assert!(feature_flag_question.contains("rollouts"));
 
     let persistence_context = run_json([
         "context-pack",
