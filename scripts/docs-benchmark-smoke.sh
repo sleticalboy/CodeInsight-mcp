@@ -545,6 +545,9 @@ main() {
     'Does a network task start at proxy, redirect, adapter, or transport code' \
     "task routing matrix network framing"
   require_pattern docs/task-routing-matrix.md \
+    'Does a validation task start at schema, binding, parser, or serializer code' \
+    "task routing matrix validation framing"
+  require_pattern docs/task-routing-matrix.md \
     'Does a persistence task start at database, repository, or storage code' \
     "task routing matrix persistence framing"
   require_pattern docs/task-routing-matrix.md \
@@ -595,6 +598,9 @@ main() {
   require_pattern docs/task-routing-matrix.md \
     $'understand proxy redirect transport\tsrc/network\\.ts' \
     "task routing matrix network expectation example"
+  require_pattern docs/task-routing-matrix.md \
+    $'understand json binding validation\tsrc/validation\\.ts' \
+    "task routing matrix validation expectation example"
   require_pattern docs/task-routing-matrix.md \
     $'understand persistence behavior\tsrc/database\\.ts' \
     "task routing matrix persistence expectation example"
@@ -1089,6 +1095,12 @@ main() {
     '.cases[] | select(.case == "flask") | .routes[] | select(.task == "understand request lifecycle before after request handling" and .first_file == "src/flask/app.py" and (.first_reading_focus | contains("request lifecycle")) and (.first_reading_focus | contains("response finalization")) and (.first_reading_question | contains("request lifecycle hooks")) and (.first_reading_question | contains("response finalization")))' \
     "public task routing matrix JSON Flask lifecycle first-read focus and question"
   require_jq docs/public-task-routing-matrix-summary.json \
+    '.cases[] | select(.case == "gin") | .routes[] | select(.task == "understand binding validation behavior" and .first_file == "binding/default_validator.go" and (.first_reading_focus | contains("validation")) and (.first_reading_question | contains("inputs validated")))' \
+    "public task routing matrix JSON Gin validation first-read focus and question"
+  require_jq docs/public-task-routing-matrix-summary.json \
+    '.cases[] | select(.case == "gin") | .routes[] | select(.task == "understand json binding behavior" and .first_file == "binding/json.go" and (.first_reading_focus | contains("binding")) and (.first_reading_question | contains("payloads bound")))' \
+    "public task routing matrix JSON Gin JSON binding first-read focus and question"
+  require_jq docs/public-task-routing-matrix-summary.json \
     '.cases[] | select(.case == "requests") | .routes[] | select(.task == "understand proxy behavior" and .first_file == "src/requests/adapters.py" and (.first_reading_focus | contains("network client")) and (.first_reading_question | contains("proxies")))' \
     "public task routing matrix JSON Requests proxy first-read focus and question"
   require_jq docs/public-task-routing-matrix-summary.json \
@@ -1335,7 +1347,7 @@ main() {
     '\| Task alias or seed ordering changed \| `scripts/task-routing-matrix-smoke\.sh` \|' \
     "maintenance task routing matrix smoke chooser"
   require_pattern docs/maintenance-commands.md \
-    'routing, authentication, authorization, access-control, settings, feature flag, network, startup, persistence, debug, coverage, API handler, cache, observability, security, billing, frontend, background job, documentation, request lifecycle, and middleware prompts choose the matching first file and that `--expect-file` failures are reported' \
+    'routing, authentication, authorization, access-control, settings, feature flag, network, validation, startup, persistence, debug, coverage, API handler, cache, observability, security, billing, frontend, background job, documentation, request lifecycle, and middleware prompts choose the matching first file and that `--expect-file` failures are reported' \
     "maintenance task routing matrix smoke scope"
   require_pattern docs/maintenance-commands.md \
     '\| Installed-binary adoption path changed \| `CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/installed-quickstart-smoke\.sh` \|' \
@@ -1893,6 +1905,9 @@ main() {
     'understand proxy redirect transport' \
     "task routing matrix default network task"
   require_pattern scripts/task-routing-matrix.sh \
+    'understand json binding validation' \
+    "task routing matrix default validation task"
+  require_pattern scripts/task-routing-matrix.sh \
     'understand persistence behavior' \
     "task routing matrix default persistence task"
   require_pattern scripts/task-routing-matrix.sh \
@@ -1964,6 +1979,9 @@ main() {
   require_pattern scripts/task-routing-matrix-smoke.sh \
     'src/network\.ts' \
     "task routing matrix smoke network assertion"
+  require_pattern scripts/task-routing-matrix-smoke.sh \
+    'src/validation\.ts' \
+    "task routing matrix smoke validation assertion"
   require_pattern tests/cli.rs \
     'context\["reading_plan"\]\[0\]\["selection_rank"\]' \
     "CLI context-pack reading-plan selection rank assertion"

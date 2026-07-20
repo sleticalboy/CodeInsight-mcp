@@ -2382,6 +2382,15 @@ export function bootRouter(settings: Record<string, string>) {
     )
     .unwrap();
     std::fs::write(
+        fixture.path().join("src/validation.ts"),
+        r#"export function bindJsonValidationSchema(payload: unknown) {
+  // JSON binding validates payloads against the request schema.
+  return { payload, schema: "user", validator: "strict" };
+}
+"#,
+    )
+    .unwrap();
+    std::fs::write(
         fixture.path().join("src/database.ts"),
         r#"export function connectDatabase() {
   // Persist user records in durable storage.
@@ -2684,6 +2693,33 @@ export function routerRegressionSpec() {
     assert!(network_question.contains("network requests"));
     assert!(network_question.contains("proxies"));
     assert!(network_question.contains("redirects"));
+
+    let validation_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand json binding validation",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(validation_context["seed_strategy"], "auto_task_match");
+    assert_eq!(
+        validation_context["selected_seeds"][0]["value"],
+        "src/validation.ts"
+    );
+    assert!(
+        validation_context["selected_seeds"][0]["matched_keywords"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|keyword| keyword == "validation")
+    );
+    assert_eq!(validation_context["files"][0]["file"], "src/validation.ts");
+    let validation_question = validation_context["reading_plan"][0]["question"]
+        .as_str()
+        .unwrap();
+    assert!(validation_question.contains("inputs validated"));
+    assert!(validation_question.contains("schemas applied"));
 
     let persistence_context = run_json([
         "context-pack",

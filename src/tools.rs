@@ -2191,6 +2191,8 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
         "Start with seed file authentication and session boundaries.".to_string()
     } else if signals.network_http {
         "Start with seed file network client, proxy, redirect, or transport boundaries.".to_string()
+    } else if signals.validation_binding {
+        "Start with seed file validation, schema, binding, or serialization boundaries.".to_string()
     } else if signals.feature_flags {
         "Start with seed file feature flag, rollout, toggle, or experiment boundaries.".to_string()
     } else if signals.configuration {
@@ -2237,6 +2239,9 @@ fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
         "Read symbol definitions that establish authentication or session behavior.".to_string()
     } else if signals.network_http {
         "Read symbol definitions that establish network client, proxy, redirect, or transport behavior."
+            .to_string()
+    } else if signals.validation_binding {
+        "Read symbol definitions that establish validation, schema, binding, or serialization behavior."
             .to_string()
     } else if signals.feature_flags {
         "Read symbol definitions that establish feature flag, rollout, toggle, or experiment behavior."
@@ -2306,6 +2311,9 @@ fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
     } else if signals.network_http {
         "Follow call graph evidence for network client requests, proxies, redirects, or transport flow."
             .to_string()
+    } else if signals.validation_binding {
+        "Follow call graph evidence for validation, binding, parsing, or serialization flow."
+            .to_string()
     } else if signals.feature_flags {
         "Follow call graph evidence for feature flag evaluation, rollout, toggle, or experiment flow."
             .to_string()
@@ -2354,6 +2362,9 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
         "Inspect references that consume authentication or session state.".to_string()
     } else if signals.network_http {
         "Inspect references that send requests, select proxies, follow redirects, or configure transports."
+            .to_string()
+    } else if signals.validation_binding {
+        "Inspect references that validate inputs, bind payloads, parse schemas, or serialize data."
             .to_string()
     } else if signals.feature_flags {
         "Inspect references that evaluate, override, or consume feature flags and rollout state."
@@ -2404,6 +2415,9 @@ fn context_semantic_focus(signals: ContextTaskSignals) -> String {
     } else if signals.network_http {
         "Review semantic matches for network clients, proxies, redirects, adapters, or transports."
             .to_string()
+    } else if signals.validation_binding {
+        "Review semantic matches for validation, schemas, bindings, parsers, or serializers."
+            .to_string()
     } else if signals.feature_flags {
         "Review semantic matches for feature flags, rollouts, toggles, variants, or experiments."
             .to_string()
@@ -2452,6 +2466,9 @@ fn context_dependency_focus(signals: ContextTaskSignals) -> String {
         "Check local dependencies that affect authentication or session boundaries.".to_string()
     } else if signals.network_http {
         "Check local dependencies that shape network client, proxy, redirect, or transport behavior."
+            .to_string()
+    } else if signals.validation_binding {
+        "Check local dependencies that shape validation, binding, parsing, or serialization behavior."
             .to_string()
     } else if signals.feature_flags {
         "Check local dependencies that shape feature flag, rollout, toggle, or experiment behavior."
@@ -2539,6 +2556,9 @@ fn context_seed_file_question(task: &str) -> String {
     } else if signals.network_http {
         "Where are network requests, proxies, redirects, adapters, or transports handled here?"
             .to_string()
+    } else if signals.validation_binding {
+        "Where are inputs validated, payloads bound, schemas applied, or data serialized here?"
+            .to_string()
     } else if signals.feature_flags {
         "Where are feature flags, rollouts, toggles, variants, or experiments evaluated here?"
             .to_string()
@@ -2593,6 +2613,8 @@ fn context_symbol_definition_question(task: &str) -> String {
         "What authentication decisions, credentials, or session boundaries does this definition establish?".to_string()
     } else if signals.network_http {
         "What network client, proxy, redirect, adapter, or transport behavior does this definition establish?".to_string()
+    } else if signals.validation_binding {
+        "What validation, schema, binding, parser, or serialization behavior does this definition establish?".to_string()
     } else if signals.feature_flags {
         "What feature flag, rollout, toggle, variant, or experiment behavior does this definition establish?".to_string()
     } else if signals.configuration {
@@ -2662,6 +2684,9 @@ fn context_call_graph_question(task: &str) -> String {
         "Which callers or callees carry authentication decisions, credentials, or session state through this flow?".to_string()
     } else if signals.network_http {
         "Which callers or callees send requests, select proxies, follow redirects, or configure transports?".to_string()
+    } else if signals.validation_binding {
+        "Which callers or callees validate inputs, bind payloads, parse schemas, or serialize data?"
+            .to_string()
     } else if signals.feature_flags {
         "Which callers or callees evaluate, override, or consume feature flags and rollout state?"
             .to_string()
@@ -2719,6 +2744,8 @@ fn context_dependency_question(task: &str) -> String {
             .to_string()
     } else if signals.network_http {
         "What imported local dependency behavior supplies network client, proxy, redirect, adapter, or transport behavior?".to_string()
+    } else if signals.validation_binding {
+        "What imported local dependency behavior supplies validation, binding, parsing, or serialization?".to_string()
     } else if signals.feature_flags {
         "What imported local dependency behavior supplies feature flag, rollout, toggle, or experiment state?".to_string()
     } else if signals.configuration {
@@ -2776,6 +2803,9 @@ fn context_reference_question(task: &str) -> String {
     } else if signals.network_http {
         "Which references send requests, select proxies, follow redirects, or configure transports?"
             .to_string()
+    } else if signals.validation_binding {
+        "Which references validate inputs, bind payloads, parse schemas, or serialize data?"
+            .to_string()
     } else if signals.feature_flags {
         "Which references evaluate, override, or consume feature flags, variants, or rollout state?"
             .to_string()
@@ -2825,6 +2855,9 @@ fn context_semantic_question(task: &str) -> String {
             .to_string()
     } else if signals.network_http {
         "Which semantic matches describe network clients, proxies, redirects, adapters, or transports?"
+            .to_string()
+    } else if signals.validation_binding {
+        "Which semantic matches describe validation, schemas, bindings, parsers, or serializers?"
             .to_string()
     } else if signals.feature_flags {
         "Which semantic matches describe feature flags, rollouts, toggles, variants, or experiments?"
@@ -2882,6 +2915,7 @@ struct ContextTaskSignals {
     impact_flow: bool,
     auth_session: bool,
     network_http: bool,
+    validation_binding: bool,
     feature_flags: bool,
     configuration: bool,
     startup: bool,
@@ -2966,6 +3000,36 @@ impl ContextTaskSignals {
                     "transports",
                     "adapter",
                     "adapters",
+                ],
+            ),
+            validation_binding: context_text_mentions(
+                task,
+                &[
+                    "validation",
+                    "validate",
+                    "validated",
+                    "validator",
+                    "validators",
+                    "schema",
+                    "schemas",
+                    "binding",
+                    "bindings",
+                    "bind",
+                    "parser",
+                    "parsers",
+                    "parse",
+                    "parsing",
+                    "json",
+                    "serialize",
+                    "serializer",
+                    "serializers",
+                    "serialization",
+                    "deserialize",
+                    "deserializer",
+                    "deserializers",
+                    "deserialization",
+                    "marshal",
+                    "unmarshal",
                 ],
             ),
             feature_flags: context_text_mentions(
@@ -5529,6 +5593,31 @@ fn task_keyword_aliases(keyword: &str) -> &'static [&'static str] {
         "transports" => &["transport", "adapter", "network"],
         "adapter" => &["adapters", "transport", "network"],
         "adapters" => &["adapter", "transport", "network"],
+        "validation" => &["validate", "validator", "schema"],
+        "validate" => &["validation", "validator", "schema"],
+        "validated" => &["validate", "validation", "validator"],
+        "validator" => &["validators", "validation", "schema"],
+        "validators" => &["validator", "validation", "schema"],
+        "schema" => &["schemas", "validation", "validator"],
+        "schemas" => &["schema", "validation", "validator"],
+        "binding" => &["bindings", "bind", "validation"],
+        "bindings" => &["binding", "bind", "validation"],
+        "bind" => &["binding", "bindings", "validation"],
+        "parser" => &["parsers", "parse", "parsing"],
+        "parsers" => &["parser", "parse", "parsing"],
+        "parse" => &["parser", "parsing", "deserialize"],
+        "parsing" => &["parse", "parser", "deserialize"],
+        "json" => &["serialization", "deserialize", "binding"],
+        "serialize" => &["serializer", "serialization", "json"],
+        "serializer" => &["serializers", "serialization", "json"],
+        "serializers" => &["serializer", "serialization", "json"],
+        "serialization" => &["serialize", "serializer", "json"],
+        "deserialize" => &["deserializer", "deserialization", "json"],
+        "deserializer" => &["deserializers", "deserialization", "json"],
+        "deserializers" => &["deserializer", "deserialization", "json"],
+        "deserialization" => &["deserialize", "deserializer", "json"],
+        "marshal" => &["unmarshal", "serialization", "json"],
+        "unmarshal" => &["marshal", "deserialization", "json"],
         "flag" => &["flags", "toggle", "rollout"],
         "flags" => &["flag", "toggle", "rollout"],
         "toggle" => &["toggles", "flag", "rollout"],
@@ -5884,6 +5973,13 @@ mod tests {
         assert!(network_keywords.contains(&"transport".to_string()));
         assert!(network_keywords.contains(&"adapter".to_string()));
         assert!(network_keywords.contains(&"network".to_string()));
+
+        let validation_keywords = task_keywords("understand json binding validation behavior");
+        assert!(validation_keywords.contains(&"json".to_string()));
+        assert!(validation_keywords.contains(&"binding".to_string()));
+        assert!(validation_keywords.contains(&"validation".to_string()));
+        assert!(validation_keywords.contains(&"schema".to_string()));
+        assert!(validation_keywords.contains(&"deserialize".to_string()));
 
         let rbac_keywords = task_keywords("audit rbac acl policy");
         assert!(rbac_keywords.contains(&"rbac".to_string()));
