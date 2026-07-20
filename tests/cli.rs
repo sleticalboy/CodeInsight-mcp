@@ -4349,6 +4349,153 @@ export class BaseController {
 }
 
 #[test]
+fn cli_context_pack_routes_php_base_type_relations() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        "src/AuthController.php",
+        r#"<?php
+class AuthController extends BaseController implements AuthGuard {
+    public function login(): string {
+        return $this->session();
+    }
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/BaseController.php",
+        r#"<?php
+class BaseController {
+    protected function session(): string {
+        return "active";
+    }
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/AuthGuard.php",
+        r#"<?php
+interface AuthGuard {
+    public function login(): string;
+}
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 3);
+
+    let context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand inherited php authentication controller behavior",
+        "--file",
+        "src/AuthController.php",
+        "--token-budget",
+        "4000",
+    ]);
+
+    let base_file = context["files"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|file| file["file"] == "src/BaseController.php")
+        .expect("php base type should be selected through type relation evidence");
+    assert!(
+        base_file["source_mix"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|source| source["source"] == "type relation")
+    );
+    assert!(base_file["ranges"].as_array().unwrap().iter().any(|range| {
+        range["source"] == "type_relation"
+            && range["reason"]
+                .as_str()
+                .is_some_and(|reason| reason.contains("base type BaseController"))
+    }));
+    let base_step = context["reading_plan"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|step| step["file"] == "src/BaseController.php")
+        .expect("php base type should have a reading step");
+    assert_eq!(base_step["next_action"], "inspect_type_relation");
+    assert_eq!(base_step["suggested_tool"]["tool"], "dependency_graph");
+}
+
+#[test]
+fn cli_context_pack_routes_ruby_base_type_relations() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        "lib/auth_service.rb",
+        r#"
+class AuthService < BaseService
+  def login
+    session
+  end
+end
+"#,
+    );
+    write_file(
+        &fixture,
+        "lib/base_service.rb",
+        r#"
+class BaseService
+  def session
+    "active"
+  end
+end
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 2);
+
+    let context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand inherited ruby authentication service behavior",
+        "--file",
+        "lib/auth_service.rb",
+        "--token-budget",
+        "3000",
+    ]);
+
+    let base_file = context["files"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|file| file["file"] == "lib/base_service.rb")
+        .expect("ruby base type should be selected through type relation evidence");
+    assert!(
+        base_file["source_mix"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|source| source["source"] == "type relation")
+    );
+    assert!(base_file["ranges"].as_array().unwrap().iter().any(|range| {
+        range["source"] == "type_relation"
+            && range["reason"]
+                .as_str()
+                .is_some_and(|reason| reason.contains("base type BaseService"))
+    }));
+    let base_step = context["reading_plan"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|step| step["file"] == "lib/base_service.rb")
+        .expect("ruby base type should have a reading step");
+    assert_eq!(base_step["next_action"], "inspect_type_relation");
+    assert_eq!(base_step["suggested_tool"]["tool"], "dependency_graph");
+}
+
+#[test]
 fn cli_resolves_php_namespace_use_imports() {
     let fixture = php_namespace_use_fixture_project();
 

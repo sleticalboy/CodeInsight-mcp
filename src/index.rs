@@ -1533,6 +1533,13 @@ fn php_dependencies(
 ) -> Vec<Dependency> {
     match node.kind() {
         "namespace_use_declaration" => php_use_dependencies(node, source, language, source_file),
+        "class_declaration" | "interface_declaration" => type_relation_dependencies(
+            node,
+            source,
+            language,
+            source_file,
+            &["extends", "implements"],
+        ),
         _ => Vec::new(),
     }
 }
@@ -1566,6 +1573,10 @@ fn ruby_dependencies(
     language: Language,
     source_file: &str,
 ) -> Vec<Dependency> {
+    if node.kind() == "class" {
+        return ruby_base_type_dependencies(node, source, language, source_file);
+    }
+
     if node.kind() != "call" {
         return Vec::new();
     }
@@ -1592,6 +1603,48 @@ fn ruby_dependencies(
             }
         })
         .collect()
+}
+
+fn ruby_base_type_dependencies(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+) -> Vec<Dependency> {
+    let Some(local_alias) = child_text(node, "name", source) else {
+        return Vec::new();
+    };
+    let Some(raw_target) =
+        child_text(node, "superclass", source).or_else(|| ruby_superclass_from_text(node, source))
+    else {
+        return Vec::new();
+    };
+    let Some(target) = clean_type_relation_target(&raw_target) else {
+        return Vec::new();
+    };
+
+    vec![Dependency {
+        source_file: source_file.to_string(),
+        target,
+        resolved_file: None,
+        local_alias: Some(local_alias),
+        imported_symbol: Some("extends".to_string()),
+        kind: "base_type".to_string(),
+        language,
+        line: node.start_position().row + 1,
+    }]
+}
+
+fn ruby_superclass_from_text(node: Node<'_>, source: &[u8]) -> Option<String> {
+    let text = node.utf8_text(source).ok()?;
+    let header = text.lines().next()?.trim();
+    let (_, raw_target) = header.split_once('<')?;
+    let target = raw_target
+        .split_whitespace()
+        .next()
+        .unwrap_or_default()
+        .trim();
+    (!target.is_empty()).then(|| target.to_string())
 }
 
 fn ruby_require_alias(target: &str, kind: &str) -> (Option<String>, Option<String>) {
@@ -1922,6 +1975,8 @@ fn clean_type_relation_target(raw: &str) -> Option<String> {
     let mut target = raw
         .trim()
         .trim_end_matches(';')
+        .trim_start_matches('<')
+        .trim()
         .trim_start_matches("public ")
         .trim_start_matches("private ")
         .trim_start_matches("protected ")
@@ -3082,6 +3137,10 @@ fn java_source_roots(source_file: &str) -> Vec<PathBuf> {
 }
 
 fn resolve_php_target(root: &Path, dependency: &Dependency) -> Option<String> {
+    if dependency.kind == "base_type" {
+        return resolve_php_type_relation_target(root, dependency);
+    }
+
     if dependency.kind != "use" {
         return None;
     }
@@ -3099,6 +3158,32 @@ fn resolve_php_target(root: &Path, dependency: &Dependency) -> Option<String> {
                 .map(move |import_path| source_root.join(import_path))
         })
         .collect::<Vec<_>>();
+    existing_relative(root, candidates)
+}
+
+fn resolve_php_type_relation_target(root: &Path, dependency: &Dependency) -> Option<String> {
+    let import_paths = php_use_candidate_paths(&dependency.target);
+    if import_paths.is_empty() {
+        return None;
+    }
+
+    let source_dir = Path::new(&dependency.source_file)
+        .parent()
+        .unwrap_or(Path::new(""));
+    let mut candidates = import_paths
+        .iter()
+        .map(|import_path| source_dir.join(import_path))
+        .collect::<Vec<_>>();
+    candidates.extend(
+        php_source_roots(&dependency.source_file)
+            .into_iter()
+            .flat_map(|source_root| {
+                import_paths
+                    .iter()
+                    .map(move |import_path| source_root.join(import_path))
+            }),
+    );
+
     existing_relative(root, candidates)
 }
 
@@ -3209,6 +3294,10 @@ fn python_target_candidates(target: PathBuf) -> Vec<PathBuf> {
 }
 
 fn resolve_ruby_target(root: &Path, dependency: &Dependency) -> Option<String> {
+    if dependency.kind == "base_type" {
+        return resolve_ruby_type_relation_target(root, dependency);
+    }
+
     if dependency.kind != "require_relative" {
         return None;
     }
@@ -3217,6 +3306,61 @@ fn resolve_ruby_target(root: &Path, dependency: &Dependency) -> Option<String> {
         .parent()
         .unwrap_or(Path::new(""));
     resolve_base(root, source_dir.join(&dependency.target), &["rb"])
+}
+
+fn resolve_ruby_type_relation_target(root: &Path, dependency: &Dependency) -> Option<String> {
+    let source_dir = Path::new(&dependency.source_file)
+        .parent()
+        .unwrap_or(Path::new(""));
+    let target_path = ruby_constant_path(&dependency.target)?;
+    let mut candidates = vec![source_dir.join(&target_path)];
+    candidates.extend(
+        ["lib", "app", "src"]
+            .into_iter()
+            .map(|root_dir| PathBuf::from(root_dir).join(&target_path)),
+    );
+    existing_relative(
+        root,
+        candidates
+            .into_iter()
+            .map(|candidate| candidate.with_extension("rb")),
+    )
+}
+
+fn ruby_constant_path(target: &str) -> Option<PathBuf> {
+    let trimmed = target.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+
+    let parts = trimmed
+        .split("::")
+        .map(ruby_constant_segment_to_snake)
+        .collect::<Option<Vec<_>>>()?;
+    Some(parts.into_iter().collect())
+}
+
+fn ruby_constant_segment_to_snake(segment: &str) -> Option<String> {
+    let trimmed = segment.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+
+    let mut output = String::new();
+    for (index, ch) in trimmed.chars().enumerate() {
+        if ch.is_ascii_uppercase() {
+            if index > 0 {
+                output.push('_');
+            }
+            output.push(ch.to_ascii_lowercase());
+        } else if ch.is_ascii_alphanumeric() || ch == '_' {
+            output.push(ch);
+        } else {
+            return None;
+        }
+    }
+
+    (!output.is_empty()).then_some(output)
 }
 
 fn resolve_rust_target(root: &Path, dependency: &Dependency) -> Option<String> {
@@ -7453,7 +7597,7 @@ use App\Repository\UserRepository;
 use App\Support\AuditLog;
 use function App\Support\audit_login;
 
-class AuthController {
+class AuthController extends BaseController implements AuthGuard, Auditable {
     private UserRepository $users;
     public const GUARD = 'web';
 
@@ -7498,6 +7642,24 @@ interface UserRepository {
         assert!(targets.contains(&"App\\Repository\\UserRepository"));
         assert!(targets.contains(&"App\\Support\\AuditLog"));
         assert!(targets.contains(&"App\\Support\\audit_login"));
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "BaseController"
+                && dependency.kind == "base_type"
+                && dependency.local_alias.as_deref() == Some("AuthController")
+                && dependency.imported_symbol.as_deref() == Some("extends")
+        }));
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "AuthGuard"
+                && dependency.kind == "base_type"
+                && dependency.local_alias.as_deref() == Some("AuthController")
+                && dependency.imported_symbol.as_deref() == Some("implements")
+        }));
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "Auditable"
+                && dependency.kind == "base_type"
+                && dependency.local_alias.as_deref() == Some("AuthController")
+                && dependency.imported_symbol.as_deref() == Some("implements")
+        }));
 
         let calls = extract_calls(source, Language::Php, "AuthController.php", &symbols);
         assert!(
@@ -7612,7 +7774,7 @@ require "json"
 require_relative "support/audit"
 
 module Example
-  class AuthService
+  class AuthService < BaseService
     TOKEN = "web"
 
     def initialize(repository)
@@ -7657,6 +7819,12 @@ end
             .collect::<Vec<_>>();
         assert!(targets.contains(&"json"));
         assert!(targets.contains(&"support/audit"));
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "BaseService"
+                && dependency.kind == "base_type"
+                && dependency.local_alias.as_deref() == Some("AuthService")
+                && dependency.imported_symbol.as_deref() == Some("extends")
+        }));
 
         let calls = extract_calls(source, Language::Ruby, "auth_service.rb", &symbols);
         assert!(
