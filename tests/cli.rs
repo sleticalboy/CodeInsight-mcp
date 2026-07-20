@@ -4386,6 +4386,23 @@ interface AuthGuard {
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
     assert_eq!(index["indexed_files"], 3);
 
+    let graph = run_json([
+        "dependency-graph",
+        fixture.path().to_str().unwrap(),
+        "--kind",
+        "base-type",
+        "--limit",
+        "10",
+    ]);
+    assert_eq!(graph["edges"].as_u64(), Some(2));
+    assert!(
+        graph["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| dependency["kind"] == "base_type")
+    );
+
     let context = run_json([
         "context-pack",
         fixture.path().to_str().unwrap(),
@@ -4454,6 +4471,23 @@ end
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
     assert_eq!(index["indexed_files"], 2);
+
+    let graph = run_json([
+        "dependency-graph",
+        fixture.path().to_str().unwrap(),
+        "--kind",
+        "base_type",
+        "--limit",
+        "10",
+    ]);
+    assert_eq!(graph["edges"].as_u64(), Some(1));
+    assert!(
+        graph["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|dependency| dependency["kind"] == "base_type")
+    );
 
     let context = run_json([
         "context-pack",

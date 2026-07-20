@@ -283,6 +283,7 @@ MVP 不追求“支持最多语言”，而追求“核心场景闭环可用”�
   "root": "/absolute/path/to/repo",
   "files": ["src/service.cpp"],
   "languages": ["cpp"],
+  "kinds": ["base_type"],
   "limit": 500
 }
 ```
@@ -296,6 +297,7 @@ MVP 不追求“支持最多语言”，而追求“核心场景闭环可用”�
 - summary
 - top_sources
 - top_targets
+- kind 过滤：例如 `base_type` 仅查看继承、接口实现、trait impl 等类型关系
 - 已解析的本地文件路径提示
 
 ### 5.9 `impact_analysis`

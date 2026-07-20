@@ -90,6 +90,8 @@ pub struct DependencyGraphArgs {
     pub files: Vec<String>,
     #[arg(long = "language")]
     pub languages: Vec<String>,
+    #[arg(long = "kind")]
+    pub kinds: Vec<String>,
     #[arg(long, default_value_t = 500)]
     pub limit: usize,
     #[arg(long, default_value_t = 0)]

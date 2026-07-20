@@ -977,9 +977,11 @@ impl Store {
         offset: usize,
         files: &[String],
         languages: &[String],
+        kinds: &[String],
     ) -> Result<DependencyGraph> {
         let mut query_params = Vec::new();
-        let where_clause = dependency_graph_filter_clause(files, languages, &mut query_params);
+        let where_clause =
+            dependency_graph_filter_clause(files, languages, kinds, &mut query_params);
         let query = format!(
             "select f.path, d.target, d.resolved_file, d.local_alias, d.imported_symbol, d.kind, d.language, d.line
              from dependencies d
@@ -1013,7 +1015,7 @@ impl Store {
         }
         let page_size = dependencies.len();
 
-        let (nodes, edges) = if files.is_empty() && languages.is_empty() {
+        let (nodes, edges) = if files.is_empty() && languages.is_empty() && kinds.is_empty() {
             let nodes = self.conn.query_row(
                 "select count(*) from (
                     select path from files
@@ -1031,7 +1033,8 @@ impl Store {
             (nodes, edges)
         } else {
             let mut edge_params = Vec::new();
-            let edge_where = dependency_graph_filter_clause(files, languages, &mut edge_params);
+            let edge_where =
+                dependency_graph_filter_clause(files, languages, kinds, &mut edge_params);
             let edge_query = format!(
                 "select count(*)
                  from dependencies d
@@ -1045,8 +1048,10 @@ impl Store {
                 })? as usize;
 
             let mut node_params = Vec::new();
-            let source_where = dependency_graph_filter_clause(files, languages, &mut node_params);
-            let target_where = dependency_graph_filter_clause(files, languages, &mut node_params);
+            let source_where =
+                dependency_graph_filter_clause(files, languages, kinds, &mut node_params);
+            let target_where =
+                dependency_graph_filter_clause(files, languages, kinds, &mut node_params);
             let node_query = format!(
                 "select count(*) from (
                     select f.path
@@ -1068,9 +1073,9 @@ impl Store {
             (nodes, edges)
         };
 
-        let summary = self.dependency_graph_summary(files, languages)?;
-        let top_sources = self.dependency_graph_top_sources(files, languages)?;
-        let top_targets = self.dependency_graph_top_targets(files, languages)?;
+        let summary = self.dependency_graph_summary(files, languages, kinds)?;
+        let top_sources = self.dependency_graph_top_sources(files, languages, kinds)?;
+        let top_targets = self.dependency_graph_top_targets(files, languages, kinds)?;
 
         Ok(DependencyGraph {
             root: root.display().to_string(),
@@ -1091,9 +1096,10 @@ impl Store {
         &self,
         files: &[String],
         languages: &[String],
+        kinds: &[String],
     ) -> Result<DependencySummary> {
         let mut params = Vec::new();
-        let where_clause = dependency_graph_filter_clause(files, languages, &mut params);
+        let where_clause = dependency_graph_filter_clause(files, languages, kinds, &mut params);
         let query = format!(
             "select
                 count(*),
@@ -1116,9 +1122,10 @@ impl Store {
                     row.get::<_, i64>(4)? as usize,
                 ))
             })?;
-        let top_external_targets = self.dependency_graph_top_external_targets(files, languages)?;
+        let top_external_targets =
+            self.dependency_graph_top_external_targets(files, languages, kinds)?;
         let top_type_relation_targets =
-            self.dependency_graph_top_type_relation_targets(files, languages)?;
+            self.dependency_graph_top_type_relation_targets(files, languages, kinds)?;
 
         Ok(DependencySummary {
             edges,
@@ -1137,9 +1144,10 @@ impl Store {
         &self,
         files: &[String],
         languages: &[String],
+        kinds: &[String],
     ) -> Result<Vec<DependencySourceStat>> {
         let mut params = Vec::new();
-        let where_clause = dependency_graph_filter_clause(files, languages, &mut params);
+        let where_clause = dependency_graph_filter_clause(files, languages, kinds, &mut params);
         let query = format!(
             "select f.path, count(*)
              from dependencies d
@@ -1164,9 +1172,10 @@ impl Store {
         &self,
         files: &[String],
         languages: &[String],
+        kinds: &[String],
     ) -> Result<Vec<DependencyTargetStat>> {
         let mut params = Vec::new();
-        let where_clause = dependency_graph_filter_clause(files, languages, &mut params);
+        let where_clause = dependency_graph_filter_clause(files, languages, kinds, &mut params);
         let query = format!(
             "select d.target, count(*)
              from dependencies d
@@ -1191,9 +1200,10 @@ impl Store {
         &self,
         files: &[String],
         languages: &[String],
+        kinds: &[String],
     ) -> Result<Vec<DependencyTargetStat>> {
         let mut params = Vec::new();
-        let base_where = dependency_graph_filter_clause(files, languages, &mut params);
+        let base_where = dependency_graph_filter_clause(files, languages, kinds, &mut params);
         let external_condition =
             "(d.resolved_file is null or d.resolved_file like 'node_modules/%')";
         let where_clause = if base_where.is_empty() {
@@ -1225,9 +1235,10 @@ impl Store {
         &self,
         files: &[String],
         languages: &[String],
+        kinds: &[String],
     ) -> Result<Vec<DependencyTargetStat>> {
         let mut params = Vec::new();
-        let base_where = dependency_graph_filter_clause(files, languages, &mut params);
+        let base_where = dependency_graph_filter_clause(files, languages, kinds, &mut params);
         let relation_condition = "d.kind = 'base_type'";
         let where_clause = if base_where.is_empty() {
             format!("where {relation_condition}")
@@ -2760,6 +2771,7 @@ fn parse_language(language: &str) -> Language {
 fn dependency_graph_filter_clause(
     files: &[String],
     languages: &[String],
+    kinds: &[String],
     params: &mut Vec<SqlValue>,
 ) -> String {
     let mut conditions = Vec::new();
@@ -2775,6 +2787,11 @@ fn dependency_graph_filter_clause(
         let placeholders = vec!["?"; languages.len()].join(", ");
         conditions.push(format!("d.language in ({placeholders})"));
         params.extend(languages.iter().cloned().map(SqlValue::Text));
+    }
+    if !kinds.is_empty() {
+        let placeholders = vec!["?"; kinds.len()].join(", ");
+        conditions.push(format!("d.kind in ({placeholders})"));
+        params.extend(kinds.iter().cloned().map(SqlValue::Text));
     }
 
     if conditions.is_empty() {
@@ -3253,7 +3270,7 @@ mod tests {
             }],
         )?;
 
-        let graph = store.dependency_graph(temp.path(), 10, 0, &[], &[])?;
+        let graph = store.dependency_graph(temp.path(), 10, 0, &[], &[], &[])?;
         assert_eq!(graph.dependencies.len(), 1);
         assert_eq!(
             graph.dependencies[0].resolved_file.as_deref(),

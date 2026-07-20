@@ -174,8 +174,9 @@ task text, and token budget.
 
 When type-relation signals are present, surface them as navigation hints and
 prefer the suggested `dependency_graph` follow-up for inheritance,
-implementation, or trait-oriented questions. Do not treat them as a complete
-type graph.
+implementation, or trait-oriented questions. Clients that need only these
+edges can call `dependency_graph` with `kinds: ["base_type"]`. Do not treat
+them as a complete type graph.
 
 ## First Context Pack
 

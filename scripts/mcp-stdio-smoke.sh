@@ -300,6 +300,27 @@ try:
         target["target"] in type_relation_targets
         for target in overview_type_relation_result["summary"]["top_type_relation_targets"]
     ), "dependency_graph summary did not preserve type-relation targets"
+    filtered_type_relation_graph = request(
+        {
+            "jsonrpc": "2.0",
+            "id": 19,
+            "method": "tools/call",
+            "params": {
+                "name": "dependency_graph",
+                "arguments": {
+                    "root": smoke_root,
+                    "kinds": ["base_type"],
+                    "limit": 10,
+                },
+            },
+        }
+    )["result"]["structuredContent"]
+    assert filtered_type_relation_graph["edges"] >= 2
+    assert filtered_type_relation_graph["summary"]["edges"] == filtered_type_relation_graph["edges"]
+    assert all(
+        dependency["kind"] == "base_type"
+        for dependency in filtered_type_relation_graph["dependencies"]
+    ), "dependency_graph kinds filter returned non-base_type edges"
 
     agent_route = request(
         {

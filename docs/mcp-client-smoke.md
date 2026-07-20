@@ -55,8 +55,11 @@ sequence:
 It also asserts the MCP-facing structured fields that clients commonly render:
 
 - `project_overview.recommended_next_tools`
+- `project_overview.dependency_summary.type_relation_edges` and
+  `top_type_relation_targets`
 - `project_overview.recommended_next_tools` calls for `context_pack` and
-  `config_status` execute
+  `config_status` execute, and the type-relation `dependency_graph`
+  recommendation executes
 - `agent_route.route[]` includes `index_project`, `project_overview`,
   `context_pack`, and `impact_analysis`
 - `agent_route.execution_plan[]` includes `read_selected_context`,

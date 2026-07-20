@@ -8287,7 +8287,9 @@ const templateModule = require(templatePath);
         assert_eq!(report.errors.len(), 0);
 
         let store = Store::open(dir.path()).unwrap();
-        let graph = store.dependency_graph(dir.path(), 10, 0, &[], &[]).unwrap();
+        let graph = store
+            .dependency_graph(dir.path(), 10, 0, &[], &[], &[])
+            .unwrap();
         assert!(graph.dependencies.iter().any(|dependency| {
             dependency.source_file == "src/main.ts"
                 && dependency.target == "./auth"

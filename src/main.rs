@@ -31,6 +31,7 @@ async fn main() -> Result<()> {
             args.root,
             args.files,
             args.languages,
+            args.kinds,
             args.limit,
             args.offset,
         )?,

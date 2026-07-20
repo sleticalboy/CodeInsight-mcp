@@ -38,7 +38,7 @@ The stdio server currently exposes 16 tools:
 | `project_overview` | Return the repository briefing an agent should fetch first: summaries, role-aware directories, entrypoint candidates, dependency/type-relation summaries, `recommended_next_tools`, and index metadata. |
 | `symbol_search` | Search extracted symbols in an indexed repository. |
 | `file_outline` | Parse one source file and return a symbol outline. |
-| `dependency_graph` | Return module-level dependencies extracted during indexing, including type-relation edge counts and top relation targets, optionally filtered by touching files or languages and paged with `limit` / `offset`. |
+| `dependency_graph` | Return module-level dependencies extracted during indexing, including type-relation edge counts and top relation targets, optionally filtered by touching files, languages, or dependency `kinds` and paged with `limit` / `offset`. |
 | `impact_analysis` | Estimate local impact radius from seed symbols or files using definitions, text references, static callers, local callee targets, and resolved dependencies; returns ranked files, paths, risk, reasons, and suggested checks. |
 | `find_references` | Find ranked text references across indexed files with file, location, context, approximate reference kind, and confidence. |
 | `semantic_search` | Query local semantic vectors through a configured embedding provider. |

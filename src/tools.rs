@@ -107,10 +107,11 @@ pub fn dependency_graph(
     root: PathBuf,
     files: Vec<String>,
     languages: Vec<String>,
+    kinds: Vec<String>,
     limit: usize,
     offset: usize,
 ) -> Result<()> {
-    let graph = dependency_graph_value(root, files, languages, limit, offset)?;
+    let graph = dependency_graph_value(root, files, languages, kinds, limit, offset)?;
     print_json(&graph)
 }
 
@@ -582,6 +583,7 @@ pub fn dependency_graph_value(
     root: PathBuf,
     files: Vec<String>,
     languages: Vec<String>,
+    kinds: Vec<String>,
     limit: usize,
     offset: usize,
 ) -> Result<DependencyGraph> {
@@ -591,8 +593,9 @@ pub fn dependency_graph_value(
         .map(|file| normalize_seed_file(&root, file))
         .collect::<Result<Vec<_>>>()?;
     let languages = normalize_dependency_languages(&languages)?;
+    let kinds = normalize_dependency_kinds(&kinds)?;
     let store = Store::open(&root)?;
-    store.dependency_graph(&root, limit, offset, &files, &languages)
+    store.dependency_graph(&root, limit, offset, &files, &languages, &kinds)
 }
 
 pub fn impact_analysis_value(
@@ -5531,6 +5534,44 @@ fn normalize_dependency_language(language: &str) -> Result<String> {
         Ok(normalized.to_string())
     } else {
         bail!("unsupported dependency graph language filter: {language}")
+    }
+}
+
+fn normalize_dependency_kinds(kinds: &[String]) -> Result<Vec<String>> {
+    kinds
+        .iter()
+        .map(|kind| normalize_dependency_kind(kind))
+        .collect()
+}
+
+fn normalize_dependency_kind(kind: &str) -> Result<String> {
+    let normalized = kind.trim().to_ascii_lowercase().replace('-', "_");
+    let allowed = [
+        "base_type",
+        "export_alias",
+        "export_namespace",
+        "extension_method",
+        "import",
+        "import_alias",
+        "import_namespace",
+        "import_static",
+        "include",
+        "mod",
+        "namespace",
+        "package",
+        "property_type",
+        "require",
+        "require_relative",
+        "type_binding",
+        "use",
+        "using",
+        "using_alias",
+        "using_static",
+    ];
+    if allowed.contains(&normalized.as_str()) {
+        Ok(normalized)
+    } else {
+        bail!("unsupported dependency graph kind filter: {kind}")
     }
 }
 

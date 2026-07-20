@@ -105,10 +105,11 @@ fn handle_tool_call(params: Value) -> Result<Value> {
             let root = required_path(&arguments, "root")?;
             let files = optional_string_array(&arguments, "files")?;
             let languages = optional_string_array(&arguments, "languages")?;
+            let kinds = optional_string_array(&arguments, "kinds")?;
             let limit = optional_positive_usize(&arguments, "limit", 500)?;
             let offset = optional_min_usize(&arguments, "offset", 0, 0)?;
             serde_json::to_value(tools::dependency_graph_value(
-                root, files, languages, limit, offset,
+                root, files, languages, kinds, limit, offset,
             )?)?
         }
         "impact_analysis" => {
@@ -293,6 +294,10 @@ fn tool_definitions() -> Value {
                         "items": {"type": "string"}
                     },
                     "languages": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    },
+                    "kinds": {
                         "type": "array",
                         "items": {"type": "string"}
                     },
@@ -1078,6 +1083,7 @@ int login(void) {
                 "root": dir.path(),
                 "files": ["src/auth.h"],
                 "languages": ["c"],
+                "kinds": ["include"],
                 "limit": 10
             }
         }))
