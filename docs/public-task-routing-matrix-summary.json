@@ -215,8 +215,8 @@
       "task_count": 6,
       "expectation_count": 6,
       "total_task_source_lines": 72192,
-      "total_selected_lines": 3710,
-      "total_estimated_tokens": 33612,
+      "total_selected_lines": 3735,
+      "total_estimated_tokens": 33764,
       "max_impacted_files": 17,
       "routes": [
         {
@@ -270,24 +270,24 @@
         {
           "task": "understand proxy behavior",
           "first_file": "src/requests/adapters.py",
-          "first_reading_focus": "Start with seed file context and primary symbols.",
-          "first_reading_question": "What entrypoints, exported symbols, or setup code define the main flow here?",
+          "first_reading_focus": "Start with seed file network client, proxy, redirect, or transport boundaries.",
+          "first_reading_question": "Where are network requests, proxies, redirects, adapters, or transports handled here?",
           "seed_strategy": "auto_task_match",
           "total_lines": 12032,
-          "line_reduction": "94.7%",
-          "estimated_tokens": 5889,
+          "line_reduction": "94.6%",
+          "estimated_tokens": 5972,
           "risk_level": "high",
           "impacted_files": 14
         },
         {
           "task": "understand redirect behavior",
           "first_file": "src/requests/sessions.py",
-          "first_reading_focus": "Start with seed file context and primary symbols.",
-          "first_reading_question": "What entrypoints, exported symbols, or setup code define the main flow here?",
+          "first_reading_focus": "Start with seed file network client, proxy, redirect, or transport boundaries.",
+          "first_reading_question": "Where are network requests, proxies, redirects, adapters, or transports handled here?",
           "seed_strategy": "auto_task_match",
           "total_lines": 12032,
-          "line_reduction": "94.6%",
-          "estimated_tokens": 5927,
+          "line_reduction": "94.5%",
+          "estimated_tokens": 5996,
           "risk_level": "high",
           "impacted_files": 15
         }
@@ -298,10 +298,10 @@
     "task_count": 19,
     "expectation_count": 19,
     "total_task_source_lines": 351947,
-    "total_selected_lines": 9027,
-    "total_estimated_tokens": 80390,
+    "total_selected_lines": 9052,
+    "total_estimated_tokens": 80542,
     "max_impacted_files": 43,
-    "line_reduction": 97.43
+    "line_reduction": 97.42
   },
   "generated_by": "scripts/update-public-task-routing-matrix.sh"
 }

@@ -2373,6 +2373,15 @@ export function bootRouter(settings: Record<string, string>) {
     )
     .unwrap();
     std::fs::write(
+        fixture.path().join("src/network.ts"),
+        r#"export function configureProxyTransport(proxyUrl: string) {
+  // Network HTTP adapter follows redirects through the configured proxy.
+  return { proxy: proxyUrl, redirect: "follow", transport: "http" };
+}
+"#,
+    )
+    .unwrap();
+    std::fs::write(
         fixture.path().join("src/database.ts"),
         r#"export function connectDatabase() {
   // Persist user records in durable storage.
@@ -2647,6 +2656,34 @@ export function routerRegressionSpec() {
         .unwrap();
     assert!(feature_flag_question.contains("feature flags"));
     assert!(feature_flag_question.contains("rollouts"));
+
+    let network_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand proxy redirect transport",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(network_context["seed_strategy"], "auto_task_match");
+    assert_eq!(
+        network_context["selected_seeds"][0]["value"],
+        "src/network.ts"
+    );
+    assert!(
+        network_context["selected_seeds"][0]["matched_keywords"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|keyword| keyword == "proxy")
+    );
+    assert_eq!(network_context["files"][0]["file"], "src/network.ts");
+    let network_question = network_context["reading_plan"][0]["question"]
+        .as_str()
+        .unwrap();
+    assert!(network_question.contains("network requests"));
+    assert!(network_question.contains("proxies"));
+    assert!(network_question.contains("redirects"));
 
     let persistence_context = run_json([
         "context-pack",

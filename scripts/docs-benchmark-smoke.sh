@@ -542,6 +542,9 @@ main() {
     'Does a feature flag task start at rollout, toggle, or experiment code' \
     "task routing matrix feature flag framing"
   require_pattern docs/task-routing-matrix.md \
+    'Does a network task start at proxy, redirect, adapter, or transport code' \
+    "task routing matrix network framing"
+  require_pattern docs/task-routing-matrix.md \
     'Does a persistence task start at database, repository, or storage code' \
     "task routing matrix persistence framing"
   require_pattern docs/task-routing-matrix.md \
@@ -589,6 +592,9 @@ main() {
   require_pattern docs/task-routing-matrix.md \
     $'understand feature flag rollout\tsrc/feature_flags\\.ts' \
     "task routing matrix feature flag expectation example"
+  require_pattern docs/task-routing-matrix.md \
+    $'understand proxy redirect transport\tsrc/network\\.ts' \
+    "task routing matrix network expectation example"
   require_pattern docs/task-routing-matrix.md \
     $'understand persistence behavior\tsrc/database\\.ts' \
     "task routing matrix persistence expectation example"
@@ -990,7 +996,7 @@ main() {
     '\-\-expect-file \./route-expectations\.tsv' \
     "README task routing matrix expectation file"
   require_pattern README.md \
-    'selecting 9,027 of 351,947 task source' \
+    'selecting 9,052 of 351,947 task source' \
     "README public route-quality headline"
   require_pattern README.md \
     '\[JSON summary\]\(docs/public-task-routing-matrix-summary\.json\)' \
@@ -1053,13 +1059,13 @@ main() {
     'source_lines: 351947' \
     "public task routing matrix source-line evidence"
   require_pattern docs/public-task-routing-matrix.md \
-    'selected_lines: 9027' \
+    'selected_lines: 9052' \
     "public task routing matrix selected-line evidence"
   require_pattern docs/public-task-routing-matrix.md \
-    'line_reduction: 97\.43%' \
+    'line_reduction: 97\.42%' \
     "public task routing matrix line-reduction evidence"
   require_pattern docs/public-task-routing-matrix.md \
-    'Aggregate line reduction: `97\.43%`' \
+    'Aggregate line reduction: `97\.42%`' \
     "public task routing matrix aggregate line-reduction summary"
   require_pattern docs/public-task-routing-matrix.md \
     '\[`public-task-routing-matrix-summary\.json`\]\(public-task-routing-matrix-summary\.json\)' \
@@ -1068,7 +1074,7 @@ main() {
     '"generated_by": "scripts/update-public-task-routing-matrix\.sh"' \
     "public task routing matrix JSON generated-by field"
   require_pattern docs/public-task-routing-matrix-summary.json \
-    '"line_reduction": 97\.43' \
+    '"line_reduction": 97\.42' \
     "public task routing matrix JSON line reduction"
   require_pattern docs/public-task-routing-matrix-summary.json \
     '"repository": "<case-root>/express"' \
@@ -1082,6 +1088,12 @@ main() {
   require_jq docs/public-task-routing-matrix-summary.json \
     '.cases[] | select(.case == "flask") | .routes[] | select(.task == "understand request lifecycle before after request handling" and .first_file == "src/flask/app.py" and (.first_reading_focus | contains("request lifecycle")) and (.first_reading_focus | contains("response finalization")) and (.first_reading_question | contains("request lifecycle hooks")) and (.first_reading_question | contains("response finalization")))' \
     "public task routing matrix JSON Flask lifecycle first-read focus and question"
+  require_jq docs/public-task-routing-matrix-summary.json \
+    '.cases[] | select(.case == "requests") | .routes[] | select(.task == "understand proxy behavior" and .first_file == "src/requests/adapters.py" and (.first_reading_focus | contains("network client")) and (.first_reading_question | contains("proxies")))' \
+    "public task routing matrix JSON Requests proxy first-read focus and question"
+  require_jq docs/public-task-routing-matrix-summary.json \
+    '.cases[] | select(.case == "requests") | .routes[] | select(.task == "understand redirect behavior" and .first_file == "src/requests/sessions.py" and (.first_reading_focus | contains("redirect")) and (.first_reading_question | contains("redirects")))' \
+    "public task routing matrix JSON Requests redirect first-read focus and question"
   require_pattern docs/public-task-routing-matrix-summary.json \
     '"summary_json": "<output-dir>/requests/summary\.json"' \
     "public task routing matrix JSON normalized summary path"
@@ -1323,7 +1335,7 @@ main() {
     '\| Task alias or seed ordering changed \| `scripts/task-routing-matrix-smoke\.sh` \|' \
     "maintenance task routing matrix smoke chooser"
   require_pattern docs/maintenance-commands.md \
-    'routing, authentication, authorization, access-control, settings, feature flag, startup, persistence, debug, coverage, API handler, cache, observability, security, billing, frontend, background job, documentation, request lifecycle, and middleware prompts choose the matching first file and that `--expect-file` failures are reported' \
+    'routing, authentication, authorization, access-control, settings, feature flag, network, startup, persistence, debug, coverage, API handler, cache, observability, security, billing, frontend, background job, documentation, request lifecycle, and middleware prompts choose the matching first file and that `--expect-file` failures are reported' \
     "maintenance task routing matrix smoke scope"
   require_pattern docs/maintenance-commands.md \
     '\| Installed-binary adoption path changed \| `CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/installed-quickstart-smoke\.sh` \|' \
@@ -1878,6 +1890,9 @@ main() {
     'understand feature flag rollout' \
     "task routing matrix default feature flag task"
   require_pattern scripts/task-routing-matrix.sh \
+    'understand proxy redirect transport' \
+    "task routing matrix default network task"
+  require_pattern scripts/task-routing-matrix.sh \
     'understand persistence behavior' \
     "task routing matrix default persistence task"
   require_pattern scripts/task-routing-matrix.sh \
@@ -1946,6 +1961,9 @@ main() {
   require_pattern scripts/task-routing-matrix-smoke.sh \
     'src/feature_flags\.ts' \
     "task routing matrix smoke feature flag assertion"
+  require_pattern scripts/task-routing-matrix-smoke.sh \
+    'src/network\.ts' \
+    "task routing matrix smoke network assertion"
   require_pattern tests/cli.rs \
     'context\["reading_plan"\]\[0\]\["selection_rank"\]' \
     "CLI context-pack reading-plan selection rank assertion"

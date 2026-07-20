@@ -2189,6 +2189,8 @@ fn context_reading_focus(file: &ContextFile, task: &str) -> String {
 fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
     if signals.auth_session {
         "Start with seed file authentication and session boundaries.".to_string()
+    } else if signals.network_http {
+        "Start with seed file network client, proxy, redirect, or transport boundaries.".to_string()
     } else if signals.feature_flags {
         "Start with seed file feature flag, rollout, toggle, or experiment boundaries.".to_string()
     } else if signals.configuration {
@@ -2233,6 +2235,9 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
 fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
     if signals.auth_session {
         "Read symbol definitions that establish authentication or session behavior.".to_string()
+    } else if signals.network_http {
+        "Read symbol definitions that establish network client, proxy, redirect, or transport behavior."
+            .to_string()
     } else if signals.feature_flags {
         "Read symbol definitions that establish feature flag, rollout, toggle, or experiment behavior."
             .to_string()
@@ -2298,6 +2303,9 @@ fn context_type_relation_focus(signals: ContextTaskSignals) -> String {
 fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
     if signals.auth_session {
         "Follow call graph evidence for authentication and session flow.".to_string()
+    } else if signals.network_http {
+        "Follow call graph evidence for network client requests, proxies, redirects, or transport flow."
+            .to_string()
     } else if signals.feature_flags {
         "Follow call graph evidence for feature flag evaluation, rollout, toggle, or experiment flow."
             .to_string()
@@ -2344,6 +2352,9 @@ fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
 fn context_reference_focus(signals: ContextTaskSignals) -> String {
     if signals.auth_session {
         "Inspect references that consume authentication or session state.".to_string()
+    } else if signals.network_http {
+        "Inspect references that send requests, select proxies, follow redirects, or configure transports."
+            .to_string()
     } else if signals.feature_flags {
         "Inspect references that evaluate, override, or consume feature flags and rollout state."
             .to_string()
@@ -2390,6 +2401,9 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
 fn context_semantic_focus(signals: ContextTaskSignals) -> String {
     if signals.auth_session {
         "Review semantic matches for authentication, cookie, or session behavior.".to_string()
+    } else if signals.network_http {
+        "Review semantic matches for network clients, proxies, redirects, adapters, or transports."
+            .to_string()
     } else if signals.feature_flags {
         "Review semantic matches for feature flags, rollouts, toggles, variants, or experiments."
             .to_string()
@@ -2436,6 +2450,9 @@ fn context_semantic_focus(signals: ContextTaskSignals) -> String {
 fn context_dependency_focus(signals: ContextTaskSignals) -> String {
     if signals.auth_session {
         "Check local dependencies that affect authentication or session boundaries.".to_string()
+    } else if signals.network_http {
+        "Check local dependencies that shape network client, proxy, redirect, or transport behavior."
+            .to_string()
     } else if signals.feature_flags {
         "Check local dependencies that shape feature flag, rollout, toggle, or experiment behavior."
             .to_string()
@@ -2519,6 +2536,9 @@ fn context_seed_file_question(task: &str) -> String {
     if signals.auth_session {
         "Where are authentication decisions, credentials, or session boundaries handled here?"
             .to_string()
+    } else if signals.network_http {
+        "Where are network requests, proxies, redirects, adapters, or transports handled here?"
+            .to_string()
     } else if signals.feature_flags {
         "Where are feature flags, rollouts, toggles, variants, or experiments evaluated here?"
             .to_string()
@@ -2571,6 +2591,8 @@ fn context_symbol_definition_question(task: &str) -> String {
     let signals = ContextTaskSignals::from_task(task);
     if signals.auth_session {
         "What authentication decisions, credentials, or session boundaries does this definition establish?".to_string()
+    } else if signals.network_http {
+        "What network client, proxy, redirect, adapter, or transport behavior does this definition establish?".to_string()
     } else if signals.feature_flags {
         "What feature flag, rollout, toggle, variant, or experiment behavior does this definition establish?".to_string()
     } else if signals.configuration {
@@ -2638,6 +2660,8 @@ fn context_call_graph_question(task: &str) -> String {
     let signals = ContextTaskSignals::from_task(task);
     if signals.auth_session {
         "Which callers or callees carry authentication decisions, credentials, or session state through this flow?".to_string()
+    } else if signals.network_http {
+        "Which callers or callees send requests, select proxies, follow redirects, or configure transports?".to_string()
     } else if signals.feature_flags {
         "Which callers or callees evaluate, override, or consume feature flags and rollout state?"
             .to_string()
@@ -2693,6 +2717,8 @@ fn context_dependency_question(task: &str) -> String {
     if signals.auth_session {
         "What imported local dependency behavior affects authentication or session boundaries here?"
             .to_string()
+    } else if signals.network_http {
+        "What imported local dependency behavior supplies network client, proxy, redirect, adapter, or transport behavior?".to_string()
     } else if signals.feature_flags {
         "What imported local dependency behavior supplies feature flag, rollout, toggle, or experiment state?".to_string()
     } else if signals.configuration {
@@ -2747,6 +2773,9 @@ fn context_reference_question(task: &str) -> String {
     if signals.auth_session {
         "Which references consume authentication decisions, credentials, or session state?"
             .to_string()
+    } else if signals.network_http {
+        "Which references send requests, select proxies, follow redirects, or configure transports?"
+            .to_string()
     } else if signals.feature_flags {
         "Which references evaluate, override, or consume feature flags, variants, or rollout state?"
             .to_string()
@@ -2793,6 +2822,9 @@ fn context_semantic_question(task: &str) -> String {
     let signals = ContextTaskSignals::from_task(task);
     if signals.auth_session {
         "Which semantic matches describe authentication, credential, cookie, or session behavior?"
+            .to_string()
+    } else if signals.network_http {
+        "Which semantic matches describe network clients, proxies, redirects, adapters, or transports?"
             .to_string()
     } else if signals.feature_flags {
         "Which semantic matches describe feature flags, rollouts, toggles, variants, or experiments?"
@@ -2849,6 +2881,7 @@ fn context_semantic_question(task: &str) -> String {
 struct ContextTaskSignals {
     impact_flow: bool,
     auth_session: bool,
+    network_http: bool,
     feature_flags: bool,
     configuration: bool,
     startup: bool,
@@ -2915,6 +2948,24 @@ impl ContextTaskSignals {
                     "tokens",
                     "oauth",
                     "jwt",
+                ],
+            ),
+            network_http: context_text_mentions(
+                task,
+                &[
+                    "network",
+                    "http",
+                    "https",
+                    "http client",
+                    "network client",
+                    "proxy",
+                    "proxies",
+                    "redirect",
+                    "redirects",
+                    "transport",
+                    "transports",
+                    "adapter",
+                    "adapters",
                 ],
             ),
             feature_flags: context_text_mentions(
@@ -5467,6 +5518,17 @@ fn task_keyword_aliases(keyword: &str) -> &'static [&'static str] {
         "jwt" => &["token", "credential"],
         "login" => &["auth", "authentication"],
         "signin" => &["auth", "login"],
+        "network" => &["http", "transport", "client"],
+        "http" => &["https", "network", "client"],
+        "https" => &["http", "network", "client"],
+        "proxy" => &["proxies", "adapter", "transport"],
+        "proxies" => &["proxy", "adapter", "transport"],
+        "redirect" => &["redirects", "request", "response"],
+        "redirects" => &["redirect", "request", "response"],
+        "transport" => &["transports", "adapter", "network"],
+        "transports" => &["transport", "adapter", "network"],
+        "adapter" => &["adapters", "transport", "network"],
+        "adapters" => &["adapter", "transport", "network"],
         "flag" => &["flags", "toggle", "rollout"],
         "flags" => &["flag", "toggle", "rollout"],
         "toggle" => &["toggles", "flag", "rollout"],
@@ -5815,6 +5877,13 @@ mod tests {
         assert!(feature_flag_keywords.contains(&"rollout".to_string()));
         assert!(feature_flag_keywords.contains(&"experiment".to_string()));
         assert!(feature_flag_keywords.contains(&"variant".to_string()));
+
+        let network_keywords = task_keywords("understand proxy redirect transport behavior");
+        assert!(network_keywords.contains(&"proxy".to_string()));
+        assert!(network_keywords.contains(&"redirect".to_string()));
+        assert!(network_keywords.contains(&"transport".to_string()));
+        assert!(network_keywords.contains(&"adapter".to_string()));
+        assert!(network_keywords.contains(&"network".to_string()));
 
         let rbac_keywords = task_keywords("audit rbac acl policy");
         assert!(rbac_keywords.contains(&"rbac".to_string()));

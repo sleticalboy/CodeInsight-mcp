@@ -83,6 +83,10 @@ main();'
   // Feature flag rollout toggles experiment variants for selected users.
   return { flagKey, rollout: "gradual", variant: "enabled" };
 }'
+  write_file "$repo/src/network.ts" 'export function configureProxyTransport(proxyUrl: string) {
+  // Network HTTP adapter follows redirects through the configured proxy.
+  return { proxy: proxyUrl, redirect: "follow", transport: "http" };
+}'
   write_file "$repo/src/database.ts" 'export function connectDatabase() {
   // Persist user records in durable storage.
   return { repository: "users", storage: "postgres" };
@@ -173,6 +177,7 @@ understand authorization permissions	src/permissions.ts
 understand access control rules	src/permissions.ts
 understand application settings	src/config.ts
 understand feature flag rollout	src/feature_flags.ts
+understand proxy redirect transport	src/network.ts
 understand startup flow	src/startup.ts
 understand persistence behavior	src/database.ts
 debug retry timeout handling	src/errors.ts
@@ -199,14 +204,15 @@ understand middleware behavior	src/middleware.ts'
     --token-budget 1600 \
     --expect-file "$expectations_tsv"
 
-  require_jq "$summary_json" '.status == "pass" and .task_count == 20' "matrix summary should pass"
-  require_jq "$summary_json" '.expectations.status == "pass" and .expectations.count == 20' "matrix expectations should pass"
+  require_jq "$summary_json" '.status == "pass" and .task_count == 21' "matrix summary should pass"
+  require_jq "$summary_json" '.expectations.status == "pass" and .expectations.count == 21' "matrix expectations should pass"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand routing behavior" and .first_file == "src/router.ts")' "routing task should choose router"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand authentication behavior" and .first_file == "src/auth.ts")' "authentication task should choose auth"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand authorization permissions" and .first_file == "src/permissions.ts")' "authorization task should choose permissions"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand access control rules" and .first_file == "src/permissions.ts")' "access control task should choose permissions"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand application settings" and .first_file == "src/config.ts")' "settings task should choose config"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand feature flag rollout" and .first_file == "src/feature_flags.ts")' "feature flag task should choose feature flags"
+  require_jq "$summary_json" '.tasks[] | select(.task == "understand proxy redirect transport" and .first_file == "src/network.ts")' "network task should choose network"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand startup flow" and .first_file == "src/startup.ts")' "startup task should choose startup"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand persistence behavior" and .first_file == "src/database.ts")' "persistence task should choose database"
   require_jq "$summary_json" '.tasks[] | select(.task == "debug retry timeout handling" and .first_file == "src/errors.ts")' "debug task should choose errors"
@@ -231,6 +237,8 @@ understand middleware behavior	src/middleware.ts'
   require_jq "$summary_json" '.tasks[] | select(.task == "understand application settings" and (.first_reading_focus | contains("configuration")))' "settings task should report a config-specific reading focus"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand feature flag rollout" and (.first_reading_question | contains("feature flags")))' "feature flag task should report a feature-specific reading question"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand feature flag rollout" and (.first_reading_focus | contains("feature flag")))' "feature flag task should report a feature-specific reading focus"
+  require_jq "$summary_json" '.tasks[] | select(.task == "understand proxy redirect transport" and (.first_reading_question | contains("network requests")))' "network task should report a network-specific reading question"
+  require_jq "$summary_json" '.tasks[] | select(.task == "understand proxy redirect transport" and (.first_reading_focus | contains("network client")))' "network task should report a network-specific reading focus"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand startup flow" and (.first_reading_question | contains("startup entrypoint")))' "startup task should report a startup-specific reading question"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand startup flow" and (.first_reading_focus | contains("startup")))' "startup task should report a startup-specific reading focus"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand persistence behavior" and (.first_reading_question | contains("database access")))' "persistence task should report a database-specific reading question"
@@ -266,10 +274,11 @@ understand middleware behavior	src/middleware.ts'
   CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/task-routing-matrix.sh" "$repo" \
     --output-dir "$default_output_dir" \
     --token-budget 1600
-  require_jq "$default_summary_json" '.status == "pass" and .task_count == 20' "default matrix summary should include all default tasks"
+  require_jq "$default_summary_json" '.status == "pass" and .task_count == 21' "default matrix summary should include all default tasks"
   require_jq "$default_summary_json" '.tasks[] | select(.task == "understand authorization permissions" and .first_file == "src/permissions.ts")' "default matrix should include authorization task"
   require_jq "$default_summary_json" '.tasks[] | select(.task == "understand access control rules" and .first_file == "src/permissions.ts")' "default matrix should include access control task"
   require_jq "$default_summary_json" '.tasks[] | select(.task == "understand feature flag rollout" and .first_file == "src/feature_flags.ts")' "default matrix should include feature flag task"
+  require_jq "$default_summary_json" '.tasks[] | select(.task == "understand proxy redirect transport" and .first_file == "src/network.ts")' "default matrix should include network task"
   require_jq "$default_summary_json" '.tasks[] | select(.task == "understand api handler behavior" and .first_file == "src/handler.ts")' "default matrix should include api handler task"
   require_jq "$default_summary_json" '.tasks[] | select(.task == "understand cache performance latency" and .first_file == "src/cache.ts")' "default matrix should include performance task"
   require_jq "$default_summary_json" '.tasks[] | select(.task == "understand observability telemetry logs" and .first_file == "src/telemetry.ts")' "default matrix should include observability task"
