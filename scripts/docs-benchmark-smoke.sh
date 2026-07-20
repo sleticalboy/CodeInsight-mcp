@@ -134,7 +134,7 @@ main() {
     '`current_reading_step` mirror and read-less instruction evidence' \
     "README self adoption report read-less instruction evidence"
   require_pattern README.md \
-    'of 31,740 source lines, avoiding 31,317 source lines before broad reading' \
+    'of 31,782 source lines, avoiding 31,359 source lines before broad reading' \
     "README two-minute demo read-less metric"
   "$ROOT_DIR/scripts/readme-adoption-summary-smoke.sh" >/dev/null
   require_pattern README.md \
@@ -1014,13 +1014,13 @@ main() {
     'first_next_action' \
     "reading plan next action demo metric"
   require_pattern docs/demo-script.md \
-    'source_lines_avoided: 31317' \
+    'source_lines_avoided: 31359' \
     "demo script source lines avoided metric"
   require_pattern docs/demo-script.md \
-    'read_less_ratio: 75\.0x' \
+    'read_less_ratio: 75\.1x' \
     "demo script read-less metric"
   require_pattern docs/demo-script.md \
-    'Read less: avoided 31317 source lines, 75\.0x less text before follow-up tools\.' \
+    'Read less: avoided 31359 source lines, 75\.1x less text before follow-up tools\.' \
     "demo script evidence summary read-less line"
   require_pattern docs/demo-script.md \
     'impact_analysis' \

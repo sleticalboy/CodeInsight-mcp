@@ -178,6 +178,9 @@ main() {
     '(.execution_plan[0].files // []) == [.context_pack.reading_plan[].file]' \
     "execution_plan[0].files to match reading_plan order"
   require_json_true "$route_json" \
+    '(.execution_plan[0].instruction // "") as $instruction | .context_pack.read_less as $read_less | ($instruction | contains("Read-less evidence: selected")) and ($instruction | contains("selected \($read_less.selected_source_lines) of \($read_less.baseline_source_lines) source lines")) and ($instruction | contains("avoided \($read_less.source_lines_avoided)")) and ($instruction | contains($read_less.read_less_ratio))' \
+    "execution_plan[0].instruction to carry read-less evidence"
+  require_json_true "$route_json" \
     '.current_reading_step == .context_pack.reading_plan[0]' \
     "current_reading_step to mirror reading_plan[0]"
   require_json_true "$route_json" \
@@ -197,7 +200,7 @@ main() {
   local execution_plan_steps first_execution_action second_execution_action
   local first_execution_suggested_tool first_next_action first_reading_focus first_reading_question first_reading_reason first_selection_reason
   local first_selection_rank continuation_next_action first_omitted_file first_omitted_rank first_omitted_reason first_omitted_next_action
-  local reading_order_contract current_reading_step_contract suggested_tool_handoff_contract continuation_timing_contract
+  local reading_order_contract read_less_instruction_contract current_reading_step_contract suggested_tool_handoff_contract continuation_timing_contract
   local continuation risk_level impacted_files suggested_checks impact_seed_file
 
   total_lines="$(json_value "$route_json" '.context_pack.read_less.baseline_source_lines // .overview.total_lines // 0')"
@@ -238,6 +241,7 @@ main() {
   first_omitted_reason="$(json_value "$route_json" '.context_pack.omitted_candidates[0].omission_reason // ""')"
   first_omitted_next_action="$(json_value "$route_json" '.context_pack.omitted_candidates[0].next_action // ""')"
   reading_order_contract="$(json_value "$route_json" '(.execution_plan[0].files // []) == [.context_pack.reading_plan[].file]')"
+  read_less_instruction_contract="$(json_value "$route_json" '(.execution_plan[0].instruction // "") as $instruction | .context_pack.read_less as $read_less | (($instruction | contains("Read-less evidence: selected")) and ($instruction | contains("selected \($read_less.selected_source_lines) of \($read_less.baseline_source_lines) source lines")) and ($instruction | contains("avoided \($read_less.source_lines_avoided)")) and ($instruction | contains($read_less.read_less_ratio)))')"
   current_reading_step_contract="$(json_value "$route_json" '.current_reading_step == .context_pack.reading_plan[0]')"
   suggested_tool_handoff_contract="$(json_value "$route_json" '.execution_plan[1].files[0] == .context_pack.reading_plan[0].file and .execution_plan[1].suggested_tool.tool == .context_pack.reading_plan[0].suggested_tool.tool')"
   continuation_timing_contract="$(json_value "$route_json" '.execution_plan[2].action == "use_continuation_if_needed" and (.execution_plan[2].instruction | contains("only after selected context"))')"
@@ -294,6 +298,7 @@ main() {
   echo "   first_context_file: $first_context_file"
   echo "   first_reading_file: $first_reading_file"
   echo "   reading_order_contract: $reading_order_contract"
+  echo "   read_less_instruction_contract: $read_less_instruction_contract"
   echo "   current_reading_step_contract: $current_reading_step_contract"
   echo "   suggested_tool_handoff_contract: $suggested_tool_handoff_contract"
   echo "   continuation_timing_contract: $continuation_timing_contract"
@@ -331,7 +336,7 @@ main() {
   echo "First reading focus: ${first_reading_focus}"
   echo "First reading question: ${first_reading_question}"
   echo "The first selected file is ${first_context_file}; reading_plan starts at ${first_reading_file} as candidate rank ${first_selection_rank}."
-  echo "Execution contract: reading_order=${reading_order_contract}, current_reading_step=${current_reading_step_contract}, suggested_tool_handoff=${suggested_tool_handoff_contract}, continuation_after_selected_context=${continuation_timing_contract}."
+  echo "Execution contract: reading_order=${reading_order_contract}, read_less_instruction=${read_less_instruction_contract}, current_reading_step=${current_reading_step_contract}, suggested_tool_handoff=${suggested_tool_handoff_contract}, continuation_after_selected_context=${continuation_timing_contract}."
   echo "Selection evidence: ${first_selection_reason}"
   echo "Continuation: status=${continuation}, next_action=${continuation_next_action}."
   if [ -n "$first_omitted_file" ]; then
@@ -356,20 +361,21 @@ main() {
   echo "7. The first reading-plan question is: ${first_reading_question}"
   echo "8. The first reading-plan action is ${first_next_action}; ${first_reading_reason}"
   echo "9. Reading order contract is ${reading_order_contract}; execution_plan[0].files follows reading_plan[] order."
-  echo "10. Current reading step contract is ${current_reading_step_contract}; agent_route.current_reading_step mirrors reading_plan[0]."
-  echo "11. Suggested-tool handoff contract is ${suggested_tool_handoff_contract}; execution_plan[1] points to the current reading step."
-  echo "12. Continuation timing contract is ${continuation_timing_contract}; continuation is only considered after selected context is read."
-  echo "13. The selected context avoided ${avoided_lines} source lines (${reduction}, ${read_less} less text); ${context_route_reason}"
-  echo "14. Selection evidence: candidate rank ${first_selection_rank}; ${first_selection_reason}"
+  echo "10. Read-less instruction contract is ${read_less_instruction_contract}; execution_plan[0].instruction carries selected lines, baseline lines, avoided lines, and read-less ratio."
+  echo "11. Current reading step contract is ${current_reading_step_contract}; agent_route.current_reading_step mirrors reading_plan[0]."
+  echo "12. Suggested-tool handoff contract is ${suggested_tool_handoff_contract}; execution_plan[1] points to the current reading step."
+  echo "13. Continuation timing contract is ${continuation_timing_contract}; continuation is only considered after selected context is read."
+  echo "14. The selected context avoided ${avoided_lines} source lines (${reduction}, ${read_less} less text); ${context_route_reason}"
+  echo "15. Selection evidence: candidate rank ${first_selection_rank}; ${first_selection_reason}"
   if [ -n "$first_omitted_file" ]; then
-    echo "15. Continuation status is ${continuation}; next follow-up is ${first_omitted_file} at candidate rank ${first_omitted_rank} because ${first_omitted_reason}; next_action=${first_omitted_next_action}."
+    echo "16. Continuation status is ${continuation}; next follow-up is ${first_omitted_file} at candidate rank ${first_omitted_rank} because ${first_omitted_reason}; next_action=${first_omitted_next_action}."
   else
-    echo "15. Continuation status is ${continuation}; next_action=${continuation_next_action}, so no omitted candidate follow-up is needed before selected context is read."
+    echo "16. Continuation status is ${continuation}; next_action=${continuation_next_action}, so no omitted candidate follow-up is needed before selected context is read."
   fi
   if [ -n "$risk_level" ]; then
-    echo "16. impact_analysis reports ${risk_level} risk across ${impacted_files} impacted files with ${suggested_checks} suggested checks; ${impact_route_reason}"
+    echo "17. impact_analysis reports ${risk_level} risk across ${impacted_files} impacted files with ${suggested_checks} suggested checks; ${impact_route_reason}"
   else
-    echo "16. impact_analysis is the pre-edit step when context_pack selects a file seed."
+    echo "17. impact_analysis is the pre-edit step when context_pack selects a file seed."
   fi
   echo
   echo "[Agent policy]"

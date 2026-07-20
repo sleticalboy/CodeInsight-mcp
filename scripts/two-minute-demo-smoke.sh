@@ -44,7 +44,7 @@ cat <<'JSON'
       "order": 1,
       "action": "read_selected_context",
       "status": "ready",
-      "instruction": "Read context_pack.files[] in reading_plan[] order, starting with src/main.rs (candidate rank 1).",
+      "instruction": "Read context_pack.files[] in reading_plan[] order, starting with src/main.rs (candidate rank 1). Read-less evidence: selected 439 of 27681 source lines, avoided 27242 (98.4% reduction, 63.1x read-less ratio). Treat reading_plan[].reason as the current-step instruction and selection_reason as evidence for why each file was selected.",
       "files": ["src/main.rs"]
     },
     {
@@ -119,6 +119,13 @@ cat <<'JSON'
     "summary": "demo",
     "seed_strategy": "auto_entrypoint",
     "selected_seeds": [],
+    "read_less": {
+      "baseline_source_lines": 27681,
+      "selected_source_lines": 439,
+      "source_lines_avoided": 27242,
+      "line_reduction": "98.4%",
+      "read_less_ratio": "63.1x"
+    },
     "reading_plan": [
       {
         "order": 1,
@@ -214,6 +221,8 @@ EOF
     fail "missing read-less ratio metric"
   grep -Fq 'reading_order_contract: true' "$TEMP_DIR/output.log" ||
     fail "missing reading order contract metric"
+  grep -Fq 'read_less_instruction_contract: true' "$TEMP_DIR/output.log" ||
+    fail "missing read-less instruction contract metric"
   grep -Fq 'current_reading_step_contract: true' "$TEMP_DIR/output.log" ||
     fail "missing current reading step contract metric"
   grep -Fq 'suggested_tool_handoff_contract: true' "$TEMP_DIR/output.log" ||
@@ -246,7 +255,7 @@ EOF
     fail "missing evidence summary reading question"
   grep -Fq 'The first selected file is src/main.rs; reading_plan starts at src/main.rs as candidate rank 1.' "$TEMP_DIR/output.log" ||
     fail "missing evidence summary first reading file"
-  grep -Fq 'Execution contract: reading_order=true, current_reading_step=true, suggested_tool_handoff=true, continuation_after_selected_context=true.' "$TEMP_DIR/output.log" ||
+  grep -Fq 'Execution contract: reading_order=true, read_less_instruction=true, current_reading_step=true, suggested_tool_handoff=true, continuation_after_selected_context=true.' "$TEMP_DIR/output.log" ||
     fail "missing evidence summary execution contract"
   grep -Fq 'Selection evidence: Selected for high relevance via seed_file: Seed file header and imports for task: src/main.rs' "$TEMP_DIR/output.log" ||
     fail "missing evidence summary selection evidence"
@@ -268,6 +277,8 @@ EOF
     fail "missing reading reason talk track"
   grep -Fq 'Reading order contract is true; execution_plan[0].files follows reading_plan[] order.' "$TEMP_DIR/output.log" ||
     fail "missing reading order contract talk track"
+  grep -Fq 'Read-less instruction contract is true; execution_plan[0].instruction carries selected lines, baseline lines, avoided lines, and read-less ratio.' "$TEMP_DIR/output.log" ||
+    fail "missing read-less instruction contract talk track"
   grep -Fq 'Current reading step contract is true; agent_route.current_reading_step mirrors reading_plan[0].' "$TEMP_DIR/output.log" ||
     fail "missing current reading step contract talk track"
   grep -Fq 'Suggested-tool handoff contract is true; execution_plan[1] points to the current reading step.' "$TEMP_DIR/output.log" ||

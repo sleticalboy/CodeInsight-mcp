@@ -38,7 +38,7 @@ token_budget: 6000
    errors: 0
 
 2. project_overview
-   total_lines: 31740
+   total_lines: 31782
    entrypoints: 7
    first_entrypoint: src/main.rs
    recommended_next_tools: 4
@@ -55,12 +55,12 @@ token_budget: 6000
    first_reading_focus: Start with seed file context and primary symbols.
    first_reading_question: What entrypoints, exported symbols, or setup code define the main flow here?
    first_selection_rank: 1
-   blind_first_read_lines: 31740
+   blind_first_read_lines: 31782
    routed_first_read_lines: 423
    selected_lines: 423
-   source_lines_avoided: 31317
+   source_lines_avoided: 31359
    line_reduction: 98.7%
-   read_less_ratio: 75.0x
+   read_less_ratio: 75.1x
    estimated_tokens: 3680
    continuation: complete
    continuation_next_action: read_selected_context
@@ -68,6 +68,7 @@ token_budget: 6000
    first_context_file: src/tools.rs
    first_reading_file: src/tools.rs
    reading_order_contract: true
+   read_less_instruction_contract: true
    current_reading_step_contract: true
    suggested_tool_handoff_contract: true
    continuation_timing_contract: true
@@ -89,14 +90,14 @@ Save the raw agent_route JSON:
   CODEINSIGHT_DEMO_SAVE_JSON=/tmp/codeinsight-agent-route.json scripts/two-minute-demo.sh
 
 [Evidence summary]
-Blind first-read baseline: 31740 source lines.
+Blind first-read baseline: 31782 source lines.
 Routed first-read: 423 source lines across 6 files.
-Read less: avoided 31317 source lines, 75.0x less text before follow-up tools.
-agent_route selected 423/31740 source lines (98.7% reduction) across 6 files.
+Read less: avoided 31359 source lines, 75.1x less text before follow-up tools.
+agent_route selected 423/31782 source lines (98.7% reduction) across 6 files.
 First reading focus: Start with seed file context and primary symbols.
 First reading question: What entrypoints, exported symbols, or setup code define the main flow here?
 The first selected file is src/tools.rs; reading_plan starts at src/tools.rs as candidate rank 1.
-Execution contract: reading_order=true, current_reading_step=true, suggested_tool_handoff=true, continuation_after_selected_context=true.
+Execution contract: reading_order=true, read_less_instruction=true, current_reading_step=true, suggested_tool_handoff=true, continuation_after_selected_context=true.
 Selection evidence: Selected for high relevance via seed_file: Seed file header and imports for task: src/tools.rs; matched task keywords: agent, context, route, router, routes
 Continuation: status=complete, next_action=read_selected_context.
 Next follow-up candidate: none before selected context is read.
@@ -113,13 +114,14 @@ Before edits, impact_analysis reports high risk across 7 impacted files.
 7. The first reading-plan question is: What entrypoints, exported symbols, or setup code define the main flow here?
 8. The first reading-plan action is inspect_seed_file; Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: src/tools.rs; matched task keywords: agent, context, route, router, routes
 9. Reading order contract is true; execution_plan[0].files follows reading_plan[] order.
-10. Current reading step contract is true; agent_route.current_reading_step mirrors reading_plan[0].
-11. Suggested-tool handoff contract is true; execution_plan[1] points to the current reading step.
-12. Continuation timing contract is true; continuation is only considered after selected context is read.
-13. The selected context avoided 31317 source lines (98.7%, 75.0x less text); selected 6 files, 11 ranges, and 6 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context
-14. Selection evidence: candidate rank 1; Selected for high relevance via seed_file: Seed file header and imports for task: src/tools.rs; matched task keywords: agent, context, route, router, routes
-15. Continuation status is complete; next_action=read_selected_context, so no omitted candidate follow-up is needed before selected context is read.
-16. impact_analysis reports high risk across 7 impacted files with 4 suggested checks; after selected context is read, pre-edit impact check estimated 7 impacted files at high risk, including 5 call-related files, 1 dependency-related files, 38 call paths, and 1 dependency paths
+10. Read-less instruction contract is true; execution_plan[0].instruction carries selected lines, baseline lines, avoided lines, and read-less ratio.
+11. Current reading step contract is true; agent_route.current_reading_step mirrors reading_plan[0].
+12. Suggested-tool handoff contract is true; execution_plan[1] points to the current reading step.
+13. Continuation timing contract is true; continuation is only considered after selected context is read.
+14. The selected context avoided 31359 source lines (98.7%, 75.1x less text); selected 6 files, 11 ranges, and 6 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context
+15. Selection evidence: candidate rank 1; Selected for high relevance via seed_file: Seed file header and imports for task: src/tools.rs; matched task keywords: agent, context, route, router, routes
+16. Continuation status is complete; next_action=read_selected_context, so no omitted candidate follow-up is needed before selected context is read.
+17. impact_analysis reports high risk across 7 impacted files with 4 suggested checks; after selected context is read, pre-edit impact check estimated 7 impacted files at high risk, including 5 call-related files, 1 dependency-related files, 38 call paths, and 1 dependency paths
 
 [Agent policy]
 Call agent_route with root, task, and token_budget for the default first read.

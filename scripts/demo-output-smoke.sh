@@ -77,6 +77,9 @@ main() {
     'reading_order_contract: true' \
     "reading order contract metric"
   require_pattern docs/demo-output.md \
+    'read_less_instruction_contract: true' \
+    "read-less instruction contract metric"
+  require_pattern docs/demo-output.md \
     'current_reading_step_contract: true' \
     "current reading step contract metric"
   require_pattern docs/demo-output.md \
@@ -146,7 +149,7 @@ main() {
     'reading_plan starts at .* as candidate rank [0-9]+\.' \
     "evidence summary first reading rank"
   require_pattern docs/demo-output.md \
-    'Execution contract: reading_order=true, current_reading_step=true, suggested_tool_handoff=true, continuation_after_selected_context=true\.' \
+    'Execution contract: reading_order=true, read_less_instruction=true, current_reading_step=true, suggested_tool_handoff=true, continuation_after_selected_context=true\.' \
     "evidence summary execution contract"
   require_pattern docs/demo-output.md \
     'Selection evidence: Selected for high relevance' \
@@ -187,6 +190,9 @@ main() {
   require_pattern docs/demo-output.md \
     'Reading order contract is true; execution_plan\[0\]\.files follows reading_plan\[\] order\.' \
     "reading order contract talk track"
+  require_pattern docs/demo-output.md \
+    'Read-less instruction contract is true; execution_plan\[0\]\.instruction carries selected lines, baseline lines, avoided lines, and read-less ratio\.' \
+    "read-less instruction contract talk track"
   require_pattern docs/demo-output.md \
     'Current reading step contract is true; agent_route\.current_reading_step mirrors reading_plan\[0\]\.' \
     "current reading step contract talk track"
