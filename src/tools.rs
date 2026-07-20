@@ -43,8 +43,7 @@ const CONTEXT_SCORE_LOCAL_DEPENDENCY: i32 = 40;
 const CONTEXT_SCORE_TASK_MATCH_BOOST: i32 = 30;
 const CONTEXT_SCORE_SEED_SYMBOL_TASK_MATCH_BOOST: i32 = 5;
 const CONTEXT_SCORE_LOW_VALUE_FILE_PENALTY: i32 = 35;
-const CONTEXT_PACK_NO_SEED_ERROR: &str =
-    "context_pack could not infer source seed files from the current index";
+const CONTEXT_PACK_NO_SEED_ERROR: &str = "context_pack could not infer source seed files from the current index; run index or provide --symbol/--file";
 const CONTEXT_SCORE_LOW_VALUE_FILE_TEST_BOOST: i32 = 35;
 const CONTEXT_MAX_SYMBOL_LINES: usize = 80;
 const CONTEXT_MAX_MERGED_RANGE_LINES: usize = 80;
@@ -530,7 +529,7 @@ fn agent_route_impact_reason(report: &ImpactAnalysisReport) -> String {
 }
 
 fn is_context_pack_no_seed_error(error: &anyhow::Error) -> bool {
-    error.to_string().contains(CONTEXT_PACK_NO_SEED_ERROR)
+    error.to_string() == CONTEXT_PACK_NO_SEED_ERROR
 }
 
 fn empty_context_pack_for_blocked_route(
@@ -1318,9 +1317,7 @@ pub fn context_pack_value(
         seed_files = auto_selection.files;
         selected_seeds = auto_selection.seeds;
         if seed_files.is_empty() {
-            bail!(
-                "context_pack could not infer source seed files from the current index; run index or provide --symbol/--file"
-            );
+            bail!(CONTEXT_PACK_NO_SEED_ERROR);
         }
     }
 
