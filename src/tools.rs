@@ -1433,6 +1433,8 @@ pub fn context_pack_value(
         let mut selected_max_score = 0;
         let mut selected_source: Option<String> = None;
         let mut selected_reason: Option<String> = None;
+        let mut selected_source_priority = 0;
+        let mut selected_source_score = 0;
 
         for range in &candidate.ranges {
             let uncovered_segments = uncovered_segments(
@@ -1467,9 +1469,16 @@ pub fn context_pack_value(
                     }
                 }
                 estimated_tokens += range_tokens;
-                if selected_source.is_none() || range.score > selected_max_score {
+                let source_priority = context_source_priority(range.source.as_str());
+                if selected_source.is_none()
+                    || source_priority > selected_source_priority
+                    || (source_priority == selected_source_priority
+                        && range.score > selected_source_score)
+                {
                     selected_source = Some(range.source.clone());
                     selected_reason = Some(range.reason.clone());
+                    selected_source_priority = source_priority;
+                    selected_source_score = range.score;
                 }
                 selected_max_score = selected_max_score.max(range.score);
                 selected_line_ranges.push((start_line, end_line));
@@ -2861,18 +2870,22 @@ fn context_source_label(source: &str) -> &'static str {
     }
 }
 
+fn context_source_priority(source: &str) -> i32 {
+    match source {
+        "seed_file" => 6,
+        "symbol_definition" => 5,
+        "call_graph" => 4,
+        "reference" => 3,
+        "dependency" => 2,
+        "semantic" => 1,
+        _ => 0,
+    }
+}
+
 fn context_range_source_mix_score(ranges: &[ContextCandidateRange]) -> i32 {
     ranges
         .iter()
-        .map(|range| match range.source.as_str() {
-            "seed_file" => 12,
-            "symbol_definition" => 10,
-            "call_graph" => 8,
-            "reference" => 6,
-            "dependency" => 5,
-            "semantic" => 3,
-            _ => 1,
-        })
+        .map(|range| context_source_priority(range.source.as_str()) * 2)
         .sum()
 }
 
