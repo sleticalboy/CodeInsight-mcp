@@ -1176,7 +1176,7 @@ main() {
     '\| MCP protocol or tool payload changed \| `scripts/mcp-stdio-smoke\.sh` \|' \
     "maintenance MCP smoke chooser"
   require_pattern docs/maintenance-commands.md \
-    'executable suggested-tool calls, selection rank, and continuation evidence' \
+    'executable suggested-tool calls, read-less metrics, selection rank, and continuation evidence' \
     "maintenance MCP smoke selection evidence scope"
   require_pattern docs/maintenance-commands.md \
     '\| Framework entrypoint routing changed \| `scripts/framework-entrypoint-demo\.sh` \|' \
@@ -1818,6 +1818,9 @@ main() {
     'agent_route_first_reading_selection_rank' \
     "MCP stdio agent-route selection rank output"
   require_pattern scripts/mcp-stdio-smoke.sh \
+    'agent_route_read_less_ratio' \
+    "MCP stdio agent-route read-less output"
+  require_pattern scripts/mcp-stdio-smoke.sh \
     'agent_route_continuation_status' \
     "MCP stdio agent-route continuation status output"
   require_pattern scripts/mcp-stdio-smoke.sh \
@@ -1889,6 +1892,9 @@ main() {
   require_pattern docs/mcp-client-smoke.md \
     'agent_route_current_reading_step_matches_reading_plan: true' \
     "MCP client smoke current reading step mirror output"
+  require_pattern docs/mcp-client-smoke.md \
+    'agent_route_read_less_ratio: 20\.5x' \
+    "MCP client smoke read-less output"
   require_pattern docs/mcp-client-smoke.md \
     'agent_route_suggested_tool_executed: true' \
     "MCP client smoke execution-plan suggested tool output"

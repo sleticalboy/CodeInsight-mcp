@@ -121,6 +121,8 @@ auto_reading_plan_steps: 2
 agent_route_execution_plan_steps: 4
 agent_route_first_execution_action: read_selected_context
 agent_route_current_reading_step_matches_reading_plan: true
+agent_route_source_lines_avoided: 156
+agent_route_read_less_ratio: 20.5x
 agent_route_first_reading_selection_rank: 1
 agent_route_continuation_status: complete
 agent_route_continuation_next_action: read_selected_context
@@ -148,6 +150,9 @@ step, seed symbol, and token budget.
 route unless the contract changes deliberately.
 `agent_route_current_reading_step_matches_reading_plan` should remain `true`;
 it verifies the protocol-level shortcut mirrors the first reading-plan row.
+`agent_route_source_lines_avoided` and `agent_route_read_less_ratio` should
+remain present so MCP client smoke output exposes the same source-line
+compression evidence as the compact first-call summary.
 `agent_route_suggested_tool_executed` should remain `true`; it verifies the
 execution-plan suggested tool is a usable MCP call, not only display metadata.
 `agent_route_first_reading_selection_rank` and

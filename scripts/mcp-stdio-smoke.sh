@@ -269,7 +269,12 @@ try:
     agent_route_reading_plan = agent_route_context["reading_plan"]
     agent_route_continuation = agent_route_context["continuation_summary"]
     agent_route_omitted_candidates = agent_route_context["omitted_candidates"]
+    agent_route_read_less = agent_route_context["read_less"]
     assert agent_route_reading_plan, "agent_route produced no reading plan"
+    assert agent_route_read_less["baseline_source_lines"] >= agent_route_read_less["selected_source_lines"]
+    assert agent_route_read_less["source_lines_avoided"] >= 0
+    assert agent_route_read_less["line_reduction"]
+    assert agent_route_read_less["read_less_ratio"]
     agent_route_first_reading = agent_route_reading_plan[0]
     agent_route_current_step_matches_reading_plan = (
         agent_route_result["current_reading_step"] == agent_route_first_reading
@@ -567,6 +572,8 @@ try:
     print(f"agent_route_execution_plan_steps: {len(agent_route_result['execution_plan'])}")
     print(f"agent_route_first_execution_action: {agent_route_result['execution_plan'][0]['action']}")
     print(f"agent_route_current_reading_step_matches_reading_plan: {str(agent_route_current_step_matches_reading_plan).lower()}")
+    print(f"agent_route_source_lines_avoided: {agent_route_read_less['source_lines_avoided']}")
+    print(f"agent_route_read_less_ratio: {agent_route_read_less['read_less_ratio']}")
     print(f"agent_route_first_reading_selection_rank: {agent_route_first_reading['selection_rank']}")
     print(f"agent_route_continuation_status: {agent_route_continuation['status']}")
     print(f"agent_route_continuation_next_action: {agent_route_continuation['next_action']}")
