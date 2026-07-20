@@ -201,7 +201,11 @@ write_summary_json() {
       impact_route_reason: (.route[] | select(.tool == "impact_analysis") | .reason),
       impact_status,
       impacted_files: (.impact_analysis.impact_counts.impacted_files // 0),
-      suggested_checks: (.impact_analysis.suggested_checks | length)
+      suggested_checks: (.impact_analysis.suggested_checks | length),
+      impact_execution_suggested_tool: (.execution_plan[3].suggested_tool.tool // ""),
+      impact_execution_suggested_checks: (.execution_plan[3].suggested_checks | length),
+      impact_first_suggested_check: (.execution_plan[3].suggested_checks[0].command // .execution_plan[3].suggested_checks[0].file // .execution_plan[3].suggested_checks[0].kind // ""),
+      impact_execution_instruction_has_first_check: ((.execution_plan[3].instruction // "") | contains("First suggested check:"))
     }
   }' "$route_json" >"$SUMMARY_JSON"
 
@@ -236,7 +240,12 @@ write_summary_json() {
       and (.metrics.continuation_status | type == "string" and length > 0)
       and (.metrics.continuation_next_action | type == "string" and length > 0)
       and .metrics.impact_status == "complete"
-      and .metrics.impacted_files >= 1' \
+      and .metrics.impacted_files >= 1
+      and (.metrics.suggested_checks | type == "number" and . >= 1)
+      and .metrics.impact_execution_suggested_tool == "impact_analysis"
+      and .metrics.impact_execution_suggested_checks == .metrics.suggested_checks
+      and (.metrics.impact_first_suggested_check | type == "string" and length > 0)
+      and .metrics.impact_execution_instruction_has_first_check == true' \
     "summary JSON should match the agent-route evidence contract"
 }
 
@@ -384,6 +393,9 @@ main() {
   require_jq "$route_json" '.impact_analysis.evidence_limit == 3' "impact_analysis should preserve evidence limit"
   require_jq "$route_json" '.impact_analysis.impact_counts.impacted_files >= 1' "impact_analysis should report impacted files"
   require_jq "$route_json" '.impact_analysis.suggested_checks | length >= 1' "impact_analysis should suggest checks"
+  require_jq "$route_json" '.execution_plan[3].suggested_checks == .impact_analysis.suggested_checks' "impact execution step should mirror suggested checks"
+  require_jq "$route_json" '.execution_plan[3].suggested_tool.tool == "impact_analysis"' "impact execution step should expose impact_analysis suggested tool"
+  require_jq "$route_json" '(.execution_plan[3].instruction // "") | contains("First suggested check:")' "impact execution instruction should include the first suggested check"
   write_summary_json "$route_json"
 
   local focused_repo="$TEMP_DIR/task-focused-repo"

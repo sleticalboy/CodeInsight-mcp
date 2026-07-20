@@ -70,7 +70,11 @@ require_summary_contract() {
       and (.metrics.impact_route_reason | type == "string")
       and (.metrics.impact_status | type == "string")
       and (.metrics.impacted_files | type == "number")
-      and (.metrics.suggested_checks | type == "number")' \
+      and (.metrics.suggested_checks | type == "number")
+      and .metrics.impact_execution_suggested_tool == "impact_analysis"
+      and .metrics.impact_execution_suggested_checks == .metrics.suggested_checks
+      and (.metrics.impact_first_suggested_check | type == "string" and length > 0)
+      and .metrics.impact_execution_instruction_has_first_check == true' \
     "$SUMMARY_JSON" >/dev/null; then
     fail "$SUMMARY_JSON does not match the agent-route summary contract"
   fi
@@ -160,6 +164,9 @@ main() {
     printf '| Impact status | `%s` |\n' "$(metric '.metrics.impact_status')"
     printf '| Impacted files | `%s` |\n' "$(metric '.metrics.impacted_files')"
     printf '| Suggested checks | `%s` |\n' "$(metric '.metrics.suggested_checks')"
+    printf '| Impact execution suggested tool | `%s` |\n' "$(metric '.metrics.impact_execution_suggested_tool')"
+    printf '| Impact execution suggested checks | `%s` |\n' "$(metric '.metrics.impact_execution_suggested_checks')"
+    printf '| Impact first suggested check | `%s` |\n' "$(metric '.metrics.impact_first_suggested_check')"
     printf "\n"
   } >>"$SUMMARY_FILE"
 

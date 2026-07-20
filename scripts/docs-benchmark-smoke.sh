@@ -2120,6 +2120,15 @@ main() {
   require_pattern scripts/agent-route-step-summary-smoke.sh \
     'Continuation next action' \
     "agent-route step summary continuation next action"
+  require_pattern scripts/agent-route-step-summary-smoke.sh \
+    'Impact execution suggested tool' \
+    "agent-route step summary impact suggested tool"
+  require_pattern scripts/agent-route-step-summary-smoke.sh \
+    'Impact execution suggested checks' \
+    "agent-route step summary impact suggested checks"
+  require_pattern scripts/agent-route-smoke.sh \
+    'impact_execution_suggested_tool' \
+    "agent-route smoke impact execution suggested tool metric"
   require_pattern scripts/agent-route-artifact-smoke.sh \
     'first_reading_question' \
     "agent-route artifact first reading question output"
