@@ -78,6 +78,11 @@ require_summary_contract() {
       and .suggested_tool_executed == true
       and .impact_status == "complete"
       and (.impact_counts.impacted_files | type == "number")
+      and .impact_execution_suggested_tool == "impact_analysis"
+      and (.impact_execution_suggested_checks | type == "number" and . >= 1)
+      and .impact_execution_suggested_checks == .impact_suggested_checks
+      and (.impact_first_suggested_check.kind | type == "string" and length > 0)
+      and .impact_execution_instruction_has_first_check == true
       and .blocked_no_seed.route_step_status == "blocked_no_seed"
       and .blocked_no_seed.seed_strategy == "auto_no_seed"
       and .blocked_no_seed.continuation_status == "blocked_no_seed"
@@ -156,6 +161,9 @@ main() {
     printf 'Suggested tool executed: `%s`\n\n' "$(value '.suggested_tool_executed')"
     printf 'Impact status: `%s`\n\n' "$(value '.impact_status')"
     printf 'Impacted files: `%s`\n\n' "$(value '.impact_counts.impacted_files')"
+    printf 'Impact execution suggested tool: `%s`\n\n' "$(value '.impact_execution_suggested_tool')"
+    printf 'Impact execution suggested checks: `%s`\n\n' "$(value '.impact_execution_suggested_checks')"
+    printf 'Impact first suggested check: `%s`\n\n' "$(value '.impact_first_suggested_check.command // .impact_first_suggested_check.file // .impact_first_suggested_check.kind')"
     printf 'Blocked no-seed status: `%s`\n\n' "$(value '.blocked_no_seed.continuation_status')"
     printf 'Blocked no-seed next action: `%s`\n\n' "$(value '.blocked_no_seed.continuation_next_action')"
     printf 'Blocked no-seed execution statuses: `%s`\n\n' "$(value '.blocked_no_seed.execution_plan_statuses | join(" -> ")')"

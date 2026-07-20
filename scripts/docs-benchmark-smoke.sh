@@ -229,6 +229,12 @@ main() {
     '`current_reading_step` mirror and read-less instruction evidence' \
     "README self adoption report read-less instruction evidence"
   require_pattern README.md \
+    'includes impact suggested checks' \
+    "README MCP wiring impact suggested checks"
+  require_pattern README.md \
+    'clients can render a pre-edit' \
+    "README MCP impact checklist evidence"
+  require_pattern README.md \
     'of 34,148 source lines, avoiding 33,710 source lines before broad reading' \
     "README two-minute demo read-less metric"
   "$ROOT_DIR/scripts/readme-adoption-summary-smoke.sh" >/dev/null
@@ -2166,17 +2172,23 @@ main() {
     'agent_route_current_reading_step_matches_reading_plan: true' \
     "MCP client smoke current reading step mirror output"
   require_pattern docs/mcp-client-smoke.md \
-    'agent_route_read_less_ratio: 20\.5x' \
+    'agent_route_read_less_ratio: 7\.0x' \
     "MCP client smoke read-less output"
   require_pattern docs/mcp-client-smoke.md \
-    'explicit_read_less_ratio: 9\.1x' \
+    'explicit_read_less_ratio: 10\.1x' \
     "MCP client smoke explicit read-less output"
   require_pattern docs/mcp-client-smoke.md \
-    'auto_read_less_ratio: 20\.5x' \
+    'auto_read_less_ratio: 7\.0x' \
     "MCP client smoke auto read-less output"
   require_pattern docs/mcp-client-smoke.md \
     'agent_route_suggested_tool_executed: true' \
     "MCP client smoke execution-plan suggested tool output"
+  require_pattern docs/mcp-client-smoke.md \
+    'agent_route_impact_suggested_tool: impact_analysis' \
+    "MCP client smoke impact suggested tool output"
+  require_pattern docs/mcp-client-smoke.md \
+    'agent_route_impact_suggested_checks' \
+    "MCP client smoke impact suggested checks output"
   require_pattern docs/mcp-client-smoke.md \
     'agent_route_first_reading_selection_rank: 1' \
     "MCP client smoke selection rank output"

@@ -530,8 +530,33 @@ try:
         "agent_route_contract",
         f"impact_status should be complete, got {route.get('impact_status')!r}",
     )
-    impact_counts = route.get("impact_analysis", {}).get("impact_counts")
+    impact_analysis = route.get("impact_analysis", {})
+    impact_counts = impact_analysis.get("impact_counts")
     expect(impact_counts is not None, "agent_route_contract", "impact_analysis.impact_counts is missing")
+    impact_suggested_checks = impact_analysis.get("suggested_checks", [])
+    expect(
+        impact_suggested_checks,
+        "agent_route_contract",
+        "impact_analysis.suggested_checks is missing",
+    )
+    impact_execution = execution_plan[3]
+    expect(
+        impact_execution.get("suggested_checks") == impact_suggested_checks,
+        "agent_route_contract",
+        "execution_plan[3].suggested_checks should mirror impact_analysis.suggested_checks",
+    )
+    impact_suggested_tool = impact_execution.get("suggested_tool", {})
+    expect(
+        impact_suggested_tool.get("tool") == "impact_analysis",
+        "agent_route_contract",
+        f"execution_plan[3].suggested_tool should reopen impact_analysis: {impact_suggested_tool!r}",
+    )
+    impact_instruction = impact_execution.get("instruction", "")
+    expect(
+        "First suggested check:" in impact_instruction,
+        "agent_route_contract",
+        "execution_plan[3].instruction should name the first suggested check",
+    )
 
     with tempfile.TemporaryDirectory(prefix="codeinsight-empty-first-call-") as empty_root:
         blocked_route = call_tool(
@@ -670,6 +695,11 @@ try:
         "suggested_tool_executed": suggested_tool_executed,
         "impact_status": route["impact_status"],
         "impact_counts": impact_counts,
+        "impact_execution_suggested_tool": impact_suggested_tool.get("tool", ""),
+        "impact_execution_suggested_checks": len(impact_execution.get("suggested_checks", [])),
+        "impact_suggested_checks": len(impact_suggested_checks),
+        "impact_first_suggested_check": impact_suggested_checks[0],
+        "impact_execution_instruction_has_first_check": True,
         "blocked_no_seed": {
             "route_step_status": blocked_route_steps[2]["status"],
             "seed_strategy": blocked_context_pack["seed_strategy"],

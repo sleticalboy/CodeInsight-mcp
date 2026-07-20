@@ -408,6 +408,14 @@ try:
     assert agent_route_result["impact_analysis"]["format"] == "summary"
     assert agent_route_result["impact_analysis"]["depth"] == 2
     assert agent_route_result["impact_analysis"]["evidence_limit"] == 3
+    agent_route_impact_step = agent_route_result["execution_plan"][3]
+    agent_route_impact_checks = agent_route_result["impact_analysis"]["suggested_checks"]
+    assert len(agent_route_impact_checks) >= 1
+    assert agent_route_impact_step["suggested_checks"] == agent_route_impact_checks
+    assert agent_route_impact_step["suggested_tool"]["tool"] == "impact_analysis"
+    assert agent_route_impact_step["suggested_tool"]["suggested_arguments"]["files"] == agent_route_result["impact_seed_files"]
+    assert "First suggested check:" in agent_route_impact_step["instruction"]
+    agent_route_first_impact_check = agent_route_impact_checks[0]
     agent_route_suggested_result = call_suggested_tool(
         agent_route_result["execution_plan"][1]["suggested_tool"],
         17,
@@ -667,6 +675,9 @@ try:
     print(f"agent_route_first_omitted_omission_reason: {first_agent_route_omitted.get('omission_reason', '-')}")
     print(f"agent_route_suggested_tool: {agent_route_result['execution_plan'][1]['suggested_tool']['tool']}")
     print(f"agent_route_suggested_tool_executed: true")
+    print(f"agent_route_impact_suggested_tool: {agent_route_impact_step['suggested_tool']['tool']}")
+    print(f"agent_route_impact_suggested_checks: {len(agent_route_impact_checks)}")
+    print(f"agent_route_impact_first_check: {agent_route_first_impact_check.get('command') or agent_route_first_impact_check.get('file') or agent_route_first_impact_check['kind']}")
     print(f"explicit_first_reading_selection_rank: {explicit_reading_plan[0]['selection_rank']}")
     print(f"explicit_source_lines_avoided: {explicit_read_less['source_lines_avoided']}")
     print(f"explicit_read_less_ratio: {explicit_read_less['read_less_ratio']}")

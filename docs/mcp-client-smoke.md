@@ -72,6 +72,9 @@ It also asserts the MCP-facing structured fields that clients commonly render:
   `suggested_tool`
 - second `agent_route.execution_plan[]` suggested tool executes through
   MCP `tools/call`
+- fourth `agent_route.execution_plan[]` step mirrors
+  `impact_analysis.suggested_checks` and exposes an `impact_analysis`
+  `suggested_tool` for reopening full evidence
 - suggested-tool execution is proof the follow-up call is usable, not permission
   to run it before selected context is read
 - an empty repository returns a structured `blocked_no_seed` route with
@@ -128,7 +131,7 @@ agent_route_execution_plan_steps: 4
 agent_route_first_execution_action: read_selected_context
 agent_route_current_reading_step_matches_reading_plan: true
 agent_route_source_lines_avoided: 156
-agent_route_read_less_ratio: 20.5x
+agent_route_read_less_ratio: 7.0x
 agent_route_first_reading_selection_rank: 1
 agent_route_continuation_status: complete
 agent_route_continuation_next_action: read_selected_context
@@ -137,12 +140,15 @@ agent_route_first_omitted_selection_rank: -
 agent_route_first_omitted_omission_reason: -
 agent_route_suggested_tool: file_outline
 agent_route_suggested_tool_executed: true
+agent_route_impact_suggested_tool: impact_analysis
+agent_route_impact_suggested_checks: 3
+agent_route_impact_first_check: review
 agent_route_blocked_no_seed_status: blocked_no_seed
 agent_route_blocked_no_seed_next_action: provide_seed_file_or_symbol
 agent_route_blocked_no_seed_impact_status: skipped_no_seed
 explicit_first_reading_selection_rank: 1
-explicit_source_lines_avoided: 146
-explicit_read_less_ratio: 9.1x
+explicit_source_lines_avoided: 164
+explicit_read_less_ratio: 10.1x
 explicit_continuation_status: omitted_candidates_available
 explicit_continuation_next_action: run_omitted_candidate_context_pack
 explicit_first_omitted_file: src/consumer_14.py
@@ -150,7 +156,7 @@ explicit_first_omitted_selection_rank: 7
 explicit_first_omitted_omission_reason: token_budget_exhausted
 explicit_suggested_tool: file_outline
 auto_source_lines_avoided: 156
-auto_read_less_ratio: 20.5x
+auto_read_less_ratio: 7.0x
 auto_suggested_tool: file_outline
 explicit_omitted_candidates: 8
 ```
@@ -171,6 +177,11 @@ present because the protocol smoke exercises direct `context_pack` calls as
 well as `agent_route`.
 `agent_route_suggested_tool_executed` should remain `true`; it verifies the
 execution-plan suggested tool is a usable MCP call, not only display metadata.
+`impact_execution_suggested_checks` should remain present in first-call
+summaries; it verifies the pre-edit impact checklist is exposed at the
+execution-plan level.
+`agent_route_impact_suggested_checks` should remain present in stdio smoke
+output for the same contract.
 `agent_route_blocked_no_seed_status` and
 `agent_route_blocked_no_seed_next_action` should remain present so MCP clients
 can handle empty or unsupported repositories without broad file reads.
