@@ -333,10 +333,17 @@ clone_repo() {
     return
   fi
 
-  if [ "$REUSE_REPOS" = "1" ] && [ -d "$repo_dir/.git" ]; then
-    echo "reusing existing checkout for $name"
-    rm -rf "$repo_dir/.codeinsight"
-    return
+  if [ "$REUSE_REPOS" = "1" ] && [ -d "$repo_dir" ]; then
+    if git -C "$repo_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+      echo "reusing existing checkout for $name"
+      git -C "$repo_dir" reset --hard --quiet HEAD
+      git -C "$repo_dir" clean -ffd --quiet
+      rm -rf "$repo_dir/.codeinsight"
+      return
+    fi
+
+    echo "discarding invalid checkout for $name"
+    rm -rf "$repo_dir"
   fi
 
   rm -rf "$repo_dir"
