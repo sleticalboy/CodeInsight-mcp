@@ -98,7 +98,7 @@ Limitations:
 
 Limitations:
 
-- Optional `files` filters match dependencies whose source file or resolved target file touches the requested file; optional `languages` filters match the indexed source language of the dependency edge.
+- Optional `files` filters match dependencies whose source file or resolved target file touches the requested file; optional `languages` filters match the indexed source language of the dependency edge; optional `kinds` filters match dependency edge kinds such as `import`, `use`, `include`, or `base_type`.
 - Output includes `summary`, `top_sources`, and `top_targets` computed across all matching dependency edges before `limit` and `offset` page the returned edge list. Use `page_size` and `has_more` to drive follow-up pages.
 - Targets are always stored as module strings; `resolved_file` is only populated when a local file can be resolved cheaply.
 - Grouped imports may be compacted rather than expanded precisely.
