@@ -381,6 +381,7 @@ fn agent_route_execution_plan(
         },
         files: reading_files,
         suggested_tool: None,
+        suggested_checks: Vec::new(),
     }];
 
     if let Some(step) = first_step {
@@ -394,6 +395,7 @@ fn agent_route_execution_plan(
             ),
             files: vec![step.file.clone()],
             suggested_tool: Some(step.suggested_tool.clone()),
+            suggested_checks: Vec::new(),
         });
     } else {
         plan.push(AgentRouteExecutionStep {
@@ -403,6 +405,7 @@ fn agent_route_execution_plan(
             instruction: "No current_reading_step is available; provide a seed file or symbol, or add source files before requesting a suggested follow-up tool.".to_string(),
             files: Vec::new(),
             suggested_tool: None,
+            suggested_checks: Vec::new(),
         });
     }
 
@@ -422,6 +425,7 @@ fn agent_route_execution_plan(
             .cloned()
             .collect::<Vec<_>>(),
         suggested_tool: continuation.suggested_tool.clone(),
+        suggested_checks: Vec::new(),
     });
 
     plan.push(AgentRouteExecutionStep {
@@ -429,15 +433,17 @@ fn agent_route_execution_plan(
         action: "review_impact_before_edits".to_string(),
         status: impact_status.to_string(),
         instruction: match impact_analysis {
-            Some(report) => format!(
-                "Before editing, review impact_analysis: {} impacted files at {} risk.",
-                report.impact_counts.impacted_files, report.risk_level
-            ),
+            Some(report) => agent_route_impact_instruction(report),
             None => "Impact analysis was skipped because no file or symbol seed was available."
                 .to_string(),
         },
-        files: Vec::new(),
-        suggested_tool: None,
+        files: impact_analysis
+            .map(|report| report.seed_files.clone())
+            .unwrap_or_default(),
+        suggested_tool: impact_analysis.map(agent_route_impact_suggested_tool),
+        suggested_checks: impact_analysis
+            .map(|report| report.suggested_checks.clone())
+            .unwrap_or_default(),
     });
 
     plan
@@ -526,6 +532,47 @@ fn agent_route_impact_reason(report: &ImpactAnalysisReport) -> String {
         report.impact_breakdown.call_paths,
         report.impact_breakdown.dependency_paths
     )
+}
+
+fn agent_route_impact_instruction(report: &ImpactAnalysisReport) -> String {
+    let mut instruction = format!(
+        "Before editing, review impact_analysis: {} impacted files at {} risk.",
+        report.impact_counts.impacted_files, report.risk_level
+    );
+    if let Some(check) = report.suggested_checks.first() {
+        instruction.push_str(" First suggested check: ");
+        instruction.push_str(&suggested_check_instruction(check));
+        instruction.push('.');
+    }
+    instruction
+}
+
+fn suggested_check_instruction(check: &SuggestedCheck) -> String {
+    let reason = check.reason.trim_end_matches('.');
+    if let Some(command) = &check.command {
+        return format!("run {command} because {reason}");
+    }
+    if let Some(file) = &check.file {
+        return format!("review {file} because {reason}");
+    }
+    format!("review impact result because {reason}")
+}
+
+fn agent_route_impact_suggested_tool(report: &ImpactAnalysisReport) -> ContextSuggestedTool {
+    ContextSuggestedTool {
+        tool: "impact_analysis".to_string(),
+        priority: 80,
+        reason: "Open the full impact analysis before editing selected context.".to_string(),
+        suggested_arguments: json!({
+            "root": &report.root,
+            "symbols": &report.seed_symbols,
+            "files": &report.seed_files,
+            "limit": report.impacted_files.len().max(10),
+            "depth": report.depth,
+            "format": "full",
+            "evidence_limit": report.evidence_limit
+        }),
+    }
 }
 
 fn is_context_pack_no_seed_error(error: &anyhow::Error) -> bool {

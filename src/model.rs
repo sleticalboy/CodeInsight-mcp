@@ -277,6 +277,8 @@ pub struct AgentRouteExecutionStep {
     pub files: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub suggested_tool: Option<ContextSuggestedTool>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub suggested_checks: Vec<SuggestedCheck>,
 }
 
 #[derive(Debug, Clone)]

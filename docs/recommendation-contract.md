@@ -70,6 +70,8 @@ Each execution step includes:
 - `instruction`: client-facing instruction text.
 - `files[]`: optional selected files related to the action.
 - `suggested_tool`: optional MCP-ready tool call for the action.
+- `suggested_checks[]`: optional command or review checks, currently emitted
+  on `review_impact_before_edits` from `impact_analysis.suggested_checks`.
 
 `agent_route.current_reading_step` mirrors `context_pack.reading_plan[0]` so a
 client can render the first file, focus, question, reason, rank, selection
@@ -218,6 +220,9 @@ Recommended client behavior:
   users need to understand why the first read is bounded.
 - Prefer `reading_plan[].suggested_tool` while reading selected context, then
   use `omitted_candidates[].suggested_tool` when more context is needed.
+- Render `review_impact_before_edits.suggested_checks[]` as the pre-edit
+  command/review checklist, and use its `suggested_tool` to reopen full
+  `impact_analysis` evidence when needed.
 
 Do not infer repository safety or change risk from recommendation priority.
 Use `impact_analysis.risk_level`, `impact_counts`, evidence, and

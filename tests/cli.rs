@@ -8902,6 +8902,51 @@ fn assert_agent_route_execution_plan_matches_context(route: &Value) {
             "continuation suggested tool should mirror continuation_summary"
         );
     }
+
+    if !route["impact_analysis"].is_null() {
+        let impact_step = &execution_plan[3];
+        assert_eq!(impact_step["action"], "review_impact_before_edits");
+        assert_eq!(impact_step["status"], route["impact_status"]);
+        assert_eq!(
+            impact_step["suggested_checks"], route["impact_analysis"]["suggested_checks"],
+            "impact execution step should mirror impact_analysis.suggested_checks"
+        );
+        assert_eq!(
+            impact_step["suggested_tool"]["tool"], "impact_analysis",
+            "impact execution step should expose the impact_analysis follow-up tool"
+        );
+        assert_eq!(
+            impact_step["suggested_tool"]["suggested_arguments"]["root"], route["root"],
+            "impact suggested tool should preserve the route root"
+        );
+        assert_eq!(
+            impact_step["suggested_tool"]["suggested_arguments"]["files"],
+            route["impact_seed_files"],
+            "impact suggested tool should preserve impact seed files"
+        );
+        assert!(
+            impact_step["instruction"]
+                .as_str()
+                .unwrap()
+                .contains("First suggested check:"),
+            "impact execution step should name the first suggested check"
+        );
+        if let Some(first_check) = route["impact_analysis"]["suggested_checks"]
+            .as_array()
+            .unwrap()
+            .first()
+        {
+            if let Some(command) = first_check["command"].as_str() {
+                assert!(
+                    impact_step["instruction"]
+                        .as_str()
+                        .unwrap()
+                        .contains(command),
+                    "impact execution step should include the first command check"
+                );
+            }
+        }
+    }
 }
 
 fn fixture_project() -> TempDir {

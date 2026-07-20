@@ -1428,6 +1428,9 @@ main() {
     '`source_lines_avoided`: non-negative baseline minus selected lines' \
     "recommendation contract read-less avoided metric"
   require_pattern docs/recommendation-contract.md \
+    '`suggested_checks\[\]`: optional command or review checks' \
+    "recommendation contract execution suggested checks field"
+  require_pattern docs/recommendation-contract.md \
     'source-line reduction evidence; the continuation step names' \
     "recommendation contract execution plan read-less evidence"
   require_pattern docs/recommendation-contract.md \
@@ -2291,6 +2294,9 @@ main() {
   require_pattern docs/client-workflow.md \
     '`context_pack\.read_less` for first-read source-line reduction evidence' \
     "client workflow read-less health check"
+  require_pattern docs/client-workflow.md \
+    'run or report the step'"'"'s `suggested_checks\[\]`' \
+    "client workflow impact execution suggested checks"
   require_pattern docs/client-workflow.md \
     '`context_pack\.continuation_summary\.status` set to `blocked_no_seed`' \
     "client workflow blocked no-seed health check"

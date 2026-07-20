@@ -169,7 +169,8 @@ Use `agent_route.execution_plan[]` as the machine-readable client sequence:
    `suggested_tool` only when deeper evidence is needed for that file.
 3. `use_continuation_if_needed`: inspect `continuation_summary` after selected
    context is consumed.
-4. `review_impact_before_edits`: review `impact_analysis` before editing.
+4. `review_impact_before_edits`: review `impact_analysis` before editing, then
+   run or report the step's `suggested_checks[]`.
 
 `route[]` describes the tools CodeInsight already ran. `execution_plan[]`
 describes what the client or agent should do next.
@@ -287,6 +288,9 @@ symbols. Render:
 - `suggested_checks`
 
 Use `suggested_checks[]` to decide which local commands or review steps to run.
+In `agent_route`, the `review_impact_before_edits` execution step mirrors these
+checks and includes an `impact_analysis` `suggested_tool` for reopening the
+full evidence payload.
 Recommendation priority does not imply safety. Risk comes from
 `impact_analysis` evidence, not from `context_pack` ranking.
 
