@@ -1591,6 +1591,23 @@ fn cli_indexes_and_queries_fixture_project() {
             })
     );
 
+    let variable_module_alias_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "variableModuleAliasMain",
+        "--limit",
+        "5",
+    ]);
+    assert!(
+        variable_module_alias_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| {
+                call["callee"] == "modalModule.render" && call["callee_file"] == "src/ui.ts"
+            })
+    );
+
     let default_callees = run_json([
         "callees",
         fixture.path().to_str().unwrap(),
@@ -1761,6 +1778,23 @@ fn cli_indexes_and_queries_fixture_project() {
             .iter()
             .any(|call| {
                 call["callee"] == "loadedUi.render" && call["callee_file"] == "src/ui.ts"
+            })
+    );
+
+    let variable_dynamic_import_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "variableDynamicImportMain",
+        "--limit",
+        "5",
+    ]);
+    assert!(
+        variable_dynamic_import_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| {
+                call["callee"] == "modalLoaded.render" && call["callee_file"] == "src/ui.ts"
             })
     );
 
@@ -7997,6 +8031,9 @@ import { multiInternalRender } from "#multi/admin/component/card";
 const { render: draw } = require("./ui");
 const uiModule = require("./ui");
 const computedUiModule = require("./" + "ui");
+const modalPath = "./ui";
+const modalModule = require(modalPath);
+const modalLoaded = await import(modalPath);
 
 export function main() {
   render();
@@ -8016,6 +8053,14 @@ export function moduleAliasMain() {
 
 export function computedModuleAliasMain() {
   computedUiModule.render();
+}
+
+export function variableModuleAliasMain() {
+  modalModule.render();
+}
+
+export async function variableDynamicImportMain() {
+  modalLoaded.render();
 }
 
 export function defaultMain() {

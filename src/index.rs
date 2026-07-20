@@ -1,5 +1,5 @@
 use std::{
-    collections::{BTreeSet, HashSet},
+    collections::{BTreeSet, HashMap, HashSet},
     fs,
     path::{Component, Path, PathBuf},
     time::Instant,
@@ -256,12 +256,24 @@ pub fn extract_dependencies(
     let tree = parser
         .parse(source, None)
         .context("tree-sitter parse failed")?;
+    let javascript_bindings = if matches!(
+        language,
+        Language::JavaScript | Language::TypeScript | Language::Tsx
+    ) {
+        Some(javascript_static_string_bindings(
+            tree.root_node(),
+            source.as_bytes(),
+        ))
+    } else {
+        None
+    };
     let mut dependencies = Vec::new();
     visit_dependency_node(
         tree.root_node(),
         source.as_bytes(),
         language,
         source_file,
+        javascript_bindings.as_ref(),
         &mut dependencies,
     );
     Ok(dependencies)
@@ -924,6 +936,9 @@ fn string_literal_value(raw: &str) -> Option<String> {
     if !matches!(quote, '"' | '\'' | '`') || !trimmed.ends_with(quote) || trimmed.len() < 2 {
         return None;
     }
+    if quote == '`' && trimmed.contains("${") {
+        return None;
+    }
 
     Some(trimmed[quote.len_utf8()..trimmed.len() - quote.len_utf8()].to_string())
 }
@@ -1025,13 +1040,27 @@ fn visit_dependency_node(
     source: &[u8],
     language: Language,
     source_file: &str,
+    javascript_bindings: Option<&HashMap<String, String>>,
     dependencies: &mut Vec<Dependency>,
 ) {
-    dependencies.extend(dependencies_from_node(node, source, language, source_file));
+    dependencies.extend(dependencies_from_node(
+        node,
+        source,
+        language,
+        source_file,
+        javascript_bindings,
+    ));
 
     let mut cursor = node.walk();
     for child in node_children(&mut cursor) {
-        visit_dependency_node(child, source, language, source_file, dependencies);
+        visit_dependency_node(
+            child,
+            source,
+            language,
+            source_file,
+            javascript_bindings,
+            dependencies,
+        );
     }
 }
 
@@ -1040,6 +1069,7 @@ fn dependencies_from_node(
     source: &[u8],
     language: Language,
     source_file: &str,
+    javascript_bindings: Option<&HashMap<String, String>>,
 ) -> Vec<Dependency> {
     match language {
         Language::C | Language::Cpp => c_like_dependencies(node, source, language, source_file),
@@ -1051,7 +1081,7 @@ fn dependencies_from_node(
         Language::Java => java_dependencies(node, source, language, source_file),
         Language::Rust => rust_dependencies(node, source, language, source_file),
         Language::JavaScript | Language::TypeScript | Language::Tsx => {
-            javascript_like_dependencies(node, source, language, source_file)
+            javascript_like_dependencies(node, source, language, source_file, javascript_bindings)
         }
     }
 }
@@ -1634,6 +1664,7 @@ fn javascript_like_dependencies(
     source: &[u8],
     language: Language,
     source_file: &str,
+    javascript_bindings: Option<&HashMap<String, String>>,
 ) -> Vec<Dependency> {
     match node.kind() {
         "import_statement" => {
@@ -1670,12 +1701,20 @@ fn javascript_like_dependencies(
             ));
             dependencies
         }
-        "call_expression" => {
-            javascript_call_expression_dependencies(node, source, language, source_file)
-        }
-        "variable_declarator" => {
-            javascript_variable_module_alias_dependencies(node, source, language, source_file)
-        }
+        "call_expression" => javascript_call_expression_dependencies(
+            node,
+            source,
+            language,
+            source_file,
+            javascript_bindings,
+        ),
+        "variable_declarator" => javascript_variable_module_alias_dependencies(
+            node,
+            source,
+            language,
+            source_file,
+            javascript_bindings,
+        ),
         _ => Vec::new(),
     }
 }
@@ -1686,7 +1725,7 @@ fn text_dependencies(
     language: Language,
     source_file: &str,
     kind: &str,
-    extractor: fn(&str) -> Vec<String>,
+    extractor: impl Fn(&str) -> Vec<String>,
 ) -> Vec<Dependency> {
     let text = node.utf8_text(source).unwrap_or_default();
     extractor(text)
@@ -1805,20 +1844,18 @@ fn javascript_call_expression_dependencies(
     source: &[u8],
     language: Language,
     source_file: &str,
+    javascript_bindings: Option<&HashMap<String, String>>,
 ) -> Vec<Dependency> {
-    let mut dependencies = text_dependencies(
-        node,
-        source,
-        language,
-        source_file,
-        "import",
-        javascript_call_expression_targets,
-    );
+    let mut dependencies =
+        text_dependencies(node, source, language, source_file, "import", |text| {
+            javascript_call_expression_targets(text, javascript_bindings)
+        });
     dependencies.extend(javascript_dynamic_import_callback_alias_dependencies(
         node,
         source,
         language,
         source_file,
+        javascript_bindings,
     ));
     dependencies
 }
@@ -1828,6 +1865,7 @@ fn javascript_dynamic_import_callback_alias_dependencies(
     source: &[u8],
     language: Language,
     source_file: &str,
+    javascript_bindings: Option<&HashMap<String, String>>,
 ) -> Vec<Dependency> {
     let text = node.utf8_text(source).unwrap_or_default();
     let trimmed = text.trim_start();
@@ -1837,7 +1875,7 @@ fn javascript_dynamic_import_callback_alias_dependencies(
     if !is_static_dynamic_import(&trimmed[..then_index]) {
         return Vec::new();
     }
-    let Some(target) = static_js_module_call_targets(&trimmed[..then_index])
+    let Some(target) = static_js_module_call_targets(&trimmed[..then_index], javascript_bindings)
         .into_iter()
         .next()
     else {
@@ -1925,6 +1963,7 @@ fn javascript_require_alias_dependencies(
     source: &[u8],
     language: Language,
     source_file: &str,
+    javascript_bindings: Option<&HashMap<String, String>>,
 ) -> Vec<Dependency> {
     let Some(name_node) = node.child_by_field_name("name").or_else(|| node.child(0)) else {
         return Vec::new();
@@ -1942,7 +1981,10 @@ fn javascript_require_alias_dependencies(
     if !value.contains("require") {
         return Vec::new();
     }
-    let Some(target) = static_js_module_call_targets(value).into_iter().next() else {
+    let Some(target) = static_js_module_call_targets(value, javascript_bindings)
+        .into_iter()
+        .next()
+    else {
         return Vec::new();
     };
 
@@ -1984,14 +2026,21 @@ fn javascript_variable_module_alias_dependencies(
     source: &[u8],
     language: Language,
     source_file: &str,
+    javascript_bindings: Option<&HashMap<String, String>>,
 ) -> Vec<Dependency> {
-    let mut dependencies =
-        javascript_require_alias_dependencies(node, source, language, source_file);
+    let mut dependencies = javascript_require_alias_dependencies(
+        node,
+        source,
+        language,
+        source_file,
+        javascript_bindings,
+    );
     dependencies.extend(javascript_dynamic_import_alias_dependencies(
         node,
         source,
         language,
         source_file,
+        javascript_bindings,
     ));
     dependencies
 }
@@ -2001,6 +2050,7 @@ fn javascript_dynamic_import_alias_dependencies(
     source: &[u8],
     language: Language,
     source_file: &str,
+    javascript_bindings: Option<&HashMap<String, String>>,
 ) -> Vec<Dependency> {
     let Some(name_node) = node.child_by_field_name("name").or_else(|| node.child(0)) else {
         return Vec::new();
@@ -2021,7 +2071,10 @@ fn javascript_dynamic_import_alias_dependencies(
     if !is_static_dynamic_import(value) {
         return Vec::new();
     }
-    let Some(target) = static_js_module_call_targets(value).into_iter().next() else {
+    let Some(target) = static_js_module_call_targets(value, javascript_bindings)
+        .into_iter()
+        .next()
+    else {
         return Vec::new();
     };
 
@@ -2090,8 +2143,54 @@ fn strip_async_callback_prefix(raw: &str) -> &str {
     }
 }
 
-fn javascript_call_expression_targets(text: &str) -> Vec<String> {
-    let static_targets = static_js_module_call_targets(text);
+fn javascript_static_string_bindings(root: Node<'_>, source: &[u8]) -> HashMap<String, String> {
+    let mut bindings = HashMap::new();
+    collect_javascript_static_string_bindings(root, source, &mut bindings);
+    bindings
+}
+
+fn collect_javascript_static_string_bindings(
+    node: Node<'_>,
+    source: &[u8],
+    bindings: &mut HashMap<String, String>,
+) {
+    if node.kind() == "variable_declarator"
+        && let Some((name, value)) = javascript_static_string_binding(node, source, bindings)
+    {
+        bindings.insert(name, value);
+    }
+
+    let mut cursor = node.walk();
+    for child in node_children(&mut cursor) {
+        collect_javascript_static_string_bindings(child, source, bindings);
+    }
+}
+
+fn javascript_static_string_binding(
+    node: Node<'_>,
+    source: &[u8],
+    bindings: &HashMap<String, String>,
+) -> Option<(String, String)> {
+    let name_node = node.child_by_field_name("name").or_else(|| node.child(0))?;
+    let name = name_node.utf8_text(source).ok()?.trim();
+    if !is_js_identifier(name) {
+        return None;
+    }
+
+    let value = node
+        .child_by_field_name("value")
+        .or_else(|| node.child_by_field_name("right"))
+        .and_then(|child| child.utf8_text(source).ok())?;
+    let value = javascript_static_string_expression_value(value, Some(bindings))?;
+
+    Some((name.to_string(), value))
+}
+
+fn javascript_call_expression_targets(
+    text: &str,
+    javascript_bindings: Option<&HashMap<String, String>>,
+) -> Vec<String> {
+    let static_targets = static_js_module_call_targets(text, javascript_bindings);
     if static_targets.is_empty() {
         string_literal_targets(text)
     } else {
@@ -2099,14 +2198,29 @@ fn javascript_call_expression_targets(text: &str) -> Vec<String> {
     }
 }
 
-fn static_js_module_call_targets(text: &str) -> Vec<String> {
+fn static_js_module_call_targets(
+    text: &str,
+    javascript_bindings: Option<&HashMap<String, String>>,
+) -> Vec<String> {
     let mut targets = Vec::new();
-    targets.extend(static_js_module_call_targets_for_keyword(text, "require"));
-    targets.extend(static_js_module_call_targets_for_keyword(text, "import"));
+    targets.extend(static_js_module_call_targets_for_keyword(
+        text,
+        "require",
+        javascript_bindings,
+    ));
+    targets.extend(static_js_module_call_targets_for_keyword(
+        text,
+        "import",
+        javascript_bindings,
+    ));
     targets
 }
 
-fn static_js_module_call_targets_for_keyword(text: &str, keyword: &str) -> Vec<String> {
+fn static_js_module_call_targets_for_keyword(
+    text: &str,
+    keyword: &str,
+    javascript_bindings: Option<&HashMap<String, String>>,
+) -> Vec<String> {
     let mut targets = Vec::new();
     let mut search_start = 0;
     while let Some(relative_start) = text[search_start..].find(keyword) {
@@ -2127,7 +2241,9 @@ fn static_js_module_call_targets_for_keyword(text: &str, keyword: &str) -> Vec<S
             search_start = open + 1;
             continue;
         };
-        if let Some(target) = static_js_string_expression_value(&text[open + 1..close]) {
+        if let Some(target) =
+            javascript_static_string_expression_value(&text[open + 1..close], javascript_bindings)
+        {
             targets.push(target);
         }
         search_start = close + 1;
@@ -2135,7 +2251,19 @@ fn static_js_module_call_targets_for_keyword(text: &str, keyword: &str) -> Vec<S
     targets
 }
 
-fn static_js_string_expression_value(raw: &str) -> Option<String> {
+fn javascript_static_string_expression_value(
+    raw: &str,
+    javascript_bindings: Option<&HashMap<String, String>>,
+) -> Option<String> {
+    let mut seen = HashSet::new();
+    javascript_static_string_expression_value_inner(raw, javascript_bindings, &mut seen)
+}
+
+fn javascript_static_string_expression_value_inner(
+    raw: &str,
+    javascript_bindings: Option<&HashMap<String, String>>,
+    seen: &mut HashSet<String>,
+) -> Option<String> {
     let first_arg = top_level_char_index(raw, ',')
         .map(|comma| &raw[..comma])
         .unwrap_or(raw)
@@ -2144,19 +2272,55 @@ fn static_js_string_expression_value(raw: &str) -> Option<String> {
         return None;
     }
 
-    let plus_indices = top_level_char_indices(first_arg, '+');
-    if plus_indices.is_empty() {
-        return string_literal_value(first_arg);
+    javascript_static_string_operand_value(first_arg, javascript_bindings, seen)
+}
+
+fn javascript_static_string_operand_value(
+    raw: &str,
+    javascript_bindings: Option<&HashMap<String, String>>,
+    seen: &mut HashSet<String>,
+) -> Option<String> {
+    let raw = raw.trim();
+    if raw.is_empty() {
+        return None;
     }
 
-    let mut value = String::new();
-    let mut start = 0;
-    for plus in plus_indices {
-        value.push_str(&string_literal_value(first_arg[start..plus].trim())?);
-        start = plus + 1;
+    let plus_indices = top_level_char_indices(raw, '+');
+    if !plus_indices.is_empty() {
+        let mut value = String::new();
+        let mut start = 0;
+        for plus in plus_indices {
+            value.push_str(&javascript_static_string_operand_value(
+                &raw[start..plus],
+                javascript_bindings,
+                seen,
+            )?);
+            start = plus + 1;
+        }
+        value.push_str(&javascript_static_string_operand_value(
+            &raw[start..],
+            javascript_bindings,
+            seen,
+        )?);
+        return Some(value);
     }
-    value.push_str(&string_literal_value(first_arg[start..].trim())?);
-    Some(value)
+
+    if let Some(value) = string_literal_value(raw) {
+        return Some(value);
+    }
+
+    if let Some(bindings) = javascript_bindings
+        && is_js_identifier(raw)
+        && let Some(value) = bindings.get(raw)
+    {
+        if !seen.insert(raw.to_string()) {
+            return None;
+        }
+        seen.remove(raw);
+        return Some(value.clone());
+    }
+
+    None
 }
 
 fn has_js_identifier_boundaries(raw: &str, start: usize, end: usize) -> bool {
@@ -7466,6 +7630,11 @@ const { render: draw } = require("./ui");
 const uiModule = require("./ui");
 const loadedUi = await import("./ui");
 const computedUi = require("./" + "ui");
+const modalPath = "./modal";
+const modalModule = require(modalPath);
+const modalLoaded = await import(modalPath);
+import(modalPath).then((thenModal) => thenModal.render());
+require(modalPath).render();
 import("./ui").then((thenUi) => thenUi.render());
 require("./" + "ui").render();
 export { render as relayRender, default as relayDefault } from "./ui";
@@ -7545,6 +7714,44 @@ export * as uiApi from "./ui";
                 && dependency.local_alias.as_deref() == Some("uiApi")
                 && dependency.imported_symbol.as_deref() == Some("*")
         }));
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "./modal"
+                && dependency.kind == "import_namespace"
+                && dependency.local_alias.as_deref() == Some("modalModule")
+                && dependency.imported_symbol.as_deref() == Some("*")
+        }));
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "./modal"
+                && dependency.kind == "import_namespace"
+                && dependency.local_alias.as_deref() == Some("modalLoaded")
+                && dependency.imported_symbol.as_deref() == Some("*")
+        }));
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "./modal"
+                && dependency.kind == "import_namespace"
+                && dependency.local_alias.as_deref() == Some("thenModal")
+                && dependency.imported_symbol.as_deref() == Some("*")
+        }));
+        assert!(
+            deps.iter().any(|dependency| {
+                dependency.target == "./modal" && dependency.kind == "import"
+            })
+        );
+
+        let interpolated_template = r#"
+const templatePath = `./${"ui"}`;
+const templateModule = require(templatePath);
+"#;
+        let deps = extract_dependencies(
+            interpolated_template,
+            Language::TypeScript,
+            "src/template.ts",
+        )
+        .unwrap();
+        assert!(
+            deps.iter()
+                .all(|dependency| { dependency.local_alias.as_deref() != Some("templateModule") })
+        );
 
         let py = "from app.auth import service\nimport os, sys\n";
         let deps = extract_dependencies(py, Language::Python, "app/main.py").unwrap();
