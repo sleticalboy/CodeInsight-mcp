@@ -8253,6 +8253,55 @@ fn mcp_stdio_executes_agent_route() {
 }
 
 #[test]
+fn mcp_stdio_agent_route_returns_blocked_plan_for_empty_repository() {
+    let fixture = TempDir::new().unwrap();
+    let request = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 31,
+        "method": "tools/call",
+        "params": {
+            "name": "agent_route",
+            "arguments": {
+                "root": fixture.path(),
+                "task": "understand this repository",
+                "token_budget": 1000,
+                "force_index": true
+            }
+        }
+    });
+
+    let mut command = Command::cargo_bin("codeinsight").unwrap();
+    command.args(["serve", "--transport", "stdio"]);
+    command.write_stdin(format!("{request}\n"));
+    let output = command.assert().success().get_output().stdout.clone();
+    let response: Value = serde_json::from_slice(&output).unwrap();
+    let route = &response["result"]["structuredContent"];
+
+    assert_eq!(response["id"], 31);
+    assert!(response["error"].is_null());
+    assert_eq!(route["route"][2]["status"], "blocked_no_seed");
+    assert_eq!(route["impact_status"], "skipped_no_seed");
+    assert_eq!(route["context_pack"]["seed_strategy"], "auto_no_seed");
+    assert_eq!(
+        route["context_pack"]["continuation_summary"]["next_action"],
+        "provide_seed_file_or_symbol"
+    );
+    assert!(route["current_reading_step"].is_null());
+    assert_eq!(
+        route["execution_plan"][0]["status"],
+        "blocked_no_reading_plan"
+    );
+    assert_eq!(
+        route["execution_plan"][1]["status"],
+        "blocked_no_current_reading_step"
+    );
+    assert_eq!(
+        route["execution_plan"][3]["action"],
+        "review_impact_before_edits"
+    );
+}
+
+#[test]
 fn mcp_stdio_rejects_invalid_tool_arguments() {
     let request = serde_json::json!({
         "jsonrpc": "2.0",
