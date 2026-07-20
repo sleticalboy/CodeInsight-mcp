@@ -64,8 +64,26 @@ export function main() {
 EOF
 
   cat >"$SMOKE_ROOT/src/ui.ts" <<'EOF'
+export interface Renderer {
+  render(): string;
+}
+
+export interface AdvancedRenderer extends Renderer {
+  hydrate(): string;
+}
+
+export class HtmlRenderer implements AdvancedRenderer {
+  render() {
+    return "ok";
+  }
+
+  hydrate() {
+    return "ready";
+  }
+}
+
 export function render() {
-  return "ok";
+  return new HtmlRenderer().render();
 }
 EOF
 }
@@ -207,6 +225,16 @@ try:
         for entrypoint in overview_result["entrypoints"]
     ), "source entrypoint not found"
     recommended_tools = overview_result["recommended_next_tools"]
+    dependency_summary = overview_result["dependency_summary"]
+    assert dependency_summary["type_relation_edges"] >= 2, "type_relation_edges missing from overview"
+    type_relation_targets = {
+        target["target"]
+        for target in dependency_summary["top_type_relation_targets"]
+    }
+    assert {
+        "Renderer",
+        "AdvancedRenderer",
+    }.issubset(type_relation_targets), "top_type_relation_targets missing expected TypeScript relations"
     overview_context_tool = next(
         (
             tool
@@ -224,6 +252,17 @@ try:
             for tool in recommended_tools
             if tool["tool"] == "config_status"
             and tool["priority"] == 80
+            and same_root(tool["suggested_arguments"]["root"])
+        ),
+        None,
+    )
+    overview_type_relation_tool = next(
+        (
+            tool
+            for tool in recommended_tools
+            if tool["tool"] == "dependency_graph"
+            and tool["priority"] == 25
+            and "type-relation edges" in tool["reason"]
             and same_root(tool["suggested_arguments"]["root"])
         ),
         None,
@@ -248,12 +287,19 @@ try:
         and same_root(tool["suggested_arguments"]["root"])
         for tool in recommended_tools
     ), "config_status recommendation not found"
+    assert overview_type_relation_tool is not None, "type-relation dependency_graph recommendation not found"
     overview_context_result = call_suggested_tool(overview_context_tool, 14)
     assert overview_context_result["seed_strategy"] == "auto_entrypoint"
     assert overview_context_result["reading_plan"], "overview context_pack recommendation produced no reading_plan"
     overview_config_result = call_suggested_tool(overview_config_tool, 15)
     assert overview_config_result["exists"] is False
     assert "detected_test_commands" in overview_config_result
+    overview_type_relation_result = call_suggested_tool(overview_type_relation_tool, 18)
+    assert overview_type_relation_result["summary"]["type_relation_edges"] >= 2
+    assert any(
+        target["target"] in type_relation_targets
+        for target in overview_type_relation_result["summary"]["top_type_relation_targets"]
+    ), "dependency_graph summary did not preserve type-relation targets"
 
     agent_route = request(
         {
