@@ -2142,6 +2142,75 @@ fn cli_agent_route_runs_first_read_pipeline() {
 }
 
 #[test]
+fn cli_agent_route_exposes_focused_impact_test_checks() {
+    let fixture = TempDir::new().unwrap();
+    std::fs::create_dir_all(fixture.path().join("src")).unwrap();
+    write_file(
+        &fixture,
+        "src/core.ts",
+        r#"
+export function leaf() {
+  return "leaf";
+}
+
+export function core() {
+  return leaf();
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/core.test.ts",
+        r#"
+import { core } from "./core";
+
+export function coreSpec() {
+  return core();
+}
+"#,
+    );
+    write_file(&fixture, "pnpm-lock.yaml", "lockfileVersion: '9.0'\n");
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand core behavior",
+        "--token-budget",
+        "1200",
+        "--force-index",
+        "--impact-limit",
+        "20",
+        "--impact-depth",
+        "2",
+    ]);
+
+    let impact_checks = route["impact_analysis"]["suggested_checks"]
+        .as_array()
+        .unwrap();
+    assert!(impact_checks.iter().any(|check| {
+        check["kind"] == "command" && check["command"] == "pnpm test -- src/core.test.ts"
+    }));
+    assert_eq!(
+        route["execution_plan"][3]["suggested_checks"],
+        route["impact_analysis"]["suggested_checks"]
+    );
+    assert!(
+        route["execution_plan"][3]["suggested_checks"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|check| {
+                check["kind"] == "command" && check["command"] == "pnpm test -- src/core.test.ts"
+            })
+    );
+    assert_eq!(
+        route["execution_plan"][3]["suggested_tool"]["tool"],
+        "impact_analysis"
+    );
+}
+
+#[test]
 fn cli_agent_route_returns_blocked_plan_for_empty_repository() {
     let fixture = TempDir::new().unwrap();
 
