@@ -286,8 +286,9 @@ pub fn agent_route_value(
             tool: "project_overview".to_string(),
             status: "complete".to_string(),
             reason: format!(
-                "found {} entrypoints and {} recommended next tools",
+                "found {} entrypoints, {} type-relation edges, and {} recommended next tools",
                 overview.entrypoints.len(),
+                overview.dependency_summary.type_relation_edges,
                 overview.recommended_next_tools.len()
             ),
         },

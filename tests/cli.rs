@@ -6202,6 +6202,48 @@ fn cli_context_pack_routes_rust_trait_impl_relations() {
 }
 
 #[test]
+fn cli_overview_reports_type_relation_signals() {
+    let fixture = rust_use_fixture_project();
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 11);
+
+    let overview = run_json(["overview", fixture.path().to_str().unwrap()]);
+    assert!(
+        overview["summary"]
+            .as_str()
+            .unwrap()
+            .contains("type-relation edges")
+    );
+    assert!(
+        overview["dependency_summary"]["type_relation_edges"]
+            .as_u64()
+            .unwrap()
+            >= 1
+    );
+    assert!(
+        overview["dependency_summary"]["top_type_relation_targets"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|target| target["target"] == "Repository" && target["edges"].as_u64() == Some(1))
+    );
+    assert!(
+        overview["recommended_next_tools"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|tool| {
+                tool["tool"] == "dependency_graph"
+                    && tool["priority"].as_u64() == Some(25)
+                    && tool["reason"]
+                        .as_str()
+                        .is_some_and(|reason| reason.contains("type-relation edges"))
+            })
+    );
+}
+
+#[test]
 fn cli_resolves_yarn_package_json_workspaces() {
     let fixture = yarn_workspace_fixture_project();
 

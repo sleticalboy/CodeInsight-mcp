@@ -765,14 +765,37 @@ impl Store {
                 })
             })?
             .collect::<rusqlite::Result<Vec<_>>>()?;
+        let type_relation_edges = self.conn.query_row(
+            "select count(*) from dependencies where kind = 'base_type'",
+            [],
+            |row| row.get::<_, i64>(0),
+        )? as usize;
+        let mut type_relation_target_stmt = self.conn.prepare(
+            "select target, count(*)
+             from dependencies
+             where kind = 'base_type'
+             group by target
+             order by count(*) desc, target
+             limit 12",
+        )?;
+        let top_type_relation_targets = type_relation_target_stmt
+            .query_map([], |row| {
+                Ok(DependencyTargetStat {
+                    target: row.get(0)?,
+                    edges: row.get::<_, i64>(1)? as usize,
+                })
+            })?
+            .collect::<rusqlite::Result<Vec<_>>>()?;
         let dependency_summary = DependencySummary {
             edges: dependencies,
             local_edges: local_dependencies,
             external_edges: dependencies.saturating_sub(local_dependencies),
             resolved_edges: resolved_dependencies,
             unresolved_edges: unresolved_dependencies,
+            type_relation_edges,
             external_targets,
             top_external_targets,
+            top_type_relation_targets,
         };
 
         let resolved_callee_edges = self.conn.query_row(
@@ -804,6 +827,7 @@ impl Store {
             total_lines,
             symbols,
             dependencies,
+            type_relation_edges,
             call_edges,
             &languages,
             &top_directories,
@@ -1075,22 +1099,26 @@ impl Store {
                 count(*),
                 coalesce(sum(case when d.resolved_file is not null and d.resolved_file not like 'node_modules/%' then 1 else 0 end), 0),
                 coalesce(sum(case when d.resolved_file is not null then 1 else 0 end), 0),
+                coalesce(sum(case when d.kind = 'base_type' then 1 else 0 end), 0),
                 count(distinct case when d.resolved_file is null or d.resolved_file like 'node_modules/%' then d.target end)
              from dependencies d
              join files f on f.id = d.source_file_id
              {where_clause}"
         );
-        let (edges, local_edges, resolved_edges, external_targets) =
-            self.conn
-                .query_row(&query, params_from_iter(params), |row| {
-                    Ok((
-                        row.get::<_, i64>(0)? as usize,
-                        row.get::<_, i64>(1)? as usize,
-                        row.get::<_, i64>(2)? as usize,
-                        row.get::<_, i64>(3)? as usize,
-                    ))
-                })?;
+        let (edges, local_edges, resolved_edges, type_relation_edges, external_targets) = self
+            .conn
+            .query_row(&query, params_from_iter(params), |row| {
+                Ok((
+                    row.get::<_, i64>(0)? as usize,
+                    row.get::<_, i64>(1)? as usize,
+                    row.get::<_, i64>(2)? as usize,
+                    row.get::<_, i64>(3)? as usize,
+                    row.get::<_, i64>(4)? as usize,
+                ))
+            })?;
         let top_external_targets = self.dependency_graph_top_external_targets(files, languages)?;
+        let top_type_relation_targets =
+            self.dependency_graph_top_type_relation_targets(files, languages)?;
 
         Ok(DependencySummary {
             edges,
@@ -1098,8 +1126,10 @@ impl Store {
             external_edges: edges.saturating_sub(local_edges),
             resolved_edges,
             unresolved_edges: edges.saturating_sub(resolved_edges),
+            type_relation_edges,
             external_targets,
             top_external_targets,
+            top_type_relation_targets,
         })
     }
 
@@ -1170,6 +1200,39 @@ impl Store {
             format!("where {external_condition}")
         } else {
             format!("{base_where} and {external_condition}")
+        };
+        let query = format!(
+            "select d.target, count(*)
+             from dependencies d
+             join files f on f.id = d.source_file_id
+             {where_clause}
+             group by d.target
+             order by count(*) desc, d.target
+             limit 12"
+        );
+        let mut stmt = self.conn.prepare(&query)?;
+        stmt.query_map(params_from_iter(params), |row| {
+            Ok(DependencyTargetStat {
+                target: row.get(0)?,
+                edges: row.get::<_, i64>(1)? as usize,
+            })
+        })?
+        .collect::<rusqlite::Result<Vec<_>>>()
+        .map_err(Into::into)
+    }
+
+    fn dependency_graph_top_type_relation_targets(
+        &self,
+        files: &[String],
+        languages: &[String],
+    ) -> Result<Vec<DependencyTargetStat>> {
+        let mut params = Vec::new();
+        let base_where = dependency_graph_filter_clause(files, languages, &mut params);
+        let relation_condition = "d.kind = 'base_type'";
+        let where_clause = if base_where.is_empty() {
+            format!("where {relation_condition}")
+        } else {
+            format!("{base_where} and {relation_condition}")
         };
         let query = format!(
             "select d.target, count(*)
@@ -2726,6 +2789,7 @@ fn overview_summary(
     total_lines: usize,
     symbols: usize,
     dependencies: usize,
+    type_relation_edges: usize,
     call_edges: usize,
     languages: &[LanguageStat],
     top_directories: &[DirectoryStat],
@@ -2739,7 +2803,7 @@ fn overview_summary(
         .map(|directory| directory.directory.as_str())
         .unwrap_or(".");
     format!(
-        "{indexed_files} indexed files, {total_lines} lines, {symbols} symbols, {dependencies} dependency edges, {call_edges} call edges. Primary language: {primary_language}. Largest directory: {top_directory}."
+        "{indexed_files} indexed files, {total_lines} lines, {symbols} symbols, {dependencies} dependency edges, {type_relation_edges} type-relation edges, {call_edges} call edges. Primary language: {primary_language}. Largest directory: {top_directory}."
     )
 }
 
@@ -2794,6 +2858,26 @@ fn recommended_next_tools(
             priority: 30,
             reason,
             suggested_arguments,
+        });
+    }
+
+    if dependency_summary.type_relation_edges > 0 {
+        let relation_target = dependency_summary
+            .top_type_relation_targets
+            .first()
+            .map(|target| target.target.as_str())
+            .unwrap_or("type contracts");
+        tools.push(RecommendedToolCall {
+            tool: "dependency_graph".to_string(),
+            priority: 25,
+            reason: format!(
+                "Inspect {} direct type-relation edges before editing inherited contracts; the most frequent relation target is {}.",
+                dependency_summary.type_relation_edges, relation_target
+            ),
+            suggested_arguments: json!({
+                "root": root,
+                "limit": 100
+            }),
         });
     }
 

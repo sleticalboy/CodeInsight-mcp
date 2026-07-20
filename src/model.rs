@@ -630,8 +630,10 @@ pub struct DependencySummary {
     pub external_edges: usize,
     pub resolved_edges: usize,
     pub unresolved_edges: usize,
+    pub type_relation_edges: usize,
     pub external_targets: usize,
     pub top_external_targets: Vec<DependencyTargetStat>,
+    pub top_type_relation_targets: Vec<DependencyTargetStat>,
 }
 
 #[derive(Debug, Serialize)]
