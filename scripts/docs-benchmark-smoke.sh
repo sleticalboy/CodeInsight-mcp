@@ -1286,6 +1286,12 @@ main() {
   require_pattern docs/status.md \
     'C# web' \
     "status C# framework entrypoint signals"
+  require_pattern docs/status.md \
+    'mirrors `impact_analysis\.suggested_checks`' \
+    "status impact execution suggested checks"
+  require_pattern docs/status.md \
+    '`pnpm test -- src/core\.test\.ts`' \
+    "status focused test command example"
   require_pattern docs/release-readiness.md \
     '`benchmark-subset-smoke` job summary' \
     "release readiness CI benchmark summary guidance"

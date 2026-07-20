@@ -68,6 +68,12 @@ MVP workflow is now implemented end to end.
 - `agent_route.execution_plan[1].instruction` carries the current reading
   action and question alongside the ready suggested tool, so client follow-up
   prompts stay aligned with `reading_plan[]`.
+- `agent_route.execution_plan[3]` mirrors `impact_analysis.suggested_checks`,
+  includes the first suggested check in its instruction, and exposes a full
+  `impact_analysis` suggested tool for pre-edit review workflows.
+- Built-in impact check inference appends focused test-file commands such as
+  `pytest tests/test_api.py`, `pnpm test -- src/core.test.ts`, and
+  `go test ./binding` when impacted files include tests.
 - CLI commands: `index`, `init-config`, `config-status`, `overview`,
   `symbols`, `outline`, `dependency-graph`, `impact-analysis`,
   `find-references`, `semantic-search`, `semantic-index`, `embedding-status`,
