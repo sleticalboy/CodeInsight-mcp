@@ -183,7 +183,7 @@ Limitations:
 - C# temporary `new` chains with nested generic wrappers, such as `new Lazy<Dictionary<string, UserService>>(...).Value[id].Find()`, are conservatively skipped instead of falling back to a simple callee name.
 - Re-export following is intentionally bounded; arbitrary-depth barrel chains are not expanded.
 - Dependency packages under `node_modules` are skipped during indexing by default, so package export resolution can populate `dependency_graph.resolved_file` without producing `callee_file` hints for those packages.
-- Non-literal dynamic `import()`, external dynamic import handlers, broader computed `require(...)` targets, package-based config `extends`, pnpm/yarn-specific workspace protocols, and broader bundler-specific resolution are not modeled yet.
+- Non-literal dynamic `import()`, external dynamic import handlers, computed `require(...)` targets beyond simple concatenation and template literal interpolation, package-based config `extends`, pnpm/yarn-specific workspace protocols, and broader bundler-specific resolution are not modeled yet.
 - Dynamic dispatch, callbacks, reflection, macros, and higher-order functions are not modeled.
 - Method calls with the same method name on different types may be conflated.
 
@@ -232,7 +232,7 @@ Do not treat current MVP output as a formal static-analysis proof.
 
 Near-term improvements:
 
-- Improve external dynamic import handlers and broader computed `require(...)` handling where obvious.
+- Improve external dynamic import handlers and computed `require(...)` handling beyond simple concatenation and template literal interpolation where obvious.
 - Add advanced workspace glob and JavaScript package metadata edge-case handling.
 - Use broader graph hints in `context_pack` ranking.
 - Exclude or down-rank tests and comments in reference search.
