@@ -2165,9 +2165,15 @@ main() {
   require_pattern docs/client-integration-examples.md \
     'Show context_pack.read_less as first-read source-line reduction evidence' \
     "client integration read-less consumption"
+  require_pattern docs/client-integration-examples.md \
+    'If continuation_summary.status is blocked_no_seed, ask for a seed file or' \
+    "client integration blocked no-seed policy"
   require_pattern docs/agent-prompt-template.md \
-    'Use context_pack.read_less only as read-less' \
+    'context_pack.read_less only as read-less reporting evidence' \
     "agent prompt minimal read-less policy"
+  require_pattern docs/agent-prompt-template.md \
+    'If continuation_summary.status is blocked_no_seed, ask' \
+    "agent prompt blocked no-seed policy"
   require_pattern scripts/two-minute-demo.sh \
     'Problem: AI agents waste the first read' \
     "two-minute demo problem statement"

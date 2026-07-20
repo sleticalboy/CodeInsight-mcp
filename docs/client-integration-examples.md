@@ -15,20 +15,22 @@ plan after the server has completed the first-read route.
 
 ```text
 1. Call agent_route with root, task, and token_budget.
-2. Read context_pack.files[] in reading_plan[] order.
-3. Use agent_route.current_reading_step for the first checklist row.
-4. Use reading_plan[].focus as the compact scan label.
-5. Use reading_plan[].question as the local checklist for the selected file.
-6. Use reading_plan[].reason as the current-step instruction.
-7. Use reading_plan[].selection_rank as the candidate rank audit trail.
-8. Use reading_plan[].selection_reason only as selection evidence.
-9. Show context_pack.read_less as first-read source-line reduction evidence.
-10. Call execution_plan[].suggested_tool only when the current step needs deeper
+2. If continuation_summary.status is blocked_no_seed, ask for a seed file or
+   symbol and do not broad-read the repository.
+3. Read context_pack.files[] in reading_plan[] order.
+4. Use agent_route.current_reading_step for the first checklist row.
+5. Use reading_plan[].focus as the compact scan label.
+6. Use reading_plan[].question as the local checklist for the selected file.
+7. Use reading_plan[].reason as the current-step instruction.
+8. Use reading_plan[].selection_rank as the candidate rank audit trail.
+9. Use reading_plan[].selection_reason only as selection evidence.
+10. Show context_pack.read_less as first-read source-line reduction evidence.
+11. Call execution_plan[].suggested_tool only when the current step needs deeper
    evidence.
-11. Use continuation_summary only after selected context has been read.
-12. Use continuation_summary.next_action and omitted_candidates[] to explain any
+12. Use continuation_summary only after selected context has been read.
+13. Use continuation_summary.next_action and omitted_candidates[] to explain any
    follow-up context request.
-13. Review impact_analysis before edits.
+14. Review impact_analysis before edits.
 ```
 
 Do not treat `route[]` and `execution_plan[]` as the same thing:
@@ -60,6 +62,8 @@ trail, and reading_plan[].selection_reason as evidence for why the file was
 selected, not as a replacement for focus, question, reason, or rank.
 Use context_pack.read_less only to report source-line reduction for the first
 read; it is not permission to skip selected context.
+If continuation_summary.status is blocked_no_seed, ask for a seed file or
+symbol and do not broad-read the repository.
 ```
 
 ## Codex
@@ -78,6 +82,9 @@ reading. Follow agent_route.execution_plan[] exactly:
 3. use_continuation_if_needed: inspect continuation_summary only after selected
    context has been read.
 4. review_impact_before_edits: review impact_analysis before editing.
+
+If continuation_summary.status is blocked_no_seed, ask for a seed file or
+symbol and do not broad-read the repository.
 
 Use reading_plan[].question as the local checklist,
 reading_plan[].focus as the compact scan label, reading_plan[].reason as the
@@ -118,6 +125,8 @@ Only offer continuation_summary.suggested_tool after selected context has been
 read. Use question for the local checklist, reason for the agent's reading
 instruction, selection_rank for candidate order, and selection_reason for
 display or audit labels.
+If continuation_summary.status is blocked_no_seed, ask for a seed file or
+symbol instead of broad file search.
 ```
 
 ## UI Checklist
@@ -155,6 +164,8 @@ they should not be labeled as a safety guarantee.
 A working integration should pass these checks:
 
 - The first broad task calls `agent_route`.
+- A `blocked_no_seed` response asks for a seed file or symbol instead of broad
+  repository reading.
 - The agent reads selected files in `reading_plan[]` order.
 - The agent can render `agent_route.current_reading_step` as the first
   checklist row.

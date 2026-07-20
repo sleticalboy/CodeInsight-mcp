@@ -453,6 +453,9 @@ main() {
     'context_pack.read_less as reporting evidence' \
     "agent prompt read-less reporting policy"
   require_pattern docs/agent-prompt-template.md \
+    'If context_pack.continuation_summary.status is "blocked_no_seed"' \
+    "agent prompt blocked no-seed policy"
+  require_pattern docs/agent-prompt-template.md \
     'Use each reading_plan\.question as the local checklist' \
     "agent prompt first read question policy"
   require_pattern docs/agent-prompt-template.md \
@@ -465,11 +468,14 @@ main() {
     'Do not use suggested_tool or continuation as a shortcut around reading the' \
     "agent prompt suggested tool ordering"
   require_pattern docs/agent-prompt-template.md \
-    'Read selected files in reading_plan order before' \
+    'reading_plan order before suggested_tool or continuation' \
     "agent prompt minimal ordering"
   require_pattern docs/client-integration-examples.md \
     'Show context_pack.read_less as first-read source-line reduction evidence' \
     "client integration read-less consumption"
+  require_pattern docs/client-integration-examples.md \
+    'If continuation_summary.status is blocked_no_seed, ask for a seed file' \
+    "client integration blocked no-seed policy"
   require_pattern docs/first-read-workflow.md \
     '`agent_route` is the default first-read contract' \
     "first-read workflow agent_route contract"

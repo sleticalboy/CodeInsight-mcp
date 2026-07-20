@@ -16,25 +16,27 @@ When CodeInsight MCP is available for a repository:
 
 1. Before broad code reading, call agent_route with root, task, and
    token_budget for the default first read.
-2. Read context_pack.files in reading_plan order. Treat reading_plan.focus as
+2. If context_pack.continuation_summary.status is "blocked_no_seed", ask for a
+   seed file or symbol and do not broad-read the repository.
+3. Read context_pack.files in reading_plan order. Treat reading_plan.focus as
    the compact scan label, reading_plan.reason as the current-step instruction,
    reading_plan.question as the local reading checklist,
    reading_plan.selection_rank as the candidate rank audit trail, and
    reading_plan.selection_reason as the selection evidence.
-3. Use context_pack.read_less as reporting evidence for first-read source-line
+4. Use context_pack.read_less as reporting evidence for first-read source-line
    reduction; do not use it as a substitute for reading selected context.
-4. Prefer reading_plan[].suggested_tool for deeper evidence on the current
+5. Prefer reading_plan[].suggested_tool for deeper evidence on the current
    selected file.
-5. Use continuation_summary.suggested_tool only after the selected context has
+6. Use continuation_summary.suggested_tool only after the selected context has
    been consumed and the task still needs more evidence.
-6. Before editing, review the included impact_analysis preview. If the edit
+7. Before editing, review the included impact_analysis preview. If the edit
    target differs from the first-read seed, call impact_analysis with the
    selected files or symbols and run or report the suggested_checks that apply.
-7. Use index_project, project_overview, context_pack, and impact_analysis
+8. Use index_project, project_overview, context_pack, and impact_analysis
    directly only when custom routing or partial refresh control is needed.
-8. Treat CodeInsight call graphs and references as best-effort navigation
+9. Treat CodeInsight call graphs and references as best-effort navigation
    evidence, not compiler-grade proof.
-9. Do not use suggested_tool or continuation as a shortcut around reading the
+10. Do not use suggested_tool or continuation as a shortcut around reading the
    selected context first.
 ```
 
@@ -102,16 +104,18 @@ Continue with CodeInsight only after reading the selected context.
 
 Workflow:
 1. Check context_pack.continuation_summary.status.
-2. If status is "complete", do not fetch more context unless the selected files
+2. If status is "blocked_no_seed", ask for a seed file or symbol and retry
+   with that seed instead of broad-reading the repository.
+3. If status is "complete", do not fetch more context unless the selected files
    fail to answer the user's task.
-3. Use continuation_summary.next_action to decide whether to narrow the task,
+4. Use continuation_summary.next_action to decide whether to narrow the task,
    read selected context, or run an omitted-candidate follow-up.
-4. If continuation_summary.suggested_tool exists, execute that suggested tool.
-5. Prefer omitted_candidates that match the current unresolved question; use
+5. If continuation_summary.suggested_tool exists, execute that suggested tool.
+6. Prefer omitted_candidates that match the current unresolved question; use
    omitted_candidates[].selection_rank and omission_reason to explain the
    follow-up.
-6. Keep the follow-up task narrower than the first task.
-7. Report what changed after the continuation:
+7. Keep the follow-up task narrower than the first task.
+8. Report what changed after the continuation:
    - new files read
    - new symbols or references found
    - remaining uncertainty
@@ -148,10 +152,12 @@ instruction:
 
 ```text
 Use CodeInsight before broad repository reading: call agent_route with
-root/task/token_budget. Read selected files in reading_plan order before
-suggested_tool or continuation. Use context_pack.read_less only as read-less
-reporting evidence. Review impact_analysis before edits. Treat call graphs and
-references as best-effort navigation evidence, not compiler-grade proof.
+root/task/token_budget. If continuation_summary.status is blocked_no_seed, ask
+for a seed file or symbol instead of broad-reading. Read selected files in
+reading_plan order before suggested_tool or continuation. Use
+context_pack.read_less only as read-less reporting evidence. Review
+impact_analysis before edits. Treat call graphs and references as best-effort
+navigation evidence, not compiler-grade proof.
 ```
 
 ## Recommended Defaults
