@@ -7517,10 +7517,21 @@ export function route() {
 }
 "#,
     );
+    write_file(
+        &fixture,
+        "src/core.test.ts",
+        r#"
+import { leaf } from "./core";
+
+export function coreSpec() {
+  return leaf();
+}
+"#,
+    );
     write_file(&fixture, "pnpm-lock.yaml", "lockfileVersion: '9.0'\n");
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 3);
+    assert_eq!(index["indexed_files"], 4);
 
     let impact = run_json([
         "impact-analysis",
@@ -7604,6 +7615,13 @@ export function route() {
             .iter()
             .any(|check| { check["kind"] == "command" && check["command"] == "pnpm test" })
     );
+    assert!(suggested_checks.iter().any(|check| {
+        check["kind"] == "command"
+            && check["command"] == "pnpm test -- src/core.test.ts"
+            && check["reason"].as_str().is_some_and(|reason| {
+                reason.contains("Focused test file src/core.test.ts is impacted")
+            })
+    }));
     assert!(
         suggested_checks
             .iter()

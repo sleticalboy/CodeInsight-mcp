@@ -3921,7 +3921,13 @@ fn impact_suggested_checks(
         .unwrap_or_default();
 
     if configured_commands == 0 {
-        push_builtin_impact_command_checks(root, &languages, &mut checks, &mut seen_commands);
+        push_builtin_impact_command_checks(
+            root,
+            &languages,
+            impacted_files,
+            &mut checks,
+            &mut seen_commands,
+        );
     }
 
     push_impact_review_checks(&mut checks, risk_level, impacted_files, paths, errors);
@@ -4005,14 +4011,33 @@ fn configured_check_matches(
 fn push_builtin_impact_command_checks(
     root: &Path,
     languages: &BTreeSet<&'static str>,
+    impacted_files: &[ImpactFile],
     checks: &mut Vec<SuggestedCheck>,
     seen_commands: &mut BTreeSet<String>,
 ) {
-    for command in suggested_test_commands_for_root(root) {
-        let Some(reason) = builtin_impact_command_reason(&command, languages) else {
+    let commands = suggested_test_commands_for_root(root);
+    for command in &commands {
+        let Some(reason) = builtin_impact_command_reason(command, languages) else {
             continue;
         };
-        push_command_check(checks, seen_commands, &command, reason);
+        push_command_check(checks, seen_commands, command, reason);
+    }
+
+    for file in impacted_files
+        .iter()
+        .filter(|file| is_test_source_file(&file.file))
+        .take(3)
+    {
+        for command in &commands {
+            let Some(focused_command) = focused_test_command(command, &file.file) else {
+                continue;
+            };
+            let reason = format!(
+                "Focused test file {} is impacted; run it before changing behavior.",
+                file.file
+            );
+            push_command_check(checks, seen_commands, &focused_command, &reason);
+        }
     }
 }
 
@@ -4119,6 +4144,70 @@ fn push_command_check(
         true
     } else {
         false
+    }
+}
+
+fn focused_test_command(base_command: &str, file: &str) -> Option<String> {
+    if !is_test_source_file(file) {
+        return None;
+    }
+    let file_arg = shell_arg(file);
+    match base_command {
+        "pnpm test" => Some(format!("pnpm test -- {file_arg}")),
+        "yarn test" => Some(format!("yarn test {file_arg}")),
+        "npm test" => Some(format!("npm test -- {file_arg}")),
+        "pytest" => Some(format!("pytest {file_arg}")),
+        "go test ./..." => Some(format!("go test {}", go_test_package_arg(file))),
+        _ => None,
+    }
+}
+
+fn is_test_source_file(file: &str) -> bool {
+    let normalized = file.replace('\\', "/").to_ascii_lowercase();
+    normalized.starts_with("test/")
+        || normalized.starts_with("tests/")
+        || normalized.contains("/test/")
+        || normalized.contains("/tests/")
+        || normalized.contains("/__tests__/")
+        || normalized.ends_with("_test.go")
+        || normalized.ends_with("_test.py")
+        || normalized.ends_with("_test.rb")
+        || normalized.ends_with("_test.php")
+        || normalized.ends_with("_test.rs")
+        || normalized.ends_with("test.java")
+        || normalized.ends_with("test.cs")
+        || normalized.ends_with(".test.js")
+        || normalized.ends_with(".test.jsx")
+        || normalized.ends_with(".test.ts")
+        || normalized.ends_with(".test.tsx")
+        || normalized.ends_with(".spec.js")
+        || normalized.ends_with(".spec.jsx")
+        || normalized.ends_with(".spec.ts")
+        || normalized.ends_with(".spec.tsx")
+}
+
+fn go_test_package_arg(file: &str) -> String {
+    let normalized = file.replace('\\', "/");
+    let package = if let Some((dir, _)) = normalized.rsplit_once('/') {
+        if dir.is_empty() {
+            ".".to_string()
+        } else {
+            format!("./{dir}")
+        }
+    } else {
+        ".".to_string()
+    };
+    shell_arg(&package)
+}
+
+fn shell_arg(value: &str) -> String {
+    if value
+        .bytes()
+        .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'/' | b'.' | b'_' | b'-'))
+    {
+        value.to_string()
+    } else {
+        format!("'{}'", value.replace('\'', "'\"'\"'"))
     }
 }
 
@@ -6098,6 +6187,31 @@ mod tests {
     #[test]
     fn uncovered_segments_keeps_ranges_after_selected_overlap() {
         assert_eq!(uncovered_segments(1, 10, &[(4, 6)]), vec![(1, 3), (7, 10)]);
+    }
+
+    #[test]
+    fn focused_test_command_targets_supported_test_files() {
+        assert_eq!(
+            focused_test_command("pnpm test", "src/core.test.ts").as_deref(),
+            Some("pnpm test -- src/core.test.ts")
+        );
+        assert_eq!(
+            focused_test_command("pytest", "tests/test_api.py").as_deref(),
+            Some("pytest tests/test_api.py")
+        );
+        assert_eq!(
+            focused_test_command("go test ./...", "binding/default_validator_test.go").as_deref(),
+            Some("go test ./binding")
+        );
+        assert_eq!(
+            focused_test_command("pytest", "tests/api test.py").as_deref(),
+            Some("pytest 'tests/api test.py'")
+        );
+        assert_eq!(
+            focused_test_command("go test ./...", "go pkg/http_test.go").as_deref(),
+            Some("go test './go pkg'")
+        );
+        assert!(focused_test_command("cargo test", "src/lib.rs").is_none());
     }
 
     #[test]

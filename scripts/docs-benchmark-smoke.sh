@@ -358,6 +358,12 @@ main() {
   require_pattern docs/quickstart.md \
     'You want evidence for your own repository' \
     "quickstart local benchmark row"
+  require_pattern docs/impact-analysis.md \
+    'appends focused commands for those files' \
+    "impact analysis focused test command guidance"
+  require_pattern docs/impact-analysis.md \
+    '`pnpm test -- src/core\.test\.ts`' \
+    "impact analysis focused pnpm test example"
   require_pattern docs/README.md \
     'Adoption comparison evidence' \
     "docs index adoption comparison validation row"
