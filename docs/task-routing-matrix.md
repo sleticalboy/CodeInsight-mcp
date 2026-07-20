@@ -94,7 +94,7 @@ understand feature flag rollout	src/feature_flags.ts
 understand proxy redirect transport	src/network.ts
 understand json binding validation	src/validation.ts
 understand persistence behavior	src/database.ts
-debug retry timeout handling	src/errors.ts
+debug retry timeout handling	src/retry_transport.ts
 find regression coverage	src/router.test.ts
 understand api handler behavior	src/handler.ts
 understand cache performance latency	src/cache.ts

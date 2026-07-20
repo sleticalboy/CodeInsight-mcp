@@ -4,3 +4,4 @@ understand configuration settings	src/requests/sessions.py
 understand package startup flow	src/requests/__init__.py
 understand proxy behavior	src/requests/adapters.py
 understand redirect behavior	src/requests/sessions.py
+debug retry timeout handling	src/requests/adapters.py

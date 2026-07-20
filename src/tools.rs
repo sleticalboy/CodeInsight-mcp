@@ -5258,6 +5258,20 @@ fn auto_seed_task_focus_boost(
         };
     }
 
+    if auto_seed_error_recovery_handling_task(task_keywords) {
+        let file_action_match = auto_seed_error_recovery_action_file_matches(file);
+        let symbol_action_match = symbol
+            .map(auto_seed_error_recovery_action_symbol_matches)
+            .unwrap_or(false);
+
+        score += match (file_action_match, symbol_action_match) {
+            (true, true) => 1800,
+            (true, false) => 1300,
+            (false, true) => 700,
+            _ => 0,
+        };
+    }
+
     if task_keywords
         .iter()
         .any(|keyword| matches!(keyword.as_str(), "route" | "routes" | "router" | "routing"))
@@ -5342,6 +5356,60 @@ fn auto_seed_request_lifecycle_symbol_matches(symbol: &str) -> bool {
             || has_exact("process")
             || has_exact("finalize")
             || has_exact("teardown"))
+}
+
+fn auto_seed_error_recovery_handling_task(task_keywords: &[String]) -> bool {
+    let retry_or_timeout = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "retry" | "retries" | "timeout" | "timeouts"
+        )
+    });
+    let handling = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "handling"
+                | "handle"
+                | "debug"
+                | "error"
+                | "errors"
+                | "failure"
+                | "failures"
+                | "recovery"
+                | "recover"
+        )
+    });
+
+    retry_or_timeout && handling
+}
+
+fn auto_seed_error_recovery_action_file_matches(file: &str) -> bool {
+    auto_seed_file_stem_matches(file, "adapter")
+        || auto_seed_file_stem_matches(file, "adapters")
+        || auto_seed_file_stem_matches(file, "transport")
+        || auto_seed_file_stem_matches(file, "transports")
+        || auto_seed_file_stem_matches(file, "client")
+        || auto_seed_file_stem_matches(file, "clients")
+        || auto_seed_file_stem_matches(file, "session")
+        || auto_seed_file_stem_matches(file, "sessions")
+        || auto_seed_file_stem_matches(file, "request")
+        || auto_seed_file_stem_matches(file, "requests")
+}
+
+fn auto_seed_error_recovery_action_symbol_matches(symbol: &str) -> bool {
+    let parts = symbol
+        .split(|ch: char| !ch.is_ascii_alphanumeric())
+        .map(str::to_ascii_lowercase)
+        .collect::<Vec<_>>();
+
+    let has_exact = |needle: &str| parts.iter().any(|part| part == needle);
+    has_exact("send")
+        || has_exact("request")
+        || has_exact("adapter")
+        || has_exact("transport")
+        || has_exact("client")
+        || has_exact("connection")
+        || (has_exact("get") && has_exact("connection"))
 }
 
 fn auto_seed_route_registration_matches(field: &str) -> bool {

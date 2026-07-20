@@ -212,11 +212,11 @@
       "ref": "f361ead047be5cb873174218582f7d8b9fcd9f49",
       "expect_file": "docs/task-routing-expectations/requests.tsv",
       "summary_json": "<output-dir>/requests/summary.json",
-      "task_count": 6,
-      "expectation_count": 6,
-      "total_task_source_lines": 72192,
-      "total_selected_lines": 3735,
-      "total_estimated_tokens": 33764,
+      "task_count": 7,
+      "expectation_count": 7,
+      "total_task_source_lines": 84224,
+      "total_selected_lines": 4376,
+      "total_estimated_tokens": 39697,
       "max_impacted_files": 17,
       "routes": [
         {
@@ -290,18 +290,30 @@
           "estimated_tokens": 5996,
           "risk_level": "high",
           "impacted_files": 15
+        },
+        {
+          "task": "debug retry timeout handling",
+          "first_file": "src/requests/adapters.py",
+          "first_reading_focus": "Start with seed file error handling, retry, and recovery boundaries.",
+          "first_reading_question": "Where are errors, retries, timeouts, or recovery decisions handled here?",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 12032,
+          "line_reduction": "94.7%",
+          "estimated_tokens": 5933,
+          "risk_level": "high",
+          "impacted_files": 14
         }
       ]
     }
   ],
   "aggregate": {
-    "task_count": 19,
-    "expectation_count": 19,
-    "total_task_source_lines": 351947,
-    "total_selected_lines": 9052,
-    "total_estimated_tokens": 80542,
+    "task_count": 20,
+    "expectation_count": 20,
+    "total_task_source_lines": 363979,
+    "total_selected_lines": 9693,
+    "total_estimated_tokens": 86475,
     "max_impacted_files": 43,
-    "line_reduction": 97.42
+    "line_reduction": 97.33
   },
   "generated_by": "scripts/update-public-task-routing-matrix.sh"
 }

@@ -2409,6 +2409,15 @@ export function bootRouter(settings: Record<string, string>) {
     )
     .unwrap();
     std::fs::write(
+        fixture.path().join("src/retry_transport.ts"),
+        r#"export function sendWithRetryTimeout(request: { url: string }) {
+  // Transport send path handles retry failures and timeout recovery.
+  return { request, retry: "once", timeout: 30, recovery: "fallback" };
+}
+"#,
+    )
+    .unwrap();
+    std::fs::write(
         fixture.path().join("src/router.test.ts"),
         r#"import { bootRouter } from "./router";
 
@@ -2757,15 +2766,18 @@ export function routerRegressionSpec() {
         "1600",
     ]);
     assert_eq!(error_context["seed_strategy"], "auto_task_match");
-    assert_eq!(error_context["selected_seeds"][0]["value"], "src/errors.ts");
+    assert_eq!(
+        error_context["selected_seeds"][0]["value"],
+        "src/retry_transport.ts"
+    );
     assert!(
         error_context["selected_seeds"][0]["matched_keywords"]
             .as_array()
             .unwrap()
             .iter()
-            .any(|keyword| keyword == "error")
+            .any(|keyword| keyword == "retry")
     );
-    assert_eq!(error_context["files"][0]["file"], "src/errors.ts");
+    assert_eq!(error_context["files"][0]["file"], "src/retry_transport.ts");
     let error_question = error_context["reading_plan"][0]["question"]
         .as_str()
         .unwrap();

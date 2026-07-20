@@ -99,6 +99,10 @@ main();'
   // Retry timeout failures before falling back to the caller.
   return { retry: true, timeout: error.message.includes("timeout") };
 }'
+  write_file "$repo/src/retry_transport.ts" 'export function sendWithRetryTimeout(request: { url: string }) {
+  // Transport send path handles retry failures and timeout recovery.
+  return { request, retry: "once", timeout: 30, recovery: "fallback" };
+}'
   write_file "$repo/src/router.test.ts" 'import { createRouter } from "./router";
 
 export function routerRegressionSpec() {
@@ -185,7 +189,7 @@ understand proxy redirect transport	src/network.ts
 understand json binding validation	src/validation.ts
 understand startup flow	src/startup.ts
 understand persistence behavior	src/database.ts
-debug retry timeout handling	src/errors.ts
+debug retry timeout handling	src/retry_transport.ts
 find regression coverage	src/router.test.ts
 understand api handler behavior	src/handler.ts
 understand cache performance latency	src/cache.ts
@@ -221,7 +225,7 @@ understand middleware behavior	src/middleware.ts'
   require_jq "$summary_json" '.tasks[] | select(.task == "understand json binding validation" and .first_file == "src/validation.ts")' "validation task should choose validation"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand startup flow" and .first_file == "src/startup.ts")' "startup task should choose startup"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand persistence behavior" and .first_file == "src/database.ts")' "persistence task should choose database"
-  require_jq "$summary_json" '.tasks[] | select(.task == "debug retry timeout handling" and .first_file == "src/errors.ts")' "debug task should choose errors"
+  require_jq "$summary_json" '.tasks[] | select(.task == "debug retry timeout handling" and .first_file == "src/retry_transport.ts")' "debug task should choose retry transport"
   require_jq "$summary_json" '.tasks[] | select(.task == "find regression coverage" and .first_file == "src/router.test.ts")' "coverage task should choose test"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand api handler behavior" and .first_file == "src/handler.ts")' "api handler task should choose handler"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand cache performance latency" and .first_file == "src/cache.ts")' "performance task should choose cache"
