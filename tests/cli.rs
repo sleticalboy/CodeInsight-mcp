@@ -1764,6 +1764,23 @@ fn cli_indexes_and_queries_fixture_project() {
             })
     );
 
+    let variable_require_member_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "variableRequireMemberMain",
+        "--limit",
+        "5",
+    ]);
+    assert!(
+        variable_require_member_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| {
+                call["callee"] == "require.render" && call["callee_file"] == "src/ui.ts"
+            })
+    );
+
     let dynamic_import_callees = run_json([
         "callees",
         fixture.path().to_str().unwrap(),
@@ -8101,6 +8118,10 @@ export function requireMemberMain() {
 
 export function computedRequireMemberMain() {
   require("./" + "ui").render();
+}
+
+export function variableRequireMemberMain() {
+  require(modalPath).render();
 }
 
 export async function dynamicImportMain() {
