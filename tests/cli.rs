@@ -2391,6 +2391,15 @@ export function bootRouter(settings: Record<string, string>) {
     )
     .unwrap();
     std::fs::write(
+        fixture.path().join("src/adapter.test.ts"),
+        r#"export function adapterCoverageSpec() {
+  // Test coverage asserts HTTP adapter regression behavior.
+  return { adapter: "http", coverage: "regression", assertions: true };
+}
+"#,
+    )
+    .unwrap();
+    std::fs::write(
         fixture.path().join("src/validation.ts"),
         r#"export function bindJsonValidationSchema(payload: unknown) {
   // JSON binding validates payloads against the request schema.
@@ -2736,6 +2745,33 @@ export function routerRegressionSpec() {
     let tls_question = tls_context["reading_plan"][0]["question"].as_str().unwrap();
     assert!(tls_question.contains("TLS certificates"));
     assert!(tls_question.contains("verification decisions"));
+
+    let adapter_test_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand adapter test coverage",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(adapter_test_context["seed_strategy"], "auto_task_match");
+    assert_eq!(
+        adapter_test_context["selected_seeds"][0]["value"],
+        "src/adapter.test.ts"
+    );
+    assert_eq!(
+        adapter_test_context["files"][0]["file"],
+        "src/adapter.test.ts"
+    );
+    let adapter_test_focus = adapter_test_context["reading_plan"][0]["focus"]
+        .as_str()
+        .unwrap();
+    let adapter_test_question = adapter_test_context["reading_plan"][0]["question"]
+        .as_str()
+        .unwrap();
+    assert!(adapter_test_focus.contains("regression coverage"));
+    assert!(adapter_test_question.contains("assertions"));
+    assert!(adapter_test_question.contains("regression cases"));
 
     let validation_context = run_json([
         "context-pack",

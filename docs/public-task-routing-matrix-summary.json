@@ -74,11 +74,11 @@
       "ref": "36e4a824f340fdee7ed50937ba8e7f6bc7d17f81",
       "expect_file": "docs/task-routing-expectations/flask.tsv",
       "summary_json": "<output-dir>/flask/summary.json",
-      "task_count": 4,
-      "expectation_count": 4,
-      "total_task_source_lines": 73348,
-      "total_selected_lines": 2300,
-      "total_estimated_tokens": 23243,
+      "task_count": 5,
+      "expectation_count": 5,
+      "total_task_source_lines": 91685,
+      "total_selected_lines": 2953,
+      "total_estimated_tokens": 29047,
       "max_impacted_files": 32,
       "routes": [
         {
@@ -128,6 +128,18 @@
           "estimated_tokens": 5611,
           "risk_level": "high",
           "impacted_files": 17
+        },
+        {
+          "task": "understand flask testing client coverage",
+          "first_file": "tests/test_testing.py",
+          "first_reading_focus": "Start with seed file test, spec, or regression coverage.",
+          "first_reading_question": "Which behavior, assertions, fixtures, or regression cases are covered here?",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 18337,
+          "line_reduction": "96.4%",
+          "estimated_tokens": 5804,
+          "risk_level": "high",
+          "impacted_files": 31
         }
       ]
     },
@@ -137,11 +149,11 @@
       "ref": "34dac209ffb6ef85cc78c5d217bbb7ad001d68fd",
       "expect_file": "docs/task-routing-expectations/gin.tsv",
       "summary_json": "<output-dir>/gin/summary.json",
-      "task_count": 5,
-      "expectation_count": 5,
-      "total_task_source_lines": 120495,
-      "total_selected_lines": 1528,
-      "total_estimated_tokens": 13684,
+      "task_count": 6,
+      "expectation_count": 6,
+      "total_task_source_lines": 144594,
+      "total_selected_lines": 1817,
+      "total_estimated_tokens": 16417,
       "max_impacted_files": 20,
       "routes": [
         {
@@ -203,6 +215,18 @@
           "estimated_tokens": 2344,
           "risk_level": "high",
           "impacted_files": 18
+        },
+        {
+          "task": "understand binding validation test coverage",
+          "first_file": "binding/default_validator_test.go",
+          "first_reading_focus": "Start with seed file test, spec, or regression coverage.",
+          "first_reading_question": "Which behavior, assertions, fixtures, or regression cases are covered here?",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 24099,
+          "line_reduction": "98.8%",
+          "estimated_tokens": 2733,
+          "risk_level": "high",
+          "impacted_files": 1
         }
       ]
     },
@@ -212,11 +236,11 @@
       "ref": "f361ead047be5cb873174218582f7d8b9fcd9f49",
       "expect_file": "docs/task-routing-expectations/requests.tsv",
       "summary_json": "<output-dir>/requests/summary.json",
-      "task_count": 9,
-      "expectation_count": 9,
-      "total_task_source_lines": 108288,
-      "total_selected_lines": 5658,
-      "total_estimated_tokens": 51594,
+      "task_count": 10,
+      "expectation_count": 10,
+      "total_task_source_lines": 120320,
+      "total_selected_lines": 5866,
+      "total_estimated_tokens": 53464,
       "max_impacted_files": 17,
       "routes": [
         {
@@ -326,18 +350,30 @@
           "estimated_tokens": 5937,
           "risk_level": "high",
           "impacted_files": 14
+        },
+        {
+          "task": "understand requests adapter test coverage",
+          "first_file": "tests/test_adapters.py",
+          "first_reading_focus": "Start with seed file test, spec, or regression coverage.",
+          "first_reading_question": "Which behavior, assertions, fixtures, or regression cases are covered here?",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 12032,
+          "line_reduction": "98.3%",
+          "estimated_tokens": 1870,
+          "risk_level": "high",
+          "impacted_files": 1
         }
       ]
     }
   ],
   "aggregate": {
-    "task_count": 22,
-    "expectation_count": 22,
-    "total_task_source_lines": 388043,
-    "total_selected_lines": 10975,
-    "total_estimated_tokens": 98372,
+    "task_count": 25,
+    "expectation_count": 25,
+    "total_task_source_lines": 442511,
+    "total_selected_lines": 12125,
+    "total_estimated_tokens": 108779,
     "max_impacted_files": 43,
-    "line_reduction": 97.17
+    "line_reduction": 97.25
   },
   "generated_by": "scripts/update-public-task-routing-matrix.sh"
 }

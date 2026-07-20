@@ -2187,7 +2187,9 @@ fn context_reading_focus(file: &ContextFile, task: &str) -> String {
 }
 
 fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
-    if signals.auth_session {
+    if signals.test_coverage {
+        "Start with seed file test, spec, or regression coverage.".to_string()
+    } else if signals.auth_session {
         "Start with seed file authentication and session boundaries.".to_string()
     } else if signals.network_http {
         "Start with seed file network client, proxy, redirect, or transport boundaries.".to_string()
@@ -2227,8 +2229,6 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
         "Start with seed file data persistence and storage boundaries.".to_string()
     } else if signals.error_recovery {
         "Start with seed file error handling, retry, and recovery boundaries.".to_string()
-    } else if signals.test_coverage {
-        "Start with seed file test, spec, or regression coverage.".to_string()
     } else if signals.impact_flow {
         "Start with seed file calls, callees, and impact paths.".to_string()
     } else {
@@ -2237,7 +2237,9 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
 }
 
 fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
-    if signals.auth_session {
+    if signals.test_coverage {
+        "Read symbol definitions that establish test coverage or regression behavior.".to_string()
+    } else if signals.auth_session {
         "Read symbol definitions that establish authentication or session behavior.".to_string()
     } else if signals.network_http {
         "Read symbol definitions that establish network client, proxy, redirect, or transport behavior."
@@ -2284,8 +2286,6 @@ fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
         "Read symbol definitions that establish database or storage behavior.".to_string()
     } else if signals.error_recovery {
         "Read symbol definitions that establish error handling or recovery behavior.".to_string()
-    } else if signals.test_coverage {
-        "Read symbol definitions that establish test coverage or regression behavior.".to_string()
     } else if signals.impact_flow {
         "Read symbol definitions that anchor call and impact paths.".to_string()
     } else {
@@ -2311,7 +2311,9 @@ fn context_type_relation_focus(signals: ContextTaskSignals) -> String {
 }
 
 fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
-    if signals.auth_session {
+    if signals.test_coverage {
+        "Follow call graph evidence from tests, specs, or regression coverage.".to_string()
+    } else if signals.auth_session {
         "Follow call graph evidence for authentication and session flow.".to_string()
     } else if signals.network_http {
         "Follow call graph evidence for network client requests, proxies, redirects, or transport flow."
@@ -2356,8 +2358,6 @@ fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
         "Follow call graph evidence for database, repository, or storage flow.".to_string()
     } else if signals.error_recovery {
         "Follow call graph evidence for error propagation, retries, and recovery.".to_string()
-    } else if signals.test_coverage {
-        "Follow call graph evidence from tests, specs, or regression coverage.".to_string()
     } else if signals.impact_flow {
         "Follow call graph evidence for callers, callees, and impact paths.".to_string()
     } else {
@@ -2366,7 +2366,10 @@ fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
 }
 
 fn context_reference_focus(signals: ContextTaskSignals) -> String {
-    if signals.auth_session {
+    if signals.test_coverage {
+        "Inspect references that exercise behavior in tests, specs, or regression cases."
+            .to_string()
+    } else if signals.auth_session {
         "Inspect references that consume authentication or session state.".to_string()
     } else if signals.network_http {
         "Inspect references that send requests, select proxies, follow redirects, or configure transports."
@@ -2410,9 +2413,6 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
         "Inspect references that read, write, or persist data.".to_string()
     } else if signals.error_recovery {
         "Inspect references that catch, wrap, retry, or recover from failures.".to_string()
-    } else if signals.test_coverage {
-        "Inspect references that exercise behavior in tests, specs, or regression cases."
-            .to_string()
     } else if signals.impact_flow {
         "Inspect references that show production usage and impact paths.".to_string()
     } else {
@@ -2421,7 +2421,9 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
 }
 
 fn context_semantic_focus(signals: ContextTaskSignals) -> String {
-    if signals.auth_session {
+    if signals.test_coverage {
+        "Review semantic matches for test, spec, or regression coverage.".to_string()
+    } else if signals.auth_session {
         "Review semantic matches for authentication, cookie, or session behavior.".to_string()
     } else if signals.network_http {
         "Review semantic matches for network clients, proxies, redirects, adapters, or transports."
@@ -2468,15 +2470,15 @@ fn context_semantic_focus(signals: ContextTaskSignals) -> String {
         "Review semantic matches for database, repository, or storage behavior.".to_string()
     } else if signals.error_recovery {
         "Review semantic matches for error handling, retries, or recovery behavior.".to_string()
-    } else if signals.test_coverage {
-        "Review semantic matches for test, spec, or regression coverage.".to_string()
     } else {
         "Review semantic matches related to the task wording.".to_string()
     }
 }
 
 fn context_dependency_focus(signals: ContextTaskSignals) -> String {
-    if signals.auth_session {
+    if signals.test_coverage {
+        "Check local dependencies that support test setup, fixtures, or assertions.".to_string()
+    } else if signals.auth_session {
         "Check local dependencies that affect authentication or session boundaries.".to_string()
     } else if signals.network_http {
         "Check local dependencies that shape network client, proxy, redirect, or transport behavior."
@@ -2524,8 +2526,6 @@ fn context_dependency_focus(signals: ContextTaskSignals) -> String {
         "Check local dependencies that supply database or storage behavior.".to_string()
     } else if signals.error_recovery {
         "Check local dependencies that shape failure handling or recovery behavior.".to_string()
-    } else if signals.test_coverage {
-        "Check local dependencies that support test setup, fixtures, or assertions.".to_string()
     } else {
         "Check local dependency context that supports selected files.".to_string()
     }
@@ -2567,7 +2567,9 @@ fn context_reading_question(file: &ContextFile, task: &str) -> String {
 
 fn context_seed_file_question(task: &str) -> String {
     let signals = ContextTaskSignals::from_task(task);
-    if signals.auth_session {
+    if signals.test_coverage {
+        "Which behavior, assertions, fixtures, or regression cases are covered here?".to_string()
+    } else if signals.auth_session {
         "Where are authentication decisions, credentials, or session boundaries handled here?"
             .to_string()
     } else if signals.network_http {
@@ -2618,8 +2620,6 @@ fn context_seed_file_question(task: &str) -> String {
             .to_string()
     } else if signals.error_recovery {
         "Where are errors, retries, timeouts, or recovery decisions handled here?".to_string()
-    } else if signals.test_coverage {
-        "Which behavior, assertions, fixtures, or regression cases are covered here?".to_string()
     } else if signals.impact_flow {
         "Which local callers, callees, or impact paths in this seed file explain the requested flow?".to_string()
     } else {
@@ -2629,7 +2629,10 @@ fn context_seed_file_question(task: &str) -> String {
 
 fn context_symbol_definition_question(task: &str) -> String {
     let signals = ContextTaskSignals::from_task(task);
-    if signals.auth_session {
+    if signals.test_coverage {
+        "What test behavior, assertion, fixture, or regression case does this definition establish?"
+            .to_string()
+    } else if signals.auth_session {
         "What authentication decisions, credentials, or session boundaries does this definition establish?".to_string()
     } else if signals.network_http {
         "What network client, proxy, redirect, adapter, or transport behavior does this definition establish?".to_string()
@@ -2673,9 +2676,6 @@ fn context_symbol_definition_question(task: &str) -> String {
     } else if signals.error_recovery {
         "What error handling, retry, timeout, or recovery decision does this definition establish?"
             .to_string()
-    } else if signals.test_coverage {
-        "What test behavior, assertion, fixture, or regression case does this definition establish?"
-            .to_string()
     } else if signals.impact_flow {
         "What callers, callees, or impact paths does this definition anchor?".to_string()
     } else {
@@ -2702,7 +2702,10 @@ fn context_type_relation_question(task: &str) -> String {
 
 fn context_call_graph_question(task: &str) -> String {
     let signals = ContextTaskSignals::from_task(task);
-    if signals.auth_session {
+    if signals.test_coverage {
+        "Which callers or callees exercise behavior through tests, specs, or regression cases?"
+            .to_string()
+    } else if signals.auth_session {
         "Which callers or callees carry authentication decisions, credentials, or session state through this flow?".to_string()
     } else if signals.network_http {
         "Which callers or callees send requests, select proxies, follow redirects, or configure transports?".to_string()
@@ -2751,9 +2754,6 @@ fn context_call_graph_question(task: &str) -> String {
     } else if signals.error_recovery {
         "Which callers or callees propagate errors, trigger retries, or recover from failures?"
             .to_string()
-    } else if signals.test_coverage {
-        "Which callers or callees exercise behavior through tests, specs, or regression cases?"
-            .to_string()
     } else if signals.impact_flow {
         "Which callers, callees, or impact paths explain how control moves through this flow?"
             .to_string()
@@ -2764,7 +2764,10 @@ fn context_call_graph_question(task: &str) -> String {
 
 fn context_dependency_question(task: &str) -> String {
     let signals = ContextTaskSignals::from_task(task);
-    if signals.auth_session {
+    if signals.test_coverage {
+        "What imported local dependency behavior supplies test setup, fixtures, or assertions?"
+            .to_string()
+    } else if signals.auth_session {
         "What imported local dependency behavior affects authentication or session boundaries here?"
             .to_string()
     } else if signals.network_http {
@@ -2814,9 +2817,6 @@ fn context_dependency_question(task: &str) -> String {
     } else if signals.error_recovery {
         "What imported local dependency behavior supplies error handling, retry, or timeout behavior?"
             .to_string()
-    } else if signals.test_coverage {
-        "What imported local dependency behavior supplies test setup, fixtures, or assertions?"
-            .to_string()
     } else {
         "What imported local dependency behavior is required to understand this file?".to_string()
     }
@@ -2824,7 +2824,10 @@ fn context_dependency_question(task: &str) -> String {
 
 fn context_reference_question(task: &str) -> String {
     let signals = ContextTaskSignals::from_task(task);
-    if signals.auth_session {
+    if signals.test_coverage {
+        "Which references exercise behavior through tests, specs, fixtures, or regression cases?"
+            .to_string()
+    } else if signals.auth_session {
         "Which references consume authentication decisions, credentials, or session state?"
             .to_string()
     } else if signals.network_http {
@@ -2868,9 +2871,6 @@ fn context_reference_question(task: &str) -> String {
         "Which references read, write, or persist data through this boundary?".to_string()
     } else if signals.error_recovery {
         "Which references catch, wrap, retry, timeout, or recover from failures?".to_string()
-    } else if signals.test_coverage {
-        "Which references exercise behavior through tests, specs, fixtures, or regression cases?"
-            .to_string()
     } else if signals.impact_flow {
         "Which references show production usage or impact paths for this seed?".to_string()
     } else {
@@ -2880,7 +2880,10 @@ fn context_reference_question(task: &str) -> String {
 
 fn context_semantic_question(task: &str) -> String {
     let signals = ContextTaskSignals::from_task(task);
-    if signals.auth_session {
+    if signals.test_coverage {
+        "Which semantic matches describe tests, specs, fixtures, or regression coverage?"
+            .to_string()
+    } else if signals.auth_session {
         "Which semantic matches describe authentication, credential, cookie, or session behavior?"
             .to_string()
     } else if signals.network_http {
@@ -2934,9 +2937,6 @@ fn context_semantic_question(task: &str) -> String {
         "Which semantic matches describe database, repository, or storage behavior?".to_string()
     } else if signals.error_recovery {
         "Which semantic matches describe error handling, retry, timeout, or recovery behavior?"
-            .to_string()
-    } else if signals.test_coverage {
-        "Which semantic matches describe tests, specs, fixtures, or regression coverage?"
             .to_string()
     } else {
         "Which task terms are reflected in this semantically related code?".to_string()
