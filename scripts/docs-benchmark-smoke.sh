@@ -1194,7 +1194,7 @@ main() {
     '\| Installed-binary adoption path changed \| `CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/installed-quickstart-smoke\.sh` \|' \
     "maintenance installed binary smoke chooser"
   require_pattern docs/maintenance-commands.md \
-    'installed binary, including selection rank and continuation evidence' \
+    'installed binary, including read-less metrics, selection rank, and continuation evidence' \
     "maintenance installed binary selection evidence scope"
   require_pattern docs/maintenance-commands.md \
     '\| One-call `agent_route` JSON contract changed \| `scripts/agent-route-smoke\.sh` \|' \
@@ -1802,6 +1802,9 @@ main() {
   require_pattern scripts/installed-quickstart-smoke.sh \
     'mcp_agent_route_selection_rank' \
     "installed quickstart MCP agent-route selection rank output"
+  require_pattern scripts/installed-quickstart-smoke.sh \
+    'mcp_agent_route_read_less_ratio' \
+    "installed quickstart MCP agent-route read-less output"
   require_pattern scripts/installed-quickstart-smoke.sh \
     'mcp_agent_route_first_omitted_omission_reason' \
     "installed quickstart MCP agent-route omitted reason output"

@@ -115,6 +115,25 @@ def assert_actionable_reading_plan(payload, label):
     return first_step
 
 
+def assert_read_less(payload, label):
+    read_less = payload.get("read_less", {})
+    if not isinstance(read_less.get("baseline_source_lines"), int):
+        raise AssertionError({label: read_less})
+    if not isinstance(read_less.get("selected_source_lines"), int):
+        raise AssertionError({label: read_less})
+    if not isinstance(read_less.get("source_lines_avoided"), int):
+        raise AssertionError({label: read_less})
+    if read_less["baseline_source_lines"] < read_less["selected_source_lines"]:
+        raise AssertionError({label: read_less})
+    if read_less["source_lines_avoided"] < 0:
+        raise AssertionError({label: read_less})
+    if not read_less.get("line_reduction"):
+        raise AssertionError({label: read_less})
+    if not read_less.get("read_less_ratio"):
+        raise AssertionError({label: read_less})
+    return read_less
+
+
 def first_omitted_candidate(payload):
     omitted_candidates = payload.get("omitted_candidates", [])
     if not omitted_candidates:
@@ -188,6 +207,7 @@ if len(context["files"]) < 1 or len(context["reading_plan"]) < 1:
 if context["budget"]["applied_token_budget"] != 1200:
     raise AssertionError(context["budget"])
 context_reading_step = assert_actionable_reading_plan(context, "cli_context_pack")
+context_read_less = assert_read_less(context, "cli_context_pack")
 context_continuation = assert_continuation_summary(context, "cli_context_pack")
 context_omitted = first_omitted_candidate(context)
 
@@ -235,6 +255,10 @@ if not agent_route["context_pack"]["files"] or not agent_route["context_pack"]["
 if agent_route["context_pack"]["budget"]["applied_token_budget"] != 1200:
     raise AssertionError(agent_route["context_pack"]["budget"])
 agent_route_reading_step = assert_actionable_reading_plan(
+    agent_route["context_pack"],
+    "cli_agent_route_context_pack",
+)
+agent_route_read_less = assert_read_less(
     agent_route["context_pack"],
     "cli_agent_route_context_pack",
 )
@@ -336,6 +360,7 @@ try:
         mcp_context,
         "mcp_context_pack",
     )
+    mcp_context_read_less = assert_read_less(mcp_context, "mcp_context_pack")
     mcp_context_continuation = assert_continuation_summary(mcp_context, "mcp_context_pack")
     mcp_context_omitted = first_omitted_candidate(mcp_context)
 
@@ -387,6 +412,10 @@ try:
         mcp_agent_route["context_pack"],
         "mcp_agent_route_context_pack",
     )
+    mcp_agent_route_read_less = assert_read_less(
+        mcp_agent_route["context_pack"],
+        "mcp_agent_route_context_pack",
+    )
     mcp_agent_route_continuation, mcp_agent_route_omitted = assert_agent_route_execution_evidence(
         mcp_agent_route,
         mcp_agent_route_reading_step,
@@ -417,6 +446,8 @@ print(json.dumps({
     "context_reading_reason": context_reading_step["reason"],
     "context_selection_rank": context_reading_step["selection_rank"],
     "context_selection_reason": context_reading_step["selection_reason"],
+    "context_source_lines_avoided": context_read_less["source_lines_avoided"],
+    "context_read_less_ratio": context_read_less["read_less_ratio"],
     "context_continuation_status": context_continuation["status"],
     "context_continuation_next_action": context_continuation["next_action"],
     "context_first_omitted_file": context_omitted.get("file", ""),
@@ -432,6 +463,8 @@ print(json.dumps({
     "agent_route_reading_reason": agent_route_reading_step["reason"],
     "agent_route_selection_rank": agent_route_reading_step["selection_rank"],
     "agent_route_selection_reason": agent_route_reading_step["selection_reason"],
+    "agent_route_source_lines_avoided": agent_route_read_less["source_lines_avoided"],
+    "agent_route_read_less_ratio": agent_route_read_less["read_less_ratio"],
     "agent_route_continuation_status": agent_route_continuation["status"],
     "agent_route_continuation_next_action": agent_route_continuation["next_action"],
     "agent_route_first_omitted_file": agent_route_omitted.get("file", ""),
@@ -447,6 +480,8 @@ print(json.dumps({
     "mcp_context_reading_reason": mcp_context_reading_step["reason"],
     "mcp_context_selection_rank": mcp_context_reading_step["selection_rank"],
     "mcp_context_selection_reason": mcp_context_reading_step["selection_reason"],
+    "mcp_context_source_lines_avoided": mcp_context_read_less["source_lines_avoided"],
+    "mcp_context_read_less_ratio": mcp_context_read_less["read_less_ratio"],
     "mcp_context_continuation_status": mcp_context_continuation["status"],
     "mcp_context_continuation_next_action": mcp_context_continuation["next_action"],
     "mcp_context_first_omitted_file": mcp_context_omitted.get("file", ""),
@@ -456,6 +491,8 @@ print(json.dumps({
     "mcp_agent_route_reading_reason": mcp_agent_route_reading_step["reason"],
     "mcp_agent_route_selection_rank": mcp_agent_route_reading_step["selection_rank"],
     "mcp_agent_route_selection_reason": mcp_agent_route_reading_step["selection_reason"],
+    "mcp_agent_route_source_lines_avoided": mcp_agent_route_read_less["source_lines_avoided"],
+    "mcp_agent_route_read_less_ratio": mcp_agent_route_read_less["read_less_ratio"],
     "mcp_agent_route_continuation_status": mcp_agent_route_continuation["status"],
     "mcp_agent_route_continuation_next_action": mcp_agent_route_continuation["next_action"],
     "mcp_agent_route_first_omitted_file": mcp_agent_route_omitted.get("file", ""),
