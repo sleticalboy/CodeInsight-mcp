@@ -5787,8 +5787,8 @@ fn cli_resolves_rust_crate_and_super_use_imports() {
     let fixture = rust_use_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 9);
-    assert_eq!(index["changed_files"], 9);
+    assert_eq!(index["indexed_files"], 11);
+    assert_eq!(index["changed_files"], 11);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -5836,6 +5836,18 @@ fn cli_resolves_rust_crate_and_super_use_imports() {
                 dependency["target"] == "plain"
                     && dependency["kind"] == "mod"
                     && dependency["resolved_file"] == "src/plain.rs"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "Repository"
+                    && dependency["kind"] == "base_type"
+                    && dependency["local_alias"] == "Store"
+                    && dependency["imported_symbol"] == "implements"
             })
     );
     assert!(
@@ -6142,6 +6154,51 @@ fn cli_respects_null_package_imports_without_tsconfig_fallback() {
         call["callee"] != "conditionalExternalImportRender"
             || call["callee_file"] != "external-import-lib.ts"
     }));
+}
+
+#[test]
+fn cli_context_pack_routes_rust_trait_impl_relations() {
+    let fixture = rust_use_fixture_project();
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 11);
+
+    let context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand repository trait implementation behavior",
+        "--file",
+        "src/repository.rs",
+        "--token-budget",
+        "4000",
+    ]);
+
+    let store_file = context["files"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|file| file["file"] == "src/store.rs")
+        .expect("rust impl should be selected through type relation evidence");
+    assert!(
+        store_file["ranges"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|range| {
+                range["source"] == "type_relation"
+                    && range["reason"]
+                        .as_str()
+                        .is_some_and(|reason| reason.contains("Type relation source of Repository"))
+            })
+    );
+    let store_step = context["reading_plan"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|step| step["file"] == "src/store.rs")
+        .expect("rust impl should have a reading step");
+    assert_eq!(store_step["next_action"], "inspect_type_relation");
 }
 
 #[test]
@@ -11056,6 +11113,8 @@ fn rust_use_fixture_project() -> TempDir {
         r#"
 mod controllers;
 mod plain;
+mod repository;
+mod store;
 mod support;
 
 use crate::support::audit;
@@ -11063,6 +11122,30 @@ use serde::Serialize;
 
 pub fn run() {
     audit::record("root");
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/repository.rs",
+        r#"
+pub trait Repository {
+    fn load(&self, id: &str) -> String;
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/store.rs",
+        r#"
+use crate::repository::Repository;
+
+pub struct Store;
+
+impl Repository for Store {
+    fn load(&self, id: &str) -> String {
+        id.to_string()
+    }
 }
 "#,
     );

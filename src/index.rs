@@ -1638,8 +1638,32 @@ fn rust_dependencies(
         "mod_item" => {
             text_dependencies(node, source, language, source_file, "mod", rust_mod_targets)
         }
+        "impl_item" => rust_impl_type_relation_dependencies(node, source, language, source_file),
         _ => Vec::new(),
     }
+}
+
+fn rust_impl_type_relation_dependencies(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+) -> Vec<Dependency> {
+    let text = node.utf8_text(source).unwrap_or_default();
+    let Some((target, local_alias)) = rust_impl_type_relation(text) else {
+        return Vec::new();
+    };
+
+    vec![Dependency {
+        source_file: source_file.to_string(),
+        resolved_file: None,
+        target,
+        local_alias: Some(local_alias),
+        imported_symbol: Some("implements".to_string()),
+        kind: "base_type".to_string(),
+        language,
+        line: node.start_position().row + 1,
+    }]
 }
 
 fn rust_use_dependencies(
@@ -1666,6 +1690,40 @@ fn rust_use_dependencies(
             }
         })
         .collect()
+}
+
+fn rust_impl_type_relation(text: &str) -> Option<(String, String)> {
+    let header_end = top_level_index(text, '{').unwrap_or(text.len());
+    let mut header = text[..header_end].trim();
+    header = header.strip_prefix("unsafe ").unwrap_or(header).trim();
+    header = header.strip_prefix("impl")?.trim_start();
+    if header.starts_with('<') {
+        let generic_end = matching_delimiter(header, 0, '<', '>')?;
+        header = header[generic_end + 1..].trim_start();
+    }
+
+    let for_index = find_rust_impl_for_keyword(header)?;
+    let trait_target = clean_type_relation_target(&header[..for_index])?;
+    let self_type = clean_type_relation_target(&header[for_index + "for".len()..])?;
+    Some((trait_target, self_type))
+}
+
+fn find_rust_impl_for_keyword(header: &str) -> Option<usize> {
+    let mut angle_depth = 0;
+    for (index, ch) in header.char_indices() {
+        match ch {
+            '<' => angle_depth += 1,
+            '>' if angle_depth > 0 => angle_depth -= 1,
+            'f' if angle_depth == 0
+                && header[index..].starts_with("for")
+                && is_relation_keyword_boundary(header, index, index + "for".len()) =>
+            {
+                return Some(index);
+            }
+            _ => {}
+        }
+    }
+    None
 }
 
 fn javascript_like_dependencies(
@@ -7746,9 +7804,13 @@ public class App {
         let source = r#"
 struct Store {}
 
+trait Repository<T> {}
+
 impl Store {
     fn open() {}
 }
+
+impl<T> Repository<T> for Store {}
 
 fn helper() {}
 "#;
@@ -7758,8 +7820,23 @@ fn helper() {}
             .map(|symbol| symbol.qualified_name.as_str())
             .collect::<Vec<_>>();
         assert!(names.contains(&"Store"));
+        assert!(names.contains(&"Repository"));
         assert!(names.contains(&"open"));
         assert!(names.contains(&"helper"));
+
+        let deps = extract_dependencies(source, Language::Rust, "storage.rs").unwrap();
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "Repository"
+                && dependency.kind == "base_type"
+                && dependency.local_alias.as_deref() == Some("Store")
+                && dependency.imported_symbol.as_deref() == Some("implements")
+        }));
+        assert_eq!(
+            deps.iter()
+                .filter(|dependency| dependency.kind == "base_type")
+                .count(),
+            1
+        );
     }
 
     #[test]

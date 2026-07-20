@@ -1444,6 +1444,51 @@ pub fn context_pack_value(
             );
         }
     }
+    let type_relation_terms = context_type_relation_terms(&seed_symbols, &symbols);
+    for dependency in store.type_relation_importers_for_symbols(
+        &type_relation_terms,
+        CONTEXT_TYPE_RELATION_DEPENDENCY_LIMIT,
+    )? {
+        if !is_type_relation_dependency(&dependency)
+            || selected_file_set.contains(&dependency.source_file)
+        {
+            continue;
+        }
+        for symbol in context_type_relation_source_symbols(&store, &dependency)? {
+            let key = (
+                dependency.target.clone(),
+                dependency.source_file.clone(),
+                symbol.file.clone(),
+                symbol.qualified_name.clone(),
+            );
+            if !seen_type_relations.insert(key) {
+                continue;
+            }
+            push_context_range(
+                &mut ranges_by_file,
+                symbol.file.clone(),
+                symbol.start_line.saturating_sub(2).max(1),
+                capped_symbol_end_line(&symbol) + 2,
+                format!(
+                    "Type relation source of {} via {} {}",
+                    dependency.target,
+                    dependency
+                        .imported_symbol
+                        .as_deref()
+                        .unwrap_or("implements"),
+                    symbol.qualified_name
+                ),
+                "type_relation",
+                context_score_for_file(
+                    &symbol.file,
+                    CONTEXT_SCORE_TYPE_RELATION
+                        + dependency_task_boost(&dependency, &task_keywords)
+                        + symbol_task_boost(&symbol, &task_keywords),
+                    &scoring_policy,
+                ),
+            );
+        }
+    }
     let mut semantic_status = semantic_vector_context_matches(&store, &task, 20);
     let vector_matches = std::mem::take(&mut semantic_status.matches);
     for result in vector_matches {
@@ -3085,6 +3130,24 @@ fn is_type_relation_dependency(dependency: &Dependency) -> bool {
     matches!(dependency.kind.as_str(), "base_type")
 }
 
+fn context_type_relation_terms(seed_symbols: &[String], symbols: &[Symbol]) -> Vec<String> {
+    let mut terms = seed_symbols
+        .iter()
+        .filter(|symbol| !symbol.trim().is_empty())
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    for symbol in symbols {
+        if matches!(
+            symbol.kind,
+            SymbolKind::Class | SymbolKind::Interface | SymbolKind::Struct
+        ) {
+            terms.insert(symbol.name.clone());
+            terms.insert(symbol.qualified_name.clone());
+        }
+    }
+    terms.into_iter().collect()
+}
+
 fn context_type_relation_symbols(store: &Store, dependency: &Dependency) -> Result<Vec<Symbol>> {
     let mut symbols = Vec::new();
     for query in type_relation_target_queries(&dependency.target) {
@@ -3102,6 +3165,33 @@ fn context_type_relation_symbols(store: &Store, dependency: &Dependency) -> Resu
             .cmp(&type_relation_symbol_rank(right, dependency))
             .then_with(|| left.file.cmp(&right.file))
             .then_with(|| left.start_line.cmp(&right.start_line))
+    });
+    symbols.truncate(4);
+    Ok(symbols)
+}
+
+fn context_type_relation_source_symbols(
+    store: &Store,
+    dependency: &Dependency,
+) -> Result<Vec<Symbol>> {
+    let Some(local_alias) = dependency.local_alias.as_deref() else {
+        return Ok(Vec::new());
+    };
+    let mut symbols = store.search_symbols(local_alias, 8)?;
+    symbols.retain(|symbol| {
+        symbol.file == dependency.source_file
+            && matches!(
+                symbol.kind,
+                SymbolKind::Class | SymbolKind::Interface | SymbolKind::Struct
+            )
+            && (symbol.name == local_alias || symbol.qualified_name == local_alias)
+    });
+    symbols.sort_by_key(|symbol| {
+        (
+            symbol.start_line,
+            symbol.end_line,
+            symbol.qualified_name.len(),
+        )
     });
     symbols.truncate(4);
     Ok(symbols)
