@@ -555,6 +555,12 @@ main() {
     'Treat `context_pack\.reading_plan\[\]\.focus` as the compact scan label' \
     "MCP client config reading focus client action"
   require_pattern docs/mcp-client-config.md \
+    'If `context_pack\.continuation_summary\.status` is `blocked_no_seed`, ask the' \
+    "MCP client config blocked no-seed client action"
+  require_pattern docs/mcp-client-config.md \
+    'broad repository reads' \
+    "MCP client config blocked no-seed broad-read guard"
+  require_pattern docs/mcp-client-config.md \
     '`reading_plan\[\]\.question` as the local checklist' \
     "MCP client config agent policy reading question"
   require_pattern docs/mcp-client-config.md \
@@ -581,6 +587,9 @@ main() {
   require_pattern docs/mcp-client-config.md \
     '\| `context_pack\.reading_plan\[\]\.reason` \| Explains what the agent should learn' \
     "MCP client config reading reason signal"
+  require_pattern docs/mcp-client-config.md \
+    '\| `context_pack\.continuation_summary\.status` \| Can be `blocked_no_seed` when no source seed can be inferred\.' \
+    "MCP client config blocked no-seed signal"
   require_pattern docs/mcp-client-config.md \
     '\| `execution_plan\[\]` \| Starts with `read_selected_context`' \
     "MCP client config execution plan signal"

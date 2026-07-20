@@ -2091,6 +2091,12 @@ main() {
     'Treat `context_pack\.reading_plan\[\]\.focus` as the compact scan label' \
     "MCP client config reading focus guidance"
   require_pattern docs/mcp-client-config.md \
+    'If `context_pack\.continuation_summary\.status` is `blocked_no_seed`, ask the' \
+    "MCP client config blocked no-seed minimal client guidance"
+  require_pattern docs/mcp-client-config.md \
+    'broad repository reads' \
+    "MCP client config blocked no-seed broad-read guard"
+  require_pattern docs/mcp-client-config.md \
     'checks that `agent_route\.execution_plan\[\]\.suggested_tool` executes through MCP' \
     "MCP client config suggested tool execution smoke"
   require_pattern docs/mcp-client-config.md \
@@ -2144,6 +2150,9 @@ main() {
   require_pattern docs/mcp-client-config.md \
     '\| `context_pack\.reading_plan\[\]\.focus` \| Gives the compact scan label' \
     "MCP client config reading focus signal"
+  require_pattern docs/mcp-client-config.md \
+    '\| `context_pack\.continuation_summary\.status` \| Can be `blocked_no_seed` when no source seed can be inferred\.' \
+    "MCP client config blocked no-seed signal"
   require_pattern docs/mcp-client-config.md \
     '\| `execution_plan\[\]` \| Starts with `read_selected_context`, then gates deeper tools and continuation\.' \
     "MCP client config execution plan signal"

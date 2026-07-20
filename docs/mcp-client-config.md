@@ -195,14 +195,17 @@ After the MCP server is configured, the first broad repository task should call
 
 The response is the default first-read bundle. A minimal client should:
 
-1. Read `context_pack.files[]` in `context_pack.reading_plan[]` order.
-2. Treat `context_pack.reading_plan[].focus` as the compact scan label and
+1. If `context_pack.continuation_summary.status` is `blocked_no_seed`, ask the
+   user for a seed file or symbol and retry `agent_route`; do not fall back to
+   broad repository reads.
+2. Read `context_pack.files[]` in `context_pack.reading_plan[]` order.
+3. Treat `context_pack.reading_plan[].focus` as the compact scan label and
    `context_pack.reading_plan[].question` as the local checklist for the
    selected file.
-3. Follow `agent_route.execution_plan[]` as the UI or agent checklist.
-4. Offer `execution_plan[].suggested_tool` only after the selected file has
+4. Follow `agent_route.execution_plan[]` as the UI or agent checklist.
+5. Offer `execution_plan[].suggested_tool` only after the selected file has
    been read.
-5. Review the included `impact_analysis` before edits.
+6. Review the included `impact_analysis` before edits.
 
 UI gating rules:
 
@@ -226,6 +229,7 @@ Expected first-call signals:
 | `context_pack.reading_plan[].reason` | Explains what the agent should learn from the selected file. | Show it as the current reading instruction. |
 | `context_pack.reading_plan[].selection_rank` | Preserves the file's rank from the candidate list that produced the selected pack. | Show it in logs or UI when explaining why this file came first. |
 | `context_pack.reading_plan[].selection_reason` | Explains why this file was selected under the token budget. | Use it as compact evidence in logs or UI. |
+| `context_pack.continuation_summary.status` | Can be `blocked_no_seed` when no source seed can be inferred. | Ask for a seed file or symbol and retry instead of broad-reading the repository. |
 | `context_pack.continuation_summary.next_action` | Gives the next post-read action after selected context is consumed. | Use it only after the selected context is read. |
 | `execution_plan[]` | Starts with `read_selected_context`, then gates deeper tools and continuation. | Render it as the ordered checklist for the agent. |
 | `execution_plan[].suggested_tool` | Contains a ready MCP tool call such as `file_outline` when deeper local structure is useful. | Run it only after the related selected context has been read. |
@@ -346,18 +350,21 @@ Example `context_pack` call arguments:
 Recommended first-read flow for agents:
 
 1. Call `agent_route` with `root`, `task`, and `token_budget`.
-2. Follow `agent_route.execution_plan[]`: read selected context first, use the
+2. If `context_pack.continuation_summary.status` is `blocked_no_seed`, ask for
+   a seed file or symbol and retry `agent_route`; do not broad-read the
+   repository.
+3. Follow `agent_route.execution_plan[]`: read selected context first, use the
    current reading step's `suggested_tool` only when needed, inspect
    `continuation_summary` after selected context, then review impact before
    edits.
-3. Read the returned `context_pack.files[]` in `reading_plan[]` order.
-4. Use `agent_route.current_reading_step` for the first checklist row. Treat
+4. Read the returned `context_pack.files[]` in `reading_plan[]` order.
+5. Use `agent_route.current_reading_step` for the first checklist row. Treat
    `reading_plan[].focus` as the compact scan label,
    `reading_plan[].question` as the local checklist,
    `reading_plan[].reason` as the current-step instruction, and
    `reading_plan[].selection_rank` plus `reading_plan[].selection_reason` as
    display or audit evidence.
-5. Use `continuation_summary` only after selected context is consumed.
+6. Use `continuation_summary` only after selected context is consumed.
 
 Call `index_project`, `project_overview`, `context_pack`, and
 `impact_analysis` directly when the client needs custom routing, partial
