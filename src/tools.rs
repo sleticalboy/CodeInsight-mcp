@@ -1400,11 +1400,13 @@ pub fn context_pack_value(
             let mut ranges = merge_ranges(ranges);
             ranges.sort_by(compare_context_ranges_for_budget);
             let max_score = ranges.iter().map(|range| range.score).max().unwrap_or(0);
+            let source_mix_score = context_range_source_mix_score(&ranges);
             ContextFileCandidate {
                 seed_order: seed_file_order.get(&file).copied(),
                 file,
                 ranges,
                 max_score,
+                source_mix_score,
                 total_score,
             }
         })
@@ -2859,6 +2861,21 @@ fn context_source_label(source: &str) -> &'static str {
     }
 }
 
+fn context_range_source_mix_score(ranges: &[ContextCandidateRange]) -> i32 {
+    ranges
+        .iter()
+        .map(|range| match range.source.as_str() {
+            "seed_file" => 12,
+            "symbol_definition" => 10,
+            "call_graph" => 8,
+            "reference" => 6,
+            "dependency" => 5,
+            "semantic" => 3,
+            _ => 1,
+        })
+        .sum()
+}
+
 #[derive(Debug)]
 struct SemanticVectorContextResult {
     status: ContextSemanticStatus,
@@ -3671,6 +3688,7 @@ struct ContextFileCandidate {
     file: String,
     ranges: Vec<ContextCandidateRange>,
     max_score: i32,
+    source_mix_score: i32,
     total_score: i32,
 }
 
@@ -3892,6 +3910,7 @@ fn compare_context_file_candidates(
         (None, None) => right
             .max_score
             .cmp(&left.max_score)
+            .then_with(|| right.source_mix_score.cmp(&left.source_mix_score))
             .then_with(|| right.total_score.cmp(&left.total_score))
             .then_with(|| left.file.cmp(&right.file)),
     }
@@ -3899,6 +3918,7 @@ fn compare_context_file_candidates(
         right
             .max_score
             .cmp(&left.max_score)
+            .then_with(|| right.source_mix_score.cmp(&left.source_mix_score))
             .then_with(|| right.total_score.cmp(&left.total_score))
             .then_with(|| left.file.cmp(&right.file))
     })
@@ -5186,6 +5206,49 @@ mod tests {
         assert!(security_keywords.contains(&"sanitize".to_string()));
         assert!(security_keywords.contains(&"sanitization".to_string()));
         assert!(security_keywords.contains(&"vulnerability".to_string()));
+    }
+
+    #[test]
+    fn prefers_graph_rich_context_candidates_over_semantic_only_candidates() {
+        let call_graph_ranges = vec![ContextCandidateRange {
+            start_line: 1,
+            end_line: 2,
+            reason: "call graph evidence".to_string(),
+            source: "call_graph".to_string(),
+            score: 70,
+        }];
+        let semantic_ranges = vec![ContextCandidateRange {
+            start_line: 1,
+            end_line: 2,
+            reason: "semantic evidence".to_string(),
+            source: "semantic".to_string(),
+            score: 70,
+        }];
+        let call_graph_candidate = ContextFileCandidate {
+            seed_order: None,
+            file: "src/call.ts".to_string(),
+            max_score: 70,
+            source_mix_score: context_range_source_mix_score(&call_graph_ranges),
+            total_score: 70,
+            ranges: call_graph_ranges,
+        };
+        let semantic_candidate = ContextFileCandidate {
+            seed_order: None,
+            file: "src/semantic.ts".to_string(),
+            max_score: 70,
+            source_mix_score: context_range_source_mix_score(&semantic_ranges),
+            total_score: 70,
+            ranges: semantic_ranges,
+        };
+
+        assert_eq!(
+            compare_context_file_candidates(&call_graph_candidate, &semantic_candidate),
+            Ordering::Less
+        );
+        assert_eq!(
+            compare_context_file_candidates(&semantic_candidate, &call_graph_candidate),
+            Ordering::Greater
+        );
     }
 
     #[test]
