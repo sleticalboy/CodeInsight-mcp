@@ -137,11 +137,11 @@
       "ref": "34dac209ffb6ef85cc78c5d217bbb7ad001d68fd",
       "expect_file": "docs/task-routing-expectations/gin.tsv",
       "summary_json": "<output-dir>/gin/summary.json",
-      "task_count": 3,
-      "expectation_count": 3,
-      "total_task_source_lines": 72297,
-      "total_selected_lines": 1030,
-      "total_estimated_tokens": 9458,
+      "task_count": 5,
+      "expectation_count": 5,
+      "total_task_source_lines": 120495,
+      "total_selected_lines": 1528,
+      "total_estimated_tokens": 13684,
       "max_impacted_files": 20,
       "routes": [
         {
@@ -179,6 +179,30 @@
           "estimated_tokens": 3177,
           "risk_level": "high",
           "impacted_files": 20
+        },
+        {
+          "task": "understand binding validation behavior",
+          "first_file": "binding/default_validator.go",
+          "first_reading_focus": "Start with seed file context and primary symbols.",
+          "first_reading_question": "What entrypoints, exported symbols, or setup code define the main flow here?",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 24099,
+          "line_reduction": "99.1%",
+          "estimated_tokens": 1882,
+          "risk_level": "high",
+          "impacted_files": 13
+        },
+        {
+          "task": "understand json binding behavior",
+          "first_file": "binding/json.go",
+          "first_reading_focus": "Start with seed file context and primary symbols.",
+          "first_reading_question": "What entrypoints, exported symbols, or setup code define the main flow here?",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 24099,
+          "line_reduction": "98.9%",
+          "estimated_tokens": 2344,
+          "risk_level": "high",
+          "impacted_files": 18
         }
       ]
     },
@@ -188,11 +212,11 @@
       "ref": "f361ead047be5cb873174218582f7d8b9fcd9f49",
       "expect_file": "docs/task-routing-expectations/requests.tsv",
       "summary_json": "<output-dir>/requests/summary.json",
-      "task_count": 4,
-      "expectation_count": 4,
-      "total_task_source_lines": 48128,
-      "total_selected_lines": 2417,
-      "total_estimated_tokens": 21796,
+      "task_count": 6,
+      "expectation_count": 6,
+      "total_task_source_lines": 72192,
+      "total_selected_lines": 3710,
+      "total_estimated_tokens": 33612,
       "max_impacted_files": 17,
       "routes": [
         {
@@ -242,18 +266,42 @@
           "estimated_tokens": 4735,
           "risk_level": "high",
           "impacted_files": 6
+        },
+        {
+          "task": "understand proxy behavior",
+          "first_file": "src/requests/adapters.py",
+          "first_reading_focus": "Start with seed file context and primary symbols.",
+          "first_reading_question": "What entrypoints, exported symbols, or setup code define the main flow here?",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 12032,
+          "line_reduction": "94.7%",
+          "estimated_tokens": 5889,
+          "risk_level": "high",
+          "impacted_files": 14
+        },
+        {
+          "task": "understand redirect behavior",
+          "first_file": "src/requests/sessions.py",
+          "first_reading_focus": "Start with seed file context and primary symbols.",
+          "first_reading_question": "What entrypoints, exported symbols, or setup code define the main flow here?",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 12032,
+          "line_reduction": "94.6%",
+          "estimated_tokens": 5927,
+          "risk_level": "high",
+          "impacted_files": 15
         }
       ]
     }
   ],
   "aggregate": {
-    "task_count": 15,
-    "expectation_count": 15,
-    "total_task_source_lines": 279685,
-    "total_selected_lines": 7236,
-    "total_estimated_tokens": 64348,
+    "task_count": 19,
+    "expectation_count": 19,
+    "total_task_source_lines": 351947,
+    "total_selected_lines": 9027,
+    "total_estimated_tokens": 80390,
     "max_impacted_files": 43,
-    "line_reduction": 97.41
+    "line_reduction": 97.43
   },
   "generated_by": "scripts/update-public-task-routing-matrix.sh"
 }

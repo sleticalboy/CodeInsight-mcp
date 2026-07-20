@@ -1,3 +1,5 @@
 understand gin engine routing behavior	routergroup.go
 understand middleware authentication behavior	auth.go
 understand startup flow	gin.go
+understand binding validation behavior	binding/default_validator.go
+understand json binding behavior	binding/json.go

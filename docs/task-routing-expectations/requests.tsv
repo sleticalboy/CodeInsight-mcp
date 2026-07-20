@@ -2,3 +2,5 @@ understand requests session request flow	src/requests/sessions.py
 understand authentication behavior	src/requests/auth.py
 understand configuration settings	src/requests/sessions.py
 understand package startup flow	src/requests/__init__.py
+understand proxy behavior	src/requests/adapters.py
+understand redirect behavior	src/requests/sessions.py
