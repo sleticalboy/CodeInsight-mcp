@@ -527,7 +527,7 @@ main() {
     'scripts/task-routing-matrix\.sh /path/to/repo' \
     "task routing matrix doc command"
   require_pattern docs/task-routing-matrix.md \
-    'The default matrix covers routing, authentication, authorization, settings, startup,' \
+    'The default matrix covers routing, authentication, authorization/access-control,' \
     "task routing matrix default task scope"
   require_pattern docs/task-routing-matrix.md \
     '\-\-expect "understand routing behavior=src/router\.ts"' \
@@ -580,6 +580,9 @@ main() {
   require_pattern docs/task-routing-matrix.md \
     $'understand authorization permissions\tsrc/permissions\\.ts' \
     "task routing matrix authorization expectation example"
+  require_pattern docs/task-routing-matrix.md \
+    $'understand access control rules\tsrc/permissions\\.ts' \
+    "task routing matrix access control expectation example"
   require_pattern docs/task-routing-matrix.md \
     $'understand persistence behavior\tsrc/database\\.ts' \
     "task routing matrix persistence expectation example"
@@ -1302,7 +1305,7 @@ main() {
     '\| Task alias or seed ordering changed \| `scripts/task-routing-matrix-smoke\.sh` \|' \
     "maintenance task routing matrix smoke chooser"
   require_pattern docs/maintenance-commands.md \
-    'routing, authentication, authorization, settings, startup, persistence, debug, coverage, API handler, cache, observability, security, billing, frontend, background job, documentation, request lifecycle, and middleware prompts choose the matching first file and that `--expect-file` failures are reported' \
+    'routing, authentication, authorization, access-control, settings, startup, persistence, debug, coverage, API handler, cache, observability, security, billing, frontend, background job, documentation, request lifecycle, and middleware prompts choose the matching first file and that `--expect-file` failures are reported' \
     "maintenance task routing matrix smoke scope"
   require_pattern docs/maintenance-commands.md \
     '\| Installed-binary adoption path changed \| `CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/installed-quickstart-smoke\.sh` \|' \
@@ -1850,6 +1853,9 @@ main() {
   require_pattern scripts/task-routing-matrix.sh \
     'understand authorization permissions' \
     "task routing matrix default authorization task"
+  require_pattern scripts/task-routing-matrix.sh \
+    'understand access control rules' \
+    "task routing matrix default access control task"
   require_pattern scripts/task-routing-matrix.sh \
     'understand persistence behavior' \
     "task routing matrix default persistence task"

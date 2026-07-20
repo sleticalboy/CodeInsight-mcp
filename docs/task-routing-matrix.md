@@ -32,9 +32,9 @@ Run the default matrix:
 scripts/task-routing-matrix.sh /path/to/repo
 ```
 
-The default matrix covers routing, authentication, authorization, settings, startup,
-persistence, debug/retry/timeout, regression coverage, API handler,
-cache/performance, observability/logging, security/sanitization,
+The default matrix covers routing, authentication, authorization/access-control,
+settings, startup, persistence, debug/retry/timeout, regression coverage,
+API handler, cache/performance, observability/logging, security/sanitization,
 billing/payment, frontend component, background job, documentation,
 request lifecycle, and middleware prompts.
 
@@ -81,6 +81,7 @@ For longer matrices, put the expectations in a file. Line-based files can use
 understand routing behavior	src/router.ts
 understand authentication behavior	src/auth.ts
 understand authorization permissions	src/permissions.ts
+understand access control rules	src/permissions.ts
 understand persistence behavior	src/database.ts
 debug retry timeout handling	src/errors.ts
 find regression coverage	src/router.test.ts

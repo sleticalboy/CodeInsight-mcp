@@ -2552,6 +2552,36 @@ export function routerRegressionSpec() {
     assert!(authorization_question.contains("authentication decisions"));
     assert!(authorization_question.contains("session boundaries"));
 
+    let access_control_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand access control rules",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(access_control_context["seed_strategy"], "auto_task_match");
+    assert_eq!(
+        access_control_context["selected_seeds"][0]["value"],
+        "src/permissions.ts"
+    );
+    assert!(
+        access_control_context["selected_seeds"][0]["matched_keywords"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|keyword| keyword == "permission")
+    );
+    assert_eq!(
+        access_control_context["files"][0]["file"],
+        "src/permissions.ts"
+    );
+    let access_control_question = access_control_context["reading_plan"][0]["question"]
+        .as_str()
+        .unwrap();
+    assert!(access_control_question.contains("authentication decisions"));
+    assert!(access_control_question.contains("session boundaries"));
+
     let settings_context = run_json([
         "context-pack",
         fixture.path().to_str().unwrap(),

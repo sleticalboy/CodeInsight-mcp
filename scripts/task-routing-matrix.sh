@@ -489,6 +489,7 @@ main() {
       "understand routing behavior"
       "understand authentication behavior"
       "understand authorization permissions"
+      "understand access control rules"
       "understand application settings"
       "understand startup flow"
       "understand persistence behavior"

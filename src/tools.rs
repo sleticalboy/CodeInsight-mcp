@@ -2865,6 +2865,10 @@ impl ContextTaskSignals {
                     "authenticate",
                     "authorization",
                     "authorize",
+                    "access control",
+                    "access-control",
+                    "acl",
+                    "rbac",
                     "login",
                     "signin",
                     "permission",
@@ -5383,11 +5387,14 @@ fn task_keyword_aliases(keyword: &str) -> &'static [&'static str] {
         "boot" => &["startup", "start"],
         "authentication" => &["auth", "login"],
         "authenticate" => &["auth", "login"],
-        "authz" => &["authorization", "permission"],
+        "access" => &["authorization", "permission", "permissions"],
+        "acl" => &["authorization", "permission", "permissions"],
+        "rbac" => &["authorization", "permission", "permissions"],
+        "authz" => &["authorization", "permission", "permissions"],
         "authorization" => &["authorize", "authz", "permission", "permissions"],
         "authorize" => &["authorization", "authz", "permission"],
-        "permission" => &["permissions", "authorization", "authz"],
-        "permissions" => &["permission", "authorization", "authz"],
+        "permission" => &["permissions", "authorization", "authz", "access"],
+        "permissions" => &["permission", "authorization", "authz", "access"],
         "token" => &["tokens", "credential", "session"],
         "tokens" => &["token", "credential", "session"],
         "oauth" => &["token", "credential"],
@@ -5719,6 +5726,18 @@ mod tests {
         assert!(authorization_keywords.contains(&"permission".to_string()));
         assert!(authorization_keywords.contains(&"permissions".to_string()));
         assert!(!authorization_keywords.contains(&"auth".to_string()));
+
+        let access_control_keywords = task_keywords("understand access control rules");
+        assert!(access_control_keywords.contains(&"access".to_string()));
+        assert!(access_control_keywords.contains(&"authorization".to_string()));
+        assert!(access_control_keywords.contains(&"permission".to_string()));
+        assert!(access_control_keywords.contains(&"permissions".to_string()));
+
+        let rbac_keywords = task_keywords("audit rbac acl policy");
+        assert!(rbac_keywords.contains(&"rbac".to_string()));
+        assert!(rbac_keywords.contains(&"acl".to_string()));
+        assert!(rbac_keywords.contains(&"authorization".to_string()));
+        assert!(rbac_keywords.contains(&"permission".to_string()));
 
         let frontend_keywords = task_keywords("understand frontend component rendering");
         assert!(frontend_keywords.contains(&"frontend".to_string()));
