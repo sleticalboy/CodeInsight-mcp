@@ -32,9 +32,9 @@ first-call contract that a client or issue triage flow needs.
 | Type-relation edges | `7` |
 | Top type-relation target | `EmbeddingProvider` |
 | Type-relation graph filter | `base_type` |
-| Blind first-read baseline | `34151` source lines |
+| Blind first-read baseline | `34148` source lines |
 | CodeInsight routed first-read | `440` source lines |
-| Source lines avoided | `33711` |
+| Source lines avoided | `33708` |
 | First-read reduction | `98.7%` |
 | Read less | `77.6x` |
 | Selected files | `10` |
@@ -115,8 +115,8 @@ The `--print-snippet` output from the refreshed report was:
 
 - Status: `pass`
 - Route: `index_project -> project_overview -> context_pack -> impact_analysis`
-- Selected context: `440/34151` source lines, `98.7%` reduction
-- Source lines avoided: `33711`
+- Selected context: `440/34148` source lines, `98.7%` reduction
+- Source lines avoided: `33708`
 - Read less: `77.6x`
 - Seed strategy: `auto_entrypoint`
 - Selected seeds: `1`
@@ -164,8 +164,8 @@ scripts/adoption-report.sh . \
 Expected summary lines:
 
 ```text
-- Selected context: `440/34151` source lines, `98.7%` reduction
-- Source lines avoided: `33711`
+- Selected context: `440/34148` source lines, `98.7%` reduction
+- Source lines avoided: `33708`
 - Read less: `77.6x`
 - MCP first-call contract: reading_order=`true`, current_reading_step=`true`, read_less_instruction=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`
 - First-read gating: suggested_tool_after_selected_context=`true`, continuation_after_selected_context=`true`, impact_review_before_edits=`true`
