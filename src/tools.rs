@@ -2024,6 +2024,7 @@ fn context_reading_suggested_tool(
             suggested_arguments: json!({
                 "root": root_arg,
                 "files": [file.file.clone()],
+                "kinds": ["base_type"],
                 "limit": 100
             }),
         },

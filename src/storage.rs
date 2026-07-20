@@ -2893,6 +2893,7 @@ fn recommended_next_tools(
             ),
             suggested_arguments: json!({
                 "root": root,
+                "kinds": ["base_type"],
                 "limit": 100
             }),
         });

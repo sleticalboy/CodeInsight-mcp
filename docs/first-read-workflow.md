@@ -121,7 +121,8 @@ surfaces such as Next.js app router files (`app/page.tsx`,
 `suggested_arguments` entries for likely next calls such as `context_pack`,
 `dependency_graph`, `impact_analysis`, and `config_status`. `dependency_graph`
 recommendations include a source-entrypoint `files` filter when one is
-available. Lower `priority` values should be displayed first.
+available, and type-relation recommendations include `kinds: ["base_type"]`.
+Lower `priority` values should be displayed first.
 
 `dependency_summary` also reports type-relation evidence extracted from
 declaration-level relationships. `type_relation_edges` counts detected

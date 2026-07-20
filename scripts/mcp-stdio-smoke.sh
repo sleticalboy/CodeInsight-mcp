@@ -263,6 +263,7 @@ try:
             if tool["tool"] == "dependency_graph"
             and tool["priority"] == 25
             and "type-relation edges" in tool["reason"]
+            and tool["suggested_arguments"]["kinds"] == ["base_type"]
             and same_root(tool["suggested_arguments"]["root"])
         ),
         None,

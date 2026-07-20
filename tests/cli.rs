@@ -4282,6 +4282,10 @@ fn cli_context_pack_routes_java_base_type_relations() {
         .expect("java base type should have a reading step");
     assert_eq!(base_step["next_action"], "inspect_type_relation");
     assert_eq!(base_step["suggested_tool"]["tool"], "dependency_graph");
+    assert_eq!(
+        base_step["suggested_tool"]["suggested_arguments"]["kinds"][0],
+        "base_type"
+    );
 }
 
 #[test]
@@ -4346,6 +4350,10 @@ export class BaseController {
         .expect("typescript base type should have a reading step");
     assert_eq!(base_step["next_action"], "inspect_type_relation");
     assert_eq!(base_step["suggested_tool"]["tool"], "dependency_graph");
+    assert_eq!(
+        base_step["suggested_tool"]["suggested_arguments"]["kinds"][0],
+        "base_type"
+    );
 }
 
 #[test]
@@ -6417,6 +6425,7 @@ fn cli_overview_reports_type_relation_signals() {
             .any(|tool| {
                 tool["tool"] == "dependency_graph"
                     && tool["priority"].as_u64() == Some(25)
+                    && tool["suggested_arguments"]["kinds"][0] == "base_type"
                     && tool["reason"]
                         .as_str()
                         .is_some_and(|reason| reason.contains("type-relation edges"))
