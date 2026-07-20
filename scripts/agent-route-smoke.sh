@@ -175,6 +175,14 @@ write_summary_json() {
         | (.context_pack.reading_plan[0].question // "") as $question
         | ($question != "" and ($instruction | contains($question)))
       ),
+      first_execution_instruction_has_read_less: (
+        (.execution_plan[0].instruction // "") as $instruction
+        | .context_pack.read_less as $read_less
+        | (($instruction | contains("Read-less evidence: selected"))
+          and ($instruction | contains("selected \($read_less.selected_source_lines) of \($read_less.baseline_source_lines) source lines"))
+          and ($instruction | contains("avoided \($read_less.source_lines_avoided)"))
+          and ($instruction | contains($read_less.read_less_ratio)))
+      ),
       second_execution_action: (.execution_plan[1].action // ""),
       first_execution_suggested_tool: (.execution_plan[1].suggested_tool.tool // ""),
       current_step_instruction_has_focus: (
