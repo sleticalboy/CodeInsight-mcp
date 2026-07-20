@@ -1992,11 +1992,15 @@ fn context_reading_reason(
     suggested_tool: &ContextSuggestedTool,
     file: &ContextFile,
 ) -> String {
+    let selection_reason = if file.reason.contains("evidence mix") {
+        file.reason.clone()
+    } else {
+        format!("{}; {}", file.reason, context_range_source_mix(&file.ranges))
+    };
+
     format!(
-        "Read this step to answer: {question} If deeper evidence is needed, call {}. Selection reason: {}; {}",
-        suggested_tool.tool,
-        file.reason,
-        context_range_source_mix(&file.ranges)
+        "Read this step to answer: {question} If deeper evidence is needed, call {}. Selection reason: {}",
+        suggested_tool.tool, selection_reason
     )
 }
 

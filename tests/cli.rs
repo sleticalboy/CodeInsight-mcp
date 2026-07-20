@@ -1116,6 +1116,15 @@ fn cli_indexes_and_queries_fixture_project() {
             .unwrap()
             .contains("Selection reason:")
     );
+    assert_eq!(
+        context["reading_plan"][0]["reason"]
+            .as_str()
+            .unwrap()
+            .matches("evidence mix")
+            .count(),
+        1,
+        "reading-plan reason should not duplicate evidence mix"
+    );
     assert!(
         context["reading_plan"][0]["selection_reason"]
             .as_str()

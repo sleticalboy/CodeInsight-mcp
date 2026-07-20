@@ -38,7 +38,7 @@ token_budget: 6000
    errors: 0
 
 2. project_overview
-   total_lines: 33928
+   total_lines: 33941
    entrypoints: 7
    first_entrypoint: src/main.rs
    recommended_next_tools: 5
@@ -55,10 +55,10 @@ token_budget: 6000
    first_reading_focus: Start with seed file context and primary symbols.
    first_reading_question: What entrypoints, exported symbols, or setup code define the main flow here?
    first_selection_rank: 1
-   blind_first_read_lines: 33928
+   blind_first_read_lines: 33941
    routed_first_read_lines: 438
    selected_lines: 438
-   source_lines_avoided: 33490
+   source_lines_avoided: 33503
    line_reduction: 98.7%
    read_less_ratio: 77.5x
    estimated_tokens: 3786
@@ -72,7 +72,7 @@ token_budget: 6000
    current_reading_step_contract: true
    suggested_tool_handoff_contract: true
    continuation_timing_contract: true
-   reading_plan_reason: Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: src/tools.rs; matched task keywords: agent, context, route, router, routes; evidence mix: seed file x3, call graph x1; evidence mix: seed file x3, call graph x1
+   reading_plan_reason: Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: src/tools.rs; matched task keywords: agent, context, route, router, routes; evidence mix: seed file x3, call graph x1
    selection_reason: Selected for high relevance via seed_file: Seed file header and imports for task: src/tools.rs; matched task keywords: agent, context, route, router, routes; evidence mix: seed file x3, call graph x1
    route_reason: selected 7 files, 12 ranges, and 7 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context
 
@@ -90,10 +90,10 @@ Save the raw agent_route JSON:
   CODEINSIGHT_DEMO_SAVE_JSON=/tmp/codeinsight-agent-route.json scripts/two-minute-demo.sh
 
 [Evidence summary]
-Blind first-read baseline: 33928 source lines.
+Blind first-read baseline: 33941 source lines.
 Routed first-read: 438 source lines across 7 files.
-Read less: avoided 33490 source lines, 77.5x less text before follow-up tools.
-agent_route selected 438/33928 source lines (98.7% reduction) across 7 files.
+Read less: avoided 33503 source lines, 77.5x less text before follow-up tools.
+agent_route selected 438/33941 source lines (98.7% reduction) across 7 files.
 First reading focus: Start with seed file context and primary symbols.
 First reading question: What entrypoints, exported symbols, or setup code define the main flow here?
 The first selected file is src/tools.rs; reading_plan starts at src/tools.rs as candidate rank 1.
@@ -112,13 +112,13 @@ Before edits, impact_analysis reports high risk across 6 impacted files.
 5. The first execution-plan suggested tool is file_outline; offer it only after the selected file has been read.
 6. The first reading-plan focus is: Start with seed file context and primary symbols.
 7. The first reading-plan question is: What entrypoints, exported symbols, or setup code define the main flow here?
-8. The first reading-plan action is inspect_seed_file; Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: src/tools.rs; matched task keywords: agent, context, route, router, routes; evidence mix: seed file x3, call graph x1; evidence mix: seed file x3, call graph x1
+8. The first reading-plan action is inspect_seed_file; Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file header and imports for task: src/tools.rs; matched task keywords: agent, context, route, router, routes; evidence mix: seed file x3, call graph x1
 9. Reading order contract is true; execution_plan[0].files follows reading_plan[] order.
 10. Read-less instruction contract is true; execution_plan[0].instruction carries selected lines, baseline lines, avoided lines, and read-less ratio.
 11. Current reading step contract is true; agent_route.current_reading_step mirrors reading_plan[0].
 12. Suggested-tool handoff contract is true; execution_plan[1] points to the current reading step.
 13. Continuation timing contract is true; continuation is only considered after selected context is read.
-14. The selected context avoided 33490 source lines (98.7%, 77.5x less text); selected 7 files, 12 ranges, and 7 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context
+14. The selected context avoided 33503 source lines (98.7%, 77.5x less text); selected 7 files, 12 ranges, and 7 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context
 15. Selection evidence: candidate rank 1; Selected for high relevance via seed_file: Seed file header and imports for task: src/tools.rs; matched task keywords: agent, context, route, router, routes; evidence mix: seed file x3, call graph x1
 16. Continuation status is complete; next_action=read_selected_context, so no omitted candidate follow-up is needed before selected context is read.
 17. impact_analysis reports high risk across 6 impacted files with 4 suggested checks; after selected context is read, pre-edit impact check estimated 6 impacted files at high risk, including 5 call-related files, 1 dependency-related files, 33 call paths, and 1 dependency paths
