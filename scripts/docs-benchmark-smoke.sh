@@ -128,7 +128,7 @@ main() {
     '93\.3x aggregate read-less ratio' \
     "README adoption cases aggregate read-less ratio"
   require_pattern README.md \
-    'routes the entrypoint task to 440 of 33,928 source lines, avoiding 33,488' \
+    'routes the entrypoint task to 440 of 33,941 source lines, avoiding 33,501' \
     "README self adoption report metric"
   require_pattern README.md \
     '7 type-relation edges surfaced through the `base_type` graph' \
@@ -573,7 +573,7 @@ main() {
     'CodeInsight routed first-read \| `440` source lines' \
     "CodeInsight self adoption report routed lines"
   require_pattern docs/adoption-report-codeinsight.md \
-    'Source lines avoided \| `33488`' \
+    'Source lines avoided \| `33501`' \
     "CodeInsight self adoption report avoided lines"
   require_pattern docs/adoption-report-codeinsight.md \
     'First-read reduction \| `98\.7%`' \
@@ -1353,7 +1353,7 @@ main() {
     '/tmp/codeinsight-self-adoption-report\.tar\.gz' \
     "release commands adoption report archive"
   require_pattern docs/release-commands.md \
-    '440/33928' \
+    '440/33941' \
     "release commands adoption report metric"
   require_pattern docs/release-commands.md \
     'type-relation routing fields' \

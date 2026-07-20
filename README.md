@@ -230,7 +230,7 @@ Current benchmark snapshot:
   to 1,361 of 126,990 source lines, avoiding 125,629 lines before broad file
   reading, a 98.9% aggregate reduction and 93.3x aggregate read-less ratio.
 - The CodeInsight self adoption report packages a full tar.gz handoff and
-  routes the entrypoint task to 440 of 33,928 source lines, avoiding 33,488
+  routes the entrypoint task to 440 of 33,941 source lines, avoiding 33,501
   source lines before broad reading for a 98.7% reduction and 77.1x read-less
   ratio, with 7 type-relation edges surfaced through the `base_type` graph
   filter, while the MCP first-call contract fields all pass, including the
