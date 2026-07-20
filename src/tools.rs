@@ -1995,7 +1995,11 @@ fn context_reading_reason(
     let selection_reason = if file.reason.contains("evidence mix") {
         file.reason.clone()
     } else {
-        format!("{}; {}", file.reason, context_range_source_mix(&file.ranges))
+        format!(
+            "{}; {}",
+            file.reason,
+            context_range_source_mix(&file.ranges)
+        )
     };
 
     format!(
