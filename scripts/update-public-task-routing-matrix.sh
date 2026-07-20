@@ -2,6 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PUBLIC_TASK_ROUTING_MATRIX_SCRIPT="${CODEINSIGHT_PUBLIC_TASK_ROUTING_MATRIX_SCRIPT:-$ROOT_DIR/scripts/public-task-routing-matrix.sh}"
 OUTPUT_FILE="$ROOT_DIR/docs/public-task-routing-matrix.md"
 SUMMARY_OUTPUT_FILE="$ROOT_DIR/docs/public-task-routing-matrix-summary.json"
 CHECK=0
@@ -27,6 +28,9 @@ Common pass-through options:
   --ref NAME=REF
   --bin PATH
   --force-clone
+
+Environment:
+  CODEINSIGHT_PUBLIC_TASK_ROUTING_MATRIX_SCRIPT=scripts/public-task-routing-matrix.sh
 EOF
 }
 
@@ -144,11 +148,17 @@ main() {
   normalized="$TEMP_DIR/normalized-public-task-routing-matrix.md"
   normalized_summary="$TEMP_DIR/normalized-public-task-routing-matrix-summary.json"
 
-  "$ROOT_DIR/scripts/public-task-routing-matrix.sh" \
-    --output-dir "$output_dir" \
-    --output "$generated" \
-    --summary-json "$summary" \
-    "${PUBLIC_ARGS[@]}"
+  local public_command=(
+    "$PUBLIC_TASK_ROUTING_MATRIX_SCRIPT"
+    --output-dir "$output_dir"
+    --output "$generated"
+    --summary-json "$summary"
+  )
+  if [ "${#PUBLIC_ARGS[@]}" -gt 0 ]; then
+    public_command+=("${PUBLIC_ARGS[@]}")
+  fi
+
+  "${public_command[@]}"
 
   normalize_markdown "$generated" "$output_dir" "$normalized"
   normalize_summary_json "$summary" "$normalized_summary"

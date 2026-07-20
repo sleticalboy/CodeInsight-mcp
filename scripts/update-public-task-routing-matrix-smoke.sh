@@ -130,6 +130,90 @@ main() {
     --root "express=$repo" \
     --token-budget 1600 >/dev/null
 
+  local stub_script no_args_snapshot no_args_summary no_args_log
+  stub_script="$TEMP_DIR/public-task-routing-matrix-stub.sh"
+  no_args_snapshot="$TEMP_DIR/no-args-public-task-routing-matrix.md"
+  no_args_summary="$TEMP_DIR/no-args-public-task-routing-matrix-summary.json"
+  no_args_log="$TEMP_DIR/no-args-public-task-routing-matrix.log"
+  cat >"$stub_script" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+output_dir=""
+output=""
+summary_json=""
+log="${CODEINSIGHT_PUBLIC_TASK_ROUTING_MATRIX_STUB_LOG:?}"
+printf '%s\n' "$*" >>"$log"
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --output-dir)
+      output_dir="$2"
+      shift 2
+      ;;
+    --output)
+      output="$2"
+      shift 2
+      ;;
+    --summary-json)
+      summary_json="$2"
+      shift 2
+      ;;
+    *)
+      echo "unexpected pass-through argument: $1" >&2
+      exit 1
+      ;;
+  esac
+done
+
+mkdir -p "$output_dir" "$(dirname "$output")" "$(dirname "$summary_json")"
+cat >"$output" <<MARKDOWN
+# CodeInsight Public Task Routing Matrix
+
+- Summary JSON: $summary_json
+
+## Evidence Summary
+
+- cases: 0
+- tasks: 0
+- expectations: 0/0
+MARKDOWN
+cat >"$summary_json" <<JSON
+{
+  "status": "pass",
+  "output": "$output",
+  "output_dir": "$output_dir",
+  "case_count": 0,
+  "cases": [],
+  "aggregate": {
+    "task_count": 0,
+    "expectation_count": 0,
+    "total_task_source_lines": 0,
+    "total_selected_lines": 0,
+    "line_reduction": 0
+  }
+}
+JSON
+EOF
+  chmod +x "$stub_script"
+
+  CODEINSIGHT_PUBLIC_TASK_ROUTING_MATRIX_STUB_LOG="$no_args_log" \
+    CODEINSIGHT_PUBLIC_TASK_ROUTING_MATRIX_SCRIPT="$stub_script" \
+    "$ROOT_DIR/scripts/update-public-task-routing-matrix.sh" \
+      --output "$no_args_snapshot" \
+      --summary-output "$no_args_summary" >/dev/null
+
+  CODEINSIGHT_PUBLIC_TASK_ROUTING_MATRIX_STUB_LOG="$no_args_log" \
+    CODEINSIGHT_PUBLIC_TASK_ROUTING_MATRIX_SCRIPT="$stub_script" \
+    "$ROOT_DIR/scripts/update-public-task-routing-matrix.sh" \
+      --check \
+      --output "$no_args_snapshot" \
+      --summary-output "$no_args_summary" >/dev/null
+
+  if grep -Fq -- '--case' "$no_args_log"; then
+    fail "no-argument check should not pass public matrix case arguments"
+  fi
+
   echo "update public task routing matrix smoke passed"
 }
 
