@@ -55,11 +55,7 @@ async fn serve_stdio() -> Result<()> {
                 }
             }
             "notifications/initialized" => continue,
-            _ => json_error(
-                id,
-                -32601,
-                format!("method not implemented in MVP scaffold: {method}"),
-            ),
+            _ => json_error(id, -32601, format!("method not found: {method}")),
         };
 
         stdout.write_all(response.to_string().as_bytes()).await?;

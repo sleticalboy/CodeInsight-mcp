@@ -8302,6 +8302,28 @@ fn mcp_stdio_agent_route_returns_blocked_plan_for_empty_repository() {
 }
 
 #[test]
+fn mcp_stdio_rejects_unknown_method_with_stable_error() {
+    let request = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 32,
+        "method": "resources/list"
+    });
+
+    let mut command = Command::cargo_bin("codeinsight").unwrap();
+    command.args(["serve", "--transport", "stdio"]);
+    command.write_stdin(format!("{request}\n"));
+    let output = command.assert().success().get_output().stdout.clone();
+    let response: Value = serde_json::from_slice(&output).unwrap();
+
+    assert_eq!(response["id"], 32);
+    assert_eq!(response["error"]["code"], -32601);
+    assert_eq!(
+        response["error"]["message"],
+        "method not found: resources/list"
+    );
+}
+
+#[test]
 fn mcp_stdio_rejects_invalid_tool_arguments() {
     let request = serde_json::json!({
         "jsonrpc": "2.0",
