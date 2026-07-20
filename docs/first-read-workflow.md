@@ -123,6 +123,13 @@ surfaces such as Next.js app router files (`app/page.tsx`,
 recommendations include a source-entrypoint `files` filter when one is
 available. Lower `priority` values should be displayed first.
 
+`dependency_summary` also reports type-relation evidence extracted from
+declaration-level relationships. `type_relation_edges` counts detected
+`extends`, `implements`, base-class, and Rust trait implementation edges.
+`top_type_relation_targets[]` lists the most referenced relation targets.
+Clients should use these fields as routing hints for `dependency_graph` and
+context selection, not as a complete type hierarchy.
+
 ## Context Pack
 
 `context_pack` combines symbol search, file seeds, reference search, static call

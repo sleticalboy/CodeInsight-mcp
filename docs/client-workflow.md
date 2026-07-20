@@ -163,12 +163,19 @@ describes what the client or agent should do next.
 - `main_directories`
 - `entrypoints`
 - `recommended_next_tools`
+- `dependency_summary.type_relation_edges`
+- `dependency_summary.top_type_relation_targets`
 - `index_status`
 
 Use `recommended_next_tools[]` for the first actionable calls. Sort by
 `priority`, preserving response order for equal priority values. The default
 first-read recommendation is a `context_pack` call with a repository `root`,
 task text, and token budget.
+
+When type-relation signals are present, surface them as navigation hints and
+prefer the suggested `dependency_graph` follow-up for inheritance,
+implementation, or trait-oriented questions. Do not treat them as a complete
+type graph.
 
 ## First Context Pack
 

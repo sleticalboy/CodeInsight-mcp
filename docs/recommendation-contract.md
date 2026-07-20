@@ -103,6 +103,8 @@ after indexing when a client chooses the lower-level path. It currently favors:
 - `context_pack` first, to build the initial reading context.
 - `dependency_graph` when dependency edges exist, scoped to the detected source
   entrypoint file when available.
+- `dependency_graph` when type-relation edges exist, so clients can inspect
+  base-class, interface, and trait implementation context.
 - `impact_analysis` when a source entrypoint is detected.
 - `callers` as a fallback when call edges exist but no source entrypoint is
   detected.
