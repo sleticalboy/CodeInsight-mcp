@@ -233,11 +233,17 @@ Do not treat current MVP output as a formal static-analysis proof.
 
 Near-term improvements:
 
-- Improve external dynamic import handlers and computed `require(...)` handling beyond simple concatenation and template literal interpolation where obvious.
-- Add advanced workspace glob and JavaScript package metadata edge-case handling.
-- Use broader graph hints in `context_pack` ranking.
-- Exclude or down-rank tests and comments in reference search.
-- Add fixture repositories for each supported language.
+- Expand real-repository task-routing fixtures for common AI-agent tasks, with
+  expected first-file checks per framework and language.
+- Improve task-aware ranking for security, configuration, test, and
+  performance prompts without treating lexical matches as semantic proof.
+- Add more blocked/empty-state contracts for MCP clients so agents receive
+  actionable next steps instead of broad-reading when context cannot be
+  inferred.
+- Strengthen optional semantic-index adoption with local provider examples and
+  quality checks, while keeping deterministic routing useful by default.
+- Add fixture repositories for supported languages that still rely mainly on
+  synthetic parser fixtures.
 
 Longer-term improvements:
 
