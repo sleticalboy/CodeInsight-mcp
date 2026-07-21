@@ -1083,8 +1083,11 @@ main() {
     '\-\-expect-file \./route-expectations\.tsv' \
     "README task routing matrix expectation file"
   require_pattern README.md \
-    'selecting 21,559 of 868,396 task source' \
+    'selecting 29,465 of 1,303,219 task' \
     "README public route-quality headline"
+  require_pattern README.md \
+    'first suggested tool such as `file_outline`' \
+    "README public route-quality suggested tool evidence"
   require_pattern README.md \
     '\[JSON summary\]\(docs/public-task-routing-matrix-summary\.json\)' \
     "README public route-quality JSON summary link"
