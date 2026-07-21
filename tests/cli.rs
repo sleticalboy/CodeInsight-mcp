@@ -2473,8 +2473,42 @@ export function impactSuggestedChecksRouter() {
             .iter()
             .any(|keyword| keyword == "impact")
     );
+    assert!(
+        context["selected_seeds"][0]["matched_symbols"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|symbol| symbol == "impactSuggestedChecksRouter")
+    );
     assert_eq!(context["selected_seeds"][1]["value"], "src/main.ts");
     assert_eq!(context["files"][0]["file"], "src/tools.ts");
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "improve impact analysis suggested checks routing quality",
+        "--token-budget",
+        "1600",
+        "--impact-limit",
+        "20",
+        "--impact-depth",
+        "2",
+    ]);
+    assert!(
+        route["impact_seed_symbols"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|symbol| symbol == "impactSuggestedChecksRouter")
+    );
+    assert!(
+        route["impact_analysis"]["seed_symbols"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|symbol| symbol == "impactSuggestedChecksRouter")
+    );
 }
 
 #[test]

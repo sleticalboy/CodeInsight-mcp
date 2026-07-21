@@ -402,6 +402,8 @@ pub struct ContextSeed {
     pub role: Option<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub matched_keywords: Vec<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub matched_symbols: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]

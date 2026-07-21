@@ -85,6 +85,9 @@ workflow is implemented end to end.
 - Auto task-match seeding supplements each file's early outline with small
   task-keyword symbol lookups, so large implementation files can win first-read
   routing even when the matching function appears late in the file.
+- `selected_seeds[]` can expose `matched_symbols` for auto task matches, and
+  `agent_route` forwards those symbols into the pre-edit `impact_analysis`
+  preview when the user did not provide explicit symbols.
 - `agent_route.execution_plan[3]` mirrors `impact_analysis.suggested_checks`,
   includes the first suggested check in its instruction, and exposes a full
   `impact_analysis` suggested tool for pre-edit review workflows.

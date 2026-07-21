@@ -259,6 +259,16 @@ pub fn agent_route_value(
     impact_seed_files.dedup();
 
     let mut impact_seed_symbols = symbols;
+    if impact_seed_symbols.is_empty() {
+        impact_seed_symbols.extend(
+            context_pack
+                .selected_seeds
+                .iter()
+                .filter(|seed| seed.source == "task_match")
+                .flat_map(|seed| seed.matched_symbols.iter().cloned())
+                .take(3),
+        );
+    }
     impact_seed_symbols.sort();
     impact_seed_symbols.dedup();
 
@@ -6337,6 +6347,7 @@ struct AutoSeedCandidate {
     source: String,
     score: i32,
     matched_keywords: Vec<String>,
+    matched_symbols: Vec<String>,
 }
 
 fn auto_context_seed_files(
@@ -6379,6 +6390,7 @@ fn auto_context_seed_files(
                 source: "overview_entrypoint".to_string(),
                 score,
                 matched_keywords,
+                matched_symbols: entrypoint.symbol.iter().cloned().collect(),
             },
         );
     }
@@ -6423,6 +6435,7 @@ fn auto_context_seed_files(
             .collect::<BTreeSet<_>>()
             .into_iter()
             .collect::<Vec<_>>();
+        let matched_symbols = auto_seed_matched_symbols(&symbols, task_keywords);
         upsert_auto_seed_candidate(
             &mut candidates,
             AutoSeedCandidate {
@@ -6431,6 +6444,7 @@ fn auto_context_seed_files(
                 source: "task_match".to_string(),
                 score: 60 + task_score,
                 matched_keywords,
+                matched_symbols,
             },
         );
     }
@@ -6488,6 +6502,7 @@ fn auto_context_seed_files(
                             entrypoint.symbol.as_deref(),
                             task_keywords,
                         ),
+                        matched_symbols: entrypoint.symbol.iter().cloned().collect(),
                     })
             })
             .flatten();
@@ -6498,6 +6513,7 @@ fn auto_context_seed_files(
             source,
             role: Some(candidate.role.clone()),
             matched_keywords: candidate.matched_keywords.clone(),
+            matched_symbols: candidate.matched_symbols.clone(),
         }];
         if let Some(entrypoint) = companion_entrypoint {
             files.push(entrypoint.file.clone());
@@ -6507,6 +6523,7 @@ fn auto_context_seed_files(
                 source: entrypoint.source,
                 role: Some(entrypoint.role),
                 matched_keywords: entrypoint.matched_keywords,
+                matched_symbols: entrypoint.matched_symbols,
             });
         }
         return Ok(AutoContextSeedSelection {
@@ -6529,6 +6546,7 @@ fn auto_context_seed_files(
             source: "indexed_file_fallback".to_string(),
             role: Some(auto_seed_file_role(file).to_string()),
             matched_keywords: Vec::new(),
+            matched_symbols: Vec::new(),
         })
         .collect::<Vec<_>>();
 
@@ -6578,6 +6596,7 @@ fn upsert_auto_seed_candidate(
             source: candidate.source.clone(),
             score: candidate.score,
             matched_keywords: candidate.matched_keywords.clone(),
+            matched_symbols: candidate.matched_symbols.clone(),
         });
     if entry.source == "overview_entrypoint" && candidate.source == "task_match" {
         entry.score = entry.score.max(candidate.score);
@@ -6589,12 +6608,59 @@ fn upsert_auto_seed_candidate(
             .collect::<BTreeSet<_>>()
             .into_iter()
             .collect();
+        entry.matched_symbols = entry
+            .matched_symbols
+            .iter()
+            .cloned()
+            .chain(candidate.matched_symbols)
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect();
         return;
     }
     if candidate.score > entry.score
         || (candidate.score == entry.score && candidate.source == "task_match")
     {
         *entry = candidate;
+    }
+}
+
+fn auto_seed_matched_symbols(symbols: &[Symbol], task_keywords: &[String]) -> Vec<String> {
+    let mut scored_symbols = symbols
+        .iter()
+        .filter_map(|symbol| {
+            let score = auto_seed_task_match_score(
+                &symbol.file,
+                Some(&symbol.qualified_name),
+                task_keywords,
+            );
+            (score > 0).then(|| (score + auto_seed_symbol_kind_priority(&symbol.kind), symbol))
+        })
+        .collect::<Vec<_>>();
+    scored_symbols.sort_by(|left, right| {
+        right
+            .0
+            .cmp(&left.0)
+            .then_with(|| left.1.name.cmp(&right.1.name))
+    });
+    let mut seen = BTreeSet::new();
+    let mut names = Vec::new();
+    for (_score, symbol) in scored_symbols {
+        if seen.insert(symbol.name.clone()) {
+            names.push(symbol.name.clone());
+            if names.len() >= 3 {
+                break;
+            }
+        }
+    }
+    names
+}
+
+fn auto_seed_symbol_kind_priority(kind: &SymbolKind) -> i32 {
+    match kind {
+        SymbolKind::Function | SymbolKind::Method => 80,
+        SymbolKind::Class | SymbolKind::Interface | SymbolKind::Struct => 30,
+        SymbolKind::Variable | SymbolKind::Constant => 0,
     }
 }
 
@@ -8618,6 +8684,7 @@ fn explicit_context_seeds(seed_symbols: &[String], seed_files: &[String]) -> Vec
             source: "explicit".to_string(),
             role: None,
             matched_keywords: Vec::new(),
+            matched_symbols: Vec::new(),
         })
         .collect::<Vec<_>>();
     seeds.extend(seed_files.iter().map(|file| ContextSeed {
@@ -8626,6 +8693,7 @@ fn explicit_context_seeds(seed_symbols: &[String], seed_files: &[String]) -> Vec
         source: "explicit".to_string(),
         role: Some(auto_seed_file_role(file).to_string()),
         matched_keywords: Vec::new(),
+        matched_symbols: Vec::new(),
     }));
     seeds
 }
