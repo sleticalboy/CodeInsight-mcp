@@ -2257,6 +2257,9 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
     } else if signals.http_method_routing {
         "Start with seed file HTTP method routing, verb registration, or dispatch boundaries."
             .to_string()
+    } else if signals.route_dispatch {
+        "Start with seed file route registration, matching, or handler dispatch boundaries."
+            .to_string()
     } else if signals.http_state_headers && !signals.auth_session && !signals.security_safety {
         "Start with seed file cookies, headers, or HTTP state boundaries.".to_string()
     } else if signals.request_body_parsing {
@@ -2844,6 +2847,8 @@ fn context_seed_file_question(task: &str) -> String {
             .to_string()
     } else if signals.http_method_routing {
         "Where are HTTP methods registered, verbs matched, or handlers dispatched here?".to_string()
+    } else if signals.route_dispatch {
+        "Where are routes registered, matched, and dispatched to handlers here?".to_string()
     } else if signals.http_state_headers && !signals.auth_session && !signals.security_safety {
         "Where are cookies, headers, or HTTP state containers handled here?".to_string()
     } else if signals.request_body_parsing {
@@ -3412,6 +3417,7 @@ struct ContextTaskSignals {
     route_grouping: bool,
     route_miss_handling: bool,
     http_method_routing: bool,
+    route_dispatch: bool,
     response_redirect: bool,
     static_file_serving: bool,
     response_rendering: bool,
@@ -3902,6 +3908,39 @@ impl ContextTaskSignals {
                 "transports",
             ],
         ));
+        let generic_route_dispatch =
+            context_text_mentions(
+                task,
+                &[
+                    "application routing",
+                    "app routing",
+                    "engine routing",
+                    "router behavior",
+                    "routing behavior",
+                    "route dispatch",
+                    "request routing",
+                    "route matching",
+                    "route registration",
+                    "routing flow",
+                ],
+            ) || (context_text_mentions(task, &["route", "routes", "router", "routing"])
+                && context_text_mentions(
+                    task,
+                    &[
+                        "app",
+                        "application",
+                        "engine",
+                        "handler",
+                        "handlers",
+                        "dispatch",
+                        "match",
+                        "matching",
+                        "register",
+                        "registration",
+                        "behavior",
+                        "flow",
+                    ],
+                ));
         let response_headers = context_text_mentions(
             task,
             &[
@@ -4269,6 +4308,12 @@ impl ContextTaskSignals {
             route_grouping,
             route_miss_handling,
             http_method_routing,
+            route_dispatch: generic_route_dispatch
+                && !route_parameters
+                && !url_building
+                && !route_grouping
+                && !route_miss_handling
+                && !http_method_routing,
             response_redirect,
             static_file_serving,
             response_rendering,
@@ -9299,6 +9344,35 @@ mod tests {
         assert!(secure_session.auth_session);
         assert!(!secure_session.network_http);
         assert!(context_seed_file_focus(secure_session).contains("authentication"));
+    }
+
+    #[test]
+    fn generic_routing_uses_route_dispatch_signal_without_overriding_specific_route_tasks() {
+        let app_routing =
+            ContextTaskSignals::from_task("understand express application routing behavior");
+        assert!(app_routing.route_dispatch);
+        assert!(!app_routing.http_method_routing);
+        assert!(!app_routing.route_grouping);
+        assert!(!app_routing.route_miss_handling);
+        assert!(context_seed_file_focus(app_routing).contains("route registration"));
+        assert!(
+            context_seed_file_question("understand express application routing behavior")
+                .contains("routes registered")
+        );
+
+        let method_routing =
+            ContextTaskSignals::from_task("understand express HTTP method routing behavior");
+        assert!(method_routing.http_method_routing);
+        assert!(!method_routing.route_dispatch);
+
+        let route_miss =
+            ContextTaskSignals::from_task("understand gin no route no method behavior");
+        assert!(route_miss.route_miss_handling);
+        assert!(!route_miss.route_dispatch);
+
+        let route_group = ContextTaskSignals::from_task("understand gin route group behavior");
+        assert!(route_group.route_grouping);
+        assert!(!route_group.route_dispatch);
     }
 
     #[test]

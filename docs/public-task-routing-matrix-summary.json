@@ -21,8 +21,8 @@
         {
           "task": "understand express application routing behavior",
           "first_file": "lib/express.js",
-          "first_reading_focus": "Start with seed file context and primary symbols.",
-          "first_reading_question": "What entrypoints, exported symbols, or setup code define the main flow here?",
+          "first_reading_focus": "Start with seed file route registration, matching, or handler dispatch boundaries.",
+          "first_reading_question": "Where are routes registered, matched, and dispatched to handlers here?",
           "seed_strategy": "auto_task_match",
           "total_lines": 21478,
           "line_reduction": "98.9%",
@@ -240,8 +240,8 @@
         {
           "task": "understand flask application routing behavior",
           "first_file": "src/flask/sansio/blueprints.py",
-          "first_reading_focus": "Start with seed file context and primary symbols.",
-          "first_reading_question": "What entrypoints, exported symbols, or setup code define the main flow here?",
+          "first_reading_focus": "Start with seed file route registration, matching, or handler dispatch boundaries.",
+          "first_reading_question": "Where are routes registered, matched, and dispatched to handlers here?",
           "seed_strategy": "auto_task_match",
           "total_lines": 18337,
           "line_reduction": "96.7%",
@@ -459,8 +459,8 @@
         {
           "task": "understand gin engine routing behavior",
           "first_file": "routergroup.go",
-          "first_reading_focus": "Start with seed file context and primary symbols.",
-          "first_reading_question": "What entrypoints, exported symbols, or setup code define the main flow here?",
+          "first_reading_focus": "Start with seed file route registration, matching, or handler dispatch boundaries.",
+          "first_reading_question": "Where are routes registered, matched, and dispatched to handlers here?",
           "seed_strategy": "auto_task_match",
           "total_lines": 24099,
           "line_reduction": "98.4%",
