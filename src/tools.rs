@@ -952,6 +952,12 @@ pub fn impact_analysis_value(
     paths.append(&mut dependency_paths);
     paths.truncate(limit);
 
+    let impact_breakdown = impact_breakdown_from_reason_sets(
+        impact.values().map(|(_score, reasons)| reasons),
+        &paths,
+        errors.len(),
+    );
+
     let mut impacted_files = impact
         .into_iter()
         .map(|(file, (score, reasons))| ImpactFile {
@@ -979,7 +985,6 @@ pub fn impact_analysis_value(
         dependencies: dependencies.len(),
         errors: errors.len(),
     };
-    let impact_breakdown = impact_breakdown(&impacted_files, &paths, errors.len());
     let summary = format!(
         "Impact analysis found {} impacted files from {} symbol seeds and {} file seeds, including {} call-related files, {} dependency-related files, {} call paths, and {} dependency paths.",
         impacted_files.len(),
@@ -4997,8 +5002,8 @@ fn impact_top_reasons(impacted_files: &[ImpactFile], limit: usize) -> Vec<String
         .collect()
 }
 
-fn impact_breakdown(
-    impacted_files: &[ImpactFile],
+fn impact_breakdown_from_reason_sets<'a>(
+    reason_sets: impl IntoIterator<Item = &'a BTreeSet<String>>,
     paths: &[ImpactPath],
     errors: usize,
 ) -> ImpactBreakdown {
@@ -5008,25 +5013,23 @@ fn impact_breakdown(
     let mut call_related_files = 0;
     let mut dependency_related_files = 0;
 
-    for file in impacted_files {
-        if file.reasons.iter().any(|reason| reason == "seed_file") {
+    for reasons in reason_sets {
+        if reasons.iter().any(|reason| reason == "seed_file") {
             seed_files += 1;
         }
-        if file
-            .reasons
+        if reasons
             .iter()
             .any(|reason| reason.starts_with("symbol_definition:"))
         {
             symbol_definition_files += 1;
         }
-        if file
-            .reasons
+        if reasons
             .iter()
             .any(|reason| reason.starts_with("reference:"))
         {
             reference_files += 1;
         }
-        if file.reasons.iter().any(|reason| {
+        if reasons.iter().any(|reason| {
             reason.starts_with("caller:")
                 || reason.starts_with("caller_depth_")
                 || reason.starts_with("callee_source:")
@@ -5034,7 +5037,7 @@ fn impact_breakdown(
         }) {
             call_related_files += 1;
         }
-        if file.reasons.iter().any(|reason| {
+        if reasons.iter().any(|reason| {
             reason.starts_with("dependency_source:")
                 || reason.starts_with("dependency_target:")
                 || reason.starts_with("dependency_importer_depth_")
@@ -9185,6 +9188,21 @@ mod tests {
             "src/core"
         ));
         assert!(!configured_file_filter_matches("src/core.ts", ""));
+    }
+
+    #[test]
+    fn impact_breakdown_uses_full_reason_sets_before_display_truncation() {
+        let mut reasons = BTreeSet::new();
+        for index in 0..12 {
+            reasons.insert(format!("callee_source:helper{index}->leaf"));
+        }
+        reasons.insert("seed_file".to_string());
+
+        let breakdown =
+            impact_breakdown_from_reason_sets(std::iter::once(&reasons), &Vec::new(), 0);
+
+        assert_eq!(breakdown.seed_files, 1);
+        assert_eq!(breakdown.call_related_files, 1);
     }
 
     #[test]
