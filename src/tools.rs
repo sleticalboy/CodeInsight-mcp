@@ -6468,14 +6468,25 @@ fn auto_context_seed_files(
         };
         let companion_entrypoint = (source == "task_match")
             .then(|| {
-                candidates
+                overview
+                    .entrypoints
                     .iter()
                     .find(|entrypoint| {
-                        entrypoint.source == "overview_entrypoint"
-                            && entrypoint.role == "source"
+                        entrypoint.role == "source"
                             && entrypoint.file != file
+                            && auto_seed_role_allowed(&entrypoint.role, task_keywords)
                     })
-                    .cloned()
+                    .map(|entrypoint| AutoSeedCandidate {
+                        file: entrypoint.file.clone(),
+                        role: entrypoint.role.clone(),
+                        source: "overview_entrypoint".to_string(),
+                        score: entrypoint.score as i32,
+                        matched_keywords: auto_seed_matched_keywords(
+                            &entrypoint.file,
+                            entrypoint.symbol.as_deref(),
+                            task_keywords,
+                        ),
+                    })
             })
             .flatten();
         let mut files = vec![file.clone()];

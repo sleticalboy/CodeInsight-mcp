@@ -2409,6 +2409,16 @@ main();
     );
     write_file(
         &fixture,
+        "src/index.ts",
+        r#"
+export const firstReadRoutingQuality = {
+  first: "read",
+  routing: "quality"
+};
+"#,
+    );
+    write_file(
+        &fixture,
         "src/config.ts",
         r#"
 export function loadImpactConfig() {
@@ -2440,7 +2450,7 @@ export function impactSuggestedChecksRouter() {
     std::fs::write(fixture.path().join("src/tools.ts"), tools_source).unwrap();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 3);
+    assert_eq!(index["indexed_files"], 4);
 
     let context = run_json([
         "context-pack",
@@ -2463,6 +2473,7 @@ export function impactSuggestedChecksRouter() {
             .iter()
             .any(|keyword| keyword == "impact")
     );
+    assert_eq!(context["selected_seeds"][1]["value"], "src/main.ts");
     assert_eq!(context["files"][0]["file"], "src/tools.ts");
 }
 
