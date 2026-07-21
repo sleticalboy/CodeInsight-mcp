@@ -11,11 +11,11 @@
       "ref": "ae6dd37680e3a00618d6c8a3e522f0ee4eeba1a4",
       "expect_file": "docs/task-routing-expectations/express.tsv",
       "summary_json": "<output-dir>/express/summary.json",
-      "task_count": 12,
-      "expectation_count": 12,
-      "total_task_source_lines": 257736,
-      "total_selected_lines": 4119,
-      "total_estimated_tokens": 28254,
+      "task_count": 13,
+      "expectation_count": 13,
+      "total_task_source_lines": 279214,
+      "total_selected_lines": 4538,
+      "total_estimated_tokens": 31367,
       "max_impacted_files": 43,
       "routes": [
         {
@@ -161,6 +161,18 @@
           "estimated_tokens": 2359,
           "risk_level": "high",
           "impacted_files": 27
+        },
+        {
+          "task": "understand express response cookie behavior",
+          "first_file": "lib/response.js",
+          "first_reading_focus": "Start with seed file response cookies, Set-Cookie headers, or cookie option boundaries.",
+          "first_reading_question": "Where are response cookies created, Set-Cookie headers appended, or cookie options applied here?",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 21478,
+          "line_reduction": "98.0%",
+          "estimated_tokens": 3113,
+          "risk_level": "high",
+          "impacted_files": 29
         }
       ]
     },
@@ -341,11 +353,11 @@
       "ref": "34dac209ffb6ef85cc78c5d217bbb7ad001d68fd",
       "expect_file": "docs/task-routing-expectations/gin.tsv",
       "summary_json": "<output-dir>/gin/summary.json",
-      "task_count": 14,
-      "expectation_count": 14,
-      "total_task_source_lines": 337386,
-      "total_selected_lines": 4513,
-      "total_estimated_tokens": 40643,
+      "task_count": 15,
+      "expectation_count": 15,
+      "total_task_source_lines": 361485,
+      "total_selected_lines": 4714,
+      "total_estimated_tokens": 42350,
       "max_impacted_files": 22,
       "routes": [
         {
@@ -515,6 +527,18 @@
           "estimated_tokens": 2821,
           "risk_level": "high",
           "impacted_files": 13
+        },
+        {
+          "task": "understand gin response cookie behavior",
+          "first_file": "context.go",
+          "first_reading_focus": "Start with seed file response cookies, Set-Cookie headers, or cookie option boundaries.",
+          "first_reading_question": "Where are response cookies created, Set-Cookie headers appended, or cookie options applied here?",
+          "seed_strategy": "auto_entrypoint",
+          "total_lines": 24099,
+          "line_reduction": "99.2%",
+          "estimated_tokens": 1707,
+          "risk_level": "high",
+          "impacted_files": 19
         }
       ]
     },
@@ -679,13 +703,13 @@
     }
   ],
   "aggregate": {
-    "task_count": 51,
-    "expectation_count": 51,
-    "total_task_source_lines": 977887,
-    "total_selected_lines": 23445,
-    "total_estimated_tokens": 210744,
+    "task_count": 53,
+    "expectation_count": 53,
+    "total_task_source_lines": 1023464,
+    "total_selected_lines": 24065,
+    "total_estimated_tokens": 215564,
     "max_impacted_files": 43,
-    "line_reduction": 97.6
+    "line_reduction": 97.64
   },
   "generated_by": "scripts/update-public-task-routing-matrix.sh"
 }

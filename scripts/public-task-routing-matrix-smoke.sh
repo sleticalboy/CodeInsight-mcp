@@ -114,6 +114,11 @@ exports.redirect = function redirectResponse(location, status) {
 exports.setHeader = function setResponseHeader(name, value) {
   // Express response header behavior sets response metadata before the body is sent.
   return { name, value, response: "header" };
+};
+
+exports.cookie = function setResponseCookie(name, value, options) {
+  // Express response cookie behavior appends Set-Cookie headers with cookie options.
+  return { name, value, options, response: "cookie" };
 };'
 }
 
@@ -138,10 +143,10 @@ main() {
     --token-budget 1600 | tee "$output_log"
 
   require_jq "$summary_json" '.status == "pass" and .case_count == 1' "aggregate summary should pass"
-  require_jq "$summary_json" '.aggregate.task_count == 12 and .aggregate.expectation_count == 12' "express expectation count should be aggregated"
+  require_jq "$summary_json" '.aggregate.task_count == 13 and .aggregate.expectation_count == 13' "express expectation count should be aggregated"
   require_jq "$summary_json" '.aggregate.total_task_source_lines > .aggregate.total_selected_lines' "aggregate should include source line baseline"
   require_jq "$summary_json" '.aggregate.line_reduction > 0' "aggregate should include line reduction"
-  require_jq "$summary_json" '.cases[] | select(.case == "express" and .task_count == 12)' "express case should be present"
+  require_jq "$summary_json" '.cases[] | select(.case == "express" and .task_count == 13)' "express case should be present"
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand express application routing behavior" and .first_file == "lib/express.js")' "routing task should choose express entry"
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand middleware behavior" and .first_file == "lib/application.js")' "middleware task should choose application"
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand startup flow" and .first_file == "index.js")' "startup task should choose index"
@@ -153,13 +158,14 @@ main() {
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand express query parameter parsing behavior" and .first_file == "lib/request.js")' "query parameter parsing task should choose request"
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand express response header behavior" and .first_file == "lib/response.js")' "response header task should choose response"
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand express route parameter behavior" and .first_file == "lib/application.js")' "route parameter task should choose application"
+  require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand express response cookie behavior" and .first_file == "lib/response.js")' "response cookie task should choose response"
   grep -Fq "evidence summary" "$output_log" ||
     fail "terminal output should include evidence summary"
-  grep -Fq "expectations: 12/12" "$output_log" ||
+  grep -Fq "expectations: 13/13" "$output_log" ||
     fail "terminal output should include expectation pass count"
   grep -Fq "line_reduction:" "$output_log" ||
     fail "terminal output should include aggregate line reduction"
-  grep -Fq "express: 12 tasks, first files index.js, lib/application.js, lib/express.js, lib/request.js, lib/response.js" "$output_log" ||
+  grep -Fq "express: 13 tasks, first files index.js, lib/application.js, lib/express.js, lib/request.js, lib/response.js" "$output_log" ||
     fail "terminal output should include first file summary"
   grep -Fq "## Evidence Summary" "$output_dir/public-task-routing-matrix.md" ||
     fail "markdown output should include evidence summary"

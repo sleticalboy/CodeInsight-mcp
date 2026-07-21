@@ -2239,6 +2239,9 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
     } else if signals.response_headers {
         "Start with seed file response headers, status metadata, or Content-Type boundaries."
             .to_string()
+    } else if signals.response_cookies {
+        "Start with seed file response cookies, Set-Cookie headers, or cookie option boundaries."
+            .to_string()
     } else if signals.route_parameters {
         "Start with seed file route parameters, path variables, or wildcard extraction boundaries."
             .to_string()
@@ -2311,6 +2314,9 @@ fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
         "Read symbol definitions that establish test coverage or regression behavior.".to_string()
     } else if signals.response_headers {
         "Read symbol definitions that establish response headers, status metadata, or Content-Type behavior."
+            .to_string()
+    } else if signals.response_cookies {
+        "Read symbol definitions that establish response cookie, Set-Cookie, or cookie option behavior."
             .to_string()
     } else if signals.route_parameters {
         "Read symbol definitions that establish route parameter, path variable, or wildcard behavior."
@@ -2407,6 +2413,9 @@ fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
     } else if signals.response_headers {
         "Follow call graph evidence for response headers, status metadata, or Content-Type flow."
             .to_string()
+    } else if signals.response_cookies {
+        "Follow call graph evidence for response cookies, Set-Cookie headers, or cookie options."
+            .to_string()
     } else if signals.route_parameters {
         "Follow call graph evidence for route parameters, path variables, or wildcard extraction."
             .to_string()
@@ -2484,6 +2493,9 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
     } else if signals.response_headers {
         "Inspect references that set response headers, status metadata, or Content-Type values."
             .to_string()
+    } else if signals.response_cookies {
+        "Inspect references that set response cookies, Set-Cookie headers, or cookie options."
+            .to_string()
     } else if signals.route_parameters {
         "Inspect references that capture, attach, or read route parameters and path variables."
             .to_string()
@@ -2554,6 +2566,9 @@ fn context_semantic_focus(signals: ContextTaskSignals) -> String {
         "Review semantic matches for test, spec, or regression coverage.".to_string()
     } else if signals.response_headers {
         "Review semantic matches for response headers, status metadata, or Content-Type behavior."
+            .to_string()
+    } else if signals.response_cookies {
+        "Review semantic matches for response cookies, Set-Cookie headers, or cookie options."
             .to_string()
     } else if signals.route_parameters {
         "Review semantic matches for route parameters, path variables, or wildcard extraction."
@@ -2628,6 +2643,9 @@ fn context_dependency_focus(signals: ContextTaskSignals) -> String {
         "Check local dependencies that support test setup, fixtures, or assertions.".to_string()
     } else if signals.response_headers {
         "Check local dependencies that supply response header, status metadata, or Content-Type behavior."
+            .to_string()
+    } else if signals.response_cookies {
+        "Check local dependencies that supply response cookie, Set-Cookie, or cookie option behavior."
             .to_string()
     } else if signals.route_parameters {
         "Check local dependencies that supply route parameter, path variable, or wildcard behavior."
@@ -2739,6 +2757,9 @@ fn context_seed_file_question(task: &str) -> String {
     } else if signals.response_headers {
         "Where are response headers set, status metadata written, or Content-Type values selected here?"
             .to_string()
+    } else if signals.response_cookies {
+        "Where are response cookies created, Set-Cookie headers appended, or cookie options applied here?"
+            .to_string()
     } else if signals.route_parameters {
         "Where are route parameters captured, attached to requests, or passed into handlers here?"
             .to_string()
@@ -2825,6 +2846,9 @@ fn context_symbol_definition_question(task: &str) -> String {
             .to_string()
     } else if signals.response_headers {
         "What response header, status metadata, or Content-Type behavior does this definition establish?".to_string()
+    } else if signals.response_cookies {
+        "What response cookie, Set-Cookie, or cookie option behavior does this definition establish?"
+            .to_string()
     } else if signals.route_parameters {
         "What route parameter, path variable, or wildcard behavior does this definition establish?"
             .to_string()
@@ -2914,6 +2938,8 @@ fn context_call_graph_question(task: &str) -> String {
             .to_string()
     } else if signals.response_headers {
         "Which callers or callees set response headers, write status metadata, or choose Content-Type values?".to_string()
+    } else if signals.response_cookies {
+        "Which callers or callees create response cookies, append Set-Cookie headers, or apply cookie options?".to_string()
     } else if signals.route_parameters {
         "Which callers or callees capture route parameters, attach path variables, or pass them into handlers?".to_string()
     } else if signals.request_body_parsing {
@@ -2992,6 +3018,8 @@ fn context_dependency_question(task: &str) -> String {
             .to_string()
     } else if signals.response_headers {
         "What imported local dependency behavior supplies response headers, status metadata, or Content-Type values?".to_string()
+    } else if signals.response_cookies {
+        "What imported local dependency behavior supplies response cookies, Set-Cookie headers, or cookie options?".to_string()
     } else if signals.route_parameters {
         "What imported local dependency behavior supplies route parameter capture or path variable dispatch?".to_string()
     } else if signals.request_body_parsing {
@@ -3067,6 +3095,8 @@ fn context_reference_question(task: &str) -> String {
             .to_string()
     } else if signals.response_headers {
         "Which references set response headers, update status metadata, or select Content-Type values?".to_string()
+    } else if signals.response_cookies {
+        "Which references create response cookies, append Set-Cookie headers, or apply cookie options?".to_string()
     } else if signals.route_parameters {
         "Which references capture, attach, or read route parameters and path variables?".to_string()
     } else if signals.request_body_parsing {
@@ -3139,6 +3169,9 @@ fn context_semantic_question(task: &str) -> String {
             .to_string()
     } else if signals.response_headers {
         "Which semantic matches describe response headers, status metadata, or Content-Type behavior?"
+            .to_string()
+    } else if signals.response_cookies {
+        "Which semantic matches describe response cookies, Set-Cookie headers, or cookie options?"
             .to_string()
     } else if signals.route_parameters {
         "Which semantic matches describe route parameters, path variables, or wildcard extraction?"
@@ -3235,6 +3268,7 @@ struct ContextTaskSignals {
     request_body_parsing: bool,
     request_query_params: bool,
     response_headers: bool,
+    response_cookies: bool,
     route_parameters: bool,
     response_redirect: bool,
     static_file_serving: bool,
@@ -3542,6 +3576,52 @@ impl ContextTaskSignals {
                 "bind",
             ],
         ));
+        let response_cookies = context_text_mentions(
+            task,
+            &[
+                "response cookie",
+                "response cookies",
+                "set cookie",
+                "set cookies",
+                "set-cookie",
+                "set-cookie header",
+                "set-cookie headers",
+                "cookie response",
+                "cookie responses",
+            ],
+        ) || (context_text_mentions(task, &["cookie", "cookies"])
+            && context_text_mentions(
+                task,
+                &[
+                    "response",
+                    "responses",
+                    "set",
+                    "sets",
+                    "send",
+                    "sends",
+                    "server",
+                    "handler",
+                    "option",
+                    "options",
+                    "header",
+                    "headers",
+                ],
+            )
+            && !context_text_mentions(
+                task,
+                &[
+                    "cookie jar",
+                    "cookiejar",
+                    "jar",
+                    "client",
+                    "network client",
+                    "request cookie",
+                    "request cookies",
+                    "requests",
+                    "case insensitive",
+                    "case-insensitive",
+                ],
+            ));
         let response_redirect = context_text_mentions(
             task,
             &[
@@ -3751,6 +3831,7 @@ impl ContextTaskSignals {
             request_body_parsing,
             request_query_params,
             response_headers,
+            response_cookies,
             route_parameters,
             response_redirect,
             static_file_serving,
@@ -6005,6 +6086,26 @@ fn auto_seed_task_focus_boost(
         }
     }
 
+    if auto_seed_response_cookies_task(task_keywords) {
+        let file_action_match = auto_seed_response_cookies_file_matches(file);
+        let symbol_action_match = symbol
+            .map(auto_seed_response_cookies_symbol_matches)
+            .unwrap_or(false);
+        let framework_file_match = auto_seed_response_cookies_framework_file_matches(file);
+
+        score += match (file_action_match, symbol_action_match) {
+            (true, true) => 2800,
+            (true, false) => 1500,
+            (false, true) => 1200,
+            _ => 0,
+        };
+        if framework_file_match && symbol_action_match {
+            score += 2600;
+        } else if framework_file_match {
+            score += 1800;
+        }
+    }
+
     if auto_seed_http_state_headers_task(task_keywords) {
         let file_action_match = auto_seed_http_state_headers_file_matches(file, task_keywords);
         let symbol_action_match = symbol
@@ -6397,6 +6498,73 @@ fn auto_seed_response_headers_symbol_matches(symbol: &str) -> bool {
                 | "setheader"
                 | "appendheader"
                 | "setcookie"
+        )
+}
+
+fn auto_seed_response_cookies_task(task_keywords: &[String]) -> bool {
+    let cookie_task = task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "cookie" | "cookies"));
+    let response_task = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "response"
+                | "responses"
+                | "set"
+                | "send"
+                | "server"
+                | "handler"
+                | "header"
+                | "headers"
+                | "option"
+                | "options"
+        )
+    });
+    let client_cookie_jar_task = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "request" | "requests" | "client" | "network"
+        )
+    });
+
+    cookie_task && response_task && !client_cookie_jar_task
+}
+
+fn auto_seed_response_cookies_file_matches(file: &str) -> bool {
+    auto_seed_file_stem_matches(file, "response")
+        || auto_seed_file_stem_matches(file, "responses")
+        || auto_seed_file_stem_matches(file, "context")
+        || auto_seed_file_stem_matches(file, "helper")
+        || auto_seed_file_stem_matches(file, "helpers")
+        || auto_seed_file_stem_matches(file, "session")
+        || auto_seed_file_stem_matches(file, "sessions")
+        || auto_seed_file_stem_matches(file, "cookie")
+        || auto_seed_file_stem_matches(file, "cookies")
+}
+
+fn auto_seed_response_cookies_framework_file_matches(file: &str) -> bool {
+    auto_seed_file_stem_matches(file, "response")
+        || auto_seed_file_stem_matches(file, "responses")
+        || auto_seed_file_stem_matches(file, "context")
+        || auto_seed_file_stem_matches(file, "session")
+        || auto_seed_file_stem_matches(file, "sessions")
+}
+
+fn auto_seed_response_cookies_symbol_matches(symbol: &str) -> bool {
+    let parts = symbol
+        .split(|ch: char| !ch.is_ascii_alphanumeric())
+        .filter(|part| !part.is_empty())
+        .map(str::to_ascii_lowercase)
+        .collect::<Vec<_>>();
+    let normalized = parts.join("");
+    let has_exact = |needle: &str| parts.iter().any(|part| part == needle);
+
+    has_exact("cookie")
+        || has_exact("cookies")
+        || (has_exact("set") && has_exact("cookie"))
+        || matches!(
+            normalized.as_str(),
+            "cookie" | "cookies" | "setcookie" | "setcookiedata" | "deletecookie" | "clearcookie"
         )
 }
 
@@ -7876,6 +8044,17 @@ mod tests {
         assert!(client_headers_keywords.contains(&"requests".to_string()));
         assert!(client_headers_keywords.contains(&"headers".to_string()));
         assert!(!auto_seed_response_headers_task(&client_headers_keywords));
+
+        let response_cookie_keywords = task_keywords("understand response cookie behavior");
+        assert!(response_cookie_keywords.contains(&"response".to_string()));
+        assert!(response_cookie_keywords.contains(&"cookie".to_string()));
+        assert!(auto_seed_response_cookies_task(&response_cookie_keywords));
+
+        let client_cookie_keywords = task_keywords("understand requests cookie jar behavior");
+        assert!(client_cookie_keywords.contains(&"requests".to_string()));
+        assert!(client_cookie_keywords.contains(&"cookie".to_string()));
+        assert!(client_cookie_keywords.contains(&"jar".to_string()));
+        assert!(!auto_seed_response_cookies_task(&client_cookie_keywords));
 
         let validation_keywords = task_keywords("understand json binding validation behavior");
         assert!(validation_keywords.contains(&"json".to_string()));
