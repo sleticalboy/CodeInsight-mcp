@@ -2248,6 +2248,9 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
     } else if signals.url_building {
         "Start with seed file URL building, reverse routing, or route path joining boundaries."
             .to_string()
+    } else if signals.http_method_routing {
+        "Start with seed file HTTP method routing, verb registration, or dispatch boundaries."
+            .to_string()
     } else if signals.http_state_headers && !signals.auth_session && !signals.security_safety {
         "Start with seed file cookies, headers, or HTTP state boundaries.".to_string()
     } else if signals.request_body_parsing {
@@ -2326,6 +2329,9 @@ fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
             .to_string()
     } else if signals.url_building {
         "Read symbol definitions that establish URL building, reverse routing, or route path joining behavior."
+            .to_string()
+    } else if signals.http_method_routing {
+        "Read symbol definitions that establish HTTP method routing, verb registration, or dispatch behavior."
             .to_string()
     } else if signals.request_body_parsing {
         "Read symbol definitions that establish request body parsing or payload binding behavior."
@@ -2428,6 +2434,9 @@ fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
     } else if signals.url_building {
         "Follow call graph evidence for URL building, reverse routing, or route path joining."
             .to_string()
+    } else if signals.http_method_routing {
+        "Follow call graph evidence for HTTP method routing, verb registration, or dispatch."
+            .to_string()
     } else if signals.request_body_parsing {
         "Follow call graph evidence for request body parsing, payload binding, or form-data flow."
             .to_string()
@@ -2510,6 +2519,9 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
             .to_string()
     } else if signals.url_building {
         "Inspect references that build URLs, reverse routes, or join route paths.".to_string()
+    } else if signals.http_method_routing {
+        "Inspect references that register HTTP verbs, match methods, or dispatch handlers."
+            .to_string()
     } else if signals.request_body_parsing {
         "Inspect references that parse request bodies, bind payloads, or read form data."
             .to_string()
@@ -2586,6 +2598,9 @@ fn context_semantic_focus(signals: ContextTaskSignals) -> String {
             .to_string()
     } else if signals.url_building {
         "Review semantic matches for URL building, reverse routing, or route path joining."
+            .to_string()
+    } else if signals.http_method_routing {
+        "Review semantic matches for HTTP method routing, verb registration, or dispatch."
             .to_string()
     } else if signals.request_body_parsing {
         "Review semantic matches for request body parsing, payload binding, or form-data behavior."
@@ -2666,6 +2681,9 @@ fn context_dependency_focus(signals: ContextTaskSignals) -> String {
             .to_string()
     } else if signals.url_building {
         "Check local dependencies that supply URL building, reverse routing, or route path joining behavior."
+            .to_string()
+    } else if signals.http_method_routing {
+        "Check local dependencies that supply HTTP method routing, verb registration, or dispatch behavior."
             .to_string()
     } else if signals.request_body_parsing {
         "Check local dependencies that supply request body parsing, payload binding, or form-data behavior.".to_string()
@@ -2782,6 +2800,8 @@ fn context_seed_file_question(task: &str) -> String {
             .to_string()
     } else if signals.url_building {
         "Where are URLs built, routes reversed, or route paths joined here?".to_string()
+    } else if signals.http_method_routing {
+        "Where are HTTP methods registered, verbs matched, or handlers dispatched here?".to_string()
     } else if signals.http_state_headers && !signals.auth_session && !signals.security_safety {
         "Where are cookies, headers, or HTTP state containers handled here?".to_string()
     } else if signals.request_body_parsing {
@@ -2873,6 +2893,9 @@ fn context_symbol_definition_question(task: &str) -> String {
             .to_string()
     } else if signals.url_building {
         "What URL building, reverse routing, or route path joining behavior does this definition establish?"
+            .to_string()
+    } else if signals.http_method_routing {
+        "What HTTP method routing, verb registration, or dispatch behavior does this definition establish?"
             .to_string()
     } else if signals.request_body_parsing {
         "What request body parsing, payload binding, content-type, or form-data behavior does this definition establish?".to_string()
@@ -2966,6 +2989,9 @@ fn context_call_graph_question(task: &str) -> String {
         "Which callers or callees capture route parameters, attach path variables, or pass them into handlers?".to_string()
     } else if signals.url_building {
         "Which callers or callees build URLs, reverse routes, or join route paths?".to_string()
+    } else if signals.http_method_routing {
+        "Which callers or callees register HTTP methods, match verbs, or dispatch handlers?"
+            .to_string()
     } else if signals.request_body_parsing {
         "Which callers or callees parse request bodies, select content-type binders, or read form data?".to_string()
     } else if signals.request_query_params {
@@ -3049,6 +3075,9 @@ fn context_dependency_question(task: &str) -> String {
     } else if signals.url_building {
         "What imported local dependency behavior supplies URL building or route path joining?"
             .to_string()
+    } else if signals.http_method_routing {
+        "What imported local dependency behavior supplies HTTP method routing or verb dispatch?"
+            .to_string()
     } else if signals.request_body_parsing {
         "What imported local dependency behavior supplies body parsers, payload binders, or form-data handling?".to_string()
     } else if signals.request_query_params {
@@ -3128,6 +3157,8 @@ fn context_reference_question(task: &str) -> String {
         "Which references capture, attach, or read route parameters and path variables?".to_string()
     } else if signals.url_building {
         "Which references build URLs, reverse routes, or join route paths?".to_string()
+    } else if signals.http_method_routing {
+        "Which references register HTTP methods, match verbs, or dispatch handlers?".to_string()
     } else if signals.request_body_parsing {
         "Which references parse request bodies, bind payloads, choose content types, or read form data?".to_string()
     } else if signals.request_query_params {
@@ -3207,6 +3238,9 @@ fn context_semantic_question(task: &str) -> String {
             .to_string()
     } else if signals.url_building {
         "Which semantic matches describe URL building, reverse routing, or route path joining?"
+            .to_string()
+    } else if signals.http_method_routing {
+        "Which semantic matches describe HTTP method routing, verb registration, or dispatch?"
             .to_string()
     } else if signals.request_body_parsing {
         "Which semantic matches describe request body parsing, payload binding, or form data?"
@@ -3303,6 +3337,7 @@ struct ContextTaskSignals {
     response_cookies: bool,
     route_parameters: bool,
     url_building: bool,
+    http_method_routing: bool,
     response_redirect: bool,
     static_file_serving: bool,
     response_rendering: bool,
@@ -3629,6 +3664,66 @@ impl ContextTaskSignals {
                     "graphql",
                 ],
             ));
+        let http_method_routing = context_text_mentions(
+            task,
+            &[
+                "http method",
+                "http methods",
+                "request method",
+                "request methods",
+                "method routing",
+                "method dispatch",
+                "method registration",
+                "verb routing",
+                "verb dispatch",
+                "verb registration",
+                "get post",
+                "get/post",
+                "post put",
+                "options head",
+            ],
+        ) || (context_text_mentions(
+            task,
+            &["method", "methods", "verb", "verbs"],
+        ) && context_text_mentions(
+            task,
+            &[
+                "http",
+                "https",
+                "request",
+                "route",
+                "routes",
+                "router",
+                "routing",
+                "dispatch",
+                "register",
+                "registration",
+                "handler",
+                "handlers",
+                "get",
+                "post",
+                "put",
+                "delete",
+                "patch",
+                "options",
+                "head",
+            ],
+        ) && !context_text_mentions(
+            task,
+            &[
+                "class method",
+                "object method",
+                "method call",
+                "method calls",
+                "network client",
+                "proxy",
+                "proxies",
+                "adapter",
+                "adapters",
+                "transport",
+                "transports",
+            ],
+        ));
         let response_headers = context_text_mentions(
             task,
             &[
@@ -3944,6 +4039,7 @@ impl ContextTaskSignals {
             response_cookies,
             route_parameters,
             url_building,
+            http_method_routing,
             response_redirect,
             static_file_serving,
             response_rendering,
@@ -6311,6 +6407,26 @@ fn auto_seed_task_focus_boost(
         }
     }
 
+    if auto_seed_http_method_routing_task(task_keywords) {
+        let file_action_match = auto_seed_http_method_routing_file_matches(file);
+        let symbol_action_match = symbol
+            .map(auto_seed_http_method_routing_symbol_matches)
+            .unwrap_or(false);
+        let framework_file_match = auto_seed_http_method_routing_framework_file_matches(file);
+
+        score += match (file_action_match, symbol_action_match) {
+            (true, true) => 3000,
+            (true, false) => 1600,
+            (false, true) => 1300,
+            _ => 0,
+        };
+        if framework_file_match && symbol_action_match {
+            score += 3200;
+        } else if framework_file_match {
+            score += 2200;
+        }
+    }
+
     if auto_seed_response_redirect_task(task_keywords) {
         let file_action_match = auto_seed_response_redirect_file_matches(file);
         let symbol_action_match = symbol
@@ -7069,6 +7185,119 @@ fn auto_seed_url_building_symbol_matches(symbol: &str) -> bool {
                 | "joinpaths"
                 | "calculateabsolutepath"
                 | "basepath"
+        )
+}
+
+fn auto_seed_http_method_routing_task(task_keywords: &[String]) -> bool {
+    let method_task = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "method"
+                | "methods"
+                | "verb"
+                | "verbs"
+                | "get"
+                | "post"
+                | "put"
+                | "delete"
+                | "patch"
+                | "options"
+                | "head"
+        )
+    });
+    let routing_task = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "http"
+                | "https"
+                | "request"
+                | "requests"
+                | "route"
+                | "routes"
+                | "router"
+                | "routing"
+                | "dispatch"
+                | "register"
+                | "registration"
+                | "handler"
+                | "handlers"
+        )
+    });
+    let client_transport_task = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "proxy" | "proxies" | "adapter" | "adapters" | "transport" | "transports"
+        )
+    });
+
+    method_task && routing_task && !client_transport_task
+}
+
+fn auto_seed_http_method_routing_file_matches(file: &str) -> bool {
+    auto_seed_file_stem_matches(file, "application")
+        || auto_seed_file_stem_matches(file, "app")
+        || auto_seed_file_stem_matches(file, "router")
+        || auto_seed_file_stem_matches(file, "routergroup")
+        || auto_seed_file_stem_matches(file, "route")
+        || auto_seed_file_stem_matches(file, "routes")
+        || auto_seed_file_stem_matches(file, "view")
+        || auto_seed_file_stem_matches(file, "views")
+        || auto_seed_file_stem_matches(file, "method")
+        || auto_seed_file_stem_matches(file, "methods")
+        || auto_seed_file_stem_matches(file, "utils")
+}
+
+fn auto_seed_http_method_routing_framework_file_matches(file: &str) -> bool {
+    auto_seed_file_stem_matches(file, "application")
+        || auto_seed_file_stem_matches(file, "app")
+        || auto_seed_file_stem_matches(file, "routergroup")
+        || auto_seed_file_stem_matches(file, "router")
+        || auto_seed_file_stem_matches(file, "views")
+        || auto_seed_file_stem_matches(file, "view")
+}
+
+fn auto_seed_http_method_routing_symbol_matches(symbol: &str) -> bool {
+    let parts = symbol
+        .split(|ch: char| !ch.is_ascii_alphanumeric())
+        .filter(|part| !part.is_empty())
+        .map(str::to_ascii_lowercase)
+        .collect::<Vec<_>>();
+    let normalized = parts.join("");
+    let has_exact = |needle: &str| parts.iter().any(|part| part == needle);
+
+    has_exact("method")
+        || has_exact("methods")
+        || has_exact("httpmethod")
+        || has_exact("dispatch")
+        || has_exact("dispatchrequest")
+        || has_exact("handle")
+        || has_exact("match")
+        || has_exact("any")
+        || has_exact("get")
+        || has_exact("post")
+        || has_exact("put")
+        || has_exact("delete")
+        || has_exact("patch")
+        || has_exact("options")
+        || has_exact("head")
+        || matches!(
+            normalized.as_str(),
+            "httpmethod"
+                | "httpmethods"
+                | "methods"
+                | "dispatchrequest"
+                | "methodview"
+                | "asview"
+                | "handle"
+                | "match"
+                | "any"
+                | "get"
+                | "post"
+                | "put"
+                | "delete"
+                | "patch"
+                | "options"
+                | "head"
         )
 }
 
@@ -8405,6 +8634,18 @@ mod tests {
         assert!(url_parameter_keywords.contains(&"url".to_string()));
         assert!(url_parameter_keywords.contains(&"parameter".to_string()));
         assert!(!auto_seed_url_building_task(&url_parameter_keywords));
+
+        let http_method_keywords = task_keywords("understand HTTP method routing behavior");
+        assert!(http_method_keywords.contains(&"http".to_string()));
+        assert!(http_method_keywords.contains(&"method".to_string()));
+        assert!(auto_seed_http_method_routing_task(&http_method_keywords));
+
+        let adapter_method_keywords = task_keywords("understand adapter method behavior");
+        assert!(adapter_method_keywords.contains(&"adapter".to_string()));
+        assert!(adapter_method_keywords.contains(&"method".to_string()));
+        assert!(!auto_seed_http_method_routing_task(
+            &adapter_method_keywords
+        ));
 
         let billing_keywords = task_keywords("understand checkout subscription payment");
         assert!(billing_keywords.contains(&"checkout".to_string()));

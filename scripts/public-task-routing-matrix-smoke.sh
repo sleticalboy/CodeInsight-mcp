@@ -100,6 +100,11 @@ exports.middleware = function middleware(request, next) {
 exports.param = function routeParameter(name, fn) {
   // Express route parameter behavior registers route params before handlers.
   return { name, fn, route: "parameter" };
+};
+
+exports.method = function httpMethodRouting(method, path, handler) {
+  // Express HTTP method routing behavior registers verbs and dispatches handlers.
+  return { method, path, handler, route: "method" };
 };'
   write_file "$repo/lib/response.js" 'exports.render = function renderResponse(view, options) {
   // Express response rendering behavior sends rendered templates as HTTP output.
@@ -143,10 +148,10 @@ main() {
     --token-budget 1600 | tee "$output_log"
 
   require_jq "$summary_json" '.status == "pass" and .case_count == 1' "aggregate summary should pass"
-  require_jq "$summary_json" '.aggregate.task_count == 13 and .aggregate.expectation_count == 13' "express expectation count should be aggregated"
+  require_jq "$summary_json" '.aggregate.task_count == 14 and .aggregate.expectation_count == 14' "express expectation count should be aggregated"
   require_jq "$summary_json" '.aggregate.total_task_source_lines > .aggregate.total_selected_lines' "aggregate should include source line baseline"
   require_jq "$summary_json" '.aggregate.line_reduction > 0' "aggregate should include line reduction"
-  require_jq "$summary_json" '.cases[] | select(.case == "express" and .task_count == 13)' "express case should be present"
+  require_jq "$summary_json" '.cases[] | select(.case == "express" and .task_count == 14)' "express case should be present"
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand express application routing behavior" and .first_file == "lib/express.js")' "routing task should choose express entry"
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand middleware behavior" and .first_file == "lib/application.js")' "middleware task should choose application"
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand startup flow" and .first_file == "index.js")' "startup task should choose index"
@@ -159,13 +164,14 @@ main() {
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand express response header behavior" and .first_file == "lib/response.js")' "response header task should choose response"
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand express route parameter behavior" and .first_file == "lib/application.js")' "route parameter task should choose application"
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand express response cookie behavior" and .first_file == "lib/response.js")' "response cookie task should choose response"
+  require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand express HTTP method routing behavior" and .first_file == "lib/application.js")' "HTTP method routing task should choose application"
   grep -Fq "evidence summary" "$output_log" ||
     fail "terminal output should include evidence summary"
-  grep -Fq "expectations: 13/13" "$output_log" ||
+  grep -Fq "expectations: 14/14" "$output_log" ||
     fail "terminal output should include expectation pass count"
   grep -Fq "line_reduction:" "$output_log" ||
     fail "terminal output should include aggregate line reduction"
-  grep -Fq "express: 13 tasks, first files index.js, lib/application.js, lib/express.js, lib/request.js, lib/response.js" "$output_log" ||
+  grep -Fq "express: 14 tasks, first files index.js, lib/application.js, lib/express.js, lib/request.js, lib/response.js" "$output_log" ||
     fail "terminal output should include first file summary"
   grep -Fq "## Evidence Summary" "$output_dir/public-task-routing-matrix.md" ||
     fail "markdown output should include evidence summary"
