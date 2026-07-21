@@ -2419,6 +2419,15 @@ fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
     } else if signals.request_lifecycle {
         "Read symbol definitions that establish request lifecycle or response finalization behavior."
             .to_string()
+    } else if signals.runtime_lifecycle {
+        "Read symbol definitions that establish runtime execution, script runner, or rerun lifecycle behavior."
+            .to_string()
+    } else if signals.file_upload {
+        "Read symbol definitions that establish uploaded file storage, retrieval, or cleanup behavior."
+            .to_string()
+    } else if signals.websocket_connection {
+        "Read symbol definitions that establish WebSocket connection, session, or message lifecycle behavior."
+            .to_string()
     } else if signals.performance_cache {
         "Read symbol definitions that establish cache, performance, or optimization behavior."
             .to_string()
@@ -2459,6 +2468,15 @@ fn context_type_relation_focus(signals: ContextTaskSignals) -> String {
             .to_string()
     } else if signals.security_safety {
         "Check inherited contracts or base behavior that can affect security boundaries."
+            .to_string()
+    } else if signals.runtime_lifecycle {
+        "Check inherited contracts or base behavior that can affect runtime lifecycle boundaries."
+            .to_string()
+    } else if signals.file_upload {
+        "Check inherited contracts or base behavior that can affect uploaded file boundaries."
+            .to_string()
+    } else if signals.websocket_connection {
+        "Check inherited contracts or base behavior that can affect WebSocket session boundaries."
             .to_string()
     } else if signals.impact_flow {
         "Check base types or interfaces that can widen the impact path.".to_string()
@@ -2528,6 +2546,15 @@ fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
         "Follow call graph evidence for middleware and handler boundaries.".to_string()
     } else if signals.request_lifecycle {
         "Follow call graph evidence for request dispatch, hooks, and response finalization."
+            .to_string()
+    } else if signals.runtime_lifecycle {
+        "Follow call graph evidence for runtime execution, script runner, rerun, or shutdown flow."
+            .to_string()
+    } else if signals.file_upload {
+        "Follow call graph evidence for uploaded file storage, retrieval, cleanup, or exposure."
+            .to_string()
+    } else if signals.websocket_connection {
+        "Follow call graph evidence for WebSocket opening, session handoff, message flow, or closure."
             .to_string()
     } else if signals.performance_cache {
         "Follow call graph evidence for cache lookups, latency, or optimization flow.".to_string()
@@ -2615,6 +2642,13 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
         "Inspect references that attach or call middleware boundaries.".to_string()
     } else if signals.request_lifecycle {
         "Inspect references that enter, hook into, or finalize request lifecycle flow.".to_string()
+    } else if signals.runtime_lifecycle {
+        "Inspect references that execute scripts, coordinate reruns, or transition runtime lifecycle state."
+            .to_string()
+    } else if signals.file_upload {
+        "Inspect references that store, retrieve, clean up, or expose uploaded files.".to_string()
+    } else if signals.websocket_connection {
+        "Inspect references that open, track, hand off, or close WebSocket connections.".to_string()
     } else if signals.performance_cache {
         "Inspect references that read, write, invalidate, or optimize cached work.".to_string()
     } else if signals.observability_logging {
@@ -2704,6 +2738,15 @@ fn context_semantic_focus(signals: ContextTaskSignals) -> String {
     } else if signals.request_lifecycle {
         "Review semantic matches for request lifecycle, dispatch, hooks, or response finalization."
             .to_string()
+    } else if signals.runtime_lifecycle {
+        "Review semantic matches for runtime execution, script runner lifecycle, reruns, or shutdown."
+            .to_string()
+    } else if signals.file_upload {
+        "Review semantic matches for uploaded file storage, retrieval, cleanup, or exposure."
+            .to_string()
+    } else if signals.websocket_connection {
+        "Review semantic matches for WebSocket connections, sessions, messages, or close handling."
+            .to_string()
     } else if signals.performance_cache {
         "Review semantic matches for cache behavior, performance, latency, or optimization."
             .to_string()
@@ -2792,6 +2835,15 @@ fn context_dependency_focus(signals: ContextTaskSignals) -> String {
         "Check local dependencies that shape middleware or handler dispatch.".to_string()
     } else if signals.request_lifecycle {
         "Check local dependencies that shape request dispatch, hooks, or response finalization."
+            .to_string()
+    } else if signals.runtime_lifecycle {
+        "Check local dependencies that shape runtime execution, script runner, or rerun lifecycle behavior."
+            .to_string()
+    } else if signals.file_upload {
+        "Check local dependencies that shape uploaded file storage, retrieval, or cleanup behavior."
+            .to_string()
+    } else if signals.websocket_connection {
+        "Check local dependencies that shape WebSocket connection, session, or message lifecycle behavior."
             .to_string()
     } else if signals.performance_cache {
         "Check local dependencies that shape cache, performance, or optimization behavior."
@@ -3022,6 +3074,12 @@ fn context_symbol_definition_question(task: &str) -> String {
         "What middleware or handler boundary does this definition establish?".to_string()
     } else if signals.request_lifecycle {
         "What request lifecycle, dispatch, or response finalization behavior does this definition establish?".to_string()
+    } else if signals.runtime_lifecycle {
+        "What runtime execution, script runner, rerun, or shutdown behavior does this definition establish?".to_string()
+    } else if signals.file_upload {
+        "What uploaded file storage, retrieval, cleanup, or exposure behavior does this definition establish?".to_string()
+    } else if signals.websocket_connection {
+        "What WebSocket connection, session, message, or close behavior does this definition establish?".to_string()
     } else if signals.performance_cache {
         "What cache, performance, latency, or optimization behavior does this definition establish?"
             .to_string()
@@ -3064,6 +3122,14 @@ fn context_type_relation_question(task: &str) -> String {
         "Which base controller or interface contract shapes this API handler behavior?".to_string()
     } else if signals.security_safety {
         "Which inherited contract or base behavior affects this security boundary?".to_string()
+    } else if signals.runtime_lifecycle {
+        "Which inherited contract or base behavior affects this runtime lifecycle boundary?"
+            .to_string()
+    } else if signals.file_upload {
+        "Which inherited contract or base behavior affects this uploaded file boundary?".to_string()
+    } else if signals.websocket_connection {
+        "Which inherited contract or base behavior affects this WebSocket session boundary?"
+            .to_string()
     } else if signals.impact_flow {
         "Which base types or interfaces widen the caller, callee, or impact path?".to_string()
     } else {
@@ -3130,6 +3196,14 @@ fn context_call_graph_question(task: &str) -> String {
             .to_string()
     } else if signals.request_lifecycle {
         "Which callers or callees move requests through dispatch, hooks, and response finalization?"
+            .to_string()
+    } else if signals.runtime_lifecycle {
+        "Which callers or callees execute scripts, coordinate reruns, or transition runtime lifecycle state?"
+            .to_string()
+    } else if signals.file_upload {
+        "Which callers or callees store, retrieve, clean up, or expose uploaded files?".to_string()
+    } else if signals.websocket_connection {
+        "Which callers or callees open, track, hand off, message, or close WebSocket connections?"
             .to_string()
     } else if signals.performance_cache {
         "Which callers or callees read, write, invalidate, or optimize cached work?".to_string()
@@ -3217,6 +3291,12 @@ fn context_dependency_question(task: &str) -> String {
         "What imported local dependency behavior shapes middleware or handler dispatch?".to_string()
     } else if signals.request_lifecycle {
         "What imported local dependency behavior shapes request lifecycle, dispatch, or response finalization?".to_string()
+    } else if signals.runtime_lifecycle {
+        "What imported local dependency behavior shapes runtime execution, script runner, or rerun lifecycle?".to_string()
+    } else if signals.file_upload {
+        "What imported local dependency behavior shapes uploaded file storage, retrieval, or cleanup?".to_string()
+    } else if signals.websocket_connection {
+        "What imported local dependency behavior shapes WebSocket connection, session, or message lifecycle?".to_string()
     } else if signals.performance_cache {
         "What imported local dependency behavior shapes cache, latency, or optimization flow?"
             .to_string()
@@ -3308,6 +3388,14 @@ fn context_reference_question(task: &str) -> String {
         "Which references attach, order, or call middleware and handler boundaries?".to_string()
     } else if signals.request_lifecycle {
         "Which references enter, hook into, or finalize the request lifecycle?".to_string()
+    } else if signals.runtime_lifecycle {
+        "Which references execute scripts, coordinate reruns, or transition runtime lifecycle state?"
+            .to_string()
+    } else if signals.file_upload {
+        "Which references store, retrieve, clean up, or expose uploaded files?".to_string()
+    } else if signals.websocket_connection {
+        "Which references open, track, hand off, message, or close WebSocket connections?"
+            .to_string()
     } else if signals.performance_cache {
         "Which references read, write, invalidate, measure, or optimize cache behavior?".to_string()
     } else if signals.observability_logging {
@@ -3402,6 +3490,15 @@ fn context_semantic_question(task: &str) -> String {
         "Which semantic matches describe middleware or handler boundary behavior?".to_string()
     } else if signals.request_lifecycle {
         "Which semantic matches describe request lifecycle hooks, dispatch, or response finalization?"
+            .to_string()
+    } else if signals.runtime_lifecycle {
+        "Which semantic matches describe runtime execution, script runner lifecycle, reruns, or shutdown?"
+            .to_string()
+    } else if signals.file_upload {
+        "Which semantic matches describe uploaded file storage, retrieval, cleanup, or exposure?"
+            .to_string()
+    } else if signals.websocket_connection {
+        "Which semantic matches describe WebSocket connections, sessions, messages, or close handling?"
             .to_string()
     } else if signals.performance_cache {
         "Which semantic matches describe cache behavior, performance, latency, or optimization?"
@@ -9932,7 +10029,7 @@ mod tests {
     }
 
     #[test]
-    fn streamlit_runtime_tasks_use_specific_first_read_prompts() {
+    fn streamlit_runtime_tasks_use_specific_context_prompts() {
         let script_runner =
             ContextTaskSignals::from_task("understand streamlit script runner lifecycle");
         assert!(script_runner.runtime_lifecycle);
@@ -9941,6 +10038,14 @@ mod tests {
         assert!(
             context_seed_file_question("understand streamlit script runner lifecycle")
                 .contains("coordinate reruns")
+        );
+        assert!(context_symbol_definition_focus(script_runner).contains("runtime execution"));
+        assert!(context_call_graph_focus(script_runner).contains("script runner"));
+        assert!(context_reference_focus(script_runner).contains("coordinate reruns"));
+        assert!(context_dependency_focus(script_runner).contains("runtime execution"));
+        assert!(
+            context_semantic_question("understand streamlit script runner lifecycle")
+                .contains("script runner lifecycle")
         );
 
         let uploaded_file =
@@ -9951,6 +10056,14 @@ mod tests {
             context_seed_file_question("understand streamlit uploaded file manager behavior")
                 .contains("uploaded files stored")
         );
+        assert!(context_symbol_definition_focus(uploaded_file).contains("uploaded file"));
+        assert!(context_call_graph_focus(uploaded_file).contains("uploaded file"));
+        assert!(context_reference_focus(uploaded_file).contains("uploaded files"));
+        assert!(
+            context_dependency_question("understand streamlit uploaded file manager behavior")
+                .contains("uploaded file storage")
+        );
+        assert!(context_semantic_focus(uploaded_file).contains("uploaded file storage"));
 
         let websocket =
             ContextTaskSignals::from_task("understand streamlit websocket connection behavior");
@@ -9959,6 +10072,20 @@ mod tests {
         assert!(
             context_seed_file_question("understand streamlit websocket connection behavior")
                 .contains("WebSocket connections opened")
+        );
+        assert!(context_symbol_definition_focus(websocket).contains("WebSocket connection"));
+        assert!(
+            context_call_graph_question("understand streamlit websocket connection behavior")
+                .contains("WebSocket connections")
+        );
+        assert!(
+            context_reference_question("understand streamlit websocket connection behavior")
+                .contains("WebSocket connections")
+        );
+        assert!(context_dependency_focus(websocket).contains("WebSocket connection"));
+        assert!(
+            context_semantic_question("understand streamlit websocket connection behavior")
+                .contains("WebSocket connections")
         );
     }
 
