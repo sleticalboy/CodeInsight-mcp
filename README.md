@@ -39,8 +39,8 @@ LSP, compiler, test runner, and language-specific tools for precise diagnostics,
 type checks, and final verification.
 
 Current public routing snapshot: pinned Express, Flask, Gin, Requests, and
-Streamlit route-quality expectations pass `68/68`, selecting 32,190 of
-2,416,275 task source lines for a `98.66%` aggregate first-read line reduction,
+Streamlit route-quality expectations pass `74/74`, selecting 34,514 of
+5,755,443 task source lines for a `99.4%` aggregate first-read line reduction,
 with each route carrying a first suggested tool such as `file_outline`. See the
 checked-in [Markdown snapshot](docs/public-task-routing-matrix.md) and
 [JSON summary](docs/public-task-routing-matrix-summary.json). Reproduce both:
@@ -238,8 +238,8 @@ Current benchmark snapshot:
   filter, while the MCP first-call contract fields all pass, including the
   `current_reading_step` mirror and read-less instruction evidence.
 - The public route-quality snapshot pins Express, Flask, Gin, Requests, and
-  Streamlit and passes 68/68 expected first-file checks, selecting 32,190 of
-  2,416,275 task source lines, a 98.66% aggregate first-read line reduction,
+  Streamlit and passes 74/74 expected first-file checks, selecting 34,514 of
+  5,755,443 task source lines, a 99.4% aggregate first-read line reduction,
   and records the first suggested tool for each route.
 - Per-repository adoption metrics, commits, and refresh commands live in
   [Adoption cases](docs/adoption-cases.md).
@@ -368,8 +368,8 @@ edits.
 
 Latest verified release: `v0.1.12`.
 
-Current public route-quality evidence passes `68/68` first-file checks and
-selects 32,190 of 2,416,275 task source lines.
+Current public route-quality evidence passes `74/74` first-file checks and
+selects 34,514 of 5,755,443 task source lines.
 
 Next focus: strengthen real-repository demos and route-quality evidence around
 the AI-agent first-read workflow.

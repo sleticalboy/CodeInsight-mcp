@@ -1,2 +1,8 @@
 understand streamlit server startup flow	lib/streamlit/web/bootstrap.py
 understand configuration settings	lib/streamlit/config.py
+understand streamlit script runner lifecycle	lib/streamlit/runtime/scriptrunner/script_runner.py
+understand streamlit cache behavior	lib/streamlit/runtime/caching/cache_data_api.py
+understand streamlit uploaded file manager behavior	lib/streamlit/runtime/memory_uploaded_file_manager.py
+understand streamlit websocket connection behavior	lib/streamlit/runtime/websocket_session_manager.py
+understand streamlit static route serving behavior	lib/streamlit/web/server/starlette/starlette_static_routes.py
+understand streamlit secrets loading behavior	lib/streamlit/runtime/secrets.py

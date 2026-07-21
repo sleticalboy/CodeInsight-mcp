@@ -995,12 +995,12 @@
       "ref": "a45904234a8f438f615ac7f11b0a96ce07e06721",
       "expect_file": "docs/task-routing-expectations/streamlit.tsv",
       "summary_json": "<output-dir>/streamlit/summary.json",
-      "task_count": 2,
-      "expectation_count": 2,
-      "total_task_source_lines": 1113056,
-      "total_selected_lines": 871,
-      "total_estimated_tokens": 8511,
-      "max_impacted_files": 6,
+      "task_count": 8,
+      "expectation_count": 8,
+      "total_task_source_lines": 4452224,
+      "total_selected_lines": 3195,
+      "total_estimated_tokens": 33131,
+      "max_impacted_files": 50,
       "routes": [
         {
           "task": "understand streamlit server startup flow",
@@ -1029,18 +1029,102 @@
           "estimated_tokens": 5614,
           "risk_level": "high",
           "impacted_files": 4
+        },
+        {
+          "task": "understand streamlit script runner lifecycle",
+          "first_file": "lib/streamlit/runtime/scriptrunner/script_runner.py",
+          "first_reading_focus": "Start with seed file context and primary symbols.",
+          "first_reading_question": "What entrypoints, exported symbols, or setup code define the main flow here?",
+          "first_next_action": "inspect_seed_file",
+          "first_suggested_tool": "file_outline",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 556528,
+          "line_reduction": "99.9%",
+          "estimated_tokens": 3680,
+          "risk_level": "high",
+          "impacted_files": 50
+        },
+        {
+          "task": "understand streamlit cache behavior",
+          "first_file": "lib/streamlit/runtime/caching/cache_data_api.py",
+          "first_reading_focus": "Start with seed file cache, performance, latency, or optimization boundaries.",
+          "first_reading_question": "Where are cache reads, invalidation, latency, or optimization decisions handled here?",
+          "first_next_action": "inspect_seed_file",
+          "first_suggested_tool": "file_outline",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 556528,
+          "line_reduction": "99.9%",
+          "estimated_tokens": 4836,
+          "risk_level": "high",
+          "impacted_files": 50
+        },
+        {
+          "task": "understand streamlit uploaded file manager behavior",
+          "first_file": "lib/streamlit/runtime/memory_uploaded_file_manager.py",
+          "first_reading_focus": "Start with seed file context and primary symbols.",
+          "first_reading_question": "What entrypoints, exported symbols, or setup code define the main flow here?",
+          "first_next_action": "inspect_seed_file",
+          "first_suggested_tool": "file_outline",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 556528,
+          "line_reduction": "99.9%",
+          "estimated_tokens": 3898,
+          "risk_level": "high",
+          "impacted_files": 50
+        },
+        {
+          "task": "understand streamlit websocket connection behavior",
+          "first_file": "lib/streamlit/runtime/websocket_session_manager.py",
+          "first_reading_focus": "Start with seed file context and primary symbols.",
+          "first_reading_question": "What entrypoints, exported symbols, or setup code define the main flow here?",
+          "first_next_action": "inspect_seed_file",
+          "first_suggested_tool": "file_outline",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 556528,
+          "line_reduction": "100.0%",
+          "estimated_tokens": 2978,
+          "risk_level": "high",
+          "impacted_files": 34
+        },
+        {
+          "task": "understand streamlit static route serving behavior",
+          "first_file": "lib/streamlit/web/server/starlette/starlette_static_routes.py",
+          "first_reading_focus": "Start with seed file route registration, matching, or handler dispatch boundaries.",
+          "first_reading_question": "Where are routes registered, matched, and dispatched to handlers here?",
+          "first_next_action": "inspect_seed_file",
+          "first_suggested_tool": "file_outline",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 556528,
+          "line_reduction": "99.9%",
+          "estimated_tokens": 4353,
+          "risk_level": "high",
+          "impacted_files": 50
+        },
+        {
+          "task": "understand streamlit secrets loading behavior",
+          "first_file": "lib/streamlit/runtime/secrets.py",
+          "first_reading_focus": "Start with seed file security, secrets, sanitization, or vulnerability boundaries.",
+          "first_reading_question": "Where are security checks, secrets, sanitization, or vulnerability boundaries handled here?",
+          "first_next_action": "inspect_seed_file",
+          "first_suggested_tool": "file_outline",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 556528,
+          "line_reduction": "99.9%",
+          "estimated_tokens": 4875,
+          "risk_level": "high",
+          "impacted_files": 39
         }
       ]
     }
   ],
   "aggregate": {
-    "task_count": 68,
-    "expectation_count": 68,
-    "total_task_source_lines": 2416275,
-    "total_selected_lines": 32190,
-    "total_estimated_tokens": 287678,
-    "max_impacted_files": 43,
-    "line_reduction": 98.66
+    "task_count": 74,
+    "expectation_count": 74,
+    "total_task_source_lines": 5755443,
+    "total_selected_lines": 34514,
+    "total_estimated_tokens": 312298,
+    "max_impacted_files": 50,
+    "line_reduction": 99.4
   },
   "generated_by": "scripts/update-public-task-routing-matrix.sh"
 }
