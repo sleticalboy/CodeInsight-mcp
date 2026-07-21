@@ -5171,9 +5171,24 @@ fn configured_check_matches(
             .any(|prefix| {
                 impacted_files
                     .iter()
-                    .any(|file| file.file == prefix || file.file.starts_with(prefix))
+                    .any(|file| configured_file_filter_matches(&file.file, prefix))
             });
     matches_language && matches_file
+}
+
+fn configured_file_filter_matches(file: &str, filter: &str) -> bool {
+    let file = file.replace('\\', "/");
+    let filter = filter.trim().replace('\\', "/");
+    if filter.is_empty() {
+        return false;
+    }
+    if file == filter {
+        return true;
+    }
+    if let Some(prefix) = filter.strip_suffix('/') {
+        return !prefix.is_empty() && file.starts_with(&format!("{prefix}/"));
+    }
+    file.starts_with(&format!("{filter}/")) || file.starts_with(&format!("{filter}."))
 }
 
 fn push_builtin_impact_command_checks(
@@ -9114,6 +9129,30 @@ mod tests {
             Some("bundle exec rspec spec/core_spec.rb")
         );
         assert!(focused_test_command("cargo test", "src/lib.rs").is_none());
+    }
+
+    #[test]
+    fn configured_file_filters_match_paths_without_prefix_bleed() {
+        assert!(configured_file_filter_matches("src/core.ts", "src/core.ts"));
+        assert!(configured_file_filter_matches("src/core.ts", "src/core"));
+        assert!(configured_file_filter_matches(
+            "src/core/index.ts",
+            "src/core"
+        ));
+        assert!(configured_file_filter_matches(
+            "src/core/index.ts",
+            "src/core/"
+        ));
+        assert!(configured_file_filter_matches(
+            "src\\core\\index.ts",
+            "src/core/"
+        ));
+        assert!(!configured_file_filter_matches("src/core2.ts", "src/core"));
+        assert!(!configured_file_filter_matches(
+            "src/core-extra/index.ts",
+            "src/core"
+        ));
+        assert!(!configured_file_filter_matches("src/core.ts", ""));
     }
 
     #[test]

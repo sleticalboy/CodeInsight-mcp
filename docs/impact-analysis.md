@@ -141,7 +141,7 @@ languages = ["typescript", "tsx"]
 files = ["src/core"]
 ```
 
-`javascript.package_conditions` controls package `exports`/`imports` condition priority during indexing. `test_commands` are global project commands. `suggested_checks` entries can filter by impacted `languages` and impacted file path prefixes in `files`. Empty filters match any impact report.
+`javascript.package_conditions` controls package `exports`/`imports` condition priority during indexing. `test_commands` are global project commands. `suggested_checks` entries can filter by impacted `languages` and impacted files. A `files` entry matches an exact path, a directory prefix such as `src/core/`, or an extensionless file stem such as `src/core` matching `src/core.ts`; it does not match sibling names such as `src/core2.ts`. Empty filters match any impact report.
 
 Missing config status:
 

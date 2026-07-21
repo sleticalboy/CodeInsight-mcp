@@ -221,6 +221,9 @@ main() {
   require_pattern docs/impact-analysis.md \
     'PHP Composer scripts are intentionally broad-only by default' \
     "PHP Composer broad-only suggested-check guidance"
+  require_pattern docs/impact-analysis.md \
+    'does not match sibling names such as `src/core2\.ts`' \
+    "configured suggested-check file filter boundary"
   require_pattern README.md \
     '93\.3x aggregate read-less ratio' \
     "README adoption cases aggregate read-less ratio"
