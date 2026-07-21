@@ -1033,8 +1033,8 @@
         {
           "task": "understand streamlit script runner lifecycle",
           "first_file": "lib/streamlit/runtime/scriptrunner/script_runner.py",
-          "first_reading_focus": "Start with seed file context and primary symbols.",
-          "first_reading_question": "What entrypoints, exported symbols, or setup code define the main flow here?",
+          "first_reading_focus": "Start with seed file runtime execution, script runner, or rerun lifecycle boundaries.",
+          "first_reading_question": "Where does the runtime execute scripts, coordinate reruns, or transition lifecycle state here?",
           "first_next_action": "inspect_seed_file",
           "first_suggested_tool": "file_outline",
           "seed_strategy": "auto_task_match",
@@ -1061,8 +1061,8 @@
         {
           "task": "understand streamlit uploaded file manager behavior",
           "first_file": "lib/streamlit/runtime/memory_uploaded_file_manager.py",
-          "first_reading_focus": "Start with seed file context and primary symbols.",
-          "first_reading_question": "What entrypoints, exported symbols, or setup code define the main flow here?",
+          "first_reading_focus": "Start with seed file uploaded file storage, retrieval, and cleanup boundaries.",
+          "first_reading_question": "Where are uploaded files stored, retrieved, cleaned up, or exposed to callers here?",
           "first_next_action": "inspect_seed_file",
           "first_suggested_tool": "file_outline",
           "seed_strategy": "auto_task_match",
@@ -1075,8 +1075,8 @@
         {
           "task": "understand streamlit websocket connection behavior",
           "first_file": "lib/streamlit/runtime/websocket_session_manager.py",
-          "first_reading_focus": "Start with seed file context and primary symbols.",
-          "first_reading_question": "What entrypoints, exported symbols, or setup code define the main flow here?",
+          "first_reading_focus": "Start with seed file WebSocket connection, session, or message lifecycle boundaries.",
+          "first_reading_question": "Where are WebSocket connections opened, tracked, handed to sessions, or closed here?",
           "first_next_action": "inspect_seed_file",
           "first_suggested_tool": "file_outline",
           "seed_strategy": "auto_task_match",

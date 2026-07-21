@@ -1391,6 +1391,15 @@ main() {
   require_pattern docs/public-task-routing-matrix.md \
     'streamlit: 8 tasks, first files lib/streamlit/config\.py, lib/streamlit/runtime/caching/cache_data_api\.py, lib/streamlit/runtime/memory_uploaded_file_manager\.py, lib/streamlit/runtime/scriptrunner/script_runner\.py, lib/streamlit/runtime/secrets\.py, lib/streamlit/runtime/websocket_session_manager\.py, lib/streamlit/web/bootstrap\.py, lib/streamlit/web/server/starlette/starlette_static_routes\.py' \
     "public task routing matrix streamlit summary"
+  require_pattern docs/public-task-routing-matrix.md \
+    'Where does the runtime execute scripts, coordinate reruns, or transition lifecycle state here\?' \
+    "public task routing matrix Streamlit script runner prompt"
+  require_pattern docs/public-task-routing-matrix.md \
+    'Where are uploaded files stored, retrieved, cleaned up, or exposed to callers here\?' \
+    "public task routing matrix Streamlit uploaded file prompt"
+  require_pattern docs/public-task-routing-matrix.md \
+    'Where are WebSocket connections opened, tracked, handed to sessions, or closed here\?' \
+    "public task routing matrix Streamlit websocket prompt"
   require_pattern scripts/update-public-task-routing-matrix.sh \
     '\-\-check' \
     "public task routing matrix update check option"

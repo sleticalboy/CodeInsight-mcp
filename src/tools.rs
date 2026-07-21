@@ -2323,6 +2323,14 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
     } else if signals.request_lifecycle {
         "Start with seed file request lifecycle, dispatch, and response finalization flow."
             .to_string()
+    } else if signals.runtime_lifecycle {
+        "Start with seed file runtime execution, script runner, or rerun lifecycle boundaries."
+            .to_string()
+    } else if signals.file_upload {
+        "Start with seed file uploaded file storage, retrieval, and cleanup boundaries.".to_string()
+    } else if signals.websocket_connection {
+        "Start with seed file WebSocket connection, session, or message lifecycle boundaries."
+            .to_string()
     } else if signals.performance_cache {
         "Start with seed file cache, performance, latency, or optimization boundaries.".to_string()
     } else if signals.observability_logging {
@@ -2919,6 +2927,15 @@ fn context_seed_file_question(task: &str) -> String {
     } else if signals.request_lifecycle {
         "Where do request lifecycle hooks, dispatch, and response finalization happen here?"
             .to_string()
+    } else if signals.runtime_lifecycle {
+        "Where does the runtime execute scripts, coordinate reruns, or transition lifecycle state here?"
+            .to_string()
+    } else if signals.file_upload {
+        "Where are uploaded files stored, retrieved, cleaned up, or exposed to callers here?"
+            .to_string()
+    } else if signals.websocket_connection {
+        "Where are WebSocket connections opened, tracked, handed to sessions, or closed here?"
+            .to_string()
     } else if signals.performance_cache {
         "Where are cache reads, invalidation, latency, or optimization decisions handled here?"
             .to_string()
@@ -3453,6 +3470,9 @@ struct ContextTaskSignals {
     frontend_ui: bool,
     background_jobs: bool,
     request_lifecycle: bool,
+    runtime_lifecycle: bool,
+    file_upload: bool,
+    websocket_connection: bool,
     api_handler: bool,
     documentation: bool,
     data_persistence: bool,
@@ -3513,6 +3533,48 @@ impl ContextTaskSignals {
                         "handlers",
                     ],
                 );
+        let runtime_lifecycle =
+            context_text_mentions(
+                task,
+                &[
+                    "script runner",
+                    "script lifecycle",
+                    "runner lifecycle",
+                    "runtime lifecycle",
+                    "execution lifecycle",
+                ],
+            ) || (context_text_mentions(task, &["script", "runner", "runtime", "execution"])
+                && context_text_mentions(
+                    task,
+                    &["lifecycle", "rerun", "reruns", "run loop", "shutdown"],
+                ));
+        let file_upload =
+            context_text_mentions(
+                task,
+                &[
+                    "file upload",
+                    "file uploader",
+                    "file uploads",
+                    "uploaded file",
+                    "uploaded files",
+                    "upload manager",
+                    "uploaded file manager",
+                ],
+            ) || (context_text_mentions(task, &["upload", "uploaded", "uploader", "uploads"])
+                && context_text_mentions(task, &["file", "files", "manager", "storage"]));
+        let websocket_connection =
+            context_text_mentions(
+                task,
+                &[
+                    "websocket",
+                    "websockets",
+                    "web socket",
+                    "web sockets",
+                    "socket connection",
+                    "socket connections",
+                ],
+            ) || (context_text_mentions(task, &["socket", "sockets", "connection", "connections"])
+                && context_text_mentions(task, &["session", "sessions", "manager"]));
 
         let http_state_headers = context_text_mentions(
             task,
@@ -4464,6 +4526,9 @@ impl ContextTaskSignals {
                 ],
             ),
             request_lifecycle,
+            runtime_lifecycle,
+            file_upload,
+            websocket_connection,
             api_handler: context_text_mentions(
                 task,
                 &[
@@ -7107,6 +7172,48 @@ fn auto_seed_task_focus_boost(
         };
     }
 
+    if auto_seed_runtime_lifecycle_task(task_keywords) {
+        let file_lifecycle_match = auto_seed_runtime_lifecycle_field_matches(file);
+        let symbol_lifecycle_match = symbol
+            .map(auto_seed_runtime_lifecycle_field_matches)
+            .unwrap_or(false);
+
+        score += match (file_lifecycle_match, symbol_lifecycle_match) {
+            (true, true) => 2800,
+            (true, false) => 1800,
+            (false, true) => 1200,
+            _ => 0,
+        };
+    }
+
+    if auto_seed_file_upload_task(task_keywords) {
+        let file_upload_match = auto_seed_file_upload_field_matches(file);
+        let symbol_upload_match = symbol
+            .map(auto_seed_file_upload_field_matches)
+            .unwrap_or(false);
+
+        score += match (file_upload_match, symbol_upload_match) {
+            (true, true) => 2800,
+            (true, false) => 1800,
+            (false, true) => 1200,
+            _ => 0,
+        };
+    }
+
+    if auto_seed_websocket_connection_task(task_keywords) {
+        let file_websocket_match = auto_seed_websocket_connection_field_matches(file);
+        let symbol_websocket_match = symbol
+            .map(auto_seed_websocket_connection_field_matches)
+            .unwrap_or(false);
+
+        score += match (file_websocket_match, symbol_websocket_match) {
+            (true, true) => 3600,
+            (true, false) => 2600,
+            (false, true) => 1800,
+            _ => 0,
+        };
+    }
+
     if auto_seed_error_recovery_handling_task(task_keywords) {
         let recovery_file_match =
             auto_seed_error_recovery_recovery_file_matches(file, task_keywords);
@@ -8442,6 +8549,66 @@ fn auto_seed_request_lifecycle_symbol_matches(symbol: &str) -> bool {
             || has_exact("teardown"))
 }
 
+fn auto_seed_runtime_lifecycle_task(task_keywords: &[String]) -> bool {
+    let runtime = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "script" | "runner" | "runtime" | "execution"
+        )
+    });
+    let lifecycle = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "lifecycle" | "rerun" | "reruns" | "shutdown"
+        )
+    });
+    runtime && lifecycle
+}
+
+fn auto_seed_runtime_lifecycle_field_matches(field: &str) -> bool {
+    auto_seed_field_matches(field, "script")
+        || auto_seed_field_matches(field, "runner")
+        || auto_seed_field_matches(field, "scriptrunner")
+        || auto_seed_field_matches(field, "runtime")
+        || auto_seed_field_matches(field, "rerun")
+        || auto_seed_field_matches(field, "lifecycle")
+}
+
+fn auto_seed_file_upload_task(task_keywords: &[String]) -> bool {
+    let upload = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "upload" | "uploaded" | "uploader" | "uploads"
+        )
+    });
+    let file = task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "file" | "files" | "manager" | "storage"));
+    upload && file
+}
+
+fn auto_seed_file_upload_field_matches(field: &str) -> bool {
+    auto_seed_field_matches(field, "upload")
+        || auto_seed_field_matches(field, "uploaded")
+        || auto_seed_field_matches(field, "uploader")
+        || auto_seed_field_matches(field, "uploadedfile")
+}
+
+fn auto_seed_websocket_connection_task(task_keywords: &[String]) -> bool {
+    task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "websocket" | "websockets" | "socket" | "sockets"
+        )
+    })
+}
+
+fn auto_seed_websocket_connection_field_matches(field: &str) -> bool {
+    auto_seed_field_matches(field, "websocket")
+        || auto_seed_field_matches(field, "websockets")
+        || auto_seed_field_matches(field, "socket")
+}
+
 fn auto_seed_error_recovery_handling_task(task_keywords: &[String]) -> bool {
     let error_or_recovery = task_keywords.iter().any(|keyword| {
         matches!(
@@ -8874,6 +9041,22 @@ fn task_keyword_aliases(keyword: &str) -> &'static [&'static str] {
         "startup" => &["start", "boot", "program"],
         "start" => &["startup", "boot"],
         "boot" => &["startup", "start"],
+        "lifecycle" => &["runtime", "execution"],
+        "runtime" => &["lifecycle", "execution"],
+        "execution" => &["runtime", "lifecycle"],
+        "runner" => &["runtime", "script"],
+        "rerun" => &["runtime", "lifecycle"],
+        "reruns" => &["rerun", "runtime", "lifecycle"],
+        "upload" => &["uploaded", "uploader", "file"],
+        "uploaded" => &["upload", "uploader", "file"],
+        "uploader" => &["upload", "uploaded", "file"],
+        "uploads" => &["upload", "uploaded", "file"],
+        "websocket" => &["socket"],
+        "websockets" => &["websocket", "socket"],
+        "socket" => &["websocket", "connection"],
+        "sockets" => &["socket", "websocket", "connection"],
+        "connection" => &["connections"],
+        "connections" => &["connection"],
         "authentication" => &["auth", "login"],
         "authenticate" => &["auth", "login"],
         "access" => &["authorization", "permission", "permissions"],
@@ -9688,6 +9871,24 @@ mod tests {
         assert!(security_keywords.contains(&"sanitize".to_string()));
         assert!(security_keywords.contains(&"sanitization".to_string()));
         assert!(security_keywords.contains(&"vulnerability".to_string()));
+
+        let runtime_keywords = task_keywords("understand script runner lifecycle");
+        assert!(runtime_keywords.contains(&"script".to_string()));
+        assert!(runtime_keywords.contains(&"runner".to_string()));
+        assert!(runtime_keywords.contains(&"runtime".to_string()));
+        assert!(runtime_keywords.contains(&"lifecycle".to_string()));
+
+        let upload_keywords = task_keywords("understand uploaded file manager behavior");
+        assert!(upload_keywords.contains(&"uploaded".to_string()));
+        assert!(upload_keywords.contains(&"upload".to_string()));
+        assert!(upload_keywords.contains(&"uploader".to_string()));
+        assert!(upload_keywords.contains(&"file".to_string()));
+
+        let websocket_keywords = task_keywords("understand websocket connection behavior");
+        assert!(websocket_keywords.contains(&"websocket".to_string()));
+        assert!(websocket_keywords.contains(&"socket".to_string()));
+        assert!(websocket_keywords.contains(&"connection".to_string()));
+        assert!(!websocket_keywords.contains(&"session".to_string()));
     }
 
     #[test]
@@ -9728,6 +9929,37 @@ mod tests {
         assert!(secure_session.auth_session);
         assert!(!secure_session.network_http);
         assert!(context_seed_file_focus(secure_session).contains("authentication"));
+    }
+
+    #[test]
+    fn streamlit_runtime_tasks_use_specific_first_read_prompts() {
+        let script_runner =
+            ContextTaskSignals::from_task("understand streamlit script runner lifecycle");
+        assert!(script_runner.runtime_lifecycle);
+        assert!(!script_runner.request_lifecycle);
+        assert!(context_seed_file_focus(script_runner).contains("script runner"));
+        assert!(
+            context_seed_file_question("understand streamlit script runner lifecycle")
+                .contains("coordinate reruns")
+        );
+
+        let uploaded_file =
+            ContextTaskSignals::from_task("understand streamlit uploaded file manager behavior");
+        assert!(uploaded_file.file_upload);
+        assert!(context_seed_file_focus(uploaded_file).contains("uploaded file"));
+        assert!(
+            context_seed_file_question("understand streamlit uploaded file manager behavior")
+                .contains("uploaded files stored")
+        );
+
+        let websocket =
+            ContextTaskSignals::from_task("understand streamlit websocket connection behavior");
+        assert!(websocket.websocket_connection);
+        assert!(context_seed_file_focus(websocket).contains("WebSocket connection"));
+        assert!(
+            context_seed_file_question("understand streamlit websocket connection behavior")
+                .contains("WebSocket connections opened")
+        );
     }
 
     #[test]
