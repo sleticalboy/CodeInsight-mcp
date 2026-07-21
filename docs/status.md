@@ -9,9 +9,10 @@ workflow is implemented end to end.
 
 ## Current First-Read Evidence
 
-- The checked-in public route-quality snapshot covers Express, Flask, Gin, and
-  Requests tasks, passes `66/66` expected first-file checks, and selects
-  29,465 of 1,303,219 task source lines for a 97.73% read-less reduction.
+- The checked-in public route-quality snapshot covers Express, Flask, Gin,
+  Requests, and Streamlit tasks, passes `68/68` expected first-file checks, and
+  selects 32,190 of 2,416,275 task source lines for a 98.66% read-less
+  reduction.
 - The public matrix records the first selected file, reading focus, reading
   question, and first suggested tool for every route.
 - The default client path is now

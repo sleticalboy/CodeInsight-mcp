@@ -190,7 +190,7 @@ case_default_ref() {
     flask) printf "36e4a824f340fdee7ed50937ba8e7f6bc7d17f81" ;;
     gin) printf "34dac209ffb6ef85cc78c5d217bbb7ad001d68fd" ;;
     requests) printf "f361ead047be5cb873174218582f7d8b9fcd9f49" ;;
-    streamlit) printf "" ;;
+    streamlit) printf "a45904234a8f438f615ac7f11b0a96ce07e06721" ;;
     *) fail "unsupported case: $1" ;;
   esac
 }
@@ -472,7 +472,7 @@ main() {
     fail "--token-budget must be greater than zero"
   fi
   if [ "${#CASES[@]}" -eq 0 ]; then
-    CASES=(express flask gin requests)
+    CASES=(express flask gin requests streamlit)
   fi
 
   OUTPUT_DIR="${OUTPUT_DIR:-$WORK_DIR/matrix}"

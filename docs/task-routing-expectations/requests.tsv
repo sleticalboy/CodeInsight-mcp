@@ -9,4 +9,4 @@ understand redirect behavior	src/requests/sessions.py
 debug retry timeout handling	src/requests/adapters.py
 understand ssl certificate verification behavior	src/requests/adapters.py
 debug certificate verification failure	src/requests/adapters.py
-understand requests adapter test coverage	tests/test_adapters.py
+understand requests adapter test coverage	tests/test_requests.py

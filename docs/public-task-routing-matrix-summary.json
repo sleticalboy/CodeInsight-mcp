@@ -3,7 +3,7 @@
   "token_budget": 6000,
   "output": "<output-dir>/public-task-routing-matrix.md",
   "output_dir": "<output-dir>",
-  "case_count": 4,
+  "case_count": 5,
   "cases": [
     {
       "case": "express",
@@ -30,7 +30,7 @@
           "line_reduction": "98.9%",
           "estimated_tokens": 1589,
           "risk_level": "high",
-          "impacted_files": 27
+          "impacted_files": 18
         },
         {
           "task": "understand middleware behavior",
@@ -86,7 +86,7 @@
           "line_reduction": "98.0%",
           "estimated_tokens": 3114,
           "risk_level": "high",
-          "impacted_files": 29
+          "impacted_files": 32
         },
         {
           "task": "understand express error handling behavior",
@@ -114,7 +114,7 @@
           "line_reduction": "98.9%",
           "estimated_tokens": 1589,
           "risk_level": "high",
-          "impacted_files": 27
+          "impacted_files": 32
         },
         {
           "task": "understand express request body parsing behavior",
@@ -128,7 +128,7 @@
           "line_reduction": "98.9%",
           "estimated_tokens": 1589,
           "risk_level": "high",
-          "impacted_files": 27
+          "impacted_files": 32
         },
         {
           "task": "understand express redirect response behavior",
@@ -142,7 +142,7 @@
           "line_reduction": "98.0%",
           "estimated_tokens": 3114,
           "risk_level": "high",
-          "impacted_files": 29
+          "impacted_files": 31
         },
         {
           "task": "understand express query parameter parsing behavior",
@@ -156,7 +156,7 @@
           "line_reduction": "99.1%",
           "estimated_tokens": 1166,
           "risk_level": "high",
-          "impacted_files": 26
+          "impacted_files": 32
         },
         {
           "task": "understand express response header behavior",
@@ -170,7 +170,7 @@
           "line_reduction": "98.0%",
           "estimated_tokens": 3113,
           "risk_level": "high",
-          "impacted_files": 29
+          "impacted_files": 30
         },
         {
           "task": "understand express route parameter behavior",
@@ -184,7 +184,7 @@
           "line_reduction": "98.3%",
           "estimated_tokens": 2359,
           "risk_level": "high",
-          "impacted_files": 27
+          "impacted_files": 21
         },
         {
           "task": "understand express response cookie behavior",
@@ -198,7 +198,7 @@
           "line_reduction": "98.0%",
           "estimated_tokens": 3113,
           "risk_level": "high",
-          "impacted_files": 29
+          "impacted_files": 32
         },
         {
           "task": "understand express HTTP method routing behavior",
@@ -212,7 +212,7 @@
           "line_reduction": "98.3%",
           "estimated_tokens": 2360,
           "risk_level": "high",
-          "impacted_files": 27
+          "impacted_files": 26
         },
         {
           "task": "understand express mounted app router behavior",
@@ -226,7 +226,7 @@
           "line_reduction": "98.3%",
           "estimated_tokens": 2360,
           "risk_level": "high",
-          "impacted_files": 27
+          "impacted_files": 24
         },
         {
           "task": "understand express request dispatch lifecycle behavior",
@@ -267,23 +267,23 @@
       "task_count": 17,
       "expectation_count": 17,
       "total_task_source_lines": 311729,
-      "total_selected_lines": 9949,
-      "total_estimated_tokens": 100180,
-      "max_impacted_files": 32,
+      "total_selected_lines": 10355,
+      "total_estimated_tokens": 100734,
+      "max_impacted_files": 39,
       "routes": [
         {
           "task": "understand flask application routing behavior",
-          "first_file": "src/flask/sansio/blueprints.py",
+          "first_file": "src/flask/sansio/scaffold.py",
           "first_reading_focus": "Start with seed file route registration, matching, or handler dispatch boundaries.",
           "first_reading_question": "Where are routes registered, matched, and dispatched to handlers here?",
           "first_next_action": "inspect_seed_file",
           "first_suggested_tool": "file_outline",
           "seed_strategy": "auto_task_match",
           "total_lines": 18337,
-          "line_reduction": "96.7%",
-          "estimated_tokens": 5985,
+          "line_reduction": "96.8%",
+          "estimated_tokens": 5999,
           "risk_level": "high",
-          "impacted_files": 22
+          "impacted_files": 33
         },
         {
           "task": "understand flask session cookie security behavior",
@@ -308,8 +308,8 @@
           "first_suggested_tool": "file_outline",
           "seed_strategy": "auto_task_match",
           "total_lines": 18337,
-          "line_reduction": "96.8%",
-          "estimated_tokens": 5888,
+          "line_reduction": "96.7%",
+          "estimated_tokens": 5812,
           "risk_level": "high",
           "impacted_files": 10
         },
@@ -339,7 +339,7 @@
           "line_reduction": "96.7%",
           "estimated_tokens": 5870,
           "risk_level": "high",
-          "impacted_files": 29
+          "impacted_files": 30
         },
         {
           "task": "understand configuration settings",
@@ -350,10 +350,10 @@
           "first_suggested_tool": "file_outline",
           "seed_strategy": "auto_task_match",
           "total_lines": 18337,
-          "line_reduction": "97.0%",
-          "estimated_tokens": 5767,
+          "line_reduction": "96.7%",
+          "estimated_tokens": 5952,
           "risk_level": "high",
-          "impacted_files": 24
+          "impacted_files": 39
         },
         {
           "task": "understand cli startup run command",
@@ -392,10 +392,10 @@
           "first_suggested_tool": "file_outline",
           "seed_strategy": "auto_task_match",
           "total_lines": 18337,
-          "line_reduction": "96.6%",
-          "estimated_tokens": 5976,
+          "line_reduction": "96.4%",
+          "estimated_tokens": 5995,
           "risk_level": "high",
-          "impacted_files": 23
+          "impacted_files": 35
         },
         {
           "task": "understand flask request body parsing behavior",
@@ -406,10 +406,10 @@
           "first_suggested_tool": "file_outline",
           "seed_strategy": "auto_task_match",
           "total_lines": 18337,
-          "line_reduction": "97.0%",
-          "estimated_tokens": 5947,
+          "line_reduction": "96.7%",
+          "estimated_tokens": 5995,
           "risk_level": "high",
-          "impacted_files": 25
+          "impacted_files": 27
         },
         {
           "task": "understand flask redirect response behavior",
@@ -420,10 +420,10 @@
           "first_suggested_tool": "file_outline",
           "seed_strategy": "auto_task_match",
           "total_lines": 18337,
-          "line_reduction": "96.9%",
-          "estimated_tokens": 5912,
+          "line_reduction": "96.6%",
+          "estimated_tokens": 5999,
           "risk_level": "high",
-          "impacted_files": 27
+          "impacted_files": 24
         },
         {
           "task": "understand flask query string request args behavior",
@@ -434,10 +434,10 @@
           "first_suggested_tool": "file_outline",
           "seed_strategy": "auto_task_match",
           "total_lines": 18337,
-          "line_reduction": "96.9%",
-          "estimated_tokens": 5914,
+          "line_reduction": "96.6%",
+          "estimated_tokens": 5992,
           "risk_level": "high",
-          "impacted_files": 27
+          "impacted_files": 26
         },
         {
           "task": "understand flask response header behavior",
@@ -448,8 +448,8 @@
           "first_suggested_tool": "file_outline",
           "seed_strategy": "auto_task_match",
           "total_lines": 18337,
-          "line_reduction": "97.0%",
-          "estimated_tokens": 5946,
+          "line_reduction": "96.7%",
+          "estimated_tokens": 5994,
           "risk_level": "high",
           "impacted_files": 25
         },
@@ -462,10 +462,10 @@
           "first_suggested_tool": "file_outline",
           "seed_strategy": "auto_task_match",
           "total_lines": 18337,
-          "line_reduction": "96.9%",
-          "estimated_tokens": 5913,
+          "line_reduction": "96.6%",
+          "estimated_tokens": 6000,
           "risk_level": "high",
-          "impacted_files": 27
+          "impacted_files": 24
         },
         {
           "task": "understand flask HTTP method dispatch behavior",
@@ -476,10 +476,10 @@
           "first_suggested_tool": "file_outline",
           "seed_strategy": "auto_task_match",
           "total_lines": 18337,
-          "line_reduction": "96.9%",
-          "estimated_tokens": 5928,
+          "line_reduction": "96.6%",
+          "estimated_tokens": 5992,
           "risk_level": "high",
-          "impacted_files": 11
+          "impacted_files": 22
         },
         {
           "task": "understand flask blueprint routing behavior",
@@ -493,7 +493,7 @@
           "line_reduction": "96.7%",
           "estimated_tokens": 5984,
           "risk_level": "high",
-          "impacted_files": 22
+          "impacted_files": 35
         },
         {
           "task": "understand flask not found method not allowed routing behavior",
@@ -520,9 +520,9 @@
       "task_count": 20,
       "expectation_count": 20,
       "total_task_source_lines": 481980,
-      "total_selected_lines": 6341,
-      "total_estimated_tokens": 56993,
-      "max_impacted_files": 22,
+      "total_selected_lines": 7351,
+      "total_estimated_tokens": 68233,
+      "max_impacted_files": 39,
       "routes": [
         {
           "task": "understand gin engine routing behavior",
@@ -536,7 +536,7 @@
           "line_reduction": "98.4%",
           "estimated_tokens": 3596,
           "risk_level": "high",
-          "impacted_files": 10
+          "impacted_files": 14
         },
         {
           "task": "understand middleware authentication behavior",
@@ -547,8 +547,8 @@
           "first_suggested_tool": "file_outline",
           "seed_strategy": "auto_task_match",
           "total_lines": 24099,
-          "line_reduction": "98.7%",
-          "estimated_tokens": 2685,
+          "line_reduction": "98.1%",
+          "estimated_tokens": 4252,
           "risk_level": "high",
           "impacted_files": 5
         },
@@ -575,10 +575,10 @@
           "first_suggested_tool": "file_outline",
           "seed_strategy": "auto_task_match",
           "total_lines": 24099,
-          "line_reduction": "99.1%",
-          "estimated_tokens": 1882,
+          "line_reduction": "98.5%",
+          "estimated_tokens": 3356,
           "risk_level": "high",
-          "impacted_files": 13
+          "impacted_files": 14
         },
         {
           "task": "understand json binding behavior",
@@ -589,10 +589,10 @@
           "first_suggested_tool": "file_outline",
           "seed_strategy": "auto_task_match",
           "total_lines": 24099,
-          "line_reduction": "98.9%",
-          "estimated_tokens": 2344,
+          "line_reduction": "98.3%",
+          "estimated_tokens": 3818,
           "risk_level": "high",
-          "impacted_files": 18
+          "impacted_files": 39
         },
         {
           "task": "understand binding validation test coverage",
@@ -603,8 +603,8 @@
           "first_suggested_tool": "file_outline",
           "seed_strategy": "auto_task_match",
           "total_lines": 24099,
-          "line_reduction": "98.8%",
-          "estimated_tokens": 2733,
+          "line_reduction": "98.2%",
+          "estimated_tokens": 4207,
           "risk_level": "high",
           "impacted_files": 1
         },
@@ -648,7 +648,7 @@
           "line_reduction": "98.4%",
           "estimated_tokens": 3597,
           "risk_level": "high",
-          "impacted_files": 10
+          "impacted_files": 14
         },
         {
           "task": "understand gin request body parsing behavior",
@@ -687,10 +687,10 @@
           "first_suggested_tool": "file_outline",
           "seed_strategy": "auto_task_match",
           "total_lines": 24099,
-          "line_reduction": "99.1%",
-          "estimated_tokens": 1793,
+          "line_reduction": "98.6%",
+          "estimated_tokens": 3267,
           "risk_level": "high",
-          "impacted_files": 17
+          "impacted_files": 34
         },
         {
           "task": "understand gin response header behavior",
@@ -715,10 +715,10 @@
           "first_suggested_tool": "file_outline",
           "seed_strategy": "auto_task_match",
           "total_lines": 24099,
-          "line_reduction": "98.6%",
-          "estimated_tokens": 2821,
+          "line_reduction": "98.1%",
+          "estimated_tokens": 4084,
           "risk_level": "high",
-          "impacted_files": 13
+          "impacted_files": 20
         },
         {
           "task": "understand gin response cookie behavior",
@@ -757,10 +757,10 @@
           "first_suggested_tool": "file_outline",
           "seed_strategy": "auto_task_match",
           "total_lines": 24099,
-          "line_reduction": "98.8%",
-          "estimated_tokens": 2340,
+          "line_reduction": "98.4%",
+          "estimated_tokens": 3597,
           "risk_level": "high",
-          "impacted_files": 10
+          "impacted_files": 14
         },
         {
           "task": "understand gin route group behavior",
@@ -771,10 +771,10 @@
           "first_suggested_tool": "file_outline",
           "seed_strategy": "auto_task_match",
           "total_lines": 24099,
-          "line_reduction": "98.8%",
-          "estimated_tokens": 2338,
+          "line_reduction": "98.4%",
+          "estimated_tokens": 3595,
           "risk_level": "high",
-          "impacted_files": 10
+          "impacted_files": 15
         },
         {
           "task": "understand gin request context handler chain behavior",
@@ -815,8 +815,8 @@
       "task_count": 12,
       "expectation_count": 12,
       "total_task_source_lines": 144384,
-      "total_selected_lines": 7189,
-      "total_estimated_tokens": 65347,
+      "total_selected_lines": 7627,
+      "total_estimated_tokens": 69389,
       "max_impacted_files": 18,
       "routes": [
         {
@@ -845,7 +845,7 @@
           "line_reduction": "94.6%",
           "estimated_tokens": 5988,
           "risk_level": "high",
-          "impacted_files": 18
+          "impacted_files": 17
         },
         {
           "task": "understand requests headers case insensitive behavior",
@@ -873,7 +873,7 @@
           "line_reduction": "95.2%",
           "estimated_tokens": 5149,
           "risk_level": "high",
-          "impacted_files": 17
+          "impacted_files": 15
         },
         {
           "task": "understand configuration settings",
@@ -975,29 +975,72 @@
         },
         {
           "task": "understand requests adapter test coverage",
-          "first_file": "tests/test_adapters.py",
+          "first_file": "tests/test_requests.py",
           "first_reading_focus": "Start with seed file test, spec, or regression coverage.",
           "first_reading_question": "Which behavior, assertions, fixtures, or regression cases are covered here?",
           "first_next_action": "inspect_seed_file",
           "first_suggested_tool": "file_outline",
           "seed_strategy": "auto_task_match",
           "total_lines": 12032,
-          "line_reduction": "98.3%",
-          "estimated_tokens": 1870,
+          "line_reduction": "94.6%",
+          "estimated_tokens": 5912,
           "risk_level": "high",
-          "impacted_files": 1
+          "impacted_files": 4
+        }
+      ]
+    },
+    {
+      "case": "streamlit",
+      "repository": "<case-root>/streamlit",
+      "ref": "a45904234a8f438f615ac7f11b0a96ce07e06721",
+      "expect_file": "docs/task-routing-expectations/streamlit.tsv",
+      "summary_json": "<output-dir>/streamlit/summary.json",
+      "task_count": 2,
+      "expectation_count": 2,
+      "total_task_source_lines": 1113056,
+      "total_selected_lines": 871,
+      "total_estimated_tokens": 8511,
+      "max_impacted_files": 6,
+      "routes": [
+        {
+          "task": "understand streamlit server startup flow",
+          "first_file": "lib/streamlit/web/bootstrap.py",
+          "first_reading_focus": "Start with seed file startup and initialization flow.",
+          "first_reading_question": "What startup entrypoint or initialization sequence creates the requested flow?",
+          "first_next_action": "inspect_seed_file",
+          "first_suggested_tool": "file_outline",
+          "seed_strategy": "auto_entrypoint",
+          "total_lines": 556528,
+          "line_reduction": "99.9%",
+          "estimated_tokens": 2897,
+          "risk_level": "high",
+          "impacted_files": 6
+        },
+        {
+          "task": "understand configuration settings",
+          "first_file": "lib/streamlit/config.py",
+          "first_reading_focus": "Start with seed file configuration defaults and inputs.",
+          "first_reading_question": "Which configuration options, defaults, or environment inputs control the requested behavior?",
+          "first_next_action": "inspect_seed_file",
+          "first_suggested_tool": "file_outline",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 556528,
+          "line_reduction": "99.9%",
+          "estimated_tokens": 5614,
+          "risk_level": "high",
+          "impacted_files": 4
         }
       ]
     }
   ],
   "aggregate": {
-    "task_count": 66,
-    "expectation_count": 66,
-    "total_task_source_lines": 1303219,
-    "total_selected_lines": 29465,
-    "total_estimated_tokens": 263331,
+    "task_count": 68,
+    "expectation_count": 68,
+    "total_task_source_lines": 2416275,
+    "total_selected_lines": 32190,
+    "total_estimated_tokens": 287678,
     "max_impacted_files": 43,
-    "line_reduction": 97.73
+    "line_reduction": 98.66
   },
   "generated_by": "scripts/update-public-task-routing-matrix.sh"
 }
