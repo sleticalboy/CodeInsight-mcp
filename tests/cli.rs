@@ -2197,6 +2197,7 @@ export function coreSpec() {
     let impact_checks = route["impact_analysis"]["suggested_checks"]
         .as_array()
         .unwrap();
+    assert_eq!(impact_checks[0]["command"], "pnpm test -- src/core.test.ts");
     assert!(impact_checks.iter().any(|check| {
         check["kind"] == "command" && check["command"] == "pnpm test -- src/core.test.ts"
     }));

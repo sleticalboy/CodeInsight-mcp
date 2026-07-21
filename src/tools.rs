@@ -5184,13 +5184,6 @@ fn push_builtin_impact_command_checks(
     seen_commands: &mut BTreeSet<String>,
 ) {
     let commands = suggested_test_commands_for_root(root);
-    for command in &commands {
-        let Some(reason) = builtin_impact_command_reason(command, languages) else {
-            continue;
-        };
-        push_command_check(checks, seen_commands, command, reason);
-    }
-
     for file in impacted_files
         .iter()
         .filter(|file| is_test_source_file(&file.file))
@@ -5206,6 +5199,13 @@ fn push_builtin_impact_command_checks(
             );
             push_command_check(checks, seen_commands, &focused_command, &reason);
         }
+    }
+
+    for command in &commands {
+        let Some(reason) = builtin_impact_command_reason(command, languages) else {
+            continue;
+        };
+        push_command_check(checks, seen_commands, command, reason);
     }
 }
 
@@ -5319,21 +5319,47 @@ fn focused_test_command(base_command: &str, file: &str) -> Option<String> {
     if !is_test_source_file(file) {
         return None;
     }
+    let normalized = file.replace('\\', "/").to_ascii_lowercase();
     let file_arg = shell_arg(file);
     match base_command {
-        "pnpm test" => Some(format!("pnpm test -- {file_arg}")),
-        "yarn test" => Some(format!("yarn test {file_arg}")),
-        "npm test" => Some(format!("npm test -- {file_arg}")),
-        "pytest" => Some(format!("pytest {file_arg}")),
-        "go test ./..." => Some(format!("go test {}", go_test_package_arg(file))),
-        "cargo test --locked" => focused_rust_test_command(base_command, file),
-        "mvn test" | "./gradlew --no-daemon test" | "gradle test" => {
+        "pnpm test" if is_javascript_like_file(&normalized) => {
+            Some(format!("pnpm test -- {file_arg}"))
+        }
+        "yarn test" if is_javascript_like_file(&normalized) => {
+            Some(format!("yarn test {file_arg}"))
+        }
+        "npm test" if is_javascript_like_file(&normalized) => {
+            Some(format!("npm test -- {file_arg}"))
+        }
+        "pytest" if normalized.ends_with(".py") => Some(format!("pytest {file_arg}")),
+        "go test ./..." if normalized.ends_with(".go") => {
+            Some(format!("go test {}", go_test_package_arg(file)))
+        }
+        "cargo test --locked" if normalized.ends_with(".rs") => {
+            focused_rust_test_command(base_command, file)
+        }
+        "mvn test" | "./gradlew --no-daemon test" | "gradle test"
+            if normalized.ends_with(".java") =>
+        {
             focused_java_test_command(base_command, file)
         }
-        "dotnet test" => focused_dotnet_test_command(base_command, file),
-        "bundle exec rspec" => Some(format!("bundle exec rspec {file_arg}")),
+        "dotnet test" if normalized.ends_with(".cs") => {
+            focused_dotnet_test_command(base_command, file)
+        }
+        "bundle exec rspec" if normalized.ends_with(".rb") => {
+            Some(format!("bundle exec rspec {file_arg}"))
+        }
         _ => None,
     }
+}
+
+fn is_javascript_like_file(file: &str) -> bool {
+    matches!(
+        Path::new(file)
+            .extension()
+            .and_then(|extension| extension.to_str()),
+        Some("js" | "jsx" | "ts" | "tsx")
+    )
 }
 
 fn is_test_source_file(file: &str) -> bool {
@@ -9033,6 +9059,8 @@ mod tests {
             focused_test_command("pytest", "tests/test_api.py").as_deref(),
             Some("pytest tests/test_api.py")
         );
+        assert!(focused_test_command("pytest", "src/core.test.ts").is_none());
+        assert!(focused_test_command("pnpm test", "tests/test_api.py").is_none());
         assert_eq!(
             focused_test_command("go test ./...", "binding/default_validator_test.go").as_deref(),
             Some("go test ./binding")

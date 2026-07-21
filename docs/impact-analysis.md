@@ -96,7 +96,7 @@ also appends focused commands for those files. Examples include
 `bundle exec rspec spec/core_spec.rb`,
 `mvn -Dtest=TokenNormalizerTest test`, and
 `dotnet test --filter FullyQualifiedName~TokenNormalizerTests`. These focused
-checks are emitted after the broader detected test command so agents can start
+checks are emitted before the broader detected test command so agents can start
 with the smallest relevant verification before running a full suite.
 
 Create a starter config:
