@@ -15,7 +15,54 @@ require_pattern() {
   fi
 }
 
+require_current_repo_snapshot_sync() {
+  ruby - "$ROOT_DIR" <<'RUBY'
+root = ARGV.fetch(0)
+readme = File.read(File.join(root, "README.md"))
+demo_output = File.read(File.join(root, "docs", "demo-output.md"))
+demo_script = File.read(File.join(root, "docs", "demo-script.md"))
+self_report = File.read(File.join(root, "docs", "adoption-report-codeinsight.md"))
+
+def fetch_metric(content, label)
+  match = content.match(/^\| #{Regexp.escape(label)} \| `([^`]+)`(?: source lines)? \|$/)
+  unless match
+    warn "docs/adoption-report-codeinsight.md is missing #{label}"
+    exit 1
+  end
+  match[1]
+end
+
+def with_commas(value)
+  value.to_s.gsub(",", "").reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse
+end
+
+symbols = fetch_metric(self_report, "Symbols")
+baseline = fetch_metric(self_report, "Blind first-read baseline")
+baseline_commas = with_commas(baseline)
+
+checks = {
+  "docs/demo-output.md symbols" => [demo_output, "symbols: #{symbols}"],
+  "docs/demo-output.md baseline metric" => [demo_output, "blind_first_read_lines: #{baseline}"],
+  "docs/demo-output.md evidence baseline" => [demo_output, "Blind first-read baseline: #{baseline} source lines."],
+  "docs/demo-script.md symbols" => [demo_script, "symbols: #{symbols}"],
+  "docs/demo-script.md baseline metric" => [demo_script, "total_lines: #{baseline}"],
+  "docs/demo-script.md evidence baseline" => [demo_script, "Blind first-read baseline: #{baseline} source lines."],
+  "README two-minute demo baseline" => [readme, "of #{baseline_commas} source lines"]
+}
+
+checks.each do |description, (content, expected)|
+  next if content.include?(expected)
+
+  warn "#{description} is out of sync with docs/adoption-report-codeinsight.md"
+  warn "expected to include: #{expected}"
+  exit 1
+end
+RUBY
+}
+
 main() {
+  require_current_repo_snapshot_sync
+
   require_pattern docs/demo-output.md \
     '^# Two-Minute Demo Output Snapshot$' \
     "demo output title"
