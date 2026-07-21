@@ -82,6 +82,9 @@ workflow is implemented end to end.
 - `agent_route.execution_plan[1].instruction` carries the current reading
   action and question alongside the ready suggested tool, so client follow-up
   prompts stay aligned with `reading_plan[]`.
+- Auto task-match seeding supplements each file's early outline with small
+  task-keyword symbol lookups, so large implementation files can win first-read
+  routing even when the matching function appears late in the file.
 - `agent_route.execution_plan[3]` mirrors `impact_analysis.suggested_checks`,
   includes the first suggested check in its instruction, and exposes a full
   `impact_analysis` suggested tool for pre-edit review workflows.

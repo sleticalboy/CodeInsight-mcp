@@ -6341,6 +6341,7 @@ fn auto_context_seed_files(
 ) -> Result<AutoContextSeedSelection> {
     let overview = store.overview(root)?;
     let indexed_files = store.indexed_files()?;
+    let task_symbol_matches = auto_seed_task_symbol_matches(store, task_keywords)?;
     let mut candidates = BTreeMap::<String, AutoSeedCandidate>::new();
 
     for entrypoint in overview
@@ -6381,7 +6382,11 @@ fn auto_context_seed_files(
         .iter()
         .filter(|file| auto_seed_role_allowed(auto_seed_file_role(file), task_keywords))
     {
-        let symbols = store.symbols_for_files(std::slice::from_ref(file), 12)?;
+        let mut symbols = store.symbols_for_files(std::slice::from_ref(file), 12)?;
+        if let Some(task_symbols) = task_symbol_matches.get(file) {
+            symbols.extend(task_symbols.iter().cloned());
+            dedup_symbols(&mut symbols);
+        }
         let symbol_or_path_score = symbols
             .iter()
             .map(|symbol| {
@@ -6516,6 +6521,33 @@ fn auto_context_seed_files(
         files,
         seeds,
     })
+}
+
+fn auto_seed_task_symbol_matches(
+    store: &Store,
+    task_keywords: &[String],
+) -> Result<BTreeMap<String, Vec<Symbol>>> {
+    let mut matches_by_file = BTreeMap::<String, Vec<Symbol>>::new();
+    let mut seen = BTreeSet::<(String, String, String)>::new();
+    for keyword in task_keywords
+        .iter()
+        .filter(|keyword| keyword.len() >= 4 && auto_seed_text_keyword_allowed(keyword))
+    {
+        for symbol in store.search_symbols(keyword, 24)? {
+            let key = (
+                symbol.file.clone(),
+                symbol.name.clone(),
+                symbol.qualified_name.clone(),
+            );
+            if seen.insert(key) {
+                matches_by_file
+                    .entry(symbol.file.clone())
+                    .or_default()
+                    .push(symbol);
+            }
+        }
+    }
+    Ok(matches_by_file)
 }
 
 fn upsert_auto_seed_candidate(

@@ -2391,6 +2391,82 @@ export function bootRouter() {
 }
 
 #[test]
+fn cli_context_pack_routes_to_late_matching_symbol_over_config_shell() {
+    let fixture = TempDir::new().unwrap();
+    std::fs::create_dir_all(fixture.path().join("src")).unwrap();
+    write_file(
+        &fixture,
+        "src/main.ts",
+        r#"
+import { loadImpactConfig } from "./config";
+
+export function main() {
+  return loadImpactConfig();
+}
+
+main();
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/config.ts",
+        r#"
+export function loadImpactConfig() {
+  return {
+    impact_analysis: true,
+    suggested_checks: ["pnpm test"],
+    routing_quality: "configuration shell"
+  };
+}
+"#,
+    );
+    let mut tools_source = String::new();
+    for index in 0..40 {
+        tools_source.push_str(&format!(
+            "export function helper{index}() {{ return {index}; }}\n"
+        ));
+    }
+    tools_source.push_str(
+        r#"
+export function impactSuggestedChecksRouter() {
+  return {
+    impact: "analysis",
+    suggested: "checks",
+    routing: "implementation quality"
+  };
+}
+"#,
+    );
+    std::fs::write(fixture.path().join("src/tools.ts"), tools_source).unwrap();
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 3);
+
+    let context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "improve impact analysis suggested checks routing quality",
+        "--token-budget",
+        "1600",
+    ]);
+
+    assert_eq!(context["seed_strategy"], "auto_task_match");
+    assert_eq!(
+        context["selected_seeds"][0]["value"], "src/tools.ts",
+        "late matching implementation symbols should beat config-shell text matches"
+    );
+    assert!(
+        context["selected_seeds"][0]["matched_keywords"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|keyword| keyword == "impact")
+    );
+    assert_eq!(context["files"][0]["file"], "src/tools.ts");
+}
+
+#[test]
 fn cli_context_pack_expands_common_agent_task_aliases() {
     let fixture = TempDir::new().unwrap();
     std::fs::create_dir_all(fixture.path().join("src")).unwrap();
