@@ -2608,6 +2608,15 @@ export function routerRegressionSpec() {
     )
     .unwrap();
     std::fs::write(
+        fixture.path().join("src/response.ts"),
+        r#"export function renderResponseBody(viewName: string) {
+  // HTTP response rendering boundary sends rendered output to the client.
+  return { viewName, response: "html", output: "sent" };
+}
+"#,
+    )
+    .unwrap();
+    std::fs::write(
         fixture.path().join("src/worker.ts"),
         r#"export function runBackgroundWorker(queueName: string) {
   // Background job worker drains the scheduled queue.
@@ -3213,7 +3222,7 @@ export function routerRegressionSpec() {
     );
     assert_eq!(
         response_rendering_context["selected_seeds"][0]["value"],
-        "src/renderer.ts"
+        "src/response.ts"
     );
     assert!(
         response_rendering_context["selected_seeds"][0]["matched_keywords"]
@@ -3224,7 +3233,7 @@ export function routerRegressionSpec() {
     );
     assert_eq!(
         response_rendering_context["files"][0]["file"],
-        "src/renderer.ts"
+        "src/response.ts"
     );
     let response_rendering_question = response_rendering_context["reading_plan"][0]["question"]
         .as_str()

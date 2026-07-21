@@ -5525,6 +5525,8 @@ fn auto_seed_task_focus_boost(
 
     if auto_seed_response_rendering_task(task_keywords) {
         let central_file_match = auto_seed_response_rendering_central_file_matches(file);
+        let response_file_match =
+            auto_seed_response_rendering_response_file_matches(file, task_keywords);
         let file_action_match = auto_seed_response_rendering_file_matches(file);
         let symbol_action_match = symbol
             .map(auto_seed_response_rendering_symbol_matches)
@@ -5538,6 +5540,9 @@ fn auto_seed_task_focus_boost(
         };
         if central_file_match {
             score += 900;
+        }
+        if response_file_match {
+            score += 2400;
         }
     }
 
@@ -5743,6 +5748,17 @@ fn auto_seed_response_rendering_central_file_matches(file: &str) -> bool {
     auto_seed_file_stem_matches(file, "render")
         || auto_seed_file_stem_matches(file, "renderer")
         || auto_seed_file_stem_matches(file, "rendering")
+}
+
+fn auto_seed_response_rendering_response_file_matches(
+    file: &str,
+    task_keywords: &[String],
+) -> bool {
+    task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "response" | "responses"))
+        && (auto_seed_file_stem_matches(file, "response")
+            || auto_seed_file_stem_matches(file, "responses"))
 }
 
 fn auto_seed_response_rendering_symbol_matches(symbol: &str) -> bool {

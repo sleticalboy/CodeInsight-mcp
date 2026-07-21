@@ -11,11 +11,11 @@
       "ref": "ae6dd37680e3a00618d6c8a3e522f0ee4eeba1a4",
       "expect_file": "docs/task-routing-expectations/express.tsv",
       "summary_json": "<output-dir>/express/summary.json",
-      "task_count": 4,
-      "expectation_count": 4,
-      "total_task_source_lines": 85912,
-      "total_selected_lines": 1489,
-      "total_estimated_tokens": 9851,
+      "task_count": 5,
+      "expectation_count": 5,
+      "total_task_source_lines": 107390,
+      "total_selected_lines": 1908,
+      "total_estimated_tokens": 12965,
       "max_impacted_files": 43,
       "routes": [
         {
@@ -65,6 +65,18 @@
           "estimated_tokens": 3550,
           "risk_level": "high",
           "impacted_files": 43
+        },
+        {
+          "task": "understand express response rendering behavior",
+          "first_file": "lib/response.js",
+          "first_reading_focus": "Start with seed file response rendering, templates, or output format boundaries.",
+          "first_reading_question": "Where are responses rendered, templates selected, or output formats produced here?",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 21478,
+          "line_reduction": "98.0%",
+          "estimated_tokens": 3114,
+          "risk_level": "high",
+          "impacted_files": 29
         }
       ]
     },
@@ -74,11 +86,11 @@
       "ref": "36e4a824f340fdee7ed50937ba8e7f6bc7d17f81",
       "expect_file": "docs/task-routing-expectations/flask.tsv",
       "summary_json": "<output-dir>/flask/summary.json",
-      "task_count": 7,
-      "expectation_count": 7,
-      "total_task_source_lines": 128359,
-      "total_selected_lines": 4136,
-      "total_estimated_tokens": 40935,
+      "task_count": 8,
+      "expectation_count": 8,
+      "total_task_source_lines": 146696,
+      "total_selected_lines": 4741,
+      "total_estimated_tokens": 46805,
       "max_impacted_files": 32,
       "routes": [
         {
@@ -128,6 +140,18 @@
           "estimated_tokens": 5880,
           "risk_level": "high",
           "impacted_files": 32
+        },
+        {
+          "task": "understand flask template rendering behavior",
+          "first_file": "src/flask/templating.py",
+          "first_reading_focus": "Start with seed file response rendering, templates, or output format boundaries.",
+          "first_reading_question": "Where are responses rendered, templates selected, or output formats produced here?",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 18337,
+          "line_reduction": "96.7%",
+          "estimated_tokens": 5870,
+          "risk_level": "high",
+          "impacted_files": 29
         },
         {
           "task": "understand configuration settings",
@@ -427,13 +451,13 @@
     }
   ],
   "aggregate": {
-    "task_count": 30,
-    "expectation_count": 30,
-    "total_task_source_lines": 527348,
-    "total_selected_lines": 15251,
-    "total_estimated_tokens": 138566,
+    "task_count": 32,
+    "expectation_count": 32,
+    "total_task_source_lines": 567163,
+    "total_selected_lines": 16275,
+    "total_estimated_tokens": 147550,
     "max_impacted_files": 43,
-    "line_reduction": 97.1
+    "line_reduction": 97.13
   },
   "generated_by": "scripts/update-public-task-routing-matrix.sh"
 }
