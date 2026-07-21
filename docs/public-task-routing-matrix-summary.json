@@ -714,8 +714,8 @@
         {
           "task": "understand requests session request flow",
           "first_file": "src/requests/sessions.py",
-          "first_reading_focus": "Start with seed file authentication and session boundaries.",
-          "first_reading_question": "Where are authentication decisions, credentials, or session boundaries handled here?",
+          "first_reading_focus": "Start with seed file network client, proxy, redirect, or transport boundaries.",
+          "first_reading_question": "Where are network requests, proxies, redirects, adapters, or transports handled here?",
           "seed_strategy": "auto_task_match",
           "total_lines": 12032,
           "line_reduction": "94.5%",

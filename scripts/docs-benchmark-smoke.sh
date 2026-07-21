@@ -1305,6 +1305,9 @@ main() {
     '.cases[] | select(.case == "gin") | .routes[] | select(.task == "understand gin no route no method behavior" and .first_file == "gin.go" and (.first_reading_focus | contains("route miss")) and (.first_reading_question | contains("404/405 responses")) and (.first_reading_question | contains("not-found handlers")))' \
     "public task routing matrix JSON Gin route miss first-read focus and question"
   require_jq docs/public-task-routing-matrix-summary.json \
+    '.cases[] | select(.case == "requests") | .routes[] | select(.task == "understand requests session request flow" and .first_file == "src/requests/sessions.py" and (.first_reading_focus | contains("network client")) and (.first_reading_question | contains("network requests")) and (.first_reading_question | contains("adapters")))' \
+    "public task routing matrix JSON Requests session request flow first-read focus and question"
+  require_jq docs/public-task-routing-matrix-summary.json \
     '.cases[] | select(.case == "requests") | .routes[] | select(.task == "understand proxy behavior" and .first_file == "src/requests/adapters.py" and (.first_reading_focus | contains("network client")) and (.first_reading_question | contains("proxies")))' \
     "public task routing matrix JSON Requests proxy first-read focus and question"
   require_jq docs/public-task-routing-matrix-summary.json \

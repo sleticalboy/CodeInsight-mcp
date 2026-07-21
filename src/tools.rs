@@ -4046,6 +4046,54 @@ impl ContextTaskSignals {
                 "transports",
             ],
         ));
+        let http_client_session = (context_text_mentions(
+            task,
+            &[
+                "requests session",
+                "request session",
+                "session request",
+                "session request flow",
+                "client session",
+                "http session",
+            ],
+        ) || (context_text_mentions(task, &["session"])
+            && context_text_mentions(
+                task,
+                &["request flow", "requests", "http client", "network client"],
+            )))
+            && context_text_mentions(
+                task,
+                &[
+                    "request",
+                    "requests",
+                    "http",
+                    "client",
+                    "network",
+                    "adapter",
+                    "transport",
+                    "redirect",
+                    "proxy",
+                    "flow",
+                ],
+            )
+            && !context_text_mentions(
+                task,
+                &[
+                    "auth",
+                    "authentication",
+                    "authorization",
+                    "login",
+                    "signin",
+                    "credential",
+                    "credentials",
+                    "token",
+                    "oauth",
+                    "jwt",
+                    "cookie",
+                    "cookies",
+                    "security",
+                ],
+            );
 
         Self {
             impact_flow: context_text_mentions(
@@ -4077,25 +4125,26 @@ impl ContextTaskSignals {
                     "oauth",
                     "jwt",
                 ],
-            ),
-            network_http: context_text_mentions(
-                task,
-                &[
-                    "network",
-                    "http",
-                    "https",
-                    "http client",
-                    "network client",
-                    "proxy",
-                    "proxies",
-                    "redirect",
-                    "redirects",
-                    "transport",
-                    "transports",
-                    "adapter",
-                    "adapters",
-                ],
-            ),
+            ) && !http_client_session,
+            network_http: http_client_session
+                || context_text_mentions(
+                    task,
+                    &[
+                        "network",
+                        "http",
+                        "https",
+                        "http client",
+                        "network client",
+                        "proxy",
+                        "proxies",
+                        "redirect",
+                        "redirects",
+                        "transport",
+                        "transports",
+                        "adapter",
+                        "adapters",
+                    ],
+                ),
             tls_certificate: context_text_mentions(
                 task,
                 &[
@@ -9231,6 +9280,25 @@ mod tests {
             "understand asyncatalog behavior",
             &["async"]
         ));
+    }
+
+    #[test]
+    fn request_session_flow_uses_network_signal_without_auth_session() {
+        let requests_session =
+            ContextTaskSignals::from_task("understand requests session request flow");
+        assert!(requests_session.network_http);
+        assert!(!requests_session.auth_session);
+        assert!(context_seed_file_focus(requests_session).contains("network client"));
+        assert!(
+            context_seed_file_question("understand requests session request flow")
+                .contains("network requests")
+        );
+
+        let secure_session =
+            ContextTaskSignals::from_task("understand flask session cookie security behavior");
+        assert!(secure_session.auth_session);
+        assert!(!secure_session.network_http);
+        assert!(context_seed_file_focus(secure_session).contains("authentication"));
     }
 
     #[test]
