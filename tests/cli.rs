@@ -9065,6 +9065,15 @@ fn assert_agent_route_execution_plan_matches_context(route: &Value) {
             .contains(continuation["next_action"].as_str().unwrap()),
         "continuation execution step should name continuation_summary.next_action"
     );
+    if continuation["status"] == "complete" {
+        assert!(
+            execution_plan[2]["instruction"]
+                .as_str()
+                .unwrap()
+                .contains("no follow-up tool is required after selected context"),
+            "complete continuation step should explain that no extra continuation tool is required"
+        );
+    }
 
     let omitted_candidates = context_pack["omitted_candidates"].as_array().unwrap();
     if let Some(first_omitted) = omitted_candidates.first() {

@@ -516,6 +516,13 @@ fn agent_route_continuation_instruction(context_pack: &ContextPack) -> String {
         );
     }
 
+    if continuation.status == "complete" {
+        return format!(
+            "Use continuation_summary only after selected context has been read. Current continuation status is complete; no follow-up tool is required after selected context. next_action {} means read the selected context first.",
+            continuation.next_action
+        );
+    }
+
     format!(
         "Use continuation_summary only after selected context has been read. Current continuation status is {} with next_action {}.",
         continuation.status, continuation.next_action
