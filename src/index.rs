@@ -1389,7 +1389,7 @@ fn csharp_using_dependencies(
     csharp_using_target(text)
         .into_iter()
         .map(|(target, kind)| {
-            let (local_alias, imported_symbol) = csharp_using_alias(&text, &target, kind);
+            let (local_alias, imported_symbol) = csharp_using_alias(text, &target, kind);
             Dependency {
                 source_file: source_file.to_string(),
                 resolved_file: None,
@@ -5243,7 +5243,7 @@ fn csharp_using_alias(text: &str, target: &str, kind: &str) -> (Option<String>, 
 fn php_use_entries(text: &str) -> Vec<(String, Option<String>, Option<String>)> {
     text.trim()
         .strip_prefix("use ")
-        .map(|target| php_use_entries_from_target(target))
+        .map(php_use_entries_from_target)
         .unwrap_or_default()
 }
 
@@ -6159,11 +6159,14 @@ fn find_c_typedef_name(node: Node<'_>, source: &[u8]) -> Option<(String, SymbolK
             .find(|child| child.kind().contains("declarator"))
     })?;
     let name = find_c_declarator_identifier(declarator, source)?;
-    let kind = node
+    let kind = if node
         .child_by_field_name("type")
         .is_some_and(|type_node| matches!(type_node.kind(), "struct_specifier" | "class_specifier"))
-        .then_some(SymbolKind::Struct)
-        .unwrap_or(SymbolKind::Interface);
+    {
+        SymbolKind::Struct
+    } else {
+        SymbolKind::Interface
+    };
     Some((name, kind))
 }
 

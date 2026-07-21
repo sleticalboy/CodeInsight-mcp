@@ -2704,7 +2704,7 @@ fn semantic_chunk_from_row(row: &Row<'_>) -> rusqlite::Result<SemanticChunk> {
 }
 
 fn encode_f32_vector(vector: &[f32]) -> Vec<u8> {
-    let mut bytes = Vec::with_capacity(vector.len() * std::mem::size_of::<f32>());
+    let mut bytes = Vec::with_capacity(std::mem::size_of_val(vector));
     for value in vector {
         bytes.extend_from_slice(&value.to_le_bytes());
     }
