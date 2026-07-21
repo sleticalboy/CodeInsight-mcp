@@ -2245,6 +2245,9 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
     } else if signals.route_parameters {
         "Start with seed file route parameters, path variables, or wildcard extraction boundaries."
             .to_string()
+    } else if signals.url_building {
+        "Start with seed file URL building, reverse routing, or route path joining boundaries."
+            .to_string()
     } else if signals.http_state_headers && !signals.auth_session && !signals.security_safety {
         "Start with seed file cookies, headers, or HTTP state boundaries.".to_string()
     } else if signals.request_body_parsing {
@@ -2320,6 +2323,9 @@ fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
             .to_string()
     } else if signals.route_parameters {
         "Read symbol definitions that establish route parameter, path variable, or wildcard behavior."
+            .to_string()
+    } else if signals.url_building {
+        "Read symbol definitions that establish URL building, reverse routing, or route path joining behavior."
             .to_string()
     } else if signals.request_body_parsing {
         "Read symbol definitions that establish request body parsing or payload binding behavior."
@@ -2419,6 +2425,9 @@ fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
     } else if signals.route_parameters {
         "Follow call graph evidence for route parameters, path variables, or wildcard extraction."
             .to_string()
+    } else if signals.url_building {
+        "Follow call graph evidence for URL building, reverse routing, or route path joining."
+            .to_string()
     } else if signals.request_body_parsing {
         "Follow call graph evidence for request body parsing, payload binding, or form-data flow."
             .to_string()
@@ -2499,6 +2508,8 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
     } else if signals.route_parameters {
         "Inspect references that capture, attach, or read route parameters and path variables."
             .to_string()
+    } else if signals.url_building {
+        "Inspect references that build URLs, reverse routes, or join route paths.".to_string()
     } else if signals.request_body_parsing {
         "Inspect references that parse request bodies, bind payloads, or read form data."
             .to_string()
@@ -2572,6 +2583,9 @@ fn context_semantic_focus(signals: ContextTaskSignals) -> String {
             .to_string()
     } else if signals.route_parameters {
         "Review semantic matches for route parameters, path variables, or wildcard extraction."
+            .to_string()
+    } else if signals.url_building {
+        "Review semantic matches for URL building, reverse routing, or route path joining."
             .to_string()
     } else if signals.request_body_parsing {
         "Review semantic matches for request body parsing, payload binding, or form-data behavior."
@@ -2649,6 +2663,9 @@ fn context_dependency_focus(signals: ContextTaskSignals) -> String {
             .to_string()
     } else if signals.route_parameters {
         "Check local dependencies that supply route parameter, path variable, or wildcard behavior."
+            .to_string()
+    } else if signals.url_building {
+        "Check local dependencies that supply URL building, reverse routing, or route path joining behavior."
             .to_string()
     } else if signals.request_body_parsing {
         "Check local dependencies that supply request body parsing, payload binding, or form-data behavior.".to_string()
@@ -2763,6 +2780,8 @@ fn context_seed_file_question(task: &str) -> String {
     } else if signals.route_parameters {
         "Where are route parameters captured, attached to requests, or passed into handlers here?"
             .to_string()
+    } else if signals.url_building {
+        "Where are URLs built, routes reversed, or route paths joined here?".to_string()
     } else if signals.http_state_headers && !signals.auth_session && !signals.security_safety {
         "Where are cookies, headers, or HTTP state containers handled here?".to_string()
     } else if signals.request_body_parsing {
@@ -2851,6 +2870,9 @@ fn context_symbol_definition_question(task: &str) -> String {
             .to_string()
     } else if signals.route_parameters {
         "What route parameter, path variable, or wildcard behavior does this definition establish?"
+            .to_string()
+    } else if signals.url_building {
+        "What URL building, reverse routing, or route path joining behavior does this definition establish?"
             .to_string()
     } else if signals.request_body_parsing {
         "What request body parsing, payload binding, content-type, or form-data behavior does this definition establish?".to_string()
@@ -2942,6 +2964,8 @@ fn context_call_graph_question(task: &str) -> String {
         "Which callers or callees create response cookies, append Set-Cookie headers, or apply cookie options?".to_string()
     } else if signals.route_parameters {
         "Which callers or callees capture route parameters, attach path variables, or pass them into handlers?".to_string()
+    } else if signals.url_building {
+        "Which callers or callees build URLs, reverse routes, or join route paths?".to_string()
     } else if signals.request_body_parsing {
         "Which callers or callees parse request bodies, select content-type binders, or read form data?".to_string()
     } else if signals.request_query_params {
@@ -3022,6 +3046,9 @@ fn context_dependency_question(task: &str) -> String {
         "What imported local dependency behavior supplies response cookies, Set-Cookie headers, or cookie options?".to_string()
     } else if signals.route_parameters {
         "What imported local dependency behavior supplies route parameter capture or path variable dispatch?".to_string()
+    } else if signals.url_building {
+        "What imported local dependency behavior supplies URL building or route path joining?"
+            .to_string()
     } else if signals.request_body_parsing {
         "What imported local dependency behavior supplies body parsers, payload binders, or form-data handling?".to_string()
     } else if signals.request_query_params {
@@ -3099,6 +3126,8 @@ fn context_reference_question(task: &str) -> String {
         "Which references create response cookies, append Set-Cookie headers, or apply cookie options?".to_string()
     } else if signals.route_parameters {
         "Which references capture, attach, or read route parameters and path variables?".to_string()
+    } else if signals.url_building {
+        "Which references build URLs, reverse routes, or join route paths?".to_string()
     } else if signals.request_body_parsing {
         "Which references parse request bodies, bind payloads, choose content types, or read form data?".to_string()
     } else if signals.request_query_params {
@@ -3175,6 +3204,9 @@ fn context_semantic_question(task: &str) -> String {
             .to_string()
     } else if signals.route_parameters {
         "Which semantic matches describe route parameters, path variables, or wildcard extraction?"
+            .to_string()
+    } else if signals.url_building {
+        "Which semantic matches describe URL building, reverse routing, or route path joining?"
             .to_string()
     } else if signals.request_body_parsing {
         "Which semantic matches describe request body parsing, payload binding, or form data?"
@@ -3270,6 +3302,7 @@ struct ContextTaskSignals {
     response_headers: bool,
     response_cookies: bool,
     route_parameters: bool,
+    url_building: bool,
     response_redirect: bool,
     static_file_serving: bool,
     response_rendering: bool,
@@ -3519,6 +3552,83 @@ impl ContextTaskSignals {
                 "graphql",
             ],
         );
+        let url_building = context_text_mentions(
+            task,
+            &[
+                "url_for",
+                "url for",
+                "url building",
+                "url builder",
+                "url builders",
+                "url generation",
+                "url generator",
+                "url generators",
+                "build url",
+                "build urls",
+                "build a url",
+                "build the url",
+                "generate url",
+                "generate urls",
+                "reverse route",
+                "reverse routes",
+                "reverse routing",
+                "route url",
+                "route urls",
+                "route path joining",
+                "path joining",
+                "path join",
+                "join path",
+                "join paths",
+                "absolute path",
+                "base path",
+            ],
+        ) || (context_text_mentions(task, &["url", "urls", "path", "paths"])
+            && context_text_mentions(
+                task,
+                &[
+                    "build",
+                    "builds",
+                    "builder",
+                    "building",
+                    "generate",
+                    "generates",
+                    "generation",
+                    "generator",
+                    "reverse",
+                    "reversing",
+                    "join",
+                    "joins",
+                    "joining",
+                    "absolute",
+                    "base",
+                ],
+            )
+            && !context_text_mentions(
+                task,
+                &[
+                    "query string",
+                    "query strings",
+                    "query parameter",
+                    "query parameters",
+                    "query param",
+                    "query params",
+                    "request args",
+                    "request arguments",
+                    "route parameter",
+                    "route parameters",
+                    "path parameter",
+                    "path parameters",
+                    "path variable",
+                    "path variables",
+                    "static file",
+                    "static files",
+                    "filesystem",
+                    "file upload",
+                    "database",
+                    "sql",
+                    "graphql",
+                ],
+            ));
         let response_headers = context_text_mentions(
             task,
             &[
@@ -3833,6 +3943,7 @@ impl ContextTaskSignals {
             response_headers,
             response_cookies,
             route_parameters,
+            url_building,
             response_redirect,
             static_file_serving,
             response_rendering,
@@ -6180,6 +6291,26 @@ fn auto_seed_task_focus_boost(
         }
     }
 
+    if auto_seed_url_building_task(task_keywords) {
+        let file_action_match = auto_seed_url_building_file_matches(file);
+        let symbol_action_match = symbol
+            .map(auto_seed_url_building_symbol_matches)
+            .unwrap_or(false);
+        let framework_file_match = auto_seed_url_building_framework_file_matches(file);
+
+        score += match (file_action_match, symbol_action_match) {
+            (true, true) => 2700,
+            (true, false) => 1400,
+            (false, true) => 1200,
+            _ => 0,
+        };
+        if framework_file_match && symbol_action_match {
+            score += 2600;
+        } else if framework_file_match {
+            score += 1600;
+        }
+    }
+
     if auto_seed_response_redirect_task(task_keywords) {
         let file_action_match = auto_seed_response_redirect_file_matches(file);
         let symbol_action_match = symbol
@@ -6834,6 +6965,110 @@ fn auto_seed_route_parameters_symbol_matches(symbol: &str) -> bool {
                 | "urlfor"
                 | "getvalue"
                 | "countparams"
+        )
+}
+
+fn auto_seed_url_building_task(task_keywords: &[String]) -> bool {
+    let url_or_path = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "url" | "urls" | "path" | "paths" | "route" | "routes" | "router" | "routing"
+        )
+    });
+    let build_or_join = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "build"
+                | "builds"
+                | "builder"
+                | "builders"
+                | "building"
+                | "generate"
+                | "generates"
+                | "generation"
+                | "generator"
+                | "generators"
+                | "reverse"
+                | "join"
+                | "joins"
+                | "joining"
+                | "absolute"
+                | "base"
+        )
+    });
+    let parameter_or_query = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "query"
+                | "queries"
+                | "parameter"
+                | "parameters"
+                | "param"
+                | "params"
+                | "variable"
+                | "variables"
+                | "args"
+                | "arguments"
+                | "database"
+                | "sql"
+                | "graphql"
+                | "static"
+                | "filesystem"
+        )
+    });
+
+    url_or_path && build_or_join && !parameter_or_query
+}
+
+fn auto_seed_url_building_file_matches(file: &str) -> bool {
+    auto_seed_file_stem_matches(file, "helper")
+        || auto_seed_file_stem_matches(file, "helpers")
+        || auto_seed_file_stem_matches(file, "app")
+        || auto_seed_file_stem_matches(file, "application")
+        || auto_seed_file_stem_matches(file, "router")
+        || auto_seed_file_stem_matches(file, "routergroup")
+        || auto_seed_file_stem_matches(file, "route")
+        || auto_seed_file_stem_matches(file, "routes")
+        || auto_seed_file_stem_matches(file, "url")
+        || auto_seed_file_stem_matches(file, "urls")
+        || auto_seed_file_stem_matches(file, "path")
+        || auto_seed_file_stem_matches(file, "paths")
+}
+
+fn auto_seed_url_building_framework_file_matches(file: &str) -> bool {
+    auto_seed_file_stem_matches(file, "helper")
+        || auto_seed_file_stem_matches(file, "helpers")
+        || auto_seed_file_stem_matches(file, "routergroup")
+        || auto_seed_file_stem_matches(file, "router")
+        || auto_seed_file_stem_matches(file, "app")
+        || auto_seed_file_stem_matches(file, "application")
+}
+
+fn auto_seed_url_building_symbol_matches(symbol: &str) -> bool {
+    let parts = symbol
+        .split(|ch: char| !ch.is_ascii_alphanumeric())
+        .filter(|part| !part.is_empty())
+        .map(str::to_ascii_lowercase)
+        .collect::<Vec<_>>();
+    let normalized = parts.join("");
+    let has_exact = |needle: &str| parts.iter().any(|part| part == needle);
+
+    (has_exact("url") && (has_exact("for") || has_exact("build") || has_exact("builder")))
+        || (has_exact("path") && (has_exact("join") || has_exact("joining")))
+        || (has_exact("calculate") && has_exact("absolute") && has_exact("path"))
+        || (has_exact("base") && has_exact("path"))
+        || matches!(
+            normalized.as_str(),
+            "urlfor"
+                | "urlbuilder"
+                | "buildurl"
+                | "buildurls"
+                | "generateurl"
+                | "reverseurl"
+                | "joinpath"
+                | "joinpaths"
+                | "calculateabsolutepath"
+                | "basepath"
         )
 }
 
@@ -7510,6 +7745,17 @@ fn task_keyword_aliases(keyword: &str) -> &'static [&'static str] {
         "routing" => &["route", "routes", "router"],
         "url" => &["urls"],
         "urls" => &["url"],
+        "build" => &["building", "builder"],
+        "builds" => &["build", "building"],
+        "building" => &["build", "builder"],
+        "builder" => &["build", "building"],
+        "generate" => &["generation", "generator"],
+        "generation" => &["generate", "generator"],
+        "generator" => &["generate", "generation"],
+        "join" => &["joining"],
+        "joins" => &["join", "joining"],
+        "joining" => &["join"],
+        "reverse" => &["routing"],
         "startup" => &["start", "boot", "program"],
         "start" => &["startup", "boot"],
         "boot" => &["startup", "start"],
@@ -8142,6 +8388,23 @@ mod tests {
         assert!(route_variable_keywords.contains(&"route".to_string()));
         assert!(route_variable_keywords.contains(&"variable".to_string()));
         assert!(auto_seed_route_parameters_task(&route_variable_keywords));
+
+        let url_building_keywords = task_keywords("understand url building behavior");
+        assert!(url_building_keywords.contains(&"url".to_string()));
+        assert!(url_building_keywords.contains(&"building".to_string()));
+        assert!(auto_seed_url_building_task(&url_building_keywords));
+        assert!(!auto_seed_request_query_params_task(&url_building_keywords));
+        assert!(!auto_seed_route_parameters_task(&url_building_keywords));
+
+        let path_joining_keywords = task_keywords("understand route path joining behavior");
+        assert!(path_joining_keywords.contains(&"path".to_string()));
+        assert!(path_joining_keywords.contains(&"joining".to_string()));
+        assert!(auto_seed_url_building_task(&path_joining_keywords));
+
+        let url_parameter_keywords = task_keywords("understand url parameter behavior");
+        assert!(url_parameter_keywords.contains(&"url".to_string()));
+        assert!(url_parameter_keywords.contains(&"parameter".to_string()));
+        assert!(!auto_seed_url_building_task(&url_parameter_keywords));
 
         let billing_keywords = task_keywords("understand checkout subscription payment");
         assert!(billing_keywords.contains(&"checkout".to_string()));

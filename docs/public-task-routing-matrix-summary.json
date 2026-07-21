@@ -182,11 +182,11 @@
       "ref": "36e4a824f340fdee7ed50937ba8e7f6bc7d17f81",
       "expect_file": "docs/task-routing-expectations/flask.tsv",
       "summary_json": "<output-dir>/flask/summary.json",
-      "task_count": 13,
-      "expectation_count": 13,
-      "total_task_source_lines": 238381,
-      "total_selected_lines": 7624,
-      "total_estimated_tokens": 76500,
+      "task_count": 14,
+      "expectation_count": 14,
+      "total_task_source_lines": 256718,
+      "total_selected_lines": 8199,
+      "total_estimated_tokens": 82413,
       "max_impacted_files": 32,
       "routes": [
         {
@@ -344,6 +344,18 @@
           "estimated_tokens": 5946,
           "risk_level": "high",
           "impacted_files": 25
+        },
+        {
+          "task": "understand flask url_for URL building behavior",
+          "first_file": "src/flask/helpers.py",
+          "first_reading_focus": "Start with seed file URL building, reverse routing, or route path joining boundaries.",
+          "first_reading_question": "Where are URLs built, routes reversed, or route paths joined here?",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 18337,
+          "line_reduction": "96.9%",
+          "estimated_tokens": 5913,
+          "risk_level": "high",
+          "impacted_files": 27
         }
       ]
     },
@@ -353,11 +365,11 @@
       "ref": "34dac209ffb6ef85cc78c5d217bbb7ad001d68fd",
       "expect_file": "docs/task-routing-expectations/gin.tsv",
       "summary_json": "<output-dir>/gin/summary.json",
-      "task_count": 15,
-      "expectation_count": 15,
-      "total_task_source_lines": 361485,
-      "total_selected_lines": 4714,
-      "total_estimated_tokens": 42350,
+      "task_count": 16,
+      "expectation_count": 16,
+      "total_task_source_lines": 385584,
+      "total_selected_lines": 5099,
+      "total_estimated_tokens": 45948,
       "max_impacted_files": 22,
       "routes": [
         {
@@ -539,6 +551,18 @@
           "estimated_tokens": 1707,
           "risk_level": "high",
           "impacted_files": 19
+        },
+        {
+          "task": "understand gin route URL path joining behavior",
+          "first_file": "routergroup.go",
+          "first_reading_focus": "Start with seed file URL building, reverse routing, or route path joining boundaries.",
+          "first_reading_question": "Where are URLs built, routes reversed, or route paths joined here?",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 24099,
+          "line_reduction": "98.4%",
+          "estimated_tokens": 3598,
+          "risk_level": "high",
+          "impacted_files": 10
         }
       ]
     },
@@ -703,13 +727,13 @@
     }
   ],
   "aggregate": {
-    "task_count": 53,
-    "expectation_count": 53,
-    "total_task_source_lines": 1023464,
-    "total_selected_lines": 24065,
-    "total_estimated_tokens": 215564,
+    "task_count": 55,
+    "expectation_count": 55,
+    "total_task_source_lines": 1065900,
+    "total_selected_lines": 25025,
+    "total_estimated_tokens": 225075,
     "max_impacted_files": 43,
-    "line_reduction": 97.64
+    "line_reduction": 97.65
   },
   "generated_by": "scripts/update-public-task-routing-matrix.sh"
 }

@@ -13,3 +13,4 @@ understand gin query parameter parsing behavior	binding/query.go
 understand gin response header behavior	context.go
 understand gin path parameter behavior	tree.go
 understand gin response cookie behavior	context.go
+understand gin route URL path joining behavior	routergroup.go
