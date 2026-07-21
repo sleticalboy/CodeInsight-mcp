@@ -1182,13 +1182,13 @@ main() {
     'source_lines: 7098531' \
     "public task routing matrix source-line evidence"
   require_pattern docs/public-task-routing-matrix.md \
-    'selected_lines: 40222' \
+    'selected_lines: 41455' \
     "public task routing matrix selected-line evidence"
   require_pattern docs/public-task-routing-matrix.md \
-    'line_reduction: 99\.43%' \
+    'line_reduction: 99\.41%' \
     "public task routing matrix line-reduction evidence"
   require_pattern docs/public-task-routing-matrix.md \
-    'Aggregate line reduction: `99\.43%`' \
+    'Aggregate line reduction: `99\.41%`' \
     "public task routing matrix aggregate line-reduction summary"
   require_pattern docs/task-routing-matrix.md \
     'pinned Express, FastAPI, Flask, Gin, Requests, and Streamlit commits' \
@@ -1533,7 +1533,7 @@ main() {
     'passes `86/86` expected first-file checks' \
     "status public route-quality pass count"
   require_pattern docs/status.md \
-    '40,222 of 7,098,531 task source lines' \
+    '41,455 of 7,098,531 task source lines' \
     "status public route-quality read-less evidence"
   require_pattern docs/status.md \
     'first suggested tool for every route' \

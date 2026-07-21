@@ -6158,7 +6158,8 @@ fn seed_request_lifecycle_reasons(
 
     let mut reasons = Vec::new();
     if auto_seed_request_lifecycle_file_matches(file) {
-        reasons.push("request lifecycle task matched app/application seed file".to_string());
+        reasons
+            .push("request lifecycle task matched framework handler or app seed file".to_string());
     }
     if symbol
         .map(auto_seed_request_lifecycle_symbol_matches)
@@ -6701,9 +6702,36 @@ fn auto_context_seed_files(
         );
     }
 
+    for file in indexed_files
+        .iter()
+        .filter(|file| auto_seed_role_allowed(auto_seed_file_role(file), task_keywords))
+    {
+        let priority = auto_seed_http_operation_file_priority(file, task_keywords);
+        if priority < 3 {
+            continue;
+        }
+        upsert_auto_seed_candidate(
+            &mut candidates,
+            AutoSeedCandidate {
+                file: file.clone(),
+                role: auto_seed_file_role(file).to_string(),
+                source: "task_match".to_string(),
+                score: 90 + priority,
+                matched_keywords: auto_seed_matched_keywords(file, None, task_keywords),
+                matched_symbols: Vec::new(),
+            },
+        );
+    }
+
     let mut candidates = candidates.into_values().collect::<Vec<_>>();
     let route_miss_task = auto_seed_route_miss_handling_task(task_keywords);
     let websocket_task = auto_seed_websocket_connection_task(task_keywords);
+    let request_body_parsing_task = auto_seed_request_body_parsing_task(task_keywords);
+    let response_headers_task = auto_seed_response_headers_task(task_keywords);
+    let response_cookies_task = auto_seed_response_cookies_task(task_keywords);
+    let response_redirect_task = auto_seed_response_redirect_task(task_keywords);
+    let request_lifecycle_task = auto_seed_request_lifecycle_task(task_keywords);
+    let middleware_task = auto_seed_middleware_task(task_keywords);
     candidates.sort_by(|left, right| {
         if route_miss_task {
             auto_seed_route_miss_file_priority(&right.file)
@@ -6715,6 +6743,36 @@ fn auto_context_seed_files(
                 .cmp(&auto_seed_websocket_file_priority(&left.file))
                 .then_with(|| right.score.cmp(&left.score))
                 .then_with(|| left.file.cmp(&right.file))
+        } else if request_body_parsing_task {
+            auto_seed_request_body_parsing_file_priority(&right.file)
+                .cmp(&auto_seed_request_body_parsing_file_priority(&left.file))
+                .then_with(|| right.score.cmp(&left.score))
+                .then_with(|| left.file.cmp(&right.file))
+        } else if response_headers_task {
+            auto_seed_response_headers_file_priority(&right.file)
+                .cmp(&auto_seed_response_headers_file_priority(&left.file))
+                .then_with(|| right.score.cmp(&left.score))
+                .then_with(|| left.file.cmp(&right.file))
+        } else if response_cookies_task {
+            auto_seed_response_cookies_file_priority(&right.file)
+                .cmp(&auto_seed_response_cookies_file_priority(&left.file))
+                .then_with(|| right.score.cmp(&left.score))
+                .then_with(|| left.file.cmp(&right.file))
+        } else if response_redirect_task {
+            auto_seed_response_redirect_file_priority(&right.file)
+                .cmp(&auto_seed_response_redirect_file_priority(&left.file))
+                .then_with(|| right.score.cmp(&left.score))
+                .then_with(|| left.file.cmp(&right.file))
+        } else if request_lifecycle_task {
+            auto_seed_request_lifecycle_file_priority(&right.file)
+                .cmp(&auto_seed_request_lifecycle_file_priority(&left.file))
+                .then_with(|| right.score.cmp(&left.score))
+                .then_with(|| left.file.cmp(&right.file))
+        } else if middleware_task {
+            auto_seed_middleware_file_priority(&right.file)
+                .cmp(&auto_seed_middleware_file_priority(&left.file))
+                .then_with(|| right.score.cmp(&left.score))
+                .then_with(|| left.file.cmp(&right.file))
         } else {
             right
                 .score
@@ -6723,8 +6781,26 @@ fn auto_context_seed_files(
         }
     });
 
+    let priority_routed_task = request_body_parsing_task
+        || response_headers_task
+        || response_cookies_task
+        || response_redirect_task
+        || request_lifecycle_task
+        || middleware_task;
     let selected_candidate = if route_miss_task || auto_seed_prefers_entrypoint(task_keywords) {
         candidates.first()
+    } else if priority_routed_task {
+        candidates
+            .first()
+            .filter(|candidate| {
+                auto_seed_priority_routed_file_priority(&candidate.file, task_keywords) > 0
+            })
+            .or_else(|| {
+                candidates
+                    .iter()
+                    .find(|candidate| candidate.source == "task_match")
+            })
+            .or_else(|| candidates.first())
     } else {
         candidates
             .iter()
@@ -6734,7 +6810,13 @@ fn auto_context_seed_files(
 
     if let Some(candidate) = selected_candidate {
         let file = candidate.file.clone();
-        let source = candidate.source.clone();
+        let source = if priority_routed_task
+            && auto_seed_priority_routed_file_priority(&candidate.file, task_keywords) > 0
+        {
+            "task_match".to_string()
+        } else {
+            candidate.source.clone()
+        };
         let strategy = if source == "task_match" {
             "auto_task_match"
         } else {
@@ -7563,6 +7645,14 @@ fn auto_seed_response_headers_framework_file_matches(file: &str) -> bool {
         || auto_seed_file_stem_matches(file, "wrappers")
 }
 
+fn auto_seed_response_headers_file_priority(file: &str) -> i32 {
+    auto_seed_framework_action_file_priority(
+        file,
+        auto_seed_response_headers_framework_file_matches(file),
+        auto_seed_response_headers_file_matches(file),
+    )
+}
+
 fn auto_seed_response_headers_symbol_matches(symbol: &str) -> bool {
     let parts = symbol
         .split(|ch: char| !ch.is_ascii_alphanumeric())
@@ -7650,6 +7740,14 @@ fn auto_seed_response_cookies_framework_file_matches(file: &str) -> bool {
         || auto_seed_file_stem_matches(file, "sessions")
 }
 
+fn auto_seed_response_cookies_file_priority(file: &str) -> i32 {
+    auto_seed_framework_action_file_priority(
+        file,
+        auto_seed_response_cookies_framework_file_matches(file),
+        auto_seed_response_cookies_file_matches(file),
+    )
+}
+
 fn auto_seed_response_cookies_symbol_matches(symbol: &str) -> bool {
     let parts = symbol
         .split(|ch: char| !ch.is_ascii_alphanumeric())
@@ -7720,6 +7818,14 @@ fn auto_seed_request_body_parsing_framework_file_matches(file: &str) -> bool {
         || auto_seed_file_stem_matches(file, "context")
         || auto_seed_file_stem_matches(file, "wrappers")
         || auto_seed_file_stem_matches(file, "wrapper")
+}
+
+fn auto_seed_request_body_parsing_file_priority(file: &str) -> i32 {
+    auto_seed_framework_action_file_priority(
+        file,
+        auto_seed_request_body_parsing_framework_file_matches(file),
+        auto_seed_request_body_parsing_file_matches(file),
+    )
 }
 
 fn auto_seed_request_body_parsing_symbol_matches(symbol: &str) -> bool {
@@ -8473,6 +8579,64 @@ fn auto_seed_response_redirect_framework_file_matches(file: &str) -> bool {
         || auto_seed_file_stem_matches(file, "helpers")
 }
 
+fn auto_seed_response_redirect_file_priority(file: &str) -> i32 {
+    auto_seed_framework_action_file_priority(
+        file,
+        auto_seed_response_redirect_framework_file_matches(file),
+        auto_seed_response_redirect_file_matches(file),
+    )
+}
+
+fn auto_seed_http_operation_file_priority(file: &str, task_keywords: &[String]) -> i32 {
+    let mut priority = 0;
+    if auto_seed_request_body_parsing_task(task_keywords) {
+        priority = priority.max(auto_seed_request_body_parsing_file_priority(file));
+    }
+    if auto_seed_response_headers_task(task_keywords) {
+        priority = priority.max(auto_seed_response_headers_file_priority(file));
+    }
+    if auto_seed_response_cookies_task(task_keywords) {
+        priority = priority.max(auto_seed_response_cookies_file_priority(file));
+    }
+    if auto_seed_response_redirect_task(task_keywords) {
+        priority = priority.max(auto_seed_response_redirect_file_priority(file));
+    }
+    priority
+}
+
+fn auto_seed_priority_routed_file_priority(file: &str, task_keywords: &[String]) -> i32 {
+    let mut priority = auto_seed_http_operation_file_priority(file, task_keywords);
+    if auto_seed_request_lifecycle_task(task_keywords) {
+        priority = priority.max(auto_seed_request_lifecycle_file_priority(file));
+    }
+    if auto_seed_middleware_task(task_keywords) {
+        priority = priority.max(auto_seed_middleware_file_priority(file));
+    }
+    priority
+}
+
+fn auto_seed_framework_action_file_priority(
+    file: &str,
+    framework_match: bool,
+    action_match: bool,
+) -> i32 {
+    let normalized = file.to_ascii_lowercase();
+    if normalized.contains("/tests/")
+        || normalized.starts_with("tests/")
+        || normalized.starts_with("docs/")
+        || normalized.starts_with("docs_src/")
+        || normalized.starts_with("examples/")
+    {
+        -2
+    } else if framework_match {
+        3
+    } else if action_match {
+        2
+    } else {
+        0
+    }
+}
+
 fn auto_seed_response_redirect_symbol_matches(symbol: &str) -> bool {
     let parts = symbol
         .split(|ch: char| !ch.is_ascii_alphanumeric())
@@ -8656,6 +8820,10 @@ fn auto_seed_response_rendering_symbol_matches(symbol: &str) -> bool {
 }
 
 fn auto_seed_request_lifecycle_task(task_keywords: &[String]) -> bool {
+    if auto_seed_response_rendering_task(task_keywords) {
+        return false;
+    }
+
     let request_or_response = task_keywords.iter().any(|keyword| {
         matches!(
             keyword.as_str(),
@@ -8665,22 +8833,26 @@ fn auto_seed_request_lifecycle_task(task_keywords: &[String]) -> bool {
     let lifecycle = task_keywords.iter().any(|keyword| {
         matches!(
             keyword.as_str(),
-            "lifecycle"
-                | "before"
-                | "after"
-                | "dispatch"
-                | "handling"
-                | "handle"
-                | "handler"
-                | "handlers"
+            "lifecycle" | "before" | "after" | "dispatch" | "handling" | "handle"
         )
     });
+    let handler_chain = task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "handler" | "handlers"))
+        && task_keywords
+            .iter()
+            .any(|keyword| matches!(keyword.as_str(), "context" | "chain" | "chains"));
 
-    request_or_response && lifecycle
+    request_or_response && (lifecycle || handler_chain)
 }
 
 fn auto_seed_request_lifecycle_file_matches(file: &str) -> bool {
-    auto_seed_file_stem_matches(file, "app") || auto_seed_file_stem_matches(file, "application")
+    auto_seed_file_stem_matches(file, "app")
+        || auto_seed_file_stem_matches(file, "application")
+        || auto_seed_file_stem_matches(file, "base")
+        || auto_seed_file_stem_matches(file, "handler")
+        || auto_seed_file_stem_matches(file, "handlers")
+        || file.to_ascii_lowercase().contains("/handlers/")
 }
 
 fn auto_seed_request_lifecycle_symbol_matches(symbol: &str) -> bool {
@@ -8696,6 +8868,74 @@ fn auto_seed_request_lifecycle_symbol_matches(symbol: &str) -> bool {
             || has_exact("process")
             || has_exact("finalize")
             || has_exact("teardown"))
+}
+
+fn auto_seed_request_lifecycle_file_priority(file: &str) -> i32 {
+    let normalized = file.to_ascii_lowercase();
+    if normalized.contains("/tests/")
+        || normalized.starts_with("tests/")
+        || normalized.starts_with("docs/")
+        || normalized.starts_with("docs_src/")
+        || normalized.starts_with("examples/")
+    {
+        -2
+    } else if normalized.contains("/core/handlers/base.") || normalized.contains("/basehandler.") {
+        5
+    } else if auto_seed_file_stem_matches(file, "app")
+        || auto_seed_file_stem_matches(file, "application")
+        || auto_seed_file_stem_matches(file, "base")
+    {
+        4
+    } else if normalized.contains("/handlers/")
+        || auto_seed_file_stem_matches(file, "handler")
+        || auto_seed_file_stem_matches(file, "handlers")
+    {
+        3
+    } else if auto_seed_request_lifecycle_file_matches(file) {
+        1
+    } else {
+        0
+    }
+}
+
+fn auto_seed_middleware_task(task_keywords: &[String]) -> bool {
+    task_keywords
+        .iter()
+        .any(|keyword| keyword == "middleware" || keyword == "middlewares")
+}
+
+fn auto_seed_middleware_file_priority(file: &str) -> i32 {
+    let normalized = file.to_ascii_lowercase();
+    if normalized.contains("/tests/")
+        || normalized.starts_with("tests/")
+        || normalized.starts_with("docs/")
+        || normalized.starts_with("docs_src/")
+        || normalized.starts_with("examples/")
+    {
+        -2
+    } else if normalized.contains("/core/handlers/base.") {
+        5
+    } else if auto_seed_file_stem_matches(file, "app")
+        || auto_seed_file_stem_matches(file, "application")
+        || auto_seed_file_stem_matches(file, "applications")
+        || normalized.contains("/core/handlers/")
+        || normalized.contains("/basehandler.")
+        || auto_seed_file_stem_matches(file, "handler")
+        || auto_seed_file_stem_matches(file, "handlers")
+    {
+        4
+    } else if normalized.starts_with("django/middleware/")
+        || normalized.contains("/middleware/")
+        || normalized.contains("/middlewares/")
+        || auto_seed_file_stem_matches(file, "middleware")
+        || auto_seed_file_stem_matches(file, "middlewares")
+    {
+        3
+    } else if normalized.contains("/handlers/") || auto_seed_file_stem_matches(file, "base") {
+        2
+    } else {
+        0
+    }
 }
 
 fn auto_seed_runtime_lifecycle_task(task_keywords: &[String]) -> bool {
@@ -10185,6 +10425,83 @@ mod tests {
             auto_seed_websocket_file_priority("fastapi/websockets.py")
                 > auto_seed_websocket_file_priority("docs_src/websockets_/tutorial001_py310.py")
         );
+    }
+
+    #[test]
+    fn request_lifecycle_tasks_prioritize_handler_source_files() {
+        let keywords = task_keywords("understand django request response handler lifecycle");
+        assert!(auto_seed_request_lifecycle_task(&keywords));
+        assert!(
+            auto_seed_request_lifecycle_file_priority("django/core/handlers/base.py")
+                > auto_seed_request_lifecycle_file_priority(
+                    "django/db/models/fields/related_descriptors.py"
+                )
+        );
+    }
+
+    #[test]
+    fn middleware_tasks_prioritize_framework_middleware_sources() {
+        let keywords = task_keywords("understand django middleware execution behavior");
+        assert!(auto_seed_middleware_task(&keywords));
+        assert!(
+            auto_seed_middleware_file_priority("django/core/handlers/base.py")
+                > auto_seed_middleware_file_priority(
+                    "django/db/models/fields/related_descriptors.py"
+                )
+        );
+        assert!(
+            auto_seed_middleware_file_priority("django/core/handlers/base.py")
+                > auto_seed_middleware_file_priority("django/contrib/admindocs/middleware.py")
+        );
+        assert!(
+            auto_seed_middleware_file_priority("fastapi/applications.py")
+                > auto_seed_middleware_file_priority("fastapi/middleware/__init__.py")
+        );
+        assert!(
+            auto_seed_middleware_file_priority("django/middleware/security.py")
+                > auto_seed_middleware_file_priority("tests/middleware/test_security.py")
+        );
+    }
+
+    #[test]
+    fn http_response_operation_tasks_prioritize_framework_context_files() {
+        let body_keywords = task_keywords("understand gin request body parsing behavior");
+        assert!(auto_seed_request_body_parsing_task(&body_keywords));
+        assert!(
+            auto_seed_request_body_parsing_file_priority("context.go")
+                > auto_seed_request_body_parsing_file_priority("binding/binding.go")
+        );
+        assert!(
+            auto_seed_request_body_parsing_file_priority("lib/express.js")
+                > auto_seed_request_body_parsing_file_priority("lib/application.js")
+        );
+
+        let redirect_keywords = task_keywords("understand gin redirect response behavior");
+        assert!(auto_seed_response_redirect_task(&redirect_keywords));
+        assert!(
+            auto_seed_response_redirect_file_priority("context.go")
+                > auto_seed_response_redirect_file_priority("render/redirect.go")
+        );
+
+        let header_keywords = task_keywords("understand gin response header behavior");
+        assert!(auto_seed_response_headers_task(&header_keywords));
+        assert!(
+            auto_seed_response_headers_file_priority("context.go")
+                > auto_seed_response_headers_file_priority("render/render.go")
+        );
+
+        let cookie_keywords = task_keywords("understand gin response cookie behavior");
+        assert!(auto_seed_response_cookies_task(&cookie_keywords));
+        assert!(
+            auto_seed_response_cookies_file_priority("context.go")
+                > auto_seed_response_cookies_file_priority("response_writer.go")
+        );
+    }
+
+    #[test]
+    fn request_context_handler_chain_tasks_use_request_lifecycle_routing() {
+        let keywords = task_keywords("understand gin request context handler chain behavior");
+        assert!(auto_seed_request_lifecycle_task(&keywords));
     }
 
     #[test]

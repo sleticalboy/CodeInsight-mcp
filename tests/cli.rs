@@ -3689,8 +3689,71 @@ func (group *RouterGroup) Handle(method string, path string, handlers ...Handler
         fixture.path().join("context.go"),
         r#"package gin
 
-type Context struct {}
+type Context struct {
+  Request *Request
+}
+
+type Request struct {
+  Body string
+}
+
 type HandlerFunc func(*Context)
+
+func Handler(c *Context) {}
+
+func (c *Context) Bind(obj any) error {
+  return c.ShouldBind(obj)
+}
+
+func (c *Context) ShouldBind(obj any) error {
+  return nil
+}
+
+func (c *Context) Header(key string, value string) {}
+
+func (c *Context) SetCookie(name string, value string) {}
+
+func (c *Context) Redirect(code int, location string) {}
+"#,
+    )
+    .unwrap();
+    std::fs::create_dir_all(fixture.path().join("binding")).unwrap();
+    std::fs::write(
+        fixture.path().join("binding/binding.go"),
+        r#"package binding
+
+type BindingBody interface {
+  BindBody([]byte, any) error
+}
+"#,
+    )
+    .unwrap();
+    std::fs::create_dir_all(fixture.path().join("render")).unwrap();
+    std::fs::write(
+        fixture.path().join("render/render.go"),
+        r#"package render
+
+type Header map[string]string
+"#,
+    )
+    .unwrap();
+    std::fs::write(
+        fixture.path().join("render/redirect.go"),
+        r#"package render
+
+type Redirect struct {
+  Location string
+}
+"#,
+    )
+    .unwrap();
+    std::fs::write(
+        fixture.path().join("response_writer.go"),
+        r#"package gin
+
+type ResponseWriter interface {
+  Header() map[string]string
+}
 "#,
     )
     .unwrap();
@@ -3712,6 +3775,32 @@ type HandlerFunc func(*Context)
         "routergroup.go"
     );
     assert_eq!(routing_context["files"][0]["file"], "routergroup.go");
+
+    for task in [
+        "understand gin request body parsing behavior",
+        "understand gin redirect response behavior",
+        "understand gin response header behavior",
+        "understand gin response cookie behavior",
+    ] {
+        let operation_context = run_json([
+            "context-pack",
+            fixture.path().to_str().unwrap(),
+            "--task",
+            task,
+            "--token-budget",
+            "1600",
+        ]);
+
+        assert_eq!(operation_context["seed_strategy"], "auto_task_match");
+        assert_eq!(
+            operation_context["selected_seeds"][0]["value"], "context.go",
+            "task should start from framework context: {task}"
+        );
+        assert_eq!(
+            operation_context["files"][0]["file"], "context.go",
+            "task should read framework context first: {task}"
+        );
+    }
 
     let flask_fixture = TempDir::new().unwrap();
     std::fs::create_dir_all(flask_fixture.path().join("src/flask/sansio")).unwrap();
@@ -3825,7 +3914,7 @@ class Flask:
         .as_str()
         .unwrap();
     assert!(flask_lifecycle_selection_reason.contains("request lifecycle task"));
-    assert!(flask_lifecycle_selection_reason.contains("app/application seed file"));
+    assert!(flask_lifecycle_selection_reason.contains("framework handler or app seed file"));
     assert!(
         flask_lifecycle_context["reading_plan"][0]["selection_reason"]
             .as_str()

@@ -450,8 +450,8 @@
       "task_count": 17,
       "expectation_count": 17,
       "total_task_source_lines": 311729,
-      "total_selected_lines": 10355,
-      "total_estimated_tokens": 100734,
+      "total_selected_lines": 10372,
+      "total_estimated_tokens": 100774,
       "max_impacted_files": 39,
       "routes": [
         {
@@ -503,12 +503,12 @@
           "first_reading_question": "Where do request lifecycle hooks, dispatch, and response finalization happen here?",
           "first_next_action": "inspect_seed_file",
           "first_suggested_tool": "file_outline",
-          "seed_strategy": "auto_entrypoint",
+          "seed_strategy": "auto_task_match",
           "total_lines": 18337,
-          "line_reduction": "96.9%",
-          "estimated_tokens": 5880,
+          "line_reduction": "96.8%",
+          "estimated_tokens": 5920,
           "risk_level": "high",
-          "impacted_files": 32
+          "impacted_files": 36
         },
         {
           "task": "understand flask template rendering behavior",
@@ -703,9 +703,9 @@
       "task_count": 20,
       "expectation_count": 20,
       "total_task_source_lines": 481980,
-      "total_selected_lines": 7351,
-      "total_estimated_tokens": 68233,
-      "max_impacted_files": 39,
+      "total_selected_lines": 8567,
+      "total_estimated_tokens": 79921,
+      "max_impacted_files": 41,
       "routes": [
         {
           "task": "understand gin engine routing behavior",
@@ -840,12 +840,12 @@
           "first_reading_question": "Where are request bodies parsed, payloads bound, content types selected, or form data read here?",
           "first_next_action": "inspect_seed_file",
           "first_suggested_tool": "file_outline",
-          "seed_strategy": "auto_entrypoint",
+          "seed_strategy": "auto_task_match",
           "total_lines": 24099,
-          "line_reduction": "99.2%",
-          "estimated_tokens": 1708,
+          "line_reduction": "97.9%",
+          "estimated_tokens": 4630,
           "risk_level": "high",
-          "impacted_files": 19
+          "impacted_files": 41
         },
         {
           "task": "understand gin redirect response behavior",
@@ -854,12 +854,12 @@
           "first_reading_question": "Where are redirect responses built, status codes selected, or Location headers set here?",
           "first_next_action": "inspect_seed_file",
           "first_suggested_tool": "file_outline",
-          "seed_strategy": "auto_entrypoint",
+          "seed_strategy": "auto_task_match",
           "total_lines": 24099,
-          "line_reduction": "99.2%",
-          "estimated_tokens": 1708,
+          "line_reduction": "97.9%",
+          "estimated_tokens": 4630,
           "risk_level": "high",
-          "impacted_files": 19
+          "impacted_files": 28
         },
         {
           "task": "understand gin query parameter parsing behavior",
@@ -882,12 +882,12 @@
           "first_reading_question": "Where are response headers set, status metadata written, or Content-Type values selected here?",
           "first_next_action": "inspect_seed_file",
           "first_suggested_tool": "file_outline",
-          "seed_strategy": "auto_entrypoint",
+          "seed_strategy": "auto_task_match",
           "total_lines": 24099,
-          "line_reduction": "99.2%",
-          "estimated_tokens": 1707,
+          "line_reduction": "97.9%",
+          "estimated_tokens": 4629,
           "risk_level": "high",
-          "impacted_files": 19
+          "impacted_files": 34
         },
         {
           "task": "understand gin path parameter behavior",
@@ -910,12 +910,12 @@
           "first_reading_question": "Where are response cookies created, Set-Cookie headers appended, or cookie options applied here?",
           "first_next_action": "inspect_seed_file",
           "first_suggested_tool": "file_outline",
-          "seed_strategy": "auto_entrypoint",
+          "seed_strategy": "auto_task_match",
           "total_lines": 24099,
-          "line_reduction": "99.2%",
-          "estimated_tokens": 1707,
+          "line_reduction": "97.9%",
+          "estimated_tokens": 4629,
           "risk_level": "high",
-          "impacted_files": 19
+          "impacted_files": 24
         },
         {
           "task": "understand gin route URL path joining behavior",
@@ -1304,10 +1304,10 @@
     "task_count": 86,
     "expectation_count": 86,
     "total_task_source_lines": 7098531,
-    "total_selected_lines": 40222,
-    "total_estimated_tokens": 366552,
+    "total_selected_lines": 41455,
+    "total_estimated_tokens": 378280,
     "max_impacted_files": 50,
-    "line_reduction": 99.43
+    "line_reduction": 99.41
   },
   "generated_by": "scripts/update-public-task-routing-matrix.sh"
 }
