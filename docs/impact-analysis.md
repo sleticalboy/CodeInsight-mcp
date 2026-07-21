@@ -99,6 +99,22 @@ also appends focused commands for those files. Examples include
 checks are emitted before the broader detected test command so agents can start
 with the smallest relevant verification before running a full suite.
 
+PHP Composer scripts are intentionally broad-only by default because script
+argument forwarding is project-specific. For PHPUnit or Pest projects, add a
+configured check that matches your local script shape instead of relying on a
+generic built-in focused command:
+
+```toml
+[impact_analysis]
+test_commands = ["composer test"]
+
+[[impact_analysis.suggested_checks]]
+command = "vendor/bin/phpunit tests/TokenNormalizerTest.php"
+reason = "Run the impacted PHPUnit test file."
+languages = ["php"]
+files = ["tests/TokenNormalizerTest.php"]
+```
+
 Create a starter config:
 
 ```bash

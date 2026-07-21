@@ -92,6 +92,9 @@ workflow is implemented end to end.
   `mvn -Dtest=TokenNormalizerTest test`, and
   `dotnet test --filter FullyQualifiedName~TokenNormalizerTests` when impacted
   files include tests.
+- PHP Composer checks stay broad-only by default; PHPUnit/Pest focused commands
+  should be added through `.codeinsight/config.toml` so project-specific script
+  forwarding is explicit.
 - CLI commands: `index`, `init-config`, `config-status`, `overview`,
   `symbols`, `outline`, `dependency-graph`, `impact-analysis`,
   `find-references`, `semantic-search`, `semantic-index`, `embedding-status`,

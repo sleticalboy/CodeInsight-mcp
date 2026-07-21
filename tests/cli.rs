@@ -8356,6 +8356,102 @@ public class TokenNormalizerTests {
 }
 
 #[test]
+fn cli_impact_analysis_keeps_php_composer_checks_broad() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        "composer.json",
+        r#"
+{
+  "scripts": {
+    "test": "phpunit"
+  }
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/TokenNormalizer.php",
+        r#"
+<?php
+
+namespace Demo;
+
+class TokenNormalizer
+{
+    public static function normalizeToken(string $input): string
+    {
+        return strtolower(trim($input));
+    }
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "tests/TokenNormalizerTest.php",
+        r#"
+<?php
+
+namespace Demo\Tests;
+
+use Demo\TokenNormalizer;
+
+class TokenNormalizerTest
+{
+    public function testNormalizeToken(): void
+    {
+        TokenNormalizer::normalizeToken(" Demo ");
+    }
+}
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 2);
+
+    let impact = run_json([
+        "impact-analysis",
+        fixture.path().to_str().unwrap(),
+        "--symbol",
+        "normalizeToken",
+        "--file",
+        "src/TokenNormalizer.php",
+        "--depth",
+        "1",
+        "--limit",
+        "20",
+        "--format",
+        "summary",
+        "--evidence-limit",
+        "2",
+    ]);
+
+    assert!(
+        impact["impacted_files"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|file| file["file"] == "tests/TokenNormalizerTest.php")
+    );
+    let suggested_checks = impact["suggested_checks"].as_array().unwrap();
+    assert_eq!(suggested_checks[0]["command"], "composer test");
+    assert!(
+        suggested_checks
+            .iter()
+            .any(|check| { check["kind"] == "command" && check["command"] == "composer test" }),
+        "expected broad Composer test command in {suggested_checks:#?}"
+    );
+    assert!(
+        !suggested_checks.iter().any(|check| {
+            check["command"].as_str().is_some_and(|command| {
+                command.contains("TokenNormalizerTest") || command.contains("tests/")
+            })
+        }),
+        "Composer scripts do not have portable file forwarding; expected no built-in focused PHP command in {suggested_checks:#?}"
+    );
+}
+
+#[test]
 fn cli_find_references_filters_comments_and_downranks_tests() {
     let fixture = TempDir::new().unwrap();
     write_file(

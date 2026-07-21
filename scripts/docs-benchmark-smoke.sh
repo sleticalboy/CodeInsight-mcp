@@ -218,6 +218,9 @@ main() {
   require_pattern README.md \
     '1,361 of 126,990 source lines' \
     "README adoption cases aggregate snapshot"
+  require_pattern docs/impact-analysis.md \
+    'PHP Composer scripts are intentionally broad-only by default' \
+    "PHP Composer broad-only suggested-check guidance"
   require_pattern README.md \
     '93\.3x aggregate read-less ratio' \
     "README adoption cases aggregate read-less ratio"
