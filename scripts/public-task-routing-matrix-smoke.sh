@@ -81,6 +81,10 @@ exports.createExpressApplicationRoutingBehavior = function createExpressApplicat
 exports.middleware = function middleware(request, next) {
   return next(request);
 };'
+  write_file "$repo/lib/response.js" 'exports.render = function renderResponse(view, options) {
+  // Express response rendering behavior sends rendered templates as HTTP output.
+  return { view, options, response: "rendered", output: "html" };
+};'
 }
 
 main() {
@@ -104,20 +108,21 @@ main() {
     --token-budget 1600 | tee "$output_log"
 
   require_jq "$summary_json" '.status == "pass" and .case_count == 1' "aggregate summary should pass"
-  require_jq "$summary_json" '.aggregate.task_count == 4 and .aggregate.expectation_count == 4' "express expectation count should be aggregated"
+  require_jq "$summary_json" '.aggregate.task_count == 5 and .aggregate.expectation_count == 5' "express expectation count should be aggregated"
   require_jq "$summary_json" '.aggregate.total_task_source_lines > .aggregate.total_selected_lines' "aggregate should include source line baseline"
   require_jq "$summary_json" '.aggregate.line_reduction > 0' "aggregate should include line reduction"
-  require_jq "$summary_json" '.cases[] | select(.case == "express" and .task_count == 4)' "express case should be present"
+  require_jq "$summary_json" '.cases[] | select(.case == "express" and .task_count == 5)' "express case should be present"
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand express application routing behavior" and .first_file == "lib/express.js")' "routing task should choose express entry"
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand middleware behavior" and .first_file == "lib/application.js")' "middleware task should choose application"
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand startup flow" and .first_file == "index.js")' "startup task should choose index"
+  require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand express response rendering behavior" and .first_file == "lib/response.js")' "response rendering task should choose response"
   grep -Fq "evidence summary" "$output_log" ||
     fail "terminal output should include evidence summary"
-  grep -Fq "expectations: 4/4" "$output_log" ||
+  grep -Fq "expectations: 5/5" "$output_log" ||
     fail "terminal output should include expectation pass count"
   grep -Fq "line_reduction:" "$output_log" ||
     fail "terminal output should include aggregate line reduction"
-  grep -Fq "express: 4 tasks, first files index.js, lib/application.js, lib/express.js" "$output_log" ||
+  grep -Fq "express: 5 tasks, first files index.js, lib/application.js, lib/express.js, lib/response.js" "$output_log" ||
     fail "terminal output should include first file summary"
   grep -Fq "## Evidence Summary" "$output_dir/public-task-routing-matrix.md" ||
     fail "markdown output should include evidence summary"
