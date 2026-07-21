@@ -11,3 +11,4 @@ understand gin request body parsing behavior	context.go
 understand gin redirect response behavior	context.go
 understand gin query parameter parsing behavior	binding/query.go
 understand gin response header behavior	context.go
+understand gin path parameter behavior	tree.go

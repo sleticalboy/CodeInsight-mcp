@@ -2239,6 +2239,9 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
     } else if signals.response_headers {
         "Start with seed file response headers, status metadata, or Content-Type boundaries."
             .to_string()
+    } else if signals.route_parameters {
+        "Start with seed file route parameters, path variables, or wildcard extraction boundaries."
+            .to_string()
     } else if signals.http_state_headers && !signals.auth_session && !signals.security_safety {
         "Start with seed file cookies, headers, or HTTP state boundaries.".to_string()
     } else if signals.request_body_parsing {
@@ -2308,6 +2311,9 @@ fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
         "Read symbol definitions that establish test coverage or regression behavior.".to_string()
     } else if signals.response_headers {
         "Read symbol definitions that establish response headers, status metadata, or Content-Type behavior."
+            .to_string()
+    } else if signals.route_parameters {
+        "Read symbol definitions that establish route parameter, path variable, or wildcard behavior."
             .to_string()
     } else if signals.request_body_parsing {
         "Read symbol definitions that establish request body parsing or payload binding behavior."
@@ -2401,6 +2407,9 @@ fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
     } else if signals.response_headers {
         "Follow call graph evidence for response headers, status metadata, or Content-Type flow."
             .to_string()
+    } else if signals.route_parameters {
+        "Follow call graph evidence for route parameters, path variables, or wildcard extraction."
+            .to_string()
     } else if signals.request_body_parsing {
         "Follow call graph evidence for request body parsing, payload binding, or form-data flow."
             .to_string()
@@ -2475,6 +2484,9 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
     } else if signals.response_headers {
         "Inspect references that set response headers, status metadata, or Content-Type values."
             .to_string()
+    } else if signals.route_parameters {
+        "Inspect references that capture, attach, or read route parameters and path variables."
+            .to_string()
     } else if signals.request_body_parsing {
         "Inspect references that parse request bodies, bind payloads, or read form data."
             .to_string()
@@ -2542,6 +2554,9 @@ fn context_semantic_focus(signals: ContextTaskSignals) -> String {
         "Review semantic matches for test, spec, or regression coverage.".to_string()
     } else if signals.response_headers {
         "Review semantic matches for response headers, status metadata, or Content-Type behavior."
+            .to_string()
+    } else if signals.route_parameters {
+        "Review semantic matches for route parameters, path variables, or wildcard extraction."
             .to_string()
     } else if signals.request_body_parsing {
         "Review semantic matches for request body parsing, payload binding, or form-data behavior."
@@ -2613,6 +2628,9 @@ fn context_dependency_focus(signals: ContextTaskSignals) -> String {
         "Check local dependencies that support test setup, fixtures, or assertions.".to_string()
     } else if signals.response_headers {
         "Check local dependencies that supply response header, status metadata, or Content-Type behavior."
+            .to_string()
+    } else if signals.route_parameters {
+        "Check local dependencies that supply route parameter, path variable, or wildcard behavior."
             .to_string()
     } else if signals.request_body_parsing {
         "Check local dependencies that supply request body parsing, payload binding, or form-data behavior.".to_string()
@@ -2721,6 +2739,9 @@ fn context_seed_file_question(task: &str) -> String {
     } else if signals.response_headers {
         "Where are response headers set, status metadata written, or Content-Type values selected here?"
             .to_string()
+    } else if signals.route_parameters {
+        "Where are route parameters captured, attached to requests, or passed into handlers here?"
+            .to_string()
     } else if signals.http_state_headers && !signals.auth_session && !signals.security_safety {
         "Where are cookies, headers, or HTTP state containers handled here?".to_string()
     } else if signals.request_body_parsing {
@@ -2804,6 +2825,9 @@ fn context_symbol_definition_question(task: &str) -> String {
             .to_string()
     } else if signals.response_headers {
         "What response header, status metadata, or Content-Type behavior does this definition establish?".to_string()
+    } else if signals.route_parameters {
+        "What route parameter, path variable, or wildcard behavior does this definition establish?"
+            .to_string()
     } else if signals.request_body_parsing {
         "What request body parsing, payload binding, content-type, or form-data behavior does this definition establish?".to_string()
     } else if signals.request_query_params {
@@ -2890,6 +2914,8 @@ fn context_call_graph_question(task: &str) -> String {
             .to_string()
     } else if signals.response_headers {
         "Which callers or callees set response headers, write status metadata, or choose Content-Type values?".to_string()
+    } else if signals.route_parameters {
+        "Which callers or callees capture route parameters, attach path variables, or pass them into handlers?".to_string()
     } else if signals.request_body_parsing {
         "Which callers or callees parse request bodies, select content-type binders, or read form data?".to_string()
     } else if signals.request_query_params {
@@ -2966,6 +2992,8 @@ fn context_dependency_question(task: &str) -> String {
             .to_string()
     } else if signals.response_headers {
         "What imported local dependency behavior supplies response headers, status metadata, or Content-Type values?".to_string()
+    } else if signals.route_parameters {
+        "What imported local dependency behavior supplies route parameter capture or path variable dispatch?".to_string()
     } else if signals.request_body_parsing {
         "What imported local dependency behavior supplies body parsers, payload binders, or form-data handling?".to_string()
     } else if signals.request_query_params {
@@ -3039,6 +3067,8 @@ fn context_reference_question(task: &str) -> String {
             .to_string()
     } else if signals.response_headers {
         "Which references set response headers, update status metadata, or select Content-Type values?".to_string()
+    } else if signals.route_parameters {
+        "Which references capture, attach, or read route parameters and path variables?".to_string()
     } else if signals.request_body_parsing {
         "Which references parse request bodies, bind payloads, choose content types, or read form data?".to_string()
     } else if signals.request_query_params {
@@ -3109,6 +3139,9 @@ fn context_semantic_question(task: &str) -> String {
             .to_string()
     } else if signals.response_headers {
         "Which semantic matches describe response headers, status metadata, or Content-Type behavior?"
+            .to_string()
+    } else if signals.route_parameters {
+        "Which semantic matches describe route parameters, path variables, or wildcard extraction?"
             .to_string()
     } else if signals.request_body_parsing {
         "Which semantic matches describe request body parsing, payload binding, or form data?"
@@ -3202,6 +3235,7 @@ struct ContextTaskSignals {
     request_body_parsing: bool,
     request_query_params: bool,
     response_headers: bool,
+    route_parameters: bool,
     response_redirect: bool,
     static_file_serving: bool,
     response_rendering: bool,
@@ -3385,6 +3419,72 @@ impl ContextTaskSignals {
                     "semantic search",
                 ],
             ));
+        let route_parameters = (context_text_mentions(
+            task,
+            &[
+                "route parameter",
+                "route parameters",
+                "route param",
+                "route params",
+                "path parameter",
+                "path parameters",
+                "path param",
+                "path params",
+                "path variable",
+                "path variables",
+                "url variable",
+                "url variables",
+                "route variable",
+                "route variables",
+                "view args",
+                "view_args",
+                "wildcard route",
+                "wildcard routes",
+                "wildcard parameter",
+                "wildcard parameters",
+            ],
+        ) || (context_text_mentions(
+            task,
+            &[
+                "route",
+                "routes",
+                "router",
+                "routing",
+                "path",
+                "paths",
+                "url rule",
+                "url rules",
+            ],
+        ) && context_text_mentions(
+            task,
+            &[
+                "param",
+                "params",
+                "parameter",
+                "parameters",
+                "variable",
+                "variables",
+                "wildcard",
+                "wildcards",
+                "view args",
+                "view_args",
+            ],
+        ))) && !context_text_mentions(
+            task,
+            &[
+                "query string",
+                "query strings",
+                "query parameter",
+                "query parameters",
+                "query param",
+                "query params",
+                "request args",
+                "request arguments",
+                "database",
+                "sql",
+                "graphql",
+            ],
+        );
         let response_headers = context_text_mentions(
             task,
             &[
@@ -3651,6 +3751,7 @@ impl ContextTaskSignals {
             request_body_parsing,
             request_query_params,
             response_headers,
+            route_parameters,
             response_redirect,
             static_file_serving,
             response_rendering,
@@ -5958,6 +6059,26 @@ fn auto_seed_task_focus_boost(
         }
     }
 
+    if auto_seed_route_parameters_task(task_keywords) {
+        let file_action_match = auto_seed_route_parameters_file_matches(file);
+        let symbol_action_match = symbol
+            .map(auto_seed_route_parameters_symbol_matches)
+            .unwrap_or(false);
+        let framework_file_match = auto_seed_route_parameters_framework_file_matches(file);
+
+        score += match (file_action_match, symbol_action_match) {
+            (true, true) => 2800,
+            (true, false) => 1500,
+            (false, true) => 1200,
+            _ => 0,
+        };
+        if framework_file_match && symbol_action_match {
+            score += 5000;
+        } else if framework_file_match {
+            score += 4000;
+        }
+    }
+
     if auto_seed_response_redirect_task(task_keywords) {
         let file_action_match = auto_seed_response_redirect_file_matches(file);
         let symbol_action_match = symbol
@@ -6459,6 +6580,92 @@ fn auto_seed_request_query_params_symbol_matches(symbol: &str) -> bool {
                 | "initquerycache"
                 | "compilequeryparser"
                 | "parseextendedquerystring"
+        )
+}
+
+fn auto_seed_route_parameters_task(task_keywords: &[String]) -> bool {
+    let route_or_path = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "route" | "routes" | "router" | "routing" | "path" | "paths" | "url"
+        )
+    });
+    let parameter_or_variable = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "parameter"
+                | "parameters"
+                | "param"
+                | "params"
+                | "variable"
+                | "variables"
+                | "wildcard"
+                | "wildcards"
+                | "viewargs"
+                | "view_args"
+        )
+    });
+    let query_task = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "query" | "queries" | "args" | "arguments" | "database" | "sql" | "graphql"
+        )
+    });
+
+    route_or_path && parameter_or_variable && !query_task
+}
+
+fn auto_seed_route_parameters_file_matches(file: &str) -> bool {
+    auto_seed_file_stem_matches(file, "application")
+        || auto_seed_file_stem_matches(file, "app")
+        || auto_seed_file_stem_matches(file, "context")
+        || auto_seed_file_stem_matches(file, "tree")
+        || auto_seed_file_stem_matches(file, "router")
+        || auto_seed_file_stem_matches(file, "routergroup")
+        || auto_seed_file_stem_matches(file, "route")
+        || auto_seed_file_stem_matches(file, "routes")
+}
+
+fn auto_seed_route_parameters_framework_file_matches(file: &str) -> bool {
+    auto_seed_file_stem_matches(file, "application")
+        || auto_seed_file_stem_matches(file, "app")
+        || auto_seed_file_stem_matches(file, "context")
+        || auto_seed_file_stem_matches(file, "tree")
+}
+
+fn auto_seed_route_parameters_symbol_matches(symbol: &str) -> bool {
+    let parts = symbol
+        .split(|ch: char| !ch.is_ascii_alphanumeric())
+        .filter(|part| !part.is_empty())
+        .map(str::to_ascii_lowercase)
+        .collect::<Vec<_>>();
+    let normalized = parts.join("");
+    let has_exact = |needle: &str| parts.iter().any(|part| part == needle);
+
+    has_exact("param")
+        || has_exact("params")
+        || has_exact("parameter")
+        || has_exact("parameters")
+        || has_exact("wildcard")
+        || has_exact("wildcards")
+        || has_exact("viewargs")
+        || has_exact("view_args")
+        || (has_exact("view") && has_exact("args"))
+        || (has_exact("dispatch") && has_exact("request"))
+        || (has_exact("add") && has_exact("url") && has_exact("rule"))
+        || (has_exact("url") && has_exact("for"))
+        || matches!(
+            normalized.as_str(),
+            "param"
+                | "params"
+                | "byname"
+                | "addparam"
+                | "viewargs"
+                | "dispatchrequest"
+                | "addurlrule"
+                | "urlfor"
+                | "getvalue"
+                | "countparams"
         )
 }
 
@@ -7735,10 +7942,27 @@ mod tests {
         assert!(query_param_keywords.contains(&"parameter".to_string()));
         assert!(query_param_keywords.contains(&"params".to_string()));
         assert!(auto_seed_request_query_params_task(&query_param_keywords));
+        assert!(!auto_seed_route_parameters_task(&query_param_keywords));
 
         let sql_query_keywords = task_keywords("understand sql query performance");
         assert!(sql_query_keywords.contains(&"query".to_string()));
         assert!(!auto_seed_request_query_params_task(&sql_query_keywords));
+
+        let route_param_keywords = task_keywords("understand route parameter behavior");
+        assert!(route_param_keywords.contains(&"route".to_string()));
+        assert!(route_param_keywords.contains(&"parameter".to_string()));
+        assert!(route_param_keywords.contains(&"param".to_string()));
+        assert!(auto_seed_route_parameters_task(&route_param_keywords));
+
+        let path_param_keywords = task_keywords("understand path parameter behavior");
+        assert!(path_param_keywords.contains(&"path".to_string()));
+        assert!(path_param_keywords.contains(&"parameter".to_string()));
+        assert!(auto_seed_route_parameters_task(&path_param_keywords));
+
+        let route_variable_keywords = task_keywords("understand route variable behavior");
+        assert!(route_variable_keywords.contains(&"route".to_string()));
+        assert!(route_variable_keywords.contains(&"variable".to_string()));
+        assert!(auto_seed_route_parameters_task(&route_variable_keywords));
 
         let billing_keywords = task_keywords("understand checkout subscription payment");
         assert!(billing_keywords.contains(&"checkout".to_string()));
