@@ -112,7 +112,7 @@ main() {
     'first_reading_focus: Start with seed file' \
     "first reading focus metric"
   require_pattern docs/demo-output.md \
-    'first_reading_question: What entrypoints' \
+    'first_reading_question: Which seed selection, reading-plan handoff, or read-less evidence controls the agent first-read workflow here\?' \
     "first reading question metric"
   require_pattern docs/demo-output.md \
     'first_selection_rank: [0-9]+' \
@@ -190,7 +190,7 @@ main() {
     'First reading focus: Start with seed file' \
     "evidence summary first reading focus"
   require_pattern docs/demo-output.md \
-    'First reading question: What entrypoints' \
+    'First reading question: Which seed selection, reading-plan handoff, or read-less evidence controls the agent first-read workflow here\?' \
     "evidence summary first reading question"
   require_pattern docs/demo-output.md \
     'reading_plan starts at .* as candidate rank [0-9]+\.' \
@@ -232,7 +232,7 @@ main() {
     'The first reading-plan focus is: Start with seed file' \
     "reading focus talk track"
   require_pattern docs/demo-output.md \
-    'The first reading-plan question is: What entrypoints' \
+    'The first reading-plan question is: Which seed selection, reading-plan handoff, or read-less evidence controls the agent first-read workflow here\?' \
     "reading question talk track"
   require_pattern docs/demo-output.md \
     'Reading order contract is true; execution_plan\[0\]\.files follows reading_plan\[\] order\.' \
