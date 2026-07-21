@@ -952,27 +952,29 @@ pub fn impact_analysis_value(
     paths.append(&mut dependency_paths);
     paths.truncate(limit);
 
+    let mut ranked_impacted_files = impact
+        .into_iter()
+        .map(|(file, (score, reasons))| (file, score, reasons))
+        .collect::<Vec<_>>();
+    ranked_impacted_files
+        .sort_by(|left, right| right.1.cmp(&left.1).then_with(|| left.0.cmp(&right.0)));
+    ranked_impacted_files.truncate(limit);
+
     let impact_breakdown = impact_breakdown_from_reason_sets(
-        impact.values().map(|(_score, reasons)| reasons),
+        ranked_impacted_files
+            .iter()
+            .map(|(_file, _score, reasons)| reasons),
         &paths,
         errors.len(),
     );
-
-    let mut impacted_files = impact
+    let impacted_files = ranked_impacted_files
         .into_iter()
-        .map(|(file, (score, reasons))| ImpactFile {
+        .map(|(file, score, reasons)| ImpactFile {
             file,
             score,
             reasons: reasons.into_iter().take(8).collect(),
         })
         .collect::<Vec<_>>();
-    impacted_files.sort_by(|left, right| {
-        right
-            .score
-            .cmp(&left.score)
-            .then_with(|| left.file.cmp(&right.file))
-    });
-    impacted_files.truncate(limit);
 
     let risk_level = impact_risk_level(&impacted_files, &paths);
     let impact_counts = ImpactCounts {
