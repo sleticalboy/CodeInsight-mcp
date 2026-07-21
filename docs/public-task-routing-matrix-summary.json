@@ -11,11 +11,11 @@
       "ref": "ae6dd37680e3a00618d6c8a3e522f0ee4eeba1a4",
       "expect_file": "docs/task-routing-expectations/express.tsv",
       "summary_json": "<output-dir>/express/summary.json",
-      "task_count": 7,
-      "expectation_count": 7,
-      "total_task_source_lines": 150346,
-      "total_selected_lines": 2502,
-      "total_estimated_tokens": 16913,
+      "task_count": 8,
+      "expectation_count": 8,
+      "total_task_source_lines": 171824,
+      "total_selected_lines": 2734,
+      "total_estimated_tokens": 18502,
       "max_impacted_files": 43,
       "routes": [
         {
@@ -101,6 +101,18 @@
           "estimated_tokens": 1589,
           "risk_level": "high",
           "impacted_files": 27
+        },
+        {
+          "task": "understand express request body parsing behavior",
+          "first_file": "lib/express.js",
+          "first_reading_focus": "Start with seed file request body parsing, payload binding, or form-data boundaries.",
+          "first_reading_question": "Where are request bodies parsed, payloads bound, content types selected, or form data read here?",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 21478,
+          "line_reduction": "98.9%",
+          "estimated_tokens": 1589,
+          "risk_level": "high",
+          "impacted_files": 27
         }
       ]
     },
@@ -110,11 +122,11 @@
       "ref": "36e4a824f340fdee7ed50937ba8e7f6bc7d17f81",
       "expect_file": "docs/task-routing-expectations/flask.tsv",
       "summary_json": "<output-dir>/flask/summary.json",
-      "task_count": 9,
-      "expectation_count": 9,
-      "total_task_source_lines": 165033,
-      "total_selected_lines": 5360,
-      "total_estimated_tokens": 52781,
+      "task_count": 10,
+      "expectation_count": 10,
+      "total_task_source_lines": 183370,
+      "total_selected_lines": 5917,
+      "total_estimated_tokens": 58728,
       "max_impacted_files": 32,
       "routes": [
         {
@@ -224,6 +236,18 @@
           "estimated_tokens": 5976,
           "risk_level": "high",
           "impacted_files": 23
+        },
+        {
+          "task": "understand flask request body parsing behavior",
+          "first_file": "src/flask/wrappers.py",
+          "first_reading_focus": "Start with seed file request body parsing, payload binding, or form-data boundaries.",
+          "first_reading_question": "Where are request bodies parsed, payloads bound, content types selected, or form data read here?",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 18337,
+          "line_reduction": "97.0%",
+          "estimated_tokens": 5947,
+          "risk_level": "high",
+          "impacted_files": 25
         }
       ]
     },
@@ -233,11 +257,11 @@
       "ref": "34dac209ffb6ef85cc78c5d217bbb7ad001d68fd",
       "expect_file": "docs/task-routing-expectations/gin.tsv",
       "summary_json": "<output-dir>/gin/summary.json",
-      "task_count": 9,
-      "expectation_count": 9,
-      "total_task_source_lines": 216891,
-      "total_selected_lines": 3351,
-      "total_estimated_tokens": 30906,
+      "task_count": 10,
+      "expectation_count": 10,
+      "total_task_source_lines": 240990,
+      "total_selected_lines": 3552,
+      "total_estimated_tokens": 32614,
       "max_impacted_files": 22,
       "routes": [
         {
@@ -347,6 +371,18 @@
           "estimated_tokens": 3597,
           "risk_level": "high",
           "impacted_files": 10
+        },
+        {
+          "task": "understand gin request body parsing behavior",
+          "first_file": "context.go",
+          "first_reading_focus": "Start with seed file request body parsing, payload binding, or form-data boundaries.",
+          "first_reading_question": "Where are request bodies parsed, payloads bound, content types selected, or form data read here?",
+          "seed_strategy": "auto_entrypoint",
+          "total_lines": 24099,
+          "line_reduction": "99.2%",
+          "estimated_tokens": 1708,
+          "risk_level": "high",
+          "impacted_files": 19
         }
       ]
     },
@@ -511,13 +547,13 @@
     }
   ],
   "aggregate": {
-    "task_count": 37,
-    "expectation_count": 37,
-    "total_task_source_lines": 676654,
-    "total_selected_lines": 18415,
-    "total_estimated_tokens": 166016,
+    "task_count": 40,
+    "expectation_count": 40,
+    "total_task_source_lines": 740568,
+    "total_selected_lines": 19405,
+    "total_estimated_tokens": 175260,
     "max_impacted_files": 43,
-    "line_reduction": 97.27
+    "line_reduction": 97.37
   },
   "generated_by": "scripts/update-public-task-routing-matrix.sh"
 }

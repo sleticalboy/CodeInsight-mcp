@@ -2238,6 +2238,9 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
         "Start with seed file test, spec, or regression coverage.".to_string()
     } else if signals.http_state_headers && !signals.auth_session && !signals.security_safety {
         "Start with seed file cookies, headers, or HTTP state boundaries.".to_string()
+    } else if signals.request_body_parsing {
+        "Start with seed file request body parsing, payload binding, or form-data boundaries."
+            .to_string()
     } else if signals.static_file_serving {
         "Start with seed file static file, asset, or filesystem serving boundaries.".to_string()
     } else if signals.response_rendering {
@@ -2295,6 +2298,9 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
 fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
     if signals.test_coverage {
         "Read symbol definitions that establish test coverage or regression behavior.".to_string()
+    } else if signals.request_body_parsing {
+        "Read symbol definitions that establish request body parsing or payload binding behavior."
+            .to_string()
     } else if signals.static_file_serving {
         "Read symbol definitions that establish static file, asset, or filesystem serving behavior."
             .to_string()
@@ -2375,6 +2381,9 @@ fn context_type_relation_focus(signals: ContextTaskSignals) -> String {
 fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
     if signals.test_coverage {
         "Follow call graph evidence from tests, specs, or regression coverage.".to_string()
+    } else if signals.request_body_parsing {
+        "Follow call graph evidence for request body parsing, payload binding, or form-data flow."
+            .to_string()
     } else if signals.static_file_serving {
         "Follow call graph evidence for static file, asset, or filesystem serving behavior."
             .to_string()
@@ -2437,6 +2446,9 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
     if signals.test_coverage {
         "Inspect references that exercise behavior in tests, specs, or regression cases."
             .to_string()
+    } else if signals.request_body_parsing {
+        "Inspect references that parse request bodies, bind payloads, or read form data."
+            .to_string()
     } else if signals.static_file_serving {
         "Inspect references that register, serve, or configure static files and assets.".to_string()
     } else if signals.response_rendering {
@@ -2495,6 +2507,9 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
 fn context_semantic_focus(signals: ContextTaskSignals) -> String {
     if signals.test_coverage {
         "Review semantic matches for test, spec, or regression coverage.".to_string()
+    } else if signals.request_body_parsing {
+        "Review semantic matches for request body parsing, payload binding, or form-data behavior."
+            .to_string()
     } else if signals.static_file_serving {
         "Review semantic matches for static file, asset, or filesystem serving behavior."
             .to_string()
@@ -2555,6 +2570,8 @@ fn context_semantic_focus(signals: ContextTaskSignals) -> String {
 fn context_dependency_focus(signals: ContextTaskSignals) -> String {
     if signals.test_coverage {
         "Check local dependencies that support test setup, fixtures, or assertions.".to_string()
+    } else if signals.request_body_parsing {
+        "Check local dependencies that supply request body parsing, payload binding, or form-data behavior.".to_string()
     } else if signals.static_file_serving {
         "Check local dependencies that supply static file, asset, or filesystem serving."
             .to_string()
@@ -2653,6 +2670,8 @@ fn context_seed_file_question(task: &str) -> String {
         "Which behavior, assertions, fixtures, or regression cases are covered here?".to_string()
     } else if signals.http_state_headers && !signals.auth_session && !signals.security_safety {
         "Where are cookies, headers, or HTTP state containers handled here?".to_string()
+    } else if signals.request_body_parsing {
+        "Where are request bodies parsed, payloads bound, content types selected, or form data read here?".to_string()
     } else if signals.static_file_serving {
         "Where are static files, assets, filesystem roots, or file responses served here?"
             .to_string()
@@ -2724,6 +2743,8 @@ fn context_symbol_definition_question(task: &str) -> String {
     if signals.test_coverage {
         "What test behavior, assertion, fixture, or regression case does this definition establish?"
             .to_string()
+    } else if signals.request_body_parsing {
+        "What request body parsing, payload binding, content-type, or form-data behavior does this definition establish?".to_string()
     } else if signals.static_file_serving {
         "What static file, asset, filesystem root, or file response behavior does this definition establish?".to_string()
     } else if signals.response_rendering {
@@ -2801,6 +2822,8 @@ fn context_call_graph_question(task: &str) -> String {
     if signals.test_coverage {
         "Which callers or callees exercise behavior through tests, specs, or regression cases?"
             .to_string()
+    } else if signals.request_body_parsing {
+        "Which callers or callees parse request bodies, select content-type binders, or read form data?".to_string()
     } else if signals.static_file_serving {
         "Which callers or callees register static routes, open filesystem roots, or serve file responses?".to_string()
     } else if signals.response_rendering {
@@ -2868,6 +2891,8 @@ fn context_dependency_question(task: &str) -> String {
     if signals.test_coverage {
         "What imported local dependency behavior supplies test setup, fixtures, or assertions?"
             .to_string()
+    } else if signals.request_body_parsing {
+        "What imported local dependency behavior supplies body parsers, payload binders, or form-data handling?".to_string()
     } else if signals.static_file_serving {
         "What imported local dependency behavior supplies static files, asset roots, or file responses?".to_string()
     } else if signals.response_rendering {
@@ -2933,6 +2958,8 @@ fn context_reference_question(task: &str) -> String {
     if signals.test_coverage {
         "Which references exercise behavior through tests, specs, fixtures, or regression cases?"
             .to_string()
+    } else if signals.request_body_parsing {
+        "Which references parse request bodies, bind payloads, choose content types, or read form data?".to_string()
     } else if signals.static_file_serving {
         "Which references register static routes, configure asset roots, or serve file responses?"
             .to_string()
@@ -2994,6 +3021,9 @@ fn context_semantic_question(task: &str) -> String {
     let signals = ContextTaskSignals::from_task(task);
     if signals.test_coverage {
         "Which semantic matches describe tests, specs, fixtures, or regression coverage?"
+            .to_string()
+    } else if signals.request_body_parsing {
+        "Which semantic matches describe request body parsing, payload binding, or form data?"
             .to_string()
     } else if signals.static_file_serving {
         "Which semantic matches describe static file serving, asset roots, or file responses?"
@@ -3075,6 +3105,7 @@ struct ContextTaskSignals {
     performance_cache: bool,
     observability_logging: bool,
     http_state_headers: bool,
+    request_body_parsing: bool,
     static_file_serving: bool,
     response_rendering: bool,
     security_safety: bool,
@@ -3180,6 +3211,39 @@ impl ContextTaskSignals {
                         "serving",
                         "filesystem",
                         "file system",
+                    ],
+                ));
+        let request_body_parsing =
+            context_text_mentions(
+                task,
+                &[
+                    "request body",
+                    "request bodies",
+                    "body parsing",
+                    "body parser",
+                    "body parsers",
+                    "payload binding",
+                    "payload parsing",
+                    "form data",
+                    "form-data",
+                    "multipart form",
+                    "content type binding",
+                    "content-type binding",
+                ],
+            ) || (context_text_mentions(task, &["body", "payload", "form", "multipart"])
+                && context_text_mentions(
+                    task,
+                    &[
+                        "parse",
+                        "parser",
+                        "parsing",
+                        "bind",
+                        "binding",
+                        "bindings",
+                        "decode",
+                        "decoder",
+                        "content type",
+                        "content-type",
                     ],
                 ));
 
@@ -3347,6 +3411,7 @@ impl ContextTaskSignals {
                 ],
             ),
             http_state_headers,
+            request_body_parsing,
             static_file_serving,
             response_rendering,
             security_safety: context_text_mentions(
@@ -5593,6 +5658,26 @@ fn auto_seed_task_focus_boost(
         };
     }
 
+    if auto_seed_request_body_parsing_task(task_keywords) {
+        let file_action_match = auto_seed_request_body_parsing_file_matches(file);
+        let symbol_action_match = symbol
+            .map(auto_seed_request_body_parsing_symbol_matches)
+            .unwrap_or(false);
+        let framework_file_match = auto_seed_request_body_parsing_framework_file_matches(file);
+
+        score += match (file_action_match, symbol_action_match) {
+            (true, true) => 2500,
+            (true, false) => 1500,
+            (false, true) => 1100,
+            _ => 0,
+        };
+        if framework_file_match && symbol_action_match {
+            score += 1900;
+        } else if framework_file_match {
+            score += 1400;
+        }
+    }
+
     if auto_seed_static_file_serving_task(task_keywords) {
         let file_action_match = auto_seed_static_file_serving_file_matches(file);
         let symbol_action_match = symbol
@@ -5798,6 +5883,109 @@ fn auto_seed_http_state_headers_symbol_matches(symbol: &str, task_keywords: &[St
                 || has_exact("headers")
                 || has_exact("caseinsensitive")
                 || (has_exact("case") && has_exact("insensitive"))))
+}
+
+fn auto_seed_request_body_parsing_task(task_keywords: &[String]) -> bool {
+    let request_or_payload = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "request" | "requests" | "body" | "bodies" | "payload" | "payloads"
+        )
+    });
+    let parsing_or_binding = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "parse"
+                | "parser"
+                | "parsers"
+                | "parsing"
+                | "bind"
+                | "binding"
+                | "bindings"
+                | "decode"
+                | "decoder"
+                | "form"
+                | "multipart"
+                | "contenttype"
+                | "content-type"
+        )
+    });
+
+    request_or_payload && parsing_or_binding
+}
+
+fn auto_seed_request_body_parsing_file_matches(file: &str) -> bool {
+    auto_seed_file_stem_matches(file, "express")
+        || auto_seed_file_stem_matches(file, "context")
+        || auto_seed_file_stem_matches(file, "wrappers")
+        || auto_seed_file_stem_matches(file, "wrapper")
+        || auto_seed_file_stem_matches(file, "request")
+        || auto_seed_file_stem_matches(file, "requests")
+        || auto_seed_file_stem_matches(file, "binding")
+        || auto_seed_file_stem_matches(file, "bindings")
+        || auto_seed_file_stem_matches(file, "json")
+        || auto_seed_file_stem_matches(file, "form")
+        || auto_seed_file_stem_matches(file, "multipart")
+        || auto_seed_file_stem_matches(file, "plain")
+        || auto_seed_file_stem_matches(file, "xml")
+        || auto_seed_file_stem_matches(file, "yaml")
+        || auto_seed_file_stem_matches(file, "toml")
+}
+
+fn auto_seed_request_body_parsing_framework_file_matches(file: &str) -> bool {
+    auto_seed_file_stem_matches(file, "express")
+        || auto_seed_file_stem_matches(file, "context")
+        || auto_seed_file_stem_matches(file, "wrappers")
+        || auto_seed_file_stem_matches(file, "wrapper")
+}
+
+fn auto_seed_request_body_parsing_symbol_matches(symbol: &str) -> bool {
+    let parts = symbol
+        .split(|ch: char| !ch.is_ascii_alphanumeric())
+        .filter(|part| !part.is_empty())
+        .map(str::to_ascii_lowercase)
+        .collect::<Vec<_>>();
+    let normalized = parts.join("");
+    let has_exact = |needle: &str| parts.iter().any(|part| part == needle);
+
+    has_exact("body")
+        || has_exact("bodyparser")
+        || has_exact("payload")
+        || has_exact("json")
+        || has_exact("raw")
+        || has_exact("text")
+        || has_exact("urlencoded")
+        || has_exact("bind")
+        || has_exact("binding")
+        || has_exact("form")
+        || has_exact("multipart")
+        || has_exact("contenttype")
+        || has_exact("decode")
+        || has_exact("decoder")
+        || (has_exact("load") && has_exact("form") && has_exact("data"))
+        || matches!(
+            normalized.as_str(),
+            "bodyparser"
+                | "bodybyteskey"
+                | "bindjson"
+                | "bindxml"
+                | "bindyaml"
+                | "bindtoml"
+                | "bindplain"
+                | "mustbindwith"
+                | "shouldbind"
+                | "shouldbindwith"
+                | "shouldbindbodywith"
+                | "shouldbindjson"
+                | "shouldbindxml"
+                | "shouldbindyaml"
+                | "shouldbindtoml"
+                | "shouldbindplain"
+                | "loadformdata"
+                | "onjsonloadingfailed"
+                | "maxformmemorysize"
+                | "maxformparts"
+        )
 }
 
 fn auto_seed_static_file_serving_task(task_keywords: &[String]) -> bool {
@@ -6427,6 +6615,13 @@ fn task_keyword_aliases(keyword: &str) -> &'static [&'static str] {
         "headers" => &["header", "case", "insensitive"],
         "case" => &["insensitive", "headers"],
         "insensitive" => &["case", "headers"],
+        "body" => &["payload", "parser", "parse"],
+        "bodies" => &["body", "payload", "parser"],
+        "payload" => &["body", "binding", "parse"],
+        "payloads" => &["payload", "body", "binding"],
+        "multipart" => &["form", "body"],
+        "contenttype" => &["binding", "parser"],
+        "content-type" => &["binding", "parser"],
         "static" => &["file", "files", "assets"],
         "asset" => &["assets", "static", "file"],
         "assets" => &["asset", "static", "files"],
@@ -6935,6 +7130,19 @@ mod tests {
         assert!(static_asset_keywords.contains(&"static".to_string()));
         assert!(static_asset_keywords.contains(&"assets".to_string()));
         assert!(auto_seed_static_file_serving_task(&static_asset_keywords));
+
+        let body_parsing_keywords = task_keywords("understand request body parsing behavior");
+        assert!(body_parsing_keywords.contains(&"request".to_string()));
+        assert!(body_parsing_keywords.contains(&"body".to_string()));
+        assert!(body_parsing_keywords.contains(&"parsing".to_string()));
+        assert!(auto_seed_request_body_parsing_task(&body_parsing_keywords));
+
+        let payload_binding_keywords = task_keywords("understand payload binding behavior");
+        assert!(payload_binding_keywords.contains(&"payload".to_string()));
+        assert!(payload_binding_keywords.contains(&"binding".to_string()));
+        assert!(auto_seed_request_body_parsing_task(
+            &payload_binding_keywords
+        ));
 
         let billing_keywords = task_keywords("understand checkout subscription payment");
         assert!(billing_keywords.contains(&"checkout".to_string()));
