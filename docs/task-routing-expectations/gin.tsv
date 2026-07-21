@@ -8,3 +8,4 @@ understand gin response rendering behavior	render/render.go
 understand gin error recovery middleware behavior	recovery.go
 understand gin static file serving behavior	routergroup.go
 understand gin request body parsing behavior	context.go
+understand gin redirect response behavior	context.go

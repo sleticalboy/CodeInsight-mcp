@@ -6,3 +6,4 @@ understand express response rendering behavior	lib/response.js
 understand express error handling behavior	lib/application.js
 understand express static file serving behavior	lib/express.js
 understand express request body parsing behavior	lib/express.js
+understand express redirect response behavior	lib/response.js

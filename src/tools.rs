@@ -2241,6 +2241,9 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
     } else if signals.request_body_parsing {
         "Start with seed file request body parsing, payload binding, or form-data boundaries."
             .to_string()
+    } else if signals.response_redirect {
+        "Start with seed file response redirect, status code, or Location header boundaries."
+            .to_string()
     } else if signals.static_file_serving {
         "Start with seed file static file, asset, or filesystem serving boundaries.".to_string()
     } else if signals.response_rendering {
@@ -2300,6 +2303,9 @@ fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
         "Read symbol definitions that establish test coverage or regression behavior.".to_string()
     } else if signals.request_body_parsing {
         "Read symbol definitions that establish request body parsing or payload binding behavior."
+            .to_string()
+    } else if signals.response_redirect {
+        "Read symbol definitions that establish response redirect, status code, or Location header behavior."
             .to_string()
     } else if signals.static_file_serving {
         "Read symbol definitions that establish static file, asset, or filesystem serving behavior."
@@ -2384,6 +2390,9 @@ fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
     } else if signals.request_body_parsing {
         "Follow call graph evidence for request body parsing, payload binding, or form-data flow."
             .to_string()
+    } else if signals.response_redirect {
+        "Follow call graph evidence for redirect responses, status codes, or Location headers."
+            .to_string()
     } else if signals.static_file_serving {
         "Follow call graph evidence for static file, asset, or filesystem serving behavior."
             .to_string()
@@ -2449,6 +2458,8 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
     } else if signals.request_body_parsing {
         "Inspect references that parse request bodies, bind payloads, or read form data."
             .to_string()
+    } else if signals.response_redirect {
+        "Inspect references that issue redirect responses or set redirect locations.".to_string()
     } else if signals.static_file_serving {
         "Inspect references that register, serve, or configure static files and assets.".to_string()
     } else if signals.response_rendering {
@@ -2509,6 +2520,9 @@ fn context_semantic_focus(signals: ContextTaskSignals) -> String {
         "Review semantic matches for test, spec, or regression coverage.".to_string()
     } else if signals.request_body_parsing {
         "Review semantic matches for request body parsing, payload binding, or form-data behavior."
+            .to_string()
+    } else if signals.response_redirect {
+        "Review semantic matches for redirect responses, status codes, or Location headers."
             .to_string()
     } else if signals.static_file_serving {
         "Review semantic matches for static file, asset, or filesystem serving behavior."
@@ -2572,6 +2586,9 @@ fn context_dependency_focus(signals: ContextTaskSignals) -> String {
         "Check local dependencies that support test setup, fixtures, or assertions.".to_string()
     } else if signals.request_body_parsing {
         "Check local dependencies that supply request body parsing, payload binding, or form-data behavior.".to_string()
+    } else if signals.response_redirect {
+        "Check local dependencies that supply redirect response or Location header behavior."
+            .to_string()
     } else if signals.static_file_serving {
         "Check local dependencies that supply static file, asset, or filesystem serving."
             .to_string()
@@ -2672,6 +2689,9 @@ fn context_seed_file_question(task: &str) -> String {
         "Where are cookies, headers, or HTTP state containers handled here?".to_string()
     } else if signals.request_body_parsing {
         "Where are request bodies parsed, payloads bound, content types selected, or form data read here?".to_string()
+    } else if signals.response_redirect {
+        "Where are redirect responses built, status codes selected, or Location headers set here?"
+            .to_string()
     } else if signals.static_file_serving {
         "Where are static files, assets, filesystem roots, or file responses served here?"
             .to_string()
@@ -2745,6 +2765,8 @@ fn context_symbol_definition_question(task: &str) -> String {
             .to_string()
     } else if signals.request_body_parsing {
         "What request body parsing, payload binding, content-type, or form-data behavior does this definition establish?".to_string()
+    } else if signals.response_redirect {
+        "What redirect response, status code, or Location header behavior does this definition establish?".to_string()
     } else if signals.static_file_serving {
         "What static file, asset, filesystem root, or file response behavior does this definition establish?".to_string()
     } else if signals.response_rendering {
@@ -2824,6 +2846,8 @@ fn context_call_graph_question(task: &str) -> String {
             .to_string()
     } else if signals.request_body_parsing {
         "Which callers or callees parse request bodies, select content-type binders, or read form data?".to_string()
+    } else if signals.response_redirect {
+        "Which callers or callees issue redirects, select redirect status codes, or set Location headers?".to_string()
     } else if signals.static_file_serving {
         "Which callers or callees register static routes, open filesystem roots, or serve file responses?".to_string()
     } else if signals.response_rendering {
@@ -2893,6 +2917,8 @@ fn context_dependency_question(task: &str) -> String {
             .to_string()
     } else if signals.request_body_parsing {
         "What imported local dependency behavior supplies body parsers, payload binders, or form-data handling?".to_string()
+    } else if signals.response_redirect {
+        "What imported local dependency behavior supplies redirect responses, status codes, or Location headers?".to_string()
     } else if signals.static_file_serving {
         "What imported local dependency behavior supplies static files, asset roots, or file responses?".to_string()
     } else if signals.response_rendering {
@@ -2960,6 +2986,8 @@ fn context_reference_question(task: &str) -> String {
             .to_string()
     } else if signals.request_body_parsing {
         "Which references parse request bodies, bind payloads, choose content types, or read form data?".to_string()
+    } else if signals.response_redirect {
+        "Which references issue redirect responses, choose redirect status codes, or set Location headers?".to_string()
     } else if signals.static_file_serving {
         "Which references register static routes, configure asset roots, or serve file responses?"
             .to_string()
@@ -3024,6 +3052,9 @@ fn context_semantic_question(task: &str) -> String {
             .to_string()
     } else if signals.request_body_parsing {
         "Which semantic matches describe request body parsing, payload binding, or form data?"
+            .to_string()
+    } else if signals.response_redirect {
+        "Which semantic matches describe redirect responses, status codes, or Location headers?"
             .to_string()
     } else if signals.static_file_serving {
         "Which semantic matches describe static file serving, asset roots, or file responses?"
@@ -3106,6 +3137,7 @@ struct ContextTaskSignals {
     observability_logging: bool,
     http_state_headers: bool,
     request_body_parsing: bool,
+    response_redirect: bool,
     static_file_serving: bool,
     response_rendering: bool,
     security_safety: bool,
@@ -3246,6 +3278,47 @@ impl ContextTaskSignals {
                         "content-type",
                     ],
                 ));
+        let response_redirect = context_text_mentions(
+            task,
+            &[
+                "redirect response",
+                "redirect responses",
+                "response redirect",
+                "response redirects",
+                "http redirect",
+                "http redirects",
+                "location header",
+                "location headers",
+            ],
+        ) || (context_text_mentions(
+            task,
+            &["redirect", "redirects", "redirection"],
+        ) && context_text_mentions(
+            task,
+            &[
+                "response",
+                "responses",
+                "status",
+                "status code",
+                "status codes",
+                "location",
+                "location header",
+                "handler",
+                "server",
+            ],
+        ) && !context_text_mentions(
+            task,
+            &[
+                "client",
+                "network client",
+                "proxy",
+                "proxies",
+                "adapter",
+                "adapters",
+                "transport",
+                "transports",
+            ],
+        ));
 
         Self {
             impact_flow: context_text_mentions(
@@ -3412,6 +3485,7 @@ impl ContextTaskSignals {
             ),
             http_state_headers,
             request_body_parsing,
+            response_redirect,
             static_file_serving,
             response_rendering,
             security_safety: context_text_mentions(
@@ -5678,6 +5752,26 @@ fn auto_seed_task_focus_boost(
         }
     }
 
+    if auto_seed_response_redirect_task(task_keywords) {
+        let file_action_match = auto_seed_response_redirect_file_matches(file);
+        let symbol_action_match = symbol
+            .map(auto_seed_response_redirect_symbol_matches)
+            .unwrap_or(false);
+        let framework_file_match = auto_seed_response_redirect_framework_file_matches(file);
+
+        score += match (file_action_match, symbol_action_match) {
+            (true, true) => 2600,
+            (true, false) => 1400,
+            (false, true) => 1100,
+            _ => 0,
+        };
+        if framework_file_match && symbol_action_match {
+            score += 2100;
+        } else if framework_file_match {
+            score += 1500;
+        }
+    }
+
     if auto_seed_static_file_serving_task(task_keywords) {
         let file_action_match = auto_seed_static_file_serving_file_matches(file);
         let symbol_action_match = symbol
@@ -5985,6 +6079,79 @@ fn auto_seed_request_body_parsing_symbol_matches(symbol: &str) -> bool {
                 | "onjsonloadingfailed"
                 | "maxformmemorysize"
                 | "maxformparts"
+        )
+}
+
+fn auto_seed_response_redirect_task(task_keywords: &[String]) -> bool {
+    let redirect_task = task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "redirect" | "redirects" | "redirection"));
+    let response_task = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "response" | "responses" | "status" | "location" | "handler" | "server"
+        )
+    });
+    let client_transport_task = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "client"
+                | "network"
+                | "proxy"
+                | "proxies"
+                | "adapter"
+                | "adapters"
+                | "transport"
+                | "transports"
+        )
+    });
+
+    redirect_task && response_task && !client_transport_task
+}
+
+fn auto_seed_response_redirect_file_matches(file: &str) -> bool {
+    auto_seed_file_stem_matches(file, "response")
+        || auto_seed_file_stem_matches(file, "responses")
+        || auto_seed_file_stem_matches(file, "context")
+        || auto_seed_file_stem_matches(file, "helper")
+        || auto_seed_file_stem_matches(file, "helpers")
+        || auto_seed_file_stem_matches(file, "redirect")
+        || auto_seed_file_stem_matches(file, "redirects")
+        || file
+            .split('/')
+            .any(|part| part.eq_ignore_ascii_case("render"))
+}
+
+fn auto_seed_response_redirect_framework_file_matches(file: &str) -> bool {
+    auto_seed_file_stem_matches(file, "response")
+        || auto_seed_file_stem_matches(file, "responses")
+        || auto_seed_file_stem_matches(file, "context")
+        || auto_seed_file_stem_matches(file, "helper")
+        || auto_seed_file_stem_matches(file, "helpers")
+}
+
+fn auto_seed_response_redirect_symbol_matches(symbol: &str) -> bool {
+    let parts = symbol
+        .split(|ch: char| !ch.is_ascii_alphanumeric())
+        .filter(|part| !part.is_empty())
+        .map(str::to_ascii_lowercase)
+        .collect::<Vec<_>>();
+    let normalized = parts.join("");
+    let has_exact = |needle: &str| parts.iter().any(|part| part == needle);
+
+    has_exact("redirect")
+        || has_exact("redirects")
+        || has_exact("redirection")
+        || has_exact("location")
+        || (has_exact("status") && has_exact("redirect"))
+        || matches!(
+            normalized.as_str(),
+            "redirect"
+                | "redirects"
+                | "redirectrequest"
+                | "redirectresponse"
+                | "redirecttrailingslash"
+                | "redirectfixedpath"
         )
 }
 
@@ -6645,8 +6812,9 @@ fn task_keyword_aliases(keyword: &str) -> &'static [&'static str] {
         "https" => &["http", "network", "client"],
         "proxy" => &["proxies", "adapter", "transport"],
         "proxies" => &["proxy", "adapter", "transport"],
-        "redirect" => &["redirects", "request", "response"],
-        "redirects" => &["redirect", "request", "response"],
+        "redirect" => &["redirects", "redirection"],
+        "redirects" => &["redirect", "redirection"],
+        "redirection" => &["redirect", "redirects"],
         "transport" => &["transports", "adapter", "network"],
         "transports" => &["transport", "adapter", "network"],
         "adapter" => &["adapters", "transport", "network"],
@@ -7083,6 +7251,17 @@ mod tests {
         assert!(network_keywords.contains(&"transport".to_string()));
         assert!(network_keywords.contains(&"adapter".to_string()));
         assert!(network_keywords.contains(&"network".to_string()));
+        assert!(!auto_seed_response_redirect_task(&network_keywords));
+
+        let response_redirect_keywords =
+            task_keywords("understand redirect response status location behavior");
+        assert!(response_redirect_keywords.contains(&"redirect".to_string()));
+        assert!(response_redirect_keywords.contains(&"response".to_string()));
+        assert!(response_redirect_keywords.contains(&"status".to_string()));
+        assert!(response_redirect_keywords.contains(&"location".to_string()));
+        assert!(auto_seed_response_redirect_task(
+            &response_redirect_keywords
+        ));
 
         let validation_keywords = task_keywords("understand json binding validation behavior");
         assert!(validation_keywords.contains(&"json".to_string()));
