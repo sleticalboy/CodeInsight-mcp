@@ -1116,6 +1116,9 @@ main() {
     '7,098,531 task source lines' \
     "README public route-quality headline"
   require_pattern README.md \
+    'Express, FastAPI, Flask, Gin, Requests, and Streamlit expectation files' \
+    "README public route matrix default cases"
+  require_pattern README.md \
     'first suggested tool such as `file_outline`' \
     "README public route-quality suggested tool evidence"
   require_pattern README.md \
@@ -1187,6 +1190,9 @@ main() {
   require_pattern docs/public-task-routing-matrix.md \
     'Aggregate line reduction: `99\.43%`' \
     "public task routing matrix aggregate line-reduction summary"
+  require_pattern docs/task-routing-matrix.md \
+    'pinned Express, FastAPI, Flask, Gin, Requests, and Streamlit commits' \
+    "task routing matrix default public cases"
   require_pattern docs/public-task-routing-matrix.md \
     '\[`public-task-routing-matrix-summary\.json`\]\(public-task-routing-matrix-summary\.json\)' \
     "public task routing matrix JSON summary link"
