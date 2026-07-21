@@ -141,7 +141,13 @@ Limitations:
 
 - Without a configured embedding provider, it remains deterministic and local-only.
 - It uses vector embeddings only when the selected provider/model already has local indexed vectors; otherwise it keeps the deterministic fallback path.
-- It does not yet build a full type graph, rank by test relevance, rank by semantic similarity, or use a full edit history signal. Type-relation routing is a best-effort context hint and does not model compiler-grade inheritance, interface dispatch, generics, JavaScript mixin expressions, or language-server type resolution.
+- It does not yet build a full type graph, rank by semantic similarity, or use
+  a full edit history signal. Type-relation routing is a best-effort context
+  hint and does not model compiler-grade inheritance, interface dispatch,
+  generics, JavaScript mixin expressions, or language-server type resolution.
+  Test and fixture files are downranked by default and promoted for explicit
+  test, spec, coverage, or regression tasks, but this remains a lexical routing
+  signal rather than coverage-aware test selection.
 - Task relevance is lexical only and uses simple ASCII keyword matching.
 - Token estimation is approximate and based on character count.
 - It may include noisy references when the seed symbol is common.

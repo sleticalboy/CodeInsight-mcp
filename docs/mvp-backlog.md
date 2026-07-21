@@ -2,7 +2,9 @@
 
 ## MVP Objective
 
-Build a local MCP server that helps AI agents understand a repository through indexed symbols, file outlines, dependency relationships, references, and compact context packs.
+Build a local-first MCP first-read router that helps AI agents turn broad
+repository tasks into indexed overviews, selected context, reading plans,
+follow-up tools, and pre-edit impact checks.
 
 ## Scope
 
