@@ -11,11 +11,11 @@
       "ref": "ae6dd37680e3a00618d6c8a3e522f0ee4eeba1a4",
       "expect_file": "docs/task-routing-expectations/express.tsv",
       "summary_json": "<output-dir>/express/summary.json",
-      "task_count": 16,
-      "expectation_count": 16,
-      "total_task_source_lines": 343648,
-      "total_selected_lines": 5624,
-      "total_estimated_tokens": 38449,
+      "task_count": 17,
+      "expectation_count": 17,
+      "total_task_source_lines": 365126,
+      "total_selected_lines": 5986,
+      "total_estimated_tokens": 40811,
       "max_impacted_files": 43,
       "routes": [
         {
@@ -209,6 +209,18 @@
           "estimated_tokens": 2362,
           "risk_level": "high",
           "impacted_files": 27
+        },
+        {
+          "task": "understand express 404 not found final handler behavior",
+          "first_file": "lib/application.js",
+          "first_reading_focus": "Start with seed file route miss, 404/405, not-found, or method-not-allowed boundaries.",
+          "first_reading_question": "Where are route misses, 404/405 responses, not-found handlers, or method-not-allowed fallbacks decided here?",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 21478,
+          "line_reduction": "98.3%",
+          "estimated_tokens": 2362,
+          "risk_level": "high",
+          "impacted_files": 27
         }
       ]
     },
@@ -218,11 +230,11 @@
       "ref": "36e4a824f340fdee7ed50937ba8e7f6bc7d17f81",
       "expect_file": "docs/task-routing-expectations/flask.tsv",
       "summary_json": "<output-dir>/flask/summary.json",
-      "task_count": 16,
-      "expectation_count": 16,
-      "total_task_source_lines": 293392,
-      "total_selected_lines": 9376,
-      "total_estimated_tokens": 94325,
+      "task_count": 17,
+      "expectation_count": 17,
+      "total_task_source_lines": 311729,
+      "total_selected_lines": 9949,
+      "total_estimated_tokens": 100180,
       "max_impacted_files": 32,
       "routes": [
         {
@@ -416,6 +428,18 @@
           "estimated_tokens": 5984,
           "risk_level": "high",
           "impacted_files": 22
+        },
+        {
+          "task": "understand flask not found method not allowed routing behavior",
+          "first_file": "src/flask/app.py",
+          "first_reading_focus": "Start with seed file route miss, 404/405, not-found, or method-not-allowed boundaries.",
+          "first_reading_question": "Where are route misses, 404/405 responses, not-found handlers, or method-not-allowed fallbacks decided here?",
+          "seed_strategy": "auto_entrypoint",
+          "total_lines": 18337,
+          "line_reduction": "96.9%",
+          "estimated_tokens": 5855,
+          "risk_level": "high",
+          "impacted_files": 32
         }
       ]
     },
@@ -425,11 +449,11 @@
       "ref": "34dac209ffb6ef85cc78c5d217bbb7ad001d68fd",
       "expect_file": "docs/task-routing-expectations/gin.tsv",
       "summary_json": "<output-dir>/gin/summary.json",
-      "task_count": 19,
-      "expectation_count": 19,
-      "total_task_source_lines": 457881,
-      "total_selected_lines": 6003,
-      "total_estimated_tokens": 53811,
+      "task_count": 20,
+      "expectation_count": 20,
+      "total_task_source_lines": 481980,
+      "total_selected_lines": 6341,
+      "total_estimated_tokens": 56993,
       "max_impacted_files": 22,
       "routes": [
         {
@@ -659,6 +683,18 @@
           "estimated_tokens": 3185,
           "risk_level": "high",
           "impacted_files": 20
+        },
+        {
+          "task": "understand gin no route no method behavior",
+          "first_file": "gin.go",
+          "first_reading_focus": "Start with seed file route miss, 404/405, not-found, or method-not-allowed boundaries.",
+          "first_reading_question": "Where are route misses, 404/405 responses, not-found handlers, or method-not-allowed fallbacks decided here?",
+          "seed_strategy": "auto_entrypoint",
+          "total_lines": 24099,
+          "line_reduction": "98.6%",
+          "estimated_tokens": 3182,
+          "risk_level": "high",
+          "impacted_files": 20
         }
       ]
     },
@@ -823,13 +859,13 @@
     }
   ],
   "aggregate": {
-    "task_count": 63,
-    "expectation_count": 63,
-    "total_task_source_lines": 1239305,
-    "total_selected_lines": 28192,
-    "total_estimated_tokens": 251932,
+    "task_count": 66,
+    "expectation_count": 66,
+    "total_task_source_lines": 1303219,
+    "total_selected_lines": 29465,
+    "total_estimated_tokens": 263331,
     "max_impacted_files": 43,
-    "line_reduction": 97.72
+    "line_reduction": 97.73
   },
   "generated_by": "scripts/update-public-task-routing-matrix.sh"
 }

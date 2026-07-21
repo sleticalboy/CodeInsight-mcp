@@ -14,3 +14,4 @@ understand express response cookie behavior	lib/response.js
 understand express HTTP method routing behavior	lib/application.js
 understand express mounted app router behavior	lib/application.js
 understand express request dispatch lifecycle behavior	lib/application.js
+understand express 404 not found final handler behavior	lib/application.js

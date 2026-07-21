@@ -115,6 +115,11 @@ exports.mountRouter = function mountedAppRouter(path, router) {
 exports.dispatchRequest = function requestDispatchLifecycle(request, response, next) {
   // Express request dispatch lifecycle behavior enters middleware and finalizes responses.
   return next(request, response);
+};
+
+exports.finalHandler = function finalHandler404(request, response, callback) {
+  // Express 404 not found final handler behavior decides route miss fallbacks.
+  return callback ? callback(request, response) : { status: 404, route: "miss" };
 };'
   write_file "$repo/lib/response.js" 'exports.render = function renderResponse(view, options) {
   // Express response rendering behavior sends rendered templates as HTTP output.
@@ -158,10 +163,10 @@ main() {
     --token-budget 1600 | tee "$output_log"
 
   require_jq "$summary_json" '.status == "pass" and .case_count == 1' "aggregate summary should pass"
-  require_jq "$summary_json" '.aggregate.task_count == 16 and .aggregate.expectation_count == 16' "express expectation count should be aggregated"
+  require_jq "$summary_json" '.aggregate.task_count == 17 and .aggregate.expectation_count == 17' "express expectation count should be aggregated"
   require_jq "$summary_json" '.aggregate.total_task_source_lines > .aggregate.total_selected_lines' "aggregate should include source line baseline"
   require_jq "$summary_json" '.aggregate.line_reduction > 0' "aggregate should include line reduction"
-  require_jq "$summary_json" '.cases[] | select(.case == "express" and .task_count == 16)' "express case should be present"
+  require_jq "$summary_json" '.cases[] | select(.case == "express" and .task_count == 17)' "express case should be present"
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand express application routing behavior" and .first_file == "lib/express.js")' "routing task should choose express entry"
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand middleware behavior" and .first_file == "lib/application.js")' "middleware task should choose application"
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand startup flow" and .first_file == "index.js")' "startup task should choose index"
@@ -177,13 +182,14 @@ main() {
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand express HTTP method routing behavior" and .first_file == "lib/application.js")' "HTTP method routing task should choose application"
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand express mounted app router behavior" and .first_file == "lib/application.js")' "mounted router task should choose application"
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand express request dispatch lifecycle behavior" and .first_file == "lib/application.js")' "request dispatch lifecycle task should choose application"
+  require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand express 404 not found final handler behavior" and .first_file == "lib/application.js")' "route miss task should choose application"
   grep -Fq "evidence summary" "$output_log" ||
     fail "terminal output should include evidence summary"
-  grep -Fq "expectations: 16/16" "$output_log" ||
+  grep -Fq "expectations: 17/17" "$output_log" ||
     fail "terminal output should include expectation pass count"
   grep -Fq "line_reduction:" "$output_log" ||
     fail "terminal output should include aggregate line reduction"
-  grep -Fq "express: 16 tasks, first files index.js, lib/application.js, lib/express.js, lib/request.js, lib/response.js" "$output_log" ||
+  grep -Fq "express: 17 tasks, first files index.js, lib/application.js, lib/express.js, lib/request.js, lib/response.js" "$output_log" ||
     fail "terminal output should include first file summary"
   grep -Fq "## Evidence Summary" "$output_dir/public-task-routing-matrix.md" ||
     fail "markdown output should include evidence summary"

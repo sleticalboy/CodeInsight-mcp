@@ -2251,6 +2251,9 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
     } else if signals.route_grouping {
         "Start with seed file mounted routers, blueprints, route groups, or nested route boundaries."
             .to_string()
+    } else if signals.route_miss_handling {
+        "Start with seed file route miss, 404/405, not-found, or method-not-allowed boundaries."
+            .to_string()
     } else if signals.http_method_routing {
         "Start with seed file HTTP method routing, verb registration, or dispatch boundaries."
             .to_string()
@@ -2335,6 +2338,9 @@ fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
             .to_string()
     } else if signals.route_grouping {
         "Read symbol definitions that establish mounted router, blueprint, route group, or nested route behavior."
+            .to_string()
+    } else if signals.route_miss_handling {
+        "Read symbol definitions that establish route miss, 404/405, not-found, or method-not-allowed behavior."
             .to_string()
     } else if signals.http_method_routing {
         "Read symbol definitions that establish HTTP method routing, verb registration, or dispatch behavior."
@@ -2443,6 +2449,9 @@ fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
     } else if signals.route_grouping {
         "Follow call graph evidence for mounted routers, blueprints, route groups, or nested route dispatch."
             .to_string()
+    } else if signals.route_miss_handling {
+        "Follow call graph evidence for route misses, 404/405 responses, or method-not-allowed fallbacks."
+            .to_string()
     } else if signals.http_method_routing {
         "Follow call graph evidence for HTTP method routing, verb registration, or dispatch."
             .to_string()
@@ -2531,6 +2540,9 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
     } else if signals.route_grouping {
         "Inspect references that mount routers, register blueprints, create route groups, or attach nested routes."
             .to_string()
+    } else if signals.route_miss_handling {
+        "Inspect references that configure not-found handlers, method-not-allowed handlers, or route miss fallbacks."
+            .to_string()
     } else if signals.http_method_routing {
         "Inspect references that register HTTP verbs, match methods, or dispatch handlers."
             .to_string()
@@ -2613,6 +2625,9 @@ fn context_semantic_focus(signals: ContextTaskSignals) -> String {
             .to_string()
     } else if signals.route_grouping {
         "Review semantic matches for mounted routers, blueprints, route groups, or nested route structure."
+            .to_string()
+    } else if signals.route_miss_handling {
+        "Review semantic matches for route misses, not-found handlers, method-not-allowed handlers, or 404/405 responses."
             .to_string()
     } else if signals.http_method_routing {
         "Review semantic matches for HTTP method routing, verb registration, or dispatch."
@@ -2699,6 +2714,9 @@ fn context_dependency_focus(signals: ContextTaskSignals) -> String {
             .to_string()
     } else if signals.route_grouping {
         "Check local dependencies that supply mounted router, blueprint, route group, or nested route behavior."
+            .to_string()
+    } else if signals.route_miss_handling {
+        "Check local dependencies that supply route miss, not-found, method-not-allowed, or final handler behavior."
             .to_string()
     } else if signals.http_method_routing {
         "Check local dependencies that supply HTTP method routing, verb registration, or dispatch behavior."
@@ -2821,6 +2839,9 @@ fn context_seed_file_question(task: &str) -> String {
     } else if signals.route_grouping {
         "Where are routers mounted, blueprints registered, route groups created, or nested routes attached here?"
             .to_string()
+    } else if signals.route_miss_handling {
+        "Where are route misses, 404/405 responses, not-found handlers, or method-not-allowed fallbacks decided here?"
+            .to_string()
     } else if signals.http_method_routing {
         "Where are HTTP methods registered, verbs matched, or handlers dispatched here?".to_string()
     } else if signals.http_state_headers && !signals.auth_session && !signals.security_safety {
@@ -2917,6 +2938,9 @@ fn context_symbol_definition_question(task: &str) -> String {
             .to_string()
     } else if signals.route_grouping {
         "What mounted router, blueprint, route group, prefix, or nested route behavior does this definition establish?"
+            .to_string()
+    } else if signals.route_miss_handling {
+        "What route miss, 404/405, not-found, or method-not-allowed behavior does this definition establish?"
             .to_string()
     } else if signals.http_method_routing {
         "What HTTP method routing, verb registration, or dispatch behavior does this definition establish?"
@@ -3016,6 +3040,9 @@ fn context_call_graph_question(task: &str) -> String {
     } else if signals.route_grouping {
         "Which callers or callees mount routers, register blueprints, create groups, or attach nested handlers?"
             .to_string()
+    } else if signals.route_miss_handling {
+        "Which callers or callees decide route misses, 404/405 responses, or method-not-allowed fallbacks?"
+            .to_string()
     } else if signals.http_method_routing {
         "Which callers or callees register HTTP methods, match verbs, or dispatch handlers?"
             .to_string()
@@ -3105,6 +3132,9 @@ fn context_dependency_question(task: &str) -> String {
     } else if signals.route_grouping {
         "What imported local dependency behavior supplies router mounting, blueprint registration, route groups, or prefixes?"
             .to_string()
+    } else if signals.route_miss_handling {
+        "What imported local dependency behavior supplies not-found, method-not-allowed, 404/405, or final handler behavior?"
+            .to_string()
     } else if signals.http_method_routing {
         "What imported local dependency behavior supplies HTTP method routing or verb dispatch?"
             .to_string()
@@ -3190,6 +3220,9 @@ fn context_reference_question(task: &str) -> String {
     } else if signals.route_grouping {
         "Which references mount routers, register blueprints, create route groups, or attach nested routes?"
             .to_string()
+    } else if signals.route_miss_handling {
+        "Which references configure not-found handlers, method-not-allowed handlers, or 404/405 fallbacks?"
+            .to_string()
     } else if signals.http_method_routing {
         "Which references register HTTP methods, match verbs, or dispatch handlers?".to_string()
     } else if signals.request_body_parsing {
@@ -3274,6 +3307,9 @@ fn context_semantic_question(task: &str) -> String {
             .to_string()
     } else if signals.route_grouping {
         "Which semantic matches describe router mounting, blueprint registration, route groups, or nested routes?"
+            .to_string()
+    } else if signals.route_miss_handling {
+        "Which semantic matches describe route misses, 404/405 responses, not-found handlers, or method-not-allowed fallbacks?"
             .to_string()
     } else if signals.http_method_routing {
         "Which semantic matches describe HTTP method routing, verb registration, or dispatch?"
@@ -3374,6 +3410,7 @@ struct ContextTaskSignals {
     route_parameters: bool,
     url_building: bool,
     route_grouping: bool,
+    route_miss_handling: bool,
     http_method_routing: bool,
     response_redirect: bool,
     static_file_serving: bool,
@@ -3759,6 +3796,52 @@ impl ContextTaskSignals {
                 "prefixes",
             ],
         ));
+        let route_miss_handling =
+            context_text_mentions(
+                task,
+                &[
+                    "not found",
+                    "not-found",
+                    "notfound",
+                    "no route",
+                    "noroute",
+                    "no method",
+                    "nomethod",
+                    "method not allowed",
+                    "method-not-allowed",
+                    "not allowed",
+                    "404",
+                    "405",
+                    "final handler",
+                    "finalhandler",
+                    "route miss",
+                    "route misses",
+                    "routing exception",
+                    "routing exceptions",
+                ],
+            ) || (context_text_mentions(
+                task,
+                &[
+                    "404",
+                    "405",
+                    "notfound",
+                    "noroute",
+                    "nomethod",
+                    "miss",
+                    "missing",
+                    "fallback",
+                    "fallthrough",
+                    "finalhandler",
+                    "final",
+                    "exception",
+                ],
+            ) && context_text_mentions(
+                task,
+                &[
+                    "route", "routes", "router", "routing", "method", "methods", "handler",
+                    "handlers", "http", "request", "response",
+                ],
+            ) && !context_text_mentions(task, &["template", "templates"]));
         let http_method_routing = context_text_mentions(
             task,
             &[
@@ -4135,6 +4218,7 @@ impl ContextTaskSignals {
             route_parameters,
             url_building,
             route_grouping,
+            route_miss_handling,
             http_method_routing,
             response_redirect,
             static_file_serving,
@@ -6145,14 +6229,22 @@ fn auto_context_seed_files(
     }
 
     let mut candidates = candidates.into_values().collect::<Vec<_>>();
+    let route_miss_task = auto_seed_route_miss_handling_task(task_keywords);
     candidates.sort_by(|left, right| {
-        right
-            .score
-            .cmp(&left.score)
-            .then_with(|| left.file.cmp(&right.file))
+        if route_miss_task {
+            auto_seed_route_miss_file_priority(&right.file)
+                .cmp(&auto_seed_route_miss_file_priority(&left.file))
+                .then_with(|| right.score.cmp(&left.score))
+                .then_with(|| left.file.cmp(&right.file))
+        } else {
+            right
+                .score
+                .cmp(&left.score)
+                .then_with(|| left.file.cmp(&right.file))
+        }
     });
 
-    let selected_candidate = if auto_seed_prefers_entrypoint(task_keywords) {
+    let selected_candidate = if route_miss_task || auto_seed_prefers_entrypoint(task_keywords) {
         candidates.first()
     } else {
         candidates
@@ -6520,6 +6612,26 @@ fn auto_seed_task_focus_boost(
             score += 3000;
         } else if framework_file_match {
             score += 2100;
+        }
+    }
+
+    if auto_seed_route_miss_handling_task(task_keywords) {
+        let file_action_match = auto_seed_route_miss_handling_file_matches(file);
+        let symbol_action_match = symbol
+            .map(auto_seed_route_miss_handling_symbol_matches)
+            .unwrap_or(false);
+        let framework_file_match = auto_seed_route_miss_handling_framework_file_matches(file);
+
+        score += match (file_action_match, symbol_action_match) {
+            (true, true) => 3000,
+            (true, false) => 1600,
+            (false, true) => 1300,
+            _ => 0,
+        };
+        if framework_file_match && symbol_action_match {
+            score += 3400;
+        } else if framework_file_match {
+            score += 2400;
         }
     }
 
@@ -7405,6 +7517,129 @@ fn auto_seed_route_grouping_symbol_matches(symbol: &str) -> bool {
         )
 }
 
+fn auto_seed_route_miss_handling_task(task_keywords: &[String]) -> bool {
+    let miss_task = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "404"
+                | "405"
+                | "no"
+                | "not"
+                | "found"
+                | "notfound"
+                | "noroute"
+                | "nomethod"
+                | "allowed"
+                | "miss"
+                | "missing"
+                | "fallback"
+                | "fallthrough"
+                | "final"
+                | "finalhandler"
+                | "exception"
+        )
+    });
+    let routing_task = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "route"
+                | "routes"
+                | "router"
+                | "routing"
+                | "method"
+                | "methods"
+                | "handler"
+                | "handlers"
+                | "http"
+                | "request"
+                | "response"
+        )
+    });
+    let template_task = task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "template" | "templates"));
+
+    miss_task && routing_task && !template_task
+}
+
+fn auto_seed_route_miss_handling_file_matches(file: &str) -> bool {
+    auto_seed_file_stem_matches(file, "application")
+        || auto_seed_file_stem_matches(file, "app")
+        || auto_seed_file_stem_matches(file, "gin")
+        || auto_seed_file_stem_matches(file, "router")
+        || auto_seed_file_stem_matches(file, "routergroup")
+        || auto_seed_file_stem_matches(file, "route")
+        || auto_seed_file_stem_matches(file, "routes")
+        || auto_seed_file_stem_matches(file, "context")
+        || auto_seed_file_stem_matches(file, "wrapper")
+        || auto_seed_file_stem_matches(file, "wrappers")
+}
+
+fn auto_seed_route_miss_handling_framework_file_matches(file: &str) -> bool {
+    auto_seed_file_stem_matches(file, "application")
+        || auto_seed_file_stem_matches(file, "app")
+        || auto_seed_file_stem_matches(file, "gin")
+}
+
+fn auto_seed_route_miss_file_priority(file: &str) -> i32 {
+    if auto_seed_file_stem_matches(file, "application")
+        || auto_seed_file_stem_matches(file, "app")
+        || auto_seed_file_stem_matches(file, "gin")
+    {
+        2
+    } else if auto_seed_file_stem_matches(file, "wrapper")
+        || auto_seed_file_stem_matches(file, "wrappers")
+        || auto_seed_file_stem_matches(file, "routergroup")
+    {
+        -1
+    } else {
+        0
+    }
+}
+
+fn auto_seed_route_miss_handling_symbol_matches(symbol: &str) -> bool {
+    let parts = symbol
+        .split(|ch: char| !ch.is_ascii_alphanumeric())
+        .filter(|part| !part.is_empty())
+        .map(str::to_ascii_lowercase)
+        .collect::<Vec<_>>();
+    let normalized = parts.join("");
+    let has_exact = |needle: &str| parts.iter().any(|part| part == needle);
+
+    has_exact("notfound")
+        || has_exact("noroute")
+        || has_exact("nomethod")
+        || has_exact("finalhandler")
+        || has_exact("routingexception")
+        || has_exact("handlemethodnotallowed")
+        || has_exact("serveerror")
+        || (has_exact("not") && has_exact("found"))
+        || (has_exact("method") && has_exact("not") && has_exact("allowed"))
+        || (has_exact("handle") && has_exact("http") && has_exact("exception"))
+        || (has_exact("raise") && has_exact("routing") && has_exact("exception"))
+        || (has_exact("rebuild") && has_exact("404"))
+        || (has_exact("rebuild") && has_exact("405"))
+        || matches!(
+            normalized.as_str(),
+            "finalhandler"
+                | "noroute"
+                | "nomethod"
+                | "allnoroute"
+                | "allnomethod"
+                | "rebuild404handlers"
+                | "rebuild405handlers"
+                | "serveerror"
+                | "handlemethodnotallowed"
+                | "routingexception"
+                | "raiseroutingexception"
+                | "handlehttpexception"
+                | "dispatchrequest"
+                | "fulldispatchrequest"
+                | "notfound"
+                | "methodnotallowed"
+        )
+}
+
 fn auto_seed_http_method_routing_task(task_keywords: &[String]) -> bool {
     let method_task = task_keywords.iter().any(|keyword| {
         matches!(
@@ -7446,8 +7681,29 @@ fn auto_seed_http_method_routing_task(task_keywords: &[String]) -> bool {
             "proxy" | "proxies" | "adapter" | "adapters" | "transport" | "transports"
         )
     });
+    let route_miss_task = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "404"
+                | "405"
+                | "no"
+                | "not"
+                | "found"
+                | "notfound"
+                | "noroute"
+                | "nomethod"
+                | "allowed"
+                | "miss"
+                | "missing"
+                | "fallback"
+                | "fallthrough"
+                | "final"
+                | "finalhandler"
+                | "exception"
+        )
+    });
 
-    method_task && routing_task && !client_transport_task
+    method_task && routing_task && !client_transport_task && !route_miss_task
 }
 
 fn auto_seed_http_method_routing_file_matches(file: &str) -> bool {
@@ -8165,7 +8421,7 @@ fn task_keywords(task: &str) -> Vec<String> {
     for word in task
         .split(|ch: char| !ch.is_ascii_alphanumeric())
         .map(str::to_ascii_lowercase)
-        .filter(|word| word.len() >= 3 && !is_task_stop_word(word))
+        .filter(|word| (word.len() >= 3 || word == "no") && !is_task_stop_word(word))
         .take(16)
     {
         push_task_keyword(&mut keywords, word.as_str());
@@ -8200,6 +8456,11 @@ fn task_keyword_aliases(keyword: &str) -> &'static [&'static str] {
         "groups" => &["group", "route", "routes"],
         "prefix" => &["prefixes", "route", "routes"],
         "prefixes" => &["prefix", "route", "routes"],
+        "notfound" => &["not", "found", "404"],
+        "noroute" => &["route", "routes", "404"],
+        "nomethod" => &["method", "methods", "405"],
+        "allowed" => &["method"],
+        "finalhandler" => &["final", "handler", "handlers"],
         "url" => &["urls"],
         "urls" => &["url"],
         "build" => &["building", "builder"],
@@ -8883,6 +9144,24 @@ mod tests {
         assert!(route_group_keywords.contains(&"group".to_string()));
         assert!(route_group_keywords.contains(&"route".to_string()));
         assert!(auto_seed_route_grouping_task(&route_group_keywords));
+
+        let route_miss_keywords = task_keywords("understand gin no route no method behavior");
+        assert!(route_miss_keywords.contains(&"route".to_string()));
+        assert!(route_miss_keywords.contains(&"method".to_string()));
+        assert!(auto_seed_route_miss_handling_task(&route_miss_keywords));
+        assert!(!auto_seed_http_method_routing_task(&route_miss_keywords));
+
+        let final_handler_keywords =
+            task_keywords("understand express 404 not found final handler behavior");
+        assert!(final_handler_keywords.contains(&"404".to_string()));
+        assert!(final_handler_keywords.contains(&"final".to_string()));
+        assert!(auto_seed_route_miss_handling_task(&final_handler_keywords));
+
+        let template_not_found_keywords = task_keywords("understand template not found behavior");
+        assert!(template_not_found_keywords.contains(&"template".to_string()));
+        assert!(!auto_seed_route_miss_handling_task(
+            &template_not_found_keywords
+        ));
 
         let http_method_keywords = task_keywords("understand HTTP method routing behavior");
         assert!(http_method_keywords.contains(&"http".to_string()));
