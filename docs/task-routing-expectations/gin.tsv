@@ -4,3 +4,4 @@ understand startup flow	gin.go
 understand binding validation behavior	binding/default_validator.go
 understand json binding behavior	binding/json.go
 understand binding validation test coverage	binding/default_validator_test.go
+understand gin response rendering behavior	render/render.go

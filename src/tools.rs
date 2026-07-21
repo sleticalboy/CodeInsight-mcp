@@ -2238,6 +2238,9 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
         "Start with seed file test, spec, or regression coverage.".to_string()
     } else if signals.http_state_headers && !signals.auth_session && !signals.security_safety {
         "Start with seed file cookies, headers, or HTTP state boundaries.".to_string()
+    } else if signals.response_rendering {
+        "Start with seed file response rendering, templates, or output format boundaries."
+            .to_string()
     } else if signals.auth_session {
         "Start with seed file authentication and session boundaries.".to_string()
     } else if signals.network_http {
@@ -2288,6 +2291,9 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
 fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
     if signals.test_coverage {
         "Read symbol definitions that establish test coverage or regression behavior.".to_string()
+    } else if signals.response_rendering {
+        "Read symbol definitions that establish response rendering or output format behavior."
+            .to_string()
     } else if signals.auth_session {
         "Read symbol definitions that establish authentication or session behavior.".to_string()
     } else if signals.network_http {
@@ -2362,6 +2368,9 @@ fn context_type_relation_focus(signals: ContextTaskSignals) -> String {
 fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
     if signals.test_coverage {
         "Follow call graph evidence from tests, specs, or regression coverage.".to_string()
+    } else if signals.response_rendering {
+        "Follow call graph evidence for response rendering, templates, or output formats."
+            .to_string()
     } else if signals.auth_session {
         "Follow call graph evidence for authentication and session flow.".to_string()
     } else if signals.network_http {
@@ -2418,6 +2427,8 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
     if signals.test_coverage {
         "Inspect references that exercise behavior in tests, specs, or regression cases."
             .to_string()
+    } else if signals.response_rendering {
+        "Inspect references that render responses, templates, or output formats.".to_string()
     } else if signals.auth_session {
         "Inspect references that consume authentication or session state.".to_string()
     } else if signals.network_http {
@@ -2472,6 +2483,8 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
 fn context_semantic_focus(signals: ContextTaskSignals) -> String {
     if signals.test_coverage {
         "Review semantic matches for test, spec, or regression coverage.".to_string()
+    } else if signals.response_rendering {
+        "Review semantic matches for response rendering, templates, or output formats.".to_string()
     } else if signals.auth_session {
         "Review semantic matches for authentication, cookie, or session behavior.".to_string()
     } else if signals.network_http {
@@ -2527,6 +2540,8 @@ fn context_semantic_focus(signals: ContextTaskSignals) -> String {
 fn context_dependency_focus(signals: ContextTaskSignals) -> String {
     if signals.test_coverage {
         "Check local dependencies that support test setup, fixtures, or assertions.".to_string()
+    } else if signals.response_rendering {
+        "Check local dependencies that shape response rendering or output formats.".to_string()
     } else if signals.auth_session {
         "Check local dependencies that affect authentication or session boundaries.".to_string()
     } else if signals.network_http {
@@ -2620,6 +2635,9 @@ fn context_seed_file_question(task: &str) -> String {
         "Which behavior, assertions, fixtures, or regression cases are covered here?".to_string()
     } else if signals.http_state_headers && !signals.auth_session && !signals.security_safety {
         "Where are cookies, headers, or HTTP state containers handled here?".to_string()
+    } else if signals.response_rendering {
+        "Where are responses rendered, templates selected, or output formats produced here?"
+            .to_string()
     } else if signals.auth_session {
         "Where are authentication decisions, credentials, or session boundaries handled here?"
             .to_string()
@@ -2683,6 +2701,8 @@ fn context_symbol_definition_question(task: &str) -> String {
     if signals.test_coverage {
         "What test behavior, assertion, fixture, or regression case does this definition establish?"
             .to_string()
+    } else if signals.response_rendering {
+        "What response rendering, template selection, or output format behavior does this definition establish?".to_string()
     } else if signals.auth_session {
         "What authentication decisions, credentials, or session boundaries does this definition establish?".to_string()
     } else if signals.network_http {
@@ -2756,6 +2776,9 @@ fn context_call_graph_question(task: &str) -> String {
     if signals.test_coverage {
         "Which callers or callees exercise behavior through tests, specs, or regression cases?"
             .to_string()
+    } else if signals.response_rendering {
+        "Which callers or callees select response renderers, templates, or output formats?"
+            .to_string()
     } else if signals.auth_session {
         "Which callers or callees carry authentication decisions, credentials, or session state through this flow?".to_string()
     } else if signals.network_http {
@@ -2818,6 +2841,9 @@ fn context_dependency_question(task: &str) -> String {
     if signals.test_coverage {
         "What imported local dependency behavior supplies test setup, fixtures, or assertions?"
             .to_string()
+    } else if signals.response_rendering {
+        "What imported local dependency behavior shapes response rendering or output formats?"
+            .to_string()
     } else if signals.auth_session {
         "What imported local dependency behavior affects authentication or session boundaries here?"
             .to_string()
@@ -2878,6 +2904,9 @@ fn context_reference_question(task: &str) -> String {
     if signals.test_coverage {
         "Which references exercise behavior through tests, specs, fixtures, or regression cases?"
             .to_string()
+    } else if signals.response_rendering {
+        "Which references render responses, select templates, or produce output formats?"
+            .to_string()
     } else if signals.auth_session {
         "Which references consume authentication decisions, credentials, or session state?"
             .to_string()
@@ -2933,6 +2962,9 @@ fn context_semantic_question(task: &str) -> String {
     let signals = ContextTaskSignals::from_task(task);
     if signals.test_coverage {
         "Which semantic matches describe tests, specs, fixtures, or regression coverage?"
+            .to_string()
+    } else if signals.response_rendering {
+        "Which semantic matches describe response rendering, templates, or output formats?"
             .to_string()
     } else if signals.auth_session {
         "Which semantic matches describe authentication, credential, cookie, or session behavior?"
@@ -3008,6 +3040,7 @@ struct ContextTaskSignals {
     performance_cache: bool,
     observability_logging: bool,
     http_state_headers: bool,
+    response_rendering: bool,
     security_safety: bool,
     billing_payment: bool,
     frontend_ui: bool,
@@ -3052,6 +3085,34 @@ impl ContextTaskSignals {
                 "http state",
             ],
         );
+        let response_rendering = context_text_mentions(task, &["render", "renderer", "rendering"])
+            && context_text_mentions(
+                task,
+                &[
+                    "response",
+                    "responses",
+                    "http",
+                    "handler",
+                    "output",
+                    "outputs",
+                    "template",
+                    "templates",
+                ],
+            )
+            && !context_text_mentions(
+                task,
+                &[
+                    "frontend",
+                    "front-end",
+                    "ui",
+                    "component",
+                    "components",
+                    "page",
+                    "pages",
+                    "screen",
+                    "screens",
+                ],
+            );
 
         Self {
             impact_flow: context_text_mentions(
@@ -3217,6 +3278,7 @@ impl ContextTaskSignals {
                 ],
             ),
             http_state_headers,
+            response_rendering,
             security_safety: context_text_mentions(
                 task,
                 &[
@@ -5461,6 +5523,24 @@ fn auto_seed_task_focus_boost(
         };
     }
 
+    if auto_seed_response_rendering_task(task_keywords) {
+        let central_file_match = auto_seed_response_rendering_central_file_matches(file);
+        let file_action_match = auto_seed_response_rendering_file_matches(file);
+        let symbol_action_match = symbol
+            .map(auto_seed_response_rendering_symbol_matches)
+            .unwrap_or(false);
+
+        score += match (file_action_match, symbol_action_match) {
+            (true, true) => 2000,
+            (true, false) => 1500,
+            (false, true) => 900,
+            _ => 0,
+        };
+        if central_file_match {
+            score += 900;
+        }
+    }
+
     if auto_seed_request_lifecycle_task(task_keywords) {
         let file_lifecycle_match = auto_seed_request_lifecycle_file_matches(file);
         let symbol_lifecycle_match = symbol
@@ -5613,6 +5693,70 @@ fn auto_seed_http_state_headers_symbol_matches(symbol: &str, task_keywords: &[St
                 || has_exact("headers")
                 || has_exact("caseinsensitive")
                 || (has_exact("case") && has_exact("insensitive"))))
+}
+
+fn auto_seed_response_rendering_task(task_keywords: &[String]) -> bool {
+    let render_task = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "render" | "renders" | "renderer" | "renderers" | "rendering"
+        )
+    });
+    let backend_response_task = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "response"
+                | "responses"
+                | "http"
+                | "handler"
+                | "output"
+                | "outputs"
+                | "template"
+                | "templates"
+        )
+    });
+    let frontend_task = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "frontend"
+                | "ui"
+                | "component"
+                | "components"
+                | "page"
+                | "pages"
+                | "screen"
+                | "screens"
+        )
+    });
+
+    render_task && backend_response_task && !frontend_task
+}
+
+fn auto_seed_response_rendering_file_matches(file: &str) -> bool {
+    auto_seed_response_rendering_central_file_matches(file)
+        || file.split('/').any(|part| {
+            part.eq_ignore_ascii_case("render") || part.eq_ignore_ascii_case("rendering")
+        })
+}
+
+fn auto_seed_response_rendering_central_file_matches(file: &str) -> bool {
+    auto_seed_file_stem_matches(file, "render")
+        || auto_seed_file_stem_matches(file, "renderer")
+        || auto_seed_file_stem_matches(file, "rendering")
+}
+
+fn auto_seed_response_rendering_symbol_matches(symbol: &str) -> bool {
+    let parts = symbol
+        .split(|ch: char| !ch.is_ascii_alphanumeric())
+        .map(str::to_ascii_lowercase)
+        .collect::<Vec<_>>();
+
+    let has_exact = |needle: &str| parts.iter().any(|part| part == needle);
+    has_exact("render")
+        || has_exact("renders")
+        || has_exact("renderer")
+        || has_exact("renderers")
+        || has_exact("rendering")
 }
 
 fn auto_seed_request_lifecycle_task(task_keywords: &[String]) -> bool {
@@ -6007,6 +6151,10 @@ fn task_keyword_aliases(keyword: &str) -> &'static [&'static str] {
         "headers" => &["header", "case", "insensitive"],
         "case" => &["insensitive", "headers"],
         "insensitive" => &["case", "headers"],
+        "output" => &["outputs", "response"],
+        "outputs" => &["output", "response"],
+        "template" => &["templates"],
+        "templates" => &["template"],
         "network" => &["http", "transport", "client"],
         "http" => &["https", "network", "client"],
         "https" => &["http", "network", "client"],
@@ -6460,6 +6608,16 @@ mod tests {
         assert!(frontend_keywords.contains(&"component".to_string()));
         assert!(frontend_keywords.contains(&"components".to_string()));
         assert!(frontend_keywords.contains(&"ui".to_string()));
+        assert!(frontend_keywords.contains(&"rendering".to_string()));
+        assert!(!frontend_keywords.contains(&"render".to_string()));
+        assert!(!auto_seed_response_rendering_task(&frontend_keywords));
+
+        let response_rendering_keywords = task_keywords("understand response rendering behavior");
+        assert!(response_rendering_keywords.contains(&"response".to_string()));
+        assert!(response_rendering_keywords.contains(&"rendering".to_string()));
+        assert!(auto_seed_response_rendering_task(
+            &response_rendering_keywords
+        ));
 
         let billing_keywords = task_keywords("understand checkout subscription payment");
         assert!(billing_keywords.contains(&"checkout".to_string()));

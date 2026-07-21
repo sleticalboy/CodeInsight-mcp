@@ -173,12 +173,12 @@
       "ref": "34dac209ffb6ef85cc78c5d217bbb7ad001d68fd",
       "expect_file": "docs/task-routing-expectations/gin.tsv",
       "summary_json": "<output-dir>/gin/summary.json",
-      "task_count": 6,
-      "expectation_count": 6,
-      "total_task_source_lines": 144594,
-      "total_selected_lines": 1817,
-      "total_estimated_tokens": 16417,
-      "max_impacted_files": 20,
+      "task_count": 7,
+      "expectation_count": 7,
+      "total_task_source_lines": 168693,
+      "total_selected_lines": 2424,
+      "total_estimated_tokens": 22364,
+      "max_impacted_files": 22,
       "routes": [
         {
           "task": "understand gin engine routing behavior",
@@ -251,6 +251,18 @@
           "estimated_tokens": 2733,
           "risk_level": "high",
           "impacted_files": 1
+        },
+        {
+          "task": "understand gin response rendering behavior",
+          "first_file": "render/render.go",
+          "first_reading_focus": "Start with seed file response rendering, templates, or output format boundaries.",
+          "first_reading_question": "Where are responses rendered, templates selected, or output formats produced here?",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 24099,
+          "line_reduction": "97.5%",
+          "estimated_tokens": 5947,
+          "risk_level": "high",
+          "impacted_files": 22
         }
       ]
     },
@@ -415,13 +427,13 @@
     }
   ],
   "aggregate": {
-    "task_count": 29,
-    "expectation_count": 29,
-    "total_task_source_lines": 503249,
-    "total_selected_lines": 14644,
-    "total_estimated_tokens": 132619,
+    "task_count": 30,
+    "expectation_count": 30,
+    "total_task_source_lines": 527348,
+    "total_selected_lines": 15251,
+    "total_estimated_tokens": 138566,
     "max_impacted_files": 43,
-    "line_reduction": 97.09
+    "line_reduction": 97.1
   },
   "generated_by": "scripts/update-public-task-routing-matrix.sh"
 }

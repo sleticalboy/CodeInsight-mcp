@@ -2599,6 +2599,15 @@ export function routerRegressionSpec() {
     )
     .unwrap();
     std::fs::write(
+        fixture.path().join("src/renderer.ts"),
+        r#"export function renderHttpResponse(templateName: string) {
+  // Response rendering selects templates and produces output formats.
+  return { templateName, output: "html", response: "rendered" };
+}
+"#,
+    )
+    .unwrap();
+    std::fs::write(
         fixture.path().join("src/worker.ts"),
         r#"export function runBackgroundWorker(queueName: string) {
   // Background job worker drains the scheduled queue.
@@ -3189,6 +3198,39 @@ export function routerRegressionSpec() {
         .unwrap();
     assert!(frontend_question.contains("frontend component"));
     assert!(frontend_question.contains("layout behavior"));
+
+    let response_rendering_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand response rendering behavior",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(
+        response_rendering_context["seed_strategy"],
+        "auto_task_match"
+    );
+    assert_eq!(
+        response_rendering_context["selected_seeds"][0]["value"],
+        "src/renderer.ts"
+    );
+    assert!(
+        response_rendering_context["selected_seeds"][0]["matched_keywords"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|keyword| keyword == "rendering")
+    );
+    assert_eq!(
+        response_rendering_context["files"][0]["file"],
+        "src/renderer.ts"
+    );
+    let response_rendering_question = response_rendering_context["reading_plan"][0]["question"]
+        .as_str()
+        .unwrap();
+    assert!(response_rendering_question.contains("responses rendered"));
+    assert!(response_rendering_question.contains("output formats"));
 
     let background_context = run_json([
         "context-pack",
