@@ -8102,6 +8102,81 @@ fn covers_normalize_token() {
 }
 
 #[test]
+fn cli_impact_analysis_suggests_focused_ruby_specs() {
+    let fixture = TempDir::new().unwrap();
+    write_file(&fixture, "Gemfile", "source 'https://rubygems.org'\n");
+    write_file(
+        &fixture,
+        "src/core.rb",
+        r#"
+module DemoCore
+  def self.normalize_token(input)
+    input.strip.downcase
+  end
+end
+"#,
+    );
+    write_file(
+        &fixture,
+        "spec/core_spec.rb",
+        r#"
+require_relative "../src/core"
+
+RSpec.describe DemoCore do
+  it "normalizes tokens" do
+    expect(DemoCore.normalize_token(" Demo ")).to eq("demo")
+  end
+end
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 2);
+
+    let impact = run_json([
+        "impact-analysis",
+        fixture.path().to_str().unwrap(),
+        "--symbol",
+        "normalize_token",
+        "--file",
+        "src/core.rb",
+        "--depth",
+        "1",
+        "--limit",
+        "20",
+        "--format",
+        "summary",
+        "--evidence-limit",
+        "2",
+    ]);
+
+    assert!(
+        impact["impacted_files"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|file| file["file"] == "spec/core_spec.rb")
+    );
+    let suggested_checks = impact["suggested_checks"].as_array().unwrap();
+    assert!(
+        suggested_checks
+            .iter()
+            .any(|check| { check["kind"] == "command" && check["command"] == "bundle exec rspec" }),
+        "expected full RSpec command in {suggested_checks:#?}"
+    );
+    assert!(
+        suggested_checks.iter().any(|check| {
+            check["kind"] == "command"
+                && check["command"] == "bundle exec rspec spec/core_spec.rb"
+                && check["reason"].as_str().is_some_and(|reason| {
+                    reason.contains("Focused test file spec/core_spec.rb is impacted")
+                })
+        }),
+        "expected focused RSpec command in {suggested_checks:#?}"
+    );
+}
+
+#[test]
 fn cli_find_references_filters_comments_and_downranks_tests() {
     let fixture = TempDir::new().unwrap();
     write_file(

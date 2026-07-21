@@ -5327,6 +5327,7 @@ fn focused_test_command(base_command: &str, file: &str) -> Option<String> {
         "pytest" => Some(format!("pytest {file_arg}")),
         "go test ./..." => Some(format!("go test {}", go_test_package_arg(file))),
         "cargo test --locked" => focused_rust_test_command(base_command, file),
+        "bundle exec rspec" => Some(format!("bundle exec rspec {file_arg}")),
         _ => None,
     }
 }
@@ -5335,14 +5336,19 @@ fn is_test_source_file(file: &str) -> bool {
     let normalized = file.replace('\\', "/").to_ascii_lowercase();
     normalized.starts_with("test/")
         || normalized.starts_with("tests/")
+        || normalized.starts_with("spec/")
+        || normalized.starts_with("specs/")
         || normalized.contains("/test/")
         || normalized.contains("/tests/")
+        || normalized.contains("/spec/")
+        || normalized.contains("/specs/")
         || normalized.contains("/__tests__/")
         || normalized.ends_with("_test.go")
         || normalized.ends_with("_test.py")
         || normalized.ends_with("_test.rb")
         || normalized.ends_with("_test.php")
         || normalized.ends_with("_test.rs")
+        || normalized.ends_with("_spec.rb")
         || normalized.ends_with("test.java")
         || normalized.ends_with("test.cs")
         || normalized.ends_with(".test.js")
@@ -9010,6 +9016,10 @@ mod tests {
             focused_test_command("cargo test --locked", "src/core_test.rs").as_deref(),
             Some("cargo test --locked core_test")
         );
+        assert_eq!(
+            focused_test_command("bundle exec rspec", "spec/core_spec.rb").as_deref(),
+            Some("bundle exec rspec spec/core_spec.rb")
+        );
         assert!(focused_test_command("cargo test", "src/lib.rs").is_none());
     }
 
@@ -9749,10 +9759,16 @@ fn is_low_value_reference_file(file: &str) -> bool {
     let normalized = file.replace('\\', "/").to_ascii_lowercase();
     normalized == "test"
         || normalized == "tests"
+        || normalized == "spec"
+        || normalized == "specs"
         || normalized.starts_with("test/")
         || normalized.starts_with("tests/")
+        || normalized.starts_with("spec/")
+        || normalized.starts_with("specs/")
         || normalized.contains("/test/")
         || normalized.contains("/tests/")
+        || normalized.contains("/spec/")
+        || normalized.contains("/specs/")
         || normalized.contains("/__tests__/")
         || normalized.contains("/fixture/")
         || normalized.contains("/fixtures/")
@@ -9761,6 +9777,7 @@ fn is_low_value_reference_file(file: &str) -> bool {
         || normalized.ends_with("_test.rb")
         || normalized.ends_with("_test.php")
         || normalized.ends_with("_test.rs")
+        || normalized.ends_with("_spec.rb")
         || normalized.ends_with("test.java")
         || normalized.ends_with("test.cs")
         || normalized.ends_with(".test.js")
