@@ -1231,9 +1231,18 @@ fn cli_indexes_and_queries_fixture_project() {
     let semantic_question = semantic_step["question"].as_str().unwrap();
     assert!(semantic_question.contains("cookie"));
     assert!(semantic_question.contains("session"));
+    assert_eq!(semantic_step["suggested_tool"]["tool"], "context_pack");
     assert_eq!(
         semantic_step["suggested_tool"]["suggested_arguments"]["task"],
         "session cookie behavior"
+    );
+    assert_eq!(
+        semantic_step["suggested_tool"]["suggested_arguments"]["files"][0],
+        "src/auth_notes.py"
+    );
+    assert_eq!(
+        semantic_step["suggested_tool"]["suggested_arguments"]["token_budget"].as_u64(),
+        Some(4000)
     );
 
     let billing_context = run_json([
@@ -3888,6 +3897,19 @@ export const AUTH_TOKEN = "x-session";
         .find(|step| step["file"] == "src/session.ts")
         .unwrap();
     assert_eq!(reference_step["next_action"], "inspect_references");
+    assert_eq!(reference_step["suggested_tool"]["tool"], "impact_analysis");
+    assert_eq!(
+        reference_step["suggested_tool"]["suggested_arguments"]["files"][0],
+        "src/session.ts"
+    );
+    assert_eq!(
+        reference_step["suggested_tool"]["suggested_arguments"]["format"],
+        "summary"
+    );
+    assert_eq!(
+        reference_step["suggested_tool"]["suggested_arguments"]["depth"].as_u64(),
+        Some(2)
+    );
     let question = reference_step["question"].as_str().unwrap();
     assert!(question.contains("authentication decisions"));
     assert!(question.contains("session state"));
@@ -8514,6 +8536,15 @@ fn cli_context_pack_uses_imported_callee_file_hints() {
         .find(|step| step["file"] == "lib/support/audit.rb")
         .unwrap();
     assert_eq!(audit_step["next_action"], "follow_call_graph");
+    assert_eq!(audit_step["suggested_tool"]["tool"], "impact_analysis");
+    assert_eq!(
+        audit_step["suggested_tool"]["suggested_arguments"]["files"][0],
+        "lib/support/audit.rb"
+    );
+    assert_eq!(
+        audit_step["suggested_tool"]["suggested_arguments"]["evidence_limit"].as_u64(),
+        Some(5)
+    );
     let audit_question = audit_step["question"].as_str().unwrap();
     assert!(audit_question.contains("authentication decisions"));
     assert!(audit_question.contains("session state"));
@@ -8535,6 +8566,14 @@ fn cli_context_pack_uses_imported_callee_file_hints() {
         .find(|step| step["file"] == "lib/support/audit.rb")
         .unwrap();
     assert_eq!(impact_audit_step["next_action"], "follow_call_graph");
+    assert_eq!(
+        impact_audit_step["suggested_tool"]["tool"],
+        "impact_analysis"
+    );
+    assert_eq!(
+        impact_audit_step["suggested_tool"]["suggested_arguments"]["files"][0],
+        "lib/support/audit.rb"
+    );
     let impact_audit_focus = impact_audit_step["focus"].as_str().unwrap();
     assert!(impact_audit_focus.contains("callers"));
     assert!(impact_audit_focus.contains("callees"));
