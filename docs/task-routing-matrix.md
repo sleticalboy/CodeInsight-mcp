@@ -138,6 +138,7 @@ the failed expected/actual pair is still available as an artifact.
 Checked-in examples:
 
 - [Express](task-routing-expectations/express.tsv)
+- [FastAPI](task-routing-expectations/fastapi.tsv)
 - [Flask](task-routing-expectations/flask.tsv)
 - [Gin](task-routing-expectations/gin.tsv)
 - [Requests](task-routing-expectations/requests.tsv)

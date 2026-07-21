@@ -2335,6 +2335,9 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
         "Start with seed file cache, performance, latency, or optimization boundaries.".to_string()
     } else if signals.observability_logging {
         "Start with seed file logging, telemetry, metrics, or tracing boundaries.".to_string()
+    } else if signals.dependency_injection {
+        "Start with seed file dependency injection, dependency resolution, or parameter injection boundaries."
+            .to_string()
     } else if signals.security_safety {
         "Start with seed file security, secrets, sanitization, or vulnerability boundaries."
             .to_string()
@@ -2434,6 +2437,9 @@ fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
     } else if signals.observability_logging {
         "Read symbol definitions that establish logging, telemetry, metrics, or tracing behavior."
             .to_string()
+    } else if signals.dependency_injection {
+        "Read symbol definitions that establish dependency injection, dependency resolution, or parameter injection behavior."
+            .to_string()
     } else if signals.security_safety {
         "Read symbol definitions that establish security, sanitization, or vulnerability behavior."
             .to_string()
@@ -2477,6 +2483,9 @@ fn context_type_relation_focus(signals: ContextTaskSignals) -> String {
             .to_string()
     } else if signals.websocket_connection {
         "Check inherited contracts or base behavior that can affect WebSocket session boundaries."
+            .to_string()
+    } else if signals.dependency_injection {
+        "Check inherited contracts or base behavior that can affect dependency injection boundaries."
             .to_string()
     } else if signals.impact_flow {
         "Check base types or interfaces that can widen the impact path.".to_string()
@@ -2560,6 +2569,9 @@ fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
         "Follow call graph evidence for cache lookups, latency, or optimization flow.".to_string()
     } else if signals.observability_logging {
         "Follow call graph evidence for logs, metrics, telemetry, or trace spans.".to_string()
+    } else if signals.dependency_injection {
+        "Follow call graph evidence for dependency injection, dependency resolution, or parameter injection flow."
+            .to_string()
     } else if signals.security_safety {
         "Follow call graph evidence for security checks, sanitization, or vulnerability flow."
             .to_string()
@@ -2654,6 +2666,8 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
     } else if signals.observability_logging {
         "Inspect references that emit, record, or propagate logs, metrics, telemetry, or traces."
             .to_string()
+    } else if signals.dependency_injection {
+        "Inspect references that declare, solve, inject, or consume dependencies.".to_string()
     } else if signals.security_safety {
         "Inspect references that validate security, sanitize input, handle secrets, or guard vulnerabilities.".to_string()
     } else if signals.billing_payment {
@@ -2753,6 +2767,9 @@ fn context_semantic_focus(signals: ContextTaskSignals) -> String {
     } else if signals.observability_logging {
         "Review semantic matches for logging, telemetry, metrics, tracing, or monitoring."
             .to_string()
+    } else if signals.dependency_injection {
+        "Review semantic matches for dependency injection, dependency resolution, or parameter injection."
+            .to_string()
     } else if signals.security_safety {
         "Review semantic matches for security, sanitization, secrets, or vulnerabilities."
             .to_string()
@@ -2850,6 +2867,9 @@ fn context_dependency_focus(signals: ContextTaskSignals) -> String {
             .to_string()
     } else if signals.observability_logging {
         "Check local dependencies that shape logging, metrics, telemetry, or tracing behavior."
+            .to_string()
+    } else if signals.dependency_injection {
+        "Check local dependencies that shape dependency injection, dependency resolution, or parameter injection behavior."
             .to_string()
     } else if signals.security_safety {
         "Check local dependencies that shape security, sanitization, or vulnerability handling."
@@ -2993,6 +3013,9 @@ fn context_seed_file_question(task: &str) -> String {
             .to_string()
     } else if signals.observability_logging {
         "Where are logs, metrics, telemetry, or trace spans emitted here?".to_string()
+    } else if signals.dependency_injection {
+        "Where are dependencies declared, resolved, injected, or passed into callables here?"
+            .to_string()
     } else if signals.security_safety {
         "Where are security checks, secrets, sanitization, or vulnerability boundaries handled here?"
             .to_string()
@@ -3086,6 +3109,8 @@ fn context_symbol_definition_question(task: &str) -> String {
     } else if signals.observability_logging {
         "What logging, telemetry, metrics, or tracing behavior does this definition establish?"
             .to_string()
+    } else if signals.dependency_injection {
+        "What dependency injection, dependency resolution, or parameter injection behavior does this definition establish?".to_string()
     } else if signals.security_safety {
         "What security check, secret handling, sanitization, or vulnerability behavior does this definition establish?".to_string()
     } else if signals.billing_payment {
@@ -3129,6 +3154,9 @@ fn context_type_relation_question(task: &str) -> String {
         "Which inherited contract or base behavior affects this uploaded file boundary?".to_string()
     } else if signals.websocket_connection {
         "Which inherited contract or base behavior affects this WebSocket session boundary?"
+            .to_string()
+    } else if signals.dependency_injection {
+        "Which inherited contract or base behavior affects this dependency injection boundary?"
             .to_string()
     } else if signals.impact_flow {
         "Which base types or interfaces widen the caller, callee, or impact path?".to_string()
@@ -3210,6 +3238,8 @@ fn context_call_graph_question(task: &str) -> String {
     } else if signals.observability_logging {
         "Which callers or callees emit logs, record metrics, or propagate telemetry and traces?"
             .to_string()
+    } else if signals.dependency_injection {
+        "Which callers or callees declare, resolve, inject, or consume dependencies?".to_string()
     } else if signals.security_safety {
         "Which callers or callees enforce security checks, sanitize data, or handle secrets?"
             .to_string()
@@ -3303,6 +3333,8 @@ fn context_dependency_question(task: &str) -> String {
     } else if signals.observability_logging {
         "What imported local dependency behavior shapes logging, metrics, telemetry, or tracing?"
             .to_string()
+    } else if signals.dependency_injection {
+        "What imported local dependency behavior shapes dependency injection or dependency resolution?".to_string()
     } else if signals.security_safety {
         "What imported local dependency behavior shapes security checks, sanitization, or secrets?"
             .to_string()
@@ -3401,6 +3433,8 @@ fn context_reference_question(task: &str) -> String {
     } else if signals.observability_logging {
         "Which references emit logs, record metrics, attach spans, or propagate telemetry?"
             .to_string()
+    } else if signals.dependency_injection {
+        "Which references declare, resolve, inject, or consume dependencies?".to_string()
     } else if signals.security_safety {
         "Which references enforce security checks, sanitize input, handle secrets, or guard vulnerabilities?".to_string()
     } else if signals.billing_payment {
@@ -3506,6 +3540,9 @@ fn context_semantic_question(task: &str) -> String {
     } else if signals.observability_logging {
         "Which semantic matches describe logs, metrics, telemetry, tracing, or monitoring?"
             .to_string()
+    } else if signals.dependency_injection {
+        "Which semantic matches describe dependency injection, dependency resolution, or parameter injection?"
+            .to_string()
     } else if signals.security_safety {
         "Which semantic matches describe security, sanitization, secrets, or vulnerabilities?"
             .to_string()
@@ -3562,6 +3599,7 @@ struct ContextTaskSignals {
     response_redirect: bool,
     static_file_serving: bool,
     response_rendering: bool,
+    dependency_injection: bool,
     security_safety: bool,
     billing_payment: bool,
     frontend_ui: bool,
@@ -3672,6 +3710,13 @@ impl ContextTaskSignals {
                 ],
             ) || (context_text_mentions(task, &["socket", "sockets", "connection", "connections"])
                 && context_text_mentions(task, &["session", "sessions", "manager"]));
+        let dependency_injection =
+            context_text_mentions(task, &["dependency injection", "dependency resolver"])
+                || (context_text_mentions(task, &["dependency", "dependencies", "depends"])
+                    && context_text_mentions(
+                        task,
+                        &["injection", "inject", "injected", "resolver", "resolution"],
+                    ));
 
         let http_state_headers = context_text_mentions(
             task,
@@ -4540,6 +4585,7 @@ impl ContextTaskSignals {
             response_redirect,
             static_file_serving,
             response_rendering,
+            dependency_injection,
             security_safety: context_text_mentions(
                 task,
                 &[
@@ -4563,7 +4609,7 @@ impl ContextTaskSignals {
                     "sanitise",
                     "sanitisation",
                 ],
-            ),
+            ) && !dependency_injection,
             billing_payment: context_text_mentions(
                 task,
                 &[
@@ -6657,10 +6703,16 @@ fn auto_context_seed_files(
 
     let mut candidates = candidates.into_values().collect::<Vec<_>>();
     let route_miss_task = auto_seed_route_miss_handling_task(task_keywords);
+    let websocket_task = auto_seed_websocket_connection_task(task_keywords);
     candidates.sort_by(|left, right| {
         if route_miss_task {
             auto_seed_route_miss_file_priority(&right.file)
                 .cmp(&auto_seed_route_miss_file_priority(&left.file))
+                .then_with(|| right.score.cmp(&left.score))
+                .then_with(|| left.file.cmp(&right.file))
+        } else if websocket_task {
+            auto_seed_websocket_file_priority(&right.file)
+                .cmp(&auto_seed_websocket_file_priority(&left.file))
                 .then_with(|| right.score.cmp(&left.score))
                 .then_with(|| left.file.cmp(&right.file))
         } else {
@@ -8706,6 +8758,25 @@ fn auto_seed_websocket_connection_field_matches(field: &str) -> bool {
         || auto_seed_field_matches(field, "socket")
 }
 
+fn auto_seed_websocket_file_priority(file: &str) -> i32 {
+    let normalized = file.to_ascii_lowercase();
+    if normalized.starts_with("docs/")
+        || normalized.starts_with("docs_src/")
+        || normalized.starts_with("examples/")
+        || normalized.contains("/tutorial")
+    {
+        -2
+    } else if auto_seed_file_stem_matches(file, "websocket")
+        || auto_seed_file_stem_matches(file, "websockets")
+    {
+        3
+    } else if auto_seed_websocket_connection_field_matches(file) {
+        1
+    } else {
+        0
+    }
+}
+
 fn auto_seed_error_recovery_handling_task(task_keywords: &[String]) -> bool {
     let error_or_recovery = task_keywords.iter().any(|keyword| {
         matches!(
@@ -10086,6 +10157,33 @@ mod tests {
         assert!(
             context_semantic_question("understand streamlit websocket connection behavior")
                 .contains("WebSocket connections")
+        );
+    }
+
+    #[test]
+    fn dependency_injection_tasks_use_dependency_prompts_without_security_override() {
+        let signals =
+            ContextTaskSignals::from_task("understand fastapi dependency injection behavior");
+        assert!(signals.dependency_injection);
+        assert!(!signals.security_safety);
+        assert!(context_seed_file_focus(signals).contains("dependency injection"));
+        assert!(
+            context_seed_file_question("understand fastapi dependency injection behavior")
+                .contains("dependencies declared")
+        );
+        assert!(
+            context_call_graph_question("understand fastapi dependency injection behavior")
+                .contains("inject")
+        );
+    }
+
+    #[test]
+    fn websocket_tasks_prioritize_source_files_over_docs_examples() {
+        let keywords = task_keywords("understand fastapi websocket behavior");
+        assert!(auto_seed_websocket_connection_task(&keywords));
+        assert!(
+            auto_seed_websocket_file_priority("fastapi/websockets.py")
+                > auto_seed_websocket_file_priority("docs_src/websockets_/tutorial001_py310.py")
         );
     }
 

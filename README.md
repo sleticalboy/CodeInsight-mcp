@@ -38,9 +38,9 @@ Use CodeInsight when the agent needs a local reading route. Keep using the IDE,
 LSP, compiler, test runner, and language-specific tools for precise diagnostics,
 type checks, and final verification.
 
-Current public routing snapshot: pinned Express, Flask, Gin, Requests, and
-Streamlit route-quality expectations pass `74/74`, selecting 34,514 of
-5,755,443 task source lines for a `99.4%` aggregate first-read line reduction,
+Current public routing snapshot: pinned Express, FastAPI, Flask, Gin, Requests,
+and Streamlit route-quality expectations pass `86/86`, selecting 40,222 of
+7,098,531 task source lines for a `99.43%` aggregate first-read line reduction,
 with each route carrying a first suggested tool such as `file_outline`. See the
 checked-in [Markdown snapshot](docs/public-task-routing-matrix.md) and
 [JSON summary](docs/public-task-routing-matrix-summary.json). Reproduce both:
@@ -237,10 +237,11 @@ Current benchmark snapshot:
   ratio, with 7 type-relation edges surfaced through the `base_type` graph
   filter, while the MCP first-call contract fields all pass, including the
   `current_reading_step` mirror and read-less instruction evidence.
-- The public route-quality snapshot pins Express, Flask, Gin, Requests, and
-  Streamlit and passes 74/74 expected first-file checks, selecting 34,514 of
-  5,755,443 task source lines, a 99.4% aggregate first-read line reduction,
-  and records the first suggested tool for each route.
+- The public route-quality snapshot pins Express, FastAPI, Flask, Gin,
+  Requests, and Streamlit and passes 86/86 expected first-file checks,
+  selecting 40,222 of 7,098,531 task source lines, a 99.43% aggregate
+  first-read line reduction, and records the first suggested tool for each
+  route.
 - Per-repository adoption metrics, commits, and refresh commands live in
   [Adoption cases](docs/adoption-cases.md).
 - Generated reports include a `Key Results` section with routing,
@@ -368,8 +369,8 @@ edits.
 
 Latest verified release: `v0.1.12`.
 
-Current public route-quality evidence passes `74/74` first-file checks and
-selects 34,514 of 5,755,443 task source lines.
+Current public route-quality evidence passes `86/86` first-file checks and
+selects 40,222 of 7,098,531 task source lines.
 
 Next focus: strengthen real-repository demos and route-quality evidence around
 the AI-agent first-read workflow.

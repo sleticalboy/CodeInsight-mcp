@@ -1,0 +1,12 @@
+understand fastapi application routing behavior	fastapi/routing.py
+understand fastapi APIRouter include route behavior	fastapi/routing.py
+understand fastapi dependency injection behavior	fastapi/dependencies/utils.py
+understand fastapi request body validation behavior	fastapi/requests.py
+understand fastapi response model serialization behavior	fastapi/_compat/v2.py
+understand fastapi exception handler behavior	fastapi/exceptions.py
+understand fastapi middleware behavior	fastapi/applications.py
+understand fastapi websocket behavior	fastapi/websockets.py
+understand fastapi openapi schema generation behavior	fastapi/openapi/models.py
+understand fastapi security oauth2 behavior	fastapi/security/oauth2.py
+understand fastapi background tasks behavior	fastapi/background.py
+understand fastapi test client behavior	tests/test_fastapi_cli.py
