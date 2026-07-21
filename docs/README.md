@@ -16,6 +16,7 @@ Default adoption path:
 
 - [Quickstart](quickstart.md)
 - [Adoption checklist](adoption-checklist.md)
+- [MVP public readiness](mvp-public-readiness.md)
 - [Demo script](demo-script.md)
 - [Demo output snapshot](demo-output.md)
 - [Adoption cases](adoption-cases.md)
@@ -82,6 +83,7 @@ Choose the check by adoption stage:
 | Public route-quality snapshot | `scripts/update-public-task-routing-matrix.sh` |
 | Local repository benchmark | `CODEINSIGHT_BENCH_PROFILE=local ... scripts/benchmark-smoke.sh` |
 
+- [MVP public readiness](mvp-public-readiness.md)
 - [Maintenance commands](maintenance-commands.md)
 - Two-minute demo: `scripts/two-minute-demo.sh`
 - MCP first-call JSON summary: `scripts/mcp-first-call-smoke.sh`

@@ -15,6 +15,10 @@ workflow is implemented end to end.
   reduction.
 - The public matrix records the first selected file, reading focus, reading
   question, and first suggested tool for every route.
+- The optional heavyweight Django manual route-quality probe covers URL
+  resolver routing, request/response lifecycle, and middleware behavior, passes
+  `3/3` expected first-file checks, and selects a bounded first read with a
+  99.87% aggregate line reduction in the latest local verification.
 - The default client path is now
   `agent_route -> selected context -> executable suggested_tool -> impact check`.
 - MCP smoke coverage verifies that stdio clients can call `agent_route`, read

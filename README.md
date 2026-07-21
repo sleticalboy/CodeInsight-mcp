@@ -43,7 +43,10 @@ and Streamlit route-quality expectations pass `86/86`, selecting 41,455 of
 7,098,531 task source lines for a `99.41%` aggregate first-read line reduction,
 with each route carrying a first suggested tool such as `file_outline`. See the
 checked-in [Markdown snapshot](docs/public-task-routing-matrix.md) and
-[JSON summary](docs/public-task-routing-matrix-summary.json). Reproduce both:
+[JSON summary](docs/public-task-routing-matrix-summary.json). A heavyweight
+manual Django probe covers URL resolver routing, request/response lifecycle,
+and middleware behavior with `3/3` expected first-file checks and a `99.87%`
+aggregate first-read line reduction. Reproduce the default snapshots:
 
 ```bash
 scripts/update-public-task-routing-matrix.sh --check
@@ -245,7 +248,8 @@ Current benchmark snapshot:
 - An optional heavyweight Django route-quality case is available with
   `scripts/public-task-routing-matrix.sh --case django`; the pinned manual probe
   covers URL resolver routing, request/response lifecycle, and middleware
-  execution.
+  execution, passes 3/3 expected first-file checks, and shows a 99.87%
+  aggregate first-read line reduction in the latest local verification.
 - Per-repository adoption metrics, commits, and refresh commands live in
   [Adoption cases](docs/adoption-cases.md).
 - Generated reports include a `Key Results` section with routing,
@@ -363,6 +367,7 @@ Key docs:
 - [Release readiness](docs/release-readiness.md)
 - [Known limitations](docs/known-limitations.md)
 - [Documentation index](docs/README.md)
+- [MVP public readiness](docs/mvp-public-readiness.md)
 
 ## Current Status
 
