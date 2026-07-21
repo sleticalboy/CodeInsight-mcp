@@ -2322,8 +2322,6 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
         "Start with seed file documentation, guide, or usage notes.".to_string()
     } else if signals.data_persistence {
         "Start with seed file data persistence and storage boundaries.".to_string()
-    } else if signals.error_recovery {
-        "Start with seed file error handling, retry, and recovery boundaries.".to_string()
     } else if signals.impact_flow {
         "Start with seed file calls, callees, and impact paths.".to_string()
     } else {
@@ -2923,8 +2921,6 @@ fn context_seed_file_question(task: &str) -> String {
     } else if signals.data_persistence {
         "Where are database access, persistence decisions, or storage boundaries handled here?"
             .to_string()
-    } else if signals.error_recovery {
-        "Where are errors, retries, timeouts, or recovery decisions handled here?".to_string()
     } else if signals.impact_flow {
         "Which local callers, callees, or impact paths in this seed file explain the requested flow?".to_string()
     } else {
