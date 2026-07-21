@@ -1,5 +1,6 @@
 understand flask application routing behavior	src/flask/sansio/blueprints.py
 understand flask session cookie security behavior	src/flask/sessions.py
+understand flask logging observability behavior	src/flask/logging.py
 understand request lifecycle before after request handling	src/flask/app.py
 understand configuration settings	src/flask/config.py
 understand cli startup run command	src/flask/cli.py

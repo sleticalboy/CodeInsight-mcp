@@ -74,11 +74,11 @@
       "ref": "36e4a824f340fdee7ed50937ba8e7f6bc7d17f81",
       "expect_file": "docs/task-routing-expectations/flask.tsv",
       "summary_json": "<output-dir>/flask/summary.json",
-      "task_count": 6,
-      "expectation_count": 6,
-      "total_task_source_lines": 110022,
-      "total_selected_lines": 3547,
-      "total_estimated_tokens": 35047,
+      "task_count": 7,
+      "expectation_count": 7,
+      "total_task_source_lines": 128359,
+      "total_selected_lines": 4136,
+      "total_estimated_tokens": 40935,
       "max_impacted_files": 32,
       "routes": [
         {
@@ -104,6 +104,18 @@
           "estimated_tokens": 6000,
           "risk_level": "high",
           "impacted_files": 19
+        },
+        {
+          "task": "understand flask logging observability behavior",
+          "first_file": "src/flask/logging.py",
+          "first_reading_focus": "Start with seed file logging, telemetry, metrics, or tracing boundaries.",
+          "first_reading_question": "Where are logs, metrics, telemetry, or trace spans emitted here?",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 18337,
+          "line_reduction": "96.8%",
+          "estimated_tokens": 5888,
+          "risk_level": "high",
+          "impacted_files": 10
         },
         {
           "task": "understand request lifecycle before after request handling",
@@ -379,13 +391,13 @@
     }
   ],
   "aggregate": {
-    "task_count": 26,
-    "expectation_count": 26,
-    "total_task_source_lines": 460848,
-    "total_selected_lines": 12719,
-    "total_estimated_tokens": 114779,
+    "task_count": 27,
+    "expectation_count": 27,
+    "total_task_source_lines": 479185,
+    "total_selected_lines": 13308,
+    "total_estimated_tokens": 120667,
     "max_impacted_files": 43,
-    "line_reduction": 97.24
+    "line_reduction": 97.22
   },
   "generated_by": "scripts/update-public-task-routing-matrix.sh"
 }
