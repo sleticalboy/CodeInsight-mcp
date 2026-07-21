@@ -3893,6 +3893,71 @@ class Flask:
         "src/flask/sansio/scaffold.py"
     );
 
+    let django_fixture = TempDir::new().unwrap();
+    write_file(
+        &django_fixture,
+        "django/urls/resolvers.py",
+        r#""""URL resolving and routing behavior."""
+
+class URLResolver:
+    def resolve(self, path):
+        return ResolverMatch(path)
+
+class URLPattern:
+    def match(self, path):
+        return path
+
+class ResolverMatch:
+    def __init__(self, path):
+        self.path = path
+"#,
+    );
+    write_file(
+        &django_fixture,
+        "django/core/checks/urls.py",
+        r#""""System checks for URL configuration."""
+
+def check_url_config(app_configs, **kwargs):
+    return []
+
+def check_url_namespaces_unique(app_configs, **kwargs):
+    return []
+"#,
+    );
+    write_file(
+        &django_fixture,
+        "django/core/handlers/base.py",
+        r#""""Request and response lifecycle."""
+
+class BaseHandler:
+    def get_response(self, request):
+        return self._get_response(request)
+
+    def load_middleware(self):
+        return []
+"#,
+    );
+
+    run_json(["index", django_fixture.path().to_str().unwrap(), "--force"]);
+
+    let django_routing_context = run_json([
+        "context-pack",
+        django_fixture.path().to_str().unwrap(),
+        "--task",
+        "understand django URL routing behavior",
+        "--token-budget",
+        "1600",
+    ]);
+
+    assert_eq!(
+        django_routing_context["selected_seeds"][0]["value"],
+        "django/urls/resolvers.py"
+    );
+    assert_eq!(
+        django_routing_context["files"][0]["file"],
+        "django/urls/resolvers.py"
+    );
+
     let flask_lifecycle_context = run_json([
         "context-pack",
         flask_fixture.path().to_str().unwrap(),

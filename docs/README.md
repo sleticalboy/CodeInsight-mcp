@@ -23,6 +23,7 @@ Default adoption path:
 - [Public task routing matrix](public-task-routing-matrix.md) and
   [JSON summary](public-task-routing-matrix-summary.json)
 - Task routing expectations:
+  [Django](task-routing-expectations/django.tsv),
   [Express](task-routing-expectations/express.tsv),
   [FastAPI](task-routing-expectations/fastapi.tsv),
   [Flask](task-routing-expectations/flask.tsv),

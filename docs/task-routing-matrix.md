@@ -137,6 +137,7 @@ the failed expected/actual pair is still available as an artifact.
 
 Checked-in examples:
 
+- [Django](task-routing-expectations/django.tsv)
 - [Express](task-routing-expectations/express.tsv)
 - [FastAPI](task-routing-expectations/fastapi.tsv)
 - [Flask](task-routing-expectations/flask.tsv)
@@ -152,6 +153,20 @@ scripts/public-task-routing-matrix.sh
 
 The default set uses pinned Express, FastAPI, Flask, Gin, Requests, and Streamlit commits
 so expectation files do not drift with upstream default branches.
+
+Django is available as a pinned heavyweight manual case. It is not part of the
+default public matrix because indexing and routing the full repository is slower
+than the fast snapshot cases:
+
+```bash
+scripts/public-task-routing-matrix.sh \
+  --case django \
+  --root django=/tmp/codeinsight-public-task-routing-matrix/repos/django-dca76b15c62a1118325b71678ce3235e2231198d \
+  --output-dir /tmp/codeinsight-public-task-routing-matrix/django-manual
+```
+
+If you do not already have a local checkout, omit `--root` and the script will
+fetch the pinned Django ref.
 
 Use local checkouts when you want deterministic or offline reproduction:
 

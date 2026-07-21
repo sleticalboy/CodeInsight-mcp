@@ -1,0 +1,3 @@
+understand django URL routing behavior	django/urls/resolvers.py
+understand django request response handler lifecycle	django/core/handlers/base.py
+understand django middleware execution behavior	django/core/handlers/base.py

@@ -4581,7 +4581,8 @@ impl ContextTaskSignals {
                 && !url_building
                 && !route_grouping
                 && !route_miss_handling
-                && !http_method_routing,
+                && !http_method_routing
+                && !static_file_serving,
             response_redirect,
             static_file_serving,
             response_rendering,
@@ -6723,6 +6724,29 @@ fn auto_context_seed_files(
         );
     }
 
+    if auto_seed_route_dispatch_task(task_keywords) {
+        for file in indexed_files
+            .iter()
+            .filter(|file| auto_seed_role_allowed(auto_seed_file_role(file), task_keywords))
+        {
+            let priority = auto_seed_route_dispatch_file_priority(file);
+            if priority < 3 {
+                continue;
+            }
+            upsert_auto_seed_candidate(
+                &mut candidates,
+                AutoSeedCandidate {
+                    file: file.clone(),
+                    role: auto_seed_file_role(file).to_string(),
+                    source: "task_match".to_string(),
+                    score: 90 + priority,
+                    matched_keywords: auto_seed_matched_keywords(file, None, task_keywords),
+                    matched_symbols: Vec::new(),
+                },
+            );
+        }
+    }
+
     let mut candidates = candidates.into_values().collect::<Vec<_>>();
     let route_miss_task = auto_seed_route_miss_handling_task(task_keywords);
     let websocket_task = auto_seed_websocket_connection_task(task_keywords);
@@ -6732,6 +6756,7 @@ fn auto_context_seed_files(
     let response_redirect_task = auto_seed_response_redirect_task(task_keywords);
     let request_lifecycle_task = auto_seed_request_lifecycle_task(task_keywords);
     let middleware_task = auto_seed_middleware_task(task_keywords);
+    let route_dispatch_task = auto_seed_route_dispatch_task(task_keywords);
     candidates.sort_by(|left, right| {
         if route_miss_task {
             auto_seed_route_miss_file_priority(&right.file)
@@ -6773,6 +6798,11 @@ fn auto_context_seed_files(
                 .cmp(&auto_seed_middleware_file_priority(&left.file))
                 .then_with(|| right.score.cmp(&left.score))
                 .then_with(|| left.file.cmp(&right.file))
+        } else if route_dispatch_task {
+            auto_seed_route_dispatch_file_priority(&right.file)
+                .cmp(&auto_seed_route_dispatch_file_priority(&left.file))
+                .then_with(|| right.score.cmp(&left.score))
+                .then_with(|| left.file.cmp(&right.file))
         } else {
             right
                 .score
@@ -6786,7 +6816,8 @@ fn auto_context_seed_files(
         || response_cookies_task
         || response_redirect_task
         || request_lifecycle_task
-        || middleware_task;
+        || middleware_task
+        || route_dispatch_task;
     let selected_candidate = if route_miss_task || auto_seed_prefers_entrypoint(task_keywords) {
         candidates.first()
     } else if priority_routed_task {
@@ -7306,6 +7337,26 @@ fn auto_seed_task_focus_boost(
             .map(auto_seed_http_method_routing_symbol_matches)
             .unwrap_or(false);
         let framework_file_match = auto_seed_http_method_routing_framework_file_matches(file);
+
+        score += match (file_action_match, symbol_action_match) {
+            (true, true) => 3000,
+            (true, false) => 1600,
+            (false, true) => 1300,
+            _ => 0,
+        };
+        if framework_file_match && symbol_action_match {
+            score += 3200;
+        } else if framework_file_match {
+            score += 2200;
+        }
+    }
+
+    if auto_seed_route_dispatch_task(task_keywords) {
+        let file_action_match = auto_seed_route_dispatch_file_matches(file);
+        let symbol_action_match = symbol
+            .map(auto_seed_route_dispatch_symbol_matches)
+            .unwrap_or(false);
+        let framework_file_match = auto_seed_route_dispatch_framework_file_matches(file);
 
         score += match (file_action_match, symbol_action_match) {
             (true, true) => 3000,
@@ -8531,6 +8582,158 @@ fn auto_seed_http_method_routing_symbol_matches(symbol: &str) -> bool {
         )
 }
 
+fn auto_seed_route_dispatch_task(task_keywords: &[String]) -> bool {
+    let routing_task = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "url" | "urls" | "route" | "routes" | "router" | "routing"
+        )
+    });
+    let dispatch_task = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "app"
+                | "application"
+                | "engine"
+                | "handler"
+                | "handlers"
+                | "dispatch"
+                | "match"
+                | "matching"
+                | "register"
+                | "registration"
+                | "resolver"
+                | "resolvers"
+                | "resolve"
+                | "resolving"
+                | "behavior"
+                | "flow"
+        )
+    });
+
+    routing_task
+        && dispatch_task
+        && !auto_seed_request_query_params_task(task_keywords)
+        && !auto_seed_route_parameters_task(task_keywords)
+        && !auto_seed_url_building_task(task_keywords)
+        && !auto_seed_route_grouping_task(task_keywords)
+        && !auto_seed_route_miss_handling_task(task_keywords)
+        && !auto_seed_http_method_routing_task(task_keywords)
+        && !auto_seed_static_file_serving_task(task_keywords)
+}
+
+fn auto_seed_route_dispatch_file_matches(file: &str) -> bool {
+    auto_seed_file_stem_matches(file, "application")
+        || auto_seed_file_stem_matches(file, "app")
+        || auto_seed_file_stem_matches(file, "express")
+        || auto_seed_file_stem_matches(file, "gin")
+        || auto_seed_file_stem_matches(file, "scaffold")
+        || auto_seed_file_stem_matches(file, "router")
+        || auto_seed_file_stem_matches(file, "routergroup")
+        || auto_seed_file_stem_matches(file, "routing")
+        || auto_seed_file_stem_matches(file, "route")
+        || auto_seed_file_stem_matches(file, "routes")
+        || auto_seed_file_stem_matches(file, "url")
+        || auto_seed_file_stem_matches(file, "urls")
+        || auto_seed_file_stem_matches(file, "resolver")
+        || auto_seed_file_stem_matches(file, "resolvers")
+        || auto_seed_file_stem_matches(file, "tree")
+}
+
+fn auto_seed_route_dispatch_framework_file_matches(file: &str) -> bool {
+    auto_seed_file_stem_matches(file, "application")
+        || auto_seed_file_stem_matches(file, "app")
+        || auto_seed_file_stem_matches(file, "express")
+        || auto_seed_file_stem_matches(file, "gin")
+        || auto_seed_file_stem_matches(file, "scaffold")
+        || auto_seed_file_stem_matches(file, "routergroup")
+        || auto_seed_file_stem_matches(file, "routing")
+        || auto_seed_file_stem_matches(file, "resolver")
+        || auto_seed_file_stem_matches(file, "resolvers")
+}
+
+fn auto_seed_route_dispatch_file_priority(file: &str) -> i32 {
+    let normalized = file.replace('\\', "/").to_ascii_lowercase();
+    if normalized.contains("/checks/")
+        || normalized.starts_with("checks/")
+        || normalized.contains("/admindocs/")
+        || normalized.starts_with("docs/")
+        || normalized.starts_with("docs_src/")
+        || normalized.starts_with("examples/")
+        || normalized.contains("/tests/")
+        || normalized.starts_with("tests/")
+    {
+        -2
+    } else if auto_seed_file_stem_matches(file, "express")
+        || auto_seed_file_stem_matches(file, "gin")
+        || auto_seed_file_stem_matches(file, "scaffold")
+        || auto_seed_file_stem_matches(file, "routergroup")
+        || auto_seed_file_stem_matches(file, "routing")
+        || auto_seed_file_stem_matches(file, "resolver")
+        || auto_seed_file_stem_matches(file, "resolvers")
+    {
+        4
+    } else if auto_seed_file_stem_matches(file, "router")
+        || auto_seed_file_stem_matches(file, "route")
+        || auto_seed_file_stem_matches(file, "routes")
+        || auto_seed_file_stem_matches(file, "url")
+        || auto_seed_file_stem_matches(file, "urls")
+        || auto_seed_file_stem_matches(file, "tree")
+    {
+        3
+    } else if auto_seed_file_stem_matches(file, "application")
+        || auto_seed_file_stem_matches(file, "app")
+    {
+        2
+    } else if normalized.contains("/router/") || normalized.contains("/routing/") {
+        1
+    } else {
+        0
+    }
+}
+
+fn auto_seed_route_dispatch_symbol_matches(symbol: &str) -> bool {
+    let parts = symbol
+        .split(|ch: char| !ch.is_ascii_alphanumeric())
+        .filter(|part| !part.is_empty())
+        .map(str::to_ascii_lowercase)
+        .collect::<Vec<_>>();
+    let normalized = parts.join("");
+    let has_exact = |needle: &str| parts.iter().any(|part| part == needle);
+
+    has_exact("resolver")
+        || has_exact("resolvers")
+        || has_exact("resolve")
+        || has_exact("resolveerror")
+        || has_exact("urlresolver")
+        || has_exact("urlpattern")
+        || has_exact("route")
+        || has_exact("router")
+        || has_exact("routing")
+        || has_exact("dispatch")
+        || has_exact("match")
+        || has_exact("matcher")
+        || has_exact("handle")
+        || has_exact("handler")
+        || has_exact("register")
+        || (has_exact("add") && has_exact("url") && has_exact("rule"))
+        || matches!(
+            normalized.as_str(),
+            "urlresolver"
+                | "urlpattern"
+                | "resolvermatch"
+                | "resolve"
+                | "check"
+                | "match"
+                | "matcher"
+                | "dispatchrequest"
+                | "fulldispatchrequest"
+                | "addurlrule"
+                | "handle"
+                | "handler"
+        )
+}
+
 fn auto_seed_response_redirect_task(task_keywords: &[String]) -> bool {
     let redirect_task = task_keywords
         .iter()
@@ -8611,6 +8814,9 @@ fn auto_seed_priority_routed_file_priority(file: &str, task_keywords: &[String])
     }
     if auto_seed_middleware_task(task_keywords) {
         priority = priority.max(auto_seed_middleware_file_priority(file));
+    }
+    if auto_seed_route_dispatch_task(task_keywords) {
+        priority = priority.max(auto_seed_route_dispatch_file_priority(file));
     }
     priority
 }
@@ -10535,6 +10741,33 @@ mod tests {
         assert!(!route_group.agent_first_read);
         assert!(route_group.route_grouping);
         assert!(!route_group.route_dispatch);
+
+        let static_route =
+            ContextTaskSignals::from_task("understand streamlit static route serving behavior");
+        assert!(static_route.static_file_serving);
+        assert!(!static_route.route_dispatch);
+        assert!(!auto_seed_route_dispatch_task(&task_keywords(
+            "understand streamlit static route serving behavior"
+        )));
+
+        let django_url_routing =
+            ContextTaskSignals::from_task("understand django URL routing behavior");
+        assert!(django_url_routing.route_dispatch);
+        assert!(auto_seed_route_dispatch_task(&task_keywords(
+            "understand django URL routing behavior"
+        )));
+        assert!(
+            auto_seed_route_dispatch_file_priority("django/urls/resolvers.py")
+                > auto_seed_route_dispatch_file_priority("django/core/checks/urls.py")
+        );
+        assert!(
+            auto_seed_route_dispatch_file_priority("lib/express.js")
+                > auto_seed_route_dispatch_file_priority("lib/router/index.js")
+        );
+        assert!(
+            auto_seed_route_dispatch_file_priority("src/router.ts")
+                > auto_seed_route_dispatch_file_priority("src/application.ts")
+        );
     }
 
     #[test]

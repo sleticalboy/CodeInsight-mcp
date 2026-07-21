@@ -1272,8 +1272,8 @@
         {
           "task": "understand streamlit static route serving behavior",
           "first_file": "lib/streamlit/web/server/starlette/starlette_static_routes.py",
-          "first_reading_focus": "Start with seed file route registration, matching, or handler dispatch boundaries.",
-          "first_reading_question": "Where are routes registered, matched, and dispatched to handlers here?",
+          "first_reading_focus": "Start with seed file static file, asset, or filesystem serving boundaries.",
+          "first_reading_question": "Where are static files, assets, filesystem roots, or file responses served here?",
           "first_next_action": "inspect_seed_file",
           "first_suggested_tool": "file_outline",
           "seed_strategy": "auto_task_match",

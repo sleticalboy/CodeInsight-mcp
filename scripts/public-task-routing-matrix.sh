@@ -24,7 +24,7 @@ and writes one aggregate route-quality summary.
 
 Options:
   --case NAME          Run one case. Can be repeated. Defaults to pinned fast cases.
-                       Supported: express, fastapi, flask, gin, requests, streamlit.
+                       Supported: django, express, fastapi, flask, gin, requests, streamlit.
   --root NAME=PATH     Use an existing checkout for a case. Can be repeated.
   --ref NAME=REF       Checkout a specific ref for a case. Can be repeated.
   --expect-file NAME=PATH
@@ -76,7 +76,7 @@ add_case() {
 
 validate_case() {
   case "$1" in
-    express|fastapi|flask|gin|requests|streamlit) ;;
+    django|express|fastapi|flask|gin|requests|streamlit) ;;
     *) fail "unsupported case: $1" ;;
   esac
 }
@@ -176,6 +176,7 @@ parse_args() {
 case_repo_url() {
   case "$1" in
     express) printf "https://github.com/expressjs/express.git" ;;
+    django) printf "https://github.com/django/django.git" ;;
     fastapi) printf "https://github.com/fastapi/fastapi.git" ;;
     flask) printf "https://github.com/pallets/flask.git" ;;
     gin) printf "https://github.com/gin-gonic/gin.git" ;;
@@ -188,6 +189,7 @@ case_repo_url() {
 case_default_ref() {
   case "$1" in
     express) printf "ae6dd37680e3a00618d6c8a3e522f0ee4eeba1a4" ;;
+    django) printf "dca76b15c62a1118325b71678ce3235e2231198d" ;;
     fastapi) printf "7d210a4a9f54f2744e50ce55c65eb852958478c5" ;;
     flask) printf "36e4a824f340fdee7ed50937ba8e7f6bc7d17f81" ;;
     gin) printf "34dac209ffb6ef85cc78c5d217bbb7ad001d68fd" ;;
@@ -297,12 +299,14 @@ run_case() {
   case_output_dir="$OUTPUT_DIR/$case_name"
   case_summary="$case_output_dir/summary.json"
 
-  "$MATRIX_SCRIPT" "$repo_root" \
+  if ! "$MATRIX_SCRIPT" "$repo_root" \
     --expect-file "$expect_file" \
     --token-budget "$TOKEN_BUDGET" \
     --output-dir "$case_output_dir" \
     --summary-json "$case_summary" \
-    ${CODEINSIGHT_BIN:+--bin "$CODEINSIGHT_BIN"} >&2
+    ${CODEINSIGHT_BIN:+--bin "$CODEINSIGHT_BIN"} >&2; then
+    fail "task routing matrix failed for case: $case_name"
+  fi
 
   jq -e \
     '.status == "pass"
