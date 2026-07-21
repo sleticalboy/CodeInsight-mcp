@@ -4,3 +4,4 @@ understand application settings	lib/application.js
 understand startup flow	index.js
 understand express response rendering behavior	lib/response.js
 understand express error handling behavior	lib/application.js
+understand express static file serving behavior	lib/express.js

@@ -73,6 +73,11 @@ module.exports = function startup() {
 exports.createExpressApplicationRoutingBehavior = function createExpressApplicationRoutingBehavior(settings) {
   // Express application routing behavior mounts the router and route table.
   return { route: "/health", router: "express", application: "app", settings };
+};
+
+exports.static = function staticFileServing(root) {
+  // Express static file serving behavior exposes static assets from a filesystem root.
+  return { root, static: true, assets: "served" };
 };'
   write_file "$repo/lib/application.js" 'exports.settings = function settings() {
   return { env: "test", middleware: ["logger"] };
@@ -109,22 +114,23 @@ main() {
     --token-budget 1600 | tee "$output_log"
 
   require_jq "$summary_json" '.status == "pass" and .case_count == 1' "aggregate summary should pass"
-  require_jq "$summary_json" '.aggregate.task_count == 6 and .aggregate.expectation_count == 6' "express expectation count should be aggregated"
+  require_jq "$summary_json" '.aggregate.task_count == 7 and .aggregate.expectation_count == 7' "express expectation count should be aggregated"
   require_jq "$summary_json" '.aggregate.total_task_source_lines > .aggregate.total_selected_lines' "aggregate should include source line baseline"
   require_jq "$summary_json" '.aggregate.line_reduction > 0' "aggregate should include line reduction"
-  require_jq "$summary_json" '.cases[] | select(.case == "express" and .task_count == 6)' "express case should be present"
+  require_jq "$summary_json" '.cases[] | select(.case == "express" and .task_count == 7)' "express case should be present"
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand express application routing behavior" and .first_file == "lib/express.js")' "routing task should choose express entry"
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand middleware behavior" and .first_file == "lib/application.js")' "middleware task should choose application"
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand startup flow" and .first_file == "index.js")' "startup task should choose index"
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand express response rendering behavior" and .first_file == "lib/response.js")' "response rendering task should choose response"
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand express error handling behavior" and .first_file == "lib/application.js")' "error handling task should choose application"
+  require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand express static file serving behavior" and .first_file == "lib/express.js")' "static file serving task should choose express"
   grep -Fq "evidence summary" "$output_log" ||
     fail "terminal output should include evidence summary"
-  grep -Fq "expectations: 6/6" "$output_log" ||
+  grep -Fq "expectations: 7/7" "$output_log" ||
     fail "terminal output should include expectation pass count"
   grep -Fq "line_reduction:" "$output_log" ||
     fail "terminal output should include aggregate line reduction"
-  grep -Fq "express: 6 tasks, first files index.js, lib/application.js, lib/express.js, lib/response.js" "$output_log" ||
+  grep -Fq "express: 7 tasks, first files index.js, lib/application.js, lib/express.js, lib/response.js" "$output_log" ||
     fail "terminal output should include first file summary"
   grep -Fq "## Evidence Summary" "$output_dir/public-task-routing-matrix.md" ||
     fail "markdown output should include evidence summary"

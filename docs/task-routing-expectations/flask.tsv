@@ -6,3 +6,4 @@ understand flask template rendering behavior	src/flask/templating.py
 understand configuration settings	src/flask/config.py
 understand cli startup run command	src/flask/cli.py
 understand flask testing client coverage	tests/test_testing.py
+understand flask static file serving behavior	src/flask/blueprints.py

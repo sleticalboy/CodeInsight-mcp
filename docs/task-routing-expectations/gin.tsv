@@ -6,3 +6,4 @@ understand json binding behavior	binding/json.go
 understand binding validation test coverage	binding/default_validator_test.go
 understand gin response rendering behavior	render/render.go
 understand gin error recovery middleware behavior	recovery.go
+understand gin static file serving behavior	routergroup.go

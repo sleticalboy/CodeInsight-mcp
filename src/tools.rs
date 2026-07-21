@@ -2238,6 +2238,8 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
         "Start with seed file test, spec, or regression coverage.".to_string()
     } else if signals.http_state_headers && !signals.auth_session && !signals.security_safety {
         "Start with seed file cookies, headers, or HTTP state boundaries.".to_string()
+    } else if signals.static_file_serving {
+        "Start with seed file static file, asset, or filesystem serving boundaries.".to_string()
     } else if signals.response_rendering {
         "Start with seed file response rendering, templates, or output format boundaries."
             .to_string()
@@ -2293,6 +2295,9 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
 fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
     if signals.test_coverage {
         "Read symbol definitions that establish test coverage or regression behavior.".to_string()
+    } else if signals.static_file_serving {
+        "Read symbol definitions that establish static file, asset, or filesystem serving behavior."
+            .to_string()
     } else if signals.response_rendering {
         "Read symbol definitions that establish response rendering or output format behavior."
             .to_string()
@@ -2370,6 +2375,9 @@ fn context_type_relation_focus(signals: ContextTaskSignals) -> String {
 fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
     if signals.test_coverage {
         "Follow call graph evidence from tests, specs, or regression coverage.".to_string()
+    } else if signals.static_file_serving {
+        "Follow call graph evidence for static file, asset, or filesystem serving behavior."
+            .to_string()
     } else if signals.response_rendering {
         "Follow call graph evidence for response rendering, templates, or output formats."
             .to_string()
@@ -2429,6 +2437,8 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
     if signals.test_coverage {
         "Inspect references that exercise behavior in tests, specs, or regression cases."
             .to_string()
+    } else if signals.static_file_serving {
+        "Inspect references that register, serve, or configure static files and assets.".to_string()
     } else if signals.response_rendering {
         "Inspect references that render responses, templates, or output formats.".to_string()
     } else if signals.auth_session {
@@ -2485,6 +2495,9 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
 fn context_semantic_focus(signals: ContextTaskSignals) -> String {
     if signals.test_coverage {
         "Review semantic matches for test, spec, or regression coverage.".to_string()
+    } else if signals.static_file_serving {
+        "Review semantic matches for static file, asset, or filesystem serving behavior."
+            .to_string()
     } else if signals.response_rendering {
         "Review semantic matches for response rendering, templates, or output formats.".to_string()
     } else if signals.auth_session {
@@ -2542,6 +2555,9 @@ fn context_semantic_focus(signals: ContextTaskSignals) -> String {
 fn context_dependency_focus(signals: ContextTaskSignals) -> String {
     if signals.test_coverage {
         "Check local dependencies that support test setup, fixtures, or assertions.".to_string()
+    } else if signals.static_file_serving {
+        "Check local dependencies that supply static file, asset, or filesystem serving."
+            .to_string()
     } else if signals.response_rendering {
         "Check local dependencies that shape response rendering or output formats.".to_string()
     } else if signals.auth_session {
@@ -2637,6 +2653,9 @@ fn context_seed_file_question(task: &str) -> String {
         "Which behavior, assertions, fixtures, or regression cases are covered here?".to_string()
     } else if signals.http_state_headers && !signals.auth_session && !signals.security_safety {
         "Where are cookies, headers, or HTTP state containers handled here?".to_string()
+    } else if signals.static_file_serving {
+        "Where are static files, assets, filesystem roots, or file responses served here?"
+            .to_string()
     } else if signals.response_rendering {
         "Where are responses rendered, templates selected, or output formats produced here?"
             .to_string()
@@ -2705,6 +2724,8 @@ fn context_symbol_definition_question(task: &str) -> String {
     if signals.test_coverage {
         "What test behavior, assertion, fixture, or regression case does this definition establish?"
             .to_string()
+    } else if signals.static_file_serving {
+        "What static file, asset, filesystem root, or file response behavior does this definition establish?".to_string()
     } else if signals.response_rendering {
         "What response rendering, template selection, or output format behavior does this definition establish?".to_string()
     } else if signals.auth_session {
@@ -2780,6 +2801,8 @@ fn context_call_graph_question(task: &str) -> String {
     if signals.test_coverage {
         "Which callers or callees exercise behavior through tests, specs, or regression cases?"
             .to_string()
+    } else if signals.static_file_serving {
+        "Which callers or callees register static routes, open filesystem roots, or serve file responses?".to_string()
     } else if signals.response_rendering {
         "Which callers or callees select response renderers, templates, or output formats?"
             .to_string()
@@ -2845,6 +2868,8 @@ fn context_dependency_question(task: &str) -> String {
     if signals.test_coverage {
         "What imported local dependency behavior supplies test setup, fixtures, or assertions?"
             .to_string()
+    } else if signals.static_file_serving {
+        "What imported local dependency behavior supplies static files, asset roots, or file responses?".to_string()
     } else if signals.response_rendering {
         "What imported local dependency behavior shapes response rendering or output formats?"
             .to_string()
@@ -2908,6 +2933,9 @@ fn context_reference_question(task: &str) -> String {
     if signals.test_coverage {
         "Which references exercise behavior through tests, specs, fixtures, or regression cases?"
             .to_string()
+    } else if signals.static_file_serving {
+        "Which references register static routes, configure asset roots, or serve file responses?"
+            .to_string()
     } else if signals.response_rendering {
         "Which references render responses, select templates, or produce output formats?"
             .to_string()
@@ -2966,6 +2994,9 @@ fn context_semantic_question(task: &str) -> String {
     let signals = ContextTaskSignals::from_task(task);
     if signals.test_coverage {
         "Which semantic matches describe tests, specs, fixtures, or regression coverage?"
+            .to_string()
+    } else if signals.static_file_serving {
+        "Which semantic matches describe static file serving, asset roots, or file responses?"
             .to_string()
     } else if signals.response_rendering {
         "Which semantic matches describe response rendering, templates, or output formats?"
@@ -3044,6 +3075,7 @@ struct ContextTaskSignals {
     performance_cache: bool,
     observability_logging: bool,
     http_state_headers: bool,
+    static_file_serving: bool,
     response_rendering: bool,
     security_safety: bool,
     billing_payment: bool,
@@ -3117,6 +3149,39 @@ impl ContextTaskSignals {
                     "screens",
                 ],
             );
+        let static_file_serving =
+            context_text_mentions(
+                task,
+                &[
+                    "static file",
+                    "static files",
+                    "static asset",
+                    "static assets",
+                    "asset serving",
+                    "assets serving",
+                    "file serving",
+                    "filesystem serving",
+                    "file system serving",
+                    "send file",
+                    "sendfile",
+                    "send static",
+                ],
+            ) || (context_text_mentions(task, &["static", "asset", "assets"])
+                && context_text_mentions(
+                    task,
+                    &[
+                        "file",
+                        "files",
+                        "folder",
+                        "folders",
+                        "directory",
+                        "directories",
+                        "serve",
+                        "serving",
+                        "filesystem",
+                        "file system",
+                    ],
+                ));
 
         Self {
             impact_flow: context_text_mentions(
@@ -3282,6 +3347,7 @@ impl ContextTaskSignals {
                 ],
             ),
             http_state_headers,
+            static_file_serving,
             response_rendering,
             security_safety: context_text_mentions(
                 task,
@@ -5527,6 +5593,26 @@ fn auto_seed_task_focus_boost(
         };
     }
 
+    if auto_seed_static_file_serving_task(task_keywords) {
+        let file_action_match = auto_seed_static_file_serving_file_matches(file);
+        let symbol_action_match = symbol
+            .map(auto_seed_static_file_serving_symbol_matches)
+            .unwrap_or(false);
+        let framework_file_match = auto_seed_static_file_serving_framework_file_matches(file);
+
+        score += match (file_action_match, symbol_action_match) {
+            (true, true) => 2400,
+            (true, false) => 1500,
+            (false, true) => 1200,
+            _ => 0,
+        };
+        if framework_file_match && symbol_action_match {
+            score += 1800;
+        } else if framework_file_match {
+            score += 1400;
+        }
+    }
+
     if auto_seed_response_rendering_task(task_keywords) {
         let central_file_match = auto_seed_response_rendering_central_file_matches(file);
         let response_file_match =
@@ -5712,6 +5798,88 @@ fn auto_seed_http_state_headers_symbol_matches(symbol: &str, task_keywords: &[St
                 || has_exact("headers")
                 || has_exact("caseinsensitive")
                 || (has_exact("case") && has_exact("insensitive"))))
+}
+
+fn auto_seed_static_file_serving_task(task_keywords: &[String]) -> bool {
+    let static_or_asset = task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "static" | "asset" | "assets"));
+    let file_or_serving = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "file"
+                | "files"
+                | "folder"
+                | "folders"
+                | "directory"
+                | "directories"
+                | "serve"
+                | "serving"
+                | "filesystem"
+                | "sendfile"
+        )
+    });
+    let direct_file_response = task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "sendfile" | "send_file"));
+
+    (static_or_asset && file_or_serving) || direct_file_response
+}
+
+fn auto_seed_static_file_serving_file_matches(file: &str) -> bool {
+    auto_seed_file_stem_matches(file, "routergroup")
+        || auto_seed_file_stem_matches(file, "express")
+        || auto_seed_file_stem_matches(file, "app")
+        || auto_seed_file_stem_matches(file, "application")
+        || auto_seed_file_stem_matches(file, "blueprint")
+        || auto_seed_file_stem_matches(file, "blueprints")
+        || auto_seed_file_stem_matches(file, "response")
+        || auto_seed_file_stem_matches(file, "responses")
+        || auto_seed_file_stem_matches(file, "helper")
+        || auto_seed_file_stem_matches(file, "helpers")
+        || file.split('/').any(|part| {
+            part.eq_ignore_ascii_case("fs")
+                || part.eq_ignore_ascii_case("filesystem")
+                || part.eq_ignore_ascii_case("static")
+                || part.eq_ignore_ascii_case("assets")
+        })
+}
+
+fn auto_seed_static_file_serving_framework_file_matches(file: &str) -> bool {
+    auto_seed_file_stem_matches(file, "routergroup")
+        || auto_seed_file_stem_matches(file, "express")
+        || auto_seed_file_stem_matches(file, "app")
+        || auto_seed_file_stem_matches(file, "application")
+}
+
+fn auto_seed_static_file_serving_symbol_matches(symbol: &str) -> bool {
+    let parts = symbol
+        .split(|ch: char| !ch.is_ascii_alphanumeric())
+        .filter(|part| !part.is_empty())
+        .map(str::to_ascii_lowercase)
+        .collect::<Vec<_>>();
+    let normalized = parts.join("");
+    let has_exact = |needle: &str| parts.iter().any(|part| part == needle);
+
+    has_exact("static")
+        || has_exact("staticfile")
+        || has_exact("staticfs")
+        || has_exact("sendfile")
+        || has_exact("sendstaticfile")
+        || has_exact("sendfromdirectory")
+        || has_exact("createstatichandler")
+        || has_exact("filesystem")
+        || (has_exact("file") && (has_exact("serve") || has_exact("send")))
+        || matches!(
+            normalized.as_str(),
+            "staticfile"
+                | "staticfilefs"
+                | "staticfs"
+                | "sendfile"
+                | "sendstaticfile"
+                | "sendfromdirectory"
+                | "createstatichandler"
+        )
 }
 
 fn auto_seed_response_rendering_task(task_keywords: &[String]) -> bool {
@@ -6259,6 +6427,20 @@ fn task_keyword_aliases(keyword: &str) -> &'static [&'static str] {
         "headers" => &["header", "case", "insensitive"],
         "case" => &["insensitive", "headers"],
         "insensitive" => &["case", "headers"],
+        "static" => &["file", "files", "assets"],
+        "asset" => &["assets", "static", "file"],
+        "assets" => &["asset", "static", "files"],
+        "file" => &["files"],
+        "files" => &["file"],
+        "folder" => &["folders", "directory"],
+        "folders" => &["folder", "directory"],
+        "directory" => &["directories", "folder"],
+        "directories" => &["directory", "folder"],
+        "serve" => &["serving"],
+        "serving" => &["serve"],
+        "filesystem" => &["file", "files"],
+        "sendfile" => &["static", "file", "serving"],
+        "send_file" => &["static", "file", "serving"],
         "output" => &["outputs", "response"],
         "outputs" => &["output", "response"],
         "template" => &["templates"],
@@ -6742,6 +6924,17 @@ mod tests {
         assert!(auto_seed_response_rendering_task(
             &response_rendering_keywords
         ));
+
+        let static_file_keywords = task_keywords("understand static file serving behavior");
+        assert!(static_file_keywords.contains(&"static".to_string()));
+        assert!(static_file_keywords.contains(&"file".to_string()));
+        assert!(static_file_keywords.contains(&"serving".to_string()));
+        assert!(auto_seed_static_file_serving_task(&static_file_keywords));
+
+        let static_asset_keywords = task_keywords("understand static assets behavior");
+        assert!(static_asset_keywords.contains(&"static".to_string()));
+        assert!(static_asset_keywords.contains(&"assets".to_string()));
+        assert!(auto_seed_static_file_serving_task(&static_asset_keywords));
 
         let billing_keywords = task_keywords("understand checkout subscription payment");
         assert!(billing_keywords.contains(&"checkout".to_string()));
