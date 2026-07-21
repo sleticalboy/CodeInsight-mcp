@@ -1464,6 +1464,21 @@ main() {
     'Auto-selected seed files keep their seed order' \
     "first-read workflow seed-order routing"
   require_pattern docs/status.md \
+    'local-first first-read router for AI coding agents' \
+    "status first-read router positioning"
+  require_pattern docs/status.md \
+    'passes `66/66` expected first-file checks' \
+    "status public route-quality pass count"
+  require_pattern docs/status.md \
+    '29,465 of 1,303,219 task source lines' \
+    "status public route-quality read-less evidence"
+  require_pattern docs/status.md \
+    'first suggested tool for every route' \
+    "status public route-quality suggested tool evidence"
+  require_pattern docs/status.md \
+    'agent_route -> selected context -> executable suggested_tool -> impact check' \
+    "status first-read route chain"
+  require_pattern docs/status.md \
     'Framework-oriented entrypoint signals' \
     "status framework entrypoint signals"
   require_pattern docs/status.md \

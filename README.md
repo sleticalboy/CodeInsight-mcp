@@ -361,14 +361,18 @@ Key docs:
 
 ## Current Status
 
-CodeInsight is an early MVP. It can index local repositories, expose CLI and
-MCP navigation tools, build agent-ready context packs, run local impact
-analysis, and optionally use configured semantic embeddings.
+CodeInsight is an early MVP for local-first AI-agent repository reading. It can
+route a broad task through `agent_route`, select bounded context, return a
+reading plan, hand off an executable suggested tool, and preview impact before
+edits.
 
 Latest verified release: `v0.1.12`.
 
-Next focus: strengthen real-repository demos and README evidence around the
-AI-agent first-read workflow.
+Current public route-quality evidence passes `66/66` first-file checks and
+selects 29,465 of 1,303,219 task source lines.
+
+Next focus: strengthen real-repository demos and route-quality evidence around
+the AI-agent first-read workflow.
 See [Current status](docs/status.md) for the full implemented capability list.
 
 ## Install From Release

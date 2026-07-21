@@ -1,10 +1,24 @@
 # Current Status
 
-CodeInsight is a local-first MVP code-intelligence server. The current build is
-useful for repository indexing, navigation, dependency/call graph inspection,
-impact triage, semantic-context experiments, and AI-agent context gathering. It
-is not a complete language-server-grade static-analysis platform, but the core
-MVP workflow is now implemented end to end.
+CodeInsight is a local-first first-read router for AI coding agents. The
+current MVP helps an agent turn a broad repository task into selected context,
+a reading plan, executable suggested tools, and a pre-edit impact check without
+uploading code to an external index. It is not a complete
+language-server-grade static-analysis platform, but the core AI-agent context
+workflow is implemented end to end.
+
+## Current First-Read Evidence
+
+- The checked-in public route-quality snapshot covers Express, Flask, Gin, and
+  Requests tasks, passes `66/66` expected first-file checks, and selects
+  29,465 of 1,303,219 task source lines for a 97.73% read-less reduction.
+- The public matrix records the first selected file, reading focus, reading
+  question, and first suggested tool for every route.
+- The default client path is now
+  `agent_route -> selected context -> executable suggested_tool -> impact check`.
+- MCP smoke coverage verifies that stdio clients can call `agent_route`, read
+  the selected context contract, execute the current step's suggested tool, and
+  inspect impact suggestions before edits.
 
 ## Implemented
 
