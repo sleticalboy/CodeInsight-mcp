@@ -89,7 +89,15 @@ Higher levels win. For example, a report with 3 files can still be `high` if one
 
 Project configuration can override command checks. If `.codeinsight/config.toml` contains matching impact-analysis commands, those commands are emitted before review checks and built-in command inference is skipped. If no configured command matches, CodeInsight falls back to built-in command inference.
 
-When built-in inference is active and impacted files include tests, CodeInsight also appends focused commands for those files. Examples include `pytest tests/test_api.py`, `pnpm test -- src/core.test.ts`, and `go test ./binding`. These focused checks are emitted after the broader detected test command so agents can start with the smallest relevant verification before running a full suite.
+When built-in inference is active and impacted files include tests, CodeInsight
+also appends focused commands for those files. Examples include
+`pytest tests/test_api.py`, `pnpm test -- src/core.test.ts`,
+`go test ./binding`, `cargo test --locked --test cli`,
+`bundle exec rspec spec/core_spec.rb`,
+`mvn -Dtest=TokenNormalizerTest test`, and
+`dotnet test --filter FullyQualifiedName~TokenNormalizerTests`. These focused
+checks are emitted after the broader detected test command so agents can start
+with the smallest relevant verification before running a full suite.
 
 Create a starter config:
 

@@ -86,8 +86,12 @@ workflow is implemented end to end.
   includes the first suggested check in its instruction, and exposes a full
   `impact_analysis` suggested tool for pre-edit review workflows.
 - Built-in impact check inference appends focused test-file commands such as
-  `pytest tests/test_api.py`, `pnpm test -- src/core.test.ts`, and
-  `go test ./binding` when impacted files include tests.
+  `pytest tests/test_api.py`, `pnpm test -- src/core.test.ts`,
+  `go test ./binding`, `cargo test --locked --test cli`,
+  `bundle exec rspec spec/core_spec.rb`,
+  `mvn -Dtest=TokenNormalizerTest test`, and
+  `dotnet test --filter FullyQualifiedName~TokenNormalizerTests` when impacted
+  files include tests.
 - CLI commands: `index`, `init-config`, `config-status`, `overview`,
   `symbols`, `outline`, `dependency-graph`, `impact-analysis`,
   `find-references`, `semantic-search`, `semantic-index`, `embedding-status`,

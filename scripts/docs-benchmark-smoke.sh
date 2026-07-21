@@ -370,6 +370,15 @@ main() {
   require_pattern docs/impact-analysis.md \
     '`pnpm test -- src/core\.test\.ts`' \
     "impact analysis focused pnpm test example"
+  require_pattern docs/impact-analysis.md \
+    '`cargo test --locked --test cli`' \
+    "impact analysis focused cargo test example"
+  require_pattern docs/impact-analysis.md \
+    '`mvn -Dtest=TokenNormalizerTest test`' \
+    "impact analysis focused maven test example"
+  require_pattern docs/impact-analysis.md \
+    '`dotnet test --filter FullyQualifiedName~TokenNormalizerTests`' \
+    "impact analysis focused dotnet test example"
   require_pattern docs/README.md \
     'Adoption comparison evidence' \
     "docs index adoption comparison validation row"
