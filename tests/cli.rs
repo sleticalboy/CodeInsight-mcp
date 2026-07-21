@@ -8267,6 +8267,94 @@ public class TokenNormalizerTest {
 }
 
 #[test]
+fn cli_impact_analysis_suggests_focused_csharp_tests() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        "Demo.csproj",
+        r#"
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+</Project>
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/TokenNormalizer.cs",
+        r#"
+namespace Demo;
+
+public static class TokenNormalizer {
+    public static string NormalizeToken(string input) {
+        return input.Trim().ToLowerInvariant();
+    }
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "tests/TokenNormalizerTests.cs",
+        r#"
+namespace Demo.Tests;
+
+public class TokenNormalizerTests {
+    public void CoversNormalizeToken() {
+        TokenNormalizer.NormalizeToken(" Demo ");
+    }
+}
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 2);
+
+    let impact = run_json([
+        "impact-analysis",
+        fixture.path().to_str().unwrap(),
+        "--symbol",
+        "NormalizeToken",
+        "--file",
+        "src/TokenNormalizer.cs",
+        "--depth",
+        "1",
+        "--limit",
+        "20",
+        "--format",
+        "summary",
+        "--evidence-limit",
+        "2",
+    ]);
+
+    assert!(
+        impact["impacted_files"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|file| file["file"] == "tests/TokenNormalizerTests.cs")
+    );
+    let suggested_checks = impact["suggested_checks"].as_array().unwrap();
+    assert!(
+        suggested_checks
+            .iter()
+            .any(|check| { check["kind"] == "command" && check["command"] == "dotnet test" }),
+        "expected full dotnet test command in {suggested_checks:#?}"
+    );
+    assert!(
+        suggested_checks.iter().any(|check| {
+            check["kind"] == "command"
+                && check["command"]
+                    == "dotnet test --filter FullyQualifiedName~TokenNormalizerTests"
+                && check["reason"].as_str().is_some_and(|reason| {
+                    reason.contains("Focused test file tests/TokenNormalizerTests.cs is impacted")
+                })
+        }),
+        "expected focused dotnet test command in {suggested_checks:#?}"
+    );
+}
+
+#[test]
 fn cli_find_references_filters_comments_and_downranks_tests() {
     let fixture = TempDir::new().unwrap();
     write_file(

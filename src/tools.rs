@@ -5330,6 +5330,7 @@ fn focused_test_command(base_command: &str, file: &str) -> Option<String> {
         "mvn test" | "./gradlew --no-daemon test" | "gradle test" => {
             focused_java_test_command(base_command, file)
         }
+        "dotnet test" => focused_dotnet_test_command(base_command, file),
         "bundle exec rspec" => Some(format!("bundle exec rspec {file_arg}")),
         _ => None,
     }
@@ -5354,6 +5355,7 @@ fn is_test_source_file(file: &str) -> bool {
         || normalized.ends_with("_spec.rb")
         || normalized.ends_with("test.java")
         || normalized.ends_with("test.cs")
+        || normalized.ends_with("tests.cs")
         || normalized.ends_with(".test.js")
         || normalized.ends_with(".test.jsx")
         || normalized.ends_with(".test.ts")
@@ -5413,6 +5415,18 @@ fn focused_java_test_command(base_command: &str, file: &str) -> Option<String> {
         )),
         _ => None,
     }
+}
+
+fn focused_dotnet_test_command(base_command: &str, file: &str) -> Option<String> {
+    let normalized = file.replace('\\', "/");
+    let class_name = Path::new(&normalized).file_stem()?.to_string_lossy();
+    if class_name.is_empty() {
+        return None;
+    }
+    Some(format!(
+        "{base_command} --filter FullyQualifiedName~{}",
+        shell_arg(class_name.as_ref())
+    ))
 }
 
 fn shell_arg(value: &str) -> String {
@@ -9064,6 +9078,10 @@ mod tests {
             Some("gradle test --tests TokenNormalizerTest")
         );
         assert_eq!(
+            focused_test_command("dotnet test", "tests/TokenNormalizerTests.cs").as_deref(),
+            Some("dotnet test --filter FullyQualifiedName~TokenNormalizerTests")
+        );
+        assert_eq!(
             focused_test_command("bundle exec rspec", "spec/core_spec.rb").as_deref(),
             Some("bundle exec rspec spec/core_spec.rb")
         );
@@ -9827,6 +9845,7 @@ fn is_low_value_reference_file(file: &str) -> bool {
         || normalized.ends_with("_spec.rb")
         || normalized.ends_with("test.java")
         || normalized.ends_with("test.cs")
+        || normalized.ends_with("tests.cs")
         || normalized.ends_with(".test.js")
         || normalized.ends_with(".test.jsx")
         || normalized.ends_with(".test.ts")
