@@ -2255,6 +2255,8 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
         "Start with seed file configuration defaults and inputs.".to_string()
     } else if signals.startup {
         "Start with seed file startup and initialization flow.".to_string()
+    } else if signals.error_recovery {
+        "Start with seed file error handling, retry, and recovery boundaries.".to_string()
     } else if signals.middleware {
         "Start with seed file middleware and handler boundaries.".to_string()
     } else if signals.request_lifecycle {
@@ -2657,6 +2659,8 @@ fn context_seed_file_question(task: &str) -> String {
         "Which configuration options, defaults, or environment inputs control the requested behavior?".to_string()
     } else if signals.startup {
         "What startup entrypoint or initialization sequence creates the requested flow?".to_string()
+    } else if signals.error_recovery {
+        "Where are errors, retries, timeouts, or recovery decisions handled here?".to_string()
     } else if signals.middleware {
         "Which middleware or handler boundaries shape the requested flow here?".to_string()
     } else if signals.request_lifecycle {
@@ -5567,7 +5571,11 @@ fn auto_seed_task_focus_boost(
     }
 
     if auto_seed_error_recovery_handling_task(task_keywords) {
-        let file_action_match = auto_seed_error_recovery_action_file_matches(file);
+        let recovery_file_match =
+            auto_seed_error_recovery_recovery_file_matches(file, task_keywords);
+        let application_file_match =
+            auto_seed_error_recovery_application_file_matches(file, task_keywords);
+        let file_action_match = auto_seed_error_recovery_action_file_matches(file, task_keywords);
         let symbol_action_match = symbol
             .map(auto_seed_error_recovery_action_symbol_matches)
             .unwrap_or(false);
@@ -5578,6 +5586,12 @@ fn auto_seed_task_focus_boost(
             (false, true) => 700,
             _ => 0,
         };
+        if recovery_file_match {
+            score += 1800;
+        }
+        if application_file_match {
+            score += 3000;
+        }
     }
 
     if auto_seed_tls_certificate_task(task_keywords) {
@@ -5819,10 +5833,23 @@ fn auto_seed_request_lifecycle_symbol_matches(symbol: &str) -> bool {
 }
 
 fn auto_seed_error_recovery_handling_task(task_keywords: &[String]) -> bool {
-    let retry_or_timeout = task_keywords.iter().any(|keyword| {
+    let error_or_recovery = task_keywords.iter().any(|keyword| {
         matches!(
             keyword.as_str(),
-            "retry" | "retries" | "timeout" | "timeouts"
+            "retry"
+                | "retries"
+                | "timeout"
+                | "timeouts"
+                | "error"
+                | "errors"
+                | "exception"
+                | "exceptions"
+                | "failure"
+                | "failures"
+                | "recovery"
+                | "recover"
+                | "panic"
+                | "panics"
         )
     });
     let handling = task_keywords.iter().any(|keyword| {
@@ -5837,14 +5864,23 @@ fn auto_seed_error_recovery_handling_task(task_keywords: &[String]) -> bool {
                 | "failures"
                 | "recovery"
                 | "recover"
+                | "middleware"
+                | "handler"
+                | "handlers"
         )
     });
 
-    retry_or_timeout && handling
+    error_or_recovery && handling
 }
 
-fn auto_seed_error_recovery_action_file_matches(file: &str) -> bool {
-    auto_seed_file_stem_matches(file, "adapter")
+fn auto_seed_error_recovery_action_file_matches(file: &str, task_keywords: &[String]) -> bool {
+    let retry_timeout_task = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "retry" | "retries" | "timeout" | "timeouts"
+        )
+    });
+    let retry_timeout_file_match = auto_seed_file_stem_matches(file, "adapter")
         || auto_seed_file_stem_matches(file, "adapters")
         || auto_seed_file_stem_matches(file, "transport")
         || auto_seed_file_stem_matches(file, "transports")
@@ -5853,7 +5889,51 @@ fn auto_seed_error_recovery_action_file_matches(file: &str) -> bool {
         || auto_seed_file_stem_matches(file, "session")
         || auto_seed_file_stem_matches(file, "sessions")
         || auto_seed_file_stem_matches(file, "request")
-        || auto_seed_file_stem_matches(file, "requests")
+        || auto_seed_file_stem_matches(file, "requests");
+
+    if retry_timeout_task {
+        return retry_timeout_file_match;
+    }
+
+    auto_seed_file_stem_matches(file, "app")
+        || auto_seed_file_stem_matches(file, "application")
+        || auto_seed_file_stem_matches(file, "error")
+        || auto_seed_file_stem_matches(file, "errors")
+        || auto_seed_file_stem_matches(file, "exception")
+        || auto_seed_file_stem_matches(file, "exceptions")
+        || auto_seed_file_stem_matches(file, "recovery")
+        || auto_seed_file_stem_matches(file, "recover")
+        || retry_timeout_file_match
+}
+
+fn auto_seed_error_recovery_recovery_file_matches(file: &str, task_keywords: &[String]) -> bool {
+    task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "recovery" | "recover" | "panic" | "panics"
+        )
+    }) && (auto_seed_file_stem_matches(file, "recovery")
+        || auto_seed_file_stem_matches(file, "recover"))
+}
+
+fn auto_seed_error_recovery_application_file_matches(file: &str, task_keywords: &[String]) -> bool {
+    let retry_timeout_task = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "retry" | "retries" | "timeout" | "timeouts"
+        )
+    });
+    let error_handling_task = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "error" | "errors" | "exception" | "exceptions" | "handling" | "handler" | "handlers"
+        )
+    });
+
+    !retry_timeout_task
+        && error_handling_task
+        && (auto_seed_file_stem_matches(file, "app")
+            || auto_seed_file_stem_matches(file, "application"))
 }
 
 fn auto_seed_error_recovery_action_symbol_matches(symbol: &str) -> bool {
@@ -5865,6 +5945,18 @@ fn auto_seed_error_recovery_action_symbol_matches(symbol: &str) -> bool {
     let has_exact = |needle: &str| parts.iter().any(|part| part == needle);
     has_exact("send")
         || has_exact("request")
+        || has_exact("error")
+        || has_exact("errors")
+        || has_exact("exception")
+        || has_exact("exceptions")
+        || has_exact("recovery")
+        || has_exact("recover")
+        || has_exact("panic")
+        || has_exact("panics")
+        || has_exact("finalhandler")
+        || has_exact("onerror")
+        || has_exact("logerror")
+        || (has_exact("handle") && (has_exact("error") || has_exact("exception")))
         || has_exact("adapter")
         || has_exact("transport")
         || has_exact("client")
@@ -6555,6 +6647,22 @@ mod tests {
         assert!(debug_keywords.contains(&"error".to_string()));
         assert!(debug_keywords.contains(&"failure".to_string()));
         assert!(debug_keywords.contains(&"timeout".to_string()));
+        assert!(auto_seed_error_recovery_handling_task(&debug_keywords));
+
+        let error_handling_keywords = task_keywords("understand error handling behavior");
+        assert!(error_handling_keywords.contains(&"error".to_string()));
+        assert!(error_handling_keywords.contains(&"handling".to_string()));
+        assert!(auto_seed_error_recovery_handling_task(
+            &error_handling_keywords
+        ));
+
+        let recovery_middleware_keywords =
+            task_keywords("understand error recovery middleware behavior");
+        assert!(recovery_middleware_keywords.contains(&"recovery".to_string()));
+        assert!(recovery_middleware_keywords.contains(&"middleware".to_string()));
+        assert!(auto_seed_error_recovery_handling_task(
+            &recovery_middleware_keywords
+        ));
 
         let coverage_keywords = task_keywords("find regression coverage");
         assert!(coverage_keywords.contains(&"regression".to_string()));

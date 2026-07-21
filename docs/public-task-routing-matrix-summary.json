@@ -11,11 +11,11 @@
       "ref": "ae6dd37680e3a00618d6c8a3e522f0ee4eeba1a4",
       "expect_file": "docs/task-routing-expectations/express.tsv",
       "summary_json": "<output-dir>/express/summary.json",
-      "task_count": 5,
-      "expectation_count": 5,
-      "total_task_source_lines": 107390,
-      "total_selected_lines": 1908,
-      "total_estimated_tokens": 12965,
+      "task_count": 6,
+      "expectation_count": 6,
+      "total_task_source_lines": 128868,
+      "total_selected_lines": 2270,
+      "total_estimated_tokens": 15324,
       "max_impacted_files": 43,
       "routes": [
         {
@@ -77,6 +77,18 @@
           "estimated_tokens": 3114,
           "risk_level": "high",
           "impacted_files": 29
+        },
+        {
+          "task": "understand express error handling behavior",
+          "first_file": "lib/application.js",
+          "first_reading_focus": "Start with seed file error handling, retry, and recovery boundaries.",
+          "first_reading_question": "Where are errors, retries, timeouts, or recovery decisions handled here?",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 21478,
+          "line_reduction": "98.3%",
+          "estimated_tokens": 2359,
+          "risk_level": "high",
+          "impacted_files": 27
         }
       ]
     },
@@ -197,11 +209,11 @@
       "ref": "34dac209ffb6ef85cc78c5d217bbb7ad001d68fd",
       "expect_file": "docs/task-routing-expectations/gin.tsv",
       "summary_json": "<output-dir>/gin/summary.json",
-      "task_count": 7,
-      "expectation_count": 7,
-      "total_task_source_lines": 168693,
-      "total_selected_lines": 2424,
-      "total_estimated_tokens": 22364,
+      "task_count": 8,
+      "expectation_count": 8,
+      "total_task_source_lines": 192792,
+      "total_selected_lines": 2966,
+      "total_estimated_tokens": 27309,
       "max_impacted_files": 22,
       "routes": [
         {
@@ -287,6 +299,18 @@
           "estimated_tokens": 5947,
           "risk_level": "high",
           "impacted_files": 22
+        },
+        {
+          "task": "understand gin error recovery middleware behavior",
+          "first_file": "recovery.go",
+          "first_reading_focus": "Start with seed file error handling, retry, and recovery boundaries.",
+          "first_reading_question": "Where are errors, retries, timeouts, or recovery decisions handled here?",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 24099,
+          "line_reduction": "97.8%",
+          "estimated_tokens": 4945,
+          "risk_level": "high",
+          "impacted_files": 7
         }
       ]
     },
@@ -451,13 +475,13 @@
     }
   ],
   "aggregate": {
-    "task_count": 32,
-    "expectation_count": 32,
-    "total_task_source_lines": 567163,
-    "total_selected_lines": 16275,
-    "total_estimated_tokens": 147550,
+    "task_count": 34,
+    "expectation_count": 34,
+    "total_task_source_lines": 612740,
+    "total_selected_lines": 17179,
+    "total_estimated_tokens": 154854,
     "max_impacted_files": 43,
-    "line_reduction": 97.13
+    "line_reduction": 97.19
   },
   "generated_by": "scripts/update-public-task-routing-matrix.sh"
 }
