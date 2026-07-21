@@ -2248,6 +2248,9 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
     } else if signals.url_building {
         "Start with seed file URL building, reverse routing, or route path joining boundaries."
             .to_string()
+    } else if signals.route_grouping {
+        "Start with seed file mounted routers, blueprints, route groups, or nested route boundaries."
+            .to_string()
     } else if signals.http_method_routing {
         "Start with seed file HTTP method routing, verb registration, or dispatch boundaries."
             .to_string()
@@ -2329,6 +2332,9 @@ fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
             .to_string()
     } else if signals.url_building {
         "Read symbol definitions that establish URL building, reverse routing, or route path joining behavior."
+            .to_string()
+    } else if signals.route_grouping {
+        "Read symbol definitions that establish mounted router, blueprint, route group, or nested route behavior."
             .to_string()
     } else if signals.http_method_routing {
         "Read symbol definitions that establish HTTP method routing, verb registration, or dispatch behavior."
@@ -2434,6 +2440,9 @@ fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
     } else if signals.url_building {
         "Follow call graph evidence for URL building, reverse routing, or route path joining."
             .to_string()
+    } else if signals.route_grouping {
+        "Follow call graph evidence for mounted routers, blueprints, route groups, or nested route dispatch."
+            .to_string()
     } else if signals.http_method_routing {
         "Follow call graph evidence for HTTP method routing, verb registration, or dispatch."
             .to_string()
@@ -2519,6 +2528,9 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
             .to_string()
     } else if signals.url_building {
         "Inspect references that build URLs, reverse routes, or join route paths.".to_string()
+    } else if signals.route_grouping {
+        "Inspect references that mount routers, register blueprints, create route groups, or attach nested routes."
+            .to_string()
     } else if signals.http_method_routing {
         "Inspect references that register HTTP verbs, match methods, or dispatch handlers."
             .to_string()
@@ -2598,6 +2610,9 @@ fn context_semantic_focus(signals: ContextTaskSignals) -> String {
             .to_string()
     } else if signals.url_building {
         "Review semantic matches for URL building, reverse routing, or route path joining."
+            .to_string()
+    } else if signals.route_grouping {
+        "Review semantic matches for mounted routers, blueprints, route groups, or nested route structure."
             .to_string()
     } else if signals.http_method_routing {
         "Review semantic matches for HTTP method routing, verb registration, or dispatch."
@@ -2681,6 +2696,9 @@ fn context_dependency_focus(signals: ContextTaskSignals) -> String {
             .to_string()
     } else if signals.url_building {
         "Check local dependencies that supply URL building, reverse routing, or route path joining behavior."
+            .to_string()
+    } else if signals.route_grouping {
+        "Check local dependencies that supply mounted router, blueprint, route group, or nested route behavior."
             .to_string()
     } else if signals.http_method_routing {
         "Check local dependencies that supply HTTP method routing, verb registration, or dispatch behavior."
@@ -2800,6 +2818,9 @@ fn context_seed_file_question(task: &str) -> String {
             .to_string()
     } else if signals.url_building {
         "Where are URLs built, routes reversed, or route paths joined here?".to_string()
+    } else if signals.route_grouping {
+        "Where are routers mounted, blueprints registered, route groups created, or nested routes attached here?"
+            .to_string()
     } else if signals.http_method_routing {
         "Where are HTTP methods registered, verbs matched, or handlers dispatched here?".to_string()
     } else if signals.http_state_headers && !signals.auth_session && !signals.security_safety {
@@ -2893,6 +2914,9 @@ fn context_symbol_definition_question(task: &str) -> String {
             .to_string()
     } else if signals.url_building {
         "What URL building, reverse routing, or route path joining behavior does this definition establish?"
+            .to_string()
+    } else if signals.route_grouping {
+        "What mounted router, blueprint, route group, prefix, or nested route behavior does this definition establish?"
             .to_string()
     } else if signals.http_method_routing {
         "What HTTP method routing, verb registration, or dispatch behavior does this definition establish?"
@@ -2989,6 +3013,9 @@ fn context_call_graph_question(task: &str) -> String {
         "Which callers or callees capture route parameters, attach path variables, or pass them into handlers?".to_string()
     } else if signals.url_building {
         "Which callers or callees build URLs, reverse routes, or join route paths?".to_string()
+    } else if signals.route_grouping {
+        "Which callers or callees mount routers, register blueprints, create groups, or attach nested handlers?"
+            .to_string()
     } else if signals.http_method_routing {
         "Which callers or callees register HTTP methods, match verbs, or dispatch handlers?"
             .to_string()
@@ -3075,6 +3102,9 @@ fn context_dependency_question(task: &str) -> String {
     } else if signals.url_building {
         "What imported local dependency behavior supplies URL building or route path joining?"
             .to_string()
+    } else if signals.route_grouping {
+        "What imported local dependency behavior supplies router mounting, blueprint registration, route groups, or prefixes?"
+            .to_string()
     } else if signals.http_method_routing {
         "What imported local dependency behavior supplies HTTP method routing or verb dispatch?"
             .to_string()
@@ -3157,6 +3187,9 @@ fn context_reference_question(task: &str) -> String {
         "Which references capture, attach, or read route parameters and path variables?".to_string()
     } else if signals.url_building {
         "Which references build URLs, reverse routes, or join route paths?".to_string()
+    } else if signals.route_grouping {
+        "Which references mount routers, register blueprints, create route groups, or attach nested routes?"
+            .to_string()
     } else if signals.http_method_routing {
         "Which references register HTTP methods, match verbs, or dispatch handlers?".to_string()
     } else if signals.request_body_parsing {
@@ -3238,6 +3271,9 @@ fn context_semantic_question(task: &str) -> String {
             .to_string()
     } else if signals.url_building {
         "Which semantic matches describe URL building, reverse routing, or route path joining?"
+            .to_string()
+    } else if signals.route_grouping {
+        "Which semantic matches describe router mounting, blueprint registration, route groups, or nested routes?"
             .to_string()
     } else if signals.http_method_routing {
         "Which semantic matches describe HTTP method routing, verb registration, or dispatch?"
@@ -3337,6 +3373,7 @@ struct ContextTaskSignals {
     response_cookies: bool,
     route_parameters: bool,
     url_building: bool,
+    route_grouping: bool,
     http_method_routing: bool,
     response_redirect: bool,
     static_file_serving: bool,
@@ -3664,6 +3701,64 @@ impl ContextTaskSignals {
                     "graphql",
                 ],
             ));
+        let route_grouping = context_text_mentions(
+            task,
+            &[
+                "route group",
+                "route groups",
+                "router group",
+                "router groups",
+                "route grouping",
+                "group routing",
+                "mounted router",
+                "mounted routers",
+                "mounted app",
+                "mounted application",
+                "subrouter",
+                "sub-router",
+                "sub router",
+                "child router",
+                "nested router",
+                "nested route",
+                "nested routes",
+                "blueprint routing",
+                "blueprint registration",
+                "register blueprint",
+                "register_blueprint",
+                "route mounting",
+                "router mounting",
+            ],
+        ) || (context_text_mentions(
+            task,
+            &[
+                "blueprint",
+                "blueprints",
+                "register_blueprint",
+                "mounted",
+                "mount",
+                "mounts",
+                "mounting",
+                "subrouter",
+                "nested",
+                "group",
+                "groups",
+            ],
+        ) && context_text_mentions(
+            task,
+            &[
+                "route",
+                "routes",
+                "router",
+                "routing",
+                "app",
+                "application",
+                "middleware",
+                "handler",
+                "handlers",
+                "prefix",
+                "prefixes",
+            ],
+        ));
         let http_method_routing = context_text_mentions(
             task,
             &[
@@ -4039,6 +4134,7 @@ impl ContextTaskSignals {
             response_cookies,
             route_parameters,
             url_building,
+            route_grouping,
             http_method_routing,
             response_redirect,
             static_file_serving,
@@ -6407,6 +6503,26 @@ fn auto_seed_task_focus_boost(
         }
     }
 
+    if auto_seed_route_grouping_task(task_keywords) {
+        let file_action_match = auto_seed_route_grouping_file_matches(file);
+        let symbol_action_match = symbol
+            .map(auto_seed_route_grouping_symbol_matches)
+            .unwrap_or(false);
+        let framework_file_match = auto_seed_route_grouping_framework_file_matches(file);
+
+        score += match (file_action_match, symbol_action_match) {
+            (true, true) => 2900,
+            (true, false) => 1500,
+            (false, true) => 1200,
+            _ => 0,
+        };
+        if framework_file_match && symbol_action_match {
+            score += 3000;
+        } else if framework_file_match {
+            score += 2100;
+        }
+    }
+
     if auto_seed_http_method_routing_task(task_keywords) {
         let file_action_match = auto_seed_http_method_routing_file_matches(file);
         let symbol_action_match = symbol
@@ -7185,6 +7301,107 @@ fn auto_seed_url_building_symbol_matches(symbol: &str) -> bool {
                 | "joinpaths"
                 | "calculateabsolutepath"
                 | "basepath"
+        )
+}
+
+fn auto_seed_route_grouping_task(task_keywords: &[String]) -> bool {
+    let grouping_task = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "blueprint"
+                | "blueprints"
+                | "mount"
+                | "mounted"
+                | "mounting"
+                | "subrouter"
+                | "subrouters"
+                | "nested"
+                | "group"
+                | "groups"
+                | "prefix"
+                | "prefixes"
+        )
+    });
+    let routing_task = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "route"
+                | "routes"
+                | "router"
+                | "routing"
+                | "app"
+                | "application"
+                | "middleware"
+                | "handler"
+                | "handlers"
+        )
+    });
+
+    grouping_task && routing_task
+}
+
+fn auto_seed_route_grouping_file_matches(file: &str) -> bool {
+    auto_seed_file_stem_matches(file, "application")
+        || auto_seed_file_stem_matches(file, "app")
+        || auto_seed_file_stem_matches(file, "blueprint")
+        || auto_seed_file_stem_matches(file, "blueprints")
+        || auto_seed_file_stem_matches(file, "scaffold")
+        || auto_seed_file_stem_matches(file, "router")
+        || auto_seed_file_stem_matches(file, "routergroup")
+        || auto_seed_file_stem_matches(file, "route")
+        || auto_seed_file_stem_matches(file, "routes")
+        || auto_seed_file_stem_matches(file, "group")
+        || auto_seed_file_stem_matches(file, "groups")
+}
+
+fn auto_seed_route_grouping_framework_file_matches(file: &str) -> bool {
+    auto_seed_file_stem_matches(file, "application")
+        || auto_seed_file_stem_matches(file, "app")
+        || auto_seed_file_stem_matches(file, "blueprint")
+        || auto_seed_file_stem_matches(file, "blueprints")
+        || auto_seed_file_stem_matches(file, "routergroup")
+        || auto_seed_file_stem_matches(file, "router")
+        || auto_seed_file_stem_matches(file, "scaffold")
+}
+
+fn auto_seed_route_grouping_symbol_matches(symbol: &str) -> bool {
+    let parts = symbol
+        .split(|ch: char| !ch.is_ascii_alphanumeric())
+        .filter(|part| !part.is_empty())
+        .map(str::to_ascii_lowercase)
+        .collect::<Vec<_>>();
+    let normalized = parts.join("");
+    let has_exact = |needle: &str| parts.iter().any(|part| part == needle);
+
+    has_exact("blueprint")
+        || has_exact("blueprints")
+        || has_exact("mount")
+        || has_exact("mounted")
+        || has_exact("mounting")
+        || has_exact("group")
+        || has_exact("groups")
+        || has_exact("prefix")
+        || has_exact("subrouter")
+        || has_exact("nested")
+        || (has_exact("register") && has_exact("blueprint"))
+        || (has_exact("add") && has_exact("url") && has_exact("rule"))
+        || (has_exact("handle") && has_exact("fromlist"))
+        || matches!(
+            normalized.as_str(),
+            "blueprint"
+                | "blueprints"
+                | "registerblueprint"
+                | "register_blueprint"
+                | "routergroup"
+                | "group"
+                | "groupfunc"
+                | "handle"
+                | "handlefromlist"
+                | "addurlrule"
+                | "mount"
+                | "mounted"
+                | "subrouter"
+                | "prefix"
         )
 }
 
@@ -7972,6 +8189,17 @@ fn task_keyword_aliases(keyword: &str) -> &'static [&'static str] {
         "routes" => &["route", "router", "routing"],
         "router" => &["route", "routes", "routing"],
         "routing" => &["route", "routes", "router"],
+        "blueprint" => &["blueprints", "route", "routes", "routing"],
+        "blueprints" => &["blueprint", "route", "routes", "routing"],
+        "mounted" => &["mount", "mounting", "router"],
+        "mounting" => &["mount", "mounted", "router"],
+        "mount" => &["mounted", "mounting", "router"],
+        "subrouter" => &["router", "route", "routes"],
+        "nested" => &["router", "route", "routes"],
+        "group" => &["groups", "route", "routes"],
+        "groups" => &["group", "route", "routes"],
+        "prefix" => &["prefixes", "route", "routes"],
+        "prefixes" => &["prefix", "route", "routes"],
         "url" => &["urls"],
         "urls" => &["url"],
         "build" => &["building", "builder"],
@@ -8634,6 +8862,27 @@ mod tests {
         assert!(url_parameter_keywords.contains(&"url".to_string()));
         assert!(url_parameter_keywords.contains(&"parameter".to_string()));
         assert!(!auto_seed_url_building_task(&url_parameter_keywords));
+
+        let blueprint_keywords = task_keywords("understand flask blueprint routing behavior");
+        assert!(blueprint_keywords.contains(&"blueprint".to_string()));
+        assert!(blueprint_keywords.contains(&"route".to_string()));
+        assert!(auto_seed_route_grouping_task(&blueprint_keywords));
+        assert!(!auto_seed_url_building_task(&blueprint_keywords));
+        assert!(!auto_seed_route_parameters_task(&blueprint_keywords));
+
+        let mounted_router_keywords =
+            task_keywords("understand express mounted app router behavior");
+        assert!(mounted_router_keywords.contains(&"mounted".to_string()));
+        assert!(mounted_router_keywords.contains(&"router".to_string()));
+        assert!(auto_seed_route_grouping_task(&mounted_router_keywords));
+        assert!(!auto_seed_http_method_routing_task(
+            &mounted_router_keywords
+        ));
+
+        let route_group_keywords = task_keywords("understand gin route group behavior");
+        assert!(route_group_keywords.contains(&"group".to_string()));
+        assert!(route_group_keywords.contains(&"route".to_string()));
+        assert!(auto_seed_route_grouping_task(&route_group_keywords));
 
         let http_method_keywords = task_keywords("understand HTTP method routing behavior");
         assert!(http_method_keywords.contains(&"http".to_string()));

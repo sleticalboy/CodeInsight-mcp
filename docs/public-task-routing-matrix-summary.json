@@ -11,11 +11,11 @@
       "ref": "ae6dd37680e3a00618d6c8a3e522f0ee4eeba1a4",
       "expect_file": "docs/task-routing-expectations/express.tsv",
       "summary_json": "<output-dir>/express/summary.json",
-      "task_count": 14,
-      "expectation_count": 14,
-      "total_task_source_lines": 300692,
-      "total_selected_lines": 4900,
-      "total_estimated_tokens": 33727,
+      "task_count": 15,
+      "expectation_count": 15,
+      "total_task_source_lines": 322170,
+      "total_selected_lines": 5262,
+      "total_estimated_tokens": 36087,
       "max_impacted_files": 43,
       "routes": [
         {
@@ -185,6 +185,18 @@
           "estimated_tokens": 2360,
           "risk_level": "high",
           "impacted_files": 27
+        },
+        {
+          "task": "understand express mounted app router behavior",
+          "first_file": "lib/application.js",
+          "first_reading_focus": "Start with seed file mounted routers, blueprints, route groups, or nested route boundaries.",
+          "first_reading_question": "Where are routers mounted, blueprints registered, route groups created, or nested routes attached here?",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 21478,
+          "line_reduction": "98.3%",
+          "estimated_tokens": 2360,
+          "risk_level": "high",
+          "impacted_files": 27
         }
       ]
     },
@@ -194,11 +206,11 @@
       "ref": "36e4a824f340fdee7ed50937ba8e7f6bc7d17f81",
       "expect_file": "docs/task-routing-expectations/flask.tsv",
       "summary_json": "<output-dir>/flask/summary.json",
-      "task_count": 15,
-      "expectation_count": 15,
-      "total_task_source_lines": 275055,
-      "total_selected_lines": 8770,
-      "total_estimated_tokens": 88341,
+      "task_count": 16,
+      "expectation_count": 16,
+      "total_task_source_lines": 293392,
+      "total_selected_lines": 9376,
+      "total_estimated_tokens": 94325,
       "max_impacted_files": 32,
       "routes": [
         {
@@ -380,6 +392,18 @@
           "estimated_tokens": 5928,
           "risk_level": "high",
           "impacted_files": 11
+        },
+        {
+          "task": "understand flask blueprint routing behavior",
+          "first_file": "src/flask/sansio/blueprints.py",
+          "first_reading_focus": "Start with seed file mounted routers, blueprints, route groups, or nested route boundaries.",
+          "first_reading_question": "Where are routers mounted, blueprints registered, route groups created, or nested routes attached here?",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 18337,
+          "line_reduction": "96.7%",
+          "estimated_tokens": 5984,
+          "risk_level": "high",
+          "impacted_files": 22
         }
       ]
     },
@@ -389,11 +413,11 @@
       "ref": "34dac209ffb6ef85cc78c5d217bbb7ad001d68fd",
       "expect_file": "docs/task-routing-expectations/gin.tsv",
       "summary_json": "<output-dir>/gin/summary.json",
-      "task_count": 17,
-      "expectation_count": 17,
-      "total_task_source_lines": 409683,
-      "total_selected_lines": 5382,
-      "total_estimated_tokens": 48288,
+      "task_count": 18,
+      "expectation_count": 18,
+      "total_task_source_lines": 433782,
+      "total_selected_lines": 5665,
+      "total_estimated_tokens": 50626,
       "max_impacted_files": 22,
       "routes": [
         {
@@ -599,6 +623,18 @@
           "estimated_tokens": 2340,
           "risk_level": "high",
           "impacted_files": 10
+        },
+        {
+          "task": "understand gin route group behavior",
+          "first_file": "routergroup.go",
+          "first_reading_focus": "Start with seed file mounted routers, blueprints, route groups, or nested route boundaries.",
+          "first_reading_question": "Where are routers mounted, blueprints registered, route groups created, or nested routes attached here?",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 24099,
+          "line_reduction": "98.8%",
+          "estimated_tokens": 2338,
+          "risk_level": "high",
+          "impacted_files": 10
         }
       ]
     },
@@ -763,13 +799,13 @@
     }
   ],
   "aggregate": {
-    "task_count": 58,
-    "expectation_count": 58,
-    "total_task_source_lines": 1129814,
-    "total_selected_lines": 26241,
-    "total_estimated_tokens": 235703,
+    "task_count": 61,
+    "expectation_count": 61,
+    "total_task_source_lines": 1193728,
+    "total_selected_lines": 27492,
+    "total_estimated_tokens": 246385,
     "max_impacted_files": 43,
-    "line_reduction": 97.67
+    "line_reduction": 97.69
   },
   "generated_by": "scripts/update-public-task-routing-matrix.sh"
 }

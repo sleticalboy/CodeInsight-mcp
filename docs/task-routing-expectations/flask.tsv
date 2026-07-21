@@ -13,3 +13,4 @@ understand flask query string request args behavior	src/flask/helpers.py
 understand flask response header behavior	src/flask/wrappers.py
 understand flask url_for URL building behavior	src/flask/helpers.py
 understand flask HTTP method dispatch behavior	src/flask/views.py
+understand flask blueprint routing behavior	src/flask/sansio/blueprints.py
