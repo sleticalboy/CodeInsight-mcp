@@ -8177,6 +8177,96 @@ end
 }
 
 #[test]
+fn cli_impact_analysis_suggests_focused_java_tests() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        "pom.xml",
+        r#"
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.example</groupId>
+  <artifactId>demo</artifactId>
+  <version>1.0.0</version>
+</project>
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/main/java/com/example/TokenNormalizer.java",
+        r#"
+package com.example;
+
+public class TokenNormalizer {
+    public static String normalizeToken(String input) {
+        return input.trim().toLowerCase();
+    }
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/test/java/com/example/TokenNormalizerTest.java",
+        r#"
+package com.example;
+
+public class TokenNormalizerTest {
+    public void coversNormalizeToken() {
+        TokenNormalizer.normalizeToken(" Demo ");
+    }
+}
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 2);
+
+    let impact = run_json([
+        "impact-analysis",
+        fixture.path().to_str().unwrap(),
+        "--symbol",
+        "normalizeToken",
+        "--file",
+        "src/main/java/com/example/TokenNormalizer.java",
+        "--depth",
+        "1",
+        "--limit",
+        "20",
+        "--format",
+        "summary",
+        "--evidence-limit",
+        "2",
+    ]);
+
+    assert!(
+        impact["impacted_files"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|file| file["file"] == "src/test/java/com/example/TokenNormalizerTest.java")
+    );
+    let suggested_checks = impact["suggested_checks"].as_array().unwrap();
+    assert!(
+        suggested_checks
+            .iter()
+            .any(|check| { check["kind"] == "command" && check["command"] == "mvn test" }),
+        "expected full Maven test command in {suggested_checks:#?}"
+    );
+    assert!(
+        suggested_checks.iter().any(|check| {
+            check["kind"] == "command"
+                && check["command"] == "mvn -Dtest=TokenNormalizerTest test"
+                && check["reason"].as_str().is_some_and(|reason| {
+                    reason.contains(
+                        "Focused test file src/test/java/com/example/TokenNormalizerTest.java is impacted",
+                    )
+                })
+        }),
+        "expected focused Maven test command in {suggested_checks:#?}"
+    );
+}
+
+#[test]
 fn cli_find_references_filters_comments_and_downranks_tests() {
     let fixture = TempDir::new().unwrap();
     write_file(

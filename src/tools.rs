@@ -5327,6 +5327,9 @@ fn focused_test_command(base_command: &str, file: &str) -> Option<String> {
         "pytest" => Some(format!("pytest {file_arg}")),
         "go test ./..." => Some(format!("go test {}", go_test_package_arg(file))),
         "cargo test --locked" => focused_rust_test_command(base_command, file),
+        "mvn test" | "./gradlew --no-daemon test" | "gradle test" => {
+            focused_java_test_command(base_command, file)
+        }
         "bundle exec rspec" => Some(format!("bundle exec rspec {file_arg}")),
         _ => None,
     }
@@ -5390,6 +5393,26 @@ fn focused_rust_test_command(base_command: &str, file: &str) -> Option<String> {
         return None;
     }
     Some(format!("{base_command} {}", shell_arg(stem.as_ref())))
+}
+
+fn focused_java_test_command(base_command: &str, file: &str) -> Option<String> {
+    let normalized = file.replace('\\', "/");
+    let class_name = Path::new(&normalized).file_stem()?.to_string_lossy();
+    if class_name.is_empty() {
+        return None;
+    }
+
+    match base_command {
+        "mvn test" => Some(format!(
+            "mvn -Dtest={} test",
+            shell_arg(class_name.as_ref())
+        )),
+        "./gradlew --no-daemon test" | "gradle test" => Some(format!(
+            "{base_command} --tests {}",
+            shell_arg(class_name.as_ref())
+        )),
+        _ => None,
+    }
 }
 
 fn shell_arg(value: &str) -> String {
@@ -9015,6 +9038,30 @@ mod tests {
         assert_eq!(
             focused_test_command("cargo test --locked", "src/core_test.rs").as_deref(),
             Some("cargo test --locked core_test")
+        );
+        assert_eq!(
+            focused_test_command(
+                "mvn test",
+                "src/test/java/com/example/TokenNormalizerTest.java"
+            )
+            .as_deref(),
+            Some("mvn -Dtest=TokenNormalizerTest test")
+        );
+        assert_eq!(
+            focused_test_command(
+                "./gradlew --no-daemon test",
+                "src/test/java/com/example/TokenNormalizerTest.java"
+            )
+            .as_deref(),
+            Some("./gradlew --no-daemon test --tests TokenNormalizerTest")
+        );
+        assert_eq!(
+            focused_test_command(
+                "gradle test",
+                "src/test/java/com/example/TokenNormalizerTest.java"
+            )
+            .as_deref(),
+            Some("gradle test --tests TokenNormalizerTest")
         );
         assert_eq!(
             focused_test_command("bundle exec rspec", "spec/core_spec.rb").as_deref(),
