@@ -103,6 +103,11 @@ clients can render the follow-up without reassembling context from separate
 fields.
 Use `review_impact_before_edits` as a pre-edit checkpoint, not as proof of
 compiler-grade safety.
+When `agent_route` selects an `auto_task_match` seed and the caller did not pass
+explicit `symbols`, the route copies `selected_seeds[].matched_symbols` into
+`impact_seed_symbols`; this lets the impact preview follow symbol definitions,
+references, and call graph evidence from the matched implementation instead of
+starting from a file-only seed.
 
 `project_overview.recommended_next_tools[]` recommends repository-level calls
 after indexing when a client chooses the lower-level path. It currently favors:

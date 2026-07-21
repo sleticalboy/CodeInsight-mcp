@@ -409,8 +409,13 @@ It also returns `seed_strategy` and `selected_seeds`; use these fields to show
 whether context came from explicit seeds, an overview entrypoint, task-matched
 source, or indexed source-file fallback. For task-matched seeds,
 `selected_seeds[].matched_keywords` names the task terms that matched file paths
-or symbol names. The first seed remains the task match; a later seed can be an
-`overview_entrypoint` companion that preserves the application startup path.
+or symbol names, and `selected_seeds[].matched_symbols` names the strongest
+matched symbols from that seed file. `agent_route` also forwards those symbols
+into `impact_seed_symbols` when the caller did not provide explicit symbols, so
+the pre-edit `impact_analysis` preview starts from the matched implementation
+instead of only the file path. The first seed remains the task match; a later
+seed can be an `overview_entrypoint` companion that preserves the application
+startup path.
 
 Example `context_pack` response shape:
 
@@ -423,14 +428,16 @@ Example `context_pack` response shape:
       "value": "src/router.ts",
       "source": "task_match",
       "role": "source",
-      "matched_keywords": ["router"]
+      "matched_keywords": ["router"],
+      "matched_symbols": ["registerRoutes", "routeRequest"]
     },
     {
       "kind": "file",
       "value": "src/main.ts",
       "source": "overview_entrypoint",
       "role": "source",
-      "matched_keywords": []
+      "matched_keywords": [],
+      "matched_symbols": ["main"]
     }
   ],
   "reading_plan": [

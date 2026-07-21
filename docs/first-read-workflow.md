@@ -167,10 +167,14 @@ The response includes `seed_strategy` (`explicit`, `auto_entrypoint`,
 `auto_task_match`, or `auto_source_fallback`) and `selected_seeds` so clients
 can inspect seed decisions without parsing summary text. When `seed_strategy`
 is `auto_task_match`, `selected_seeds[].matched_keywords` explains which task
-terms matched the selected file path or symbol names. Task-matched first reads
-keep the task-matched seed first and may include a source entrypoint companion
-seed afterward, so agents can stay focused without losing the application
-startup path.
+terms matched the selected file path or symbol names, and
+`selected_seeds[].matched_symbols` lists the strongest matched symbols in that
+seed file. When `agent_route` was called without explicit `symbols`, those
+matched symbols are forwarded into `impact_seed_symbols` for the bundled
+pre-edit `impact_analysis` preview. Task-matched first reads keep the
+task-matched seed first and may include a source entrypoint companion seed
+afterward, so agents can stay focused without losing the application startup
+path.
 
 ## Context Ranking
 
