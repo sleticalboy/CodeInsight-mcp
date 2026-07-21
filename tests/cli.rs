@@ -8021,6 +8021,87 @@ files = ["src/core"]
 }
 
 #[test]
+fn cli_impact_analysis_suggests_focused_rust_integration_tests() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        "Cargo.toml",
+        r#"
+[package]
+name = "demo"
+version = "0.1.0"
+edition = "2021"
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/lib.rs",
+        r#"
+pub fn normalize_token(input: &str) -> String {
+    input.trim().to_ascii_lowercase()
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "tests/normalize.rs",
+        r#"
+use demo::normalize_token;
+
+#[test]
+fn covers_normalize_token() {
+    assert_eq!(normalize_token(" Demo "), "demo");
+}
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 2);
+
+    let impact = run_json([
+        "impact-analysis",
+        fixture.path().to_str().unwrap(),
+        "--symbol",
+        "normalize_token",
+        "--file",
+        "src/lib.rs",
+        "--depth",
+        "1",
+        "--limit",
+        "20",
+        "--format",
+        "summary",
+        "--evidence-limit",
+        "2",
+    ]);
+
+    assert!(
+        impact["impacted_files"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|file| file["file"] == "tests/normalize.rs")
+    );
+    let suggested_checks = impact["suggested_checks"].as_array().unwrap();
+    assert!(
+        suggested_checks.iter().any(|check| {
+            check["kind"] == "command" && check["command"] == "cargo test --locked"
+        }),
+        "expected full Cargo test command in {suggested_checks:#?}"
+    );
+    assert!(
+        suggested_checks.iter().any(|check| {
+            check["kind"] == "command"
+                && check["command"] == "cargo test --locked --test normalize"
+                && check["reason"].as_str().is_some_and(|reason| {
+                    reason.contains("Focused test file tests/normalize.rs is impacted")
+                })
+        }),
+        "expected focused Cargo integration test command in {suggested_checks:#?}"
+    );
+}
+
+#[test]
 fn cli_find_references_filters_comments_and_downranks_tests() {
     let fixture = TempDir::new().unwrap();
     write_file(

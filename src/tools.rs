@@ -5326,6 +5326,7 @@ fn focused_test_command(base_command: &str, file: &str) -> Option<String> {
         "npm test" => Some(format!("npm test -- {file_arg}")),
         "pytest" => Some(format!("pytest {file_arg}")),
         "go test ./..." => Some(format!("go test {}", go_test_package_arg(file))),
+        "cargo test --locked" => focused_rust_test_command(base_command, file),
         _ => None,
     }
 }
@@ -5366,6 +5367,23 @@ fn go_test_package_arg(file: &str) -> String {
         ".".to_string()
     };
     shell_arg(&package)
+}
+
+fn focused_rust_test_command(base_command: &str, file: &str) -> Option<String> {
+    let normalized = file.replace('\\', "/");
+    if let Some(test_file) = normalized.strip_prefix("tests/")
+        && let Some(test_target) = test_file.strip_suffix(".rs")
+        && !test_target.is_empty()
+        && !test_target.contains('/')
+    {
+        return Some(format!("{base_command} --test {}", shell_arg(test_target)));
+    }
+
+    let stem = Path::new(&normalized).file_stem()?.to_string_lossy();
+    if stem.is_empty() {
+        return None;
+    }
+    Some(format!("{base_command} {}", shell_arg(stem.as_ref())))
 }
 
 fn shell_arg(value: &str) -> String {
@@ -8983,6 +9001,14 @@ mod tests {
         assert_eq!(
             focused_test_command("go test ./...", "go pkg/http_test.go").as_deref(),
             Some("go test './go pkg'")
+        );
+        assert_eq!(
+            focused_test_command("cargo test --locked", "tests/cli.rs").as_deref(),
+            Some("cargo test --locked --test cli")
+        );
+        assert_eq!(
+            focused_test_command("cargo test --locked", "src/core_test.rs").as_deref(),
+            Some("cargo test --locked core_test")
         );
         assert!(focused_test_command("cargo test", "src/lib.rs").is_none());
     }
