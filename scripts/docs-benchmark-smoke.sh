@@ -1164,13 +1164,16 @@ main() {
     '"line_reduction": 97\.7' \
     "public task routing matrix JSON line reduction"
   require_pattern docs/public-task-routing-matrix-summary.json \
+    '"first_suggested_tool": "file_outline"' \
+    "public task routing matrix JSON first suggested tool evidence"
+  require_pattern docs/public-task-routing-matrix-summary.json \
     '"repository": "<case-root>/express"' \
     "public task routing matrix JSON normalized repository path"
   require_pattern docs/public-task-routing-matrix-summary.json \
     '"repository": "<case-root>/flask"' \
     "public task routing matrix JSON normalized Flask repository path"
   require_jq docs/public-task-routing-matrix-summary.json \
-    '.cases[] | select(.case == "express") | .routes[] | select(.task == "understand express application routing behavior" and .first_file == "lib/express.js" and (.first_reading_focus | contains("route registration")) and (.first_reading_question | contains("routes registered")) and (.first_reading_question | contains("dispatched to handlers")))' \
+    '.cases[] | select(.case == "express") | .routes[] | select(.task == "understand express application routing behavior" and .first_file == "lib/express.js" and .first_suggested_tool == "file_outline" and (.first_reading_focus | contains("route registration")) and (.first_reading_question | contains("routes registered")) and (.first_reading_question | contains("dispatched to handlers")))' \
     "public task routing matrix JSON Express generic routing first-read focus and question"
   require_jq docs/public-task-routing-matrix-summary.json \
     '.cases[] | select(.case == "express") | .routes[] | select(.task == "understand express response rendering behavior" and .first_file == "lib/response.js" and (.first_reading_focus | contains("response rendering")) and (.first_reading_question | contains("responses rendered")) and (.first_reading_question | contains("output formats")))' \
@@ -1218,7 +1221,7 @@ main() {
     '.cases[] | select(.case == "flask") | .routes[] | select(.task == "understand flask session cookie security behavior" and .first_file == "src/flask/sessions.py" and (.first_reading_focus | contains("authentication")) and (.first_reading_focus | contains("session boundaries")) and (.first_reading_question | contains("session boundaries")))' \
     "public task routing matrix JSON Flask session cookie security first-read focus and question"
   require_jq docs/public-task-routing-matrix-summary.json \
-    '.cases[] | select(.case == "flask") | .routes[] | select(.task == "understand flask application routing behavior" and .first_file == "src/flask/sansio/blueprints.py" and (.first_reading_focus | contains("route registration")) and (.first_reading_question | contains("routes registered")) and (.first_reading_question | contains("dispatched to handlers")))' \
+    '.cases[] | select(.case == "flask") | .routes[] | select(.task == "understand flask application routing behavior" and .first_file == "src/flask/sansio/blueprints.py" and .first_suggested_tool == "file_outline" and (.first_reading_focus | contains("route registration")) and (.first_reading_question | contains("routes registered")) and (.first_reading_question | contains("dispatched to handlers")))' \
     "public task routing matrix JSON Flask generic routing first-read focus and question"
   require_jq docs/public-task-routing-matrix-summary.json \
     '.cases[] | select(.case == "flask") | .routes[] | select(.task == "understand flask logging observability behavior" and .first_file == "src/flask/logging.py" and (.first_reading_focus | contains("logging")) and (.first_reading_focus | contains("telemetry")) and (.first_reading_question | contains("logs")) and (.first_reading_question | contains("trace spans")))' \
@@ -1263,7 +1266,7 @@ main() {
     '.cases[] | select(.case == "gin") | .routes[] | select(.task == "understand binding validation behavior" and .first_file == "binding/default_validator.go" and (.first_reading_focus | contains("validation")) and (.first_reading_question | contains("inputs validated")))' \
     "public task routing matrix JSON Gin validation first-read focus and question"
   require_jq docs/public-task-routing-matrix-summary.json \
-    '.cases[] | select(.case == "gin") | .routes[] | select(.task == "understand gin engine routing behavior" and .first_file == "routergroup.go" and (.first_reading_focus | contains("route registration")) and (.first_reading_question | contains("routes registered")) and (.first_reading_question | contains("dispatched to handlers")))' \
+    '.cases[] | select(.case == "gin") | .routes[] | select(.task == "understand gin engine routing behavior" and .first_file == "routergroup.go" and .first_suggested_tool == "file_outline" and (.first_reading_focus | contains("route registration")) and (.first_reading_question | contains("routes registered")) and (.first_reading_question | contains("dispatched to handlers")))' \
     "public task routing matrix JSON Gin generic routing first-read focus and question"
   require_jq docs/public-task-routing-matrix-summary.json \
     '.cases[] | select(.case == "gin") | .routes[] | select(.task == "understand json binding behavior" and .first_file == "binding/json.go" and (.first_reading_focus | contains("binding")) and (.first_reading_question | contains("payloads bound")))' \

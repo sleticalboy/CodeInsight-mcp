@@ -302,6 +302,8 @@ run_task() {
       first_reading_question: .metrics.first_reading_question,
       first_selection_rank: .metrics.first_selection_rank,
       first_selection_reason: .metrics.first_selection_reason,
+      first_next_action: .metrics.first_next_action,
+      first_suggested_tool: .metrics.first_suggested_tool,
       continuation_next_action: .metrics.continuation_next_action,
       risk_level: .metrics.risk_level,
       impacted_files: .metrics.impacted_files,
@@ -345,6 +347,8 @@ write_summary() {
         and (.first_file | type == "string" and length > 0)
         and (.first_reading_focus | type == "string" and length > 0)
         and (.first_reading_question | type == "string" and length > 0)
+        and (.first_next_action | type == "string" and length > 0)
+        and (.first_suggested_tool | type == "string" and length > 0)
         and (.seed_strategy | type == "string" and length > 0)
         and (.line_reduction | type == "string" and length > 0))' \
     "$SUMMARY_JSON" >/dev/null ||
@@ -430,10 +434,10 @@ write_markdown() {
     echo
     echo "## Results"
     echo
-    echo "| Task | Seed strategy | First file | Focus | Question | First seed | Companion | Lines | Reduction | Tokens | Impact |"
-    echo "| --- | --- | --- | --- | --- | --- | --- | ---: | ---: | ---: | ---: |"
+    echo "| Task | Seed strategy | First file | Focus | Question | Suggested tool | First seed | Companion | Lines | Reduction | Tokens | Impact |"
+    echo "| --- | --- | --- | --- | --- | --- | --- | --- | ---: | ---: | ---: | ---: |"
     jq -r '.tasks[] |
-      "| \(.task) | `\(.seed_strategy)` | `\(.first_file)` | \(.first_reading_focus) | \(.first_reading_question) | `\(.first_seed_value)` | `\((.companion_entrypoint // "") as $value | if $value == "" then "-" else $value end)` | `\(.selected_lines)/\(.total_lines)` | `\(.line_reduction)` | `\(.estimated_tokens)` | `\(.risk_level) / \(.impacted_files)` |"' \
+      "| \(.task) | `\(.seed_strategy)` | `\(.first_file)` | \(.first_reading_focus) | \(.first_reading_question) | `\(.first_suggested_tool)` | `\(.first_seed_value)` | `\((.companion_entrypoint // "") as $value | if $value == "" then "-" else $value end)` | `\(.selected_lines)/\(.total_lines)` | `\(.line_reduction)` | `\(.estimated_tokens)` | `\(.risk_level) / \(.impacted_files)` |"' \
       "$SUMMARY_JSON"
     echo
     echo "## Read Order Evidence"
