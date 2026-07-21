@@ -41,8 +41,8 @@ settings, feature flag/rollout, network/proxy/redirect, TLS/certificate
 verification, startup, persistence, validation/binding/serialization,
 debug/retry/timeout, regression coverage, API handler, cache/performance,
 observability/logging, security/sanitization, billing/payment, frontend
-component, background job, documentation, request lifecycle, and middleware
-prompts.
+component, background job, documentation, request lifecycle, middleware, and
+AI-agent first-read workflow prompts.
 
 Run a custom matrix:
 
@@ -110,6 +110,7 @@ understand background job queue	src/worker.ts
 understand documentation usage	docs/usage.ts
 understand request lifecycle before after request handling	src/application.ts
 understand middleware behavior	src/middleware.ts
+improve AI agent first-read routing quality evidence	src/agent_workflow.ts
 ```
 
 Then run:

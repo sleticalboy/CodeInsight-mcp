@@ -66,7 +66,8 @@ workflow is implemented end to end.
   network clients, TLS/certificate verification, validation/binding,
   persistence, debugging, coverage, API handlers, cache/performance,
   observability, security, billing, frontend, background jobs, documentation,
-  request lifecycle, middleware, and impact/call-path tasks.
+  request lifecycle, middleware, AI-agent first-read workflow, and
+  impact/call-path tasks.
 - `context_pack` budget metadata, bounded omitted-candidate follow-ups, and a
   `continuation_summary.next_action` that lets MCP clients expose a single next
   action after the initial reading plan.

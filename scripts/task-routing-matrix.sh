@@ -513,6 +513,7 @@ main() {
       "understand documentation usage"
       "understand request lifecycle before after request handling"
       "understand middleware behavior"
+      "improve AI agent first-read routing quality evidence"
     )
   fi
 

@@ -6766,6 +6766,20 @@ fn auto_seed_task_focus_boost(
 ) -> i32 {
     let mut score = 0;
 
+    if auto_seed_agent_first_read_task(task_keywords) {
+        let file_match = auto_seed_agent_first_read_field_matches(file);
+        let symbol_match = symbol
+            .map(auto_seed_agent_first_read_field_matches)
+            .unwrap_or(false);
+
+        score += match (file_match, symbol_match) {
+            (true, true) => 5000,
+            (true, false) => 3500,
+            (false, true) => 3200,
+            _ => 0,
+        };
+    }
+
     if task_keywords
         .iter()
         .any(|keyword| auto_seed_lifecycle_keyword(keyword))
@@ -7499,6 +7513,32 @@ fn auto_seed_request_body_parsing_symbol_matches(symbol: &str) -> bool {
                 | "maxformmemorysize"
                 | "maxformparts"
         )
+}
+
+fn auto_seed_agent_first_read_task(task_keywords: &[String]) -> bool {
+    let agent_or_context = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "agent" | "agents" | "assistant" | "assistants" | "context" | "adoption" | "evidence"
+        )
+    });
+    let first_read_or_route = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "first" | "read" | "routing" | "route" | "router" | "quality" | "workflow" | "pack"
+        )
+    });
+
+    agent_or_context && first_read_or_route
+}
+
+fn auto_seed_agent_first_read_field_matches(field: &str) -> bool {
+    auto_seed_field_matches(field, "agent")
+        || auto_seed_field_matches(field, "workflow")
+        || auto_seed_field_matches(field, "context")
+        || auto_seed_field_matches(field, "readless")
+        || auto_seed_field_matches(field, "evidence")
+        || auto_seed_field_matches(field, "adoption")
 }
 
 fn auto_seed_request_query_params_task(task_keywords: &[String]) -> bool {
@@ -9733,6 +9773,27 @@ mod tests {
         assert!(
             context_seed_file_question("improve AI agent first-read routing quality evidence")
                 .contains("agent first-read workflow")
+        );
+
+        let keywords = task_keywords("improve AI agent first-read routing quality evidence");
+        assert!(auto_seed_agent_first_read_task(&keywords));
+        assert!(
+            auto_seed_task_match_score(
+                "src/agent_workflow.ts",
+                Some("routeAgentFirstReadWorkflow"),
+                &keywords
+            ) + auto_seed_task_focus_boost(
+                "src/agent_workflow.ts",
+                Some("routeAgentFirstReadWorkflow"),
+                &keywords,
+                false,
+            ) > auto_seed_task_match_score("src/router.ts", Some("createRouter"), &keywords)
+                + auto_seed_task_focus_boost(
+                    "src/router.ts",
+                    Some("createRouter"),
+                    &keywords,
+                    false
+                )
         );
     }
 
