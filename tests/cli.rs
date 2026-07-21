@@ -9177,16 +9177,15 @@ fn assert_agent_route_execution_plan_matches_context(route: &Value) {
             .as_array()
             .unwrap()
             .first()
+            && let Some(command) = first_check["command"].as_str()
         {
-            if let Some(command) = first_check["command"].as_str() {
-                assert!(
-                    impact_step["instruction"]
-                        .as_str()
-                        .unwrap()
-                        .contains(command),
-                    "impact execution step should include the first command check"
-                );
-            }
+            assert!(
+                impact_step["instruction"]
+                    .as_str()
+                    .unwrap()
+                    .contains(command),
+                "impact execution step should include the first command check"
+            );
         }
     }
 }

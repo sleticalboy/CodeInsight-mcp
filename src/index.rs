@@ -4421,10 +4421,10 @@ fn package_entry_mappings(
     subpath: &str,
     package_conditions: &[String],
 ) -> Vec<PathBuf> {
-    if let Some(exports) = package.get("exports") {
-        if let Some(mappings) = package_export_mappings(exports, subpath, package_conditions) {
-            return mappings;
-        }
+    if let Some(exports) = package.get("exports")
+        && let Some(mappings) = package_export_mappings(exports, subpath, package_conditions)
+    {
+        return mappings;
     }
 
     package_metadata_entry(package, subpath)
@@ -4564,10 +4564,10 @@ fn package_local_target_path(target: String) -> Option<PathBuf> {
 fn package_metadata_entry(package: &Value, subpath: &str) -> Option<PathBuf> {
     if subpath == "." {
         for field in ["module", "main", "types", "typings"] {
-            if let Some(target) = package.get(field).and_then(Value::as_str) {
-                if let Some(target) = package_local_target_path(target.to_string()) {
-                    return Some(target);
-                }
+            if let Some(target) = package.get(field).and_then(Value::as_str)
+                && let Some(target) = package_local_target_path(target.to_string())
+            {
+                return Some(target);
             }
         }
         return None;

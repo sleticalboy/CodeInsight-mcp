@@ -250,10 +250,10 @@ pub fn agent_route_value(
         .iter()
         .map(|file| normalize_seed_file(&root, file))
         .collect::<Result<Vec<_>>>()?;
-    if impact_seed_files.is_empty() {
-        if let Some(first_file) = context_pack.files.first() {
-            impact_seed_files.push(first_file.file.clone());
-        }
+    if impact_seed_files.is_empty()
+        && let Some(first_file) = context_pack.files.first()
+    {
+        impact_seed_files.push(first_file.file.clone());
     }
     impact_seed_files.sort();
     impact_seed_files.dedup();
@@ -4509,12 +4509,10 @@ fn ascii_word_tokens(text: &str) -> Vec<String> {
 }
 
 fn context_reading_sources(file: &ContextFile) -> BTreeSet<&str> {
-    let sources = file
-        .ranges
+    file.ranges
         .iter()
         .map(|range| range.source.as_str())
-        .collect::<BTreeSet<_>>();
-    sources
+        .collect::<BTreeSet<_>>()
 }
 
 fn context_range_source_counts(ranges: &[ContextRange]) -> Vec<ContextSourceCount> {

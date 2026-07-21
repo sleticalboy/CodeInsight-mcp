@@ -878,17 +878,17 @@ impl Store {
             if let Some((score, reason)) = file_entrypoint_signal(&file) {
                 upsert_entrypoint_candidate(&mut candidates, &file, &language, score, reason, None);
             }
-            if let Some(symbol) = symbol {
-                if let Some((score, reason)) = symbol_entrypoint_signal(&symbol) {
-                    upsert_entrypoint_candidate(
-                        &mut candidates,
-                        &file,
-                        &language,
-                        score,
-                        reason,
-                        Some(symbol),
-                    );
-                }
+            if let Some(symbol) = symbol
+                && let Some((score, reason)) = symbol_entrypoint_signal(&symbol)
+            {
+                upsert_entrypoint_candidate(
+                    &mut candidates,
+                    &file,
+                    &language,
+                    score,
+                    reason,
+                    Some(symbol),
+                );
             }
         }
 
