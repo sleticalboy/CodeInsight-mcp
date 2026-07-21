@@ -98,6 +98,14 @@ main() {
     "impacted_files": 2,
     "paths": 1
   },
+  "impact_execution_suggested_tool": "impact_analysis",
+  "impact_suggested_checks": 3,
+  "impact_execution_suggested_checks": 3,
+  "impact_first_suggested_check": {
+    "kind": "review",
+    "command": "cargo test --locked"
+  },
+  "impact_execution_instruction_has_first_check": true,
   "blocked_no_seed": {
     "route_step_status": "blocked_no_seed",
     "seed_strategy": "auto_no_seed",
@@ -156,6 +164,9 @@ EOF
   require_literal "$summary_md" 'Suggested tool executed: `true`' "suggested tool execution"
   require_literal "$summary_md" 'Impact status: `complete`' "impact status"
   require_literal "$summary_md" 'Impacted files: `2`' "impacted files"
+  require_literal "$summary_md" 'Impact execution suggested tool: `impact_analysis`' "impact execution suggested tool"
+  require_literal "$summary_md" 'Impact execution suggested checks: `3`' "impact execution suggested checks"
+  require_literal "$summary_md" 'Impact first suggested check: `cargo test --locked`' "impact first suggested check"
   require_literal "$summary_md" 'Blocked no-seed status: `blocked_no_seed`' "blocked no-seed status"
   require_literal "$summary_md" 'Blocked no-seed next action: `provide_seed_file_or_symbol`' "blocked no-seed next action"
   require_literal "$summary_md" 'Blocked no-seed execution statuses: `blocked_no_reading_plan -> blocked_no_current_reading_step -> manual_after_selected_context -> skipped_no_seed`' "blocked no-seed execution statuses"

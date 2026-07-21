@@ -159,8 +159,12 @@ main() {
     fail "snapshot should include aggregate line reduction"
   grep -Fq 'Summary JSON: `<output-dir>/summary.json`' "$snapshot" ||
     fail "snapshot should normalize summary path"
-  grep -Fq '| Task | First file | Focus | Question | Seed strategy | Reduction | Tokens | Impact |' "$snapshot" ||
+  grep -Fq '| Task | First file | Focus | Question | Suggested tool | Seed strategy | Reduction | Tokens | Impact |' "$snapshot" ||
     fail "snapshot should include first-read focus and question columns"
+  grep -Fq '| understand express application routing behavior | `lib/express.js` |' "$snapshot" ||
+    fail "snapshot should include express first-read route"
+  grep -Fq '| `file_outline` | `auto_task_match` |' "$snapshot" ||
+    fail "snapshot should include suggested tool handoff"
   grep -Fq 'docs/task-routing-expectations/express.tsv' "$snapshot" ||
     fail "snapshot should normalize expectation file path"
   if grep -Fq "$TEMP_DIR" "$snapshot"; then
@@ -177,7 +181,8 @@ main() {
       and .cases[0].summary_json == "<output-dir>/express/summary.json"
       and .cases[0].expect_file == "docs/task-routing-expectations/express.tsv"
       and (.cases[0].routes[0].first_reading_focus | type == "string" and length > 0)
-      and (.cases[0].routes[0].first_reading_question | type == "string" and length > 0)' \
+      and (.cases[0].routes[0].first_reading_question | type == "string" and length > 0)
+      and (.cases[0].routes[0].first_suggested_tool | type == "string" and length > 0)' \
     "$summary_snapshot" >/dev/null ||
     fail "summary snapshot should be normalized JSON evidence"
 

@@ -11,8 +11,8 @@ Run the standard non-network local gate:
 scripts/local-ci-smoke.sh
 ```
 
-This prints numbered stages and runs formatting, Rust tests, shell syntax
-checks, workflow action version checks, benchmark, context-pack, and
+This prints numbered stages and runs formatting, Rust tests, clippy, shell
+syntax checks, workflow action version checks, benchmark, context-pack, and
 agent-route step-summary checks, release-tooling smokes, docs smokes,
 context-pack quality checks, the `agent_route` contract smoke, the
 agent-router demo, and whitespace diff checks. Nested smoke groups also print
@@ -24,6 +24,7 @@ Run focused smoke groups when changing the corresponding area:
 
 ```bash
 scripts/script-syntax-smoke.sh
+scripts/clippy-smoke.sh
 scripts/workflow-actions-smoke.sh
 scripts/benchmark-step-summary-smoke.sh
 scripts/context-pack-quality-step-summary-smoke.sh
