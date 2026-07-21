@@ -11,11 +11,11 @@
       "ref": "ae6dd37680e3a00618d6c8a3e522f0ee4eeba1a4",
       "expect_file": "docs/task-routing-expectations/express.tsv",
       "summary_json": "<output-dir>/express/summary.json",
-      "task_count": 10,
-      "expectation_count": 10,
-      "total_task_source_lines": 214780,
-      "total_selected_lines": 3338,
-      "total_estimated_tokens": 22782,
+      "task_count": 11,
+      "expectation_count": 11,
+      "total_task_source_lines": 236258,
+      "total_selected_lines": 3757,
+      "total_estimated_tokens": 25895,
       "max_impacted_files": 43,
       "routes": [
         {
@@ -137,6 +137,18 @@
           "estimated_tokens": 1166,
           "risk_level": "high",
           "impacted_files": 26
+        },
+        {
+          "task": "understand express response header behavior",
+          "first_file": "lib/response.js",
+          "first_reading_focus": "Start with seed file response headers, status metadata, or Content-Type boundaries.",
+          "first_reading_question": "Where are response headers set, status metadata written, or Content-Type values selected here?",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 21478,
+          "line_reduction": "98.0%",
+          "estimated_tokens": 3113,
+          "risk_level": "high",
+          "impacted_files": 29
         }
       ]
     },
@@ -146,11 +158,11 @@
       "ref": "36e4a824f340fdee7ed50937ba8e7f6bc7d17f81",
       "expect_file": "docs/task-routing-expectations/flask.tsv",
       "summary_json": "<output-dir>/flask/summary.json",
-      "task_count": 12,
-      "expectation_count": 12,
-      "total_task_source_lines": 220044,
-      "total_selected_lines": 7067,
-      "total_estimated_tokens": 70554,
+      "task_count": 13,
+      "expectation_count": 13,
+      "total_task_source_lines": 238381,
+      "total_selected_lines": 7624,
+      "total_estimated_tokens": 76500,
       "max_impacted_files": 32,
       "routes": [
         {
@@ -296,6 +308,18 @@
           "estimated_tokens": 5914,
           "risk_level": "high",
           "impacted_files": 27
+        },
+        {
+          "task": "understand flask response header behavior",
+          "first_file": "src/flask/wrappers.py",
+          "first_reading_focus": "Start with seed file response headers, status metadata, or Content-Type boundaries.",
+          "first_reading_question": "Where are response headers set, status metadata written, or Content-Type values selected here?",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 18337,
+          "line_reduction": "97.0%",
+          "estimated_tokens": 5946,
+          "risk_level": "high",
+          "impacted_files": 25
         }
       ]
     },
@@ -305,11 +329,11 @@
       "ref": "34dac209ffb6ef85cc78c5d217bbb7ad001d68fd",
       "expect_file": "docs/task-routing-expectations/gin.tsv",
       "summary_json": "<output-dir>/gin/summary.json",
-      "task_count": 12,
-      "expectation_count": 12,
-      "total_task_source_lines": 289188,
-      "total_selected_lines": 3965,
-      "total_estimated_tokens": 36115,
+      "task_count": 13,
+      "expectation_count": 13,
+      "total_task_source_lines": 313287,
+      "total_selected_lines": 4166,
+      "total_estimated_tokens": 37822,
       "max_impacted_files": 22,
       "routes": [
         {
@@ -455,6 +479,18 @@
           "estimated_tokens": 1793,
           "risk_level": "high",
           "impacted_files": 17
+        },
+        {
+          "task": "understand gin response header behavior",
+          "first_file": "context.go",
+          "first_reading_focus": "Start with seed file response headers, status metadata, or Content-Type boundaries.",
+          "first_reading_question": "Where are response headers set, status metadata written, or Content-Type values selected here?",
+          "seed_strategy": "auto_entrypoint",
+          "total_lines": 24099,
+          "line_reduction": "99.2%",
+          "estimated_tokens": 1707,
+          "risk_level": "high",
+          "impacted_files": 19
         }
       ]
     },
@@ -619,13 +655,13 @@
     }
   ],
   "aggregate": {
-    "task_count": 46,
-    "expectation_count": 46,
-    "total_task_source_lines": 868396,
-    "total_selected_lines": 21559,
-    "total_estimated_tokens": 194798,
+    "task_count": 49,
+    "expectation_count": 49,
+    "total_task_source_lines": 932310,
+    "total_selected_lines": 22736,
+    "total_estimated_tokens": 205564,
     "max_impacted_files": 43,
-    "line_reduction": 97.51
+    "line_reduction": 97.56
   },
   "generated_by": "scripts/update-public-task-routing-matrix.sh"
 }

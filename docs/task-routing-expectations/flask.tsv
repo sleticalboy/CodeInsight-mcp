@@ -10,3 +10,4 @@ understand flask static file serving behavior	src/flask/blueprints.py
 understand flask request body parsing behavior	src/flask/wrappers.py
 understand flask redirect response behavior	src/flask/helpers.py
 understand flask query string request args behavior	src/flask/helpers.py
+understand flask response header behavior	src/flask/wrappers.py

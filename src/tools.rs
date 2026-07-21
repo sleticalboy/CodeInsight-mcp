@@ -2236,6 +2236,9 @@ fn context_reading_focus(file: &ContextFile, task: &str) -> String {
 fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
     if signals.test_coverage {
         "Start with seed file test, spec, or regression coverage.".to_string()
+    } else if signals.response_headers {
+        "Start with seed file response headers, status metadata, or Content-Type boundaries."
+            .to_string()
     } else if signals.http_state_headers && !signals.auth_session && !signals.security_safety {
         "Start with seed file cookies, headers, or HTTP state boundaries.".to_string()
     } else if signals.request_body_parsing {
@@ -2303,6 +2306,9 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
 fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
     if signals.test_coverage {
         "Read symbol definitions that establish test coverage or regression behavior.".to_string()
+    } else if signals.response_headers {
+        "Read symbol definitions that establish response headers, status metadata, or Content-Type behavior."
+            .to_string()
     } else if signals.request_body_parsing {
         "Read symbol definitions that establish request body parsing or payload binding behavior."
             .to_string()
@@ -2392,6 +2398,9 @@ fn context_type_relation_focus(signals: ContextTaskSignals) -> String {
 fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
     if signals.test_coverage {
         "Follow call graph evidence from tests, specs, or regression coverage.".to_string()
+    } else if signals.response_headers {
+        "Follow call graph evidence for response headers, status metadata, or Content-Type flow."
+            .to_string()
     } else if signals.request_body_parsing {
         "Follow call graph evidence for request body parsing, payload binding, or form-data flow."
             .to_string()
@@ -2463,6 +2472,9 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
     if signals.test_coverage {
         "Inspect references that exercise behavior in tests, specs, or regression cases."
             .to_string()
+    } else if signals.response_headers {
+        "Inspect references that set response headers, status metadata, or Content-Type values."
+            .to_string()
     } else if signals.request_body_parsing {
         "Inspect references that parse request bodies, bind payloads, or read form data."
             .to_string()
@@ -2528,6 +2540,9 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
 fn context_semantic_focus(signals: ContextTaskSignals) -> String {
     if signals.test_coverage {
         "Review semantic matches for test, spec, or regression coverage.".to_string()
+    } else if signals.response_headers {
+        "Review semantic matches for response headers, status metadata, or Content-Type behavior."
+            .to_string()
     } else if signals.request_body_parsing {
         "Review semantic matches for request body parsing, payload binding, or form-data behavior."
             .to_string()
@@ -2596,6 +2611,9 @@ fn context_semantic_focus(signals: ContextTaskSignals) -> String {
 fn context_dependency_focus(signals: ContextTaskSignals) -> String {
     if signals.test_coverage {
         "Check local dependencies that support test setup, fixtures, or assertions.".to_string()
+    } else if signals.response_headers {
+        "Check local dependencies that supply response header, status metadata, or Content-Type behavior."
+            .to_string()
     } else if signals.request_body_parsing {
         "Check local dependencies that supply request body parsing, payload binding, or form-data behavior.".to_string()
     } else if signals.request_query_params {
@@ -2700,6 +2718,9 @@ fn context_seed_file_question(task: &str) -> String {
     let signals = ContextTaskSignals::from_task(task);
     if signals.test_coverage {
         "Which behavior, assertions, fixtures, or regression cases are covered here?".to_string()
+    } else if signals.response_headers {
+        "Where are response headers set, status metadata written, or Content-Type values selected here?"
+            .to_string()
     } else if signals.http_state_headers && !signals.auth_session && !signals.security_safety {
         "Where are cookies, headers, or HTTP state containers handled here?".to_string()
     } else if signals.request_body_parsing {
@@ -2781,6 +2802,8 @@ fn context_symbol_definition_question(task: &str) -> String {
     if signals.test_coverage {
         "What test behavior, assertion, fixture, or regression case does this definition establish?"
             .to_string()
+    } else if signals.response_headers {
+        "What response header, status metadata, or Content-Type behavior does this definition establish?".to_string()
     } else if signals.request_body_parsing {
         "What request body parsing, payload binding, content-type, or form-data behavior does this definition establish?".to_string()
     } else if signals.request_query_params {
@@ -2865,6 +2888,8 @@ fn context_call_graph_question(task: &str) -> String {
     if signals.test_coverage {
         "Which callers or callees exercise behavior through tests, specs, or regression cases?"
             .to_string()
+    } else if signals.response_headers {
+        "Which callers or callees set response headers, write status metadata, or choose Content-Type values?".to_string()
     } else if signals.request_body_parsing {
         "Which callers or callees parse request bodies, select content-type binders, or read form data?".to_string()
     } else if signals.request_query_params {
@@ -2939,6 +2964,8 @@ fn context_dependency_question(task: &str) -> String {
     if signals.test_coverage {
         "What imported local dependency behavior supplies test setup, fixtures, or assertions?"
             .to_string()
+    } else if signals.response_headers {
+        "What imported local dependency behavior supplies response headers, status metadata, or Content-Type values?".to_string()
     } else if signals.request_body_parsing {
         "What imported local dependency behavior supplies body parsers, payload binders, or form-data handling?".to_string()
     } else if signals.request_query_params {
@@ -3010,6 +3037,8 @@ fn context_reference_question(task: &str) -> String {
     if signals.test_coverage {
         "Which references exercise behavior through tests, specs, fixtures, or regression cases?"
             .to_string()
+    } else if signals.response_headers {
+        "Which references set response headers, update status metadata, or select Content-Type values?".to_string()
     } else if signals.request_body_parsing {
         "Which references parse request bodies, bind payloads, choose content types, or read form data?".to_string()
     } else if signals.request_query_params {
@@ -3077,6 +3106,9 @@ fn context_semantic_question(task: &str) -> String {
     let signals = ContextTaskSignals::from_task(task);
     if signals.test_coverage {
         "Which semantic matches describe tests, specs, fixtures, or regression coverage?"
+            .to_string()
+    } else if signals.response_headers {
+        "Which semantic matches describe response headers, status metadata, or Content-Type behavior?"
             .to_string()
     } else if signals.request_body_parsing {
         "Which semantic matches describe request body parsing, payload binding, or form data?"
@@ -3169,6 +3201,7 @@ struct ContextTaskSignals {
     http_state_headers: bool,
     request_body_parsing: bool,
     request_query_params: bool,
+    response_headers: bool,
     response_redirect: bool,
     static_file_serving: bool,
     response_rendering: bool,
@@ -3352,6 +3385,63 @@ impl ContextTaskSignals {
                     "semantic search",
                 ],
             ));
+        let response_headers = context_text_mentions(
+            task,
+            &[
+                "response header",
+                "response headers",
+                "http response header",
+                "http response headers",
+                "set response header",
+                "set response headers",
+                "response metadata",
+                "content-type header",
+                "content type header",
+            ],
+        ) || (context_text_mentions(
+            task,
+            &[
+                "header",
+                "headers",
+                "content type",
+                "content-type",
+                "contenttype",
+            ],
+        ) && context_text_mentions(
+            task,
+            &[
+                "response",
+                "responses",
+                "status",
+                "status code",
+                "status codes",
+                "set",
+                "write",
+                "writes",
+                "send",
+                "sends",
+                "server",
+                "handler",
+            ],
+        ) && !context_text_mentions(
+            task,
+            &[
+                "request header",
+                "request headers",
+                "request",
+                "requests",
+                "client",
+                "network client",
+                "proxy",
+                "proxies",
+                "adapter",
+                "adapters",
+                "transport",
+                "transports",
+                "binding",
+                "bind",
+            ],
+        ));
         let response_redirect = context_text_mentions(
             task,
             &[
@@ -3560,6 +3650,7 @@ impl ContextTaskSignals {
             http_state_headers,
             request_body_parsing,
             request_query_params,
+            response_headers,
             response_redirect,
             static_file_serving,
             response_rendering,
@@ -5793,6 +5884,26 @@ fn auto_seed_task_focus_boost(
         score += 320;
     }
 
+    if auto_seed_response_headers_task(task_keywords) {
+        let file_action_match = auto_seed_response_headers_file_matches(file);
+        let symbol_action_match = symbol
+            .map(auto_seed_response_headers_symbol_matches)
+            .unwrap_or(false);
+        let framework_file_match = auto_seed_response_headers_framework_file_matches(file);
+
+        score += match (file_action_match, symbol_action_match) {
+            (true, true) => 2700,
+            (true, false) => 1500,
+            (false, true) => 1200,
+            _ => 0,
+        };
+        if framework_file_match && symbol_action_match {
+            score += 2400;
+        } else if framework_file_match {
+            score += 1700;
+        }
+    }
+
     if auto_seed_http_state_headers_task(task_keywords) {
         let file_action_match = auto_seed_http_state_headers_file_matches(file, task_keywords);
         let symbol_action_match = symbol
@@ -6072,6 +6183,100 @@ fn auto_seed_http_state_headers_symbol_matches(symbol: &str, task_keywords: &[St
                 || has_exact("headers")
                 || has_exact("caseinsensitive")
                 || (has_exact("case") && has_exact("insensitive"))))
+}
+
+fn auto_seed_response_headers_task(task_keywords: &[String]) -> bool {
+    let header_task = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "header" | "headers" | "contenttype" | "content-type"
+        )
+    });
+    let response_task = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "response" | "responses" | "status" | "content" | "type" | "server" | "handler"
+        )
+    });
+    let request_client_task = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "request"
+                | "requests"
+                | "client"
+                | "network"
+                | "proxy"
+                | "proxies"
+                | "adapter"
+                | "adapters"
+                | "transport"
+                | "transports"
+                | "binding"
+                | "bind"
+        )
+    });
+
+    header_task && response_task && !request_client_task
+}
+
+fn auto_seed_response_headers_file_matches(file: &str) -> bool {
+    auto_seed_file_stem_matches(file, "response")
+        || auto_seed_file_stem_matches(file, "responses")
+        || auto_seed_file_stem_matches(file, "context")
+        || auto_seed_file_stem_matches(file, "helper")
+        || auto_seed_file_stem_matches(file, "helpers")
+        || auto_seed_file_stem_matches(file, "wrapper")
+        || auto_seed_file_stem_matches(file, "wrappers")
+        || auto_seed_file_stem_matches(file, "render")
+        || auto_seed_file_stem_matches(file, "renderer")
+}
+
+fn auto_seed_response_headers_framework_file_matches(file: &str) -> bool {
+    auto_seed_file_stem_matches(file, "response")
+        || auto_seed_file_stem_matches(file, "responses")
+        || auto_seed_file_stem_matches(file, "context")
+        || auto_seed_file_stem_matches(file, "helper")
+        || auto_seed_file_stem_matches(file, "helpers")
+        || auto_seed_file_stem_matches(file, "wrapper")
+        || auto_seed_file_stem_matches(file, "wrappers")
+}
+
+fn auto_seed_response_headers_symbol_matches(symbol: &str) -> bool {
+    let parts = symbol
+        .split(|ch: char| !ch.is_ascii_alphanumeric())
+        .filter(|part| !part.is_empty())
+        .map(str::to_ascii_lowercase)
+        .collect::<Vec<_>>();
+    let normalized = parts.join("");
+    let has_exact = |needle: &str| parts.iter().any(|part| part == needle);
+
+    has_exact("header")
+        || has_exact("headers")
+        || has_exact("status")
+        || has_exact("contenttype")
+        || has_exact("content")
+        || has_exact("type")
+        || (has_exact("set") && has_exact("cookie"))
+        || matches!(
+            normalized.as_str(),
+            "header"
+                | "headers"
+                | "set"
+                | "get"
+                | "append"
+                | "vary"
+                | "status"
+                | "sendstatus"
+                | "writeheader"
+                | "writeheadernow"
+                | "writestatusnow"
+                | "writecontenttype"
+                | "contenttype"
+                | "setcontenttype"
+                | "setheader"
+                | "appendheader"
+                | "setcookie"
+        )
 }
 
 fn auto_seed_request_body_parsing_task(task_keywords: &[String]) -> bool {
@@ -7443,6 +7648,27 @@ mod tests {
         assert!(auto_seed_response_redirect_task(
             &response_redirect_keywords
         ));
+
+        let response_header_keywords = task_keywords("understand response header behavior");
+        assert!(response_header_keywords.contains(&"response".to_string()));
+        assert!(response_header_keywords.contains(&"header".to_string()));
+        assert!(response_header_keywords.contains(&"headers".to_string()));
+        assert!(auto_seed_response_headers_task(&response_header_keywords));
+
+        let request_header_binding_keywords =
+            task_keywords("understand request header binding behavior");
+        assert!(request_header_binding_keywords.contains(&"request".to_string()));
+        assert!(request_header_binding_keywords.contains(&"header".to_string()));
+        assert!(request_header_binding_keywords.contains(&"binding".to_string()));
+        assert!(!auto_seed_response_headers_task(
+            &request_header_binding_keywords
+        ));
+
+        let client_headers_keywords =
+            task_keywords("understand requests headers case insensitive behavior");
+        assert!(client_headers_keywords.contains(&"requests".to_string()));
+        assert!(client_headers_keywords.contains(&"headers".to_string()));
+        assert!(!auto_seed_response_headers_task(&client_headers_keywords));
 
         let validation_keywords = task_keywords("understand json binding validation behavior");
         assert!(validation_keywords.contains(&"json".to_string()));
