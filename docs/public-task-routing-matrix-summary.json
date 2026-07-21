@@ -260,12 +260,12 @@
       "ref": "f361ead047be5cb873174218582f7d8b9fcd9f49",
       "expect_file": "docs/task-routing-expectations/requests.tsv",
       "summary_json": "<output-dir>/requests/summary.json",
-      "task_count": 10,
-      "expectation_count": 10,
-      "total_task_source_lines": 120320,
-      "total_selected_lines": 5866,
-      "total_estimated_tokens": 53464,
-      "max_impacted_files": 17,
+      "task_count": 12,
+      "expectation_count": 12,
+      "total_task_source_lines": 144384,
+      "total_selected_lines": 7202,
+      "total_estimated_tokens": 65416,
+      "max_impacted_files": 18,
       "routes": [
         {
           "task": "understand requests session request flow",
@@ -278,6 +278,30 @@
           "estimated_tokens": 5999,
           "risk_level": "high",
           "impacted_files": 15
+        },
+        {
+          "task": "understand requests cookie handling behavior",
+          "first_file": "src/requests/cookies.py",
+          "first_reading_focus": "Start with seed file cookies, headers, or HTTP state boundaries.",
+          "first_reading_question": "Where are cookies, headers, or HTTP state containers handled here?",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 12032,
+          "line_reduction": "94.6%",
+          "estimated_tokens": 5988,
+          "risk_level": "high",
+          "impacted_files": 18
+        },
+        {
+          "task": "understand requests headers case insensitive behavior",
+          "first_file": "src/requests/structures.py",
+          "first_reading_focus": "Start with seed file cookies, headers, or HTTP state boundaries.",
+          "first_reading_question": "Where are cookies, headers, or HTTP state containers handled here?",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 12032,
+          "line_reduction": "94.3%",
+          "estimated_tokens": 5964,
+          "risk_level": "high",
+          "impacted_files": 18
         },
         {
           "task": "understand authentication behavior",
@@ -391,13 +415,13 @@
     }
   ],
   "aggregate": {
-    "task_count": 27,
-    "expectation_count": 27,
-    "total_task_source_lines": 479185,
-    "total_selected_lines": 13308,
-    "total_estimated_tokens": 120667,
+    "task_count": 29,
+    "expectation_count": 29,
+    "total_task_source_lines": 503249,
+    "total_selected_lines": 14644,
+    "total_estimated_tokens": 132619,
     "max_impacted_files": 43,
-    "line_reduction": 97.22
+    "line_reduction": 97.09
   },
   "generated_by": "scripts/update-public-task-routing-matrix.sh"
 }

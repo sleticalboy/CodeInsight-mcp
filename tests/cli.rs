@@ -2552,6 +2552,26 @@ export function routerRegressionSpec() {
     )
     .unwrap();
     std::fs::write(
+        fixture.path().join("src/cookies.ts"),
+        r#"export function mergeCookieJar(cookieHeader: string) {
+  // Cookie jar handling preserves HTTP state across requests.
+  return { cookieHeader, cookiejar: "merged", cookies: true };
+}
+"#,
+    )
+    .unwrap();
+    std::fs::write(
+        fixture.path().join("src/structures.ts"),
+        r#"export class CaseInsensitiveHeaders {
+  // Headers are stored case-insensitively for HTTP lookups.
+  get(headerName: string) {
+    return headerName.toLowerCase();
+  }
+}
+"#,
+    )
+    .unwrap();
+    std::fs::write(
         fixture.path().join("src/security.ts"),
         r#"export function sanitizeSecurityInput(input: string) {
   // Security sanitization guards against injection vulnerabilities.
@@ -3034,6 +3054,60 @@ export function routerRegressionSpec() {
         .unwrap();
     assert!(observability_question.contains("logs"));
     assert!(observability_question.contains("metrics"));
+
+    let cookie_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand cookie jar behavior",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(cookie_context["seed_strategy"], "auto_task_match");
+    assert_eq!(
+        cookie_context["selected_seeds"][0]["value"],
+        "src/cookies.ts"
+    );
+    assert!(
+        cookie_context["selected_seeds"][0]["matched_keywords"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|keyword| keyword == "cookie")
+    );
+    assert_eq!(cookie_context["files"][0]["file"], "src/cookies.ts");
+    let cookie_question = cookie_context["reading_plan"][0]["question"]
+        .as_str()
+        .unwrap();
+    assert!(cookie_question.contains("cookies"));
+    assert!(cookie_question.contains("HTTP state"));
+
+    let headers_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand headers case insensitive behavior",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(headers_context["seed_strategy"], "auto_task_match");
+    assert_eq!(
+        headers_context["selected_seeds"][0]["value"],
+        "src/structures.ts"
+    );
+    assert!(
+        headers_context["selected_seeds"][0]["matched_keywords"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|keyword| keyword == "headers")
+    );
+    assert_eq!(headers_context["files"][0]["file"], "src/structures.ts");
+    let headers_question = headers_context["reading_plan"][0]["question"]
+        .as_str()
+        .unwrap();
+    assert!(headers_question.contains("headers"));
+    assert!(headers_question.contains("HTTP state"));
 
     let security_context = run_json([
         "context-pack",

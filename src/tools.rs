@@ -2236,6 +2236,8 @@ fn context_reading_focus(file: &ContextFile, task: &str) -> String {
 fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
     if signals.test_coverage {
         "Start with seed file test, spec, or regression coverage.".to_string()
+    } else if signals.http_state_headers && !signals.auth_session && !signals.security_safety {
+        "Start with seed file cookies, headers, or HTTP state boundaries.".to_string()
     } else if signals.auth_session {
         "Start with seed file authentication and session boundaries.".to_string()
     } else if signals.network_http {
@@ -2616,6 +2618,8 @@ fn context_seed_file_question(task: &str) -> String {
     let signals = ContextTaskSignals::from_task(task);
     if signals.test_coverage {
         "Which behavior, assertions, fixtures, or regression cases are covered here?".to_string()
+    } else if signals.http_state_headers && !signals.auth_session && !signals.security_safety {
+        "Where are cookies, headers, or HTTP state containers handled here?".to_string()
     } else if signals.auth_session {
         "Where are authentication decisions, credentials, or session boundaries handled here?"
             .to_string()
@@ -3003,6 +3007,7 @@ struct ContextTaskSignals {
     middleware: bool,
     performance_cache: bool,
     observability_logging: bool,
+    http_state_headers: bool,
     security_safety: bool,
     billing_payment: bool,
     frontend_ui: bool,
@@ -3033,6 +3038,21 @@ impl ContextTaskSignals {
                     ],
                 );
 
+        let http_state_headers = context_text_mentions(
+            task,
+            &[
+                "cookie",
+                "cookies",
+                "cookie jar",
+                "cookiejar",
+                "header",
+                "headers",
+                "case insensitive",
+                "case-insensitive",
+                "http state",
+            ],
+        );
+
         Self {
             impact_flow: context_text_mentions(
                 task,
@@ -3056,7 +3076,6 @@ impl ContextTaskSignals {
                     "permission",
                     "permissions",
                     "session",
-                    "cookie",
                     "credential",
                     "credentials",
                     "token",
@@ -3197,6 +3216,7 @@ impl ContextTaskSignals {
                     "instrumentation",
                 ],
             ),
+            http_state_headers,
             security_safety: context_text_mentions(
                 task,
                 &[
@@ -5427,6 +5447,20 @@ fn auto_seed_task_focus_boost(
         score += 320;
     }
 
+    if auto_seed_http_state_headers_task(task_keywords) {
+        let file_action_match = auto_seed_http_state_headers_file_matches(file, task_keywords);
+        let symbol_action_match = symbol
+            .map(|symbol| auto_seed_http_state_headers_symbol_matches(symbol, task_keywords))
+            .unwrap_or(false);
+
+        score += match (file_action_match, symbol_action_match) {
+            (true, true) => 2000,
+            (true, false) => 1500,
+            (false, true) => 900,
+            _ => 0,
+        };
+    }
+
     if auto_seed_request_lifecycle_task(task_keywords) {
         let file_lifecycle_match = auto_seed_request_lifecycle_file_matches(file);
         let symbol_lifecycle_match = symbol
@@ -5516,6 +5550,69 @@ fn auto_seed_task_focus_boost(
     }
 
     score
+}
+
+fn auto_seed_http_state_headers_task(task_keywords: &[String]) -> bool {
+    task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "cookie"
+                | "cookies"
+                | "cookiejar"
+                | "jar"
+                | "headers"
+                | "header"
+                | "case"
+                | "insensitive"
+        )
+    })
+}
+
+fn auto_seed_http_state_headers_file_matches(file: &str, task_keywords: &[String]) -> bool {
+    let cookie_task = task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "cookie" | "cookies" | "cookiejar" | "jar"));
+    let header_task = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "headers" | "header" | "case" | "insensitive"
+        )
+    });
+
+    (cookie_task
+        && (auto_seed_file_stem_matches(file, "cookie")
+            || auto_seed_file_stem_matches(file, "cookies")
+            || auto_seed_file_stem_matches(file, "cookiejar")))
+        || (header_task
+            && (auto_seed_file_stem_matches(file, "header")
+                || auto_seed_file_stem_matches(file, "headers")
+                || auto_seed_file_stem_matches(file, "structure")
+                || auto_seed_file_stem_matches(file, "structures")))
+}
+
+fn auto_seed_http_state_headers_symbol_matches(symbol: &str, task_keywords: &[String]) -> bool {
+    let parts = symbol
+        .split(|ch: char| !ch.is_ascii_alphanumeric())
+        .map(str::to_ascii_lowercase)
+        .collect::<Vec<_>>();
+
+    let has_exact = |needle: &str| parts.iter().any(|part| part == needle);
+    let cookie_task = task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "cookie" | "cookies" | "cookiejar" | "jar"));
+    let header_task = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "headers" | "header" | "case" | "insensitive"
+        )
+    });
+
+    (cookie_task && (has_exact("cookie") || has_exact("cookies") || has_exact("cookiejar")))
+        || (header_task
+            && (has_exact("header")
+                || has_exact("headers")
+                || has_exact("caseinsensitive")
+                || (has_exact("case") && has_exact("insensitive"))))
 }
 
 fn auto_seed_request_lifecycle_task(task_keywords: &[String]) -> bool {
@@ -5902,6 +5999,14 @@ fn task_keyword_aliases(keyword: &str) -> &'static [&'static str] {
         "jwt" => &["token", "credential"],
         "login" => &["auth", "authentication"],
         "signin" => &["auth", "login"],
+        "cookie" => &["cookies", "cookiejar", "jar"],
+        "cookies" => &["cookie", "cookiejar", "jar"],
+        "cookiejar" => &["cookie", "cookies", "jar"],
+        "jar" => &["cookie", "cookies", "cookiejar"],
+        "header" => &["headers", "case", "insensitive"],
+        "headers" => &["header", "case", "insensitive"],
+        "case" => &["insensitive", "headers"],
+        "insensitive" => &["case", "headers"],
         "network" => &["http", "transport", "client"],
         "http" => &["https", "network", "client"],
         "https" => &["http", "network", "client"],
@@ -6373,6 +6478,18 @@ mod tests {
         assert!(observability_keywords.contains(&"telemetry".to_string()));
         assert!(observability_keywords.contains(&"logging".to_string()));
         assert!(observability_keywords.contains(&"metrics".to_string()));
+
+        let cookie_keywords = task_keywords("understand cookie jar behavior");
+        assert!(cookie_keywords.contains(&"cookie".to_string()));
+        assert!(cookie_keywords.contains(&"cookies".to_string()));
+        assert!(cookie_keywords.contains(&"cookiejar".to_string()));
+        assert!(cookie_keywords.contains(&"jar".to_string()));
+
+        let header_keywords = task_keywords("understand headers case insensitive behavior");
+        assert!(header_keywords.contains(&"headers".to_string()));
+        assert!(header_keywords.contains(&"header".to_string()));
+        assert!(header_keywords.contains(&"case".to_string()));
+        assert!(header_keywords.contains(&"insensitive".to_string()));
 
         let security_keywords = task_keywords("understand security sanitization vulnerabilities");
         assert!(security_keywords.contains(&"security".to_string()));
