@@ -2241,6 +2241,8 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
     } else if signals.request_body_parsing {
         "Start with seed file request body parsing, payload binding, or form-data boundaries."
             .to_string()
+    } else if signals.request_query_params {
+        "Start with seed file query string, request args, or URL parameter boundaries.".to_string()
     } else if signals.response_redirect {
         "Start with seed file response redirect, status code, or Location header boundaries."
             .to_string()
@@ -2303,6 +2305,9 @@ fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
         "Read symbol definitions that establish test coverage or regression behavior.".to_string()
     } else if signals.request_body_parsing {
         "Read symbol definitions that establish request body parsing or payload binding behavior."
+            .to_string()
+    } else if signals.request_query_params {
+        "Read symbol definitions that establish query string or request parameter behavior."
             .to_string()
     } else if signals.response_redirect {
         "Read symbol definitions that establish response redirect, status code, or Location header behavior."
@@ -2390,6 +2395,9 @@ fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
     } else if signals.request_body_parsing {
         "Follow call graph evidence for request body parsing, payload binding, or form-data flow."
             .to_string()
+    } else if signals.request_query_params {
+        "Follow call graph evidence for query strings, request args, or URL parameter flow."
+            .to_string()
     } else if signals.response_redirect {
         "Follow call graph evidence for redirect responses, status codes, or Location headers."
             .to_string()
@@ -2458,6 +2466,8 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
     } else if signals.request_body_parsing {
         "Inspect references that parse request bodies, bind payloads, or read form data."
             .to_string()
+    } else if signals.request_query_params {
+        "Inspect references that read query strings, request args, or URL parameters.".to_string()
     } else if signals.response_redirect {
         "Inspect references that issue redirect responses or set redirect locations.".to_string()
     } else if signals.static_file_serving {
@@ -2521,6 +2531,8 @@ fn context_semantic_focus(signals: ContextTaskSignals) -> String {
     } else if signals.request_body_parsing {
         "Review semantic matches for request body parsing, payload binding, or form-data behavior."
             .to_string()
+    } else if signals.request_query_params {
+        "Review semantic matches for query strings, request args, or URL parameters.".to_string()
     } else if signals.response_redirect {
         "Review semantic matches for redirect responses, status codes, or Location headers."
             .to_string()
@@ -2586,6 +2598,9 @@ fn context_dependency_focus(signals: ContextTaskSignals) -> String {
         "Check local dependencies that support test setup, fixtures, or assertions.".to_string()
     } else if signals.request_body_parsing {
         "Check local dependencies that supply request body parsing, payload binding, or form-data behavior.".to_string()
+    } else if signals.request_query_params {
+        "Check local dependencies that supply query string parsing or request parameter behavior."
+            .to_string()
     } else if signals.response_redirect {
         "Check local dependencies that supply redirect response or Location header behavior."
             .to_string()
@@ -2689,6 +2704,9 @@ fn context_seed_file_question(task: &str) -> String {
         "Where are cookies, headers, or HTTP state containers handled here?".to_string()
     } else if signals.request_body_parsing {
         "Where are request bodies parsed, payloads bound, content types selected, or form data read here?".to_string()
+    } else if signals.request_query_params {
+        "Where are query strings parsed, request args read, or URL parameters exposed here?"
+            .to_string()
     } else if signals.response_redirect {
         "Where are redirect responses built, status codes selected, or Location headers set here?"
             .to_string()
@@ -2765,6 +2783,9 @@ fn context_symbol_definition_question(task: &str) -> String {
             .to_string()
     } else if signals.request_body_parsing {
         "What request body parsing, payload binding, content-type, or form-data behavior does this definition establish?".to_string()
+    } else if signals.request_query_params {
+        "What query string, request arg, or URL parameter behavior does this definition establish?"
+            .to_string()
     } else if signals.response_redirect {
         "What redirect response, status code, or Location header behavior does this definition establish?".to_string()
     } else if signals.static_file_serving {
@@ -2846,6 +2867,9 @@ fn context_call_graph_question(task: &str) -> String {
             .to_string()
     } else if signals.request_body_parsing {
         "Which callers or callees parse request bodies, select content-type binders, or read form data?".to_string()
+    } else if signals.request_query_params {
+        "Which callers or callees parse query strings, read request args, or expose URL parameters?"
+            .to_string()
     } else if signals.response_redirect {
         "Which callers or callees issue redirects, select redirect status codes, or set Location headers?".to_string()
     } else if signals.static_file_serving {
@@ -2917,6 +2941,8 @@ fn context_dependency_question(task: &str) -> String {
             .to_string()
     } else if signals.request_body_parsing {
         "What imported local dependency behavior supplies body parsers, payload binders, or form-data handling?".to_string()
+    } else if signals.request_query_params {
+        "What imported local dependency behavior supplies query parsing or request parameter access?".to_string()
     } else if signals.response_redirect {
         "What imported local dependency behavior supplies redirect responses, status codes, or Location headers?".to_string()
     } else if signals.static_file_serving {
@@ -2986,6 +3012,8 @@ fn context_reference_question(task: &str) -> String {
             .to_string()
     } else if signals.request_body_parsing {
         "Which references parse request bodies, bind payloads, choose content types, or read form data?".to_string()
+    } else if signals.request_query_params {
+        "Which references read query strings, request args, or URL parameters?".to_string()
     } else if signals.response_redirect {
         "Which references issue redirect responses, choose redirect status codes, or set Location headers?".to_string()
     } else if signals.static_file_serving {
@@ -3052,6 +3080,9 @@ fn context_semantic_question(task: &str) -> String {
             .to_string()
     } else if signals.request_body_parsing {
         "Which semantic matches describe request body parsing, payload binding, or form data?"
+            .to_string()
+    } else if signals.request_query_params {
+        "Which semantic matches describe query string parsing or request parameter access?"
             .to_string()
     } else if signals.response_redirect {
         "Which semantic matches describe redirect responses, status codes, or Location headers?"
@@ -3137,6 +3168,7 @@ struct ContextTaskSignals {
     observability_logging: bool,
     http_state_headers: bool,
     request_body_parsing: bool,
+    request_query_params: bool,
     response_redirect: bool,
     static_file_serving: bool,
     response_rendering: bool,
@@ -3278,6 +3310,48 @@ impl ContextTaskSignals {
                         "content-type",
                     ],
                 ));
+        let request_query_params = context_text_mentions(
+            task,
+            &[
+                "query string",
+                "query strings",
+                "query parameter",
+                "query parameters",
+                "query param",
+                "query params",
+                "request args",
+                "request arguments",
+                "url parameter",
+                "url parameters",
+                "url params",
+            ],
+        ) || (context_text_mentions(task, &["query", "queries"])
+            && context_text_mentions(
+                task,
+                &[
+                    "parameter",
+                    "parameters",
+                    "param",
+                    "params",
+                    "args",
+                    "arguments",
+                    "parse",
+                    "parser",
+                    "parsing",
+                    "url",
+                    "request",
+                ],
+            )
+            && !context_text_mentions(
+                task,
+                &[
+                    "database",
+                    "sql",
+                    "graphql",
+                    "search index",
+                    "semantic search",
+                ],
+            ));
         let response_redirect = context_text_mentions(
             task,
             &[
@@ -3485,6 +3559,7 @@ impl ContextTaskSignals {
             ),
             http_state_headers,
             request_body_parsing,
+            request_query_params,
             response_redirect,
             static_file_serving,
             response_rendering,
@@ -5752,6 +5827,26 @@ fn auto_seed_task_focus_boost(
         }
     }
 
+    if auto_seed_request_query_params_task(task_keywords) {
+        let file_action_match = auto_seed_request_query_params_file_matches(file);
+        let symbol_action_match = symbol
+            .map(auto_seed_request_query_params_symbol_matches)
+            .unwrap_or(false);
+        let framework_file_match = auto_seed_request_query_params_framework_file_matches(file);
+
+        score += match (file_action_match, symbol_action_match) {
+            (true, true) => 2600,
+            (true, false) => 1400,
+            (false, true) => 1100,
+            _ => 0,
+        };
+        if framework_file_match && symbol_action_match {
+            score += 2200;
+        } else if framework_file_match {
+            score += 1500;
+        }
+    }
+
     if auto_seed_response_redirect_task(task_keywords) {
         let file_action_match = auto_seed_response_redirect_file_matches(file);
         let symbol_action_match = symbol
@@ -6079,6 +6174,86 @@ fn auto_seed_request_body_parsing_symbol_matches(symbol: &str) -> bool {
                 | "onjsonloadingfailed"
                 | "maxformmemorysize"
                 | "maxformparts"
+        )
+}
+
+fn auto_seed_request_query_params_task(task_keywords: &[String]) -> bool {
+    let query_task = task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "query" | "queries"));
+    let params_task = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "parameter"
+                | "parameters"
+                | "param"
+                | "params"
+                | "args"
+                | "arguments"
+                | "url"
+                | "request"
+                | "parse"
+                | "parser"
+                | "parsing"
+        )
+    });
+    let non_http_query_task = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "database" | "sql" | "graphql" | "semantic" | "search"
+        )
+    });
+
+    query_task && params_task && !non_http_query_task
+}
+
+fn auto_seed_request_query_params_file_matches(file: &str) -> bool {
+    auto_seed_file_stem_matches(file, "request")
+        || auto_seed_file_stem_matches(file, "requests")
+        || auto_seed_file_stem_matches(file, "context")
+        || auto_seed_file_stem_matches(file, "helper")
+        || auto_seed_file_stem_matches(file, "helpers")
+        || auto_seed_file_stem_matches(file, "query")
+        || auto_seed_file_stem_matches(file, "queries")
+        || auto_seed_file_stem_matches(file, "url")
+        || auto_seed_file_stem_matches(file, "urls")
+}
+
+fn auto_seed_request_query_params_framework_file_matches(file: &str) -> bool {
+    auto_seed_file_stem_matches(file, "request")
+        || auto_seed_file_stem_matches(file, "requests")
+        || auto_seed_file_stem_matches(file, "context")
+        || auto_seed_file_stem_matches(file, "helper")
+        || auto_seed_file_stem_matches(file, "helpers")
+}
+
+fn auto_seed_request_query_params_symbol_matches(symbol: &str) -> bool {
+    let parts = symbol
+        .split(|ch: char| !ch.is_ascii_alphanumeric())
+        .filter(|part| !part.is_empty())
+        .map(str::to_ascii_lowercase)
+        .collect::<Vec<_>>();
+    let normalized = parts.join("");
+    let has_exact = |needle: &str| parts.iter().any(|part| part == needle);
+
+    has_exact("query")
+        || has_exact("queries")
+        || has_exact("args")
+        || has_exact("arguments")
+        || (has_exact("url") && (has_exact("for") || has_exact("query")))
+        || matches!(
+            normalized.as_str(),
+            "query"
+                | "querybinding"
+                | "defaultquery"
+                | "getquery"
+                | "queryarray"
+                | "getqueryarray"
+                | "querymap"
+                | "getquerymap"
+                | "initquerycache"
+                | "compilequeryparser"
+                | "parseextendedquerystring"
         )
 }
 
@@ -6789,6 +6964,14 @@ fn task_keyword_aliases(keyword: &str) -> &'static [&'static str] {
         "multipart" => &["form", "body"],
         "contenttype" => &["binding", "parser"],
         "content-type" => &["binding", "parser"],
+        "query" => &["queries", "parameter", "params"],
+        "queries" => &["query", "parameter", "params"],
+        "parameter" => &["parameters", "param"],
+        "parameters" => &["parameter", "params"],
+        "param" => &["parameter", "params"],
+        "params" => &["param", "parameters"],
+        "args" => &["arguments"],
+        "arguments" => &["args"],
         "static" => &["file", "files", "assets"],
         "asset" => &["assets", "static", "file"],
         "assets" => &["asset", "static", "files"],
@@ -6987,8 +7170,6 @@ fn task_keyword_aliases(keyword: &str) -> &'static [&'static str] {
         "persist" => &["persistence", "database", "storage"],
         "storage" => &["database", "persistence", "repository"],
         "repository" => &["database", "persistence", "storage"],
-        "query" => &["queries", "database", "sql"],
-        "queries" => &["query", "database", "sql"],
         "error" => &["errors", "exception", "failure"],
         "errors" => &["error", "exception", "failure"],
         "exception" => &["error", "failure"],
@@ -7322,6 +7503,16 @@ mod tests {
         assert!(auto_seed_request_body_parsing_task(
             &payload_binding_keywords
         ));
+
+        let query_param_keywords = task_keywords("understand query parameter parsing behavior");
+        assert!(query_param_keywords.contains(&"query".to_string()));
+        assert!(query_param_keywords.contains(&"parameter".to_string()));
+        assert!(query_param_keywords.contains(&"params".to_string()));
+        assert!(auto_seed_request_query_params_task(&query_param_keywords));
+
+        let sql_query_keywords = task_keywords("understand sql query performance");
+        assert!(sql_query_keywords.contains(&"query".to_string()));
+        assert!(!auto_seed_request_query_params_task(&sql_query_keywords));
 
         let billing_keywords = task_keywords("understand checkout subscription payment");
         assert!(billing_keywords.contains(&"checkout".to_string()));
