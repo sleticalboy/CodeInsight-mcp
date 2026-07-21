@@ -5,7 +5,7 @@ This snapshot captures the expected user-facing shape of
 Use it as a copyable reference for README videos, project introductions, and
 release checks.
 
-The numbers below are from the current repository state on 2026-07-20. Counts
+The numbers below are from the current repository state on 2026-07-21. Counts
 and timing may change as the codebase changes; the stable contract is the
 four-step agent path and the presence of the routing metrics.
 
@@ -33,12 +33,12 @@ token_budget: 6000
 
 1. index_project
    indexed_files: 23
-   symbols: 1053
+   symbols: 1129
    duration_ms: <duration_ms>
    errors: 0
 
 2. project_overview
-   total_lines: 34148
+   total_lines: 38305
    entrypoints: 7
    first_entrypoint: src/main.rs
    recommended_next_tools: 5
@@ -55,12 +55,12 @@ token_budget: 6000
    first_reading_focus: Start with seed file context and primary symbols.
    first_reading_question: What entrypoints, exported symbols, or setup code define the main flow here?
    first_selection_rank: 1
-   blind_first_read_lines: 34148
+   blind_first_read_lines: 38305
    routed_first_read_lines: 438
    selected_lines: 438
-   source_lines_avoided: 33710
-   line_reduction: 98.7%
-   read_less_ratio: 78.0x
+   source_lines_avoided: 37867
+   line_reduction: 98.9%
+   read_less_ratio: 87.5x
    estimated_tokens: 3786
    continuation: complete
    continuation_next_action: read_selected_context
@@ -90,10 +90,10 @@ Save the raw agent_route JSON:
   CODEINSIGHT_DEMO_SAVE_JSON=/tmp/codeinsight-agent-route.json scripts/two-minute-demo.sh
 
 [Evidence summary]
-Blind first-read baseline: 34148 source lines.
+Blind first-read baseline: 38305 source lines.
 Routed first-read: 438 source lines across 7 files.
-Read less: avoided 33710 source lines, 78.0x less text before follow-up tools.
-agent_route selected 438/34148 source lines (98.7% reduction) across 7 files.
+Read less: avoided 37867 source lines, 87.5x less text before follow-up tools.
+agent_route selected 438/38305 source lines (98.9% reduction) across 7 files.
 First reading focus: Start with seed file context and primary symbols.
 First reading question: What entrypoints, exported symbols, or setup code define the main flow here?
 The first selected file is src/tools.rs; reading_plan starts at src/tools.rs as candidate rank 1.
@@ -118,7 +118,7 @@ Before edits, impact_analysis reports high risk across 6 impacted files.
 11. Current reading step contract is true; agent_route.current_reading_step mirrors reading_plan[0].
 12. Suggested-tool handoff contract is true; execution_plan[1] points to the current reading step.
 13. Continuation timing contract is true; continuation is only considered after selected context is read.
-14. The selected context avoided 33710 source lines (98.7%, 78.0x less text); selected 7 files, 12 ranges, and 7 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context
+14. The selected context avoided 37867 source lines (98.9%, 87.5x less text); selected 7 files, 12 ranges, and 7 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context
 15. Selection evidence: candidate rank 1; Selected for high relevance via seed_file: Seed file header and imports for task: src/tools.rs; matched task keywords: agent, context, route, router, routes; evidence mix: seed file x3, call graph x1
 16. Continuation status is complete; next_action=read_selected_context, so no omitted candidate follow-up is needed before selected context is read.
 17. impact_analysis reports high risk across 6 impacted files with 4 suggested checks; after selected context is read, pre-edit impact check estimated 6 impacted files at high risk, including 5 call-related files, 1 dependency-related files, 32 call paths, and 1 dependency paths
