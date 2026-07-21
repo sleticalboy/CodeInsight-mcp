@@ -74,11 +74,11 @@
       "ref": "36e4a824f340fdee7ed50937ba8e7f6bc7d17f81",
       "expect_file": "docs/task-routing-expectations/flask.tsv",
       "summary_json": "<output-dir>/flask/summary.json",
-      "task_count": 5,
-      "expectation_count": 5,
-      "total_task_source_lines": 91685,
-      "total_selected_lines": 2953,
-      "total_estimated_tokens": 29047,
+      "task_count": 6,
+      "expectation_count": 6,
+      "total_task_source_lines": 110022,
+      "total_selected_lines": 3547,
+      "total_estimated_tokens": 35047,
       "max_impacted_files": 32,
       "routes": [
         {
@@ -92,6 +92,18 @@
           "estimated_tokens": 5985,
           "risk_level": "high",
           "impacted_files": 22
+        },
+        {
+          "task": "understand flask session cookie security behavior",
+          "first_file": "src/flask/sessions.py",
+          "first_reading_focus": "Start with seed file authentication and session boundaries.",
+          "first_reading_question": "Where are authentication decisions, credentials, or session boundaries handled here?",
+          "seed_strategy": "auto_task_match",
+          "total_lines": 18337,
+          "line_reduction": "96.8%",
+          "estimated_tokens": 6000,
+          "risk_level": "high",
+          "impacted_files": 19
         },
         {
           "task": "understand request lifecycle before after request handling",
@@ -367,13 +379,13 @@
     }
   ],
   "aggregate": {
-    "task_count": 25,
-    "expectation_count": 25,
-    "total_task_source_lines": 442511,
-    "total_selected_lines": 12125,
-    "total_estimated_tokens": 108779,
+    "task_count": 26,
+    "expectation_count": 26,
+    "total_task_source_lines": 460848,
+    "total_selected_lines": 12719,
+    "total_estimated_tokens": 114779,
     "max_impacted_files": 43,
-    "line_reduction": 97.25
+    "line_reduction": 97.24
   },
   "generated_by": "scripts/update-public-task-routing-matrix.sh"
 }
