@@ -2258,7 +2258,10 @@ fn context_reading_focus(file: &ContextFile, task: &str) -> String {
 }
 
 fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
-    if signals.test_coverage {
+    if signals.agent_first_read {
+        "Start with seed file context routing, first-read handoff, and read-less evidence."
+            .to_string()
+    } else if signals.test_coverage {
         "Start with seed file test, spec, or regression coverage.".to_string()
     } else if signals.response_headers {
         "Start with seed file response headers, status metadata, or Content-Type boundaries."
@@ -2848,7 +2851,10 @@ fn context_reading_question(file: &ContextFile, task: &str) -> String {
 
 fn context_seed_file_question(task: &str) -> String {
     let signals = ContextTaskSignals::from_task(task);
-    if signals.test_coverage {
+    if signals.agent_first_read {
+        "Which seed selection, reading-plan handoff, or read-less evidence controls the agent first-read workflow here?"
+            .to_string()
+    } else if signals.test_coverage {
         "Which behavior, assertions, fixtures, or regression cases are covered here?".to_string()
     } else if signals.response_headers {
         "Where are response headers set, status metadata written, or Content-Type values selected here?"
@@ -3416,6 +3422,7 @@ fn context_semantic_question(task: &str) -> String {
 
 #[derive(Debug, Clone, Copy)]
 struct ContextTaskSignals {
+    agent_first_read: bool,
     impact_flow: bool,
     auth_session: bool,
     network_http: bool,
@@ -3455,6 +3462,42 @@ struct ContextTaskSignals {
 
 impl ContextTaskSignals {
     fn from_task(task: &str) -> Self {
+        let agent_first_read = context_text_mentions(
+            task,
+            &[
+                "agent",
+                "ai agent",
+                "coding agent",
+                "first read",
+                "first-read",
+                "first reading",
+                "first-read workflow",
+                "context pack",
+                "context_pack",
+                "context router",
+                "context routing",
+                "route quality",
+                "routing quality",
+                "adoption evidence",
+                "read less",
+                "read-less",
+            ],
+        ) && !context_text_mentions(
+            task,
+            &[
+                "express",
+                "gin",
+                "rails",
+                "django",
+                "flask",
+                "http method",
+                "route parameter",
+                "route group",
+                "404",
+                "405",
+            ],
+        );
+
         let request_lifecycle =
             context_text_mentions(task, &["request", "requests", "response", "responses"])
                 && context_text_mentions(
@@ -4155,6 +4198,7 @@ impl ContextTaskSignals {
             );
 
         Self {
+            agent_first_read,
             impact_flow: context_text_mentions(
                 task,
                 &["impact", "caller", "callee", "call path", "call paths"],
@@ -9650,6 +9694,7 @@ mod tests {
     fn generic_routing_uses_route_dispatch_signal_without_overriding_specific_route_tasks() {
         let app_routing =
             ContextTaskSignals::from_task("understand express application routing behavior");
+        assert!(!app_routing.agent_first_read);
         assert!(app_routing.route_dispatch);
         assert!(!app_routing.http_method_routing);
         assert!(!app_routing.route_grouping);
@@ -9662,17 +9707,33 @@ mod tests {
 
         let method_routing =
             ContextTaskSignals::from_task("understand express HTTP method routing behavior");
+        assert!(!method_routing.agent_first_read);
         assert!(method_routing.http_method_routing);
         assert!(!method_routing.route_dispatch);
 
         let route_miss =
             ContextTaskSignals::from_task("understand gin no route no method behavior");
+        assert!(!route_miss.agent_first_read);
         assert!(route_miss.route_miss_handling);
         assert!(!route_miss.route_dispatch);
 
         let route_group = ContextTaskSignals::from_task("understand gin route group behavior");
+        assert!(!route_group.agent_first_read);
         assert!(route_group.route_grouping);
         assert!(!route_group.route_dispatch);
+    }
+
+    #[test]
+    fn agent_first_read_tasks_use_context_routing_prompt() {
+        let first_read =
+            ContextTaskSignals::from_task("improve AI agent first-read routing quality evidence");
+        assert!(first_read.agent_first_read);
+        assert!(!first_read.route_dispatch);
+        assert!(context_seed_file_focus(first_read).contains("first-read handoff"));
+        assert!(
+            context_seed_file_question("improve AI agent first-read routing quality evidence")
+                .contains("agent first-read workflow")
+        );
     }
 
     #[test]

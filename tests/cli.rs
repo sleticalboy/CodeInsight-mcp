@@ -2482,6 +2482,18 @@ export function impactSuggestedChecksRouter() {
     );
     assert_eq!(context["selected_seeds"][1]["value"], "src/main.ts");
     assert_eq!(context["files"][0]["file"], "src/tools.ts");
+    assert!(
+        context["reading_plan"][0]["focus"]
+            .as_str()
+            .unwrap()
+            .contains("first-read handoff")
+    );
+    assert!(
+        context["reading_plan"][0]["question"]
+            .as_str()
+            .unwrap()
+            .contains("agent first-read workflow")
+    );
 
     let route = run_json([
         "agent-route",
@@ -2508,6 +2520,12 @@ export function impactSuggestedChecksRouter() {
             .unwrap()
             .iter()
             .any(|symbol| symbol == "impactSuggestedChecksRouter")
+    );
+    assert!(
+        route["current_reading_step"]["question"]
+            .as_str()
+            .unwrap()
+            .contains("agent first-read workflow")
     );
 }
 

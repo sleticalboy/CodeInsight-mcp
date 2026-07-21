@@ -88,6 +88,10 @@ workflow is implemented end to end.
 - `selected_seeds[]` can expose `matched_symbols` for auto task matches, and
   `agent_route` forwards those symbols into the pre-edit `impact_analysis`
   preview when the user did not provide explicit symbols.
+- Agent first-read, context routing, route-quality, and adoption-evidence tasks
+  now get task-specific seed-file focus and questions about seed selection,
+  reading-plan handoff, and read-less evidence instead of generic entrypoint
+  prompts.
 - `agent_route.execution_plan[3]` mirrors `impact_analysis.suggested_checks`,
   includes the first suggested check in its instruction, and exposes a full
   `impact_analysis` suggested tool for pre-edit review workflows.
