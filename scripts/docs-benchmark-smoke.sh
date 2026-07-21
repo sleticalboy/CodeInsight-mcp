@@ -788,7 +788,7 @@ main() {
     'Source lines avoided \| `[0-9]+`' \
     "CodeInsight self adoption report avoided lines"
   require_pattern docs/adoption-report-codeinsight.md \
-    'First-read reduction \| `98\.7%`' \
+    'First-read reduction \| `98\.9%`' \
     "CodeInsight self adoption report reduction"
   require_pattern docs/adoption-report-codeinsight.md \
     'Read less \| `[0-9.]+x`' \
