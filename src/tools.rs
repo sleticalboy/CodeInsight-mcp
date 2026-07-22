@@ -1419,6 +1419,11 @@ pub fn context_pack_value(
         prefer_semantic_context_orchestration_files:
             auto_seed_semantic_context_prefers_orchestration(&task_keywords),
         prefer_dependency_graph_source_files: auto_seed_dependency_graph_task(&task_keywords),
+        prefer_project_overview_source_files: auto_seed_project_overview_task(&task_keywords),
+        prefer_symbol_search_source_files: auto_seed_symbol_search_task(&task_keywords),
+        prefer_file_parsing_source_files: auto_seed_file_parsing_task(&task_keywords),
+        prefer_binding_validation_source_files: auto_seed_binding_validation_task(&task_keywords),
+        prefer_import_resolution_source_files: auto_seed_import_resolution_task(&task_keywords),
     };
 
     for seed in &seed_symbols {
@@ -2324,6 +2329,8 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
         "Start with seed file network client, proxy, redirect, or transport boundaries.".to_string()
     } else if signals.tls_certificate {
         "Start with seed file TLS, SSL, certificate, or verification boundaries.".to_string()
+    } else if signals.file_parsing_language {
+        "Start with seed file parsing, AST extraction, or language support boundaries.".to_string()
     } else if signals.validation_binding {
         "Start with seed file validation, schema, binding, or serialization boundaries.".to_string()
     } else if signals.feature_flags {
@@ -2998,6 +3005,9 @@ fn context_seed_file_question(task: &str) -> String {
     } else if signals.tls_certificate {
         "Where are TLS certificates, SSL settings, CA bundles, or verification decisions handled here?"
             .to_string()
+    } else if signals.file_parsing_language {
+        "Where are source files parsed, languages detected, ASTs built, or symbols extracted here?"
+            .to_string()
     } else if signals.validation_binding {
         "Where are inputs validated, payloads bound, schemas applied, or data serialized here?"
             .to_string()
@@ -3594,6 +3604,7 @@ struct ContextTaskSignals {
     auth_session: bool,
     network_http: bool,
     tls_certificate: bool,
+    file_parsing_language: bool,
     validation_binding: bool,
     feature_flags: bool,
     configuration: bool,
@@ -3733,6 +3744,23 @@ impl ContextTaskSignals {
                         task,
                         &["injection", "inject", "injected", "resolver", "resolution"],
                     ));
+        let file_parsing_language =
+            context_text_mentions(
+                task,
+                &[
+                    "file parsing",
+                    "source parsing",
+                    "code parsing",
+                    "parse file",
+                    "parse files",
+                    "ast",
+                    "abstract syntax tree",
+                    "tree-sitter",
+                    "language support",
+                    "language detection",
+                ],
+            ) || (context_text_mentions(task, &["parse", "parser", "parsing"])
+                && context_text_mentions(task, &["language", "languages", "support", "supported"]));
 
         let http_state_headers = context_text_mentions(
             task,
@@ -4487,6 +4515,7 @@ impl ContextTaskSignals {
                     "ssl context",
                 ],
             ),
+            file_parsing_language,
             validation_binding: context_text_mentions(
                 task,
                 &[
@@ -4516,7 +4545,7 @@ impl ContextTaskSignals {
                     "marshal",
                     "unmarshal",
                 ],
-            ),
+            ) && !file_parsing_language,
             feature_flags: context_text_mentions(
                 task,
                 &[
@@ -6088,6 +6117,11 @@ struct ContextScoringPolicy {
     prefer_semantic_context_source_files: bool,
     prefer_semantic_context_orchestration_files: bool,
     prefer_dependency_graph_source_files: bool,
+    prefer_project_overview_source_files: bool,
+    prefer_symbol_search_source_files: bool,
+    prefer_file_parsing_source_files: bool,
+    prefer_binding_validation_source_files: bool,
+    prefer_import_resolution_source_files: bool,
 }
 
 fn seed_file_ranges(
@@ -6505,6 +6539,16 @@ fn context_score_for_file(file: &str, score: i32, policy: &ContextScoringPolicy)
         )
     } else if policy.prefer_dependency_graph_source_files {
         context_dependency_graph_source_score(file, score)
+    } else if policy.prefer_project_overview_source_files {
+        context_project_overview_source_score(file, score)
+    } else if policy.prefer_symbol_search_source_files {
+        context_symbol_search_source_score(file, score)
+    } else if policy.prefer_file_parsing_source_files {
+        context_file_parsing_source_score(file, score)
+    } else if policy.prefer_binding_validation_source_files {
+        context_binding_validation_source_score(file, score)
+    } else if policy.prefer_import_resolution_source_files {
+        context_import_resolution_source_score(file, score)
     } else {
         score
     }
@@ -6573,6 +6617,40 @@ fn context_semantic_context_source_score(
 
 fn context_dependency_graph_source_score(file: &str, score: i32) -> i32 {
     let priority = auto_seed_dependency_graph_file_priority(file);
+    if context_agent_first_read_support_file(file) {
+        score.saturating_sub(900)
+    } else if priority > 0 {
+        score.saturating_add(priority)
+    } else {
+        score
+    }
+}
+
+fn context_project_overview_source_score(file: &str, score: i32) -> i32 {
+    context_priority_source_score(file, score, auto_seed_project_overview_file_priority(file))
+}
+
+fn context_symbol_search_source_score(file: &str, score: i32) -> i32 {
+    context_priority_source_score(file, score, auto_seed_symbol_search_file_priority(file))
+}
+
+fn context_file_parsing_source_score(file: &str, score: i32) -> i32 {
+    context_priority_source_score(file, score, auto_seed_file_parsing_file_priority(file))
+}
+
+fn context_binding_validation_source_score(file: &str, score: i32) -> i32 {
+    context_priority_source_score(
+        file,
+        score,
+        auto_seed_binding_validation_file_priority(file),
+    )
+}
+
+fn context_import_resolution_source_score(file: &str, score: i32) -> i32 {
+    context_priority_source_score(file, score, auto_seed_import_resolution_file_priority(file))
+}
+
+fn context_priority_source_score(file: &str, score: i32, priority: i32) -> i32 {
     if context_agent_first_read_support_file(file) {
         score.saturating_sub(900)
     } else if priority > 0 {
@@ -6899,6 +6977,11 @@ fn auto_context_seed_files(
     let semantic_context_prefers_orchestration =
         auto_seed_semantic_context_prefers_orchestration(task_keywords);
     let dependency_graph_task = auto_seed_dependency_graph_task(task_keywords);
+    let project_overview_task = auto_seed_project_overview_task(task_keywords);
+    let symbol_search_task = auto_seed_symbol_search_task(task_keywords);
+    let file_parsing_task = auto_seed_file_parsing_task(task_keywords);
+    let binding_validation_task = auto_seed_binding_validation_task(task_keywords);
+    let import_resolution_task = auto_seed_import_resolution_task(task_keywords);
     candidates.sort_by(|left, right| {
         if agent_first_read_task {
             auto_seed_agent_first_read_file_priority(&right.file, task_keywords)
@@ -6932,6 +7015,31 @@ fn auto_context_seed_files(
         } else if dependency_graph_task {
             auto_seed_dependency_graph_file_priority(&right.file)
                 .cmp(&auto_seed_dependency_graph_file_priority(&left.file))
+                .then_with(|| right.score.cmp(&left.score))
+                .then_with(|| left.file.cmp(&right.file))
+        } else if project_overview_task {
+            auto_seed_project_overview_file_priority(&right.file)
+                .cmp(&auto_seed_project_overview_file_priority(&left.file))
+                .then_with(|| right.score.cmp(&left.score))
+                .then_with(|| left.file.cmp(&right.file))
+        } else if symbol_search_task {
+            auto_seed_symbol_search_file_priority(&right.file)
+                .cmp(&auto_seed_symbol_search_file_priority(&left.file))
+                .then_with(|| right.score.cmp(&left.score))
+                .then_with(|| left.file.cmp(&right.file))
+        } else if file_parsing_task {
+            auto_seed_file_parsing_file_priority(&right.file)
+                .cmp(&auto_seed_file_parsing_file_priority(&left.file))
+                .then_with(|| right.score.cmp(&left.score))
+                .then_with(|| left.file.cmp(&right.file))
+        } else if binding_validation_task {
+            auto_seed_binding_validation_file_priority(&right.file)
+                .cmp(&auto_seed_binding_validation_file_priority(&left.file))
+                .then_with(|| right.score.cmp(&left.score))
+                .then_with(|| left.file.cmp(&right.file))
+        } else if import_resolution_task {
+            auto_seed_import_resolution_file_priority(&right.file)
+                .cmp(&auto_seed_import_resolution_file_priority(&left.file))
                 .then_with(|| right.score.cmp(&left.score))
                 .then_with(|| left.file.cmp(&right.file))
         } else if route_miss_task {
@@ -6997,7 +7105,12 @@ fn auto_context_seed_files(
         || indexing_pipeline_task
         || data_persistence_task
         || semantic_context_task
-        || dependency_graph_task;
+        || dependency_graph_task
+        || project_overview_task
+        || symbol_search_task
+        || file_parsing_task
+        || binding_validation_task
+        || import_resolution_task;
     let selected_candidate = if route_miss_task || auto_seed_prefers_entrypoint(task_keywords) {
         candidates.first()
     } else if priority_routed_task {
@@ -7062,6 +7175,17 @@ fn auto_context_seed_files(
                                 ) >= 0)
                             && (!dependency_graph_task
                                 || auto_seed_dependency_graph_file_priority(&entrypoint.file) >= 0)
+                            && (!project_overview_task
+                                || auto_seed_project_overview_file_priority(&entrypoint.file) >= 0)
+                            && (!symbol_search_task
+                                || auto_seed_symbol_search_file_priority(&entrypoint.file) >= 0)
+                            && (!file_parsing_task
+                                || auto_seed_file_parsing_file_priority(&entrypoint.file) >= 0)
+                            && (!binding_validation_task
+                                || auto_seed_binding_validation_file_priority(&entrypoint.file)
+                                    >= 0)
+                            && (!import_resolution_task
+                                || auto_seed_import_resolution_file_priority(&entrypoint.file) >= 0)
                     })
                     .map(|entrypoint| AutoSeedCandidate {
                         file: entrypoint.file.clone(),
@@ -9111,6 +9235,21 @@ fn auto_seed_priority_routed_file_priority(file: &str, task_keywords: &[String])
     if auto_seed_dependency_graph_task(task_keywords) {
         priority = priority.max(auto_seed_dependency_graph_file_priority(file));
     }
+    if auto_seed_project_overview_task(task_keywords) {
+        priority = priority.max(auto_seed_project_overview_file_priority(file));
+    }
+    if auto_seed_symbol_search_task(task_keywords) {
+        priority = priority.max(auto_seed_symbol_search_file_priority(file));
+    }
+    if auto_seed_file_parsing_task(task_keywords) {
+        priority = priority.max(auto_seed_file_parsing_file_priority(file));
+    }
+    if auto_seed_binding_validation_task(task_keywords) {
+        priority = priority.max(auto_seed_binding_validation_file_priority(file));
+    }
+    if auto_seed_import_resolution_task(task_keywords) {
+        priority = priority.max(auto_seed_import_resolution_file_priority(file));
+    }
     if auto_seed_request_lifecycle_task(task_keywords) {
         priority = priority.max(auto_seed_request_lifecycle_file_priority(file));
     }
@@ -9360,6 +9499,269 @@ fn auto_seed_dependency_graph_file_priority(file: &str) -> i32 {
     }
     if matches!(stem, "mcp") {
         priority = priority.max(55);
+    }
+    if source_file && matches!(stem, "main" | "lib" | "mod") {
+        priority = priority.max(45);
+    }
+
+    priority
+}
+
+fn auto_seed_project_overview_task(task_keywords: &[String]) -> bool {
+    let overview = task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "overview" | "summary"));
+    let project_entrypoint = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "project"
+                | "repository"
+                | "repo"
+                | "entrypoint"
+                | "entrypoints"
+                | "detect"
+                | "detection"
+                | "candidate"
+                | "candidates"
+        )
+    });
+
+    overview && project_entrypoint
+}
+
+fn auto_seed_project_overview_file_priority(file: &str) -> i32 {
+    let normalized = file.replace('\\', "/").to_ascii_lowercase();
+    if normalized == "scripts" || normalized.starts_with("scripts/") {
+        return -80;
+    }
+    if normalized == "docs" || normalized.starts_with("docs/") || is_low_value_reference_file(file)
+    {
+        return -30;
+    }
+
+    let source_file = normalized.starts_with("src/") || normalized.contains("/src/");
+    let file_name = normalized.rsplit('/').next().unwrap_or(normalized.as_str());
+    let stem = file_name.split('.').next().unwrap_or(file_name);
+
+    let mut priority = if source_file { 20 } else { 0 };
+    if matches!(stem, "storage" | "store" | "database" | "db") {
+        priority = priority.max(180);
+    }
+    if matches!(stem, "tools" | "tool") {
+        priority = priority.max(130);
+    }
+    if matches!(stem, "model" | "models") {
+        priority = priority.max(110);
+    }
+    if matches!(stem, "mcp") {
+        priority = priority.max(35);
+    }
+    if source_file && matches!(stem, "main" | "lib" | "mod") {
+        priority = priority.max(45);
+    }
+
+    priority
+}
+
+fn auto_seed_symbol_search_task(task_keywords: &[String]) -> bool {
+    let symbol = task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "symbol" | "symbols"));
+    let search = task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "search" | "lookup" | "find"));
+
+    symbol && search
+}
+
+fn auto_seed_symbol_search_file_priority(file: &str) -> i32 {
+    let normalized = file.replace('\\', "/").to_ascii_lowercase();
+    if normalized == "scripts" || normalized.starts_with("scripts/") {
+        return -80;
+    }
+    if normalized == "docs" || normalized.starts_with("docs/") || is_low_value_reference_file(file)
+    {
+        return -30;
+    }
+
+    let source_file = normalized.starts_with("src/") || normalized.contains("/src/");
+    let file_name = normalized.rsplit('/').next().unwrap_or(normalized.as_str());
+    let stem = file_name.split('.').next().unwrap_or(file_name);
+
+    let mut priority = if source_file { 20 } else { 0 };
+    if matches!(stem, "tools" | "tool") {
+        priority = priority.max(180);
+    }
+    if matches!(stem, "storage" | "store" | "database" | "db") {
+        priority = priority.max(150);
+    }
+    if matches!(stem, "index" | "indexer") {
+        priority = priority.max(80);
+    }
+    if matches!(stem, "mcp") {
+        priority = priority.max(60);
+    }
+    if source_file && matches!(stem, "main" | "lib" | "mod") {
+        priority = priority.max(45);
+    }
+
+    priority
+}
+
+fn auto_seed_file_parsing_task(task_keywords: &[String]) -> bool {
+    let parsing = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "parse" | "parser" | "parsing" | "deserialize" | "deserialization"
+        )
+    });
+    let language = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "language" | "languages" | "support" | "supported"
+        )
+    });
+
+    parsing && language
+}
+
+fn auto_seed_file_parsing_file_priority(file: &str) -> i32 {
+    let normalized = file.replace('\\', "/").to_ascii_lowercase();
+    if normalized == "scripts" || normalized.starts_with("scripts/") {
+        return -80;
+    }
+    if normalized == "docs" || normalized.starts_with("docs/") || is_low_value_reference_file(file)
+    {
+        return -30;
+    }
+
+    let source_file = normalized.starts_with("src/") || normalized.contains("/src/");
+    let file_name = normalized.rsplit('/').next().unwrap_or(normalized.as_str());
+    let stem = file_name.split('.').next().unwrap_or(file_name);
+
+    let mut priority = if source_file { 20 } else { 0 };
+    if matches!(stem, "index" | "indexer") {
+        priority = priority.max(180);
+    }
+    if matches!(stem, "language" | "languages") {
+        priority = priority.max(150);
+    }
+    if matches!(stem, "model" | "models") {
+        priority = priority.max(90);
+    }
+    if matches!(stem, "tools" | "tool") {
+        priority = priority.max(70);
+    }
+    if matches!(stem, "storage" | "store" | "database" | "db") {
+        priority = priority.max(30);
+    }
+    if source_file && matches!(stem, "main" | "lib" | "mod") {
+        priority = priority.max(45);
+    }
+
+    priority
+}
+
+fn auto_seed_binding_validation_task(task_keywords: &[String]) -> bool {
+    let validation = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "validation" | "validate" | "validator" | "schema" | "schemas"
+        )
+    });
+    let binding = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "binding" | "bindings" | "bind" | "json" | "payload"
+        )
+    });
+
+    validation && binding
+}
+
+fn auto_seed_binding_validation_file_priority(file: &str) -> i32 {
+    let normalized = file.replace('\\', "/").to_ascii_lowercase();
+    if normalized == "scripts" || normalized.starts_with("scripts/") {
+        return -80;
+    }
+    if normalized == "docs" || normalized.starts_with("docs/") || is_low_value_reference_file(file)
+    {
+        return -30;
+    }
+
+    let source_file = normalized.starts_with("src/") || normalized.contains("/src/");
+    let file_name = normalized.rsplit('/').next().unwrap_or(normalized.as_str());
+    let stem = file_name.split('.').next().unwrap_or(file_name);
+
+    let mut priority = if source_file { 20 } else { 0 };
+    if matches!(
+        stem,
+        "validation" | "validator" | "validators" | "schema" | "binding" | "bindings"
+    ) {
+        priority = priority.max(180);
+    }
+    if matches!(stem, "mcp") {
+        priority = priority.max(130);
+    }
+    if matches!(stem, "tools" | "tool") {
+        priority = priority.max(90);
+    }
+    if matches!(stem, "index" | "indexer") {
+        priority = priority.max(80);
+    }
+    if matches!(stem, "storage" | "store" | "database" | "db") {
+        priority = priority.max(50);
+    }
+    if source_file && matches!(stem, "main" | "lib" | "mod") {
+        priority = priority.max(45);
+    }
+
+    priority
+}
+
+fn auto_seed_import_resolution_task(task_keywords: &[String]) -> bool {
+    let import = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "import" | "imports" | "package" | "packages" | "dependency" | "dependencies"
+        )
+    });
+    let resolution = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "resolution" | "resolve" | "resolves" | "resolver" | "resolving"
+        )
+    });
+
+    import && resolution
+}
+
+fn auto_seed_import_resolution_file_priority(file: &str) -> i32 {
+    let normalized = file.replace('\\', "/").to_ascii_lowercase();
+    if normalized == "scripts" || normalized.starts_with("scripts/") {
+        return -80;
+    }
+    if normalized == "docs" || normalized.starts_with("docs/") || is_low_value_reference_file(file)
+    {
+        return -30;
+    }
+
+    let source_file = normalized.starts_with("src/") || normalized.contains("/src/");
+    let file_name = normalized.rsplit('/').next().unwrap_or(normalized.as_str());
+    let stem = file_name.split('.').next().unwrap_or(file_name);
+
+    let mut priority = if source_file { 20 } else { 0 };
+    if matches!(stem, "index" | "indexer") {
+        priority = priority.max(180);
+    }
+    if matches!(stem, "storage" | "store" | "database" | "db") {
+        priority = priority.max(130);
+    }
+    if matches!(stem, "tools" | "tool") {
+        priority = priority.max(90);
+    }
+    if matches!(stem, "language" | "languages" | "model" | "models") {
+        priority = priority.max(50);
     }
     if source_file && matches!(stem, "main" | "lib" | "mod") {
         priority = priority.max(45);

@@ -2922,6 +2922,137 @@ main "$@"
 }
 
 #[test]
+fn cli_context_pack_routes_code_analysis_capability_tasks_to_core_sources() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        "src/storage.ts",
+        r#"
+export function entrypointCandidates(files: string[]) {
+  return files.filter((file) => file.endsWith("main.ts"));
+}
+
+export function projectOverview(files: string[]) {
+  return { entrypoints: entrypointCandidates(files) };
+}
+
+export function searchSymbols(query: string) {
+  return [{ name: query, kind: "function" }];
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/tools.ts",
+        r#"
+import { searchSymbols } from "./storage";
+
+export function symbolSearchValue(query: string) {
+  return searchSymbols(query);
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/index.ts",
+        r#"
+export function parseFile(path: string, language: string) {
+  return { path, language, ast: "tree-sitter" };
+}
+
+export function resolvePackageImport(source: string) {
+  return source.includes("import") ? "resolved-package" : "local-file";
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/language.ts",
+        r#"
+export function detectLanguage(path: string) {
+  return path.endsWith(".ts") ? "typescript" : "unknown";
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/mcp.ts",
+        r#"
+export function optionalStringArray(argumentsJson: unknown, key: string) {
+  // JSON binding validation checks MCP tool arguments before dispatch.
+  return { argumentsJson, key, schema: "array-of-strings" };
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "scripts/framework-entrypoint-demo.sh",
+        r#"
+#!/usr/bin/env bash
+echo "project overview entrypoint detection demo script"
+echo "symbol search implementation and file parsing language support"
+"#,
+    );
+    write_file(
+        &fixture,
+        "scripts/agent-router-demo.sh",
+        r#"
+#!/usr/bin/env bash
+echo "json binding validation package import resolution demo"
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 7);
+
+    for (task, expected_file) in [
+        (
+            "understand project overview entrypoint detection",
+            "src/storage.ts",
+        ),
+        ("understand symbol search implementation", "src/tools.ts"),
+        ("understand file parsing language support", "src/index.ts"),
+        ("understand package import resolution", "src/index.ts"),
+        ("understand json binding validation", "src/mcp.ts"),
+    ] {
+        let context = run_json([
+            "context-pack",
+            fixture.path().to_str().unwrap(),
+            "--task",
+            task,
+            "--token-budget",
+            "1800",
+        ]);
+
+        assert_eq!(context["seed_strategy"], "auto_task_match", "{task}");
+        assert_eq!(
+            context["selected_seeds"][0]["value"], expected_file,
+            "{task}"
+        );
+        assert_eq!(context["files"][0]["file"], expected_file, "{task}");
+        assert!(
+            !context["files"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|file| file["file"]
+                    .as_str()
+                    .is_some_and(|path| path.starts_with("scripts/"))),
+            "{task} should not spend context budget on demo scripts"
+        );
+        if task == "understand file parsing language support" {
+            assert!(
+                context["reading_plan"][0]["question"]
+                    .as_str()
+                    .unwrap()
+                    .contains("source files parsed"),
+                "file parsing tasks should get parsing-specific reading guidance"
+            );
+        }
+    }
+}
+
+#[test]
 fn cli_context_pack_expands_common_agent_task_aliases() {
     let fixture = TempDir::new().unwrap();
     std::fs::create_dir_all(fixture.path().join("src")).unwrap();
