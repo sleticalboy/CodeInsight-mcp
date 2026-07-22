@@ -74,8 +74,8 @@ validate_summary_json() {
 
   if ! jq -e \
     '.status == "pass"
-      and .scenarios_passed == 9
-      and (.scenarios | length) == 9
+      and .scenarios_passed == 10
+      and (.scenarios | length) == 10
       and all(.scenarios[]; .status == "pass")
       and (.scenarios[] | select(.name == "polyglot_symbol_web_controller" and .metrics.first_file == "src/app.ts"))
       and (.scenarios[] | select(.name == "polyglot_symbol_web_controller" and (.metrics.first_reading_focus | type == "string" and length > 0)))
@@ -85,8 +85,9 @@ validate_summary_json() {
       and (.scenarios[] | select(.name == "budget_continuation" and .metrics.omitted_candidates > 0 and .metrics.continuation_status == "omitted_candidates_available"))
       and (.scenarios[] | select(.name == "minimum_budget" and .metrics.applied_token_budget == 500 and .metrics.continuation_status == "minimum_budget_applied"))
       and (.scenarios[] | select(.name == "token_exhaustion" and .metrics.truncated == true and .metrics.continuation_status == "token_budget_exhausted"))
-      and .question_checks_passed == 5
-      and (.question_checks | length) == 5
+      and (.scenarios[] | select(.name == "core_analysis_question_coverage"))
+      and .question_checks_passed == 8
+      and (.question_checks | length) == 8
       and all(.question_checks[]; .status == "pass" and (.focus | type == "string" and length > 0) and (.question | type == "string" and length > 0))' \
     "$summary_file" >/dev/null; then
     fail "$summary_file does not match expected context-pack quality metrics"

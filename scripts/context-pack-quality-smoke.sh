@@ -700,6 +700,59 @@ run_question_coverage_scenario() {
   echo "  pass: task-aware question coverage ($QUESTION_CHECKS_PASSED checks)"
 }
 
+run_core_analysis_question_scenario() {
+  local index_json="$TEMP_DIR/core-analysis-index.json"
+  local indexing_json="$TEMP_DIR/core-analysis-indexing-context.json"
+  local dependency_json="$TEMP_DIR/core-analysis-dependency-context.json"
+  local semantic_json="$TEMP_DIR/core-analysis-semantic-context.json"
+
+  "$CODEINSIGHT_BIN" index "$ROOT_DIR" --force >"$index_json"
+  require_jq "$index_json" '.indexed_files > 0' "core analysis scenario should index this repository"
+
+  "$CODEINSIGHT_BIN" context-pack "$ROOT_DIR" \
+    --task "understand indexing pipeline" \
+    --token-budget 2600 \
+    >"$indexing_json"
+  require_jq "$indexing_json" \
+    '.reading_plan[0].next_action == "inspect_seed_file"
+      and (.reading_plan[0].focus | contains("project indexing"))
+      and (.reading_plan[0].question | contains("files scanned"))
+      and (.reading_plan[0].question | contains("index records written"))' \
+    "indexing pipeline reading question should be core-analysis-aware"
+  QUESTION_CHECKS_PASSED=$((QUESTION_CHECKS_PASSED + 1))
+  record_question_check "core_indexing_pipeline_question" "$indexing_json" '.reading_plan[0]'
+
+  "$CODEINSIGHT_BIN" context-pack "$ROOT_DIR" \
+    --task "understand dependency graph generation" \
+    --token-budget 2600 \
+    >"$dependency_json"
+  require_jq "$dependency_json" \
+    '.reading_plan[0].next_action == "inspect_seed_file"
+      and (.reading_plan[0].focus | contains("dependency graph extraction"))
+      and (.reading_plan[0].question | contains("dependency edges extracted"))' \
+    "dependency graph reading question should be core-analysis-aware"
+  QUESTION_CHECKS_PASSED=$((QUESTION_CHECKS_PASSED + 1))
+  record_question_check "core_dependency_graph_question" "$dependency_json" '.reading_plan[0]'
+
+  "$CODEINSIGHT_BIN" context-pack "$ROOT_DIR" \
+    --task "understand semantic search fallback" \
+    --token-budget 2600 \
+    >"$semantic_json"
+  require_jq "$semantic_json" \
+    '.reading_plan[0].next_action == "inspect_seed_file"
+      and (.reading_plan[0].focus | contains("semantic search orchestration"))
+      and (.reading_plan[0].question | contains("semantic searches routed"))
+      and (.reading_plan[0].question | contains("embedding fallback"))' \
+    "semantic search fallback reading question should be core-analysis-aware"
+  QUESTION_CHECKS_PASSED=$((QUESTION_CHECKS_PASSED + 1))
+  record_question_check "core_semantic_fallback_question" "$semantic_json" '.reading_plan[0]'
+
+  SCENARIOS_PASSED=$((SCENARIOS_PASSED + 1))
+  record_scenario "core_analysis_question_coverage" "$semantic_json" \
+    "{question_checks: $QUESTION_CHECKS_PASSED, semantic_file: .reading_plan[0].file, semantic_next_action: .reading_plan[0].next_action, semantic_question: .reading_plan[0].question}"
+  echo "  pass: core analysis question coverage ($QUESTION_CHECKS_PASSED checks)"
+}
+
 main() {
   parse_args "$@"
   require_command jq
@@ -734,6 +787,7 @@ main() {
   run_minimum_budget_scenario
   run_token_exhaustion_scenario
   run_question_coverage_scenario
+  run_core_analysis_question_scenario
 
   echo "context-pack quality smoke passed"
   echo "scenarios: $SCENARIOS_PASSED"
