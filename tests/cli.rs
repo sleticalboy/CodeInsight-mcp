@@ -3148,6 +3148,21 @@ echo "json binding validation package import resolution demo"
                     .contains("imports parsed"),
                 "import resolution tasks should get import-specific reading guidance"
             );
+        } else if task == "understand project overview entrypoint detection" {
+            assert!(
+                context["reading_plan"][0]["focus"]
+                    .as_str()
+                    .unwrap()
+                    .contains("entrypoint detection"),
+                "project overview tasks should get overview-specific reading focus"
+            );
+            assert!(
+                context["reading_plan"][0]["question"]
+                    .as_str()
+                    .unwrap()
+                    .contains("entrypoint candidates"),
+                "project overview tasks should get overview-specific reading guidance"
+            );
         }
     }
 }

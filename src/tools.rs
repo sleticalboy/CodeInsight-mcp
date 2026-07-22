@@ -2339,6 +2339,9 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
     } else if signals.import_resolution {
         "Start with seed file import parsing, alias resolution, package mapping, and local target resolution."
             .to_string()
+    } else if signals.project_overview {
+        "Start with seed file project summary, entrypoint detection, directory roles, and recommended next tools."
+            .to_string()
     } else if signals.file_parsing_language {
         "Start with seed file parsing, AST extraction, or language support boundaries.".to_string()
     } else if signals.validation_binding {
@@ -2445,6 +2448,9 @@ fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
             .to_string()
     } else if signals.import_resolution {
         "Read symbol definitions that implement import parsing, alias/package resolution, or local target mapping."
+            .to_string()
+    } else if signals.project_overview {
+        "Read symbol definitions that build project summaries, entrypoint detection, directory roles, or next-tool recommendations."
             .to_string()
     } else if signals.validation_binding {
         "Read symbol definitions that establish validation, schema, binding, or serialization behavior."
@@ -2625,6 +2631,9 @@ fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
         "Follow call graph evidence for API request, response, or controller flow.".to_string()
     } else if signals.documentation {
         "Follow call graph evidence that supports documented usage.".to_string()
+    } else if signals.project_overview {
+        "Follow call graph evidence for project summary assembly, entrypoint detection, and next-tool recommendations."
+            .to_string()
     } else if signals.data_persistence {
         "Follow call graph evidence for database, repository, or storage flow.".to_string()
     } else if signals.error_recovery {
@@ -2925,6 +2934,9 @@ fn context_dependency_focus(signals: ContextTaskSignals) -> String {
         "Check local dependencies that shape API handler or controller dispatch.".to_string()
     } else if signals.documentation {
         "Check local dependencies referenced by documentation or examples.".to_string()
+    } else if signals.project_overview {
+        "Check local dependencies that supply project summary, entrypoint detection, directory role, or next-tool data."
+            .to_string()
     } else if signals.data_persistence {
         "Check local dependencies that supply database or storage behavior.".to_string()
     } else if signals.error_recovery {
@@ -3026,6 +3038,9 @@ fn context_seed_file_question(task: &str) -> String {
             .to_string()
     } else if signals.import_resolution {
         "Where are imports parsed, aliases or package metadata applied, and local targets resolved here?"
+            .to_string()
+    } else if signals.project_overview {
+        "Where are project summaries, entrypoint candidates, directory roles, or recommended next tools assembled here?"
             .to_string()
     } else if signals.file_parsing_language {
         "Where are source files parsed, languages detected, ASTs built, or symbols extracted here?"
@@ -3137,6 +3152,8 @@ fn context_symbol_definition_question(task: &str) -> String {
         "What symbol lookup, matching, ranking, limit, or result-shaping behavior does this definition establish?".to_string()
     } else if signals.import_resolution {
         "What import parsing, alias resolution, package metadata, or local target mapping behavior does this definition establish?".to_string()
+    } else if signals.project_overview {
+        "What project summary, entrypoint candidates, directory role, or next-tool recommendation behavior does this definition establish?".to_string()
     } else if signals.validation_binding {
         "What validation, schema, binding, parser, or serialization behavior does this definition establish?".to_string()
     } else if signals.feature_flags {
@@ -3306,6 +3323,9 @@ fn context_call_graph_question(task: &str) -> String {
         "Which callers or callees route API requests through handlers or controllers?".to_string()
     } else if signals.documentation {
         "Which callers or callees implement the documented workflow or usage example?".to_string()
+    } else if signals.project_overview {
+        "Which callers or callees assemble project summaries, entrypoint candidates, directory roles, or recommended next tools?"
+            .to_string()
     } else if signals.data_persistence {
         "Which callers or callees read, write, or persist data through this flow?".to_string()
     } else if signals.error_recovery {
@@ -3404,6 +3424,9 @@ fn context_dependency_question(task: &str) -> String {
             .to_string()
     } else if signals.documentation {
         "What imported local dependency behavior supports the documented workflow or examples?"
+            .to_string()
+    } else if signals.project_overview {
+        "What imported local dependency behavior supplies project summaries, entrypoint candidates, directory roles, or next-tool recommendations?"
             .to_string()
     } else if signals.data_persistence {
         "What imported local dependency behavior supplies database, repository, or storage access?"
@@ -3632,6 +3655,7 @@ struct ContextTaskSignals {
     tls_certificate: bool,
     symbol_search: bool,
     import_resolution: bool,
+    project_overview: bool,
     file_parsing_language: bool,
     validation_binding: bool,
     feature_flags: bool,
@@ -4545,6 +4569,7 @@ impl ContextTaskSignals {
             ),
             symbol_search: auto_seed_symbol_search_task(&task_keywords(task)),
             import_resolution: auto_seed_import_resolution_task(&task_keywords(task)),
+            project_overview: auto_seed_project_overview_task(&task_keywords(task)),
             file_parsing_language,
             validation_binding: context_text_mentions(
                 task,
