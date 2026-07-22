@@ -43,6 +43,19 @@ scripts/external-beta-trial.sh /path/to/repo \
 CLI route and MCP first-call check, so the trial can start from a known
 subsystem instead of relying only on broad automatic seed selection.
 
+If broad indexing is too noisy for the trial, add `.codeinsight/config.toml`
+before running the script:
+
+```toml
+[index]
+include = ["packages/api/**", "src/**"]
+exclude = ["**/*.generated.ts", "fixtures/**"]
+```
+
+The generated local evidence includes the applied `index_scope_*` metrics, so
+maintainers can tell whether the report measured a full repository or a scoped
+subsystem.
+
 ## Generated Files
 
 The command writes:

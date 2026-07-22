@@ -173,6 +173,32 @@ scripts/local-repo-evidence.sh /path/to/repo \
   --summary-json /tmp/codeinsight-local-evidence.json
 ```
 
+For a large repository or a known subsystem, scope the local index before
+collecting evidence:
+
+```toml
+# /path/to/repo/.codeinsight/config.toml
+[index]
+include = ["packages/api/**", "src/**"]
+exclude = ["**/*.generated.ts", "fixtures/**"]
+```
+
+Then confirm the scope and run evidence collection with explicit seeds:
+
+```bash
+codeinsight config-status /path/to/repo
+scripts/local-repo-evidence.sh /path/to/repo \
+  --file packages/api/src/main.ts \
+  --symbol main \
+  --output /tmp/codeinsight-local-evidence.md \
+  --json /tmp/codeinsight-agent-route.json \
+  --summary-json /tmp/codeinsight-local-evidence.json
+```
+
+The evidence Markdown and summary JSON include `index_scope_enabled`,
+`index_scope_includes`, and `index_scope_excludes`, so reviewers can see the
+exact indexing scope behind the route-quality numbers.
+
 Generate a blind-read vs routed-first-read comparison for adoption notes:
 
 ```bash
