@@ -1185,6 +1185,26 @@ fn cli_indexes_and_queries_fixture_project() {
             .any(|file| file["file"] == "src/main.ts" && file["source"] == "seed_file")
     );
 
+    let task_path_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "inspect src/auth.py before editing login behavior",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(task_path_context["seed_strategy"], "auto_task_path");
+    assert_eq!(
+        task_path_context["selected_seeds"][0]["value"],
+        "src/auth.py"
+    );
+    assert_eq!(
+        task_path_context["selected_seeds"][0]["source"],
+        "task_path"
+    );
+    assert_eq!(task_path_context["files"][0]["file"], "src/auth.py");
+    assert_eq!(task_path_context["files"][0]["source"], "seed_file");
+
     let semantic_context = run_json([
         "context-pack",
         fixture.path().to_str().unwrap(),

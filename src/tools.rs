@@ -1593,7 +1593,7 @@ pub fn context_pack_value(
     let mut seed_strategy = "explicit".to_string();
     let mut selected_seeds = explicit_context_seeds(&seed_symbols, &seed_files);
     if auto_seeded {
-        let auto_selection = auto_context_seed_files(&store, &root, &task_keywords)?;
+        let auto_selection = auto_context_seed_files(&store, &root, &task, &task_keywords)?;
         seed_strategy = auto_selection.strategy;
         seed_files = auto_selection.files;
         selected_seeds = auto_selection.seeds;
@@ -7495,10 +7495,31 @@ struct AutoSeedCandidate {
 fn auto_context_seed_files(
     store: &Store,
     root: &Path,
+    task: &str,
     task_keywords: &[String],
 ) -> Result<AutoContextSeedSelection> {
-    let overview = store.overview(root)?;
     let indexed_files = store.indexed_files()?;
+    let task_path_files = auto_seed_task_path_files(task, &indexed_files);
+    if !task_path_files.is_empty() {
+        let seeds = task_path_files
+            .iter()
+            .map(|file| ContextSeed {
+                kind: "file".to_string(),
+                value: file.clone(),
+                source: "task_path".to_string(),
+                role: Some(auto_seed_file_role(file).to_string()),
+                matched_keywords: Vec::new(),
+                matched_symbols: Vec::new(),
+            })
+            .collect::<Vec<_>>();
+        return Ok(AutoContextSeedSelection {
+            strategy: "auto_task_path".to_string(),
+            files: task_path_files,
+            seeds,
+        });
+    }
+
+    let overview = store.overview(root)?;
     let task_symbol_matches = auto_seed_task_symbol_matches(store, task_keywords)?;
     let mut candidates = BTreeMap::<String, AutoSeedCandidate>::new();
 
@@ -7957,6 +7978,31 @@ fn auto_context_seed_files(
         files,
         seeds,
     })
+}
+
+fn auto_seed_task_path_files(task: &str, indexed_files: &[String]) -> Vec<String> {
+    let indexed_file_set = indexed_files.iter().cloned().collect::<BTreeSet<_>>();
+    let mut seen = BTreeSet::new();
+    task.split(|character: char| !auto_seed_task_path_character(character))
+        .map(normalize_auto_seed_task_path_token)
+        .filter(|token| token.contains('/'))
+        .filter(|token| indexed_file_set.contains(token))
+        .filter(|token| seen.insert(token.clone()))
+        .take(3)
+        .collect()
+}
+
+fn auto_seed_task_path_character(character: char) -> bool {
+    character.is_ascii_alphanumeric()
+        || matches!(character, '/' | '\\' | '.' | '_' | '-' | '+' | '#')
+}
+
+fn normalize_auto_seed_task_path_token(token: &str) -> String {
+    token
+        .replace('\\', "/")
+        .trim_start_matches("./")
+        .trim_start_matches('/')
+        .to_string()
 }
 
 fn auto_seed_task_symbol_matches(

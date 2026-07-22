@@ -97,6 +97,7 @@ hands the agent to precise local tools when the selected context is not enough.
 
    ```text
    Call agent_route with root, task, and token_budget 6000 before reading files directly.
+   If the task names an indexed file path such as src/auth.ts, pass it in task; CodeInsight can auto-seed that path without --file.
    If continuation_summary.status is blocked_no_seed, ask for a seed file or symbol instead of broad-reading.
    If it is blocked_invalid_seed or blocked_no_context, ask for an existing or matching seed and retry.
    Read selected files in reading_plan order and use selection_rank as the audit trail.
@@ -530,7 +531,8 @@ For all commands and common workflows, see [CLI usage](docs/cli-usage.md).
 Recommended MCP first-read flow:
 
 1. Call `agent_route` with `root`, `task`, and `token_budget` for the default
-   first-read path.
+   first-read path. If the task text names an indexed file path such as
+   `src/auth.ts`, CodeInsight treats it as an automatic file seed.
 2. If `context_pack.continuation_summary.status` is `blocked_no_seed`, ask for
    a seed file or symbol and retry `agent_route` instead of broad-reading the
    repository. If it is `blocked_invalid_seed`, ask for an existing seed file

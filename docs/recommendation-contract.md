@@ -82,6 +82,11 @@ repository, `agent_route` still returns a structured report: the context step
 uses `blocked_no_seed`, `context_pack.seed_strategy` is `auto_no_seed`, and
 `execution_plan[]` keeps the normal action order with blocked/manual statuses
 that tell the client to provide a seed file or symbol.
+If the task text names an indexed file path such as `src/auth.ts`,
+`context_pack.seed_strategy` becomes `auto_task_path`; those path seeds are
+preferred before broader keyword or entrypoint inference, so agents can pass
+natural tasks like "inspect src/auth.ts before editing login" without also
+populating `files[]`.
 
 The default action order is:
 
