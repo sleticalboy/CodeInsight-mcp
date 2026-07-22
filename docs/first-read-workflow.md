@@ -73,6 +73,8 @@ lower-level tools directly: `index_project`, `project_overview`,
 - `overview`
 - `context_pack`
 - `current_reading_step` mirroring `context_pack.reading_plan[0]` when present
+- `routing_decision`, a compact projection of the first seed, first reading
+  file, route focus, read-less metrics, continuation state, and impact status
 - `impact_analysis` when a file or symbol seed is available
 - `route[]` metadata describing the executed tool path and why each stage
   matters for the first read
@@ -93,6 +95,9 @@ execution-plan rows and ask for a seed file or symbol.
 Use `agent_route` for broad repository understanding and first-pass planning.
 Use the lower-level tools when the user named a specific file, symbol, module,
 or when the client needs to refresh only part of the route.
+Use `routing_decision` for compact UI rows, issue templates, and demo summaries;
+use the nested `context_pack` and `execution_plan[]` objects for actual reading
+and follow-up tool execution.
 
 For client setup snippets, see [MCP client configuration](mcp-client-config.md).
 For a full client-side read, continue, and edit-preflight sequence, see

@@ -199,6 +199,14 @@ write_summary_json() {
       continuation_next_action: (.context_pack.continuation_summary.next_action // ""),
       context_route_reason: (.route[] | select(.tool == "context_pack") | .reason),
       impact_route_reason: (.route[] | select(.tool == "impact_analysis") | .reason),
+      routing_decision_seed_strategy: (.routing_decision.seed_strategy // ""),
+      routing_decision_first_seed_source: (.routing_decision.first_seed_source // ""),
+      routing_decision_first_seed_value: (.routing_decision.first_seed_value // ""),
+      routing_decision_first_file: (.routing_decision.first_file // ""),
+      routing_decision_first_selection_rank: (.routing_decision.first_selection_rank // 0),
+      routing_decision_first_suggested_tool: (.routing_decision.first_suggested_tool.tool // ""),
+      routing_decision_line_reduction: (.routing_decision.line_reduction // ""),
+      routing_decision_continuation_status: (.routing_decision.continuation_status // ""),
       impact_status,
       impacted_files: (.impact_analysis.impact_counts.impacted_files // 0),
       suggested_checks: (.impact_analysis.suggested_checks | length),
@@ -226,6 +234,14 @@ write_summary_json() {
       and (.metrics.selected_seed_count | type == "number")
       and (.metrics.first_seed_source | type == "string")
       and (.metrics.companion_entrypoint | type == "string")
+      and .metrics.routing_decision_seed_strategy == .metrics.seed_strategy
+      and .metrics.routing_decision_first_seed_source == .metrics.first_seed_source
+      and .metrics.routing_decision_first_seed_value == .metrics.first_seed_value
+      and .metrics.routing_decision_first_file == .metrics.first_reading_file
+      and .metrics.routing_decision_first_selection_rank == .metrics.first_selection_rank
+      and .metrics.routing_decision_first_suggested_tool == .metrics.first_execution_suggested_tool
+      and .metrics.routing_decision_line_reduction == .metrics.line_reduction
+      and .metrics.routing_decision_continuation_status == .metrics.continuation_status
       and .metrics.first_execution_action == "read_selected_context"
       and .metrics.current_reading_step_matches_reading_plan == true
       and .metrics.first_execution_instruction_has_focus == true

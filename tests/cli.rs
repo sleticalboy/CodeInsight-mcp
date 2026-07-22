@@ -11524,6 +11524,51 @@ fn assert_agent_route_execution_plan_matches_context(route: &Value) {
         route["current_reading_step"], reading_plan[0],
         "agent_route should mirror reading_plan[0] at top level for client handoff"
     );
+    let routing_decision = &route["routing_decision"];
+    assert_eq!(
+        routing_decision["seed_strategy"], context_pack["seed_strategy"],
+        "routing_decision should mirror context_pack.seed_strategy"
+    );
+    assert_eq!(
+        routing_decision["selected_file_count"].as_u64(),
+        Some(context_pack["files"].as_array().unwrap().len() as u64),
+        "routing_decision should expose selected file count"
+    );
+    assert_eq!(
+        routing_decision["selected_range_count"], context_pack["budget"]["selected_ranges"],
+        "routing_decision should expose selected range count"
+    );
+    assert_eq!(
+        routing_decision["omitted_file_count"], context_pack["budget"]["omitted_files"],
+        "routing_decision should expose omitted file count"
+    );
+    assert_eq!(
+        routing_decision["continuation_status"], context_pack["continuation_summary"]["status"],
+        "routing_decision should expose continuation status"
+    );
+    assert_eq!(
+        routing_decision["continuation_next_action"],
+        context_pack["continuation_summary"]["next_action"],
+        "routing_decision should expose continuation next action"
+    );
+    assert_eq!(
+        routing_decision["impact_status"], route["impact_status"],
+        "routing_decision should expose impact status"
+    );
+    if let Some(first_seed) = context_pack["selected_seeds"].as_array().unwrap().first() {
+        assert_eq!(
+            routing_decision["first_seed_kind"], first_seed["kind"],
+            "routing_decision should expose first seed kind"
+        );
+        assert_eq!(
+            routing_decision["first_seed_source"], first_seed["source"],
+            "routing_decision should expose first seed source"
+        );
+        assert_eq!(
+            routing_decision["first_seed_value"], first_seed["value"],
+            "routing_decision should expose first seed value"
+        );
+    }
     let selected_source_lines = context_pack["files"]
         .as_array()
         .unwrap()
@@ -11542,14 +11587,29 @@ fn assert_agent_route_execution_plan_matches_context(route: &Value) {
         "context_pack.read_less should expose the blind first-read baseline"
     );
     assert_eq!(
+        routing_decision["baseline_source_lines"].as_u64(),
+        Some(baseline_source_lines),
+        "routing_decision should expose the blind first-read baseline"
+    );
+    assert_eq!(
         context_pack["read_less"]["selected_source_lines"].as_u64(),
         Some(selected_source_lines),
         "context_pack.read_less should expose selected source lines"
     );
     assert_eq!(
+        routing_decision["selected_source_lines"].as_u64(),
+        Some(selected_source_lines),
+        "routing_decision should expose selected source lines"
+    );
+    assert_eq!(
         context_pack["read_less"]["source_lines_avoided"].as_u64(),
         Some(baseline_source_lines.saturating_sub(selected_source_lines)),
         "context_pack.read_less should expose avoided source lines"
+    );
+    assert_eq!(
+        routing_decision["source_lines_avoided"].as_u64(),
+        Some(baseline_source_lines.saturating_sub(selected_source_lines)),
+        "routing_decision should expose avoided source lines"
     );
     assert!(
         context_pack["read_less"]["line_reduction"]
@@ -11558,12 +11618,20 @@ fn assert_agent_route_execution_plan_matches_context(route: &Value) {
             .ends_with('%'),
         "context_pack.read_less should expose a line reduction percentage"
     );
+    assert_eq!(
+        routing_decision["line_reduction"], context_pack["read_less"]["line_reduction"],
+        "routing_decision should mirror line reduction"
+    );
     assert!(
         context_pack["read_less"]["read_less_ratio"]
             .as_str()
             .unwrap()
             .ends_with('x'),
         "context_pack.read_less should expose a read-less ratio"
+    );
+    assert_eq!(
+        routing_decision["read_less_ratio"], context_pack["read_less"]["read_less_ratio"],
+        "routing_decision should mirror read-less ratio"
     );
 
     let reading_files = reading_plan
@@ -11582,6 +11650,34 @@ fn assert_agent_route_execution_plan_matches_context(route: &Value) {
     );
 
     let first_step = &reading_plan[0];
+    assert_eq!(
+        routing_decision["first_file"], first_step["file"],
+        "routing_decision should expose first reading file"
+    );
+    assert_eq!(
+        routing_decision["first_selection_rank"], first_step["selection_rank"],
+        "routing_decision should expose first selection rank"
+    );
+    assert_eq!(
+        routing_decision["first_focus"], first_step["focus"],
+        "routing_decision should expose first focus"
+    );
+    assert_eq!(
+        routing_decision["first_question"], first_step["question"],
+        "routing_decision should expose first question"
+    );
+    assert_eq!(
+        routing_decision["first_next_action"], first_step["next_action"],
+        "routing_decision should expose first next action"
+    );
+    assert_eq!(
+        routing_decision["first_selection_reason"], first_step["selection_reason"],
+        "routing_decision should expose first selection reason"
+    );
+    assert_eq!(
+        routing_decision["first_suggested_tool"], first_step["suggested_tool"],
+        "routing_decision should expose first suggested tool"
+    );
     assert_eq!(execution_plan[0]["status"], "ready");
     assert!(
         execution_plan[0]["instruction"]

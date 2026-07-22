@@ -470,6 +470,49 @@ try:
         "agent_route_contract",
         "execution_plan[0].instruction should include context_pack.read_less evidence",
     )
+    routing_decision = route.get("routing_decision", {})
+    expect(
+        isinstance(routing_decision, dict),
+        "agent_route_contract",
+        "agent_route.routing_decision is missing",
+    )
+    expect(
+        routing_decision.get("seed_strategy") == seed_strategy,
+        "agent_route_contract",
+        f"routing_decision.seed_strategy should mirror context_pack.seed_strategy: {routing_decision!r}",
+    )
+    expect(
+        routing_decision.get("first_seed_source", "") == first_seed.get("source", ""),
+        "agent_route_contract",
+        "routing_decision.first_seed_source should mirror selected_seeds[0].source",
+    )
+    expect(
+        routing_decision.get("first_seed_value", "") == first_seed.get("value", ""),
+        "agent_route_contract",
+        "routing_decision.first_seed_value should mirror selected_seeds[0].value",
+    )
+    expect(
+        routing_decision.get("first_file") == first_reading_file,
+        "agent_route_contract",
+        "routing_decision.first_file should mirror reading_plan[0].file",
+    )
+    expect(
+        routing_decision.get("first_selection_rank") == reading_plan[0]["selection_rank"],
+        "agent_route_contract",
+        "routing_decision.first_selection_rank should mirror reading_plan[0].selection_rank",
+    )
+    expect(
+        routing_decision.get("first_suggested_tool", {}).get("tool") == first_reading_tool,
+        "agent_route_contract",
+        "routing_decision.first_suggested_tool should mirror reading_plan[0].suggested_tool",
+    )
+    expect(
+        routing_decision.get("line_reduction") == read_less["line_reduction"]
+        and routing_decision.get("read_less_ratio") == read_less["read_less_ratio"]
+        and routing_decision.get("source_lines_avoided") == read_less["source_lines_avoided"],
+        "agent_route_contract",
+        "routing_decision read-less metrics should mirror context_pack.read_less",
+    )
 
     suggested_tool = execution_plan[1].get("suggested_tool", {})
     expect(suggested_tool.get("tool"), "suggested_tool", "execution_plan suggested_tool.tool is missing")
@@ -693,6 +736,15 @@ try:
         "agent_route_blocked_contract",
         f"unexpected blocked execution statuses: {blocked_execution_statuses}",
     )
+    blocked_routing_decision = blocked_route.get("routing_decision", {})
+    expect(
+        blocked_routing_decision.get("seed_strategy") == "auto_no_seed"
+        and blocked_routing_decision.get("selected_file_count") == 0
+        and blocked_routing_decision.get("continuation_status") == "blocked_no_seed"
+        and blocked_routing_decision.get("impact_status") == "skipped_no_seed",
+        "agent_route_blocked_contract",
+        f"blocked routing_decision should expose no-seed status: {blocked_routing_decision!r}",
+    )
 
     unmatched_route = call_tool(
         6,
@@ -773,6 +825,14 @@ try:
         unmatched_execution_statuses == expected_unmatched_statuses,
         "agent_route_blocked_contract",
         f"unexpected unmatched explicit seed execution statuses: {unmatched_execution_statuses}",
+    )
+    unmatched_routing_decision = unmatched_route.get("routing_decision", {})
+    expect(
+        unmatched_routing_decision.get("selected_file_count") == 0
+        and unmatched_routing_decision.get("continuation_status") == "blocked_no_context"
+        and unmatched_routing_decision.get("impact_status") == "skipped_no_context",
+        "agent_route_blocked_contract",
+        f"unmatched routing_decision should expose no-context status: {unmatched_routing_decision!r}",
     )
 
     with tempfile.TemporaryDirectory(prefix="codeinsight-unindexed-first-call-") as scoped_root:
@@ -883,6 +943,17 @@ try:
         "agent_route_blocked_contract",
         f"unexpected unindexed task-path execution statuses: {unindexed_execution_statuses}",
     )
+    unindexed_routing_decision = unindexed_route.get("routing_decision", {})
+    expect(
+        unindexed_routing_decision.get("seed_strategy") == "auto_task_path_unindexed"
+        and unindexed_routing_decision.get("first_seed_source") == "task_path_unindexed"
+        and unindexed_routing_decision.get("first_seed_value") == "src/main.ts"
+        and unindexed_routing_decision.get("selected_file_count") == 0
+        and unindexed_routing_decision.get("continuation_status") == "blocked_unindexed_task_path"
+        and unindexed_routing_decision.get("impact_status") == "skipped_unindexed_task_path",
+        "agent_route_blocked_contract",
+        f"unindexed routing_decision should expose task-path block status: {unindexed_routing_decision!r}",
+    )
     expect(
         "task path seed is not indexed" in unindexed_execution_plan[3].get("instruction", ""),
         "agent_route_blocked_contract",
@@ -904,6 +975,19 @@ try:
         "first_context_file": first_context_file,
         "first_reading_file": first_reading_file,
         "first_reading_selection_rank": reading_plan[0]["selection_rank"],
+        "routing_decision": {
+            "seed_strategy": routing_decision["seed_strategy"],
+            "first_seed_source": routing_decision.get("first_seed_source", ""),
+            "first_seed_value": routing_decision.get("first_seed_value", ""),
+            "first_file": routing_decision.get("first_file", ""),
+            "first_selection_rank": routing_decision.get("first_selection_rank"),
+            "first_suggested_tool": routing_decision.get("first_suggested_tool", {}).get("tool", ""),
+            "line_reduction": routing_decision["line_reduction"],
+            "read_less_ratio": routing_decision["read_less_ratio"],
+            "continuation_status": routing_decision["continuation_status"],
+            "continuation_next_action": routing_decision["continuation_next_action"],
+            "impact_status": routing_decision["impact_status"],
+        },
         "current_reading_step_matches_reading_plan": current_reading_step_matches_reading_plan,
         "context_pack_read_less": read_less,
         "baseline_source_lines": read_less["baseline_source_lines"],

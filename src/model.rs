@@ -249,6 +249,7 @@ pub struct AgentRouteReport {
     pub root: String,
     pub task: String,
     pub token_budget: usize,
+    pub routing_decision: AgentRouteRoutingDecision,
     pub route: Vec<AgentRouteStep>,
     pub execution_plan: Vec<AgentRouteExecutionStep>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -283,6 +284,48 @@ pub struct AgentRouteExecutionStep {
     pub suggested_tool: Option<ContextSuggestedTool>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub suggested_checks: Vec<SuggestedCheck>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct AgentRouteRoutingDecision {
+    pub seed_strategy: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub first_seed_kind: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub first_seed_source: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub first_seed_value: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub first_seed_role: Option<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub first_seed_matched_keywords: Vec<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub first_seed_matched_symbols: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub first_file: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub first_selection_rank: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub first_focus: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub first_question: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub first_next_action: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub first_selection_reason: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub first_suggested_tool: Option<ContextSuggestedTool>,
+    pub selected_file_count: usize,
+    pub selected_range_count: usize,
+    pub omitted_file_count: usize,
+    pub baseline_source_lines: usize,
+    pub selected_source_lines: usize,
+    pub source_lines_avoided: usize,
+    pub line_reduction: String,
+    pub read_less_ratio: String,
+    pub continuation_status: String,
+    pub continuation_next_action: String,
+    pub impact_status: String,
 }
 
 #[derive(Debug, Clone)]

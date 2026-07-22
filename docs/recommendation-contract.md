@@ -61,6 +61,21 @@ client or agent after `agent_route` returns. It is different from `route[]`:
 
 - `route[]` explains what CodeInsight already ran.
 - `execution_plan[]` explains what the client or agent should do next.
+- `routing_decision` summarizes the first routing outcome for display and
+  audit UIs without requiring clients to join nested fields.
+
+`agent_route.routing_decision` mirrors the most important fields from
+`context_pack` and the impact preview:
+
+- `seed_strategy`, first seed kind/source/value/role, and matched task evidence.
+- First reading file, rank, focus, question, next action, raw selection reason,
+  and suggested follow-up tool.
+- Selected/omitted counts, read-less metrics, continuation status/next action,
+  and impact status.
+
+Clients should treat `routing_decision` as a compact read-only projection. The
+source of truth remains `context_pack`, `current_reading_step`,
+`execution_plan[]`, and `impact_analysis`.
 
 Each execution step includes:
 

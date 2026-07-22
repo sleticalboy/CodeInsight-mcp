@@ -106,6 +106,7 @@ hands the agent to precise local tools when the selected context is not enough.
    Use context_pack.read_less only as first-read reduction evidence.
    Use continuation_summary only after selected context is consumed.
    Follow agent_route.execution_plan[] in order.
+   Use agent_route.routing_decision for a compact display of the first seed, first file, read-less metrics, continuation, and impact status.
    ```
 
    The first MCP `tools/call` payload is shown in
@@ -541,7 +542,10 @@ Recommended MCP first-read flow:
    indexed source context. If it is `blocked_unindexed_task_path`, update the
    index scope or rerun indexing so the task path is indexed before retrying.
 3. Use `agent_route.current_reading_step` as the first checklist row, then read
-   `context_pack.files[]` in `reading_plan[]` order.
+   `context_pack.files[]` in `reading_plan[]` order. Use
+   `agent_route.routing_decision` when the client needs one compact object for
+   the first seed, first file, read-less metrics, continuation state, and
+   impact status.
 4. Use `reading_plan[].selection_rank` and `selection_reason` as the audit
    trail, and use `continuation_summary` only after selected context has been
    consumed.

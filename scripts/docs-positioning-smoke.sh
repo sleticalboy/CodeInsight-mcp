@@ -89,6 +89,9 @@ main() {
     'Follow agent_route\.execution_plan\[\] in order' \
     "README fast path execution plan policy"
   require_pattern README.md \
+    'Use agent_route\.routing_decision for a compact display' \
+    "README fast path routing decision policy"
+  require_pattern README.md \
     'If `context_pack\.continuation_summary\.status` is `blocked_no_seed`, ask for' \
     "README MCP tools blocked no-seed policy"
   require_pattern README.md \
@@ -175,6 +178,9 @@ main() {
   require_pattern README.md \
     'Use `agent_route\.current_reading_step` as the first checklist row' \
     "README MCP tools current reading step flow"
+  require_pattern README.md \
+    '`agent_route\.routing_decision` when the client needs one compact object for' \
+    "README MCP tools routing decision flow"
   require_pattern README.md \
     '\[CodeInsight self adoption report\]\(docs/adoption-report-codeinsight\.md\)' \
     "README self adoption report evidence"
@@ -279,6 +285,12 @@ main() {
   require_pattern docs/quickstart.md \
     '"first_reading_file": "src/auth\.ts"' \
     "quickstart MCP first-call first reading file"
+  require_pattern docs/quickstart.md \
+    '"routing_decision": \{' \
+    "quickstart MCP first-call routing decision object"
+  require_pattern docs/quickstart.md \
+    '"first_suggested_tool": "file_outline"' \
+    "quickstart MCP first-call routing decision suggested tool"
   require_pattern docs/quickstart.md \
     '"next_action": "inspect_seed_file"' \
     "quickstart MCP first-call next action"
@@ -399,8 +411,11 @@ main() {
     '\[Known limitations\]\(known-limitations\.md\)' \
     "known limitations link"
   require_pattern docs/mcp-tools.md \
-    '`agent_route` \| Run the default first-read path.*expose `current_reading_step` and `execution_plan\[\]`' \
+    '`agent_route` \| Run the default first-read path.*expose `routing_decision`, `current_reading_step`, and `execution_plan\[\]`' \
     "MCP tools agent_route execution plan"
+  require_pattern docs/mcp-tools.md \
+    'Use `agent_route\.routing_decision` for compact route cards' \
+    "MCP tools routing decision guidance"
   require_pattern docs/mcp-tools.md \
     'read-less source-line metrics' \
     "MCP tools context_pack read-less metrics"
@@ -419,6 +434,9 @@ main() {
   require_pattern docs/client-workflow.md \
     'Use `agent_route\.execution_plan\[\]` as the client checklist' \
     "client workflow execution plan checklist"
+  require_pattern docs/client-workflow.md \
+    '`routing_decision` is the compact display/audit projection' \
+    "client workflow routing decision projection"
   require_pattern docs/client-workflow.md \
     '\[Client integration examples\]\(client-integration-examples\.md\)' \
     "client workflow integration examples link"

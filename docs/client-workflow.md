@@ -164,9 +164,9 @@ specific source location.
 ## Project Overview
 
 `agent_route` returns the default first-read bundle: `index_report`,
-`overview`, `context_pack`, route metadata, and an optional `impact_analysis`
-preview. Clients should use it when the user asks to understand a repository or
-begin a broad task.
+`overview`, `context_pack`, `routing_decision`, route metadata, and an optional
+`impact_analysis` preview. Clients should use it when the user asks to
+understand a repository or begin a broad task.
 
 Use `agent_route.execution_plan[]` as the machine-readable client sequence:
 
@@ -181,6 +181,10 @@ Use `agent_route.execution_plan[]` as the machine-readable client sequence:
 
 `route[]` describes the tools CodeInsight already ran. `execution_plan[]`
 describes what the client or agent should do next.
+`routing_decision` is the compact display/audit projection: first seed, first
+reading file, read-less metrics, continuation state, and impact status. Use the
+nested `context_pack` and `execution_plan[]` objects for actual reading and
+tool execution.
 
 `project_overview` is the lower-level repository briefing. Clients should render:
 

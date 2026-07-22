@@ -55,6 +55,19 @@ main() {
   "first_context_file": "src/auth.ts",
   "first_reading_file": "src/auth.ts",
   "first_reading_selection_rank": 1,
+  "routing_decision": {
+    "seed_strategy": "auto_task_path",
+    "first_seed_source": "task_path",
+    "first_seed_value": "src/auth.ts",
+    "first_file": "src/auth.ts",
+    "first_selection_rank": 1,
+    "first_suggested_tool": "file_outline",
+    "line_reduction": "90.0%",
+    "read_less_ratio": "10.0x",
+    "continuation_status": "complete",
+    "continuation_next_action": "read_selected_context",
+    "impact_status": "complete"
+  },
   "current_reading_step_matches_reading_plan": true,
   "context_pack_read_less": {
     "baseline_source_lines": 120,
@@ -180,6 +193,11 @@ EOF
   require_literal "$summary_md" 'First context file: `src/auth.ts`' "first context file"
   require_literal "$summary_md" 'First reading file: `src/auth.ts`' "first reading file"
   require_literal "$summary_md" 'First reading selection rank: `1`' "first reading selection rank"
+  require_literal "$summary_md" 'Routing decision first seed: `task_path:src/auth.ts`' "routing decision first seed"
+  require_literal "$summary_md" 'Routing decision first file: `src/auth.ts`' "routing decision first file"
+  require_literal "$summary_md" 'Routing decision suggested tool: `file_outline`' "routing decision suggested tool"
+  require_literal "$summary_md" 'Routing decision continuation: `complete -> read_selected_context`' "routing decision continuation"
+  require_literal "$summary_md" 'Routing decision impact status: `complete`' "routing decision impact status"
   require_literal "$summary_md" 'Current reading step mirror contract: `true`' "current reading step mirror contract"
   require_literal "$summary_md" 'Blind first-read baseline: `120` source lines' "blind first-read baseline"
   require_literal "$summary_md" 'Routed first-read: `12` source lines' "routed first-read"

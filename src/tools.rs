@@ -17,16 +17,16 @@ use crate::{
     embedding, index,
     language::detect_language,
     model::{
-        AgentRouteExecutionStep, AgentRouteReport, AgentRouteStep, CallEdge, ConfigInitReport,
-        ConfigStatusReport, ContextBudget, ContextContinuationSummary, ContextFile,
-        ContextOmittedCandidate, ContextPack, ContextRange, ContextReadLess, ContextReadingRange,
-        ContextReadingStep, ContextSeed, ContextSemanticStatus, ContextSourceCount,
-        ContextSuggestedTool, Dependency, DependencyGraph, EmbeddingProviderStatus,
-        ImpactAnalysisReport, ImpactBreakdown, ImpactCounts, ImpactFile, ImpactPath, IndexError,
-        IndexScopeReport, Language, OllamaEmbeddingStatus, OpenAiEmbeddingStatus,
-        ProjectIndexReport, ProjectOverview, ReferenceMatch, SemanticChunk, SemanticChunkInput,
-        SemanticEmbeddingInput, SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus,
-        SemanticSearchResult, SuggestedCheck, Symbol, SymbolKind, VersionInfo,
+        AgentRouteExecutionStep, AgentRouteReport, AgentRouteRoutingDecision, AgentRouteStep,
+        CallEdge, ConfigInitReport, ConfigStatusReport, ContextBudget, ContextContinuationSummary,
+        ContextFile, ContextOmittedCandidate, ContextPack, ContextRange, ContextReadLess,
+        ContextReadingRange, ContextReadingStep, ContextSeed, ContextSemanticStatus,
+        ContextSourceCount, ContextSuggestedTool, Dependency, DependencyGraph,
+        EmbeddingProviderStatus, ImpactAnalysisReport, ImpactBreakdown, ImpactCounts, ImpactFile,
+        ImpactPath, IndexError, IndexScopeReport, Language, OllamaEmbeddingStatus,
+        OpenAiEmbeddingStatus, ProjectIndexReport, ProjectOverview, ReferenceMatch, SemanticChunk,
+        SemanticChunkInput, SemanticEmbeddingInput, SemanticEmbeddingMatch, SemanticIndexReport,
+        SemanticIndexStatus, SemanticSearchResult, SuggestedCheck, Symbol, SymbolKind, VersionInfo,
     },
     storage::Store,
 };
@@ -355,11 +355,13 @@ pub fn agent_route_value(
     let execution_plan =
         agent_route_execution_plan(&context_pack, &impact_status, impact_analysis.as_ref());
     let current_reading_step = context_pack.reading_plan.first().cloned();
+    let routing_decision = agent_route_routing_decision(&context_pack, &impact_status);
 
     Ok(AgentRouteReport {
         root: root.display().to_string(),
         task,
         token_budget,
+        routing_decision,
         route,
         execution_plan,
         current_reading_step,
@@ -371,6 +373,46 @@ pub fn agent_route_value(
         context_pack,
         impact_analysis,
     })
+}
+
+fn agent_route_routing_decision(
+    context_pack: &ContextPack,
+    impact_status: &str,
+) -> AgentRouteRoutingDecision {
+    let first_seed = context_pack.selected_seeds.first();
+    let first_step = context_pack.reading_plan.first();
+
+    AgentRouteRoutingDecision {
+        seed_strategy: context_pack.seed_strategy.clone(),
+        first_seed_kind: first_seed.map(|seed| seed.kind.clone()),
+        first_seed_source: first_seed.map(|seed| seed.source.clone()),
+        first_seed_value: first_seed.map(|seed| seed.value.clone()),
+        first_seed_role: first_seed.and_then(|seed| seed.role.clone()),
+        first_seed_matched_keywords: first_seed
+            .map(|seed| seed.matched_keywords.clone())
+            .unwrap_or_default(),
+        first_seed_matched_symbols: first_seed
+            .map(|seed| seed.matched_symbols.clone())
+            .unwrap_or_default(),
+        first_file: first_step.map(|step| step.file.clone()),
+        first_selection_rank: first_step.map(|step| step.selection_rank),
+        first_focus: first_step.map(|step| step.focus.clone()),
+        first_question: first_step.map(|step| step.question.clone()),
+        first_next_action: first_step.map(|step| step.next_action.clone()),
+        first_selection_reason: first_step.map(|step| step.selection_reason.clone()),
+        first_suggested_tool: first_step.map(|step| step.suggested_tool.clone()),
+        selected_file_count: context_pack.files.len(),
+        selected_range_count: context_pack.budget.selected_ranges,
+        omitted_file_count: context_pack.budget.omitted_files,
+        baseline_source_lines: context_pack.read_less.baseline_source_lines,
+        selected_source_lines: context_pack.read_less.selected_source_lines,
+        source_lines_avoided: context_pack.read_less.source_lines_avoided,
+        line_reduction: context_pack.read_less.line_reduction.clone(),
+        read_less_ratio: context_pack.read_less.read_less_ratio.clone(),
+        continuation_status: context_pack.continuation_summary.status.clone(),
+        continuation_next_action: context_pack.continuation_summary.next_action.clone(),
+        impact_status: impact_status.to_string(),
+    }
 }
 
 fn agent_route_execution_plan(

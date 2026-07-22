@@ -38,6 +38,18 @@ require_summary_contract() {
       and (.first_context_file | type == "string" and length > 0)
       and .first_reading_file == .first_context_file
       and (.first_reading_selection_rank | type == "number")
+      and (.routing_decision | type == "object")
+      and .routing_decision.seed_strategy == .seed_strategy
+      and .routing_decision.first_seed_source == .first_seed_source
+      and .routing_decision.first_seed_value == .first_seed_value
+      and .routing_decision.first_file == .first_reading_file
+      and .routing_decision.first_selection_rank == .first_reading_selection_rank
+      and (.routing_decision.first_suggested_tool | type == "string" and length > 0)
+      and .routing_decision.line_reduction == .line_reduction
+      and .routing_decision.read_less_ratio == .read_less_ratio
+      and .routing_decision.continuation_status == .continuation_status
+      and .routing_decision.continuation_next_action == .continuation_next_action
+      and .routing_decision.impact_status == .impact_status
       and .current_reading_step_matches_reading_plan == true
       and (.context_pack_read_less | type == "object")
       and (.context_pack_read_less.baseline_source_lines | type == "number")
@@ -166,6 +178,11 @@ main() {
     printf 'First context file: `%s`\n\n' "$(value '.first_context_file')"
     printf 'First reading file: `%s`\n\n' "$(value '.first_reading_file')"
     printf 'First reading selection rank: `%s`\n\n' "$(value '.first_reading_selection_rank')"
+    printf 'Routing decision first seed: `%s:%s`\n\n' "$(value '.routing_decision.first_seed_source')" "$(value '.routing_decision.first_seed_value')"
+    printf 'Routing decision first file: `%s`\n\n' "$(value '.routing_decision.first_file')"
+    printf 'Routing decision suggested tool: `%s`\n\n' "$(value '.routing_decision.first_suggested_tool')"
+    printf 'Routing decision continuation: `%s -> %s`\n\n' "$(value '.routing_decision.continuation_status')" "$(value '.routing_decision.continuation_next_action')"
+    printf 'Routing decision impact status: `%s`\n\n' "$(value '.routing_decision.impact_status')"
     printf 'Current reading step mirror contract: `%s`\n\n' "$(value '.current_reading_step_matches_reading_plan')"
     printf 'Blind first-read baseline: `%s` source lines\n\n' "$(value '.baseline_source_lines')"
     printf 'Routed first-read: `%s` source lines\n\n' "$(value '.selected_source_lines')"

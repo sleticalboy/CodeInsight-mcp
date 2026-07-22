@@ -140,9 +140,10 @@ Before broad repository reading, use CodeInsight:
 3. Use reading_plan.focus as the compact scan label, reading_plan.question as
    the local checklist, and reading_plan.reason as the current-step
    instruction.
-4. Use continuation_summary only after selected context is consumed.
-5. Use focused follow-up tools only when the selected context is insufficient.
-6. For custom routing, call index_project, project_overview, context_pack, and
+4. Use agent_route.routing_decision for compact UI or issue summaries.
+5. Use continuation_summary only after selected context is consumed.
+6. Use focused follow-up tools only when the selected context is insufficient.
+7. For custom routing, call index_project, project_overview, context_pack, and
    impact_analysis directly.
 ```
 
@@ -172,9 +173,9 @@ scripts/mcp-stdio-smoke.sh
 
 `mcp-first-call-smoke.sh` prints a compact JSON summary for the first MCP
 `agent_route` call. Use it when you want to confirm the server, route, selected
-files, read-less metrics, selection rank, continuation summary, reading plan
-order, suggested tool handoff, and impact preview without reading the full
-protocol smoke log.
+files, `routing_decision`, read-less metrics, selection rank, continuation
+summary, reading plan order, suggested tool handoff, and impact preview without
+reading the full protocol smoke log.
 
 Run `scripts/mcp-first-call-smoke.sh --help` to see the supported environment
 variables for binary path, target repository, task, and token budget.
@@ -209,6 +210,19 @@ Expected output shape:
   "first_context_file": "src/auth.ts",
   "first_reading_file": "src/auth.ts",
   "first_reading_selection_rank": 1,
+  "routing_decision": {
+    "seed_strategy": "auto_task_path",
+    "first_seed_source": "task_path",
+    "first_seed_value": "src/auth.ts",
+    "first_file": "src/auth.ts",
+    "first_selection_rank": 1,
+    "first_suggested_tool": "file_outline",
+    "line_reduction": "44.4%",
+    "read_less_ratio": "1.8x",
+    "continuation_status": "complete",
+    "continuation_next_action": "read_selected_context",
+    "impact_status": "complete"
+  },
   "current_reading_step_matches_reading_plan": true,
   "context_pack_read_less": {
     "baseline_source_lines": 18,
