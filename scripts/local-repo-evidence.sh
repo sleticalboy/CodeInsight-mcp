@@ -11,6 +11,8 @@ SUMMARY_JSON="${CODEINSIGHT_EVIDENCE_SUMMARY_JSON:-}"
 FORCE_INDEX="${CODEINSIGHT_EVIDENCE_FORCE_INDEX:-1}"
 CODEINSIGHT_BIN="${CODEINSIGHT_BIN:-}"
 TEMP_DIR=""
+SEED_FILES=()
+SEED_SYMBOLS=()
 
 usage() {
   cat <<'EOF'
@@ -22,6 +24,8 @@ route on a local repository.
 Options:
   --root PATH           Repository root. Also accepted as the first argument.
   --task TEXT           Task for agent_route.
+  --file PATH           Explicit seed file passed to agent_route. Repeatable.
+  --symbol NAME         Explicit seed symbol passed to agent_route. Repeatable.
   --token-budget N      Token budget for context_pack. Default: 6000.
   --output PATH         Write Markdown evidence to PATH instead of stdout.
   --json PATH           Save the raw agent_route JSON to PATH.
@@ -70,6 +74,16 @@ parse_args() {
       --task)
         [ "$#" -ge 2 ] || fail "--task requires text"
         TASK="$2"
+        shift 2
+        ;;
+      --file)
+        [ "$#" -ge 2 ] || fail "--file requires a path"
+        SEED_FILES+=("$2")
+        shift 2
+        ;;
+      --symbol)
+        [ "$#" -ge 2 ] || fail "--symbol requires a name"
+        SEED_SYMBOLS+=("$2")
         shift 2
         ;;
       --token-budget)
@@ -421,6 +435,16 @@ main() {
   )
   if [ "$FORCE_INDEX" = "1" ]; then
     args+=("--force-index")
+  fi
+  if [ "${#SEED_FILES[@]}" -gt 0 ]; then
+    for seed_file in "${SEED_FILES[@]}"; do
+      args+=("--file" "$seed_file")
+    done
+  fi
+  if [ "${#SEED_SYMBOLS[@]}" -gt 0 ]; then
+    for seed_symbol in "${SEED_SYMBOLS[@]}"; do
+      args+=("--symbol" "$seed_symbol")
+    done
   fi
 
   "$CODEINSIGHT_BIN" "${args[@]}" >"$route_json"

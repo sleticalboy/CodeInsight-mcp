@@ -31,6 +31,8 @@ shift
 output=""
 raw_json=""
 summary_json=""
+saw_file=0
+saw_symbol=0
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --output)
@@ -45,6 +47,22 @@ while [ "$#" -gt 0 ]; do
       summary_json="$2"
       shift 2
       ;;
+    --file)
+      [ "${2:-}" = "src/main.ts" ] || {
+        echo "unexpected seed file: ${2:-}" >&2
+        exit 1
+      }
+      saw_file=1
+      shift 2
+      ;;
+    --symbol)
+      [ "${2:-}" = "main" ] || {
+        echo "unexpected seed symbol: ${2:-}" >&2
+        exit 1
+      }
+      saw_symbol=1
+      shift 2
+      ;;
     --task|--token-budget|--bin)
       shift 2
       ;;
@@ -56,6 +74,16 @@ while [ "$#" -gt 0 ]; do
       ;;
   esac
 done
+if [ "${EXPECT_SEEDS:-0}" = "1" ]; then
+  [ "$saw_file" -eq 1 ] || {
+    echo "missing seed file" >&2
+    exit 1
+  }
+  [ "$saw_symbol" -eq 1 ] || {
+    echo "missing seed symbol" >&2
+    exit 1
+  }
+fi
 
 mkdir -p "$(dirname "$output")" "$(dirname "$raw_json")" "$(dirname "$summary_json")"
 cat >"$output" <<'MARKDOWN'
@@ -130,6 +158,16 @@ while [ "$#" -gt 0 ]; do
 done
 
 mkdir -p "$(dirname "$summary_json")"
+if [ "${EXPECT_SEEDS:-0}" = "1" ]; then
+  [ "${CODEINSIGHT_FIRST_CALL_FILES:-}" = "src/main.ts" ] || {
+    echo "missing MCP seed file: ${CODEINSIGHT_FIRST_CALL_FILES:-}" >&2
+    exit 1
+  }
+  [ "${CODEINSIGHT_FIRST_CALL_SYMBOLS:-}" = "main" ] || {
+    echo "missing MCP seed symbol: ${CODEINSIGHT_FIRST_CALL_SYMBOLS:-}" >&2
+    exit 1
+  }
+fi
 cat >"$summary_json" <<'JSON'
 {
   "status": "pass",
@@ -170,10 +208,13 @@ JSON
 EOF
   chmod +x "$TEMP_DIR/mcp-first-call-smoke"
 
+  EXPECT_SEEDS=1 \
   CODEINSIGHT_LOCAL_REPO_EVIDENCE_SCRIPT="$TEMP_DIR/local-repo-evidence" \
   CODEINSIGHT_MCP_FIRST_CALL_SMOKE_SCRIPT="$TEMP_DIR/mcp-first-call-smoke" \
     "$ROOT_DIR/scripts/adoption-evidence.sh" \
     "$TEMP_DIR/repo" \
+    --file src/main.ts \
+    --symbol main \
     --output-dir "$TEMP_DIR/evidence" \
     --issue-template >"$TEMP_DIR/output.log"
 

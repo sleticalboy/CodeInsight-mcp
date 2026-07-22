@@ -30,6 +30,8 @@ repo_root="$1"
 shift
 output_dir=""
 task="understand the main application entrypoint"
+saw_file=0
+saw_symbol=0
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --output-dir)
@@ -38,6 +40,22 @@ while [ "$#" -gt 0 ]; do
       ;;
     --task)
       task="$2"
+      shift 2
+      ;;
+    --file)
+      [ "${2:-}" = "src/router.ts" ] || {
+        echo "unexpected seed file: ${2:-}" >&2
+        exit 1
+      }
+      saw_file=1
+      shift 2
+      ;;
+    --symbol)
+      [ "${2:-}" = "routes" ] || {
+        echo "unexpected seed symbol: ${2:-}" >&2
+        exit 1
+      }
+      saw_symbol=1
       shift 2
       ;;
     --token-budget|--bin)
@@ -51,6 +69,16 @@ while [ "$#" -gt 0 ]; do
       ;;
   esac
 done
+if [ "${EXPECT_SEEDS:-0}" = "1" ]; then
+  [ "$saw_file" -eq 1 ] || {
+    echo "missing seed file" >&2
+    exit 1
+  }
+  [ "$saw_symbol" -eq 1 ] || {
+    echo "missing seed symbol" >&2
+    exit 1
+  }
+fi
 
 mkdir -p "$output_dir"
 cat >"$output_dir/adoption-evidence.md" <<'MARKDOWN'
@@ -110,10 +138,13 @@ echo "adoption evidence written to $output_dir"
 EOF
   chmod +x "$TEMP_DIR/adoption-evidence"
 
+  EXPECT_SEEDS=1 \
   CODEINSIGHT_ADOPTION_EVIDENCE_SCRIPT="$TEMP_DIR/adoption-evidence" \
     "$ROOT_DIR/scripts/external-beta-trial.sh" \
       "$TEMP_DIR/repo" \
       --task "understand route registration behavior" \
+      --file src/router.ts \
+      --symbol routes \
       --repo-url "https://example.com/demo/repo" \
       --expected-first-read "src/router.ts or route registration package" \
       --install-method "Source" \
@@ -142,6 +173,10 @@ EOF
     fail "issue body is missing needs_triage outcome"
   grep -Fq -- '- First selected file: `src/router.ts`' "$TEMP_DIR/beta/issue-body.md" ||
     fail "issue body is missing first selected file"
+  grep -Fq -- '  --file "src/router.ts" \' "$TEMP_DIR/beta/issue-body.md" ||
+    fail "issue body reproduction command is missing seed file"
+  grep -Fq -- '  --symbol "routes" \' "$TEMP_DIR/beta/issue-body.md" ||
+    fail "issue body reproduction command is missing seed symbol"
   grep -Fq 'Private/redacted repository: no' "$TEMP_DIR/beta/issue-body.md" ||
     fail "issue body should mark public trial"
   grep -Fq 'Replace private absolute paths with repository-relative paths.' "$TEMP_DIR/beta/redaction-checklist.md" ||

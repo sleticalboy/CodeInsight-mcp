@@ -35,6 +35,40 @@ if [ "${1:-}" != "agent-route" ]; then
   exit 1
 fi
 
+saw_file=0
+saw_symbol=0
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --file)
+      [ "${2:-}" = "src/main.ts" ] || {
+        echo "unexpected seed file: ${2:-}" >&2
+        exit 1
+      }
+      saw_file=1
+      shift 2
+      ;;
+    --symbol)
+      [ "${2:-}" = "main" ] || {
+        echo "unexpected seed symbol: ${2:-}" >&2
+        exit 1
+      }
+      saw_symbol=1
+      shift 2
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+[ "$saw_file" -eq 1 ] || {
+  echo "missing seed file" >&2
+  exit 1
+}
+[ "$saw_symbol" -eq 1 ] || {
+  echo "missing seed symbol" >&2
+  exit 1
+}
+
 cat <<'JSON'
 {
   "root": "/tmp/local-evidence",
@@ -126,6 +160,8 @@ EOF
   CODEINSIGHT_BIN="$TEMP_DIR/codeinsight" \
     "$ROOT_DIR/scripts/local-repo-evidence.sh" \
     "$TEMP_DIR/repo" \
+    --file src/main.ts \
+    --symbol main \
     --output "$TEMP_DIR/evidence.md" \
     --json "$TEMP_DIR/agent-route.json" \
     --summary-json "$TEMP_DIR/summary.json" >"$TEMP_DIR/output.log"

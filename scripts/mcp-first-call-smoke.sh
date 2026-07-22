@@ -6,6 +6,8 @@ CODEINSIGHT_BIN="${CODEINSIGHT_BIN:-}"
 FIRST_CALL_ROOT="${CODEINSIGHT_FIRST_CALL_ROOT:-}"
 FIRST_CALL_TASK="${CODEINSIGHT_FIRST_CALL_TASK:-understand app entrypoint flow}"
 FIRST_CALL_TOKEN_BUDGET="${CODEINSIGHT_FIRST_CALL_TOKEN_BUDGET:-1600}"
+FIRST_CALL_FILES="${CODEINSIGHT_FIRST_CALL_FILES:-}"
+FIRST_CALL_SYMBOLS="${CODEINSIGHT_FIRST_CALL_SYMBOLS:-}"
 SUMMARY_JSON=""
 TEMP_DIR=""
 DEFAULT_FIXTURE="0"
@@ -40,6 +42,8 @@ Environment:
                                         Defaults to a temporary TypeScript fixture.
   CODEINSIGHT_FIRST_CALL_TASK           Task passed to agent_route.
                                         Defaults to "understand app entrypoint flow".
+  CODEINSIGHT_FIRST_CALL_FILES          Newline-separated explicit seed files.
+  CODEINSIGHT_FIRST_CALL_SYMBOLS        Newline-separated explicit seed symbols.
   CODEINSIGHT_FIRST_CALL_TOKEN_BUDGET   Token budget passed to agent_route.
                                         Defaults to 1600.
 
@@ -152,6 +156,8 @@ main() {
     FIRST_CALL_ROOT="$FIRST_CALL_ROOT" \
     FIRST_CALL_TASK="$FIRST_CALL_TASK" \
     FIRST_CALL_TOKEN_BUDGET="$FIRST_CALL_TOKEN_BUDGET" \
+    FIRST_CALL_FILES="$FIRST_CALL_FILES" \
+    FIRST_CALL_SYMBOLS="$FIRST_CALL_SYMBOLS" \
     SUMMARY_JSON="$SUMMARY_JSON" \
     DEFAULT_FIXTURE="$DEFAULT_FIXTURE" \
     python3 <<'PY'
@@ -165,6 +171,8 @@ codeinsight_bin = os.environ["CODEINSIGHT_BIN"]
 root = os.environ["FIRST_CALL_ROOT"]
 task = os.environ["FIRST_CALL_TASK"]
 token_budget = int(os.environ["FIRST_CALL_TOKEN_BUDGET"])
+seed_files = [item for item in os.environ.get("FIRST_CALL_FILES", "").splitlines() if item]
+seed_symbols = [item for item in os.environ.get("FIRST_CALL_SYMBOLS", "").splitlines() if item]
 summary_json_path = os.environ.get("SUMMARY_JSON", "")
 default_fixture = os.environ.get("DEFAULT_FIXTURE") == "1"
 
@@ -254,17 +262,23 @@ try:
     for expected in ("agent_route", "context_pack", "impact_analysis", "version"):
         expect(expected in tool_names, "mcp_server", f"tools/list is missing {expected}")
 
+    route_arguments = {
+        "root": root,
+        "task": task,
+        "token_budget": token_budget,
+        "impact_limit": 10,
+        "impact_depth": 2,
+        "impact_evidence_limit": 3,
+    }
+    if seed_files:
+        route_arguments["files"] = seed_files
+    if seed_symbols:
+        route_arguments["symbols"] = seed_symbols
+
     route = call_tool(
         3,
         "agent_route",
-        {
-            "root": root,
-            "task": task,
-            "token_budget": token_budget,
-            "impact_limit": 10,
-            "impact_depth": 2,
-            "impact_evidence_limit": 3,
-        },
+        route_arguments,
         "agent_route_contract",
     )
 

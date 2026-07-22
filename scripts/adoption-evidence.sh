@@ -12,6 +12,8 @@ PRINT_SNIPPET="${CODEINSIGHT_ADOPTION_PRINT_SNIPPET:-0}"
 ISSUE_TEMPLATE="${CODEINSIGHT_ADOPTION_ISSUE_TEMPLATE:-0}"
 LOCAL_REPO_EVIDENCE_SCRIPT="${CODEINSIGHT_LOCAL_REPO_EVIDENCE_SCRIPT:-$ROOT_DIR/scripts/local-repo-evidence.sh}"
 MCP_FIRST_CALL_SMOKE_SCRIPT="${CODEINSIGHT_MCP_FIRST_CALL_SMOKE_SCRIPT:-$ROOT_DIR/scripts/mcp-first-call-smoke.sh}"
+SEED_FILES=()
+SEED_SYMBOLS=()
 
 usage() {
   cat <<'EOF'
@@ -24,6 +26,8 @@ MCP first-call JSON, and an aggregate Markdown/JSON summary.
 Options:
   --root PATH           Repository root. Also accepted as the first argument.
   --task TEXT           Task for local evidence and MCP first-call checks.
+  --file PATH           Explicit seed file for agent_route. Repeatable.
+  --symbol NAME         Explicit seed symbol for agent_route. Repeatable.
   --token-budget N      Token budget for context routing. Default: 6000.
   --output-dir PATH     Evidence output directory. Default: /tmp/codeinsight-adoption-evidence.
   --bin PATH            Use a specific codeinsight binary.
@@ -86,6 +90,16 @@ parse_args() {
       --task)
         [ "$#" -ge 2 ] || fail_with usage "--task requires text"
         TASK="$2"
+        shift 2
+        ;;
+      --file)
+        [ "$#" -ge 2 ] || fail_with usage "--file requires a path"
+        SEED_FILES+=("$2")
+        shift 2
+        ;;
+      --symbol)
+        [ "$#" -ge 2 ] || fail_with usage "--symbol requires a name"
+        SEED_SYMBOLS+=("$2")
         shift 2
         ;;
       --token-budget)
@@ -407,6 +421,16 @@ main() {
   if [ "$FORCE_INDEX" != "1" ]; then
     local_args+=("--no-force-index")
   fi
+  if [ "${#SEED_FILES[@]}" -gt 0 ]; then
+    for seed_file in "${SEED_FILES[@]}"; do
+      local_args+=("--file" "$seed_file")
+    done
+  fi
+  if [ "${#SEED_SYMBOLS[@]}" -gt 0 ]; then
+    for seed_symbol in "${SEED_SYMBOLS[@]}"; do
+      local_args+=("--symbol" "$seed_symbol")
+    done
+  fi
 
   if ! "$LOCAL_REPO_EVIDENCE_SCRIPT" "${local_args[@]}" >"$OUTPUT_DIR/local-repo-evidence.out" 2>"$local_log"; then
     fail_step local_cli_route "$local_log" "local first-read evidence generation failed"
@@ -419,6 +443,12 @@ main() {
   )
   if [ -n "$CODEINSIGHT_BIN" ]; then
     mcp_env+=("CODEINSIGHT_BIN=$CODEINSIGHT_BIN")
+  fi
+  if [ "${#SEED_FILES[@]}" -gt 0 ]; then
+    mcp_env+=("CODEINSIGHT_FIRST_CALL_FILES=$(printf '%s\n' "${SEED_FILES[@]}")")
+  fi
+  if [ "${#SEED_SYMBOLS[@]}" -gt 0 ]; then
+    mcp_env+=("CODEINSIGHT_FIRST_CALL_SYMBOLS=$(printf '%s\n' "${SEED_SYMBOLS[@]}")")
   fi
 
   env "${mcp_env[@]}" \

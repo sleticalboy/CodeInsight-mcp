@@ -15,6 +15,7 @@ From a CodeInsight checkout:
 ```bash
 scripts/external-beta-trial.sh /path/to/repo \
   --task "understand the main application entrypoint" \
+  --file "src/main.ts" \
   --repo-url "https://github.com/owner/repo" \
   --expected-first-read "entrypoint, router, or application setup area" \
   --install-method "Source" \
@@ -25,6 +26,22 @@ scripts/external-beta-trial.sh /path/to/repo \
 
 For private repositories, add `--private-repo` and review the generated
 redaction checklist before uploading artifacts.
+
+For very large repositories, prefer an explicit seed when the expected area is
+known:
+
+```bash
+scripts/external-beta-trial.sh /path/to/repo \
+  --task "understand nextjs app router rendering flow" \
+  --file "packages/next/src/server/app-render/app-render.tsx" \
+  --symbol "renderToHTMLOrFlight" \
+  --no-force-index \
+  --output-dir /tmp/codeinsight-external-beta-trial
+```
+
+`--file` and `--symbol` are repeatable. They are passed through to the local
+CLI route and MCP first-call check, so the trial can start from a known
+subsystem instead of relying only on broad automatic seed selection.
 
 ## Generated Files
 

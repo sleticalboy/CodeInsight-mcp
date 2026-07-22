@@ -17,6 +17,8 @@ PRINT_SNIPPET="${CODEINSIGHT_BETA_PRINT_SNIPPET:-1}"
 FORCE_INDEX="${CODEINSIGHT_BETA_FORCE_INDEX:-1}"
 PRIVATE_REPO="${CODEINSIGHT_BETA_PRIVATE_REPO:-0}"
 ADOPTION_EVIDENCE_SCRIPT="${CODEINSIGHT_ADOPTION_EVIDENCE_SCRIPT:-$ROOT_DIR/scripts/adoption-evidence.sh}"
+SEED_FILES=()
+SEED_SYMBOLS=()
 
 usage() {
   cat <<'EOF'
@@ -29,6 +31,8 @@ checklist, and maintainer triage note.
 Options:
   --root PATH                 Repository root. Also accepted as first argument.
   --task TEXT                 Exact task passed to agent_route.
+  --file PATH                 Explicit seed file passed to agent_route. Repeatable.
+  --symbol NAME               Explicit seed symbol passed to agent_route. Repeatable.
   --token-budget N            Token budget. Default: 6000.
   --output-dir PATH           Output directory. Default: /tmp/codeinsight-external-beta-trial.
   --bin PATH                  Use a specific codeinsight binary.
@@ -84,6 +88,16 @@ parse_args() {
       --task)
         [ "$#" -ge 2 ] || fail usage "--task requires text"
         TASK="$2"
+        shift 2
+        ;;
+      --file)
+        [ "$#" -ge 2 ] || fail usage "--file requires a path"
+        SEED_FILES+=("$2")
+        shift 2
+        ;;
+      --symbol)
+        [ "$#" -ge 2 ] || fail usage "--symbol requires a name"
+        SEED_SYMBOLS+=("$2")
         shift 2
         ;;
       --token-budget)
@@ -248,6 +262,16 @@ write_issue_body() {
     echo '```bash'
     echo "scripts/external-beta-trial.sh \"$REPO_ROOT\" \\"
     echo "  --task \"$TASK\" \\"
+    if [ "${#SEED_FILES[@]}" -gt 0 ]; then
+      for seed_file in "${SEED_FILES[@]}"; do
+        echo "  --file \"$seed_file\" \\"
+      done
+    fi
+    if [ "${#SEED_SYMBOLS[@]}" -gt 0 ]; then
+      for seed_symbol in "${SEED_SYMBOLS[@]}"; do
+        echo "  --symbol \"$seed_symbol\" \\"
+      done
+    fi
     echo "  --token-budget $TOKEN_BUDGET \\"
     echo "  --output-dir \"$OUTPUT_DIR\""
     echo '```'
@@ -373,6 +397,16 @@ main() {
   fi
   if [ "$FORCE_INDEX" != "1" ]; then
     adoption_args+=("--no-force-index")
+  fi
+  if [ "${#SEED_FILES[@]}" -gt 0 ]; then
+    for seed_file in "${SEED_FILES[@]}"; do
+      adoption_args+=("--file" "$seed_file")
+    done
+  fi
+  if [ "${#SEED_SYMBOLS[@]}" -gt 0 ]; then
+    for seed_symbol in "${SEED_SYMBOLS[@]}"; do
+      adoption_args+=("--symbol" "$seed_symbol")
+    done
   fi
   if [ -n "$CODEINSIGHT_BIN" ]; then
     adoption_args+=("--bin" "$CODEINSIGHT_BIN")
