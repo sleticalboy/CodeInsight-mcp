@@ -1414,6 +1414,7 @@ pub fn context_pack_value(
         prefer_agent_first_read_source_files: auto_seed_agent_first_read_task(&task_keywords)
             && !auto_seed_agent_first_read_evidence_task(&task_keywords),
         prefer_indexing_pipeline_source_files: auto_seed_indexing_pipeline_task(&task_keywords),
+        prefer_data_persistence_source_files: auto_seed_data_persistence_task(&task_keywords),
     };
 
     for seed in &seed_symbols {
@@ -6079,6 +6080,7 @@ struct ContextScoringPolicy {
     prefer_low_value_files: bool,
     prefer_agent_first_read_source_files: bool,
     prefer_indexing_pipeline_source_files: bool,
+    prefer_data_persistence_source_files: bool,
 }
 
 fn seed_file_ranges(
@@ -6486,6 +6488,8 @@ fn context_score_for_file(file: &str, score: i32, policy: &ContextScoringPolicy)
         context_agent_first_read_source_score(file, score)
     } else if policy.prefer_indexing_pipeline_source_files {
         context_indexing_pipeline_source_score(file, score)
+    } else if policy.prefer_data_persistence_source_files {
+        context_data_persistence_source_score(file, score)
     } else {
         score
     }
@@ -6517,6 +6521,17 @@ fn context_agent_first_read_support_file(file: &str) -> bool {
 
 fn context_indexing_pipeline_source_score(file: &str, score: i32) -> i32 {
     let priority = auto_seed_indexing_pipeline_file_priority(file);
+    if context_agent_first_read_support_file(file) {
+        score.saturating_sub(900)
+    } else if priority > 0 {
+        score.saturating_add(priority)
+    } else {
+        score
+    }
+}
+
+fn context_data_persistence_source_score(file: &str, score: i32) -> i32 {
+    let priority = auto_seed_data_persistence_file_priority(file);
     if context_agent_first_read_support_file(file) {
         score.saturating_sub(900)
     } else if priority > 0 {
@@ -6838,6 +6853,7 @@ fn auto_context_seed_files(
     let route_dispatch_task = auto_seed_route_dispatch_task(task_keywords);
     let agent_first_read_task = auto_seed_agent_first_read_task(task_keywords);
     let indexing_pipeline_task = auto_seed_indexing_pipeline_task(task_keywords);
+    let data_persistence_task = auto_seed_data_persistence_task(task_keywords);
     candidates.sort_by(|left, right| {
         if agent_first_read_task {
             auto_seed_agent_first_read_file_priority(&right.file, task_keywords)
@@ -6850,6 +6866,11 @@ fn auto_context_seed_files(
         } else if indexing_pipeline_task {
             auto_seed_indexing_pipeline_file_priority(&right.file)
                 .cmp(&auto_seed_indexing_pipeline_file_priority(&left.file))
+                .then_with(|| right.score.cmp(&left.score))
+                .then_with(|| left.file.cmp(&right.file))
+        } else if data_persistence_task {
+            auto_seed_data_persistence_file_priority(&right.file)
+                .cmp(&auto_seed_data_persistence_file_priority(&left.file))
                 .then_with(|| right.score.cmp(&left.score))
                 .then_with(|| left.file.cmp(&right.file))
         } else if route_miss_task {
@@ -6912,7 +6933,8 @@ fn auto_context_seed_files(
         || request_lifecycle_task
         || middleware_task
         || route_dispatch_task
-        || indexing_pipeline_task;
+        || indexing_pipeline_task
+        || data_persistence_task;
     let selected_candidate = if route_miss_task || auto_seed_prefers_entrypoint(task_keywords) {
         candidates.first()
     } else if priority_routed_task {
@@ -6968,6 +6990,8 @@ fn auto_context_seed_files(
                                 ) >= 0)
                             && (!indexing_pipeline_task
                                 || auto_seed_indexing_pipeline_file_priority(&entrypoint.file) >= 0)
+                            && (!data_persistence_task
+                                || auto_seed_data_persistence_file_priority(&entrypoint.file) >= 0)
                     })
                     .map(|entrypoint| AutoSeedCandidate {
                         file: entrypoint.file.clone(),
@@ -9005,6 +9029,9 @@ fn auto_seed_priority_routed_file_priority(file: &str, task_keywords: &[String])
     if auto_seed_indexing_pipeline_task(task_keywords) {
         priority = priority.max(auto_seed_indexing_pipeline_file_priority(file));
     }
+    if auto_seed_data_persistence_task(task_keywords) {
+        priority = priority.max(auto_seed_data_persistence_file_priority(file));
+    }
     if auto_seed_request_lifecycle_task(task_keywords) {
         priority = priority.max(auto_seed_request_lifecycle_file_priority(file));
     }
@@ -9061,6 +9088,63 @@ fn auto_seed_indexing_pipeline_file_priority(file: &str) -> i32 {
     }
     if auto_seed_field_matches(file, "storage") || auto_seed_field_matches(file, "store") {
         priority = priority.max(90);
+    }
+    if source_file && matches!(stem, "main" | "lib" | "mod") {
+        priority = priority.max(45);
+    }
+
+    priority
+}
+
+fn auto_seed_data_persistence_task(task_keywords: &[String]) -> bool {
+    task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "database"
+                | "db"
+                | "persistence"
+                | "persist"
+                | "storage"
+                | "store"
+                | "repository"
+                | "migration"
+                | "migrations"
+                | "migrate"
+                | "sql"
+        )
+    })
+}
+
+fn auto_seed_data_persistence_file_priority(file: &str) -> i32 {
+    let normalized = file.replace('\\', "/").to_ascii_lowercase();
+    if normalized == "scripts" || normalized.starts_with("scripts/") {
+        return -80;
+    }
+    if normalized == "docs" || normalized.starts_with("docs/") || is_low_value_reference_file(file)
+    {
+        return -30;
+    }
+
+    let source_file = normalized.starts_with("src/") || normalized.contains("/src/");
+    let file_name = normalized.rsplit('/').next().unwrap_or(normalized.as_str());
+    let stem = file_name.split('.').next().unwrap_or(file_name);
+
+    let mut priority = if source_file { 20 } else { 0 };
+    if matches!(
+        stem,
+        "storage" | "store" | "database" | "db" | "repository" | "repo"
+    ) {
+        priority = priority.max(150);
+    }
+    if auto_seed_field_matches(file, "migration")
+        || auto_seed_field_matches(file, "migrations")
+        || auto_seed_field_matches(file, "migrate")
+        || auto_seed_field_matches(file, "schema")
+    {
+        priority = priority.max(120);
+    }
+    if auto_seed_field_matches(file, "model") || auto_seed_field_matches(file, "entity") {
+        priority = priority.max(80);
     }
     if source_file && matches!(stem, "main" | "lib" | "mod") {
         priority = priority.max(45);
@@ -9896,7 +9980,7 @@ fn task_keyword_aliases(keyword: &str) -> &'static [&'static str] {
         "generate" => &["generation", "generator"],
         "generation" => &["generate", "generator"],
         "generator" => &["generate", "generation"],
-        "indexing" => &["index", "indexer", "parser", "parse"],
+        "indexing" => &["index", "indexer"],
         "indexed" => &["index", "indexer"],
         "indexer" => &["index", "indexing"],
         "join" => &["joining"],
@@ -10159,6 +10243,9 @@ fn task_keyword_aliases(keyword: &str) -> &'static [&'static str] {
         "persist" => &["persistence", "database", "storage"],
         "storage" => &["database", "persistence", "repository"],
         "repository" => &["database", "persistence", "storage"],
+        "migration" => &["migrations", "migrate", "database", "storage", "schema"],
+        "migrations" => &["migration", "migrate", "database", "storage", "schema"],
+        "migrate" => &["migration", "migrations", "database", "storage", "schema"],
         "error" => &["errors", "exception", "failure"],
         "errors" => &["error", "exception", "failure"],
         "exception" => &["error", "failure"],

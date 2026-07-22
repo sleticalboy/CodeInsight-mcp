@@ -2680,6 +2680,101 @@ main "$@"
 }
 
 #[test]
+fn cli_context_pack_routes_storage_migrations_to_storage_source_over_evidence_scripts() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        "src/storage.ts",
+        r#"
+export function migrateDatabaseSchema() {
+  return applyStorageMigration();
+}
+
+export function applyStorageMigration() {
+  return "schema migrated";
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "scripts/adoption-evidence.sh",
+        r#"
+#!/usr/bin/env bash
+set -euo pipefail
+
+main() {
+  echo "storage migrations adoption evidence"
+}
+
+main "$@"
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 2);
+
+    let context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand storage migrations",
+        "--token-budget",
+        "1200",
+    ]);
+
+    assert_eq!(context["seed_strategy"], "auto_task_match");
+    assert_eq!(context["selected_seeds"][0]["value"], "src/storage.ts");
+    assert_eq!(context["files"][0]["file"], "src/storage.ts");
+    assert!(
+        !context["files"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|file| file["file"] == "scripts/adoption-evidence.sh"),
+        "storage migration tasks should not spend context budget on adoption evidence scripts"
+    );
+}
+
+#[test]
+fn cli_context_pack_does_not_route_semantic_indexing_as_plain_index_pipeline() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        "src/index.ts",
+        r#"
+export function buildProjectIndex(root: string) {
+  return { root };
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/embedding.ts",
+        r#"
+export function generateSemanticEmbeddings(chunks: string[]) {
+  return chunks.map((chunk) => ({ chunk, vector: [1, 0] }));
+}
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 2);
+
+    let context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand semantic indexing",
+        "--token-budget",
+        "1200",
+    ]);
+
+    assert_eq!(context["seed_strategy"], "auto_task_match");
+    assert_eq!(context["selected_seeds"][0]["value"], "src/embedding.ts");
+    assert_eq!(context["files"][0]["file"], "src/embedding.ts");
+}
+
+#[test]
 fn cli_context_pack_expands_common_agent_task_aliases() {
     let fixture = TempDir::new().unwrap();
     std::fs::create_dir_all(fixture.path().join("src")).unwrap();
