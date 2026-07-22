@@ -47,6 +47,8 @@ const CONTEXT_PACK_NO_SEED_ERROR: &str = "context_pack could not infer source se
 const CONTEXT_SCORE_LOW_VALUE_FILE_TEST_BOOST: i32 = 35;
 const CONTEXT_MAX_SYMBOL_LINES: usize = 80;
 const CONTEXT_MAX_MERGED_RANGE_LINES: usize = 80;
+const CONTEXT_RANGE_REASON_MAX_BYTES: usize = 1200;
+const CONTEXT_RANGE_REASON_OMITTED: &str = "additional matching signals omitted for brevity";
 const CONTEXT_OMITTED_CANDIDATE_LIMIT: usize = 8;
 const CONTEXT_OMITTED_CANDIDATE_RANGE_LIMIT: usize = 4;
 const CONTEXT_TYPE_RELATION_DEPENDENCY_LIMIT: usize = 80;
@@ -6108,15 +6110,18 @@ fn seed_file_ranges(
         .iter()
         .filter(|symbol| symbol.file == file && is_primary_seed_symbol(symbol))
         .collect::<Vec<_>>();
+    primary_symbols.sort_by(|left, right| {
+        seed_primary_symbol_score(right, file, task_keywords)
+            .cmp(&seed_primary_symbol_score(left, file, task_keywords))
+            .then_with(|| left.start_line.cmp(&right.start_line))
+            .then_with(|| left.end_line.cmp(&right.end_line))
+    });
+    let mut primary_symbols = primary_symbols.into_iter().take(12).collect::<Vec<_>>();
     primary_symbols.sort_by_key(|symbol| (symbol.start_line, symbol.end_line));
 
-    for symbol in primary_symbols.into_iter().take(12) {
-        let matched_keywords = auto_seed_file_matched_keywords(
-            root,
-            file,
-            Some(&symbol.qualified_name),
-            task_keywords,
-        );
+    for symbol in primary_symbols {
+        let matched_keywords =
+            auto_seed_matched_keywords(file, Some(&symbol.qualified_name), task_keywords);
         ranges.push(ContextCandidateRange {
             start_line: symbol.start_line.saturating_sub(2).max(1),
             end_line: (capped_symbol_end_line(symbol) + 2).min(line_count),
@@ -6146,6 +6151,12 @@ fn seed_file_ranges(
     }
 
     ranges
+}
+
+fn seed_primary_symbol_score(symbol: &Symbol, file: &str, task_keywords: &[String]) -> i32 {
+    auto_seed_task_match_score(file, Some(&symbol.qualified_name), task_keywords)
+        + auto_seed_task_focus_boost(file, Some(&symbol.qualified_name), task_keywords, false)
+        + auto_seed_symbol_kind_priority(&symbol.kind)
 }
 
 fn seed_range_reason(base: &str, matched_keywords: &[String], extra_reasons: &[String]) -> String {
@@ -6265,10 +6276,7 @@ fn push_context_range(
             existing.source = source.to_string();
         }
         existing.score = existing.score.max(score);
-        if !existing.reason.contains(&reason) {
-            existing.reason.push_str("; ");
-            existing.reason.push_str(&reason);
-        }
+        append_context_range_reason(&mut existing.reason, &reason);
         return;
     }
     ranges.push(ContextCandidateRange {
@@ -6278,6 +6286,21 @@ fn push_context_range(
         source: source.to_string(),
         score,
     });
+}
+
+fn append_context_range_reason(existing: &mut String, reason: &str) {
+    if existing.contains(reason) {
+        return;
+    }
+
+    let additional_len = 2 + reason.len();
+    if existing.len().saturating_add(additional_len) <= CONTEXT_RANGE_REASON_MAX_BYTES {
+        existing.push_str("; ");
+        existing.push_str(reason);
+    } else if !existing.contains(CONTEXT_RANGE_REASON_OMITTED) {
+        existing.push_str("; ");
+        existing.push_str(CONTEXT_RANGE_REASON_OMITTED);
+    }
 }
 
 fn compare_context_file_candidates(
@@ -10950,6 +10973,36 @@ mod tests {
                     false
                 )
         );
+    }
+
+    #[test]
+    fn context_range_reason_merge_caps_repeated_signal_noise() {
+        let mut ranges_by_file = BTreeMap::new();
+        push_context_range(
+            &mut ranges_by_file,
+            "src/tools.rs".to_string(),
+            1,
+            40,
+            "Call graph target of seed via first".to_string(),
+            "call_graph",
+            75,
+        );
+
+        for index in 0..80 {
+            push_context_range(
+                &mut ranges_by_file,
+                "src/tools.rs".to_string(),
+                1,
+                40,
+                format!("Call graph target of seed via helper_{index}"),
+                "call_graph",
+                75,
+            );
+        }
+
+        let reason = &ranges_by_file["src/tools.rs"][0].reason;
+        assert!(reason.len() <= CONTEXT_RANGE_REASON_MAX_BYTES + 64);
+        assert!(reason.contains(CONTEXT_RANGE_REASON_OMITTED));
     }
 
     #[test]

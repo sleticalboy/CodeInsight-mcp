@@ -2545,9 +2545,13 @@ export function main() {
 main();
 "#,
     );
-    write_file(
-        &fixture,
-        "src/tools.ts",
+    let mut tools_source = String::new();
+    for index in 0..40 {
+        tools_source.push_str(&format!(
+            "export function helper{index}() {{ return {index}; }}\n"
+        ));
+    }
+    tools_source.push_str(
         r#"
 export function createContextRouter(task: string) {
   return routeAgentContextPack(task);
@@ -2563,6 +2567,7 @@ export function routeAgentContextPack(task: string) {
 }
 "#,
     );
+    write_file(&fixture, "src/tools.ts", &tools_source);
     write_file(
         &fixture,
         "scripts/agent-context-routing-evidence.sh",
@@ -2612,6 +2617,17 @@ main "$@"
             .iter()
             .any(|file| file["file"] == "scripts/agent-context-routing-evidence.sh"),
         "non-evidence agent context routing should not spend context budget on evidence scripts"
+    );
+    assert!(
+        context["files"][0]["ranges"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|range| range["reason"]
+                .as_str()
+                .unwrap()
+                .contains("routeAgentContextPack")),
+        "seed-file ranges should include the late task-matching routing symbol"
     );
 }
 
