@@ -2334,6 +2334,8 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
         "Start with seed file network client, proxy, redirect, or transport boundaries.".to_string()
     } else if signals.tls_certificate {
         "Start with seed file TLS, SSL, certificate, or verification boundaries.".to_string()
+    } else if signals.symbol_search {
+        "Start with seed file symbol lookup, matching, ranking, and result shaping.".to_string()
     } else if signals.file_parsing_language {
         "Start with seed file parsing, AST extraction, or language support boundaries.".to_string()
     } else if signals.validation_binding {
@@ -2434,6 +2436,9 @@ fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
             .to_string()
     } else if signals.tls_certificate {
         "Read symbol definitions that establish TLS, SSL, certificate, or verification behavior."
+            .to_string()
+    } else if signals.symbol_search {
+        "Read symbol definitions that implement symbol lookup, matching, ranking, or result shaping."
             .to_string()
     } else if signals.validation_binding {
         "Read symbol definitions that establish validation, schema, binding, or serialization behavior."
@@ -3010,6 +3015,9 @@ fn context_seed_file_question(task: &str) -> String {
     } else if signals.tls_certificate {
         "Where are TLS certificates, SSL settings, CA bundles, or verification decisions handled here?"
             .to_string()
+    } else if signals.symbol_search {
+        "Where are symbol queries matched, ranked, limited, or formatted into search results here?"
+            .to_string()
     } else if signals.file_parsing_language {
         "Where are source files parsed, languages detected, ASTs built, or symbols extracted here?"
             .to_string()
@@ -3116,6 +3124,8 @@ fn context_symbol_definition_question(task: &str) -> String {
         "What network client, proxy, redirect, adapter, or transport behavior does this definition establish?".to_string()
     } else if signals.tls_certificate {
         "What TLS, SSL, certificate, CA bundle, or verification behavior does this definition establish?".to_string()
+    } else if signals.symbol_search {
+        "What symbol lookup, matching, ranking, limit, or result-shaping behavior does this definition establish?".to_string()
     } else if signals.validation_binding {
         "What validation, schema, binding, parser, or serialization behavior does this definition establish?".to_string()
     } else if signals.feature_flags {
@@ -3609,6 +3619,7 @@ struct ContextTaskSignals {
     auth_session: bool,
     network_http: bool,
     tls_certificate: bool,
+    symbol_search: bool,
     file_parsing_language: bool,
     validation_binding: bool,
     feature_flags: bool,
@@ -4520,6 +4531,7 @@ impl ContextTaskSignals {
                     "ssl context",
                 ],
             ),
+            symbol_search: auto_seed_symbol_search_task(&task_keywords(task)),
             file_parsing_language,
             validation_binding: context_text_mentions(
                 task,
