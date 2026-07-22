@@ -10527,6 +10527,85 @@ fn cli_context_pack_uses_imported_callee_file_hints() {
 }
 
 #[test]
+fn cli_context_pack_uses_bash_source_callee_file_hints() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        "scripts/bootstrap.sh",
+        r#"
+#!/usr/bin/env bash
+source ./lib/common.sh
+
+bootstrap() {
+  run_common
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "scripts/lib/common.sh",
+        r#"
+#!/usr/bin/env bash
+
+run_common() {
+  echo "ready"
+}
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 2);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand shell bootstrap helper behavior",
+        "--symbol",
+        "bootstrap",
+        "--token-budget",
+        "1600",
+    ]);
+
+    assert_eq!(context["seed_strategy"], "explicit");
+    assert_eq!(context["files"][0]["file"], "scripts/bootstrap.sh");
+    let helper_file = context["files"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|file| file["file"] == "scripts/lib/common.sh")
+        .expect("sourced helper should be selected through call graph hints");
+    assert!(
+        helper_file["source_mix"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|source| source["source"] == "call graph")
+    );
+    assert!(
+        helper_file["ranges"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|range| {
+                range["source"] == "call_graph"
+                    && range["reason"]
+                        .as_str()
+                        .is_some_and(|reason| reason.contains("run_common"))
+            })
+    );
+    let helper_step = context["reading_plan"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|step| step["file"] == "scripts/lib/common.sh")
+        .expect("sourced helper should have a reading step");
+    assert_eq!(helper_step["next_action"], "follow_call_graph");
+    assert_eq!(helper_step["suggested_tool"]["tool"], "impact_analysis");
+}
+
+#[test]
 fn cli_semantic_search_requires_embedding_provider() {
     let fixture = fixture_project();
 
