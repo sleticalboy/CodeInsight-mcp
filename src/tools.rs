@@ -246,13 +246,30 @@ pub fn agent_route_value(
         Err(error) if is_context_pack_no_seed_error(&error) => {
             empty_context_pack_for_blocked_route(task.clone(), token_budget, overview.total_lines)
         }
+        Err(error) if is_context_pack_invalid_seed_error(&error) => {
+            empty_context_pack_for_invalid_seed_route(
+                task.clone(),
+                token_budget,
+                overview.total_lines,
+                &files,
+                error.to_string(),
+            )
+        }
         Err(error) => return Err(error),
     };
 
-    let mut impact_seed_files = files
-        .iter()
-        .map(|file| normalize_seed_file(&root, file))
-        .collect::<Result<Vec<_>>>()?;
+    let blocked_context_status = context_pack
+        .reading_plan
+        .is_empty()
+        .then(|| context_pack.continuation_summary.status.clone());
+    let mut impact_seed_files = if blocked_context_status.is_some() {
+        Vec::new()
+    } else {
+        files
+            .iter()
+            .map(|file| normalize_seed_file(&root, file))
+            .collect::<Result<Vec<_>>>()?
+    };
     if impact_seed_files.is_empty()
         && let Some(first_file) = context_pack.files.first()
     {
@@ -261,7 +278,11 @@ pub fn agent_route_value(
     impact_seed_files.sort();
     impact_seed_files.dedup();
 
-    let mut impact_seed_symbols = symbols;
+    let mut impact_seed_symbols = if blocked_context_status.is_some() {
+        Vec::new()
+    } else {
+        symbols
+    };
     if impact_seed_symbols.is_empty() {
         impact_seed_symbols.extend(
             context_pack
@@ -275,21 +296,22 @@ pub fn agent_route_value(
     impact_seed_symbols.sort();
     impact_seed_symbols.dedup();
 
-    let (impact_status, impact_analysis) =
-        if impact_seed_files.is_empty() && impact_seed_symbols.is_empty() {
-            ("skipped_no_seed".to_string(), None)
-        } else {
-            let report = impact_analysis_value(
-                root.clone(),
-                impact_seed_symbols.clone(),
-                impact_seed_files.clone(),
-                impact_limit,
-                impact_depth,
-                "summary".to_string(),
-                impact_evidence_limit,
-            )?;
-            ("complete".to_string(), Some(report))
-        };
+    let (impact_status, impact_analysis) = if let Some(status) = blocked_context_status.as_deref() {
+        (agent_route_skipped_impact_status(status).to_string(), None)
+    } else if impact_seed_files.is_empty() && impact_seed_symbols.is_empty() {
+        ("skipped_no_seed".to_string(), None)
+    } else {
+        let report = impact_analysis_value(
+            root.clone(),
+            impact_seed_symbols.clone(),
+            impact_seed_files.clone(),
+            impact_limit,
+            impact_depth,
+            "summary".to_string(),
+            impact_evidence_limit,
+        )?;
+        ("complete".to_string(), Some(report))
+    };
 
     let route = vec![
         AgentRouteStep {
@@ -316,11 +338,7 @@ pub fn agent_route_value(
         AgentRouteStep {
             order: 3,
             tool: "context_pack".to_string(),
-            status: if context_pack.reading_plan.is_empty() {
-                "blocked_no_seed".to_string()
-            } else {
-                "complete".to_string()
-            },
+            status: agent_route_context_status(&context_pack),
             reason: agent_route_context_reason(&context_pack),
         },
         AgentRouteStep {
@@ -329,7 +347,7 @@ pub fn agent_route_value(
             status: impact_status.clone(),
             reason: match &impact_analysis {
                 Some(report) => agent_route_impact_reason(report),
-                None => "skipped because no context file or symbol seed was available".to_string(),
+                None => agent_route_skipped_impact_reason(&impact_status),
             },
         },
     ];
@@ -447,8 +465,7 @@ fn agent_route_execution_plan(
         status: impact_status.to_string(),
         instruction: match impact_analysis {
             Some(report) => agent_route_impact_instruction(report),
-            None => "Impact analysis was skipped because no file or symbol seed was available."
-                .to_string(),
+            None => agent_route_skipped_impact_instruction(impact_status),
         },
         files: impact_analysis
             .map(|report| report.seed_files.clone())
@@ -479,9 +496,20 @@ fn agent_route_context_reason(context_pack: &ContextPack) -> String {
         ),
         None => {
             format!(
-                "{summary}; no reading_plan step was produced, so narrow the task or seed files"
+                "{summary}; context selection is {}; next action {}; {}",
+                context_pack.continuation_summary.status,
+                context_pack.continuation_summary.next_action,
+                context_pack.continuation_summary.message
             )
         }
+    }
+}
+
+fn agent_route_context_status(context_pack: &ContextPack) -> String {
+    if context_pack.reading_plan.is_empty() {
+        context_pack.continuation_summary.status.clone()
+    } else {
+        "complete".to_string()
     }
 }
 
@@ -554,6 +582,32 @@ fn agent_route_impact_reason(report: &ImpactAnalysisReport) -> String {
     )
 }
 
+fn agent_route_skipped_impact_status(context_status: &str) -> &'static str {
+    match context_status {
+        "blocked_invalid_seed" => "skipped_invalid_seed",
+        _ => "skipped_no_seed",
+    }
+}
+
+fn agent_route_skipped_impact_reason(impact_status: &str) -> String {
+    match impact_status {
+        "skipped_invalid_seed" => {
+            "skipped because the explicit seed file could not be resolved".to_string()
+        }
+        _ => "skipped because no context file or symbol seed was available".to_string(),
+    }
+}
+
+fn agent_route_skipped_impact_instruction(impact_status: &str) -> String {
+    match impact_status {
+        "skipped_invalid_seed" => {
+            "Impact analysis was skipped because the explicit seed file could not be resolved; provide an existing seed file or symbol before editing.".to_string()
+        }
+        _ => "Impact analysis was skipped because no file or symbol seed was available."
+            .to_string(),
+    }
+}
+
 fn agent_route_impact_instruction(report: &ImpactAnalysisReport) -> String {
     let mut instruction = format!(
         "Before editing, review impact_analysis: {} impacted files at {} risk.",
@@ -599,6 +653,12 @@ fn is_context_pack_no_seed_error(error: &anyhow::Error) -> bool {
     error.to_string() == CONTEXT_PACK_NO_SEED_ERROR
 }
 
+fn is_context_pack_invalid_seed_error(error: &anyhow::Error) -> bool {
+    let error = error.to_string();
+    error.starts_with("failed to resolve seed file:")
+        || error.starts_with("seed file is outside project root:")
+}
+
 fn empty_context_pack_for_blocked_route(
     task: String,
     requested_token_budget: usize,
@@ -641,6 +701,68 @@ fn empty_context_pack_for_blocked_route(
             status: "blocked_no_seed".to_string(),
             message: "No source seed was available for context selection; provide --file/--symbol or add source files.".to_string(),
             next_action: "provide_seed_file_or_symbol".to_string(),
+            omitted_candidate_count: 0,
+            first_omitted_file: None,
+            suggested_tool: None,
+        },
+        omitted_candidates: Vec::new(),
+        files: Vec::new(),
+        symbols: Vec::new(),
+        references: Vec::new(),
+        estimated_tokens,
+        truncated: false,
+    }
+}
+
+fn empty_context_pack_for_invalid_seed_route(
+    task: String,
+    requested_token_budget: usize,
+    baseline_source_lines: usize,
+    seed_files: &[String],
+    error_message: String,
+) -> ContextPack {
+    let applied_token_budget = requested_token_budget.max(500);
+    let estimated_tokens = estimate_tokens(&task);
+    ContextPack {
+        task,
+        summary: format!(
+            "Context pack could not resolve an explicit seed file: {error_message}. Provide an existing --file path under the project root or use --symbol."
+        ),
+        seed_strategy: "explicit_invalid_seed".to_string(),
+        selected_seeds: explicit_context_seeds(&[], seed_files),
+        reading_plan: Vec::new(),
+        semantic_status: ContextSemanticStatus {
+            provider: "disabled".to_string(),
+            model: "disabled".to_string(),
+            provider_configured: false,
+            vector_status: "skipped_invalid_seed".to_string(),
+            vector_candidates: 0,
+            fallback_candidates: 0,
+            selected_vector_ranges: 0,
+            selected_fallback_ranges: 0,
+            recommendation: "provide an existing source seed before semantic context expansion"
+                .to_string(),
+        },
+        budget: ContextBudget {
+            requested_token_budget,
+            applied_token_budget,
+            estimated_tokens,
+            candidate_files: 0,
+            selected_files: 0,
+            omitted_files: 0,
+            candidate_ranges: 0,
+            selected_ranges: 0,
+            omitted_ranges: 0,
+            truncated: false,
+            truncation_reason: "invalid_seed_file".to_string(),
+        },
+        read_less: context_read_less(baseline_source_lines, 0),
+        continuation_summary: ContextContinuationSummary {
+            status: "blocked_invalid_seed".to_string(),
+            message: format!(
+                "Explicit seed file could not be resolved: {error_message}. Provide an existing --file path under the project root or use --symbol."
+            ),
+            next_action: "provide_existing_seed_file_or_symbol".to_string(),
             omitted_candidate_count: 0,
             first_omitted_file: None,
             suggested_tool: None,

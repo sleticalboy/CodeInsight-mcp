@@ -506,7 +506,8 @@ Recommended MCP first-read flow:
    first-read path.
 2. If `context_pack.continuation_summary.status` is `blocked_no_seed`, ask for
    a seed file or symbol and retry `agent_route` instead of broad-reading the
-   repository.
+   repository. If it is `blocked_invalid_seed`, ask for an existing seed file
+   under the project root or a symbol, then retry.
 3. Use `agent_route.current_reading_step` as the first checklist row, then read
    `context_pack.files[]` in `reading_plan[]` order.
 4. Use `reading_plan[].selection_rank` and `selection_reason` as the audit

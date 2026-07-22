@@ -2409,6 +2409,76 @@ fn cli_agent_route_returns_blocked_plan_for_empty_repository() {
 }
 
 #[test]
+fn cli_agent_route_returns_blocked_plan_for_invalid_seed_file() {
+    let fixture = fixture_project();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand invalid explicit seed",
+        "--file",
+        "does/not/exist.ts",
+        "--token-budget",
+        "1000",
+        "--force-index",
+    ]);
+
+    assert_eq!(route["impact_status"], "skipped_invalid_seed");
+    assert_eq!(route["route"][2]["status"], "blocked_invalid_seed");
+    assert_eq!(route["route"][3]["status"], "skipped_invalid_seed");
+    assert!(
+        route["route"][2]["reason"]
+            .as_str()
+            .unwrap()
+            .contains("provide_existing_seed_file_or_symbol")
+    );
+    assert_eq!(
+        route["context_pack"]["seed_strategy"],
+        "explicit_invalid_seed"
+    );
+    assert_eq!(
+        route["context_pack"]["budget"]["truncation_reason"],
+        "invalid_seed_file"
+    );
+    assert_eq!(
+        route["context_pack"]["continuation_summary"]["status"],
+        "blocked_invalid_seed"
+    );
+    assert_eq!(
+        route["context_pack"]["continuation_summary"]["next_action"],
+        "provide_existing_seed_file_or_symbol"
+    );
+    assert!(
+        route["context_pack"]["continuation_summary"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("does/not/exist.ts")
+    );
+    assert_eq!(
+        route["context_pack"]["selected_seeds"][0]["value"],
+        "does/not/exist.ts"
+    );
+    assert_eq!(route["context_pack"]["files"].as_array().unwrap().len(), 0);
+    assert_eq!(
+        route["context_pack"]["reading_plan"]
+            .as_array()
+            .unwrap()
+            .len(),
+        0
+    );
+    assert!(route["current_reading_step"].is_null());
+    assert_eq!(route["impact_seed_files"].as_array().unwrap().len(), 0);
+    assert_eq!(route["impact_seed_symbols"].as_array().unwrap().len(), 0);
+    assert!(
+        route["execution_plan"][3]["instruction"]
+            .as_str()
+            .unwrap()
+            .contains("explicit seed file could not be resolved")
+    );
+}
+
+#[test]
 fn cli_agent_route_keeps_entrypoint_companion_for_task_match() {
     let fixture = TempDir::new().unwrap();
     std::fs::create_dir_all(fixture.path().join("src")).unwrap();
