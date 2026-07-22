@@ -227,7 +227,8 @@ is available after the selected pack, and what impact check should happen before
 edits.
 
 For a recording or project introduction, use the
-[two-minute demo script](docs/demo-script.md) and the checked-in
+[public demo one-pager](docs/public-demo-one-pager.md),
+[two-minute demo script](docs/demo-script.md), and the checked-in
 [demo output snapshot](docs/demo-output.md).
 
 ## Current Evidence

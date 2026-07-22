@@ -22,6 +22,7 @@ Default adoption path:
 - [Alpha feedback triage](alpha-feedback-triage.md)
 - [Alpha trial log](alpha-trial-log.md)
 - [Public adoption feedback template](public-adoption-feedback-template.md)
+- [Public demo one-pager](public-demo-one-pager.md)
 - [Demo script](demo-script.md)
 - [Demo output snapshot](demo-output.md)
 - [Adoption cases](adoption-cases.md)
@@ -98,6 +99,7 @@ Choose the check by adoption stage:
 - [Alpha feedback triage](alpha-feedback-triage.md)
 - [Alpha trial log](alpha-trial-log.md)
 - [Public adoption feedback template](public-adoption-feedback-template.md)
+- [Public demo one-pager](public-demo-one-pager.md)
 - [Maintenance commands](maintenance-commands.md)
 - Two-minute demo: `scripts/two-minute-demo.sh`
 - MCP first-call JSON summary: `scripts/mcp-first-call-smoke.sh`
