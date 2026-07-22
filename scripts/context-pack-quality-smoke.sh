@@ -713,6 +713,9 @@ run_core_analysis_question_scenario() {
   local blocked_no_seed_json="$TEMP_DIR/core-analysis-blocked-no-seed-context.json"
   local recommended_tools_json="$TEMP_DIR/core-analysis-recommended-tools-context.json"
   local budget_continuation_json="$TEMP_DIR/core-analysis-budget-continuation-context.json"
+  local entrypoint_ranking_json="$TEMP_DIR/core-analysis-entrypoint-ranking-context.json"
+  local impact_checks_json="$TEMP_DIR/core-analysis-impact-checks-context.json"
+  local mcp_schema_json="$TEMP_DIR/core-analysis-mcp-schema-context.json"
 
   "$CODEINSIGHT_BIN" index "$ROOT_DIR" --force >"$index_json"
   require_jq "$index_json" '.indexed_files > 0' "core analysis scenario should index this repository"
@@ -859,6 +862,45 @@ run_core_analysis_question_scenario() {
     "budget continuation reading question should be core-analysis-aware"
   QUESTION_CHECKS_PASSED=$((QUESTION_CHECKS_PASSED + 1))
   record_question_check "core_budget_continuation_question" "$budget_continuation_json" '.reading_plan[0]'
+
+  "$CODEINSIGHT_BIN" context-pack "$ROOT_DIR" \
+    --task "understand project overview entrypoint ranking" \
+    --token-budget 2600 \
+    >"$entrypoint_ranking_json"
+  require_jq "$entrypoint_ranking_json" \
+    '.reading_plan[0].next_action == "inspect_seed_file"
+      and (.reading_plan[0].focus | contains("entrypoint ranking"))
+      and (.reading_plan[0].question | contains("entrypoints detected"))
+      and (.reading_plan[0].question | contains("ranked"))' \
+    "project overview entrypoint ranking reading question should be core-analysis-aware"
+  QUESTION_CHECKS_PASSED=$((QUESTION_CHECKS_PASSED + 1))
+  record_question_check "core_project_entrypoint_ranking_question" "$entrypoint_ranking_json" '.reading_plan[0]'
+
+  "$CODEINSIGHT_BIN" context-pack "$ROOT_DIR" \
+    --task "understand impact suggested checks" \
+    --token-budget 2600 \
+    >"$impact_checks_json"
+  require_jq "$impact_checks_json" \
+    '.reading_plan[0].next_action == "inspect_seed_file"
+      and (.reading_plan[0].focus | contains("impact suggested checks"))
+      and (.reading_plan[0].question | contains("impact suggested checks selected"))
+      and (.reading_plan[0].question | contains("focused commands"))' \
+    "impact suggested checks reading question should be core-analysis-aware"
+  QUESTION_CHECKS_PASSED=$((QUESTION_CHECKS_PASSED + 1))
+  record_question_check "core_impact_suggested_checks_question" "$impact_checks_json" '.reading_plan[0]'
+
+  "$CODEINSIGHT_BIN" context-pack "$ROOT_DIR" \
+    --task "understand MCP tool schema validation" \
+    --token-budget 2600 \
+    >"$mcp_schema_json"
+  require_jq "$mcp_schema_json" \
+    '.reading_plan[0].next_action == "inspect_seed_file"
+      and (.reading_plan[0].focus | contains("MCP tool schema validation"))
+      and (.reading_plan[0].question | contains("MCP tool arguments validated"))
+      and (.reading_plan[0].question | contains("invalid shapes rejected"))' \
+    "MCP tool schema reading question should be core-analysis-aware"
+  QUESTION_CHECKS_PASSED=$((QUESTION_CHECKS_PASSED + 1))
+  record_question_check "core_mcp_tool_schema_validation_question" "$mcp_schema_json" '.reading_plan[0]'
 
   SCENARIOS_PASSED=$((SCENARIOS_PASSED + 1))
   record_scenario "core_analysis_question_coverage" "$semantic_json" \

@@ -26,8 +26,8 @@ context_pack_quality_smoke() {
     '.status == "pass"
       and .scenarios_passed == 10
       and (.scenarios | length) == 10
-      and .question_checks_passed == 16
-      and (.question_checks | length) == 16
+      and .question_checks_passed == 19
+      and (.question_checks | length) == 19
       and all(.scenarios[]; .status == "pass")
       and (.scenarios[] | select(.name == "budget_continuation"))
       and (.scenarios[] | select(.name == "minimum_budget"))
@@ -49,7 +49,10 @@ context_pack_quality_smoke() {
       and (.question_checks[] | select(.name == "core_config_status_question"))
       and (.question_checks[] | select(.name == "core_blocked_no_seed_question"))
       and (.question_checks[] | select(.name == "core_recommended_next_tools_question"))
-      and (.question_checks[] | select(.name == "core_budget_continuation_question"))' \
+      and (.question_checks[] | select(.name == "core_budget_continuation_question"))
+      and (.question_checks[] | select(.name == "core_project_entrypoint_ranking_question"))
+      and (.question_checks[] | select(.name == "core_impact_suggested_checks_question"))
+      and (.question_checks[] | select(.name == "core_mcp_tool_schema_validation_question"))' \
     "$summary_json" >/dev/null
 }
 

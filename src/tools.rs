@@ -2297,8 +2297,17 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
     } else if signals.recommended_next_tools_contract {
         "Start with seed file recommended next tools ordering, arguments, and client contract."
             .to_string()
+    } else if signals.project_entrypoint_ranking {
+        "Start with seed file project overview entrypoint ranking, framework detection, and scoring."
+            .to_string()
     } else if signals.budget_continuation {
         "Start with seed file token budget accounting, omitted candidates, and continuation contract."
+            .to_string()
+    } else if signals.impact_suggested_checks {
+        "Start with seed file impact suggested checks, focused commands, and review gates."
+            .to_string()
+    } else if signals.mcp_tool_schema_validation {
+        "Start with seed file MCP tool schema validation, argument binding, and error shaping."
             .to_string()
     } else if signals.config_status_reporting {
         "Start with seed file config status loading, parse diagnostics, and structured reporting."
@@ -2440,8 +2449,17 @@ fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
     } else if signals.recommended_next_tools_contract {
         "Read symbol definitions that build recommended next tool entries, priorities, and arguments."
             .to_string()
+    } else if signals.project_entrypoint_ranking {
+        "Read symbol definitions that rank entrypoints, detect frameworks, or score project overview candidates."
+            .to_string()
     } else if signals.budget_continuation {
         "Read symbol definitions that compute token budgets, omitted candidates, or continuation summaries."
+            .to_string()
+    } else if signals.impact_suggested_checks {
+        "Read symbol definitions that choose impact suggested checks, focused commands, or review gates."
+            .to_string()
+    } else if signals.mcp_tool_schema_validation {
+        "Read symbol definitions that validate MCP tool arguments, bind schemas, or shape protocol errors."
             .to_string()
     } else if signals.config_status_reporting {
         "Read symbol definitions that load config status, preserve parse diagnostics, or shape status reports."
@@ -3112,8 +3130,17 @@ fn context_seed_file_question(task: &str) -> String {
     } else if signals.recommended_next_tools_contract {
         "Where are recommended next tools selected, ordered, justified, or shaped into client-ready arguments here?"
             .to_string()
+    } else if signals.project_entrypoint_ranking {
+        "Where are project overview entrypoints detected, ranked, scored, or filtered here?"
+            .to_string()
     } else if signals.budget_continuation {
         "Where are token budgets applied, omitted candidates recorded, and continuation next actions decided here?"
+            .to_string()
+    } else if signals.impact_suggested_checks {
+        "Where are impact suggested checks selected, focused commands built, or review gates added here?"
+            .to_string()
+    } else if signals.mcp_tool_schema_validation {
+        "Where are MCP tool arguments validated, schemas bound, invalid shapes rejected, or protocol errors shaped here?"
             .to_string()
     } else if signals.config_status_reporting {
         "Where is config status loaded, parse errors preserved, defaults detected, or status output shaped here?"
@@ -3268,8 +3295,17 @@ fn context_symbol_definition_question(task: &str) -> String {
     } else if signals.recommended_next_tools_contract {
         "What recommended next tool ordering, priority, reason, or argument contract does this definition establish?"
             .to_string()
+    } else if signals.project_entrypoint_ranking {
+        "What entrypoint detection, ranking, framework scoring, or overview filtering behavior does this definition establish?"
+            .to_string()
     } else if signals.budget_continuation {
         "What token budget, omitted-candidate, truncation, or continuation behavior does this definition establish?"
+            .to_string()
+    } else if signals.impact_suggested_checks {
+        "What impact suggested check, focused command, or review gate behavior does this definition establish?"
+            .to_string()
+    } else if signals.mcp_tool_schema_validation {
+        "What MCP argument validation, schema binding, invalid-shape rejection, or protocol error behavior does this definition establish?"
             .to_string()
     } else if signals.config_status_reporting {
         "What config status loading, parse diagnostic, default detection, or report-shaping behavior does this definition establish?"
@@ -3881,7 +3917,10 @@ struct ContextTaskSignals {
     agent_first_read: bool,
     blocked_no_seed_route: bool,
     recommended_next_tools_contract: bool,
+    project_entrypoint_ranking: bool,
     budget_continuation: bool,
+    impact_suggested_checks: bool,
+    mcp_tool_schema_validation: bool,
     config_status_reporting: bool,
     semantic_index_explain: bool,
     impact_flow: bool,
@@ -3941,7 +3980,10 @@ impl ContextTaskSignals {
         let blocked_no_seed_route = auto_seed_blocked_no_seed_route_task(&keywords);
         let recommended_next_tools_contract =
             auto_seed_recommended_next_tools_contract_task(&keywords);
+        let project_entrypoint_ranking = auto_seed_project_entrypoint_ranking_task(&keywords);
         let budget_continuation = auto_seed_budget_continuation_task(&keywords);
+        let impact_suggested_checks = auto_seed_impact_suggested_checks_task(&keywords);
+        let mcp_tool_schema_validation = auto_seed_mcp_tool_schema_validation_task(&keywords);
         let config_status_reporting = auto_seed_config_status_reporting_task(&keywords);
         let semantic_index_explain = auto_seed_semantic_index_explain_task(&keywords);
         let agent_first_read = context_text_mentions(
@@ -4749,7 +4791,10 @@ impl ContextTaskSignals {
             agent_first_read,
             blocked_no_seed_route,
             recommended_next_tools_contract,
+            project_entrypoint_ranking,
             budget_continuation,
+            impact_suggested_checks,
+            mcp_tool_schema_validation,
             config_status_reporting,
             semantic_index_explain,
             impact_flow: context_text_mentions(
@@ -9823,6 +9868,26 @@ fn auto_seed_recommended_next_tools_contract_task(task_keywords: &[String]) -> b
     recommendation && tools && contract
 }
 
+fn auto_seed_project_entrypoint_ranking_task(task_keywords: &[String]) -> bool {
+    let overview = task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "overview" | "project"));
+    let entrypoint = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "entrypoint" | "entrypoints" | "entry" | "entries"
+        )
+    });
+    let ranking = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "rank" | "ranking" | "ranked" | "score" | "scoring" | "priority"
+        )
+    });
+
+    overview && entrypoint && ranking
+}
+
 fn auto_seed_budget_continuation_task(task_keywords: &[String]) -> bool {
     let budget = task_keywords.iter().any(|keyword| {
         matches!(
@@ -9844,6 +9909,44 @@ fn auto_seed_budget_continuation_task(task_keywords: &[String]) -> bool {
     });
 
     budget && continuation
+}
+
+fn auto_seed_impact_suggested_checks_task(task_keywords: &[String]) -> bool {
+    let impact = task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "impact" | "impacted"));
+    let checks = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "check" | "checks" | "suggested" | "command" | "commands" | "test" | "tests"
+        )
+    });
+
+    impact && checks
+}
+
+fn auto_seed_mcp_tool_schema_validation_task(task_keywords: &[String]) -> bool {
+    let mcp_tool = task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "mcp"))
+        && task_keywords
+            .iter()
+            .any(|keyword| matches!(keyword.as_str(), "tool" | "tools"));
+    let schema_validation = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "schema"
+                | "schemas"
+                | "validation"
+                | "validate"
+                | "argument"
+                | "arguments"
+                | "binding"
+                | "bind"
+        )
+    });
+
+    mcp_tool && schema_validation
 }
 
 fn auto_seed_config_status_reporting_task(task_keywords: &[String]) -> bool {
@@ -11749,6 +11852,12 @@ mod tests {
             &recommended_next_tools_keywords
         ));
 
+        let entrypoint_ranking_keywords =
+            task_keywords("understand project overview entrypoint ranking");
+        assert!(auto_seed_project_entrypoint_ranking_task(
+            &entrypoint_ranking_keywords
+        ));
+
         let budget_continuation_keywords = task_keywords("understand token budget continuation");
         assert!(auto_seed_budget_continuation_task(
             &budget_continuation_keywords
@@ -11762,6 +11871,16 @@ mod tests {
             task_keywords("understand semantic index explain output");
         assert!(auto_seed_semantic_index_explain_task(
             &semantic_index_explain_keywords
+        ));
+
+        let impact_checks_keywords = task_keywords("understand impact suggested checks");
+        assert!(auto_seed_impact_suggested_checks_task(
+            &impact_checks_keywords
+        ));
+
+        let mcp_schema_keywords = task_keywords("understand MCP tool schema validation");
+        assert!(auto_seed_mcp_tool_schema_validation_task(
+            &mcp_schema_keywords
         ));
 
         let background_keywords = task_keywords("understand background job queue");
