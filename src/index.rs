@@ -16,8 +16,8 @@ use crate::{
     config::{IndexConfig, ProjectConfig, load_project_config},
     language::{detect_language, tree_sitter_language},
     model::{
-        CallEdge, Dependency, IndexError, Language, ProjectIndexReport, SourceFile, Symbol,
-        SymbolKind,
+        CallEdge, Dependency, IndexError, IndexScopeReport, Language, ProjectIndexReport,
+        SourceFile, Symbol, SymbolKind,
     },
     storage::{INDEX_VERSION, SCHEMA_VERSION, Store},
 };
@@ -207,6 +207,7 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
         root: root.display().to_string(),
         schema_version: SCHEMA_VERSION,
         index_version: INDEX_VERSION.to_string(),
+        index_scope: index_scope_report(&project_config.index),
         indexed_files: total_indexed_files,
         changed_files,
         unchanged_files,
@@ -217,6 +218,14 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
         errors,
         duration_ms: started.elapsed().as_millis(),
     })
+}
+
+fn index_scope_report(config: &IndexConfig) -> IndexScopeReport {
+    IndexScopeReport {
+        enabled: !config.include.is_empty() || !config.exclude.is_empty(),
+        includes: config.include.clone(),
+        excludes: config.exclude.clone(),
+    }
 }
 
 #[derive(Debug, Default)]

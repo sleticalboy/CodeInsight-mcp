@@ -92,6 +92,11 @@ cat <<'JSON'
     {"order": 4, "action": "review_impact_before_edits", "status": "complete"}
   ],
   "index_report": {
+    "index_scope": {
+      "enabled": true,
+      "includes": ["src/**"],
+      "excludes": ["src/generated/**"]
+    },
     "indexed_files": 3,
     "symbols": 8,
     "errors": []
@@ -173,6 +178,12 @@ EOF
     fail "missing evidence title"
   grep -Fq -- '- Route: `index_project -> project_overview -> context_pack -> impact_analysis`' "$TEMP_DIR/evidence.md" ||
     fail "missing route"
+  grep -Fq -- '- Index scope: `true`' "$TEMP_DIR/evidence.md" ||
+    fail "missing index scope"
+  grep -Fq -- '- Index includes: `src/**`' "$TEMP_DIR/evidence.md" ||
+    fail "missing index includes"
+  grep -Fq -- '- Index excludes: `src/generated/**`' "$TEMP_DIR/evidence.md" ||
+    fail "missing index excludes"
   grep -Fq -- '- Selected context: `12/120` source lines, `90.0%` reduction' "$TEMP_DIR/evidence.md" ||
     fail "missing selected context reduction"
   grep -Fq -- '- Blind first-read baseline: `120` source lines' "$TEMP_DIR/evidence.md" ||
@@ -227,6 +238,9 @@ EOF
       and .metrics.source_lines_avoided == 108
       and .metrics.line_reduction == "90.0%"
       and .metrics.read_less_ratio == "10.0x"
+      and .metrics.index_scope_enabled == true
+      and .metrics.index_scope_includes == ["src/**"]
+      and .metrics.index_scope_excludes == ["src/generated/**"]
       and .metrics.seed_strategy == "auto_task_match"
       and .metrics.selected_seed_count == 2
       and .metrics.first_seed_source == "task_match"

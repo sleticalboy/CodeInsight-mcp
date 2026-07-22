@@ -8853,6 +8853,9 @@ export function docsScopedRoute() {
     );
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["index_scope"]["enabled"].as_bool(), Some(true));
+    assert_eq!(index["index_scope"]["includes"][0], "src/**");
+    assert_eq!(index["index_scope"]["excludes"][0], "src/generated/**");
     assert_eq!(index["indexed_files"].as_u64(), Some(1));
     assert_eq!(index["changed_files"].as_u64(), Some(1));
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);

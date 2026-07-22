@@ -565,6 +565,7 @@ pub struct ProjectIndexReport {
     pub root: String,
     pub schema_version: i64,
     pub index_version: String,
+    pub index_scope: IndexScopeReport,
     pub indexed_files: usize,
     pub changed_files: usize,
     pub unchanged_files: usize,
@@ -574,6 +575,13 @@ pub struct ProjectIndexReport {
     pub changed_symbols: usize,
     pub errors: Vec<IndexError>,
     pub duration_ms: u128,
+}
+
+#[derive(Debug, Serialize)]
+pub struct IndexScopeReport {
+    pub enabled: bool,
+    pub includes: Vec<String>,
+    pub excludes: Vec<String>,
 }
 
 #[derive(Debug, Serialize)]

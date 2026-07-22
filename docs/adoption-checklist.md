@@ -99,7 +99,9 @@ exclude = ["**/*.generated.ts", "fixtures/**"]
 Then run `codeinsight config-status /path/to/repo` and confirm
 `configured_index_includes` / `configured_index_excludes` before collecting the
 route evidence. The configured scope defines the current local index contents;
-files outside the scope are removed on the next `index` run.
+files outside the scope are removed on the next `index` run. Local evidence
+Markdown and summary JSON also include `index_scope_enabled`,
+`index_scope_includes`, and `index_scope_excludes` from `agent_route.index_report`.
 
 When you need a short comparison for adoption notes:
 

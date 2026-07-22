@@ -30,7 +30,9 @@ exclude = ["**/*.generated.ts", "fixtures/**"]
 When `include` is non-empty, only matching source files are kept in the local
 index. `exclude` always removes matching files. Running `index` after changing
 this scope replaces the previous index contents, so files outside the current
-scope are removed from CodeInsight's SQLite index.
+scope are removed from CodeInsight's SQLite index. The `index` JSON response
+includes `index_scope.enabled`, `index_scope.includes`, and
+`index_scope.excludes` so evidence artifacts can record the indexing scope.
 
 Print an overview:
 

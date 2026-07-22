@@ -195,7 +195,7 @@ build_binary_if_needed() {
 write_markdown() {
   local route_json="$1"
   local target="$2"
-  local total_lines selected_lines avoided_lines reduction read_less risk_level
+  local total_lines selected_lines avoided_lines reduction read_less risk_level index_scope_enabled index_scope_includes index_scope_excludes
 
   total_lines="$(json_value "$route_json" '.context_pack.read_less.baseline_source_lines // .overview.total_lines // 0')"
   selected_lines="$(selected_context_lines "$route_json")"
@@ -212,6 +212,9 @@ write_markdown() {
     read_less="$(read_less_ratio "$total_lines" "$selected_lines")"
   fi
   risk_level="$(json_value "$route_json" '.impact_analysis.risk_level // "not_available"')"
+  index_scope_enabled="$(json_value "$route_json" '.index_report.index_scope.enabled // false')"
+  index_scope_includes="$(json_value "$route_json" '(.index_report.index_scope.includes // []) | join(", ") | if . == "" then "-" else . end')"
+  index_scope_excludes="$(json_value "$route_json" '(.index_report.index_scope.excludes // []) | join(", ") | if . == "" then "-" else . end')"
 
   {
     echo "# CodeInsight Local Repository Evidence"
@@ -224,6 +227,11 @@ write_markdown() {
     echo "## Key Results"
     echo
     echo "- Indexed files: \`$(json_value "$route_json" '.index_report.indexed_files')\`"
+    echo "- Index scope: \`${index_scope_enabled}\`"
+    if [ "$index_scope_enabled" = "true" ]; then
+      echo "- Index includes: \`${index_scope_includes}\`"
+      echo "- Index excludes: \`${index_scope_excludes}\`"
+    fi
     echo "- Symbols: \`$(json_value "$route_json" '.index_report.symbols')\`"
     echo "- Entrypoints: \`$(json_value "$route_json" '.overview.entrypoints | length')\`"
     echo "- Recommended next tools: \`$(json_value "$route_json" '.overview.recommended_next_tools | length')\`"
@@ -319,6 +327,9 @@ write_summary_json() {
         indexed_files: .index_report.indexed_files,
         symbols: .index_report.symbols,
         index_errors: (.index_report.errors | length),
+        index_scope_enabled: (.index_report.index_scope.enabled // false),
+        index_scope_includes: (.index_report.index_scope.includes // []),
+        index_scope_excludes: (.index_report.index_scope.excludes // []),
         entrypoints: (.overview.entrypoints | length),
         recommended_next_tools: (.overview.recommended_next_tools | length),
         type_relation_edges: (.overview.dependency_summary.type_relation_edges // 0),
@@ -371,6 +382,9 @@ write_summary_json() {
     '.status == "pass"
       and .route_tools == ["index_project", "project_overview", "context_pack", "impact_analysis"]
       and (.metrics.total_lines | type == "number")
+      and (.metrics.index_scope_enabled | type == "boolean")
+      and (.metrics.index_scope_includes | type == "array")
+      and (.metrics.index_scope_excludes | type == "array")
       and (.metrics.selected_lines | type == "number")
       and (.metrics.source_lines_avoided | type == "number")
       and (.metrics.line_reduction | type == "string" and length > 0)

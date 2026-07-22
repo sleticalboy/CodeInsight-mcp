@@ -33,7 +33,7 @@ The stdio server currently exposes 16 tools:
 
 | Tool | Purpose |
 | --- | --- |
-| `index_project` | Index a local repository for repeatable local analysis. |
+| `index_project` | Index a local repository for repeatable local analysis, including the applied `.codeinsight/config.toml` index scope in the response. |
 | `config_status` | Report `.codeinsight/config.toml`, load status, parse errors, configured index scope, configured JavaScript package conditions, configured impact-analysis checks, detected fallback test commands, and whether configured commands override built-in inference. |
 | `project_overview` | Return the repository briefing an agent should fetch first: summaries, role-aware directories, entrypoint candidates, dependency/type-relation summaries, `recommended_next_tools`, and index metadata. |
 | `symbol_search` | Search extracted symbols in an indexed repository. |
