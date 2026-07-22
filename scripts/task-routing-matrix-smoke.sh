@@ -183,7 +183,7 @@ main() {
   TEMP_DIR="$(mktemp -d)"
   trap cleanup EXIT INT TERM
 
-  local repo output_dir summary_json default_output_dir default_summary_json seed_output_dir seed_summary_json bad_output_dir bad_summary_json expectations_tsv bad_expectations_json
+  local repo output_dir summary_json default_output_dir default_summary_json seed_output_dir seed_summary_json seeded_expect_output_dir seeded_expect_summary_json seeded_json_output_dir seeded_json_summary_json bad_output_dir bad_summary_json expectations_tsv seeded_expectations_tsv seeded_expectations_json bad_expectations_json
   repo="$TEMP_DIR/repo"
   output_dir="$TEMP_DIR/matrix"
   summary_json="$output_dir/summary.json"
@@ -191,9 +191,15 @@ main() {
   default_summary_json="$default_output_dir/summary.json"
   seed_output_dir="$TEMP_DIR/matrix-seed"
   seed_summary_json="$seed_output_dir/summary.json"
+  seeded_expect_output_dir="$TEMP_DIR/matrix-seeded-expect"
+  seeded_expect_summary_json="$seeded_expect_output_dir/summary.json"
+  seeded_json_output_dir="$TEMP_DIR/matrix-seeded-json"
+  seeded_json_summary_json="$seeded_json_output_dir/summary.json"
   bad_output_dir="$TEMP_DIR/matrix-bad"
   bad_summary_json="$bad_output_dir/summary.json"
   expectations_tsv="$TEMP_DIR/expectations.tsv"
+  seeded_expectations_tsv="$TEMP_DIR/seeded-expectations.tsv"
+  seeded_expectations_json="$TEMP_DIR/seeded-expectations.json"
   bad_expectations_json="$TEMP_DIR/bad-expectations.json"
   create_fixture "$repo"
 write_file "$expectations_tsv" 'understand routing behavior	src/router.ts
@@ -220,6 +226,15 @@ understand documentation usage	docs/usage.ts
 understand request lifecycle before after request handling	src/application.ts
 understand middleware behavior	src/middleware.ts
 improve AI agent first-read routing quality evidence	src/agent_workflow.ts'
+  write_file "$seeded_expectations_tsv" 'understand the known security sanitizer	src/security.ts	src/security.ts	sanitizeSecurityInput'
+  write_file "$seeded_expectations_json" '[
+  {
+    "task": "understand the known security sanitizer",
+    "expected_first_file": "src/security.ts",
+    "seed_file": "src/security.ts",
+    "seed_symbol": "sanitizeSecurityInput"
+  }
+]'
   write_file "$bad_expectations_json" '[
   {
     "task": "understand routing behavior",
@@ -342,6 +357,21 @@ improve AI agent first-read routing quality evidence	src/agent_workflow.ts'
   require_jq "$seed_summary_json" '.tasks[] | select(.task == "understand the known security sanitizer" and .seed_strategy == "explicit" and .first_file == "src/security.ts" and .first_seed_value == "sanitizeSecurityInput")' "seeded matrix should pass explicit seeds to local evidence"
   grep -Fq -- '- Explicit seed files: `src/security.ts`' "$seed_output_dir/task-routing-matrix.md" ||
     fail "seeded matrix markdown should list explicit seed files"
+
+  CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/task-routing-matrix.sh" "$repo" \
+    --output-dir "$seeded_expect_output_dir" \
+    --token-budget 1600 \
+    --expect-file "$seeded_expectations_tsv"
+  require_jq "$seeded_expect_summary_json" '.status == "pass" and .task_count == 1 and .expectations.status == "pass"' "seeded expectation matrix summary should pass"
+  require_jq "$seeded_expect_summary_json" '.explicit_seed_files == [] and .explicit_seed_symbols == []' "seeded expectation matrix should not treat per-task seeds as global seeds"
+  require_jq "$seeded_expect_summary_json" '.tasks[] | select(.task == "understand the known security sanitizer" and .explicit_seed_file == "src/security.ts" and .explicit_seed_symbol == "sanitizeSecurityInput" and .seed_strategy == "explicit" and .first_file == "src/security.ts")' "expectation TSV seeds should pass through per task"
+
+  CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/task-routing-matrix.sh" "$repo" \
+    --output-dir "$seeded_json_output_dir" \
+    --token-budget 1600 \
+    --expect-file "$seeded_expectations_json"
+  require_jq "$seeded_json_summary_json" '.status == "pass" and .task_count == 1 and .expectations.status == "pass"' "seeded JSON expectation matrix summary should pass"
+  require_jq "$seeded_json_summary_json" '.tasks[] | select(.task == "understand the known security sanitizer" and .explicit_seed_file == "src/security.ts" and .explicit_seed_symbol == "sanitizeSecurityInput" and .seed_strategy == "explicit" and .first_file == "src/security.ts")' "expectation JSON seeds should pass through per task"
 
   if CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/task-routing-matrix.sh" "$repo" \
     --output-dir "$bad_output_dir" \

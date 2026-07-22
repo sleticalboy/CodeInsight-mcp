@@ -11,6 +11,8 @@ CODEINSIGHT_BIN="${CODEINSIGHT_BIN:-}"
 LOCAL_EVIDENCE_SCRIPT="${CODEINSIGHT_LOCAL_REPO_EVIDENCE_SCRIPT:-$ROOT_DIR/scripts/local-repo-evidence.sh}"
 FORCE_INDEX="${CODEINSIGHT_TASK_MATRIX_FORCE_INDEX:-1}"
 TASKS=()
+TASK_SEED_FILES=()
+TASK_SEED_SYMBOLS=()
 EXPECTATIONS=()
 EXPECTATION_FILES=()
 SEED_FILES=()
@@ -35,6 +37,7 @@ Options:
   --expect TASK=FILE    Assert that TASK selects FILE as the first file. Can be repeated.
   --expect-file PATH    Read expectations from PATH and add those tasks to the matrix.
                         Supports JSON array objects or line-based TASK=FILE / TSV.
+                        TSV columns 3 and 4 are optional seed_file and seed_symbol.
   --bin PATH            Use a specific codeinsight binary.
   --no-force-index      Reuse the existing index for the first task too.
   -h, --help            Show this help text.
@@ -151,14 +154,60 @@ add_task() {
     fail "task must not be empty"
   fi
   local existing
+  local index
   if [ "${#TASKS[@]}" -gt 0 ]; then
-    for existing in "${TASKS[@]}"; do
+    for index in "${!TASKS[@]}"; do
+      existing="${TASKS[$index]}"
       if [ "$existing" = "$task" ]; then
         return
       fi
     done
   fi
   TASKS+=("$task")
+  TASK_SEED_FILES+=("")
+  TASK_SEED_SYMBOLS+=("")
+}
+
+task_index() {
+  local task="$1"
+  local index
+
+  if [ "${#TASKS[@]}" -gt 0 ]; then
+    for index in "${!TASKS[@]}"; do
+      if [ "${TASKS[$index]}" = "$task" ]; then
+        printf "%s\n" "$index"
+        return
+      fi
+    done
+  fi
+  printf "%s\n" "-1"
+}
+
+set_task_seed() {
+  local task="$1"
+  local seed_file="$2"
+  local seed_symbol="$3"
+  local index current
+
+  add_task "$task"
+  index="$(task_index "$task")"
+  if [ "$index" -lt 0 ]; then
+    fail "internal error: task seed target was not registered: $task"
+  fi
+  if [ -n "$seed_file" ]; then
+    current="${TASK_SEED_FILES[$index]}"
+    if [ -n "$current" ] && [ "$current" != "$seed_file" ]; then
+      fail "task already has a different seed_file: $task"
+    fi
+    TASK_SEED_FILES[$index]="$seed_file"
+  fi
+  if [ -n "$seed_symbol" ]; then
+    current="${TASK_SEED_SYMBOLS[$index]}"
+    if [ -n "$current" ] && [ "$current" != "$seed_symbol" ]; then
+      fail "task already has a different seed_symbol: $task"
+    fi
+    TASK_SEED_SYMBOLS[$index]="$seed_symbol"
+  fi
 }
 
 add_expectation() {
@@ -181,6 +230,19 @@ add_expectation() {
   EXPECTATIONS+=("$task=$expected")
 }
 
+add_expectation_with_seeds() {
+  local task="$1"
+  local expected="$2"
+  local seed_file="${3:-}"
+  local seed_symbol="${4:-}"
+
+  if [ -z "$task" ] || [ -z "$expected" ]; then
+    fail "expectation must include non-empty task and file"
+  fi
+  add_expectation "$task=$expected"
+  set_task_seed "$task" "$seed_file" "$seed_symbol"
+}
+
 load_expectation_file() {
   local file="$1"
 
@@ -193,23 +255,27 @@ load_expectation_file() {
       jq -e '
         type == "array"
         and all(.[]; (.task | type == "string" and length > 0)
-          and (((.expected_first_file // .first_file) | type == "string") and ((.expected_first_file // .first_file) | length > 0)))
+          and (((.expected_first_file // .first_file) | type == "string") and ((.expected_first_file // .first_file) | length > 0))
+          and ((.seed_file // "") | type == "string")
+          and ((.seed_symbol // "") | type == "string"))
       ' "$file" >/dev/null ||
-        fail "JSON expectation file must be an array of objects with task and expected_first_file or first_file: $file"
-      while IFS= read -r expectation; do
-        add_expectation "$expectation"
-      done < <(jq -r '.[] | .task + "=" + (.expected_first_file // .first_file)' "$file")
+        fail "JSON expectation file must be an array of objects with task and expected_first_file or first_file, plus optional seed_file and seed_symbol: $file"
+      while IFS=$'\t' read -r task expected seed_file seed_symbol; do
+        add_expectation_with_seeds "$task" "$expected" "$seed_file" "$seed_symbol"
+      done < <(jq -r '.[] | [.task, (.expected_first_file // .first_file), (.seed_file // ""), (.seed_symbol // "")] | @tsv' "$file")
       ;;
     *)
-      local line task expected
+      local line task expected seed_file seed_symbol extra
       while IFS= read -r line || [ -n "$line" ]; do
         case "$line" in
           ''|'#'*) continue ;;
         esac
         if [[ "$line" == *$'\t'* ]]; then
-          task="${line%%$'\t'*}"
-          expected="${line#*$'\t'}"
-          add_expectation "$task=$expected"
+          IFS=$'\t' read -r task expected seed_file seed_symbol extra <<<"$line"
+          if [ -n "${extra:-}" ]; then
+            fail "TSV expectation rows support at most four columns: $line"
+          fi
+          add_expectation_with_seeds "$task" "$expected" "${seed_file:-}" "${seed_symbol:-}"
         else
           add_expectation "$line"
         fi
@@ -268,7 +334,7 @@ run_task() {
   local index="$1"
   local task="$2"
   local slug task_dir summary_json markdown_json raw_json evidence_markdown
-  local local_args seed_file seed_symbol
+  local local_args seed_file seed_symbol task_seed_file task_seed_symbol task_array_index
 
   slug="$(slugify_task "$task")"
   task_dir="$OUTPUT_DIR/tasks/$index-$slug"
@@ -298,6 +364,15 @@ run_task() {
       local_args+=(--symbol "$seed_symbol")
     done
   fi
+  task_array_index=$((index - 1))
+  task_seed_file="${TASK_SEED_FILES[$task_array_index]}"
+  task_seed_symbol="${TASK_SEED_SYMBOLS[$task_array_index]}"
+  if [ -n "$task_seed_file" ]; then
+    local_args+=(--file "$task_seed_file")
+  fi
+  if [ -n "$task_seed_symbol" ]; then
+    local_args+=(--symbol "$task_seed_symbol")
+  fi
   if [ "$index" -gt 1 ] || [ "$FORCE_INDEX" = "0" ]; then
     local_args+=(--no-force-index)
   fi
@@ -311,9 +386,13 @@ run_task() {
     --arg summary_json "$summary_json" \
     --arg raw_agent_route_json "$raw_json" \
     --arg evidence_markdown "$evidence_markdown" \
+    --arg task_seed_file "$task_seed_file" \
+    --arg task_seed_symbol "$task_seed_symbol" \
     '{
       slug: $slug,
       task: $task,
+      explicit_seed_file: (if $task_seed_file == "" then null else $task_seed_file end),
+      explicit_seed_symbol: (if $task_seed_symbol == "" then null else $task_seed_symbol end),
       seed_strategy: .metrics.seed_strategy,
       first_file: .metrics.first_file,
       first_seed_value: .metrics.first_seed_value,
@@ -560,6 +639,12 @@ main() {
       "understand middleware behavior"
       "improve AI agent first-read routing quality evidence"
     )
+    TASK_SEED_FILES=()
+    TASK_SEED_SYMBOLS=()
+    for _task in "${TASKS[@]}"; do
+      TASK_SEED_FILES+=("")
+      TASK_SEED_SYMBOLS+=("")
+    done
   fi
 
   OUTPUT_DIR="${OUTPUT_DIR:-/tmp/codeinsight-task-routing-matrix}"

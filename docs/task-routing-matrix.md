@@ -97,11 +97,17 @@ scripts/task-routing-matrix.sh /path/to/repo \
 ```
 
 For longer matrices, put the expectations in a file. Line-based files can use
-`TASK=FILE` or tab-separated `TASK<TAB>FILE` rows:
+`TASK=FILE` or tab-separated `TASK<TAB>FILE` rows. TSV rows can also include
+per-task explicit seeds as columns 3 and 4:
+
+```text
+TASK<TAB>EXPECTED_FIRST_FILE<TAB>SEED_FILE<TAB>SEED_SYMBOL
+```
 
 ```text
 understand routing behavior	src/router.ts
 understand authentication behavior	src/auth.ts
+understand the known security sanitizer	src/security.ts	src/security.ts	sanitizeSecurityInput
 understand authorization permissions	src/permissions.ts
 understand access control rules	src/permissions.ts
 understand feature flag rollout	src/feature_flags.ts
@@ -137,12 +143,16 @@ JSON expectation files are also supported:
 [
   {
     "task": "understand routing behavior",
-    "expected_first_file": "src/router.ts"
+    "expected_first_file": "src/router.ts",
+    "seed_file": "src/router.ts",
+    "seed_symbol": "createRouter"
   }
 ]
 ```
 
-Expectation files automatically add their tasks to the matrix.
+Expectation files automatically add their tasks to the matrix. Per-task seeds
+are passed only to their own route. Global `--file` and `--symbol` seeds are
+still applied to every task.
 Expectation failures return a non-zero exit code after writing the summary, so
 the failed expected/actual pair is still available as an artifact.
 
