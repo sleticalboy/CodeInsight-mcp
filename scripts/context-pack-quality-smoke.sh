@@ -716,6 +716,8 @@ run_core_analysis_question_scenario() {
   local entrypoint_ranking_json="$TEMP_DIR/core-analysis-entrypoint-ranking-context.json"
   local impact_checks_json="$TEMP_DIR/core-analysis-impact-checks-context.json"
   local mcp_schema_json="$TEMP_DIR/core-analysis-mcp-schema-context.json"
+  local current_step_json="$TEMP_DIR/core-analysis-current-step-context.json"
+  local semantic_provider_json="$TEMP_DIR/core-analysis-semantic-provider-context.json"
   local suggested_tool_json="$TEMP_DIR/core-analysis-suggested-tool-context.json"
   local omitted_candidate_json="$TEMP_DIR/core-analysis-omitted-candidate-context.json"
   local line_reduction_json="$TEMP_DIR/core-analysis-line-reduction-context.json"
@@ -904,6 +906,32 @@ run_core_analysis_question_scenario() {
     "MCP tool schema reading question should be core-analysis-aware"
   QUESTION_CHECKS_PASSED=$((QUESTION_CHECKS_PASSED + 1))
   record_question_check "core_mcp_tool_schema_validation_question" "$mcp_schema_json" '.reading_plan[0]'
+
+  "$CODEINSIGHT_BIN" context-pack "$ROOT_DIR" \
+    --task "understand current reading step mirror" \
+    --token-budget 2600 \
+    >"$current_step_json"
+  require_jq "$current_step_json" \
+    '.reading_plan[0].next_action == "inspect_seed_file"
+      and (.reading_plan[0].focus | contains("current_reading_step"))
+      and (.reading_plan[0].question | contains("current_reading_step mirrored"))
+      and (.reading_plan[0].question | contains("reading_plan[0]"))' \
+    "current reading step mirror question should be contract-aware"
+  QUESTION_CHECKS_PASSED=$((QUESTION_CHECKS_PASSED + 1))
+  record_question_check "core_current_reading_step_mirror_question" "$current_step_json" '.reading_plan[0]'
+
+  "$CODEINSIGHT_BIN" context-pack "$ROOT_DIR" \
+    --task "understand semantic provider disabled fallback" \
+    --token-budget 2600 \
+    >"$semantic_provider_json"
+  require_jq "$semantic_provider_json" \
+    '.reading_plan[0].next_action == "inspect_seed_file"
+      and (.reading_plan[0].focus | contains("semantic provider fallback"))
+      and (.reading_plan[0].question | contains("disabled semantic provider"))
+      and (.reading_plan[0].question | contains("fallback"))' \
+    "semantic provider disabled fallback question should be provider-aware"
+  QUESTION_CHECKS_PASSED=$((QUESTION_CHECKS_PASSED + 1))
+  record_question_check "core_semantic_provider_disabled_fallback_question" "$semantic_provider_json" '.reading_plan[0]'
 
   "$CODEINSIGHT_BIN" context-pack "$ROOT_DIR" \
     --task "understand reading plan suggested tool handoff" \

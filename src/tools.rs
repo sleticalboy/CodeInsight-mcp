@@ -2288,7 +2288,10 @@ fn context_reading_focus(file: &ContextFile, task: &str) -> String {
 }
 
 fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
-    if signals.agent_first_read {
+    if signals.current_reading_step_contract {
+        "Start with seed file current_reading_step mirroring, reading-plan fields, and client handoff."
+            .to_string()
+    } else if signals.agent_first_read {
         "Start with seed file context routing, first-read handoff, and read-less evidence."
             .to_string()
     } else if signals.blocked_no_seed_route {
@@ -2314,6 +2317,9 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
             .to_string()
     } else if signals.semantic_index_explain {
         "Start with seed file semantic index explain output, chunk change reporting, and provider status."
+            .to_string()
+    } else if signals.semantic_provider_fallback {
+        "Start with seed file semantic provider fallback, disabled-provider handling, and search readiness."
             .to_string()
     } else if signals.test_coverage {
         "Start with seed file test, spec, or regression coverage.".to_string()
@@ -2443,7 +2449,10 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
 }
 
 fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
-    if signals.blocked_no_seed_route {
+    if signals.current_reading_step_contract {
+        "Read symbol definitions that mirror current_reading_step from reading_plan and shape client handoff."
+            .to_string()
+    } else if signals.blocked_no_seed_route {
         "Read symbol definitions that implement blocked no-seed routing and empty-state handoff."
             .to_string()
     } else if signals.recommended_next_tools_contract {
@@ -2466,6 +2475,9 @@ fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
             .to_string()
     } else if signals.semantic_index_explain {
         "Read symbol definitions that explain semantic index chunks, provider status, or embedding changes."
+            .to_string()
+    } else if signals.semantic_provider_fallback {
+        "Read symbol definitions that choose semantic provider fallback, disabled-provider behavior, or readiness errors."
             .to_string()
     } else if signals.test_coverage {
         "Read symbol definitions that establish test coverage or regression behavior.".to_string()
@@ -3121,7 +3133,10 @@ fn context_reading_question(file: &ContextFile, task: &str) -> String {
 
 fn context_seed_file_question(task: &str) -> String {
     let signals = ContextTaskSignals::from_task(task);
-    if signals.agent_first_read {
+    if signals.current_reading_step_contract {
+        "Where is current_reading_step mirrored from reading_plan[0], and how is that handoff exposed to clients?"
+            .to_string()
+    } else if signals.agent_first_read {
         "Which seed selection, reading-plan handoff, or read-less evidence controls the agent first-read workflow here?"
             .to_string()
     } else if signals.blocked_no_seed_route {
@@ -3147,6 +3162,9 @@ fn context_seed_file_question(task: &str) -> String {
             .to_string()
     } else if signals.semantic_index_explain {
         "Where does semantic index explain report chunk changes, provider readiness, or embedding status here?"
+            .to_string()
+    } else if signals.semantic_provider_fallback {
+        "Where is a disabled semantic provider detected, reported, or turned into fallback/readiness behavior here?"
             .to_string()
     } else if signals.test_coverage {
         "Which behavior, assertions, fixtures, or regression cases are covered here?".to_string()
@@ -3289,7 +3307,10 @@ fn context_seed_file_question(task: &str) -> String {
 
 fn context_symbol_definition_question(task: &str) -> String {
     let signals = ContextTaskSignals::from_task(task);
-    if signals.blocked_no_seed_route {
+    if signals.current_reading_step_contract {
+        "What current_reading_step mirror, reading_plan field, or client handoff behavior does this definition establish?"
+            .to_string()
+    } else if signals.blocked_no_seed_route {
         "What blocked no-seed route status, continuation behavior, or client handoff does this definition establish?"
             .to_string()
     } else if signals.recommended_next_tools_contract {
@@ -3312,6 +3333,9 @@ fn context_symbol_definition_question(task: &str) -> String {
             .to_string()
     } else if signals.semantic_index_explain {
         "What semantic index explain, chunk-change, provider-readiness, or embedding-status behavior does this definition establish?"
+            .to_string()
+    } else if signals.semantic_provider_fallback {
+        "What disabled-provider detection, semantic fallback, or readiness-error behavior does this definition establish?"
             .to_string()
     } else if signals.test_coverage {
         "What test behavior, assertion, fixture, or regression case does this definition establish?"
@@ -3915,6 +3939,7 @@ fn context_semantic_question(task: &str) -> String {
 #[derive(Debug, Clone, Copy)]
 struct ContextTaskSignals {
     agent_first_read: bool,
+    current_reading_step_contract: bool,
     blocked_no_seed_route: bool,
     recommended_next_tools_contract: bool,
     project_entrypoint_ranking: bool,
@@ -3923,6 +3948,7 @@ struct ContextTaskSignals {
     mcp_tool_schema_validation: bool,
     config_status_reporting: bool,
     semantic_index_explain: bool,
+    semantic_provider_fallback: bool,
     impact_flow: bool,
     auth_session: bool,
     network_http: bool,
@@ -3986,53 +4012,56 @@ impl ContextTaskSignals {
         let mcp_tool_schema_validation = auto_seed_mcp_tool_schema_validation_task(&keywords);
         let config_status_reporting = auto_seed_config_status_reporting_task(&keywords);
         let semantic_index_explain = auto_seed_semantic_index_explain_task(&keywords);
-        let agent_first_read = context_text_mentions(
-            task,
-            &[
-                "agent",
-                "ai agent",
-                "coding agent",
-                "first read",
-                "first-read",
-                "first reading",
-                "first-read workflow",
-                "reading plan",
-                "reading_plan",
-                "execution plan",
-                "execution_plan",
-                "suggested tool",
-                "suggested_tool",
-                "omitted candidate",
-                "omitted candidates",
-                "context pack",
-                "context_pack",
-                "context router",
-                "context routing",
-                "route quality",
-                "routing quality",
-                "adoption evidence",
-                "read less",
-                "read-less",
-                "source line reduction",
-                "line reduction",
-                "selection rank",
-                "selection reason",
-            ],
-        ) && !context_text_mentions(
-            task,
-            &[
-                "express",
-                "gin",
-                "rails",
-                "django",
-                "flask",
-                "http method",
-                "route parameter",
-                "route group",
-                "404",
-                "405",
-            ],
-        );
+        let current_reading_step_contract = auto_seed_current_reading_step_contract_task(&keywords);
+        let semantic_provider_fallback = auto_seed_semantic_provider_fallback_task(&keywords);
+        let agent_first_read = current_reading_step_contract
+            || context_text_mentions(
+                task,
+                &[
+                    "agent",
+                    "ai agent",
+                    "coding agent",
+                    "first read",
+                    "first-read",
+                    "first reading",
+                    "first-read workflow",
+                    "reading plan",
+                    "reading_plan",
+                    "execution plan",
+                    "execution_plan",
+                    "suggested tool",
+                    "suggested_tool",
+                    "omitted candidate",
+                    "omitted candidates",
+                    "context pack",
+                    "context_pack",
+                    "context router",
+                    "context routing",
+                    "route quality",
+                    "routing quality",
+                    "adoption evidence",
+                    "read less",
+                    "read-less",
+                    "source line reduction",
+                    "line reduction",
+                    "selection rank",
+                    "selection reason",
+                ],
+            ) && !context_text_mentions(
+                task,
+                &[
+                    "express",
+                    "gin",
+                    "rails",
+                    "django",
+                    "flask",
+                    "http method",
+                    "route parameter",
+                    "route group",
+                    "404",
+                    "405",
+                ],
+            );
 
         let request_lifecycle =
             context_text_mentions(task, &["request", "requests", "response", "responses"])
@@ -4801,6 +4830,7 @@ impl ContextTaskSignals {
 
         Self {
             agent_first_read,
+            current_reading_step_contract,
             blocked_no_seed_route,
             recommended_next_tools_contract,
             project_entrypoint_ranking,
@@ -4809,6 +4839,7 @@ impl ContextTaskSignals {
             mcp_tool_schema_validation,
             config_status_reporting,
             semantic_index_explain,
+            semantic_provider_fallback,
             impact_flow: context_text_mentions(
                 task,
                 &["impact", "caller", "callee", "call path", "call paths"],
@@ -8720,11 +8751,32 @@ fn auto_seed_agent_first_read_task(task_keywords: &[String]) -> bool {
         && task_keywords
             .iter()
             .any(|keyword| matches!(keyword.as_str(), "reduction" | "metrics" | "metric"));
+    let current_reading_step_contract = auto_seed_current_reading_step_contract_task(task_keywords);
 
     (agent_or_context && first_read_or_route)
         || reading_plan_handoff
         || omitted_candidate_follow_up
         || source_line_reduction
+        || current_reading_step_contract
+}
+
+fn auto_seed_current_reading_step_contract_task(task_keywords: &[String]) -> bool {
+    let current_reading_step = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "current" | "currentreadingstep" | "current_reading_step"
+        )
+    }) && task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "reading" | "step"));
+    let mirror = task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "mirror" | "mirrors" | "mirrored"));
+    let reading_plan = task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "reading" | "plan" | "readingplan"));
+
+    current_reading_step && (mirror || reading_plan)
 }
 
 fn auto_seed_agent_first_read_field_matches(field: &str) -> bool {
@@ -9904,6 +9956,31 @@ fn auto_seed_embedding_provider_status_task(task_keywords: &[String]) -> bool {
     });
 
     embedding_provider && status_reporting && !configuration
+}
+
+fn auto_seed_semantic_provider_fallback_task(task_keywords: &[String]) -> bool {
+    let semantic = task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "semantic"));
+    let provider = task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "provider" | "providers"));
+    let fallback_or_disabled = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "disabled"
+                | "disable"
+                | "fallback"
+                | "fallbacks"
+                | "unavailable"
+                | "missing"
+                | "unconfigured"
+                | "readiness"
+                | "ready"
+        )
+    });
+
+    semantic && provider && fallback_or_disabled
 }
 
 fn auto_seed_blocked_no_seed_route_task(task_keywords: &[String]) -> bool {
@@ -12544,6 +12621,12 @@ mod tests {
         assert!(auto_seed_agent_first_read_task(&task_keywords(
             "understand source line reduction metrics"
         )));
+        let current_step = ContextTaskSignals::from_task("understand current reading step mirror");
+        assert!(current_step.current_reading_step_contract);
+        assert!(current_step.agent_first_read);
+        assert!(auto_seed_agent_first_read_task(&task_keywords(
+            "understand current reading step mirror"
+        )));
 
         let keywords = task_keywords("improve AI agent first-read routing quality evidence");
         assert!(auto_seed_agent_first_read_task(&keywords));
@@ -12565,6 +12648,25 @@ mod tests {
                     false
                 )
         );
+    }
+
+    #[test]
+    fn semantic_provider_fallback_tasks_use_provider_prompt() {
+        let fallback =
+            ContextTaskSignals::from_task("understand semantic provider disabled fallback");
+        assert!(fallback.semantic_provider_fallback);
+        assert!(!fallback.semantic_index_explain);
+        assert!(context_seed_file_focus(fallback).contains("semantic provider fallback"));
+        assert!(
+            context_seed_file_question("understand semantic provider disabled fallback")
+                .contains("disabled semantic provider")
+        );
+        assert!(auto_seed_semantic_provider_fallback_task(&task_keywords(
+            "understand semantic provider disabled fallback"
+        )));
+        assert!(!auto_seed_semantic_provider_fallback_task(&task_keywords(
+            "understand embedding provider status reporting"
+        )));
     }
 
     #[test]

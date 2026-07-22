@@ -26,8 +26,8 @@ context_pack_quality_smoke() {
     '.status == "pass"
       and .scenarios_passed == 10
       and (.scenarios | length) == 10
-      and .question_checks_passed == 22
-      and (.question_checks | length) == 22
+      and .question_checks_passed == 24
+      and (.question_checks | length) == 24
       and all(.scenarios[]; .status == "pass")
       and (.scenarios[] | select(.name == "budget_continuation"))
       and (.scenarios[] | select(.name == "minimum_budget"))
