@@ -1426,6 +1426,10 @@ pub fn context_pack_value(
         prefer_dependency_graph_source_files: auto_seed_dependency_graph_task(&task_keywords),
         prefer_project_overview_source_files: auto_seed_project_overview_task(&task_keywords),
         prefer_symbol_search_source_files: auto_seed_symbol_search_task(&task_keywords),
+        prefer_reference_search_source_files: auto_seed_reference_search_task(&task_keywords),
+        prefer_call_graph_traversal_source_files: auto_seed_call_graph_traversal_task(
+            &task_keywords,
+        ),
         prefer_file_parsing_source_files: auto_seed_file_parsing_task(&task_keywords),
         prefer_binding_validation_source_files: auto_seed_binding_validation_task(&task_keywords),
         prefer_import_resolution_source_files: auto_seed_import_resolution_task(&task_keywords),
@@ -2334,6 +2338,12 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
         "Start with seed file network client, proxy, redirect, or transport boundaries.".to_string()
     } else if signals.tls_certificate {
         "Start with seed file TLS, SSL, certificate, or verification boundaries.".to_string()
+    } else if signals.reference_search {
+        "Start with seed file reference search, usage classification, and definition filtering."
+            .to_string()
+    } else if signals.call_graph_traversal {
+        "Start with seed file call graph extraction, caller/callee traversal, and path shaping."
+            .to_string()
     } else if signals.symbol_search {
         "Start with seed file symbol lookup, matching, ranking, and result shaping.".to_string()
     } else if signals.import_resolution {
@@ -2451,6 +2461,12 @@ fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
             .to_string()
     } else if signals.tls_certificate {
         "Read symbol definitions that establish TLS, SSL, certificate, or verification behavior."
+            .to_string()
+    } else if signals.reference_search {
+        "Read symbol definitions that implement reference search, usage classification, or definition filtering."
+            .to_string()
+    } else if signals.call_graph_traversal {
+        "Read symbol definitions that implement call extraction, caller/callee traversal, or call path shaping."
             .to_string()
     } else if signals.symbol_search {
         "Read symbol definitions that implement symbol lookup, matching, ranking, or result shaping."
@@ -2604,6 +2620,12 @@ fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
     } else if signals.tls_certificate {
         "Follow call graph evidence for TLS verification, certificates, CA bundles, or SSL context flow."
             .to_string()
+    } else if signals.reference_search {
+        "Follow call graph evidence for reference search dispatch, classification, and filtering."
+            .to_string()
+    } else if signals.call_graph_traversal {
+        "Follow call graph evidence for call extraction, caller/callee traversal, and path shaping."
+            .to_string()
     } else if signals.validation_binding {
         "Follow call graph evidence for validation, binding, parsing, or serialization flow."
             .to_string()
@@ -2715,6 +2737,12 @@ fn context_reference_focus(signals: ContextTaskSignals) -> String {
     } else if signals.tls_certificate {
         "Inspect references that verify TLS certificates, configure SSL, or pass CA/cert inputs."
             .to_string()
+    } else if signals.reference_search {
+        "Inspect references that exercise reference search, classification, or definition filtering."
+            .to_string()
+    } else if signals.call_graph_traversal {
+        "Inspect references that exercise caller/callee lookup, call extraction, or path shaping."
+            .to_string()
     } else if signals.validation_binding {
         "Inspect references that validate inputs, bind payloads, parse schemas, or serialize data."
             .to_string()
@@ -2811,6 +2839,12 @@ fn context_semantic_focus(signals: ContextTaskSignals) -> String {
             .to_string()
     } else if signals.tls_certificate {
         "Review semantic matches for TLS, SSL, certificates, CA bundles, or verification."
+            .to_string()
+    } else if signals.reference_search {
+        "Review semantic matches for reference search, usage classification, or definition filtering."
+            .to_string()
+    } else if signals.call_graph_traversal {
+        "Review semantic matches for call graph extraction, caller/callee traversal, or path shaping."
             .to_string()
     } else if signals.validation_binding {
         "Review semantic matches for validation, schemas, bindings, parsers, or serializers."
@@ -2912,6 +2946,12 @@ fn context_dependency_focus(signals: ContextTaskSignals) -> String {
             .to_string()
     } else if signals.tls_certificate {
         "Check local dependencies that shape TLS verification, SSL context, certificates, or CA bundles."
+            .to_string()
+    } else if signals.reference_search {
+        "Check local dependencies that supply reference search, usage classification, or definition filtering."
+            .to_string()
+    } else if signals.call_graph_traversal {
+        "Check local dependencies that supply call extraction, caller/callee traversal, or path shaping."
             .to_string()
     } else if signals.validation_binding {
         "Check local dependencies that shape validation, binding, parsing, or serialization behavior."
@@ -3069,6 +3109,12 @@ fn context_seed_file_question(task: &str) -> String {
     } else if signals.tls_certificate {
         "Where are TLS certificates, SSL settings, CA bundles, or verification decisions handled here?"
             .to_string()
+    } else if signals.reference_search {
+        "Where are references found, usage kinds classified, definitions filtered, or results shaped here?"
+            .to_string()
+    } else if signals.call_graph_traversal {
+        "Where are calls extracted, callers or callees traversed, paths bounded, or results shaped here?"
+            .to_string()
     } else if signals.symbol_search {
         "Where are symbol queries matched, ranked, limited, or formatted into search results here?"
             .to_string()
@@ -3193,6 +3239,10 @@ fn context_symbol_definition_question(task: &str) -> String {
         "What network client, proxy, redirect, adapter, or transport behavior does this definition establish?".to_string()
     } else if signals.tls_certificate {
         "What TLS, SSL, certificate, CA bundle, or verification behavior does this definition establish?".to_string()
+    } else if signals.reference_search {
+        "What reference search, usage classification, definition filtering, or result-shaping behavior does this definition establish?".to_string()
+    } else if signals.call_graph_traversal {
+        "What call extraction, caller/callee traversal, path bounding, or result-shaping behavior does this definition establish?".to_string()
     } else if signals.symbol_search {
         "What symbol lookup, matching, ranking, limit, or result-shaping behavior does this definition establish?".to_string()
     } else if signals.import_resolution {
@@ -3327,6 +3377,12 @@ fn context_call_graph_question(task: &str) -> String {
     } else if signals.tls_certificate {
         "Which callers or callees verify TLS certificates, configure SSL, or pass CA/cert inputs?"
             .to_string()
+    } else if signals.reference_search {
+        "Which callers or callees find references, classify usage kinds, filter definitions, or shape reference results?"
+            .to_string()
+    } else if signals.call_graph_traversal {
+        "Which callers or callees extract calls, traverse caller/callee edges, bound paths, or shape call graph results?"
+            .to_string()
     } else if signals.validation_binding {
         "Which callers or callees validate inputs, bind payloads, parse schemas, or serialize data?"
             .to_string()
@@ -3440,6 +3496,10 @@ fn context_dependency_question(task: &str) -> String {
         "What imported local dependency behavior supplies network client, proxy, redirect, adapter, or transport behavior?".to_string()
     } else if signals.tls_certificate {
         "What imported local dependency behavior supplies TLS verification, SSL context, certificates, or CA bundles?".to_string()
+    } else if signals.reference_search {
+        "What imported local dependency behavior supplies reference search, usage classification, definition filtering, or result shaping?".to_string()
+    } else if signals.call_graph_traversal {
+        "What imported local dependency behavior supplies call extraction, caller/callee traversal, path bounding, or result shaping?".to_string()
     } else if signals.validation_binding {
         "What imported local dependency behavior supplies validation, binding, parsing, or serialization?".to_string()
     } else if signals.feature_flags {
@@ -3550,6 +3610,12 @@ fn context_reference_question(task: &str) -> String {
     } else if signals.tls_certificate {
         "Which references verify TLS certificates, configure SSL, or pass CA/cert inputs?"
             .to_string()
+    } else if signals.reference_search {
+        "Which references show reference search, usage classification, definition filtering, or result shaping?"
+            .to_string()
+    } else if signals.call_graph_traversal {
+        "Which references show caller/callee lookup, call extraction, traversal bounds, or path shaping?"
+            .to_string()
     } else if signals.validation_binding {
         "Which references validate inputs, bind payloads, parse schemas, or serialize data?"
             .to_string()
@@ -3652,6 +3718,12 @@ fn context_semantic_question(task: &str) -> String {
     } else if signals.tls_certificate {
         "Which semantic matches describe TLS, SSL, certificates, CA bundles, or verification?"
             .to_string()
+    } else if signals.reference_search {
+        "Which semantic matches describe reference search, usage classification, or definition filtering?"
+            .to_string()
+    } else if signals.call_graph_traversal {
+        "Which semantic matches describe call graph extraction, caller/callee traversal, or path shaping?"
+            .to_string()
     } else if signals.validation_binding {
         "Which semantic matches describe validation, schemas, bindings, parsers, or serializers?"
             .to_string()
@@ -3728,6 +3800,8 @@ struct ContextTaskSignals {
     indexing_pipeline: bool,
     dependency_graph: bool,
     semantic_context_orchestration: bool,
+    reference_search: bool,
+    call_graph_traversal: bool,
     file_parsing_language: bool,
     validation_binding: bool,
     feature_flags: bool,
@@ -4647,6 +4721,8 @@ impl ContextTaskSignals {
             dependency_graph: auto_seed_dependency_graph_task(&keywords),
             semantic_context_orchestration: auto_seed_semantic_context_task(&keywords)
                 && auto_seed_semantic_context_prefers_orchestration(&keywords),
+            reference_search: auto_seed_reference_search_task(&keywords),
+            call_graph_traversal: auto_seed_call_graph_traversal_task(&keywords),
             file_parsing_language,
             validation_binding: context_text_mentions(
                 task,
@@ -6257,6 +6333,8 @@ struct ContextScoringPolicy {
     prefer_dependency_graph_source_files: bool,
     prefer_project_overview_source_files: bool,
     prefer_symbol_search_source_files: bool,
+    prefer_reference_search_source_files: bool,
+    prefer_call_graph_traversal_source_files: bool,
     prefer_file_parsing_source_files: bool,
     prefer_binding_validation_source_files: bool,
     prefer_import_resolution_source_files: bool,
@@ -6681,6 +6759,10 @@ fn context_score_for_file(file: &str, score: i32, policy: &ContextScoringPolicy)
         context_project_overview_source_score(file, score)
     } else if policy.prefer_symbol_search_source_files {
         context_symbol_search_source_score(file, score)
+    } else if policy.prefer_reference_search_source_files {
+        context_reference_search_source_score(file, score)
+    } else if policy.prefer_call_graph_traversal_source_files {
+        context_call_graph_traversal_source_score(file, score)
     } else if policy.prefer_file_parsing_source_files {
         context_file_parsing_source_score(file, score)
     } else if policy.prefer_binding_validation_source_files {
@@ -6770,6 +6852,14 @@ fn context_project_overview_source_score(file: &str, score: i32) -> i32 {
 
 fn context_symbol_search_source_score(file: &str, score: i32) -> i32 {
     context_priority_source_score(file, score, auto_seed_symbol_search_file_priority(file))
+}
+
+fn context_reference_search_source_score(file: &str, score: i32) -> i32 {
+    context_priority_source_score(file, score, auto_seed_tool_analysis_file_priority(file))
+}
+
+fn context_call_graph_traversal_source_score(file: &str, score: i32) -> i32 {
+    context_priority_source_score(file, score, auto_seed_tool_analysis_file_priority(file))
 }
 
 fn context_file_parsing_source_score(file: &str, score: i32) -> i32 {
@@ -7117,6 +7207,8 @@ fn auto_context_seed_files(
     let dependency_graph_task = auto_seed_dependency_graph_task(task_keywords);
     let project_overview_task = auto_seed_project_overview_task(task_keywords);
     let symbol_search_task = auto_seed_symbol_search_task(task_keywords);
+    let reference_search_task = auto_seed_reference_search_task(task_keywords);
+    let call_graph_traversal_task = auto_seed_call_graph_traversal_task(task_keywords);
     let file_parsing_task = auto_seed_file_parsing_task(task_keywords);
     let binding_validation_task = auto_seed_binding_validation_task(task_keywords);
     let import_resolution_task = auto_seed_import_resolution_task(task_keywords);
@@ -7163,6 +7255,11 @@ fn auto_context_seed_files(
         } else if symbol_search_task {
             auto_seed_symbol_search_file_priority(&right.file)
                 .cmp(&auto_seed_symbol_search_file_priority(&left.file))
+                .then_with(|| right.score.cmp(&left.score))
+                .then_with(|| left.file.cmp(&right.file))
+        } else if reference_search_task || call_graph_traversal_task {
+            auto_seed_tool_analysis_file_priority(&right.file)
+                .cmp(&auto_seed_tool_analysis_file_priority(&left.file))
                 .then_with(|| right.score.cmp(&left.score))
                 .then_with(|| left.file.cmp(&right.file))
         } else if file_parsing_task {
@@ -9379,6 +9476,11 @@ fn auto_seed_priority_routed_file_priority(file: &str, task_keywords: &[String])
     if auto_seed_symbol_search_task(task_keywords) {
         priority = priority.max(auto_seed_symbol_search_file_priority(file));
     }
+    if auto_seed_reference_search_task(task_keywords)
+        || auto_seed_call_graph_traversal_task(task_keywords)
+    {
+        priority = priority.max(auto_seed_tool_analysis_file_priority(file));
+    }
     if auto_seed_file_parsing_task(task_keywords) {
         priority = priority.max(auto_seed_file_parsing_file_priority(file));
     }
@@ -9710,6 +9812,66 @@ fn auto_seed_symbol_search_task(task_keywords: &[String]) -> bool {
         .any(|keyword| matches!(keyword.as_str(), "search" | "lookup" | "find"));
 
     symbol && search
+}
+
+fn auto_seed_reference_search_task(task_keywords: &[String]) -> bool {
+    let reference = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "reference" | "references" | "usage" | "usages"
+        )
+    });
+    let search = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "find"
+                | "search"
+                | "lookup"
+                | "classification"
+                | "classify"
+                | "classified"
+                | "filter"
+                | "filtering"
+        )
+    });
+
+    reference && search
+}
+
+fn auto_seed_call_graph_traversal_task(task_keywords: &[String]) -> bool {
+    if task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "impact" | "impacted"))
+    {
+        return false;
+    }
+
+    let call_graph = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "call" | "calls" | "caller" | "callers" | "callee" | "callees" | "graph" | "graphs"
+        )
+    });
+    let traversal = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "traversal"
+                | "traverse"
+                | "traversed"
+                | "path"
+                | "paths"
+                | "caller"
+                | "callers"
+                | "callee"
+                | "callees"
+        )
+    });
+
+    call_graph && traversal
+}
+
+fn auto_seed_tool_analysis_file_priority(file: &str) -> i32 {
+    auto_seed_symbol_search_file_priority(file)
 }
 
 fn auto_seed_symbol_search_file_priority(file: &str) -> i32 {
@@ -11313,6 +11475,19 @@ mod tests {
         assert!(docs_keywords.contains(&"docs".to_string()));
         assert!(docs_keywords.contains(&"documentation".to_string()));
         assert!(docs_keywords.contains(&"guide".to_string()));
+
+        let references_keywords = task_keywords("understand find references classification");
+        assert!(references_keywords.contains(&"references".to_string()));
+        assert!(auto_seed_reference_search_task(&references_keywords));
+
+        let call_graph_keywords = task_keywords("understand callers callees call graph traversal");
+        assert!(call_graph_keywords.contains(&"callers".to_string()));
+        assert!(call_graph_keywords.contains(&"callees".to_string()));
+        assert!(auto_seed_call_graph_traversal_task(&call_graph_keywords));
+
+        let impact_keywords = task_keywords("understand impact analysis risk scoring");
+        assert!(impact_keywords.contains(&"impact".to_string()));
+        assert!(!auto_seed_call_graph_traversal_task(&impact_keywords));
 
         let background_keywords = task_keywords("understand background job queue");
         assert!(background_keywords.contains(&"background".to_string()));

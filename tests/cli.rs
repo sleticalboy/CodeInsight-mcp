@@ -3062,6 +3062,18 @@ import { searchSymbols } from "./storage";
 export function symbolSearchValue(query: string) {
   return searchSymbols(query);
 }
+
+export function findReferencesValue(symbol: string) {
+  return [{ symbol, kind: "call" }];
+}
+
+export function callersValue(symbol: string) {
+  return [{ caller: "route", callee: symbol }];
+}
+
+export function calleesValue(symbol: string) {
+  return [{ caller: symbol, callee: "leaf" }];
+}
 "#,
     );
     write_file(
@@ -3123,6 +3135,11 @@ echo "json binding validation package import resolution demo"
             "src/storage.ts",
         ),
         ("understand symbol search implementation", "src/tools.ts"),
+        ("understand find references classification", "src/tools.ts"),
+        (
+            "understand callers callees call graph traversal",
+            "src/tools.ts",
+        ),
         ("understand file parsing language support", "src/index.ts"),
         ("understand package import resolution", "src/index.ts"),
         ("understand json binding validation", "src/mcp.ts"),
@@ -3174,6 +3191,36 @@ echo "json binding validation package import resolution demo"
                     .unwrap()
                     .contains("symbol queries matched"),
                 "symbol search tasks should get symbol-specific reading guidance"
+            );
+        } else if task == "understand find references classification" {
+            assert!(
+                context["reading_plan"][0]["focus"]
+                    .as_str()
+                    .unwrap()
+                    .contains("reference search"),
+                "reference search tasks should get reference-specific reading focus"
+            );
+            assert!(
+                context["reading_plan"][0]["question"]
+                    .as_str()
+                    .unwrap()
+                    .contains("references found"),
+                "reference search tasks should get reference-specific reading guidance"
+            );
+        } else if task == "understand callers callees call graph traversal" {
+            assert!(
+                context["reading_plan"][0]["focus"]
+                    .as_str()
+                    .unwrap()
+                    .contains("call graph extraction"),
+                "call graph traversal tasks should get call-graph-specific reading focus"
+            );
+            assert!(
+                context["reading_plan"][0]["question"]
+                    .as_str()
+                    .unwrap()
+                    .contains("callers or callees traversed"),
+                "call graph traversal tasks should get call-graph-specific reading guidance"
             );
         } else if task == "understand package import resolution" {
             assert!(

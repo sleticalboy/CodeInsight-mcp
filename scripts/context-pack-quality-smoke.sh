@@ -705,6 +705,8 @@ run_core_analysis_question_scenario() {
   local indexing_json="$TEMP_DIR/core-analysis-indexing-context.json"
   local dependency_json="$TEMP_DIR/core-analysis-dependency-context.json"
   local semantic_json="$TEMP_DIR/core-analysis-semantic-context.json"
+  local references_json="$TEMP_DIR/core-analysis-references-context.json"
+  local calls_json="$TEMP_DIR/core-analysis-calls-context.json"
 
   "$CODEINSIGHT_BIN" index "$ROOT_DIR" --force >"$index_json"
   require_jq "$index_json" '.indexed_files > 0' "core analysis scenario should index this repository"
@@ -746,6 +748,32 @@ run_core_analysis_question_scenario() {
     "semantic search fallback reading question should be core-analysis-aware"
   QUESTION_CHECKS_PASSED=$((QUESTION_CHECKS_PASSED + 1))
   record_question_check "core_semantic_fallback_question" "$semantic_json" '.reading_plan[0]'
+
+  "$CODEINSIGHT_BIN" context-pack "$ROOT_DIR" \
+    --task "understand find references classification" \
+    --token-budget 2600 \
+    >"$references_json"
+  require_jq "$references_json" \
+    '.reading_plan[0].next_action == "inspect_seed_file"
+      and (.reading_plan[0].focus | contains("reference search"))
+      and (.reading_plan[0].question | contains("references found"))
+      and (.reading_plan[0].question | contains("usage kinds classified"))' \
+    "find references reading question should be core-analysis-aware"
+  QUESTION_CHECKS_PASSED=$((QUESTION_CHECKS_PASSED + 1))
+  record_question_check "core_find_references_question" "$references_json" '.reading_plan[0]'
+
+  "$CODEINSIGHT_BIN" context-pack "$ROOT_DIR" \
+    --task "understand callers callees call graph traversal" \
+    --token-budget 2600 \
+    >"$calls_json"
+  require_jq "$calls_json" \
+    '.reading_plan[0].next_action == "inspect_seed_file"
+      and (.reading_plan[0].focus | contains("call graph extraction"))
+      and (.reading_plan[0].question | contains("calls extracted"))
+      and (.reading_plan[0].question | contains("callers or callees traversed"))' \
+    "call graph traversal reading question should be core-analysis-aware"
+  QUESTION_CHECKS_PASSED=$((QUESTION_CHECKS_PASSED + 1))
+  record_question_check "core_call_graph_traversal_question" "$calls_json" '.reading_plan[0]'
 
   SCENARIOS_PASSED=$((SCENARIOS_PASSED + 1))
   record_scenario "core_analysis_question_coverage" "$semantic_json" \
