@@ -339,7 +339,21 @@ write_issue_template() {
     echo "## Command"
     echo
     echo '```bash'
-    echo "scripts/adoption-evidence.sh \"$REPO_ROOT\" --output-dir \"$OUTPUT_DIR\" --print-snippet --issue-template"
+    echo "scripts/adoption-evidence.sh \"$REPO_ROOT\" \\"
+    echo "  --task \"$TASK\" \\"
+    if [ "${#SEED_FILES[@]}" -gt 0 ]; then
+      for seed_file in "${SEED_FILES[@]}"; do
+        echo "  --file \"$seed_file\" \\"
+      done
+    fi
+    if [ "${#SEED_SYMBOLS[@]}" -gt 0 ]; then
+      for seed_symbol in "${SEED_SYMBOLS[@]}"; do
+        echo "  --symbol \"$seed_symbol\" \\"
+      done
+    fi
+    echo "  --output-dir \"$OUTPUT_DIR\" \\"
+    echo "  --print-snippet \\"
+    echo "  --issue-template"
     echo '```'
     echo
     echo "## Artifacts"

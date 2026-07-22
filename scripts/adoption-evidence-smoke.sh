@@ -303,6 +303,10 @@ EOF
     fail "missing issue template failure category placeholder"
   grep -Fq '## Artifacts' "$TEMP_DIR/evidence/issue-template.md" ||
     fail "missing issue template artifacts section"
+  grep -Fq -- '  --file "src/main.ts" \' "$TEMP_DIR/evidence/issue-template.md" ||
+    fail "issue template command is missing seed file"
+  grep -Fq -- '  --symbol "main" \' "$TEMP_DIR/evidence/issue-template.md" ||
+    fail "issue template command is missing seed symbol"
   grep -Fq -- "- MCP first-call stderr: \`$TEMP_DIR/evidence/mcp-first-call.err\`" "$TEMP_DIR/evidence/issue-template.md" ||
     fail "missing issue template MCP stderr artifact"
   grep -Fq -- '- First-read gating: suggested_tool_after_selected_context=`true`, continuation_after_selected_context=`true`, impact_review_before_edits=`true`' "$TEMP_DIR/evidence/issue-template.md" ||
