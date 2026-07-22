@@ -716,6 +716,9 @@ run_core_analysis_question_scenario() {
   local entrypoint_ranking_json="$TEMP_DIR/core-analysis-entrypoint-ranking-context.json"
   local impact_checks_json="$TEMP_DIR/core-analysis-impact-checks-context.json"
   local mcp_schema_json="$TEMP_DIR/core-analysis-mcp-schema-context.json"
+  local suggested_tool_json="$TEMP_DIR/core-analysis-suggested-tool-context.json"
+  local omitted_candidate_json="$TEMP_DIR/core-analysis-omitted-candidate-context.json"
+  local line_reduction_json="$TEMP_DIR/core-analysis-line-reduction-context.json"
 
   "$CODEINSIGHT_BIN" index "$ROOT_DIR" --force >"$index_json"
   require_jq "$index_json" '.indexed_files > 0' "core analysis scenario should index this repository"
@@ -901,6 +904,42 @@ run_core_analysis_question_scenario() {
     "MCP tool schema reading question should be core-analysis-aware"
   QUESTION_CHECKS_PASSED=$((QUESTION_CHECKS_PASSED + 1))
   record_question_check "core_mcp_tool_schema_validation_question" "$mcp_schema_json" '.reading_plan[0]'
+
+  "$CODEINSIGHT_BIN" context-pack "$ROOT_DIR" \
+    --task "understand reading plan suggested tool handoff" \
+    --token-budget 2600 \
+    >"$suggested_tool_json"
+  require_jq "$suggested_tool_json" \
+    '.reading_plan[0].next_action == "inspect_seed_file"
+      and (.reading_plan[0].focus | contains("first-read handoff"))
+      and (.reading_plan[0].question | contains("agent first-read workflow"))' \
+    "reading plan suggested tool handoff question should be agent-first-read-aware"
+  QUESTION_CHECKS_PASSED=$((QUESTION_CHECKS_PASSED + 1))
+  record_question_check "core_reading_plan_suggested_tool_question" "$suggested_tool_json" '.reading_plan[0]'
+
+  "$CODEINSIGHT_BIN" context-pack "$ROOT_DIR" \
+    --task "understand omitted candidate follow up" \
+    --token-budget 2600 \
+    >"$omitted_candidate_json"
+  require_jq "$omitted_candidate_json" \
+    '.reading_plan[0].next_action == "inspect_seed_file"
+      and (.reading_plan[0].focus | contains("first-read handoff"))
+      and (.reading_plan[0].question | contains("agent first-read workflow"))' \
+    "omitted candidate follow-up question should be agent-first-read-aware"
+  QUESTION_CHECKS_PASSED=$((QUESTION_CHECKS_PASSED + 1))
+  record_question_check "core_omitted_candidate_follow_up_question" "$omitted_candidate_json" '.reading_plan[0]'
+
+  "$CODEINSIGHT_BIN" context-pack "$ROOT_DIR" \
+    --task "understand source line reduction metrics" \
+    --token-budget 2600 \
+    >"$line_reduction_json"
+  require_jq "$line_reduction_json" \
+    '.reading_plan[0].next_action == "inspect_seed_file"
+      and (.reading_plan[0].focus | contains("first-read handoff"))
+      and (.reading_plan[0].question | contains("agent first-read workflow"))' \
+    "source line reduction question should be agent-first-read-aware"
+  QUESTION_CHECKS_PASSED=$((QUESTION_CHECKS_PASSED + 1))
+  record_question_check "core_source_line_reduction_question" "$line_reduction_json" '.reading_plan[0]'
 
   SCENARIOS_PASSED=$((SCENARIOS_PASSED + 1))
   record_scenario "core_analysis_question_coverage" "$semantic_json" \

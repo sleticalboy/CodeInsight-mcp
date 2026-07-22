@@ -3996,6 +3996,14 @@ impl ContextTaskSignals {
                 "first-read",
                 "first reading",
                 "first-read workflow",
+                "reading plan",
+                "reading_plan",
+                "execution plan",
+                "execution_plan",
+                "suggested tool",
+                "suggested_tool",
+                "omitted candidate",
+                "omitted candidates",
                 "context pack",
                 "context_pack",
                 "context router",
@@ -4005,6 +4013,10 @@ impl ContextTaskSignals {
                 "adoption evidence",
                 "read less",
                 "read-less",
+                "source line reduction",
+                "line reduction",
+                "selection rank",
+                "selection reason",
             ],
         ) && !context_text_mentions(
             task,
@@ -7341,6 +7353,31 @@ fn auto_context_seed_files(
         }
     }
 
+    if auto_seed_agent_first_read_task(task_keywords)
+        && !auto_seed_agent_first_read_evidence_task(task_keywords)
+    {
+        for file in indexed_files
+            .iter()
+            .filter(|file| auto_seed_role_allowed(auto_seed_file_role(file), task_keywords))
+        {
+            let priority = auto_seed_agent_first_read_file_priority(file, task_keywords);
+            if priority < 70 {
+                continue;
+            }
+            upsert_auto_seed_candidate(
+                &mut candidates,
+                AutoSeedCandidate {
+                    file: file.clone(),
+                    role: auto_seed_file_role(file).to_string(),
+                    source: "task_match".to_string(),
+                    score: 90 + priority,
+                    matched_keywords: auto_seed_matched_keywords(file, None, task_keywords),
+                    matched_symbols: Vec::new(),
+                },
+            );
+        }
+    }
+
     let mut candidates = candidates.into_values().collect::<Vec<_>>();
     let route_miss_task = auto_seed_route_miss_handling_task(task_keywords);
     let websocket_task = auto_seed_websocket_connection_task(task_keywords);
@@ -7490,6 +7527,7 @@ fn auto_context_seed_files(
         || request_lifecycle_task
         || middleware_task
         || route_dispatch_task
+        || (agent_first_read_task && !auto_seed_agent_first_read_evidence_task(task_keywords))
         || indexing_pipeline_task
         || data_persistence_task
         || semantic_context_task
@@ -8650,11 +8688,43 @@ fn auto_seed_agent_first_read_task(task_keywords: &[String]) -> bool {
     let first_read_or_route = task_keywords.iter().any(|keyword| {
         matches!(
             keyword.as_str(),
-            "first" | "read" | "routing" | "route" | "router" | "quality" | "workflow" | "pack"
+            "first"
+                | "read"
+                | "reading"
+                | "routing"
+                | "route"
+                | "router"
+                | "quality"
+                | "workflow"
+                | "pack"
         )
     });
+    let reading_plan_handoff = task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "reading" | "plan" | "execution"))
+        && task_keywords
+            .iter()
+            .any(|keyword| matches!(keyword.as_str(), "tool" | "tools" | "handoff"));
+    let omitted_candidate_follow_up = task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "omitted" | "candidate" | "candidates"))
+        && task_keywords
+            .iter()
+            .any(|keyword| matches!(keyword.as_str(), "follow" | "followup" | "continuation"));
+    let source_line_reduction = task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "source"))
+        && task_keywords
+            .iter()
+            .any(|keyword| matches!(keyword.as_str(), "line" | "lines"))
+        && task_keywords
+            .iter()
+            .any(|keyword| matches!(keyword.as_str(), "reduction" | "metrics" | "metric"));
 
-    agent_or_context && first_read_or_route
+    (agent_or_context && first_read_or_route)
+        || reading_plan_handoff
+        || omitted_candidate_follow_up
+        || source_line_reduction
 }
 
 fn auto_seed_agent_first_read_field_matches(field: &str) -> bool {
@@ -9608,6 +9678,14 @@ fn auto_seed_http_operation_file_priority(file: &str, task_keywords: &[String]) 
 
 fn auto_seed_priority_routed_file_priority(file: &str, task_keywords: &[String]) -> i32 {
     let mut priority = auto_seed_http_operation_file_priority(file, task_keywords);
+    if auto_seed_agent_first_read_task(task_keywords)
+        && !auto_seed_agent_first_read_evidence_task(task_keywords)
+    {
+        priority = priority.max(auto_seed_agent_first_read_file_priority(
+            file,
+            task_keywords,
+        ));
+    }
     if auto_seed_indexing_pipeline_task(task_keywords) {
         priority = priority.max(auto_seed_indexing_pipeline_file_priority(file));
     }
@@ -12445,6 +12523,27 @@ mod tests {
             context_seed_file_question("improve AI agent first-read routing quality evidence")
                 .contains("agent first-read workflow")
         );
+        assert!(
+            ContextTaskSignals::from_task("understand reading plan suggested tool handoff")
+                .agent_first_read
+        );
+        assert!(auto_seed_agent_first_read_task(&task_keywords(
+            "understand reading plan suggested tool handoff"
+        )));
+        assert!(
+            ContextTaskSignals::from_task("understand omitted candidate follow up")
+                .agent_first_read
+        );
+        assert!(auto_seed_agent_first_read_task(&task_keywords(
+            "understand omitted candidate follow up"
+        )));
+        assert!(
+            ContextTaskSignals::from_task("understand source line reduction metrics")
+                .agent_first_read
+        );
+        assert!(auto_seed_agent_first_read_task(&task_keywords(
+            "understand source line reduction metrics"
+        )));
 
         let keywords = task_keywords("improve AI agent first-read routing quality evidence");
         assert!(auto_seed_agent_first_read_task(&keywords));
