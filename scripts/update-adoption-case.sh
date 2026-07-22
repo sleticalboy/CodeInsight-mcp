@@ -26,6 +26,7 @@ Supported cases:
   django
   express
   gin
+  ip2region
   memchr
   requests
 
@@ -71,7 +72,7 @@ require_command() {
 parse_args() {
   while [ "$#" -gt 0 ]; do
     case "$1" in
-      django|express|gin|memchr|requests)
+      django|express|gin|ip2region|memchr|requests)
         if [ -n "$CASE_NAME" ] && [ "$CASE_NAME" != "$1" ]; then
           fail "case specified more than once"
         fi
@@ -167,6 +168,14 @@ configure_case() {
       WORK_DIR="${WORK_DIR:-/tmp/codeinsight-adoption-case-gin}"
       OUTPUT_FILE="${OUTPUT_FILE:-$ROOT_DIR/docs/adoption-case-gin.md}"
       TASK="${TASK:-understand gin engine routing behavior}"
+      ;;
+    ip2region)
+      CASE_TITLE="ip2region Adoption Comparison"
+      CASE_SUBJECT="ip2region"
+      REPO_URL="${REPO_URL:-https://github.com/lionsoul2014/ip2region.git}"
+      WORK_DIR="${WORK_DIR:-/tmp/codeinsight-adoption-case-ip2region}"
+      OUTPUT_FILE="${OUTPUT_FILE:-$ROOT_DIR/docs/adoption-case-ip2region.md}"
+      TASK="${TASK:-understand ip2region java search flow}"
       ;;
     memchr)
       CASE_TITLE="Memchr Adoption Comparison"

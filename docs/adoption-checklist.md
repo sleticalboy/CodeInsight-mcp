@@ -98,6 +98,7 @@ Pass criteria:
   [Django adoption case](adoption-case-django.md),
   [Express adoption case](adoption-case-express.md),
   [Gin adoption case](adoption-case-gin.md),
+  [ip2region adoption case](adoption-case-ip2region.md),
   [Memchr adoption case](adoption-case-memchr.md), and
   [Requests adoption case](adoption-case-requests.md) as reference shapes for
   public repository comparison snapshots.
@@ -114,6 +115,8 @@ Pass criteria:
 - Run `scripts/update-adoption-case.sh django` to refresh the Python web
   framework routing adoption case.
 - Run `scripts/update-adoption-case.sh gin` to refresh the Go adoption case.
+- Run `scripts/update-adoption-case.sh ip2region` to refresh the multi-language
+  IP lookup library adoption case.
 - Run `scripts/update-adoption-case.sh memchr` to refresh the Rust library
   adoption case.
 - Run `scripts/update-adoption-case.sh requests` to refresh the Python library

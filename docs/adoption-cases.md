@@ -17,19 +17,20 @@ show what an AI coding agent can read first before opening files broadly.
 | Gin | Go web framework | understand gin engine routing behavior | `24,099` | `248` | `23,851` | `99.0%` | `97.2x` | [case](adoption-case-gin.md) |
 | Memchr | Rust search library | understand memchr search implementation flow | `69,381` | `230` | `69,151` | `99.7%` | `301.7x` | [case](adoption-case-memchr.md) |
 | Requests | Python HTTP library | understand requests session request flow | `12,032` | `651` | `11,381` | `94.6%` | `18.5x` | [case](adoption-case-requests.md) |
+| ip2region | Multi-language IP lookup library | understand ip2region java search flow | `19,379` | `641` | `18,738` | `96.7%` | `30.2x` | [case](adoption-case-ip2region.md) |
 
 Aggregate snapshot:
 
-- Public repositories: `5`
-- Blind first-read baseline: `656,393` source lines
-- CodeInsight routed first-read: `1,954` source lines
-- Source lines avoided before broad file reading: `654,439`
-- Aggregate first-read reduction: `99.7%`
-- Aggregate read-less ratio: `335.9x`
-- Selected files: `31`
-- Selected ranges: `62`
-- Estimated tokens: `18,209`
-- Impacted files reported before edits: `111`
+- Public repositories: `6`
+- Blind first-read baseline: `675,772` source lines
+- CodeInsight routed first-read: `2,595` source lines
+- Source lines avoided before broad file reading: `673,177`
+- Aggregate first-read reduction: `99.6%`
+- Aggregate read-less ratio: `260.4x`
+- Selected files: `39`
+- Selected ranges: `78`
+- Estimated tokens: `24,133`
+- Impacted files reported before edits: `150`
 
 ## How To Read These Numbers
 
@@ -53,6 +54,7 @@ compiler, test runner, and language-specific tools.
 | Gin | `34dac209ffb6ef85cc78c5d217bbb7ad001d68fd` | `auto_task_match` | `routergroup.go` | Start with seed file context and primary symbols. | `context.go` | `file_outline` | `high` |
 | Memchr | `bce7df7140acff420478a358cde5587904000cb1` | `auto_task_match` | `benchmarks/engines/rust-memchr/main.rs` | Start with seed file context and primary symbols. | `benchmarks/engines/rust-jetscii/main.rs` | `file_outline` | `high` |
 | Requests | `f361ead047be5cb873174218582f7d8b9fcd9f49` | `auto_task_match` | `src/requests/sessions.py` | Start with seed file context and primary symbols. | `src/requests/help.py` | `file_outline` | `high` |
+| ip2region | `1a29562c2ddab00e26609f401afa921ed89af263` | `auto_task_match` | `binding/java/src/main/java/org/lionsoul/ip2region/service/Ip2Region.java` | Start with seed file context and primary symbols. | `binding/c/main.c` | `file_outline` | `high` |
 
 ## Refresh
 
@@ -64,6 +66,7 @@ scripts/update-adoption-case.sh express
 scripts/update-adoption-case.sh gin
 scripts/update-adoption-case.sh memchr
 scripts/update-adoption-case.sh requests
+scripts/update-adoption-case.sh ip2region
 ```
 
 Generate the same shape for another repository:

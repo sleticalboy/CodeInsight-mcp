@@ -208,18 +208,37 @@ EOF
   grep -Fq -- "- Generated with: \`scripts/update-adoption-case.sh memchr\`" "$TEMP_DIR/adoption-case-memchr.md" ||
     fail "missing memchr generator line"
 
+  "$ROOT_DIR/scripts/update-adoption-case.sh" \
+    ip2region \
+    --root "$TEMP_DIR/repo" \
+    --repo-url "https://github.com/lionsoul2014/ip2region.git" \
+    --comparison-script "$TEMP_DIR/adoption-comparison" \
+    --output "$TEMP_DIR/adoption-case-ip2region.md" \
+    --work-dir "$TEMP_DIR/ip2region-work" \
+    >"$TEMP_DIR/ip2region-output.log"
+
+  grep -Fq "updated adoption case: $TEMP_DIR/adoption-case-ip2region.md" "$TEMP_DIR/ip2region-output.log" ||
+    fail "ip2region case did not use generic updater"
+  grep -Fq '# ip2region Adoption Comparison' "$TEMP_DIR/adoption-case-ip2region.md" ||
+    fail "missing ip2region case title"
+  grep -Fq -- "- Repository: \`https://github.com/lionsoul2014/ip2region.git\`" "$TEMP_DIR/adoption-case-ip2region.md" ||
+    fail "missing ip2region repository"
+  grep -Fq -- "- Generated with: \`scripts/update-adoption-case.sh ip2region\`" "$TEMP_DIR/adoption-case-ip2region.md" ||
+    fail "missing ip2region generator line"
+
   "$ROOT_DIR/scripts/update-adoption-cases.sh" \
     --output "$TEMP_DIR/adoption-cases.md" \
     "$TEMP_DIR/adoption-case-django.md" \
     "$TEMP_DIR/adoption-case-express.md" \
     "$TEMP_DIR/adoption-case-gin.md" \
+    "$TEMP_DIR/adoption-case-ip2region.md" \
     "$TEMP_DIR/adoption-case-memchr.md" \
     "$TEMP_DIR/adoption-case-requests.md" \
     >"$TEMP_DIR/summary-output.log"
 
   grep -Fq "updated adoption cases summary: $TEMP_DIR/adoption-cases.md" "$TEMP_DIR/summary-output.log" ||
     fail "summary updater did not report output path"
-  grep -Fq 'Blind first-read baseline: `107,390` source lines' "$TEMP_DIR/adoption-cases.md" ||
+  grep -Fq 'Blind first-read baseline: `128,868` source lines' "$TEMP_DIR/adoption-cases.md" ||
     fail "summary updater did not aggregate baselines"
   grep -Fq 'Aggregate read-less ratio: `92.6x`' "$TEMP_DIR/adoption-cases.md" ||
     fail "summary updater did not aggregate read-less ratio"
@@ -229,6 +248,7 @@ EOF
     "$TEMP_DIR/adoption-case-django.md" \
     "$TEMP_DIR/adoption-case-express.md" \
     "$TEMP_DIR/adoption-case-gin.md" \
+    "$TEMP_DIR/adoption-case-ip2region.md" \
     "$TEMP_DIR/adoption-case-memchr.md" \
     "$TEMP_DIR/adoption-case-requests.md" \
     >"$TEMP_DIR/summary-check-output.log"

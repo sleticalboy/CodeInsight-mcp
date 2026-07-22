@@ -1,0 +1,102 @@
+name: Adoption feedback
+description: Report a CodeInsight first-read routing trial on a real repository.
+title: "[adoption] "
+labels: ["adoption-feedback", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for Public Adoption Alpha trials. Attach the evidence folder from `scripts/adoption-evidence.sh` when possible.
+  - type: input
+    id: version
+    attributes:
+      label: CodeInsight version
+      description: Paste `codeinsight version`.
+      placeholder: "codeinsight 0.1.x ..."
+    validations:
+      required: true
+  - type: dropdown
+    id: install_method
+    attributes:
+      label: Install method
+      options:
+        - Release installer
+        - Homebrew
+        - Source
+        - Docker
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: mcp_client
+    attributes:
+      label: MCP client
+      options:
+        - Codex
+        - Claude Code
+        - Cursor
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Operating system, shell, and repository language/ecosystem.
+      placeholder: "macOS 15, zsh, TypeScript/Next.js"
+    validations:
+      required: true
+  - type: textarea
+    id: task
+    attributes:
+      label: Task
+      description: Exact task passed to `agent_route`.
+      render: text
+      placeholder: "understand the main application entrypoint"
+    validations:
+      required: true
+  - type: input
+    id: expected_first_read
+    attributes:
+      label: Expected first read
+      description: Expected file, symbol, or area if you know it.
+      placeholder: "src/router.ts or routing package"
+  - type: textarea
+    id: codeinsight_result
+    attributes:
+      label: CodeInsight result
+      description: Paste the issue-ready snippet from `scripts/adoption-evidence.sh --issue-template`.
+      render: markdown
+      placeholder: |
+        First selected file:
+        First reading focus:
+        Read-less ratio:
+        Impact risk:
+    validations:
+      required: true
+  - type: dropdown
+    id: outcome
+    attributes:
+      label: Outcome
+      options:
+        - route_hit
+        - route_near_miss
+        - route_miss
+        - workflow_friction
+        - overtrust_risk
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Include the command and list attached artifacts.
+      render: bash
+      placeholder: |
+        scripts/adoption-evidence.sh /path/to/repo \
+          --task "..." \
+          --output-dir /tmp/codeinsight-adoption-evidence \
+          --print-snippet \
+          --issue-template
+    validations:
+      required: true

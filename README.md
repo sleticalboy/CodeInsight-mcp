@@ -210,8 +210,9 @@ entrypoint and recommended-tool routing decisions from `project_overview`:
 - [Large repository benchmark](docs/benchmark-large.md): express, Flask, Gin,
   and Tokio.
 - [Adoption cases](docs/adoption-cases.md): public repository blind-read vs
-  routed-first-read comparison summary across JavaScript, Go, Rust, and Python
-  public repositories, including a heavyweight Django routing case.
+  routed-first-read comparison summary across JavaScript, Go, Rust, Python, and
+  multi-language library repositories, including a heavyweight Django routing
+  case.
 - [CodeInsight self adoption report](docs/adoption-report-codeinsight.md): a
   complete report bundle snapshot with issue template, manifest, raw MCP
   first-call JSON, and diagnostic logs.
@@ -231,9 +232,9 @@ Current benchmark snapshot:
   select 709 of 75,753 source lines, a 99.1% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and
   select 1,781 of 241,724 source lines, a 99.3% aggregate line reduction.
-- The adoption case summary covers 5 public repositories and routes a first read
-  to 1,954 of 656,393 source lines, avoiding 654,439 lines before broad file
-  reading, a 99.7% aggregate reduction and 335.9x aggregate read-less ratio.
+- The adoption case summary covers 6 public repositories and routes a first read
+  to 2,595 of 675,772 source lines, avoiding 673,177 lines before broad file
+  reading, a 99.6% aggregate reduction and 260.4x aggregate read-less ratio.
 - The CodeInsight self adoption report packages a full tar.gz handoff and
   routes the entrypoint task to 440 of 39,357 source lines, avoiding 38,917
   source lines before broad reading for a 98.9% reduction and 89.4x read-less
@@ -352,6 +353,7 @@ Key docs:
 - [Django adoption case](docs/adoption-case-django.md)
 - [Express adoption case](docs/adoption-case-express.md)
 - [Gin adoption case](docs/adoption-case-gin.md)
+- [ip2region adoption case](docs/adoption-case-ip2region.md)
 - [Memchr adoption case](docs/adoption-case-memchr.md)
 - [Requests adoption case](docs/adoption-case-requests.md)
 - [Agent prompt templates](docs/agent-prompt-template.md)
@@ -370,6 +372,8 @@ Key docs:
 - [Documentation index](docs/README.md)
 - [MVP public readiness](docs/mvp-public-readiness.md)
 - [Public Adoption Alpha](docs/public-adoption-alpha.md)
+- [Alpha feedback triage](docs/alpha-feedback-triage.md)
+- [Alpha trial log](docs/alpha-trial-log.md)
 - [Public adoption feedback template](docs/public-adoption-feedback-template.md)
 
 ## Current Status
@@ -384,8 +388,9 @@ Latest verified release: `v0.1.12`.
 Current public route-quality evidence passes `86/86` first-file checks and
 selects 41,455 of 7,098,531 task source lines.
 
-Next focus: run Public Adoption Alpha trials with external users and collect
-route-quality feedback using the checked-in feedback template.
+Next focus: run Alpha Feedback Loop trials with external users, collect
+route-quality feedback through the checked-in issue form, and fix the highest
+priority route miss or workflow friction.
 See [Current status](docs/status.md) for the full implemented capability list.
 
 ## Install From Release

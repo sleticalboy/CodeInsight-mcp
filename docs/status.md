@@ -13,9 +13,9 @@ workflow is implemented end to end.
   Gin, Requests, and Streamlit tasks, passes `86/86` expected first-file checks,
   and selects 41,455 of 7,098,531 task source lines for a 99.41% read-less
   reduction.
-- The checked-in adoption cases now cover Django, Express, Gin, Memchr, and
-  Requests, routing a first read to 1,954 of 656,393 source lines before broad
-  reading for a 99.7% aggregate reduction.
+- The checked-in adoption cases now cover Django, Express, Gin, ip2region,
+  Memchr, and Requests, routing a first read to 2,595 of 675,772 source lines
+  before broad reading for a 99.6% aggregate reduction.
 - The public matrix records the first selected file, reading focus, reading
   question, and first suggested tool for every route.
 - The optional heavyweight Django manual route-quality probe covers URL

@@ -18,6 +18,8 @@ Default adoption path:
 - [Adoption checklist](adoption-checklist.md)
 - [MVP public readiness](mvp-public-readiness.md)
 - [Public Adoption Alpha](public-adoption-alpha.md)
+- [Alpha feedback triage](alpha-feedback-triage.md)
+- [Alpha trial log](alpha-trial-log.md)
 - [Public adoption feedback template](public-adoption-feedback-template.md)
 - [Demo script](demo-script.md)
 - [Demo output snapshot](demo-output.md)
@@ -37,6 +39,7 @@ Default adoption path:
 - [Django adoption case](adoption-case-django.md)
 - [Express adoption case](adoption-case-express.md)
 - [Gin adoption case](adoption-case-gin.md)
+- [ip2region adoption case](adoption-case-ip2region.md)
 - [Memchr adoption case](adoption-case-memchr.md)
 - [Requests adoption case](adoption-case-requests.md)
 - [Agent prompt templates](agent-prompt-template.md)
@@ -88,6 +91,8 @@ Choose the check by adoption stage:
 
 - [MVP public readiness](mvp-public-readiness.md)
 - [Public Adoption Alpha](public-adoption-alpha.md)
+- [Alpha feedback triage](alpha-feedback-triage.md)
+- [Alpha trial log](alpha-trial-log.md)
 - [Public adoption feedback template](public-adoption-feedback-template.md)
 - [Maintenance commands](maintenance-commands.md)
 - Two-minute demo: `scripts/two-minute-demo.sh`
@@ -106,6 +111,7 @@ Choose the check by adoption stage:
 - [Django adoption case](adoption-case-django.md)
 - [Express adoption case](adoption-case-express.md)
 - [Gin adoption case](adoption-case-gin.md)
+- [ip2region adoption case](adoption-case-ip2region.md)
 - [Memchr adoption case](adoption-case-memchr.md)
 - [Requests adoption case](adoption-case-requests.md)
 - [Smoke benchmark](benchmark-v0.1.md)

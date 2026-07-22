@@ -216,7 +216,7 @@ main() {
     '\[CodeInsight self adoption report\]\(docs/adoption-report-codeinsight\.md\)' \
     "README self adoption report link"
   require_pattern README.md \
-    '1,954 of 656,393 source lines' \
+    '2,595 of 675,772 source lines' \
     "README adoption cases aggregate snapshot"
   require_pattern docs/impact-analysis.md \
     'PHP Composer scripts are intentionally broad-only by default' \
@@ -225,7 +225,7 @@ main() {
     'does not match sibling names such as `src/core2\.ts`' \
     "configured suggested-check file filter boundary"
   require_pattern README.md \
-    '335\.9x aggregate read-less ratio' \
+    '260\.4x aggregate read-less ratio' \
     "README adoption cases aggregate read-less ratio"
   require_self_adoption_summary_sync
   require_pattern README.md \
@@ -344,6 +344,9 @@ main() {
     '\[Gin adoption case\]\(adoption-case-gin\.md\)' \
     "adoption checklist Gin case link"
   require_pattern docs/adoption-checklist.md \
+    '\[ip2region adoption case\]\(adoption-case-ip2region\.md\)' \
+    "adoption checklist ip2region case link"
+  require_pattern docs/adoption-checklist.md \
     '\[Memchr adoption case\]\(adoption-case-memchr\.md\)' \
     "adoption checklist Memchr case link"
   require_pattern docs/adoption-checklist.md \
@@ -361,6 +364,9 @@ main() {
   require_pattern docs/adoption-checklist.md \
     'scripts/update-adoption-case\.sh gin' \
     "adoption checklist Gin refresh command"
+  require_pattern docs/adoption-checklist.md \
+    'scripts/update-adoption-case\.sh ip2region' \
+    "adoption checklist ip2region refresh command"
   require_pattern docs/adoption-checklist.md \
     'scripts/update-adoption-case\.sh memchr' \
     "adoption checklist Memchr refresh command"
@@ -425,6 +431,36 @@ main() {
     'Uploadable adoption report' \
     "docs index uploadable adoption report validation row"
   require_pattern docs/README.md \
+    '\[Public Adoption Alpha\]\(public-adoption-alpha\.md\)' \
+    "docs index Public Adoption Alpha link"
+  require_pattern docs/README.md \
+    '\[Alpha feedback triage\]\(alpha-feedback-triage\.md\)' \
+    "docs index Alpha feedback triage link"
+  require_pattern docs/README.md \
+    '\[Alpha trial log\]\(alpha-trial-log\.md\)' \
+    "docs index Alpha trial log link"
+  require_pattern README.md \
+    '\[Alpha feedback triage\]\(docs/alpha-feedback-triage\.md\)' \
+    "README Alpha feedback triage link"
+  require_pattern README.md \
+    '\[Alpha trial log\]\(docs/alpha-trial-log\.md\)' \
+    "README Alpha trial log link"
+  require_pattern docs/alpha-feedback-triage.md \
+    'Do not close route misses only because the read-less ratio looks good' \
+    "Alpha feedback triage route miss caveat"
+  require_pattern docs/alpha-feedback-triage.md \
+    'Large Repository Friction' \
+    "Alpha feedback triage large repository friction section"
+  require_pattern docs/alpha-trial-log.md \
+    'Next\.js app router' \
+    "Alpha trial log Next.js workflow friction row"
+  require_pattern .github/ISSUE_TEMPLATE/adoption-feedback.yml \
+    'name: Adoption feedback' \
+    "GitHub adoption feedback issue form"
+  require_pattern .github/ISSUE_TEMPLATE/adoption-feedback.yml \
+    'route_near_miss' \
+    "GitHub adoption feedback outcome category"
+  require_pattern docs/README.md \
     '\[Django adoption case\]\(adoption-case-django\.md\)' \
     "docs index Django adoption case link"
   require_pattern docs/README.md \
@@ -433,6 +469,9 @@ main() {
   require_pattern docs/README.md \
     '\[Gin adoption case\]\(adoption-case-gin\.md\)' \
     "docs index Gin adoption case link"
+  require_pattern docs/README.md \
+    '\[ip2region adoption case\]\(adoption-case-ip2region\.md\)' \
+    "docs index ip2region adoption case link"
   require_pattern docs/README.md \
     '\[Memchr adoption case\]\(adoption-case-memchr\.md\)' \
     "docs index Memchr adoption case link"
@@ -505,6 +544,24 @@ main() {
   require_pattern docs/adoption-case-gin.md \
     'scripts/adoption-comparison\.sh /tmp/codeinsight-case-gin' \
     "Gin adoption case reproduce command"
+  require_pattern docs/adoption-case-ip2region.md \
+    'Commit: `1a29562c2ddab00e26609f401afa921ed89af263`' \
+    "ip2region adoption case commit"
+  require_pattern docs/adoption-case-ip2region.md \
+    'Read less | `30\.2x`' \
+    "ip2region adoption case read-less metric"
+  require_pattern docs/adoption-case-ip2region.md \
+    'First selected file \| `binding/java/src/main/java/org/lionsoul/ip2region/service/Ip2Region\.java`' \
+    "ip2region adoption case first selected file"
+  require_pattern docs/adoption-case-ip2region.md \
+    'Generated with: `scripts/update-adoption-case\.sh ip2region`' \
+    "ip2region adoption case generator"
+  require_pattern docs/adoption-case-ip2region.md \
+    'scripts/update-adoption-case\.sh ip2region --commit 1a29562c2ddab00e26609f401afa921ed89af263' \
+    "ip2region adoption case exact refresh command"
+  require_pattern docs/adoption-case-ip2region.md \
+    'scripts/adoption-comparison\.sh /tmp/codeinsight-case-ip2region' \
+    "ip2region adoption case reproduce command"
   require_pattern docs/adoption-case-memchr.md \
     'Commit: `bce7df7140acff420478a358cde5587904000cb1`' \
     "Memchr adoption case commit"
@@ -545,13 +602,13 @@ main() {
     'scripts/adoption-comparison\.sh /tmp/codeinsight-case-requests' \
     "Requests adoption case reproduce command"
   require_pattern docs/adoption-cases.md \
-    'Blind first-read baseline: `656,393` source lines' \
+    'Blind first-read baseline: `675,772` source lines' \
     "adoption cases aggregate baseline"
   require_pattern docs/adoption-cases.md \
-    'Aggregate first-read reduction: `99\.7%`' \
+    'Aggregate first-read reduction: `99\.6%`' \
     "adoption cases aggregate reduction"
   require_pattern docs/adoption-cases.md \
-    'Aggregate read-less ratio: `335\.9x`' \
+    'Aggregate read-less ratio: `260\.4x`' \
     "adoption cases aggregate read-less ratio"
   require_pattern docs/adoption-cases.md \
     '\| Case \| Commit \| Seed strategy \| First selected file \| First reading focus \|' \
@@ -577,6 +634,9 @@ main() {
   require_pattern docs/adoption-cases.md \
     '\[case\]\(adoption-case-gin\.md\)' \
     "adoption cases Gin detail link"
+  require_pattern docs/adoption-cases.md \
+    '\[case\]\(adoption-case-ip2region\.md\)' \
+    "adoption cases ip2region detail link"
   require_pattern docs/adoption-cases.md \
     '\[case\]\(adoption-case-memchr\.md\)' \
     "adoption cases Memchr detail link"
@@ -899,6 +959,9 @@ main() {
   require_pattern scripts/update-adoption-case.sh \
     'gin\)' \
     "Gin adoption case update script branch"
+  require_pattern scripts/update-adoption-case.sh \
+    'ip2region\)' \
+    "ip2region adoption case update script branch"
   require_pattern scripts/update-adoption-case.sh \
     'memchr\)' \
     "Memchr adoption case update script branch"

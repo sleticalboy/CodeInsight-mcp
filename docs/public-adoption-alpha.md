@@ -121,12 +121,23 @@ Checked-in adoption cases:
   first, 99.9% reduction, 892.8x read-less ratio.
 - [Express](adoption-case-express.md): JavaScript web framework routing.
 - [Gin](adoption-case-gin.md): Go web framework routing.
+- [ip2region](adoption-case-ip2region.md): multi-language IP lookup library,
+  Java search flow, first selected file
+  `binding/java/src/main/java/org/lionsoul/ip2region/service/Ip2Region.java`,
+  641 of 19,379 source lines routed first, 96.7% reduction, 30.2x read-less
+  ratio.
 - [Memchr](adoption-case-memchr.md): Rust search implementation flow.
 - [Requests](adoption-case-requests.md): Python HTTP session request flow.
 
-The aggregate public adoption snapshot covers five public repositories and
-routes 1,954 of 656,393 source lines before broad reading, a 99.7% aggregate
+The aggregate public adoption snapshot covers six public repositories and
+routes 2,595 of 675,772 source lines before broad reading, a 99.6% aggregate
 first-read reduction.
+
+Current Alpha Feedback Loop documents:
+
+- [Alpha feedback triage](alpha-feedback-triage.md)
+- [Alpha trial log](alpha-trial-log.md)
+- GitHub `Adoption feedback` issue form under `.github/ISSUE_TEMPLATE/`
 
 ## Triage Policy
 
