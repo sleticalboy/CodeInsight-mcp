@@ -20,6 +20,9 @@ The format is based on Keep a Changelog, and this project follows semantic versi
   `agent_route` first-read JSON contract directly. The smoke can now write
   `--summary-json`, and CI uploads the `codeinsight-agent-route-smoke` artifact
   while publishing the key metrics through `scripts/agent-route-step-summary.sh`.
+- Agent-route and MCP first-call smoke evidence now cover task text that names
+  an indexed file path, reporting `auto_task_path`, `task_path`, and the first
+  seed value in local summaries, Actions summaries, and onboarding examples.
 - Added `scripts/agent-route-artifact-smoke.sh` and wired
   `codeinsight-agent-route-smoke` into release evidence summaries and pre-tag
   artifact gates.

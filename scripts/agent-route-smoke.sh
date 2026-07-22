@@ -344,7 +344,7 @@ main() {
   local route_json="$TEMP_DIR/agent-route.json"
 
   "$CODEINSIGHT_BIN" agent-route "$repo_dir" \
-    --task "understand auth entrypoint flow" \
+    --task "inspect src/auth.ts before editing login behavior" \
     --token-budget 1600 \
     --force-index \
     --impact-limit 10 \
@@ -352,7 +352,7 @@ main() {
     --impact-evidence-limit 3 \
     >"$route_json"
 
-  require_jq "$route_json" '.task == "understand auth entrypoint flow"' "task should round-trip"
+  require_jq "$route_json" '.task == "inspect src/auth.ts before editing login behavior"' "task should round-trip"
   require_jq "$route_json" '.token_budget == 1600' "token budget should round-trip"
   require_jq "$route_json" '.route | map(.tool) == ["index_project", "project_overview", "context_pack", "impact_analysis"]' "route should run the first-read pipeline in order"
   require_jq "$route_json" '.execution_plan | map(.action) == ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"]' "execution plan should describe the client follow-up path"
@@ -374,6 +374,12 @@ main() {
   require_jq "$route_json" '.context_pack.read_less.line_reduction | test("^[0-9]+\\.[0-9]%$|^n/a$")' "context_pack read_less should expose line reduction"
   require_jq "$route_json" '.context_pack.read_less.read_less_ratio | test("^[0-9]+\\.[0-9]x$|^n/a$")' "context_pack read_less should expose read-less ratio"
   require_jq "$route_json" '.context_pack.reading_plan | length >= 1' "context_pack should include a reading plan"
+  require_jq "$route_json" '.context_pack.seed_strategy == "auto_task_path"' "path-focused route should report task-path seed strategy"
+  require_jq "$route_json" '.context_pack.selected_seeds[0].source == "task_path"' "path-focused route should mark the first seed as a task path"
+  require_jq "$route_json" '.context_pack.selected_seeds[0].value == "src/auth.ts"' "path-focused route should seed from src/auth.ts"
+  require_jq "$route_json" '.context_pack.files[0].file == "src/auth.ts"' "path-focused route should read src/auth.ts first"
+  require_jq "$route_json" '.context_pack.reading_plan[0].file == "src/auth.ts"' "path-focused reading plan should start with src/auth.ts"
+  require_jq "$route_json" '.execution_plan[0].files[0] == "src/auth.ts"' "path-focused execution plan should start with src/auth.ts"
   require_jq "$route_json" '.current_reading_step == .context_pack.reading_plan[0]' "agent_route current_reading_step should mirror reading_plan[0]"
   require_jq "$route_json" '.context_pack.reading_plan[0].next_action != null and .context_pack.reading_plan[0].next_action != ""' "reading plan should include next action"
   require_jq "$route_json" '.context_pack.reading_plan[0].question != null and .context_pack.reading_plan[0].question != ""' "reading plan should include a question"

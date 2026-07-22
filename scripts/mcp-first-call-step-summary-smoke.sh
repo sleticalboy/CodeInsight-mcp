@@ -37,12 +37,23 @@ main() {
   "status": "pass",
   "server": "codeinsight",
   "root": "/tmp/repo",
-  "task": "understand app entrypoint flow",
+  "task": "inspect src/auth.ts before editing login behavior",
   "token_budget": 1600,
   "route_tools": ["index_project", "project_overview", "context_pack", "impact_analysis"],
-  "selected_files": ["src/main.ts", "src/auth.ts"],
-  "first_context_file": "src/main.ts",
-  "first_reading_file": "src/main.ts",
+  "selected_files": ["src/auth.ts", "src/audit.ts"],
+  "seed_strategy": "auto_task_path",
+  "selected_seeds": [
+    {
+      "kind": "file",
+      "role": "source",
+      "source": "task_path",
+      "value": "src/auth.ts"
+    }
+  ],
+  "first_seed_source": "task_path",
+  "first_seed_value": "src/auth.ts",
+  "first_context_file": "src/auth.ts",
+  "first_reading_file": "src/auth.ts",
   "first_reading_selection_rank": 1,
   "current_reading_step_matches_reading_plan": true,
   "context_pack_read_less": {
@@ -59,12 +70,12 @@ main() {
   "read_less_ratio": "10.0x",
   "reading_plan": [
     {
-      "file": "src/main.ts",
+      "file": "src/auth.ts",
       "selection_rank": 1,
       "next_action": "inspect_seed_file",
-      "focus": "Start with seed file context and primary symbols.",
-      "question": "What entrypoints define the main flow?",
-      "reason": "Read this step to answer: What entrypoints define the main flow? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file",
+      "focus": "Start with seed file authentication and session boundaries.",
+      "question": "Where are authentication decisions, credentials, or session boundaries handled here?",
+      "reason": "Read this step to answer: Where are authentication decisions, credentials, or session boundaries handled here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file",
       "selection_reason": "Selected for high relevance via seed_file",
       "suggested_tool": "file_outline"
     }
@@ -89,7 +100,7 @@ main() {
   "suggested_tool": {
     "tool": "file_outline",
     "arguments": {
-      "path": "/tmp/repo/src/main.ts"
+      "path": "/tmp/repo/src/auth.ts"
     }
   },
   "suggested_tool_executed": true,
@@ -142,12 +153,15 @@ EOF
 
   require_literal "$summary_md" "## MCP First-Call Smoke" "summary heading"
   require_literal "$summary_md" 'Status: `pass`' "status"
-  require_literal "$summary_md" 'Task: `understand app entrypoint flow`' "task"
+  require_literal "$summary_md" 'Task: `inspect src/auth.ts before editing login behavior`' "task"
   require_literal "$summary_md" 'Route: `index_project -> project_overview -> context_pack -> impact_analysis`' "route"
   require_literal "$summary_md" 'Execution plan: `read_selected_context -> use_current_reading_step_suggested_tool -> use_continuation_if_needed -> review_impact_before_edits`' "execution plan"
-  require_literal "$summary_md" 'Selected files: `src/main.ts`, `src/auth.ts`' "selected files"
-  require_literal "$summary_md" 'First context file: `src/main.ts`' "first context file"
-  require_literal "$summary_md" 'First reading file: `src/main.ts`' "first reading file"
+  require_literal "$summary_md" 'Selected files: `src/auth.ts`, `src/audit.ts`' "selected files"
+  require_literal "$summary_md" 'Seed strategy: `auto_task_path`' "seed strategy"
+  require_literal "$summary_md" 'First seed source: `task_path`' "first seed source"
+  require_literal "$summary_md" 'First seed value: `src/auth.ts`' "first seed value"
+  require_literal "$summary_md" 'First context file: `src/auth.ts`' "first context file"
+  require_literal "$summary_md" 'First reading file: `src/auth.ts`' "first reading file"
   require_literal "$summary_md" 'First reading selection rank: `1`' "first reading selection rank"
   require_literal "$summary_md" 'Current reading step mirror contract: `true`' "current reading step mirror contract"
   require_literal "$summary_md" 'Blind first-read baseline: `120` source lines' "blind first-read baseline"
@@ -156,8 +170,8 @@ EOF
   require_literal "$summary_md" 'First-read line reduction: `90.0%`' "first-read line reduction"
   require_literal "$summary_md" 'Read less: `10.0x`' "read-less ratio"
   require_literal "$summary_md" 'First next action: `inspect_seed_file`' "first next action"
-  require_literal "$summary_md" 'First reading focus: `Start with seed file context and primary symbols.`' "first reading focus"
-  require_literal "$summary_md" 'First reading question: `What entrypoints define the main flow?`' "first reading question"
+  require_literal "$summary_md" 'First reading focus: `Start with seed file authentication and session boundaries.`' "first reading focus"
+  require_literal "$summary_md" 'First reading question: `Where are authentication decisions, credentials, or session boundaries handled here?`' "first reading question"
   require_literal "$summary_md" 'Reading order contract: `true`' "reading order contract"
   require_literal "$summary_md" 'First execution instruction focus contract: `true`' "first execution instruction focus contract"
   require_literal "$summary_md" 'First execution instruction question contract: `true`' "first execution instruction question contract"

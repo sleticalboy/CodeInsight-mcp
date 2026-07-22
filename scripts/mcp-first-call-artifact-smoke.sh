@@ -75,16 +75,22 @@ validate_summary_json() {
   if ! jq -e \
     '.status == "pass"
       and .server == "codeinsight"
-      and .task == "understand app entrypoint flow"
+      and .task == "inspect src/auth.ts before editing login behavior"
       and .token_budget == 1600
       and .route_tools == ["index_project", "project_overview", "context_pack", "impact_analysis"]
       and .execution_plan_actions == ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"]
       and .first_execution_action == "read_selected_context"
       and (.selected_files | type == "array")
-      and (.selected_files | length) >= 2
-      and (.selected_files | index("src/main.ts"))
+      and (.selected_files | length) >= 1
       and (.selected_files | index("src/auth.ts"))
-      and .first_context_file == "src/main.ts"
+      and .seed_strategy == "auto_task_path"
+      and .first_seed_source == "task_path"
+      and .first_seed_value == "src/auth.ts"
+      and (.selected_seeds | type == "array")
+      and (.selected_seeds | length) >= 1
+      and .selected_seeds[0].source == "task_path"
+      and .selected_seeds[0].value == "src/auth.ts"
+      and .first_context_file == "src/auth.ts"
       and .first_reading_file == .first_context_file
       and (.first_reading_selection_rank | type == "number")
       and (.context_pack_read_less | type == "object")
@@ -101,7 +107,7 @@ validate_summary_json() {
       and .current_reading_step_matches_reading_plan == true
       and (.reading_plan | type == "array")
       and (.reading_plan | length) >= 1
-      and (.reading_plan[0].file == "src/main.ts")
+      and (.reading_plan[0].file == "src/auth.ts")
       and (.reading_plan[0].selection_rank == .first_reading_selection_rank)
       and (.reading_plan[0].next_action == "inspect_seed_file")
       and (.reading_plan[0].focus | type == "string" and length > 0)
@@ -280,6 +286,9 @@ main() {
 
   echo "MCP first-call artifact smoke passed"
   echo "summary: $summary_file"
+  echo "seed_strategy: $(jq -r '.seed_strategy' "$summary_file")"
+  echo "first_seed_source: $(jq -r '.first_seed_source' "$summary_file")"
+  echo "first_seed_value: $(jq -r '.first_seed_value' "$summary_file")"
   echo "first_reading_focus: $(jq -r '.reading_plan[0].focus' "$summary_file")"
   echo "first_reading_question: $(jq -r '.reading_plan[0].question' "$summary_file")"
   echo "current_reading_step_matches_reading_plan: $(jq -r '.current_reading_step_matches_reading_plan' "$summary_file")"

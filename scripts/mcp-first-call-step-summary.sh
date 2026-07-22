@@ -31,6 +31,10 @@ require_summary_contract() {
       and .execution_plan_actions == ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"]
       and (.selected_files | type == "array")
       and (.selected_files | length) >= 1
+      and (.seed_strategy | type == "string" and length > 0)
+      and (.first_seed_source | type == "string")
+      and (.first_seed_value | type == "string")
+      and (.selected_seeds | type == "array")
       and (.first_context_file | type == "string" and length > 0)
       and .first_reading_file == .first_context_file
       and (.first_reading_selection_rank | type == "number")
@@ -141,6 +145,9 @@ main() {
     printf 'Route: `%s`\n\n' "$(value '.route_tools | join(" -> ")')"
     printf 'Execution plan: `%s`\n\n' "$(value '.execution_plan_actions | join(" -> ")')"
     printf 'Selected files: `%s`\n\n' "$(value '.selected_files | join("`, `")')"
+    printf 'Seed strategy: `%s`\n\n' "$(value '.seed_strategy')"
+    printf 'First seed source: `%s`\n\n' "$(value '.first_seed_source')"
+    printf 'First seed value: `%s`\n\n' "$(value '.first_seed_value')"
     printf 'First context file: `%s`\n\n' "$(value '.first_context_file')"
     printf 'First reading file: `%s`\n\n' "$(value '.first_reading_file')"
     printf 'First reading selection rank: `%s`\n\n' "$(value '.first_reading_selection_rank')"

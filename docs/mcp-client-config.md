@@ -260,31 +260,42 @@ Expected summary shape:
     "context_pack",
     "impact_analysis"
   ],
-  "selected_files": ["src/main.ts", "src/auth.ts"],
-  "first_context_file": "src/main.ts",
-  "first_reading_file": "src/main.ts",
+  "selected_files": ["src/auth.ts", "src/audit.ts"],
+  "seed_strategy": "auto_task_path",
+  "selected_seeds": [
+    {
+      "kind": "file",
+      "role": "source",
+      "source": "task_path",
+      "value": "src/auth.ts"
+    }
+  ],
+  "first_seed_source": "task_path",
+  "first_seed_value": "src/auth.ts",
+  "first_context_file": "src/auth.ts",
+  "first_reading_file": "src/auth.ts",
   "first_reading_selection_rank": 1,
   "current_reading_step_matches_reading_plan": true,
   "context_pack_read_less": {
     "baseline_source_lines": 18,
-    "selected_source_lines": 15,
-    "source_lines_avoided": 3,
-    "line_reduction": "16.7%",
-    "read_less_ratio": "1.2x"
+    "selected_source_lines": 10,
+    "source_lines_avoided": 8,
+    "line_reduction": "44.4%",
+    "read_less_ratio": "1.8x"
   },
   "baseline_source_lines": 18,
-  "selected_source_lines": 15,
-  "source_lines_avoided": 3,
-  "line_reduction": "16.7%",
-  "read_less_ratio": "1.2x",
+  "selected_source_lines": 10,
+  "source_lines_avoided": 8,
+  "line_reduction": "44.4%",
+  "read_less_ratio": "1.8x",
   "reading_plan": [
     {
-      "file": "src/main.ts",
+      "file": "src/auth.ts",
       "selection_rank": 1,
       "next_action": "inspect_seed_file",
-      "focus": "Start with seed file context and primary symbols.",
-      "question": "What entrypoints, exported symbols, or setup code define the main flow here?",
-      "reason": "Read this step to answer: What entrypoints, exported symbols, or setup code define the main flow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file",
+      "focus": "Start with seed file authentication and session boundaries.",
+      "question": "Where are authentication decisions, credentials, or session boundaries handled here?",
+      "reason": "Read this step to answer: Where are authentication decisions, credentials, or session boundaries handled here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file",
       "selection_reason": "Selected for high relevance via seed_file",
       "suggested_tool": "file_outline"
     }
@@ -312,7 +323,7 @@ Expected summary shape:
   "suggested_tool": {
     "tool": "file_outline",
     "arguments": {
-      "path": "/absolute/path/to/repo/src/main.ts"
+      "path": "/absolute/path/to/repo/src/auth.ts"
     }
   },
   "suggested_tool_executed": true,

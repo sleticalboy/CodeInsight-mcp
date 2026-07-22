@@ -1812,7 +1812,7 @@ main() {
     '\| First MCP call onboarding changed \| `scripts/mcp-first-call-smoke\.sh --summary-json /tmp/codeinsight-mcp-first-call\.json` \|' \
     "maintenance MCP first-call smoke chooser"
   require_pattern docs/maintenance-commands.md \
-    'first context file, read-less metrics, selection rank, reading-question handoff, continuation summary, reading-plan order, suggested-tool handoff, impact status, blocked no-seed handling, and saved artifacts' \
+    'first context file, task-path seed evidence, read-less metrics, selection rank, reading-question handoff, continuation summary, reading-plan order, suggested-tool handoff, impact status, blocked no-seed handling, and saved artifacts' \
     "maintenance MCP first-call artifact scope"
   require_pattern docs/maintenance-commands.md \
     'scripts/mcp-first-call-step-summary-smoke\.sh' \
@@ -1821,10 +1821,16 @@ main() {
     '\| First MCP call Actions summary changed \| `scripts/mcp-first-call-step-summary-smoke\.sh` \|' \
     "maintenance MCP first-call step summary chooser"
   require_pattern docs/maintenance-commands.md \
-    'Actions Summary section for selected files, first context file, first reading file, read-less metrics, selection rank, reading-question handoff, omitted-candidate continuation fields, reading-plan order, suggested-tool handoff, continuation timing, impact status, blocked no-seed handling, and artifact link' \
+    'Actions Summary section for selected files, task-path seed evidence, first context file, first reading file, read-less metrics, selection rank, reading-question handoff, omitted-candidate continuation fields, reading-plan order, suggested-tool handoff, continuation timing, impact status, blocked no-seed handling, and artifact link' \
     "maintenance MCP first-call step summary scope"
   require_pattern scripts/mcp-first-call-step-summary-smoke.sh \
-    'First context file: `src/main\.ts`' \
+    'Seed strategy: `auto_task_path`' \
+    "MCP first-call step summary seed strategy"
+  require_pattern scripts/mcp-first-call-step-summary-smoke.sh \
+    'First seed source: `task_path`' \
+    "MCP first-call step summary first seed source"
+  require_pattern scripts/mcp-first-call-step-summary-smoke.sh \
+    'First context file: `src/auth\.ts`' \
     "MCP first-call step summary first context file"
   require_pattern scripts/mcp-first-call-step-summary-smoke.sh \
     'First reading selection rank: `1`' \
@@ -2742,8 +2748,11 @@ main() {
     'Expected summary shape:' \
     "MCP client config first-call summary example"
   require_pattern docs/mcp-client-config.md \
-    '"selected_files": \["src/main\.ts", "src/auth\.ts"\]' \
+    '"selected_files": \["src/auth\.ts", "src/audit\.ts"\]' \
     "MCP client config first-call selected files example"
+  require_pattern docs/mcp-client-config.md \
+    '"seed_strategy": "auto_task_path"' \
+    "MCP client config first-call seed strategy example"
   require_pattern docs/mcp-client-config.md \
     '"use_current_reading_step_suggested_tool"' \
     "MCP client config first-call execution action example"
@@ -2754,7 +2763,7 @@ main() {
     '"current_reading_step_matches_reading_plan": true' \
     "MCP client config current reading step mirror example"
   require_pattern docs/mcp-client-config.md \
-    '"focus": "Start with seed file context' \
+    '"focus": "Start with seed file authentication' \
     "MCP client config reading focus example"
   require_pattern docs/mcp-client-config.md \
     '"current_step_instruction_has_focus": true' \

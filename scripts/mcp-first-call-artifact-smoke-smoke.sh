@@ -41,8 +41,8 @@ write_summary_json() {
     "symbols": 2
   },
   "impact_status": "complete",
-  "first_context_file": "src/main.ts",
-  "first_reading_file": "src/main.ts",
+  "first_context_file": "src/auth.ts",
+  "first_reading_file": "src/auth.ts",
   "first_reading_selection_rank": 1,
   "context_pack_read_less": {
     "baseline_source_lines": 120,
@@ -59,12 +59,12 @@ write_summary_json() {
   "current_reading_step_matches_reading_plan": true,
   "reading_plan": [
     {
-      "file": "src/main.ts",
+      "file": "src/auth.ts",
       "selection_rank": 1,
       "next_action": "inspect_seed_file",
-      "focus": "Start with seed file context and primary symbols.",
-      "question": "What entrypoints define the main flow?",
-      "reason": "Read this step to answer: What entrypoints define the main flow? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file",
+      "focus": "Start with seed file authentication and session boundaries.",
+      "question": "Where are authentication decisions, credentials, or session boundaries handled here?",
+      "reason": "Read this step to answer: Where are authentication decisions, credentials, or session boundaries handled here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file",
       "selection_reason": "Selected for high relevance via seed_file",
       "suggested_tool": "file_outline"
     }
@@ -89,14 +89,25 @@ write_summary_json() {
   "first_omitted_omission_reason": "",
   "first_omitted_next_action": "",
   "selected_files": [
-    "src/main.ts",
-    "src/auth.ts"
+    "src/auth.ts",
+    "src/audit.ts"
   ],
+  "seed_strategy": "auto_task_path",
+  "selected_seeds": [
+    {
+      "kind": "file",
+      "role": "source",
+      "source": "task_path",
+      "value": "src/auth.ts"
+    }
+  ],
+  "first_seed_source": "task_path",
+  "first_seed_value": "src/auth.ts",
   "server": "codeinsight",
   "status": "pass",
   "suggested_tool": {
     "arguments": {
-      "path": "/tmp/repo/src/main.ts"
+      "path": "/tmp/repo/src/auth.ts"
     },
     "tool": "file_outline"
   },
@@ -145,7 +156,7 @@ write_summary_json() {
       "skipped_no_context"
     ]
   },
-  "task": "understand app entrypoint flow",
+  "task": "inspect src/auth.ts before editing login behavior",
   "token_budget": 1600
 }
 EOF
@@ -207,9 +218,15 @@ EOF
     fail "missing artifact smoke success output"
   grep -Fq "summary: $TEMP_DIR/download/mcp-first-call.json" "$TEMP_DIR/output.log" ||
     fail "missing summary path output"
-  grep -Fq 'first_reading_focus: Start with seed file context and primary symbols.' "$TEMP_DIR/output.log" ||
+  grep -Fq 'seed_strategy: auto_task_path' "$TEMP_DIR/output.log" ||
+    fail "missing seed strategy output"
+  grep -Fq 'first_seed_source: task_path' "$TEMP_DIR/output.log" ||
+    fail "missing first seed source output"
+  grep -Fq 'first_seed_value: src/auth.ts' "$TEMP_DIR/output.log" ||
+    fail "missing first seed value output"
+  grep -Fq 'first_reading_focus: Start with seed file authentication and session boundaries.' "$TEMP_DIR/output.log" ||
     fail "missing first reading focus output"
-  grep -Fq 'first_reading_question: What entrypoints define the main flow?' "$TEMP_DIR/output.log" ||
+  grep -Fq 'first_reading_question: Where are authentication decisions, credentials, or session boundaries handled here?' "$TEMP_DIR/output.log" ||
     fail "missing first reading question output"
   grep -Fq 'current_reading_step_matches_reading_plan: true' "$TEMP_DIR/output.log" ||
     fail "missing current reading step mirror output"
@@ -257,9 +274,15 @@ EOF
     fail "missing latest successful run lookup"
   grep -Fq 'gh run download 123456 --repo sleticalboy/CodeInsight-mcp --name codeinsight-mcp-first-call --dir' "$TEMP_DIR/latest-calls.log" ||
     fail "missing latest successful artifact download"
-  grep -Fq 'first_reading_question: What entrypoints define the main flow?' "$TEMP_DIR/latest-output.log" ||
+  grep -Fq 'seed_strategy: auto_task_path' "$TEMP_DIR/latest-output.log" ||
+    fail "missing latest seed strategy output"
+  grep -Fq 'first_seed_source: task_path' "$TEMP_DIR/latest-output.log" ||
+    fail "missing latest first seed source output"
+  grep -Fq 'first_seed_value: src/auth.ts' "$TEMP_DIR/latest-output.log" ||
+    fail "missing latest first seed value output"
+  grep -Fq 'first_reading_question: Where are authentication decisions, credentials, or session boundaries handled here?' "$TEMP_DIR/latest-output.log" ||
     fail "missing latest first reading question output"
-  grep -Fq 'first_reading_focus: Start with seed file context and primary symbols.' "$TEMP_DIR/latest-output.log" ||
+  grep -Fq 'first_reading_focus: Start with seed file authentication and session boundaries.' "$TEMP_DIR/latest-output.log" ||
     fail "missing latest first reading focus output"
   grep -Fq 'current_reading_step_matches_reading_plan: true' "$TEMP_DIR/latest-output.log" ||
     fail "missing latest current reading step mirror output"

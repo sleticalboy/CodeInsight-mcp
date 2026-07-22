@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CODEINSIGHT_BIN="${CODEINSIGHT_BIN:-}"
 FIRST_CALL_ROOT="${CODEINSIGHT_FIRST_CALL_ROOT:-}"
-FIRST_CALL_TASK="${CODEINSIGHT_FIRST_CALL_TASK:-understand app entrypoint flow}"
+FIRST_CALL_TASK="${CODEINSIGHT_FIRST_CALL_TASK:-inspect src/auth.ts before editing login behavior}"
 FIRST_CALL_TOKEN_BUDGET="${CODEINSIGHT_FIRST_CALL_TOKEN_BUDGET:-1600}"
 FIRST_CALL_FILES="${CODEINSIGHT_FIRST_CALL_FILES:-}"
 FIRST_CALL_SYMBOLS="${CODEINSIGHT_FIRST_CALL_SYMBOLS:-}"
@@ -41,7 +41,7 @@ Environment:
   CODEINSIGHT_FIRST_CALL_ROOT           Repository to analyze.
                                         Defaults to a temporary TypeScript fixture.
   CODEINSIGHT_FIRST_CALL_TASK           Task passed to agent_route.
-                                        Defaults to "understand app entrypoint flow".
+                                        Defaults to "inspect src/auth.ts before editing login behavior".
   CODEINSIGHT_FIRST_CALL_FILES          Newline-separated explicit seed files.
   CODEINSIGHT_FIRST_CALL_SYMBOLS        Newline-separated explicit seed symbols.
   CODEINSIGHT_FIRST_CALL_TOKEN_BUDGET   Token budget passed to agent_route.
@@ -315,6 +315,25 @@ try:
     reading_plan = context_pack.get("reading_plan", [])
     expect(context_pack.get("files"), "agent_route_contract", "agent_route selected no context files")
     expect(reading_plan, "agent_route_contract", "agent_route returned no reading plan")
+    selected_seeds = context_pack.get("selected_seeds", [])
+    seed_strategy = context_pack.get("seed_strategy", "")
+    first_seed = selected_seeds[0] if selected_seeds else {}
+    if default_fixture and not seed_files and not seed_symbols:
+        expect(
+            seed_strategy == "auto_task_path",
+            "agent_route_contract",
+            f"default first-call seed_strategy should be auto_task_path: {seed_strategy!r}",
+        )
+        expect(
+            first_seed.get("source") == "task_path",
+            "agent_route_contract",
+            f"default first-call first seed should come from task_path: {first_seed!r}",
+        )
+        expect(
+            first_seed.get("value") == "src/auth.ts",
+            "agent_route_contract",
+            f"default first-call first seed should target src/auth.ts: {first_seed!r}",
+        )
     expect(reading_plan[0].get("file"), "agent_route_contract", "reading_plan[0].file is missing")
     expect(
         isinstance(reading_plan[0].get("selection_rank"), int)
@@ -554,9 +573,10 @@ try:
         )
         if default_fixture:
             expect(
-                "main" in suggested_tool_result_names,
+                ("main" in suggested_tool_result_names)
+                or ("AuthService" in suggested_tool_result_names and "login" in suggested_tool_result_names),
                 "suggested_tool",
-                f"file_outline suggested tool did not return main; names={suggested_tool_result_names}",
+                f"file_outline suggested tool did not return expected default fixture symbols; names={suggested_tool_result_names}",
             )
 
     expect(
@@ -763,6 +783,10 @@ try:
         "token_budget": token_budget,
         "route_tools": route_tools,
         "selected_files": [item["file"] for item in context_pack["files"]],
+        "seed_strategy": seed_strategy,
+        "selected_seeds": selected_seeds,
+        "first_seed_source": first_seed.get("source", ""),
+        "first_seed_value": first_seed.get("value", ""),
         "first_context_file": first_context_file,
         "first_reading_file": first_reading_file,
         "first_reading_selection_rank": reading_plan[0]["selection_rank"],

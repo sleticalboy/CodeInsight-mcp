@@ -268,10 +268,16 @@ main() {
     '"reading_plan": \[' \
     "quickstart MCP first-call reading plan"
   require_pattern docs/quickstart.md \
-    '"first_context_file": "src/main\.ts"' \
+    '"seed_strategy": "auto_task_path"' \
+    "quickstart MCP first-call seed strategy"
+  require_pattern docs/quickstart.md \
+    '"first_seed_source": "task_path"' \
+    "quickstart MCP first-call first seed source"
+  require_pattern docs/quickstart.md \
+    '"first_context_file": "src/auth\.ts"' \
     "quickstart MCP first-call first context file"
   require_pattern docs/quickstart.md \
-    '"first_reading_file": "src/main\.ts"' \
+    '"first_reading_file": "src/auth\.ts"' \
     "quickstart MCP first-call first reading file"
   require_pattern docs/quickstart.md \
     '"next_action": "inspect_seed_file"' \
@@ -280,10 +286,10 @@ main() {
     '"current_reading_step_matches_reading_plan": true' \
     "quickstart MCP first-call current reading step mirror"
   require_pattern docs/quickstart.md \
-    '"focus": "Start with seed file context' \
+    '"focus": "Start with seed file authentication' \
     "quickstart MCP first-call reading focus"
   require_pattern docs/quickstart.md \
-    '"question": "What entrypoints' \
+    '"question": "Where are authentication decisions' \
     "quickstart MCP first-call reading question"
   require_pattern docs/quickstart.md \
     '"execution_plan_reads_in_reading_plan_order": true' \
