@@ -2775,6 +2775,79 @@ export function generateSemanticEmbeddings(chunks: string[]) {
 }
 
 #[test]
+fn cli_context_pack_keeps_semantic_search_context_in_source_files() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        "src/tools.ts",
+        r#"
+import { generateSemanticEmbeddings } from "./embedding";
+import { loadSemanticChunks } from "./storage";
+
+export function semanticSearchFallback(query: string) {
+  return generateSemanticEmbeddings(loadSemanticChunks(query));
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/embedding.ts",
+        r#"
+export function generateSemanticEmbeddings(chunks: string[]) {
+  return chunks.map((chunk) => ({ chunk, vector: [1, 0] }));
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/storage.ts",
+        r#"
+export function loadSemanticChunks(query: string) {
+  return [query];
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "scripts/adoption-evidence.sh",
+        r#"
+#!/usr/bin/env bash
+set -euo pipefail
+
+main() {
+  echo "semantic search fallback adoption evidence"
+}
+
+main "$@"
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 4);
+
+    let context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand semantic search fallback",
+        "--token-budget",
+        "1600",
+    ]);
+
+    assert_eq!(context["seed_strategy"], "auto_task_match");
+    assert_eq!(context["selected_seeds"][0]["value"], "src/tools.ts");
+    assert_eq!(context["files"][0]["file"], "src/tools.ts");
+    assert!(
+        !context["files"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|file| file["file"] == "scripts/adoption-evidence.sh"),
+        "semantic search tasks should keep context budget on implementation sources"
+    );
+}
+
+#[test]
 fn cli_context_pack_expands_common_agent_task_aliases() {
     let fixture = TempDir::new().unwrap();
     std::fs::create_dir_all(fixture.path().join("src")).unwrap();
