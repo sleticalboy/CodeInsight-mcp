@@ -9543,9 +9543,22 @@ int use_macro(void) {
 }
 "#,
     );
+    write_file(
+        &fixture,
+        "src/lib.rs",
+        r#"
+pub(crate) async fn load_user() -> String {
+    "ok".to_string()
+}
+
+pub async fn run() -> String {
+    load_user().await
+}
+"#,
+    );
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 4);
+    assert_eq!(index["indexed_files"], 5);
 
     let references = run_json([
         "find-references",
@@ -9572,6 +9585,12 @@ int use_macro(void) {
             .as_str()
             .is_some_and(|context| context.contains("comments") || context.contains("strings"))),
         "comment and string-only references should be filtered"
+    );
+    assert!(
+        !references.iter().any(|reference| reference["context"]
+            .as_str()
+            .is_some_and(|context| context.contains("export function leaf"))),
+        "definitions should be filtered unless explicitly requested"
     );
 
     let production_call_index = references
@@ -9618,6 +9637,78 @@ int use_macro(void) {
                 reference["file"] == "src/native.c"
                     && reference["reference_kind"] == "definition"
                     && reference["context"].as_str().unwrap().contains("#define")
+            })
+    );
+
+    let leaf_with_definitions = run_json([
+        "find-references",
+        fixture.path().to_str().unwrap(),
+        "leaf",
+        "--include-definitions",
+        "--limit",
+        "10",
+    ]);
+    assert!(
+        leaf_with_definitions
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|reference| {
+                reference["file"] == "src/core.ts"
+                    && reference["reference_kind"] == "definition"
+                    && reference["context"]
+                        .as_str()
+                        .unwrap()
+                        .contains("export function leaf")
+            })
+    );
+
+    let rust_references = run_json([
+        "find-references",
+        fixture.path().to_str().unwrap(),
+        "load_user",
+        "--limit",
+        "10",
+    ]);
+    let rust_references = rust_references.as_array().unwrap();
+    assert!(
+        rust_references.iter().any(|reference| {
+            reference["file"] == "src/lib.rs"
+                && reference["reference_kind"] == "call"
+                && reference["context"]
+                    .as_str()
+                    .unwrap()
+                    .contains("load_user().await")
+        }),
+        "expected Rust call reference in {rust_references:#?}"
+    );
+    assert!(
+        !rust_references.iter().any(|reference| reference["context"]
+            .as_str()
+            .is_some_and(|context| context.contains("pub(crate) async fn load_user"))),
+        "Rust pub async definitions should be filtered unless explicitly requested"
+    );
+
+    let rust_with_definitions = run_json([
+        "find-references",
+        fixture.path().to_str().unwrap(),
+        "load_user",
+        "--include-definitions",
+        "--limit",
+        "10",
+    ]);
+    assert!(
+        rust_with_definitions
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|reference| {
+                reference["file"] == "src/lib.rs"
+                    && reference["reference_kind"] == "definition"
+                    && reference["context"]
+                        .as_str()
+                        .unwrap()
+                        .contains("pub(crate) async fn load_user")
             })
     );
 }

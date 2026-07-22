@@ -12063,21 +12063,64 @@ fn is_code_reference_column(code_mask: &[bool], column: usize, symbol_len: usize
 }
 
 fn looks_like_definition(line: &str, symbol: &str) -> bool {
-    let trimmed = line.trim_start();
-    let patterns = [
-        format!("fn {symbol}"),
-        format!("def {symbol}"),
-        format!("function {symbol}"),
-        format!("class {symbol}"),
-        format!("struct {symbol}"),
-        format!("interface {symbol}"),
-        format!("type {symbol}"),
-        format!("const {symbol}"),
-        format!("let {symbol}"),
-        format!("var {symbol}"),
-        format!("#define {symbol}"),
-    ];
-    patterns.iter().any(|pattern| trimmed.starts_with(pattern))
+    let trimmed = strip_definition_modifiers(line.trim_start());
+    [
+        "#define",
+        "fn",
+        "def",
+        "function",
+        "class",
+        "struct",
+        "interface",
+        "type",
+        "const",
+        "let",
+        "var",
+    ]
+    .iter()
+    .any(|keyword| starts_with_declaration(trimmed, keyword, symbol))
+}
+
+fn strip_definition_modifiers(mut line: &str) -> &str {
+    loop {
+        let trimmed = line.trim_start();
+        if let Some(rest) = trimmed.strip_prefix("pub ") {
+            line = rest;
+        } else if let Some(rest) = trimmed
+            .strip_prefix("pub(")
+            .and_then(|rest| rest.split_once(')').map(|(_, after)| after))
+        {
+            line = rest;
+        } else if let Some(rest) = trimmed.strip_prefix("export ") {
+            line = rest;
+        } else if let Some(rest) = trimmed.strip_prefix("default ") {
+            line = rest;
+        } else if let Some(rest) = trimmed.strip_prefix("async ") {
+            line = rest;
+        } else if let Some(rest) = trimmed.strip_prefix("unsafe ") {
+            line = rest;
+        } else if let Some(rest) = trimmed.strip_prefix("extern ") {
+            line = rest;
+        } else if let Some(rest) = trimmed.strip_prefix("inline ") {
+            line = rest;
+        } else {
+            return trimmed;
+        }
+    }
+}
+
+fn starts_with_declaration(line: &str, keyword: &str, symbol: &str) -> bool {
+    let Some(rest) = line.strip_prefix(keyword) else {
+        return false;
+    };
+    let rest = rest.trim_start();
+    let Some(after_symbol) = rest.strip_prefix(symbol) else {
+        return false;
+    };
+    after_symbol
+        .chars()
+        .next()
+        .is_none_or(|ch| !is_identifier_char(ch) || matches!(ch, '<' | '(' | ':' | '=' | '{' | '['))
 }
 
 fn classify_reference(line: &str, symbol: &str) -> &'static str {
