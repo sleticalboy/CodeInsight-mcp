@@ -894,9 +894,9 @@ impl Store {
 
         let mut candidates = candidates.into_values().collect::<Vec<_>>();
         candidates.sort_by(|left, right| {
-            right
-                .score
-                .cmp(&left.score)
+            entrypoint_sort_score(right)
+                .cmp(&entrypoint_sort_score(left))
+                .then_with(|| right.score.cmp(&left.score))
                 .then_with(|| left.file.cmp(&right.file))
         });
         candidates.truncate(12);
@@ -3032,6 +3032,21 @@ fn path_role(path: &str) -> &'static str {
 
 fn entrypoint_confidence(score: usize) -> f64 {
     ((score.min(110) as f64) / 110.0 * 100.0).round() / 100.0
+}
+
+fn entrypoint_sort_score(candidate: &EntryPointCandidate) -> i32 {
+    candidate.score as i32 + entrypoint_path_priority(&candidate.file)
+}
+
+fn entrypoint_path_priority(file: &str) -> i32 {
+    let normalized = file.replace('\\', "/").to_ascii_lowercase();
+    if normalized == "scripts" || normalized.starts_with("scripts/") {
+        -40
+    } else if matches!(path_role(file), "docs" | "test" | "fixture" | "vendor") {
+        -60
+    } else {
+        0
+    }
 }
 
 fn symbol_entrypoint_signal(symbol: &str) -> Option<(usize, String)> {

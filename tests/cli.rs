@@ -8180,6 +8180,64 @@ fn cli_overview_detects_framework_entrypoint_files() {
 }
 
 #[test]
+fn cli_overview_prioritizes_source_entrypoints_over_script_helpers() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        "src/main.ts",
+        r#"
+export function main() {
+  return "application startup";
+}
+
+main();
+"#,
+    );
+    write_file(
+        &fixture,
+        "scripts/adoption-comparison-smoke.sh",
+        r#"
+#!/usr/bin/env bash
+set -euo pipefail
+
+main() {
+  echo "supporting smoke helper"
+}
+
+main "$@"
+"#,
+    );
+    write_file(
+        &fixture,
+        "scripts/adoption-comparison.sh",
+        r#"
+#!/usr/bin/env bash
+set -euo pipefail
+
+main() {
+  echo "supporting report helper"
+}
+
+main "$@"
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 3);
+
+    let overview = run_json(["overview", fixture.path().to_str().unwrap()]);
+    let entrypoints = overview["entrypoints"].as_array().unwrap();
+    assert_eq!(entrypoints[0]["file"], "src/main.ts");
+    assert_eq!(entrypoints[0]["symbol"], "main");
+    assert!(
+        entrypoints
+            .iter()
+            .any(|entrypoint| entrypoint["file"] == "scripts/adoption-comparison.sh"),
+        "script entrypoints should remain visible after source entrypoints"
+    );
+}
+
+#[test]
 fn cli_impact_analysis_reports_depth_paths() {
     let fixture = TempDir::new().unwrap();
     write_file(
