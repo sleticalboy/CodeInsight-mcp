@@ -14,7 +14,7 @@ reproduce route quality and prioritize fixes.
 | ip2region Java search | `lionsoul2014/ip2region` | Multi-language IP lookup library | `understand ip2region java search flow` | Java search implementation | `binding/java/src/main/java/org/lionsoul/ip2region/service/Ip2Region.java` | `route_hit` | Checked in as [ip2region adoption case](adoption-case-ip2region.md). |
 | Memchr search flow | `BurntSushi/memchr` | Rust search library | `understand memchr search implementation flow` | Search implementation entrypoint | `src/lib.rs` | `route_hit` | Checked in as [Memchr adoption case](adoption-case-memchr.md). |
 | Requests session flow | `psf/requests` | Python HTTP library | `understand requests session request flow` | Session request implementation | `src/requests/sessions.py` | `route_hit` | Checked in as [Requests adoption case](adoption-case-requests.md). |
-| Next.js app router | `vercel/next.js` | TypeScript web framework | `understand nextjs app router rendering flow` | App router rendering code | n/a | `workflow_friction` | Full-repo route generation was interrupted after repeated multi-minute runs; keep as a future large-repo filtering/performance probe. |
+| Next.js app router | `vercel/next.js` | TypeScript web framework | `understand nextjs app router rendering flow` | App router rendering code | n/a | `workflow_friction` | Full-repo route generation was interrupted after repeated multi-minute runs; explicit `--file` / `--symbol` seeds are now available for targeted large-repo retry, while full-repo performance remains a future probe. |
 
 ## Maintainer-Run Cohort
 
@@ -35,6 +35,10 @@ bundle, and MCP first-call checks work on real repositories.
   `file_outline` results to contain a `main` symbol. The default built-in
   fixture still checks `main`, while external roots only need a valid non-empty
   outline. This fixed adoption evidence generation for mcp-hub and ip2region.
+- External Beta and adoption evidence wrappers now pass repeatable explicit
+  `--file` and `--symbol` seeds through local CLI and MCP first-call checks.
+  This gives large repositories such as Next.js a targeted retry path when
+  broad automatic routing is too slow for the 10-minute trial.
 
 ## Open Follow-Ups
 
