@@ -74,6 +74,17 @@ scripts/task-routing-matrix.sh /path/to/repo \
   --output-dir /tmp/codeinsight-task-routing-matrix
 ```
 
+When a large repository has a known subsystem, pass explicit seeds. They are
+applied to each route in that matrix and preserved in the generated summary:
+
+```bash
+scripts/task-routing-matrix.sh /path/to/repo \
+  --task "understand the known security sanitizer" \
+  --file src/security.ts \
+  --symbol sanitizeSecurityInput \
+  --output-dir /tmp/codeinsight-task-routing-matrix-security
+```
+
 Use expectations when you already know the intended first-read file and want a
 CI gate:
 

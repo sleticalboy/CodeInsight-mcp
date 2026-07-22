@@ -183,12 +183,14 @@ main() {
   TEMP_DIR="$(mktemp -d)"
   trap cleanup EXIT INT TERM
 
-  local repo output_dir summary_json default_output_dir default_summary_json bad_output_dir bad_summary_json expectations_tsv bad_expectations_json
+  local repo output_dir summary_json default_output_dir default_summary_json seed_output_dir seed_summary_json bad_output_dir bad_summary_json expectations_tsv bad_expectations_json
   repo="$TEMP_DIR/repo"
   output_dir="$TEMP_DIR/matrix"
   summary_json="$output_dir/summary.json"
   default_output_dir="$TEMP_DIR/matrix-default"
   default_summary_json="$default_output_dir/summary.json"
+  seed_output_dir="$TEMP_DIR/matrix-seed"
+  seed_summary_json="$seed_output_dir/summary.json"
   bad_output_dir="$TEMP_DIR/matrix-bad"
   bad_summary_json="$bad_output_dir/summary.json"
   expectations_tsv="$TEMP_DIR/expectations.tsv"
@@ -328,6 +330,18 @@ improve AI agent first-read routing quality evidence	src/agent_workflow.ts'
   require_jq "$default_summary_json" '.tasks[] | select(.task == "understand request lifecycle before after request handling" and .first_file == "src/application.ts")' "default matrix should include request lifecycle task"
   require_jq "$default_summary_json" '.tasks[] | select(.task == "understand middleware behavior" and .first_file == "src/middleware.ts")' "default matrix should include middleware task"
   require_jq "$default_summary_json" '.tasks[] | select(.task == "improve AI agent first-read routing quality evidence" and .first_file == "src/agent_workflow.ts")' "default matrix should include agent first-read task"
+
+  CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/task-routing-matrix.sh" "$repo" \
+    --output-dir "$seed_output_dir" \
+    --token-budget 1600 \
+    --task "understand the known security sanitizer" \
+    --file src/security.ts \
+    --symbol sanitizeSecurityInput
+  require_jq "$seed_summary_json" '.status == "pass" and .task_count == 1' "seeded matrix summary should pass"
+  require_jq "$seed_summary_json" '.explicit_seed_files == ["src/security.ts"] and .explicit_seed_symbols == ["sanitizeSecurityInput"]' "seeded matrix should preserve explicit seed inputs"
+  require_jq "$seed_summary_json" '.tasks[] | select(.task == "understand the known security sanitizer" and .seed_strategy == "explicit" and .first_file == "src/security.ts" and .first_seed_value == "sanitizeSecurityInput")' "seeded matrix should pass explicit seeds to local evidence"
+  grep -Fq -- '- Explicit seed files: `src/security.ts`' "$seed_output_dir/task-routing-matrix.md" ||
+    fail "seeded matrix markdown should list explicit seed files"
 
   if CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/task-routing-matrix.sh" "$repo" \
     --output-dir "$bad_output_dir" \

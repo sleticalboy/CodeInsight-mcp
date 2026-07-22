@@ -11,6 +11,8 @@ SUMMARY_JSON="${CODEINSIGHT_ADOPTION_COMPARE_SUMMARY_JSON:-}"
 CODEINSIGHT_BIN="${CODEINSIGHT_BIN:-}"
 FORCE_INDEX="${CODEINSIGHT_ADOPTION_COMPARE_FORCE_INDEX:-1}"
 LOCAL_EVIDENCE_SCRIPT="${CODEINSIGHT_LOCAL_REPO_EVIDENCE_SCRIPT:-$ROOT_DIR/scripts/local-repo-evidence.sh}"
+SEED_FILES=()
+SEED_SYMBOLS=()
 
 usage() {
   cat <<'EOF'
@@ -22,6 +24,8 @@ repository with CodeInsight's routed first-read context.
 Options:
   --root PATH           Repository root. Also accepted as the first argument.
   --task TEXT           Task for agent_route.
+  --file PATH           Add an explicit seed file for the route. Can be repeated.
+  --symbol NAME         Add an explicit seed symbol for the route. Can be repeated.
   --token-budget N      Token budget for context routing. Default: 6000.
   --output-dir PATH     Output directory. Default: /tmp/codeinsight-adoption-comparison.
   --output PATH         Markdown comparison path.
@@ -65,6 +69,18 @@ parse_args() {
       --task)
         [ "$#" -ge 2 ] || fail "--task requires text"
         TASK="$2"
+        shift 2
+        ;;
+      --file)
+        [ "$#" -ge 2 ] || fail "--file requires a path"
+        [ -n "$2" ] || fail "--file must not be empty"
+        SEED_FILES+=("$2")
+        shift 2
+        ;;
+      --symbol)
+        [ "$#" -ge 2 ] || fail "--symbol requires a name"
+        [ -n "$2" ] || fail "--symbol must not be empty"
+        SEED_SYMBOLS+=("$2")
         shift 2
         ;;
       --token-budget)
@@ -308,7 +324,7 @@ main() {
   SUMMARY_JSON="${SUMMARY_JSON:-$OUTPUT_DIR/summary.json}"
   mkdir -p "$OUTPUT_DIR" "$(dirname "$OUTPUT_FILE")" "$(dirname "$SUMMARY_JSON")"
 
-  local local_args
+  local local_args seed_file seed_symbol
   local_args=(
     "$REPO_ROOT"
     "--task"
@@ -324,6 +340,16 @@ main() {
   )
   if [ -n "$CODEINSIGHT_BIN" ]; then
     local_args+=("--bin" "$CODEINSIGHT_BIN")
+  fi
+  if [ "${#SEED_FILES[@]}" -gt 0 ]; then
+    for seed_file in "${SEED_FILES[@]}"; do
+      local_args+=("--file" "$seed_file")
+    done
+  fi
+  if [ "${#SEED_SYMBOLS[@]}" -gt 0 ]; then
+    for seed_symbol in "${SEED_SYMBOLS[@]}"; do
+      local_args+=("--symbol" "$seed_symbol")
+    done
   fi
   if [ "$FORCE_INDEX" != "1" ]; then
     local_args+=("--no-force-index")

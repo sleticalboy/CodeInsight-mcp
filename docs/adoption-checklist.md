@@ -91,8 +91,14 @@ When you need a short comparison for adoption notes:
 
 ```bash
 scripts/adoption-comparison.sh /path/to/repo \
+  --file src/main.ts \
+  --symbol main \
   --output-dir /tmp/codeinsight-adoption-comparison
 ```
+
+Omit `--file` and `--symbol` when you want to evaluate broad automatic routing.
+Keep them when you want the adoption comparison to reflect a known feature area
+or a large-repository retry path.
 
 Pass criteria:
 

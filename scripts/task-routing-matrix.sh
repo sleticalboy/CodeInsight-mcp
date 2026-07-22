@@ -13,6 +13,8 @@ FORCE_INDEX="${CODEINSIGHT_TASK_MATRIX_FORCE_INDEX:-1}"
 TASKS=()
 EXPECTATIONS=()
 EXPECTATION_FILES=()
+SEED_FILES=()
+SEED_SYMBOLS=()
 
 usage() {
   cat <<'EOF'
@@ -24,6 +26,8 @@ and writes a compact routing-quality matrix.
 Options:
   --root PATH           Repository root. Also accepted as the first argument.
   --task TEXT           Add one task prompt. Can be repeated.
+  --file PATH           Add an explicit seed file for every route. Can be repeated.
+  --symbol NAME         Add an explicit seed symbol for every route. Can be repeated.
   --token-budget N      Token budget for each route. Default: 6000.
   --output-dir PATH     Output directory. Default: /tmp/codeinsight-task-routing-matrix.
   --output PATH         Markdown matrix path. Default: <output-dir>/task-routing-matrix.md.
@@ -69,6 +73,18 @@ parse_args() {
       --task)
         [ "$#" -ge 2 ] || fail "--task requires text"
         add_task "$2"
+        shift 2
+        ;;
+      --file)
+        [ "$#" -ge 2 ] || fail "--file requires a path"
+        [ -n "$2" ] || fail "--file must not be empty"
+        SEED_FILES+=("$2")
+        shift 2
+        ;;
+      --symbol)
+        [ "$#" -ge 2 ] || fail "--symbol requires a name"
+        [ -n "$2" ] || fail "--symbol must not be empty"
+        SEED_SYMBOLS+=("$2")
         shift 2
         ;;
       --token-budget)
@@ -252,6 +268,7 @@ run_task() {
   local index="$1"
   local task="$2"
   local slug task_dir summary_json markdown_json raw_json evidence_markdown
+  local local_args seed_file seed_symbol
 
   slug="$(slugify_task "$task")"
   task_dir="$OUTPUT_DIR/tasks/$index-$slug"
@@ -260,24 +277,32 @@ run_task() {
   evidence_markdown="$task_dir/local-repo-evidence.md"
   mkdir -p "$task_dir"
 
-  if [ "$index" -gt 1 ] || [ "$FORCE_INDEX" = "0" ]; then
-    "$LOCAL_EVIDENCE_SCRIPT" "$REPO_ROOT" \
-      --task "$task" \
-      --token-budget "$TOKEN_BUDGET" \
-      --output "$evidence_markdown" \
-      --json "$raw_json" \
-      --summary-json "$summary_json" \
-      --bin "$CODEINSIGHT_BIN" \
-      --no-force-index >&2
-  else
-    "$LOCAL_EVIDENCE_SCRIPT" "$REPO_ROOT" \
-      --task "$task" \
-      --token-budget "$TOKEN_BUDGET" \
-      --output "$evidence_markdown" \
-      --json "$raw_json" \
-      --summary-json "$summary_json" \
-      --bin "$CODEINSIGHT_BIN" >&2
+  local_args=(
+    "$REPO_ROOT"
+    --task "$task"
+    --token-budget "$TOKEN_BUDGET"
+    --output "$evidence_markdown"
+    --json "$raw_json"
+    --summary-json "$summary_json"
+  )
+  if [ -n "$CODEINSIGHT_BIN" ]; then
+    local_args+=(--bin "$CODEINSIGHT_BIN")
   fi
+  if [ "${#SEED_FILES[@]}" -gt 0 ]; then
+    for seed_file in "${SEED_FILES[@]}"; do
+      local_args+=(--file "$seed_file")
+    done
+  fi
+  if [ "${#SEED_SYMBOLS[@]}" -gt 0 ]; then
+    for seed_symbol in "${SEED_SYMBOLS[@]}"; do
+      local_args+=(--symbol "$seed_symbol")
+    done
+  fi
+  if [ "$index" -gt 1 ] || [ "$FORCE_INDEX" = "0" ]; then
+    local_args+=(--no-force-index)
+  fi
+
+  "$LOCAL_EVIDENCE_SCRIPT" "${local_args[@]}" >&2
 
   markdown_json="$task_dir/row.json"
   jq \
@@ -318,16 +343,32 @@ run_task() {
 
 write_summary() {
   local rows_file="$1"
+  local explicit_seed_files_json explicit_seed_symbols_json
+
+  if [ "${#SEED_FILES[@]}" -gt 0 ]; then
+    explicit_seed_files_json="$(printf '%s\n' "${SEED_FILES[@]}" | jq -R -s 'split("\n")[:-1]')"
+  else
+    explicit_seed_files_json="[]"
+  fi
+  if [ "${#SEED_SYMBOLS[@]}" -gt 0 ]; then
+    explicit_seed_symbols_json="$(printf '%s\n' "${SEED_SYMBOLS[@]}" | jq -R -s 'split("\n")[:-1]')"
+  else
+    explicit_seed_symbols_json="[]"
+  fi
 
   jq -s \
     --arg repository "$REPO_ROOT" \
     --arg output "$OUTPUT_FILE" \
     --arg output_dir "$OUTPUT_DIR" \
     --argjson token_budget "$TOKEN_BUDGET" \
+    --argjson explicit_seed_files "$explicit_seed_files_json" \
+    --argjson explicit_seed_symbols "$explicit_seed_symbols_json" \
     '{
       status: "pass",
       repository: $repository,
       token_budget: $token_budget,
+      explicit_seed_files: $explicit_seed_files,
+      explicit_seed_symbols: $explicit_seed_symbols,
       task_count: length,
       output: $output,
       output_dir: $output_dir,
@@ -430,6 +471,10 @@ write_markdown() {
     echo "- Repository: \`$REPO_ROOT\`"
     echo "- Token budget: \`$TOKEN_BUDGET\`"
     echo "- Tasks: \`$(json_value "$SUMMARY_JSON" '.task_count')\`"
+    if [ "${#SEED_FILES[@]}" -gt 0 ] || [ "${#SEED_SYMBOLS[@]}" -gt 0 ]; then
+      echo "- Explicit seed files: \`$(json_value "$SUMMARY_JSON" '.explicit_seed_files | join(", ")')\`"
+      echo "- Explicit seed symbols: \`$(json_value "$SUMMARY_JSON" '.explicit_seed_symbols | join(", ")')\`"
+    fi
     echo "- Summary JSON: \`$SUMMARY_JSON\`"
     echo
     echo "## Results"

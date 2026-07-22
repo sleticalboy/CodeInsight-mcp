@@ -33,6 +33,8 @@ json=""
 summary_json=""
 task=""
 token_budget=""
+seed_file=""
+seed_symbol=""
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --output)
@@ -55,6 +57,14 @@ while [ "$#" -gt 0 ]; do
       token_budget="$2"
       shift 2
       ;;
+    --file)
+      seed_file="$2"
+      shift 2
+      ;;
+    --symbol)
+      seed_symbol="$2"
+      shift 2
+      ;;
     --bin)
       shift 2
       ;;
@@ -71,6 +81,8 @@ done
 [ -n "$output" ] || exit 3
 [ -n "$json" ] || exit 4
 [ -n "$summary_json" ] || exit 5
+[ "$seed_file" = "src/main.ts" ] || exit 6
+[ "$seed_symbol" = "main" ] || exit 7
 mkdir -p "$(dirname "$output")" "$(dirname "$json")" "$(dirname "$summary_json")"
 
 cat >"$output" <<'MARKDOWN'
@@ -93,10 +105,10 @@ cat >"$summary_json" <<JSON
     "selected_files": 3,
     "selected_ranges": 5,
     "estimated_tokens": 900,
-    "seed_strategy": "auto_task_match",
+    "seed_strategy": "explicit",
     "selected_seed_count": 2,
-    "first_seed_source": "task_match",
-    "first_seed_value": "src/router.ts",
+    "first_seed_source": "explicit",
+    "first_seed_value": "$seed_file",
     "companion_entrypoint": "src/main.ts",
     "first_file": "src/router.ts",
     "first_reading_focus": "Trace login route ownership.",
@@ -122,6 +134,8 @@ EOF
     "$ROOT_DIR/scripts/adoption-comparison.sh" \
     "$TEMP_DIR/repo" \
     --task "understand login routing" \
+    --file "src/main.ts" \
+    --symbol "main" \
     --token-budget 6000 \
     --output-dir "$TEMP_DIR/comparison" \
     >"$TEMP_DIR/output.log"
@@ -158,7 +172,9 @@ EOF
       and .metrics.routed_first_read_lines == 60
       and .metrics.source_lines_avoided == 1140
       and .metrics.read_less_ratio == "20.0x"
-      and .metrics.first_seed_source == "task_match"
+      and .metrics.seed_strategy == "explicit"
+      and .metrics.first_seed_source == "explicit"
+      and .metrics.first_seed_value == "src/main.ts"
       and .metrics.first_reading_focus == "Trace login route ownership."
       and .metrics.first_selection_rank == 1
       and .metrics.first_selection_reason == "Selected for high relevance via seed_file"
