@@ -708,6 +708,11 @@ run_core_analysis_question_scenario() {
   local references_json="$TEMP_DIR/core-analysis-references-context.json"
   local calls_json="$TEMP_DIR/core-analysis-calls-context.json"
   local embedding_status_json="$TEMP_DIR/core-analysis-embedding-status-context.json"
+  local semantic_explain_json="$TEMP_DIR/core-analysis-semantic-explain-context.json"
+  local config_status_json="$TEMP_DIR/core-analysis-config-status-context.json"
+  local blocked_no_seed_json="$TEMP_DIR/core-analysis-blocked-no-seed-context.json"
+  local recommended_tools_json="$TEMP_DIR/core-analysis-recommended-tools-context.json"
+  local budget_continuation_json="$TEMP_DIR/core-analysis-budget-continuation-context.json"
 
   "$CODEINSIGHT_BIN" index "$ROOT_DIR" --force >"$index_json"
   require_jq "$index_json" '.indexed_files > 0' "core analysis scenario should index this repository"
@@ -788,6 +793,72 @@ run_core_analysis_question_scenario() {
     "embedding provider status reading question should be core-analysis-aware"
   QUESTION_CHECKS_PASSED=$((QUESTION_CHECKS_PASSED + 1))
   record_question_check "core_embedding_provider_status_question" "$embedding_status_json" '.reading_plan[0]'
+
+  "$CODEINSIGHT_BIN" context-pack "$ROOT_DIR" \
+    --task "understand semantic index explain output" \
+    --token-budget 2600 \
+    >"$semantic_explain_json"
+  require_jq "$semantic_explain_json" \
+    '.reading_plan[0].next_action == "inspect_seed_file"
+      and (.reading_plan[0].focus | contains("semantic index explain"))
+      and (.reading_plan[0].question | contains("chunk changes"))
+      and (.reading_plan[0].question | contains("provider readiness"))' \
+    "semantic index explain reading question should be core-analysis-aware"
+  QUESTION_CHECKS_PASSED=$((QUESTION_CHECKS_PASSED + 1))
+  record_question_check "core_semantic_index_explain_question" "$semantic_explain_json" '.reading_plan[0]'
+
+  "$CODEINSIGHT_BIN" context-pack "$ROOT_DIR" \
+    --task "understand config status parse errors" \
+    --token-budget 2600 \
+    >"$config_status_json"
+  require_jq "$config_status_json" \
+    '.reading_plan[0].next_action == "inspect_seed_file"
+      and (.reading_plan[0].focus | contains("config status"))
+      and (.reading_plan[0].question | contains("parse errors"))
+      and (.reading_plan[0].question | contains("status output"))' \
+    "config status reading question should be core-analysis-aware"
+  QUESTION_CHECKS_PASSED=$((QUESTION_CHECKS_PASSED + 1))
+  record_question_check "core_config_status_question" "$config_status_json" '.reading_plan[0]'
+
+  "$CODEINSIGHT_BIN" context-pack "$ROOT_DIR" \
+    --task "understand MCP first-call blocked no seed route" \
+    --token-budget 2600 \
+    >"$blocked_no_seed_json"
+  require_jq "$blocked_no_seed_json" \
+    '.reading_plan[0].next_action == "inspect_seed_file"
+      and (.reading_plan[0].focus | contains("blocked no-seed"))
+      and (.reading_plan[0].question | contains("no-seed path"))
+      and (.reading_plan[0].question | contains("client-facing next action"))' \
+    "blocked no-seed reading question should be core-analysis-aware"
+  QUESTION_CHECKS_PASSED=$((QUESTION_CHECKS_PASSED + 1))
+  record_question_check "core_blocked_no_seed_question" "$blocked_no_seed_json" '.reading_plan[0]'
+
+  "$CODEINSIGHT_BIN" context-pack "$ROOT_DIR" \
+    --task "understand recommended next tools contract" \
+    --token-budget 2600 \
+    >"$recommended_tools_json"
+  require_jq "$recommended_tools_json" \
+    '.reading_plan[0].next_action == "inspect_seed_file"
+      and (.reading_plan[0].focus | contains("recommended next tools"))
+      and (.reading_plan[0].question | contains("recommended next tools selected"))
+      and (.reading_plan[0].question | contains("client-ready arguments"))' \
+    "recommended next tools reading question should be core-analysis-aware"
+  QUESTION_CHECKS_PASSED=$((QUESTION_CHECKS_PASSED + 1))
+  record_question_check "core_recommended_next_tools_question" "$recommended_tools_json" '.reading_plan[0]'
+
+  "$CODEINSIGHT_BIN" context-pack "$ROOT_DIR" \
+    --task "understand token budget continuation" \
+    --token-budget 2600 \
+    >"$budget_continuation_json"
+  require_jq "$budget_continuation_json" \
+    '.reading_plan[0].next_action == "inspect_seed_file"
+      and (.reading_plan[0].focus | contains("token budget"))
+      and (.reading_plan[0].focus | contains("continuation"))
+      and (.reading_plan[0].question | contains("token budgets applied"))
+      and (.reading_plan[0].question | contains("continuation next actions"))' \
+    "budget continuation reading question should be core-analysis-aware"
+  QUESTION_CHECKS_PASSED=$((QUESTION_CHECKS_PASSED + 1))
+  record_question_check "core_budget_continuation_question" "$budget_continuation_json" '.reading_plan[0]'
 
   SCENARIOS_PASSED=$((SCENARIOS_PASSED + 1))
   record_scenario "core_analysis_question_coverage" "$semantic_json" \

@@ -2291,6 +2291,21 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
     if signals.agent_first_read {
         "Start with seed file context routing, first-read handoff, and read-less evidence."
             .to_string()
+    } else if signals.blocked_no_seed_route {
+        "Start with seed file blocked no-seed routing, empty-state contract, and client handoff."
+            .to_string()
+    } else if signals.recommended_next_tools_contract {
+        "Start with seed file recommended next tools ordering, arguments, and client contract."
+            .to_string()
+    } else if signals.budget_continuation {
+        "Start with seed file token budget accounting, omitted candidates, and continuation contract."
+            .to_string()
+    } else if signals.config_status_reporting {
+        "Start with seed file config status loading, parse diagnostics, and structured reporting."
+            .to_string()
+    } else if signals.semantic_index_explain {
+        "Start with seed file semantic index explain output, chunk change reporting, and provider status."
+            .to_string()
     } else if signals.test_coverage {
         "Start with seed file test, spec, or regression coverage.".to_string()
     } else if signals.response_headers {
@@ -2419,7 +2434,22 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
 }
 
 fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
-    if signals.test_coverage {
+    if signals.blocked_no_seed_route {
+        "Read symbol definitions that implement blocked no-seed routing and empty-state handoff."
+            .to_string()
+    } else if signals.recommended_next_tools_contract {
+        "Read symbol definitions that build recommended next tool entries, priorities, and arguments."
+            .to_string()
+    } else if signals.budget_continuation {
+        "Read symbol definitions that compute token budgets, omitted candidates, or continuation summaries."
+            .to_string()
+    } else if signals.config_status_reporting {
+        "Read symbol definitions that load config status, preserve parse diagnostics, or shape status reports."
+            .to_string()
+    } else if signals.semantic_index_explain {
+        "Read symbol definitions that explain semantic index chunks, provider status, or embedding changes."
+            .to_string()
+    } else if signals.test_coverage {
         "Read symbol definitions that establish test coverage or regression behavior.".to_string()
     } else if signals.response_headers {
         "Read symbol definitions that establish response headers, status metadata, or Content-Type behavior."
@@ -3076,6 +3106,21 @@ fn context_seed_file_question(task: &str) -> String {
     if signals.agent_first_read {
         "Which seed selection, reading-plan handoff, or read-less evidence controls the agent first-read workflow here?"
             .to_string()
+    } else if signals.blocked_no_seed_route {
+        "Where does the no-seed path become a blocked route, continuation status, or client-facing next action here?"
+            .to_string()
+    } else if signals.recommended_next_tools_contract {
+        "Where are recommended next tools selected, ordered, justified, or shaped into client-ready arguments here?"
+            .to_string()
+    } else if signals.budget_continuation {
+        "Where are token budgets applied, omitted candidates recorded, and continuation next actions decided here?"
+            .to_string()
+    } else if signals.config_status_reporting {
+        "Where is config status loaded, parse errors preserved, defaults detected, or status output shaped here?"
+            .to_string()
+    } else if signals.semantic_index_explain {
+        "Where does semantic index explain report chunk changes, provider readiness, or embedding status here?"
+            .to_string()
     } else if signals.test_coverage {
         "Which behavior, assertions, fixtures, or regression cases are covered here?".to_string()
     } else if signals.response_headers {
@@ -3217,7 +3262,22 @@ fn context_seed_file_question(task: &str) -> String {
 
 fn context_symbol_definition_question(task: &str) -> String {
     let signals = ContextTaskSignals::from_task(task);
-    if signals.test_coverage {
+    if signals.blocked_no_seed_route {
+        "What blocked no-seed route status, continuation behavior, or client handoff does this definition establish?"
+            .to_string()
+    } else if signals.recommended_next_tools_contract {
+        "What recommended next tool ordering, priority, reason, or argument contract does this definition establish?"
+            .to_string()
+    } else if signals.budget_continuation {
+        "What token budget, omitted-candidate, truncation, or continuation behavior does this definition establish?"
+            .to_string()
+    } else if signals.config_status_reporting {
+        "What config status loading, parse diagnostic, default detection, or report-shaping behavior does this definition establish?"
+            .to_string()
+    } else if signals.semantic_index_explain {
+        "What semantic index explain, chunk-change, provider-readiness, or embedding-status behavior does this definition establish?"
+            .to_string()
+    } else if signals.test_coverage {
         "What test behavior, assertion, fixture, or regression case does this definition establish?"
             .to_string()
     } else if signals.response_headers {
@@ -3819,6 +3879,11 @@ fn context_semantic_question(task: &str) -> String {
 #[derive(Debug, Clone, Copy)]
 struct ContextTaskSignals {
     agent_first_read: bool,
+    blocked_no_seed_route: bool,
+    recommended_next_tools_contract: bool,
+    budget_continuation: bool,
+    config_status_reporting: bool,
+    semantic_index_explain: bool,
     impact_flow: bool,
     auth_session: bool,
     network_http: bool,
@@ -3873,6 +3938,12 @@ struct ContextTaskSignals {
 impl ContextTaskSignals {
     fn from_task(task: &str) -> Self {
         let keywords = task_keywords(task);
+        let blocked_no_seed_route = auto_seed_blocked_no_seed_route_task(&keywords);
+        let recommended_next_tools_contract =
+            auto_seed_recommended_next_tools_contract_task(&keywords);
+        let budget_continuation = auto_seed_budget_continuation_task(&keywords);
+        let config_status_reporting = auto_seed_config_status_reporting_task(&keywords);
+        let semantic_index_explain = auto_seed_semantic_index_explain_task(&keywords);
         let agent_first_read = context_text_mentions(
             task,
             &[
@@ -4676,6 +4747,11 @@ impl ContextTaskSignals {
 
         Self {
             agent_first_read,
+            blocked_no_seed_route,
+            recommended_next_tools_contract,
+            budget_continuation,
+            config_status_reporting,
+            semantic_index_explain,
             impact_flow: context_text_mentions(
                 task,
                 &["impact", "caller", "callee", "call path", "call paths"],
@@ -4705,7 +4781,8 @@ impl ContextTaskSignals {
                     "oauth",
                     "jwt",
                 ],
-            ) && !http_client_session,
+            ) && !http_client_session
+                && !budget_continuation,
             network_http: http_client_session
                 || context_text_mentions(
                     task,
@@ -9706,6 +9783,103 @@ fn auto_seed_embedding_provider_status_task(task_keywords: &[String]) -> bool {
     embedding_provider && status_reporting && !configuration
 }
 
+fn auto_seed_blocked_no_seed_route_task(task_keywords: &[String]) -> bool {
+    let blocked = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "blocked" | "block" | "empty" | "missing" | "no"
+        )
+    });
+    let seed = task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "seed" | "seeds"));
+    let routing = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "route" | "routes" | "router" | "routing" | "mcp" | "agent"
+        )
+    });
+
+    blocked && seed && routing
+}
+
+fn auto_seed_recommended_next_tools_contract_task(task_keywords: &[String]) -> bool {
+    let recommendation = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "recommended" | "recommendation" | "recommend" | "next"
+        )
+    });
+    let tools = task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "tool" | "tools"));
+    let contract = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "contract" | "contracts" | "priority" | "priorities" | "argument" | "arguments"
+        )
+    });
+
+    recommendation && tools && contract
+}
+
+fn auto_seed_budget_continuation_task(task_keywords: &[String]) -> bool {
+    let budget = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "budget" | "budgets" | "token" | "tokens" | "context"
+        )
+    });
+    let continuation = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "continuation"
+                | "continue"
+                | "omitted"
+                | "candidate"
+                | "candidates"
+                | "truncated"
+                | "exhausted"
+        )
+    });
+
+    budget && continuation
+}
+
+fn auto_seed_config_status_reporting_task(task_keywords: &[String]) -> bool {
+    let config = task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "config" | "configuration"));
+    let status = task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "status" | "report" | "reporting"));
+    let diagnostics = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "parse" | "parser" | "parsing" | "error" | "errors" | "diagnostic" | "diagnostics"
+        )
+    });
+
+    config && status && diagnostics
+}
+
+fn auto_seed_semantic_index_explain_task(task_keywords: &[String]) -> bool {
+    let semantic_index = task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "semantic"))
+        && task_keywords
+            .iter()
+            .any(|keyword| matches!(keyword.as_str(), "index" | "indexing" | "indexed"));
+    let explain = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "explain" | "explains" | "explanation" | "output" | "report"
+        )
+    });
+
+    semantic_index && explain
+}
+
 fn auto_seed_semantic_context_file_priority(file: &str, prefer_orchestration: bool) -> i32 {
     let normalized = file.replace('\\', "/").to_ascii_lowercase();
     if normalized == "scripts" || normalized.starts_with("scripts/") {
@@ -11556,6 +11730,38 @@ mod tests {
         assert!(embedding_config_keywords.contains(&"configuration".to_string()));
         assert!(!auto_seed_embedding_provider_status_task(
             &embedding_config_keywords
+        ));
+
+        let config_status_keywords = task_keywords("understand config status parse errors");
+        assert!(auto_seed_config_status_reporting_task(
+            &config_status_keywords
+        ));
+
+        let blocked_no_seed_keywords =
+            task_keywords("understand MCP first-call blocked no seed route");
+        assert!(auto_seed_blocked_no_seed_route_task(
+            &blocked_no_seed_keywords
+        ));
+
+        let recommended_next_tools_keywords =
+            task_keywords("understand recommended next tools contract");
+        assert!(auto_seed_recommended_next_tools_contract_task(
+            &recommended_next_tools_keywords
+        ));
+
+        let budget_continuation_keywords = task_keywords("understand token budget continuation");
+        assert!(auto_seed_budget_continuation_task(
+            &budget_continuation_keywords
+        ));
+        let budget_continuation_signals =
+            ContextTaskSignals::from_task("understand token budget continuation");
+        assert!(budget_continuation_signals.budget_continuation);
+        assert!(!budget_continuation_signals.auth_session);
+
+        let semantic_index_explain_keywords =
+            task_keywords("understand semantic index explain output");
+        assert!(auto_seed_semantic_index_explain_task(
+            &semantic_index_explain_keywords
         ));
 
         let background_keywords = task_keywords("understand background job queue");
