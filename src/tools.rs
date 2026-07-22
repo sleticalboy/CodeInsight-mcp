@@ -233,7 +233,6 @@ pub fn agent_route_value(
     impact_evidence_limit: usize,
 ) -> Result<AgentRouteReport> {
     let root = root.canonicalize()?;
-    let token_budget = token_budget.max(500);
     let index_report = index_project_value(root.clone(), force_index)?;
     let overview = project_overview_value(root.clone())?;
     let context_pack = match context_pack_value(

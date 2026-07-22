@@ -2151,6 +2151,42 @@ fn cli_agent_route_runs_first_read_pipeline() {
 }
 
 #[test]
+fn cli_agent_route_preserves_requested_minimum_token_budget() {
+    let fixture = fixture_project();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand app entrypoint flow",
+        "--token-budget",
+        "20",
+        "--force-index",
+    ]);
+
+    assert_eq!(route["token_budget"].as_u64(), Some(20));
+    assert_eq!(
+        route["context_pack"]["budget"]["requested_token_budget"].as_u64(),
+        Some(20)
+    );
+    assert_eq!(
+        route["context_pack"]["budget"]["applied_token_budget"].as_u64(),
+        Some(500)
+    );
+    assert_eq!(
+        route["context_pack"]["budget"]["truncation_reason"],
+        "minimum_budget_applied"
+    );
+    assert!(
+        !route["context_pack"]["continuation_summary"]["status"]
+            .as_str()
+            .unwrap()
+            .is_empty()
+    );
+    assert_agent_route_execution_plan_matches_context(&route);
+}
+
+#[test]
 fn cli_agent_route_exposes_focused_impact_test_checks() {
     let fixture = TempDir::new().unwrap();
     std::fs::create_dir_all(fixture.path().join("src")).unwrap();
