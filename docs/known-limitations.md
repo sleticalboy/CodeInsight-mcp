@@ -22,7 +22,8 @@ These capabilities are expected to be reliable for common source files in suppor
   - C# classes, interfaces, structs, enums, records, methods, constructors, properties, fields, using directives, and basic calls.
   - PHP classes, interfaces, traits, enums, functions, methods, properties, constants, namespace use declarations, and basic calls.
   - Ruby classes, modules, methods, singleton methods, constants, require directives, and basic calls.
-  - Bash/Shell function definitions and basic same-file command calls.
+  - Bash/Shell function definitions, basic same-file command calls, and
+    straightforward `source ./file` / `. ../file` script includes.
 - Caching indexed files by content hash.
 - Skipping unchanged files during incremental indexing.
 - Removing stale index records for deleted files.
@@ -159,8 +160,10 @@ Limitations:
 
 Bash/Shell support is intentionally narrow: CodeInsight indexes `.sh` and
 `.bash` files, extracts shell functions, and records straightforward command
-calls. It does not resolve `source`, `. file`, PATH lookups, shell aliases,
-dynamic command construction, or environment-dependent script dispatch yet.
+calls. It resolves static relative `source ./file` and `. ../file` includes
+when the target is literal. It does not resolve variable-based sources, globs,
+process substitution, PATH lookups, shell aliases, dynamic command
+construction, or environment-dependent script dispatch yet.
 
 Currently supported JavaScript/TypeScript imported target hints:
 

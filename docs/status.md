@@ -52,9 +52,8 @@ workflow is implemented end to end.
 - Local dependency resolution for common import/include/use forms across the
   supported languages, including JavaScript/TypeScript package metadata,
   workspaces, Python relative imports, Rust modules, Go modules, Java/C#/PHP
-  namespace imports, Ruby `require_relative`, and C/C++ local includes. Bash
-  files are indexed for functions and same-file command calls; shell imports
-  are not modeled yet.
+  namespace imports, Ruby `require_relative`, C/C++ local includes, and
+  straightforward Bash `source ./file` / `. ../file` script includes.
 - Direct type-relation extraction and routing for C#, Java,
   TypeScript/JavaScript, PHP, Ruby, and Rust trait implementations, exposed in
   `project_overview`, `dependency_graph`, `context_pack`, and
