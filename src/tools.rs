@@ -75,6 +75,8 @@ const IMPACT_RISK_HIGH_DEPTH: usize = 3;
 const IMPACT_RISK_MEDIUM_FILE_COUNT: usize = 4;
 const IMPACT_RISK_MEDIUM_SCORE: i32 = 160;
 const IMPACT_RISK_MEDIUM_DEPTH: usize = 2;
+const IMPACT_FILE_SYMBOL_SCAN_PER_FILE: usize = 256;
+const IMPACT_FILE_SYMBOL_SCAN_MAX: usize = 4096;
 
 pub fn index_project(root: PathBuf, force: bool) -> Result<()> {
     let report = index_project_value(root, force)?;
@@ -812,7 +814,10 @@ pub fn impact_analysis_value(
         }
     }
 
-    let file_symbols = store.symbols_for_files(&normalized_seed_files, limit)?;
+    let file_symbols = store.symbols_for_files(
+        &normalized_seed_files,
+        impact_file_symbol_scan_limit(limit, normalized_seed_files.len()),
+    )?;
     for symbol in file_symbols {
         add_impact(
             &mut impact,
@@ -5266,6 +5271,12 @@ fn normalize_impact_format(format: &str) -> Result<String> {
             bail!("unsupported impact analysis format '{other}'; expected 'summary' or 'full'")
         }
     }
+}
+
+fn impact_file_symbol_scan_limit(output_limit: usize, seed_file_count: usize) -> usize {
+    output_limit
+        .max(IMPACT_FILE_SYMBOL_SCAN_PER_FILE.saturating_mul(seed_file_count.max(1)))
+        .min(IMPACT_FILE_SYMBOL_SCAN_MAX)
 }
 
 fn impact_risk_level(impacted_files: &[ImpactFile], paths: &[ImpactPath]) -> String {

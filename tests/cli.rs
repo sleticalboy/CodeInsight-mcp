@@ -2221,6 +2221,76 @@ export function coreSpec() {
 }
 
 #[test]
+fn cli_impact_analysis_file_seed_scans_beyond_output_limit_for_call_terms() {
+    let fixture = TempDir::new().unwrap();
+    std::fs::create_dir_all(fixture.path().join("src")).unwrap();
+
+    let mut core = String::new();
+    for index in 0..40 {
+        core.push_str(&format!(
+            "export function filler{index}() {{ return {index}; }}\n"
+        ));
+    }
+    core.push_str(
+        r#"
+export function importantBehavior() {
+  return "important";
+}
+"#,
+    );
+    write_file(&fixture, "src/core.ts", &core);
+    write_file(
+        &fixture,
+        "src/consumer.ts",
+        r#"
+import { importantBehavior } from "./core";
+
+export function runConsumer() {
+  return importantBehavior();
+}
+"#,
+    );
+
+    run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    let impact = run_json([
+        "impact-analysis",
+        fixture.path().to_str().unwrap(),
+        "--file",
+        "src/core.ts",
+        "--limit",
+        "5",
+        "--depth",
+        "1",
+        "--format",
+        "summary",
+    ]);
+
+    assert!(
+        impact["callers"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| call["file"] == "src/consumer.ts" && call["callee"] == "importantBehavior"),
+        "file-seed impact should scan enough symbols to find callers beyond the output limit"
+    );
+    assert!(
+        impact["impacted_files"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|file| file["file"] == "src/consumer.ts"),
+        "caller files should be included in the impacted file list"
+    );
+    assert!(
+        impact["summary"]
+            .as_str()
+            .unwrap()
+            .contains("including 1 call-related files"),
+        "summary should report call-related impact for file seeds"
+    );
+}
+
+#[test]
 fn cli_agent_route_returns_blocked_plan_for_empty_repository() {
     let fixture = TempDir::new().unwrap();
 
