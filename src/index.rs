@@ -53,6 +53,7 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
     let project_config = load_project_config(&root)?.unwrap_or_default();
     let package_conditions = project_package_conditions(&project_config);
     let path_scope = IndexPathScope::from_config(&project_config.index)?;
+    let walk_roots = path_scope.walk_roots(&root);
     let mut store = Store::open(&root)?;
     if force {
         store.reset()?;
@@ -64,138 +65,153 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
     let mut symbol_count = 0;
     let mut seen_source_files = Vec::new();
     let mut errors = Vec::new();
+    let mut visited_paths = HashSet::new();
 
-    for entry in WalkBuilder::new(&root)
-        .hidden(false)
-        .filter_entry(|entry| should_enter(entry.path()))
-        .build()
-    {
-        let entry = match entry {
-            Ok(entry) => entry,
-            Err(error) => {
-                errors.push(IndexError {
-                    file: "<walk>".to_string(),
-                    stage: "walk".to_string(),
-                    message: error.to_string(),
-                });
-                skipped_files += 1;
-                continue;
-            }
-        };
-        if !entry
-            .file_type()
-            .is_some_and(|file_type| file_type.is_file())
+    if path_scope.has_include_patterns() && walk_roots.is_empty() {
+        errors.push(IndexError {
+            file: project_config_path_for_error(&root),
+            stage: "scope".to_string(),
+            message: "index.include patterns did not resolve to any existing walk roots"
+                .to_string(),
+        });
+    }
+
+    for walk_root in &walk_roots {
+        for entry in WalkBuilder::new(walk_root)
+            .hidden(false)
+            .filter_entry(|entry| should_enter(entry.path()))
+            .build()
         {
-            continue;
-        }
+            let entry = match entry {
+                Ok(entry) => entry,
+                Err(error) => {
+                    errors.push(IndexError {
+                        file: "<walk>".to_string(),
+                        stage: "walk".to_string(),
+                        message: error.to_string(),
+                    });
+                    skipped_files += 1;
+                    continue;
+                }
+            };
+            if !entry
+                .file_type()
+                .is_some_and(|file_type| file_type.is_file())
+            {
+                continue;
+            }
 
-        let path = entry.path();
-        let relative_path = path
-            .strip_prefix(&root)
-            .unwrap_or(path)
-            .to_string_lossy()
-            .replace('\\', "/");
-        if !path_scope.matches(&relative_path) {
-            skipped_files += 1;
-            continue;
-        }
-
-        let Some(language) = detect_language(path) else {
-            skipped_files += 1;
-            continue;
-        };
-
-        let source = match fs::read_to_string(path) {
-            Ok(source) => source,
-            Err(error) => {
-                errors.push(index_error(path, "read", error));
+            let path = entry.path();
+            if !visited_paths.insert(path.to_path_buf()) {
+                continue;
+            }
+            let relative_path = path
+                .strip_prefix(&root)
+                .unwrap_or(path)
+                .to_string_lossy()
+                .replace('\\', "/");
+            if !path_scope.matches(&relative_path) {
                 skipped_files += 1;
                 continue;
             }
-        };
 
-        seen_source_files.push(relative_path.clone());
-        let hash = hash_source(&source);
-        if !force && store.file_hash(&relative_path)?.as_deref() == Some(hash.as_str()) {
-            unchanged_files += 1;
-            continue;
-        }
+            let Some(language) = detect_language(path) else {
+                skipped_files += 1;
+                continue;
+            };
 
-        let symbols = match extract_symbols(&source, language, &relative_path) {
-            Ok(symbols) => symbols,
-            Err(error) => {
+            let source = match fs::read_to_string(path) {
+                Ok(source) => source,
+                Err(error) => {
+                    errors.push(index_error(path, "read", error));
+                    skipped_files += 1;
+                    continue;
+                }
+            };
+
+            seen_source_files.push(relative_path.clone());
+            let hash = hash_source(&source);
+            if !force && store.file_hash(&relative_path)?.as_deref() == Some(hash.as_str()) {
+                unchanged_files += 1;
+                continue;
+            }
+
+            let symbols = match extract_symbols(&source, language, &relative_path) {
+                Ok(symbols) => symbols,
+                Err(error) => {
+                    errors.push(IndexError {
+                        file: relative_path.clone(),
+                        stage: "parse_symbols".to_string(),
+                        message: error.to_string(),
+                    });
+                    skipped_files += 1;
+                    continue;
+                }
+            };
+            let mut dependencies = match extract_dependencies(&source, language, &relative_path) {
+                Ok(dependencies) => dependencies,
+                Err(error) => {
+                    errors.push(IndexError {
+                        file: relative_path.clone(),
+                        stage: "parse_dependencies".to_string(),
+                        message: error.to_string(),
+                    });
+                    skipped_files += 1;
+                    continue;
+                }
+            };
+            resolve_dependencies(&root, &mut dependencies, &package_conditions);
+            let calls = extract_calls(&source, language, &relative_path, &symbols);
+            let source_file = SourceFile {
+                path: path.to_path_buf(),
+                relative_path: relative_path.clone(),
+                language,
+                hash,
+                line_count: source.lines().count(),
+            };
+            let file_id = match store.upsert_file(&source_file) {
+                Ok(file_id) => file_id,
+                Err(error) => {
+                    errors.push(IndexError {
+                        file: relative_path.clone(),
+                        stage: "store_file".to_string(),
+                        message: error.to_string(),
+                    });
+                    skipped_files += 1;
+                    continue;
+                }
+            };
+            if let Err(error) = store.replace_symbols(file_id, &symbols) {
                 errors.push(IndexError {
                     file: relative_path.clone(),
-                    stage: "parse_symbols".to_string(),
+                    stage: "store_symbols".to_string(),
                     message: error.to_string(),
                 });
                 skipped_files += 1;
                 continue;
             }
-        };
-        let mut dependencies = match extract_dependencies(&source, language, &relative_path) {
-            Ok(dependencies) => dependencies,
-            Err(error) => {
+            if let Err(error) = store.replace_dependencies(file_id, &dependencies) {
                 errors.push(IndexError {
                     file: relative_path.clone(),
-                    stage: "parse_dependencies".to_string(),
+                    stage: "store_dependencies".to_string(),
                     message: error.to_string(),
                 });
                 skipped_files += 1;
                 continue;
             }
-        };
-        resolve_dependencies(&root, &mut dependencies, &package_conditions);
-        let calls = extract_calls(&source, language, &relative_path, &symbols);
-        let source_file = SourceFile {
-            path: path.to_path_buf(),
-            relative_path: relative_path.clone(),
-            language,
-            hash,
-            line_count: source.lines().count(),
-        };
-        let file_id = match store.upsert_file(&source_file) {
-            Ok(file_id) => file_id,
-            Err(error) => {
+            if let Err(error) = store.replace_calls(file_id, &calls) {
                 errors.push(IndexError {
                     file: relative_path.clone(),
-                    stage: "store_file".to_string(),
+                    stage: "store_calls".to_string(),
                     message: error.to_string(),
                 });
                 skipped_files += 1;
                 continue;
             }
-        };
-        if let Err(error) = store.replace_symbols(file_id, &symbols) {
-            errors.push(IndexError {
-                file: relative_path.clone(),
-                stage: "store_symbols".to_string(),
-                message: error.to_string(),
-            });
-            skipped_files += 1;
-            continue;
-        }
-        if let Err(error) = store.replace_dependencies(file_id, &dependencies) {
-            errors.push(IndexError {
-                file: relative_path.clone(),
-                stage: "store_dependencies".to_string(),
-                message: error.to_string(),
-            });
-            skipped_files += 1;
-            continue;
-        }
-        if let Err(error) = store.replace_calls(file_id, &calls) {
-            errors.push(IndexError {
-                file: relative_path.clone(),
-                stage: "store_calls".to_string(),
-                message: error.to_string(),
-            });
-            skipped_files += 1;
-            continue;
-        }
 
-        changed_files += 1;
-        symbol_count += symbols.len();
+            changed_files += 1;
+            symbol_count += symbols.len();
+        }
     }
     let deleted_files = store.delete_files_not_in(&seen_source_files)?;
     store.resolve_imported_calls()?;
@@ -207,7 +223,7 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
         root: root.display().to_string(),
         schema_version: SCHEMA_VERSION,
         index_version: INDEX_VERSION.to_string(),
-        index_scope: index_scope_report(&project_config.index),
+        index_scope: index_scope_report(&project_config.index, &root, &walk_roots),
         indexed_files: total_indexed_files,
         changed_files,
         unchanged_files,
@@ -220,16 +236,40 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
     })
 }
 
-fn index_scope_report(config: &IndexConfig) -> IndexScopeReport {
+fn index_scope_report(
+    config: &IndexConfig,
+    root: &Path,
+    walk_roots: &[PathBuf],
+) -> IndexScopeReport {
     IndexScopeReport {
         enabled: !config.include.is_empty() || !config.exclude.is_empty(),
         includes: config.include.clone(),
         excludes: config.exclude.clone(),
+        walk_roots: walk_roots
+            .iter()
+            .map(|walk_root| relative_walk_root(root, walk_root))
+            .collect(),
     }
+}
+
+fn relative_walk_root(root: &Path, walk_root: &Path) -> String {
+    let relative = walk_root.strip_prefix(root).unwrap_or(walk_root);
+    if relative.as_os_str().is_empty() {
+        ".".to_string()
+    } else {
+        relative.to_string_lossy().replace('\\', "/")
+    }
+}
+
+fn project_config_path_for_error(root: &Path) -> String {
+    root.join(crate::config::project_config_path())
+        .display()
+        .to_string()
 }
 
 #[derive(Debug, Default)]
 struct IndexPathScope {
+    include_patterns: Vec<String>,
     include: Option<GlobSet>,
     exclude: Option<GlobSet>,
 }
@@ -237,9 +277,31 @@ struct IndexPathScope {
 impl IndexPathScope {
     fn from_config(config: &IndexConfig) -> Result<Self> {
         Ok(Self {
+            include_patterns: normalized_scope_patterns(&config.include),
             include: build_scope_glob_set(&config.include, "index.include")?,
             exclude: build_scope_glob_set(&config.exclude, "index.exclude")?,
         })
+    }
+
+    fn has_include_patterns(&self) -> bool {
+        !self.include_patterns.is_empty()
+    }
+
+    fn walk_roots(&self, project_root: &Path) -> Vec<PathBuf> {
+        if self.include_patterns.is_empty() {
+            return vec![project_root.to_path_buf()];
+        }
+
+        let mut roots = BTreeSet::new();
+        for pattern in &self.include_patterns {
+            let relative_root = static_scope_root(pattern);
+            let walk_root = project_root.join(relative_root);
+            if walk_root.exists() {
+                roots.insert(walk_root);
+            }
+        }
+
+        remove_nested_walk_roots(roots.into_iter().collect())
     }
 
     fn matches(&self, relative_path: &str) -> bool {
@@ -253,6 +315,37 @@ impl IndexPathScope {
             .is_some_and(|exclude| exclude.is_match(relative_path));
         included && !excluded
     }
+}
+
+fn normalized_scope_patterns(patterns: &[String]) -> Vec<String> {
+    patterns
+        .iter()
+        .map(|pattern| normalize_scope_pattern(pattern))
+        .filter(|pattern| !pattern.is_empty())
+        .collect()
+}
+
+fn static_scope_root(pattern: &str) -> PathBuf {
+    let mut root = PathBuf::new();
+    for component in pattern.split('/') {
+        if component.is_empty() || contains_glob_meta(component) {
+            break;
+        }
+        root.push(component);
+    }
+    root
+}
+
+fn remove_nested_walk_roots(mut roots: Vec<PathBuf>) -> Vec<PathBuf> {
+    roots.sort();
+    let mut kept: Vec<PathBuf> = Vec::new();
+    for root in roots {
+        if kept.iter().any(|kept_root| root.starts_with(kept_root)) {
+            continue;
+        }
+        kept.push(root);
+    }
+    kept
 }
 
 fn build_scope_glob_set(patterns: &[String], label: &str) -> Result<Option<GlobSet>> {

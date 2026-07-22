@@ -101,7 +101,8 @@ Then run `codeinsight config-status /path/to/repo` and confirm
 route evidence. The configured scope defines the current local index contents;
 files outside the scope are removed on the next `index` run. Local evidence
 Markdown and summary JSON also include `index_scope_enabled`,
-`index_scope_includes`, and `index_scope_excludes` from `agent_route.index_report`.
+`index_scope_includes`, `index_scope_excludes`, and `index_scope_roots` from
+`agent_route.index_report`.
 
 When you need a short comparison for adoption notes:
 

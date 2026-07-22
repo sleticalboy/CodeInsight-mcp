@@ -95,7 +95,8 @@ cat <<'JSON'
     "index_scope": {
       "enabled": true,
       "includes": ["src/**"],
-      "excludes": ["src/generated/**"]
+      "excludes": ["src/generated/**"],
+      "walk_roots": ["src"]
     },
     "indexed_files": 3,
     "symbols": 8,
@@ -184,6 +185,8 @@ EOF
     fail "missing index includes"
   grep -Fq -- '- Index excludes: `src/generated/**`' "$TEMP_DIR/evidence.md" ||
     fail "missing index excludes"
+  grep -Fq -- '- Index walk roots: `src`' "$TEMP_DIR/evidence.md" ||
+    fail "missing index walk roots"
   grep -Fq -- '- Selected context: `12/120` source lines, `90.0%` reduction' "$TEMP_DIR/evidence.md" ||
     fail "missing selected context reduction"
   grep -Fq -- '- Blind first-read baseline: `120` source lines' "$TEMP_DIR/evidence.md" ||
@@ -241,6 +244,7 @@ EOF
       and .metrics.index_scope_enabled == true
       and .metrics.index_scope_includes == ["src/**"]
       and .metrics.index_scope_excludes == ["src/generated/**"]
+      and .metrics.index_scope_roots == ["src"]
       and .metrics.seed_strategy == "auto_task_match"
       and .metrics.selected_seed_count == 2
       and .metrics.first_seed_source == "task_match"

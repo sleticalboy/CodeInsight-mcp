@@ -33,6 +33,8 @@ this scope replaces the previous index contents, so files outside the current
 scope are removed from CodeInsight's SQLite index. The `index` JSON response
 includes `index_scope.enabled`, `index_scope.includes`, and
 `index_scope.excludes` so evidence artifacts can record the indexing scope.
+When possible, `index_scope.walk_roots` shows the existing static directories or
+files used as walk roots for scoped indexing.
 
 Print an overview:
 

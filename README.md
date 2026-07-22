@@ -196,8 +196,8 @@ scripts/local-repo-evidence.sh /path/to/repo \
 ```
 
 The evidence Markdown and summary JSON include `index_scope_enabled`,
-`index_scope_includes`, and `index_scope_excludes`, so reviewers can see the
-exact indexing scope behind the route-quality numbers.
+`index_scope_includes`, `index_scope_excludes`, and `index_scope_roots`, so
+reviewers can see the exact indexing scope behind the route-quality numbers.
 
 Generate a blind-read vs routed-first-read comparison for adoption notes:
 

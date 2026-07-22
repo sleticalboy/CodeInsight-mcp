@@ -582,6 +582,7 @@ pub struct IndexScopeReport {
     pub enabled: bool,
     pub includes: Vec<String>,
     pub excludes: Vec<String>,
+    pub walk_roots: Vec<String>,
 }
 
 #[derive(Debug, Serialize)]

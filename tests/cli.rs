@@ -8856,6 +8856,7 @@ export function docsScopedRoute() {
     assert_eq!(index["index_scope"]["enabled"].as_bool(), Some(true));
     assert_eq!(index["index_scope"]["includes"][0], "src/**");
     assert_eq!(index["index_scope"]["excludes"][0], "src/generated/**");
+    assert_eq!(index["index_scope"]["walk_roots"][0], "src");
     assert_eq!(index["indexed_files"].as_u64(), Some(1));
     assert_eq!(index["changed_files"].as_u64(), Some(1));
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
@@ -8886,6 +8887,45 @@ export function docsScopedRoute() {
         "5",
     ]);
     assert!(docs.as_array().unwrap().is_empty());
+}
+
+#[test]
+fn cli_index_reports_missing_configured_include_roots_without_full_walk() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        ".codeinsight/config.toml",
+        r#"
+[index]
+include = ["missing/**"]
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/app.ts",
+        r#"
+export function shouldNotBeIndexedFromMissingScope() {
+  return "skip";
+}
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"].as_u64(), Some(0));
+    assert_eq!(index["index_scope"]["enabled"].as_bool(), Some(true));
+    assert!(
+        index["index_scope"]["walk_roots"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+    assert_eq!(index["errors"][0]["stage"], "scope");
+    assert!(
+        index["errors"][0]["message"]
+            .as_str()
+            .unwrap()
+            .contains("did not resolve")
+    );
 }
 
 #[test]

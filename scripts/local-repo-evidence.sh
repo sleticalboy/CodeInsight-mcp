@@ -195,7 +195,7 @@ build_binary_if_needed() {
 write_markdown() {
   local route_json="$1"
   local target="$2"
-  local total_lines selected_lines avoided_lines reduction read_less risk_level index_scope_enabled index_scope_includes index_scope_excludes
+  local total_lines selected_lines avoided_lines reduction read_less risk_level index_scope_enabled index_scope_includes index_scope_excludes index_scope_roots
 
   total_lines="$(json_value "$route_json" '.context_pack.read_less.baseline_source_lines // .overview.total_lines // 0')"
   selected_lines="$(selected_context_lines "$route_json")"
@@ -215,6 +215,7 @@ write_markdown() {
   index_scope_enabled="$(json_value "$route_json" '.index_report.index_scope.enabled // false')"
   index_scope_includes="$(json_value "$route_json" '(.index_report.index_scope.includes // []) | join(", ") | if . == "" then "-" else . end')"
   index_scope_excludes="$(json_value "$route_json" '(.index_report.index_scope.excludes // []) | join(", ") | if . == "" then "-" else . end')"
+  index_scope_roots="$(json_value "$route_json" '(.index_report.index_scope.walk_roots // []) | join(", ") | if . == "" then "-" else . end')"
 
   {
     echo "# CodeInsight Local Repository Evidence"
@@ -231,6 +232,7 @@ write_markdown() {
     if [ "$index_scope_enabled" = "true" ]; then
       echo "- Index includes: \`${index_scope_includes}\`"
       echo "- Index excludes: \`${index_scope_excludes}\`"
+      echo "- Index walk roots: \`${index_scope_roots}\`"
     fi
     echo "- Symbols: \`$(json_value "$route_json" '.index_report.symbols')\`"
     echo "- Entrypoints: \`$(json_value "$route_json" '.overview.entrypoints | length')\`"
@@ -330,6 +332,7 @@ write_summary_json() {
         index_scope_enabled: (.index_report.index_scope.enabled // false),
         index_scope_includes: (.index_report.index_scope.includes // []),
         index_scope_excludes: (.index_report.index_scope.excludes // []),
+        index_scope_roots: (.index_report.index_scope.walk_roots // []),
         entrypoints: (.overview.entrypoints | length),
         recommended_next_tools: (.overview.recommended_next_tools | length),
         type_relation_edges: (.overview.dependency_summary.type_relation_edges // 0),
@@ -385,6 +388,7 @@ write_summary_json() {
       and (.metrics.index_scope_enabled | type == "boolean")
       and (.metrics.index_scope_includes | type == "array")
       and (.metrics.index_scope_excludes | type == "array")
+      and (.metrics.index_scope_roots | type == "array")
       and (.metrics.selected_lines | type == "number")
       and (.metrics.source_lines_avoided | type == "number")
       and (.metrics.line_reduction | type == "string" and length > 0)
