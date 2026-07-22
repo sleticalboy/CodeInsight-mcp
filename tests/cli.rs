@@ -2183,6 +2183,11 @@ fn cli_agent_route_preserves_requested_minimum_token_budget() {
             .unwrap()
             .is_empty()
     );
+    let continuation_message = route["context_pack"]["continuation_summary"]["message"]
+        .as_str()
+        .unwrap();
+    assert!(continuation_message.contains("Requested token budget 20 was below the minimum"));
+    assert!(continuation_message.contains("500 tokens were applied"));
     assert_agent_route_execution_plan_matches_context(&route);
 }
 

@@ -2013,12 +2013,13 @@ fn context_continuation_summary(
     budget: &ContextBudget,
     omitted_candidates: &[ContextOmittedCandidate],
 ) -> ContextContinuationSummary {
+    let minimum_budget_note = context_minimum_budget_note(budget);
     if let Some(candidate) = omitted_candidates.first() {
         return ContextContinuationSummary {
             status: "omitted_candidates_available".to_string(),
             message: format!(
-                "{} selected files fit the context budget; {} candidate files were omitted. Continue with {} if more context is needed.",
-                budget.selected_files, budget.omitted_files, candidate.file
+                "{}{} selected files fit the context budget; {} candidate files were omitted. Continue with {} if more context is needed.",
+                minimum_budget_note, budget.selected_files, budget.omitted_files, candidate.file
             ),
             next_action: "run_omitted_candidate_context_pack".to_string(),
             omitted_candidate_count: omitted_candidates.len(),
@@ -2031,8 +2032,8 @@ fn context_continuation_summary(
         return ContextContinuationSummary {
             status: "token_budget_exhausted".to_string(),
             message: format!(
-                "{} selected files fit the context budget, but some ranges were truncated. Increase token_budget or narrow the task for deeper context.",
-                budget.selected_files
+                "{}{} selected files fit the context budget, but some ranges were truncated. Increase token_budget or narrow the task for deeper context.",
+                minimum_budget_note, budget.selected_files
             ),
             next_action: "increase_token_budget_or_narrow_task".to_string(),
             omitted_candidate_count: 0,
@@ -2059,8 +2060,8 @@ fn context_continuation_summary(
         return ContextContinuationSummary {
             status: "lower_ranked_context_omitted".to_string(),
             message: format!(
-                "{} lower-ranked files and {} ranges were omitted; use a narrower seed if those signals are needed.",
-                budget.omitted_files, budget.omitted_ranges
+                "{}{} lower-ranked files and {} ranges were omitted; use a narrower seed if those signals are needed.",
+                minimum_budget_note, budget.omitted_files, budget.omitted_ranges
             ),
             next_action: "narrow_task_or_seed".to_string(),
             omitted_candidate_count: 0,
@@ -2077,6 +2078,17 @@ fn context_continuation_summary(
         omitted_candidate_count: 0,
         first_omitted_file: None,
         suggested_tool: None,
+    }
+}
+
+fn context_minimum_budget_note(budget: &ContextBudget) -> String {
+    if budget.requested_token_budget < budget.applied_token_budget {
+        format!(
+            "Requested token budget {} was below the minimum, so {} tokens were applied. ",
+            budget.requested_token_budget, budget.applied_token_budget
+        )
+    } else {
+        String::new()
     }
 }
 
