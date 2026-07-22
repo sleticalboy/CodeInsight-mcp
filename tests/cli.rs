@@ -2747,6 +2747,20 @@ main "$@"
     assert_eq!(context["seed_strategy"], "auto_task_match");
     assert_eq!(context["selected_seeds"][0]["value"], "src/index.ts");
     assert_eq!(context["files"][0]["file"], "src/index.ts");
+    assert!(
+        context["reading_plan"][0]["focus"]
+            .as_str()
+            .unwrap()
+            .contains("project indexing"),
+        "indexing tasks should get indexing-specific reading focus"
+    );
+    assert!(
+        context["reading_plan"][0]["question"]
+            .as_str()
+            .unwrap()
+            .contains("files scanned"),
+        "indexing tasks should get indexing-specific reading guidance"
+    );
 }
 
 #[test]
@@ -2908,6 +2922,20 @@ main "$@"
     assert_eq!(context["selected_seeds"][0]["value"], "src/tools.ts");
     assert_eq!(context["files"][0]["file"], "src/tools.ts");
     assert!(
+        context["reading_plan"][0]["focus"]
+            .as_str()
+            .unwrap()
+            .contains("semantic search orchestration"),
+        "semantic search tasks should get semantic-specific reading focus"
+    );
+    assert!(
+        context["reading_plan"][0]["question"]
+            .as_str()
+            .unwrap()
+            .contains("semantic searches routed"),
+        "semantic search tasks should get semantic-specific reading guidance"
+    );
+    assert!(
         !context["files"]
             .as_array()
             .unwrap()
@@ -2981,6 +3009,20 @@ main "$@"
     assert_eq!(context["seed_strategy"], "auto_task_match");
     assert_eq!(context["selected_seeds"][0]["value"], "src/index.ts");
     assert_eq!(context["files"][0]["file"], "src/index.ts");
+    assert!(
+        context["reading_plan"][0]["focus"]
+            .as_str()
+            .unwrap()
+            .contains("dependency graph extraction"),
+        "dependency graph tasks should get graph-specific reading focus"
+    );
+    assert!(
+        context["reading_plan"][0]["question"]
+            .as_str()
+            .unwrap()
+            .contains("dependency edges extracted"),
+        "dependency graph tasks should get graph-specific reading guidance"
+    );
     assert!(
         !context["files"]
             .as_array()

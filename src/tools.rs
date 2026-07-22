@@ -2342,6 +2342,15 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
     } else if signals.project_overview {
         "Start with seed file project summary, entrypoint detection, directory roles, and recommended next tools."
             .to_string()
+    } else if signals.indexing_pipeline {
+        "Start with seed file project indexing, source scanning, parsing, and graph extraction."
+            .to_string()
+    } else if signals.dependency_graph {
+        "Start with seed file dependency graph extraction, local edge resolution, and graph output."
+            .to_string()
+    } else if signals.semantic_context_orchestration {
+        "Start with seed file semantic search orchestration, chunk fallback, and embedding context flow."
+            .to_string()
     } else if signals.file_parsing_language {
         "Start with seed file parsing, AST extraction, or language support boundaries.".to_string()
     } else if signals.validation_binding {
@@ -2451,6 +2460,15 @@ fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
             .to_string()
     } else if signals.project_overview {
         "Read symbol definitions that build project summaries, entrypoint detection, directory roles, or next-tool recommendations."
+            .to_string()
+    } else if signals.indexing_pipeline {
+        "Read symbol definitions that implement source scanning, parsing, symbol extraction, dependency extraction, or index writes."
+            .to_string()
+    } else if signals.dependency_graph {
+        "Read symbol definitions that implement dependency graph extraction, local edge resolution, filtering, or graph output."
+            .to_string()
+    } else if signals.semantic_context_orchestration {
+        "Read symbol definitions that implement semantic search orchestration, chunk selection, fallback, or embedding context flow."
             .to_string()
     } else if signals.validation_binding {
         "Read symbol definitions that establish validation, schema, binding, or serialization behavior."
@@ -2633,6 +2651,15 @@ fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
         "Follow call graph evidence that supports documented usage.".to_string()
     } else if signals.project_overview {
         "Follow call graph evidence for project summary assembly, entrypoint detection, and next-tool recommendations."
+            .to_string()
+    } else if signals.indexing_pipeline {
+        "Follow call graph evidence for project indexing, source scanning, parsing, and index writes."
+            .to_string()
+    } else if signals.dependency_graph {
+        "Follow call graph evidence for dependency graph extraction, local edge resolution, and graph output."
+            .to_string()
+    } else if signals.semantic_context_orchestration {
+        "Follow call graph evidence for semantic search orchestration, chunk fallback, and embedding context flow."
             .to_string()
     } else if signals.data_persistence {
         "Follow call graph evidence for database, repository, or storage flow.".to_string()
@@ -2937,6 +2964,15 @@ fn context_dependency_focus(signals: ContextTaskSignals) -> String {
     } else if signals.project_overview {
         "Check local dependencies that supply project summary, entrypoint detection, directory role, or next-tool data."
             .to_string()
+    } else if signals.indexing_pipeline {
+        "Check local dependencies that supply source scanning, parsing, symbol extraction, dependency extraction, or index storage."
+            .to_string()
+    } else if signals.dependency_graph {
+        "Check local dependencies that supply dependency edges, local resolution, filtering, or graph output."
+            .to_string()
+    } else if signals.semantic_context_orchestration {
+        "Check local dependencies that supply semantic chunks, embeddings, fallback ranges, or context assembly."
+            .to_string()
     } else if signals.data_persistence {
         "Check local dependencies that supply database or storage behavior.".to_string()
     } else if signals.error_recovery {
@@ -3041,6 +3077,15 @@ fn context_seed_file_question(task: &str) -> String {
             .to_string()
     } else if signals.project_overview {
         "Where are project summaries, entrypoint candidates, directory roles, or recommended next tools assembled here?"
+            .to_string()
+    } else if signals.indexing_pipeline {
+        "Where are files scanned, languages parsed, symbols extracted, dependencies captured, or index records written here?"
+            .to_string()
+    } else if signals.dependency_graph {
+        "Where are dependency edges extracted, resolved, filtered, or formatted into graph output here?"
+            .to_string()
+    } else if signals.semantic_context_orchestration {
+        "Where are semantic searches routed, chunks selected, embedding fallback applied, or context results assembled here?"
             .to_string()
     } else if signals.file_parsing_language {
         "Where are source files parsed, languages detected, ASTs built, or symbols extracted here?"
@@ -3154,6 +3199,12 @@ fn context_symbol_definition_question(task: &str) -> String {
         "What import parsing, alias resolution, package metadata, or local target mapping behavior does this definition establish?".to_string()
     } else if signals.project_overview {
         "What project summary, entrypoint candidates, directory role, or next-tool recommendation behavior does this definition establish?".to_string()
+    } else if signals.indexing_pipeline {
+        "What source scanning, parsing, symbol extraction, dependency extraction, or index-write behavior does this definition establish?".to_string()
+    } else if signals.dependency_graph {
+        "What dependency graph extraction, local edge resolution, filtering, or graph output behavior does this definition establish?".to_string()
+    } else if signals.semantic_context_orchestration {
+        "What semantic search orchestration, chunk selection, fallback, or embedding context behavior does this definition establish?".to_string()
     } else if signals.validation_binding {
         "What validation, schema, binding, parser, or serialization behavior does this definition establish?".to_string()
     } else if signals.feature_flags {
@@ -3326,6 +3377,15 @@ fn context_call_graph_question(task: &str) -> String {
     } else if signals.project_overview {
         "Which callers or callees assemble project summaries, entrypoint candidates, directory roles, or recommended next tools?"
             .to_string()
+    } else if signals.indexing_pipeline {
+        "Which callers or callees scan files, parse languages, extract symbols, capture dependencies, or write index records?"
+            .to_string()
+    } else if signals.dependency_graph {
+        "Which callers or callees extract dependency edges, resolve local targets, filter graph data, or format graph output?"
+            .to_string()
+    } else if signals.semantic_context_orchestration {
+        "Which callers or callees route semantic search, select chunks, apply fallback, or assemble context results?"
+            .to_string()
     } else if signals.data_persistence {
         "Which callers or callees read, write, or persist data through this flow?".to_string()
     } else if signals.error_recovery {
@@ -3427,6 +3487,15 @@ fn context_dependency_question(task: &str) -> String {
             .to_string()
     } else if signals.project_overview {
         "What imported local dependency behavior supplies project summaries, entrypoint candidates, directory roles, or next-tool recommendations?"
+            .to_string()
+    } else if signals.indexing_pipeline {
+        "What imported local dependency behavior supplies source scanning, parsing, symbol extraction, dependency extraction, or index storage?"
+            .to_string()
+    } else if signals.dependency_graph {
+        "What imported local dependency behavior supplies dependency edges, local target resolution, filtering, or graph output?"
+            .to_string()
+    } else if signals.semantic_context_orchestration {
+        "What imported local dependency behavior supplies semantic chunks, embeddings, fallback ranges, or context assembly?"
             .to_string()
     } else if signals.data_persistence {
         "What imported local dependency behavior supplies database, repository, or storage access?"
@@ -3656,6 +3725,9 @@ struct ContextTaskSignals {
     symbol_search: bool,
     import_resolution: bool,
     project_overview: bool,
+    indexing_pipeline: bool,
+    dependency_graph: bool,
+    semantic_context_orchestration: bool,
     file_parsing_language: bool,
     validation_binding: bool,
     feature_flags: bool,
@@ -3696,6 +3768,7 @@ struct ContextTaskSignals {
 
 impl ContextTaskSignals {
     fn from_task(task: &str) -> Self {
+        let keywords = task_keywords(task);
         let agent_first_read = context_text_mentions(
             task,
             &[
@@ -4567,9 +4640,13 @@ impl ContextTaskSignals {
                     "ssl context",
                 ],
             ),
-            symbol_search: auto_seed_symbol_search_task(&task_keywords(task)),
-            import_resolution: auto_seed_import_resolution_task(&task_keywords(task)),
-            project_overview: auto_seed_project_overview_task(&task_keywords(task)),
+            symbol_search: auto_seed_symbol_search_task(&keywords),
+            import_resolution: auto_seed_import_resolution_task(&keywords),
+            project_overview: auto_seed_project_overview_task(&keywords),
+            indexing_pipeline: auto_seed_indexing_pipeline_task(&keywords),
+            dependency_graph: auto_seed_dependency_graph_task(&keywords),
+            semantic_context_orchestration: auto_seed_semantic_context_task(&keywords)
+                && auto_seed_semantic_context_prefers_orchestration(&keywords),
             file_parsing_language,
             validation_binding: context_text_mentions(
                 task,
