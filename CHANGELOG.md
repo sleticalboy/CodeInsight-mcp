@@ -23,6 +23,10 @@ The format is based on Keep a Changelog, and this project follows semantic versi
 - Agent-route and MCP first-call smoke evidence now cover task text that names
   an indexed file path, reporting `auto_task_path`, `task_path`, and the first
   seed value in local summaries, Actions summaries, and onboarding examples.
+- MCP first-call smoke evidence now also covers existing task paths that are
+  excluded by the configured index scope, proving clients receive
+  `blocked_unindexed_task_path` with `index_or_update_scope_for_task_path`
+  instead of falling back to unrelated context.
 - Added `scripts/agent-route-artifact-smoke.sh` and wired
   `codeinsight-agent-route-smoke` into release evidence summaries and pre-tag
   artifact gates.

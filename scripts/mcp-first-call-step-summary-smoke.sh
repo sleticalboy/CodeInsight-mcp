@@ -140,6 +140,23 @@ main() {
     "impact_status": "skipped_no_context",
     "execution_plan_actions": ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"],
     "execution_plan_statuses": ["blocked_no_reading_plan", "blocked_no_current_reading_step", "manual_after_selected_context", "skipped_no_context"]
+  },
+  "blocked_unindexed_task_path": {
+    "route_step_status": "blocked_unindexed_task_path",
+    "seed_strategy": "auto_task_path_unindexed",
+    "first_seed_source": "task_path_unindexed",
+    "first_seed_value": "src/main.ts",
+    "continuation_status": "blocked_unindexed_task_path",
+    "continuation_next_action": "index_or_update_scope_for_task_path",
+    "truncation_reason": "unindexed_task_path",
+    "context_files": 0,
+    "reading_plan_steps": 0,
+    "has_current_reading_step": false,
+    "impact_status": "skipped_unindexed_task_path",
+    "execution_plan_actions": ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"],
+    "execution_plan_statuses": ["blocked_no_reading_plan", "blocked_no_current_reading_step", "manual_after_selected_context", "skipped_unindexed_task_path"],
+    "continuation_message_has_scope_hint": true,
+    "impact_instruction_has_skipped_reason": true
   }
 }
 EOF
@@ -200,6 +217,12 @@ EOF
   require_literal "$summary_md" 'Blocked no-context next action: `provide_matching_seed_file_or_symbol`' "blocked no-context next action"
   require_literal "$summary_md" 'Blocked no-context impact status: `skipped_no_context`' "blocked no-context impact status"
   require_literal "$summary_md" 'Blocked no-context execution statuses: `blocked_no_reading_plan -> blocked_no_current_reading_step -> manual_after_selected_context -> skipped_no_context`' "blocked no-context execution statuses"
+  require_literal "$summary_md" 'Blocked unindexed path status: `blocked_unindexed_task_path`' "blocked unindexed path status"
+  require_literal "$summary_md" 'Blocked unindexed path seed strategy: `auto_task_path_unindexed`' "blocked unindexed path seed strategy"
+  require_literal "$summary_md" 'Blocked unindexed path first seed: `task_path_unindexed:src/main.ts`' "blocked unindexed path first seed"
+  require_literal "$summary_md" 'Blocked unindexed path next action: `index_or_update_scope_for_task_path`' "blocked unindexed path next action"
+  require_literal "$summary_md" 'Blocked unindexed path impact status: `skipped_unindexed_task_path`' "blocked unindexed path impact status"
+  require_literal "$summary_md" 'Blocked unindexed path scope hint: `true`' "blocked unindexed path scope hint"
   require_literal "$summary_md" 'Workflow artifact: [`codeinsight-mcp-first-call`](https://example.com/artifact)' "artifact link"
 
   echo "mcp first-call step summary smoke passed"

@@ -283,10 +283,11 @@ The context-pack quality summary should show the scenario table and a
 The agent-route summary should show the route line, context-pack metrics,
 impact metrics, and a `codeinsight-agent-route-smoke` artifact link.
 
-The MCP first-call summary should show selected files, first context file,
-first reading file, selection rank, first next action, omitted-candidate
-continuation fields, reading-order and suggested-tool handoff contracts, impact
-status, and a `codeinsight-mcp-first-call` artifact link.
+The MCP first-call summary should show selected files, task-path seed evidence,
+first context file, first reading file, selection rank, first next action,
+omitted-candidate continuation fields, reading-order and suggested-tool handoff
+contracts, impact status, blocked no-seed/no-context/unindexed-path handling,
+and a `codeinsight-mcp-first-call` artifact link.
 
 Use the artifacts when you need the full Markdown report or JSON summary rather
 than the summary excerpt:

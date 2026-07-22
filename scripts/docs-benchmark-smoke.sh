@@ -1812,7 +1812,7 @@ main() {
     '\| First MCP call onboarding changed \| `scripts/mcp-first-call-smoke\.sh --summary-json /tmp/codeinsight-mcp-first-call\.json` \|' \
     "maintenance MCP first-call smoke chooser"
   require_pattern docs/maintenance-commands.md \
-    'first context file, task-path seed evidence, read-less metrics, selection rank, reading-question handoff, continuation summary, reading-plan order, suggested-tool handoff, impact status, blocked no-seed handling, and saved artifacts' \
+    'first context file, task-path seed evidence, read-less metrics, selection rank, reading-question handoff, continuation summary, reading-plan order, suggested-tool handoff, impact status, blocked no-seed/no-context/unindexed-path handling, and saved artifacts' \
     "maintenance MCP first-call artifact scope"
   require_pattern docs/maintenance-commands.md \
     'scripts/mcp-first-call-step-summary-smoke\.sh' \
@@ -1821,7 +1821,7 @@ main() {
     '\| First MCP call Actions summary changed \| `scripts/mcp-first-call-step-summary-smoke\.sh` \|' \
     "maintenance MCP first-call step summary chooser"
   require_pattern docs/maintenance-commands.md \
-    'Actions Summary section for selected files, task-path seed evidence, first context file, first reading file, read-less metrics, selection rank, reading-question handoff, omitted-candidate continuation fields, reading-plan order, suggested-tool handoff, continuation timing, impact status, blocked no-seed handling, and artifact link' \
+    'Actions Summary section for selected files, task-path seed evidence, first context file, first reading file, read-less metrics, selection rank, reading-question handoff, omitted-candidate continuation fields, reading-plan order, suggested-tool handoff, continuation timing, impact status, blocked no-seed/no-context/unindexed-path handling, and artifact link' \
     "maintenance MCP first-call step summary scope"
   require_pattern scripts/mcp-first-call-step-summary-smoke.sh \
     'Seed strategy: `auto_task_path`' \
@@ -2003,11 +2003,14 @@ main() {
   require_pattern scripts/mcp-first-call-artifact-smoke.sh \
     'first_omitted_omission_reason' \
     "MCP first-call artifact omitted reason output"
+  require_pattern scripts/mcp-first-call-artifact-smoke.sh \
+    'blocked_unindexed_task_path_status' \
+    "MCP first-call artifact unindexed task path output"
   require_pattern docs/maintainer-checklist.md \
-    'the first context file, first reading file, read-less metrics, selection' \
+    'task-path seed evidence, the first context file, first reading file, read-less' \
     "maintainer MCP first-call route contract summary"
   require_pattern docs/release-readiness.md \
-    'first reading file, selection rank, first next action, omitted-candidate' \
+    'task-path seed evidence,' \
     "release readiness MCP first-call route contract summary"
   require_pattern docs/release-commands.md \
     'scripts/release-pretag-check\.sh main' \

@@ -106,7 +106,22 @@ require_summary_contract() {
       and .blocked_no_context.has_current_reading_step == false
       and .blocked_no_context.impact_status == "skipped_no_context"
       and .blocked_no_context.execution_plan_actions == ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"]
-      and .blocked_no_context.execution_plan_statuses == ["blocked_no_reading_plan", "blocked_no_current_reading_step", "manual_after_selected_context", "skipped_no_context"]' \
+      and .blocked_no_context.execution_plan_statuses == ["blocked_no_reading_plan", "blocked_no_current_reading_step", "manual_after_selected_context", "skipped_no_context"]
+      and .blocked_unindexed_task_path.route_step_status == "blocked_unindexed_task_path"
+      and .blocked_unindexed_task_path.seed_strategy == "auto_task_path_unindexed"
+      and .blocked_unindexed_task_path.first_seed_source == "task_path_unindexed"
+      and .blocked_unindexed_task_path.first_seed_value == "src/main.ts"
+      and .blocked_unindexed_task_path.continuation_status == "blocked_unindexed_task_path"
+      and .blocked_unindexed_task_path.continuation_next_action == "index_or_update_scope_for_task_path"
+      and .blocked_unindexed_task_path.truncation_reason == "unindexed_task_path"
+      and .blocked_unindexed_task_path.context_files == 0
+      and .blocked_unindexed_task_path.reading_plan_steps == 0
+      and .blocked_unindexed_task_path.has_current_reading_step == false
+      and .blocked_unindexed_task_path.impact_status == "skipped_unindexed_task_path"
+      and .blocked_unindexed_task_path.execution_plan_actions == ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"]
+      and .blocked_unindexed_task_path.execution_plan_statuses == ["blocked_no_reading_plan", "blocked_no_current_reading_step", "manual_after_selected_context", "skipped_unindexed_task_path"]
+      and .blocked_unindexed_task_path.continuation_message_has_scope_hint == true
+      and .blocked_unindexed_task_path.impact_instruction_has_skipped_reason == true' \
     "$SUMMARY_JSON" >/dev/null; then
     fail "$SUMMARY_JSON does not match the MCP first-call summary contract"
   fi
@@ -188,6 +203,12 @@ main() {
     printf 'Blocked no-context next action: `%s`\n\n' "$(value '.blocked_no_context.continuation_next_action')"
     printf 'Blocked no-context impact status: `%s`\n\n' "$(value '.blocked_no_context.impact_status')"
     printf 'Blocked no-context execution statuses: `%s`\n\n' "$(value '.blocked_no_context.execution_plan_statuses | join(" -> ")')"
+    printf 'Blocked unindexed path status: `%s`\n\n' "$(value '.blocked_unindexed_task_path.continuation_status')"
+    printf 'Blocked unindexed path seed strategy: `%s`\n\n' "$(value '.blocked_unindexed_task_path.seed_strategy')"
+    printf 'Blocked unindexed path first seed: `%s:%s`\n\n' "$(value '.blocked_unindexed_task_path.first_seed_source')" "$(value '.blocked_unindexed_task_path.first_seed_value')"
+    printf 'Blocked unindexed path next action: `%s`\n\n' "$(value '.blocked_unindexed_task_path.continuation_next_action')"
+    printf 'Blocked unindexed path impact status: `%s`\n\n' "$(value '.blocked_unindexed_task_path.impact_status')"
+    printf 'Blocked unindexed path scope hint: `%s`\n\n' "$(value '.blocked_unindexed_task_path.continuation_message_has_scope_hint')"
     printf 'Full JSON summary: `%s`\n\n' "$SUMMARY_JSON"
     if [ -n "$RUN_URL" ]; then
       printf 'Workflow run: [open run](%s)\n\n' "$RUN_URL"

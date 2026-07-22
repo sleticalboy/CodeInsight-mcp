@@ -775,6 +775,120 @@ try:
         f"unexpected unmatched explicit seed execution statuses: {unmatched_execution_statuses}",
     )
 
+    with tempfile.TemporaryDirectory(prefix="codeinsight-unindexed-first-call-") as scoped_root:
+        os.makedirs(os.path.join(scoped_root, ".codeinsight"), exist_ok=True)
+        os.makedirs(os.path.join(scoped_root, "src"), exist_ok=True)
+        with open(os.path.join(scoped_root, ".codeinsight", "config.toml"), "w", encoding="utf-8") as config_file:
+            config_file.write('[index]\ninclude = ["src/auth.ts"]\n')
+        with open(os.path.join(scoped_root, "src", "main.ts"), "w", encoding="utf-8") as main_file:
+            main_file.write('export function main() {\n  return "skip";\n}\n')
+        with open(os.path.join(scoped_root, "src", "auth.ts"), "w", encoding="utf-8") as auth_file:
+            auth_file.write('export function authOnly() {\n  return "keep";\n}\n')
+        unindexed_route = call_tool(
+            7,
+            "agent_route",
+            {
+                "root": scoped_root,
+                "task": "inspect src/main.ts before editing startup",
+                "token_budget": token_budget,
+                "impact_limit": 10,
+                "impact_depth": 2,
+                "impact_evidence_limit": 3,
+            },
+            "agent_route_blocked_contract",
+        )
+
+    unindexed_context_pack = unindexed_route.get("context_pack", {})
+    unindexed_continuation = unindexed_context_pack.get("continuation_summary", {})
+    unindexed_execution_plan = unindexed_route.get("execution_plan", [])
+    unindexed_route_steps = unindexed_route.get("route", [])
+    unindexed_selected_seeds = unindexed_context_pack.get("selected_seeds", [])
+    unindexed_first_seed = unindexed_selected_seeds[0] if unindexed_selected_seeds else {}
+    expect(
+        [step.get("tool") for step in unindexed_route_steps] == expected_route_tools,
+        "agent_route_blocked_contract",
+        "unindexed task-path route should preserve the default route tool order",
+    )
+    expect(
+        unindexed_route_steps[2].get("status") == "blocked_unindexed_task_path",
+        "agent_route_blocked_contract",
+        f"unindexed task-path route step should be blocked_unindexed_task_path: {unindexed_route_steps}",
+    )
+    expect(
+        unindexed_route.get("impact_status") == "skipped_unindexed_task_path",
+        "agent_route_blocked_contract",
+        f"unindexed task-path impact_status should be skipped_unindexed_task_path: {unindexed_route.get('impact_status')!r}",
+    )
+    expect(
+        unindexed_context_pack.get("seed_strategy") == "auto_task_path_unindexed",
+        "agent_route_blocked_contract",
+        f"unindexed task-path seed_strategy should be auto_task_path_unindexed: {unindexed_context_pack.get('seed_strategy')!r}",
+    )
+    expect(
+        unindexed_first_seed.get("source") == "task_path_unindexed"
+        and unindexed_first_seed.get("value") == "src/main.ts",
+        "agent_route_blocked_contract",
+        f"unindexed task-path first seed should name src/main.ts: {unindexed_first_seed!r}",
+    )
+    expect(
+        unindexed_context_pack.get("files") == [],
+        "agent_route_blocked_contract",
+        "unindexed task-path context_pack.files should be empty",
+    )
+    expect(
+        unindexed_context_pack.get("reading_plan") == [],
+        "agent_route_blocked_contract",
+        "unindexed task-path context_pack.reading_plan should be empty",
+    )
+    expect(
+        unindexed_context_pack.get("budget", {}).get("truncation_reason") == "unindexed_task_path",
+        "agent_route_blocked_contract",
+        f"unindexed task-path truncation_reason should be unindexed_task_path: {unindexed_context_pack.get('budget')!r}",
+    )
+    expect(
+        "current_reading_step" not in unindexed_route,
+        "agent_route_blocked_contract",
+        "unindexed task-path route should omit current_reading_step",
+    )
+    expect(
+        unindexed_continuation.get("status") == "blocked_unindexed_task_path",
+        "agent_route_blocked_contract",
+        f"unindexed task-path continuation status should be blocked_unindexed_task_path: {unindexed_continuation}",
+    )
+    expect(
+        unindexed_continuation.get("next_action") == "index_or_update_scope_for_task_path",
+        "agent_route_blocked_contract",
+        f"unindexed task-path continuation next_action should ask for scope update: {unindexed_continuation}",
+    )
+    unindexed_message = unindexed_continuation.get("message", "")
+    expect(
+        "src/main.ts" in unindexed_message and "Index scope is enabled" in unindexed_message,
+        "agent_route_blocked_contract",
+        f"unindexed task-path continuation message should mention path and index scope: {unindexed_message!r}",
+    )
+    expect(
+        [step.get("action") for step in unindexed_execution_plan] == expected_execution_plan_actions,
+        "agent_route_blocked_contract",
+        f"unindexed task-path execution_plan actions should preserve client order: {unindexed_execution_plan}",
+    )
+    expected_unindexed_statuses = [
+        "blocked_no_reading_plan",
+        "blocked_no_current_reading_step",
+        "manual_after_selected_context",
+        "skipped_unindexed_task_path",
+    ]
+    unindexed_execution_statuses = [step.get("status") for step in unindexed_execution_plan]
+    expect(
+        unindexed_execution_statuses == expected_unindexed_statuses,
+        "agent_route_blocked_contract",
+        f"unexpected unindexed task-path execution statuses: {unindexed_execution_statuses}",
+    )
+    expect(
+        "task path seed is not indexed" in unindexed_execution_plan[3].get("instruction", ""),
+        "agent_route_blocked_contract",
+        "unindexed task-path impact instruction should name the skipped reason",
+    )
+
     summary = {
         "status": "pass",
         "server": server_name,
@@ -863,6 +977,24 @@ try:
             "impact_status": unmatched_route["impact_status"],
             "execution_plan_actions": [step["action"] for step in unmatched_execution_plan],
             "execution_plan_statuses": unmatched_execution_statuses,
+        },
+        "blocked_unindexed_task_path": {
+            "route_step_status": unindexed_route_steps[2]["status"],
+            "seed_strategy": unindexed_context_pack["seed_strategy"],
+            "first_seed_source": unindexed_first_seed.get("source", ""),
+            "first_seed_value": unindexed_first_seed.get("value", ""),
+            "continuation_status": unindexed_continuation["status"],
+            "continuation_next_action": unindexed_continuation["next_action"],
+            "truncation_reason": unindexed_context_pack["budget"]["truncation_reason"],
+            "context_files": len(unindexed_context_pack["files"]),
+            "reading_plan_steps": len(unindexed_context_pack["reading_plan"]),
+            "has_current_reading_step": "current_reading_step" in unindexed_route,
+            "impact_status": unindexed_route["impact_status"],
+            "execution_plan_actions": [step["action"] for step in unindexed_execution_plan],
+            "execution_plan_statuses": unindexed_execution_statuses,
+            "continuation_message_has_scope_hint": "Index scope is enabled" in unindexed_message,
+            "impact_instruction_has_skipped_reason": "task path seed is not indexed"
+            in unindexed_execution_plan[3].get("instruction", ""),
         },
     }
     summary_json = json.dumps(summary, indent=2, sort_keys=True)

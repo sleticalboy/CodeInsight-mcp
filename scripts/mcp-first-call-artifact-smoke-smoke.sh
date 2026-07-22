@@ -156,6 +156,33 @@ write_summary_json() {
       "skipped_no_context"
     ]
   },
+  "blocked_unindexed_task_path": {
+    "route_step_status": "blocked_unindexed_task_path",
+    "seed_strategy": "auto_task_path_unindexed",
+    "first_seed_source": "task_path_unindexed",
+    "first_seed_value": "src/main.ts",
+    "continuation_status": "blocked_unindexed_task_path",
+    "continuation_next_action": "index_or_update_scope_for_task_path",
+    "truncation_reason": "unindexed_task_path",
+    "context_files": 0,
+    "reading_plan_steps": 0,
+    "has_current_reading_step": false,
+    "impact_status": "skipped_unindexed_task_path",
+    "execution_plan_actions": [
+      "read_selected_context",
+      "use_current_reading_step_suggested_tool",
+      "use_continuation_if_needed",
+      "review_impact_before_edits"
+    ],
+    "execution_plan_statuses": [
+      "blocked_no_reading_plan",
+      "blocked_no_current_reading_step",
+      "manual_after_selected_context",
+      "skipped_unindexed_task_path"
+    ],
+    "continuation_message_has_scope_hint": true,
+    "impact_instruction_has_skipped_reason": true
+  },
   "task": "inspect src/auth.ts before editing login behavior",
   "token_budget": 1600
 }
@@ -258,6 +285,20 @@ EOF
     fail "missing blocked no-context next action output"
   grep -Fq 'blocked_no_context_impact_status: skipped_no_context' "$TEMP_DIR/output.log" ||
     fail "missing blocked no-context impact status output"
+  grep -Fq 'blocked_unindexed_task_path_status: blocked_unindexed_task_path' "$TEMP_DIR/output.log" ||
+    fail "missing blocked unindexed task path status output"
+  grep -Fq 'blocked_unindexed_task_path_seed_strategy: auto_task_path_unindexed' "$TEMP_DIR/output.log" ||
+    fail "missing blocked unindexed task path seed strategy output"
+  grep -Fq 'blocked_unindexed_task_path_first_seed_source: task_path_unindexed' "$TEMP_DIR/output.log" ||
+    fail "missing blocked unindexed task path first seed source output"
+  grep -Fq 'blocked_unindexed_task_path_first_seed_value: src/main.ts' "$TEMP_DIR/output.log" ||
+    fail "missing blocked unindexed task path first seed value output"
+  grep -Fq 'blocked_unindexed_task_path_next_action: index_or_update_scope_for_task_path' "$TEMP_DIR/output.log" ||
+    fail "missing blocked unindexed task path next action output"
+  grep -Fq 'blocked_unindexed_task_path_impact_status: skipped_unindexed_task_path' "$TEMP_DIR/output.log" ||
+    fail "missing blocked unindexed task path impact status output"
+  grep -Fq 'blocked_unindexed_task_path_scope_hint: true' "$TEMP_DIR/output.log" ||
+    fail "missing blocked unindexed task path scope hint output"
   grep -Fq 'gh run download 123456 --repo sleticalboy/CodeInsight-mcp --name codeinsight-mcp-first-call --dir '"$TEMP_DIR/download" "$TEMP_DIR/calls.log" ||
     fail "missing fixed-run artifact download"
 
@@ -304,6 +345,14 @@ EOF
     fail "missing latest blocked no-seed status output"
   grep -Fq 'blocked_no_seed_next_action: provide_seed_file_or_symbol' "$TEMP_DIR/latest-output.log" ||
     fail "missing latest blocked no-seed next action output"
+  grep -Fq 'blocked_unindexed_task_path_status: blocked_unindexed_task_path' "$TEMP_DIR/latest-output.log" ||
+    fail "missing latest blocked unindexed task path status output"
+  grep -Fq 'blocked_unindexed_task_path_seed_strategy: auto_task_path_unindexed' "$TEMP_DIR/latest-output.log" ||
+    fail "missing latest blocked unindexed task path seed strategy output"
+  grep -Fq 'blocked_unindexed_task_path_first_seed_value: src/main.ts' "$TEMP_DIR/latest-output.log" ||
+    fail "missing latest blocked unindexed task path first seed value output"
+  grep -Fq 'blocked_unindexed_task_path_next_action: index_or_update_scope_for_task_path' "$TEMP_DIR/latest-output.log" ||
+    fail "missing latest blocked unindexed task path next action output"
   grep -Fq 'blocked_no_seed_impact_status: skipped_no_seed' "$TEMP_DIR/latest-output.log" ||
     fail "missing latest blocked no-seed impact status output"
   grep -Fq 'blocked_no_context_status: blocked_no_context' "$TEMP_DIR/latest-output.log" ||
