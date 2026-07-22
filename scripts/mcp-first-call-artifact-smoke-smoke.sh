@@ -123,6 +123,28 @@ write_summary_json() {
       "skipped_no_seed"
     ]
   },
+  "blocked_no_context": {
+    "route_step_status": "blocked_no_context",
+    "continuation_status": "blocked_no_context",
+    "continuation_next_action": "provide_matching_seed_file_or_symbol",
+    "truncation_reason": "no_context_for_explicit_seed",
+    "context_files": 0,
+    "reading_plan_steps": 0,
+    "has_current_reading_step": false,
+    "impact_status": "skipped_no_context",
+    "execution_plan_actions": [
+      "read_selected_context",
+      "use_current_reading_step_suggested_tool",
+      "use_continuation_if_needed",
+      "review_impact_before_edits"
+    ],
+    "execution_plan_statuses": [
+      "blocked_no_reading_plan",
+      "blocked_no_current_reading_step",
+      "manual_after_selected_context",
+      "skipped_no_context"
+    ]
+  },
   "task": "understand app entrypoint flow",
   "token_budget": 1600
 }
@@ -213,6 +235,12 @@ EOF
     fail "missing blocked no-seed next action output"
   grep -Fq 'blocked_no_seed_impact_status: skipped_no_seed' "$TEMP_DIR/output.log" ||
     fail "missing blocked no-seed impact status output"
+  grep -Fq 'blocked_no_context_status: blocked_no_context' "$TEMP_DIR/output.log" ||
+    fail "missing blocked no-context status output"
+  grep -Fq 'blocked_no_context_next_action: provide_matching_seed_file_or_symbol' "$TEMP_DIR/output.log" ||
+    fail "missing blocked no-context next action output"
+  grep -Fq 'blocked_no_context_impact_status: skipped_no_context' "$TEMP_DIR/output.log" ||
+    fail "missing blocked no-context impact status output"
   grep -Fq 'gh run download 123456 --repo sleticalboy/CodeInsight-mcp --name codeinsight-mcp-first-call --dir '"$TEMP_DIR/download" "$TEMP_DIR/calls.log" ||
     fail "missing fixed-run artifact download"
 
@@ -255,6 +283,12 @@ EOF
     fail "missing latest blocked no-seed next action output"
   grep -Fq 'blocked_no_seed_impact_status: skipped_no_seed' "$TEMP_DIR/latest-output.log" ||
     fail "missing latest blocked no-seed impact status output"
+  grep -Fq 'blocked_no_context_status: blocked_no_context' "$TEMP_DIR/latest-output.log" ||
+    fail "missing latest blocked no-context status output"
+  grep -Fq 'blocked_no_context_next_action: provide_matching_seed_file_or_symbol' "$TEMP_DIR/latest-output.log" ||
+    fail "missing latest blocked no-context next action output"
+  grep -Fq 'blocked_no_context_impact_status: skipped_no_context' "$TEMP_DIR/latest-output.log" ||
+    fail "missing latest blocked no-context impact status output"
 
   echo "MCP first-call artifact smoke smoke passed"
 }

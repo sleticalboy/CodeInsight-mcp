@@ -110,6 +110,7 @@ main() {
 import json
 import os
 import subprocess
+import tempfile
 
 codeinsight_bin = os.environ["CODEINSIGHT_BIN"]
 smoke_root = os.environ["SMOKE_ROOT"]
@@ -652,6 +653,65 @@ try:
             for symbol in auto_suggested_result
         ), "auto suggested file_outline did not return entrypoint symbol"
 
+    with tempfile.TemporaryDirectory(prefix="codeinsight-stdio-empty-") as empty_root:
+        blocked_no_seed = request(
+            {
+                "jsonrpc": "2.0",
+                "id": 20,
+                "method": "tools/call",
+                "params": {
+                    "name": "agent_route",
+                    "arguments": {
+                        "root": empty_root,
+                        "task": "understand empty repository",
+                        "token_budget": 1600,
+                        "impact_limit": 10,
+                        "impact_depth": 2,
+                        "impact_evidence_limit": 3,
+                    },
+                },
+            }
+        )["result"]["structuredContent"]
+    blocked_no_seed_context = blocked_no_seed["context_pack"]
+    blocked_no_seed_continuation = blocked_no_seed_context["continuation_summary"]
+    assert blocked_no_seed["route"][2]["status"] == "blocked_no_seed"
+    assert blocked_no_seed["impact_status"] == "skipped_no_seed"
+    assert blocked_no_seed_context["files"] == []
+    assert blocked_no_seed_context["reading_plan"] == []
+    assert "current_reading_step" not in blocked_no_seed
+    assert blocked_no_seed_continuation["status"] == "blocked_no_seed"
+    assert blocked_no_seed_continuation["next_action"] == "provide_seed_file_or_symbol"
+
+    blocked_no_context = request(
+        {
+            "jsonrpc": "2.0",
+            "id": 21,
+            "method": "tools/call",
+            "params": {
+                "name": "agent_route",
+                "arguments": {
+                    "root": smoke_root,
+                    "task": "understand unmatched explicit symbol",
+                    "symbols": ["ThisSymbolDoesNotExist"],
+                    "token_budget": 1600,
+                    "impact_limit": 10,
+                    "impact_depth": 2,
+                    "impact_evidence_limit": 3,
+                },
+            },
+        }
+    )["result"]["structuredContent"]
+    blocked_no_context_pack = blocked_no_context["context_pack"]
+    blocked_no_context_continuation = blocked_no_context_pack["continuation_summary"]
+    assert blocked_no_context["route"][2]["status"] == "blocked_no_context"
+    assert blocked_no_context["impact_status"] == "skipped_no_context"
+    assert blocked_no_context_pack["budget"]["truncation_reason"] == "no_context_for_explicit_seed"
+    assert blocked_no_context_pack["files"] == []
+    assert blocked_no_context_pack["reading_plan"] == []
+    assert "current_reading_step" not in blocked_no_context
+    assert blocked_no_context_continuation["status"] == "blocked_no_context"
+    assert blocked_no_context_continuation["next_action"] == "provide_matching_seed_file_or_symbol"
+
     print("MCP stdio smoke passed")
     print(f"root: {smoke_root}")
     print(f"symbol: {smoke_symbol}")
@@ -678,6 +738,12 @@ try:
     print(f"agent_route_impact_suggested_tool: {agent_route_impact_step['suggested_tool']['tool']}")
     print(f"agent_route_impact_suggested_checks: {len(agent_route_impact_checks)}")
     print(f"agent_route_impact_first_check: {agent_route_first_impact_check.get('command') or agent_route_first_impact_check.get('file') or agent_route_first_impact_check['kind']}")
+    print(f"agent_route_blocked_no_seed_status: {blocked_no_seed_continuation['status']}")
+    print(f"agent_route_blocked_no_seed_next_action: {blocked_no_seed_continuation['next_action']}")
+    print(f"agent_route_blocked_no_seed_impact_status: {blocked_no_seed['impact_status']}")
+    print(f"agent_route_blocked_no_context_status: {blocked_no_context_continuation['status']}")
+    print(f"agent_route_blocked_no_context_next_action: {blocked_no_context_continuation['next_action']}")
+    print(f"agent_route_blocked_no_context_impact_status: {blocked_no_context['impact_status']}")
     print(f"explicit_first_reading_selection_rank: {explicit_reading_plan[0]['selection_rank']}")
     print(f"explicit_source_lines_avoided: {explicit_read_less['source_lines_avoided']}")
     print(f"explicit_read_less_ratio: {explicit_read_less['read_less_ratio']}")

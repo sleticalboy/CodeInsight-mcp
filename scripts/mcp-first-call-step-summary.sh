@@ -92,7 +92,17 @@ require_summary_contract() {
       and .blocked_no_seed.has_current_reading_step == false
       and .blocked_no_seed.impact_status == "skipped_no_seed"
       and .blocked_no_seed.execution_plan_actions == ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"]
-      and .blocked_no_seed.execution_plan_statuses == ["blocked_no_reading_plan", "blocked_no_current_reading_step", "manual_after_selected_context", "skipped_no_seed"]' \
+      and .blocked_no_seed.execution_plan_statuses == ["blocked_no_reading_plan", "blocked_no_current_reading_step", "manual_after_selected_context", "skipped_no_seed"]
+      and .blocked_no_context.route_step_status == "blocked_no_context"
+      and .blocked_no_context.continuation_status == "blocked_no_context"
+      and .blocked_no_context.continuation_next_action == "provide_matching_seed_file_or_symbol"
+      and .blocked_no_context.truncation_reason == "no_context_for_explicit_seed"
+      and .blocked_no_context.context_files == 0
+      and .blocked_no_context.reading_plan_steps == 0
+      and .blocked_no_context.has_current_reading_step == false
+      and .blocked_no_context.impact_status == "skipped_no_context"
+      and .blocked_no_context.execution_plan_actions == ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"]
+      and .blocked_no_context.execution_plan_statuses == ["blocked_no_reading_plan", "blocked_no_current_reading_step", "manual_after_selected_context", "skipped_no_context"]' \
     "$SUMMARY_JSON" >/dev/null; then
     fail "$SUMMARY_JSON does not match the MCP first-call summary contract"
   fi
@@ -167,6 +177,10 @@ main() {
     printf 'Blocked no-seed status: `%s`\n\n' "$(value '.blocked_no_seed.continuation_status')"
     printf 'Blocked no-seed next action: `%s`\n\n' "$(value '.blocked_no_seed.continuation_next_action')"
     printf 'Blocked no-seed execution statuses: `%s`\n\n' "$(value '.blocked_no_seed.execution_plan_statuses | join(" -> ")')"
+    printf 'Blocked no-context status: `%s`\n\n' "$(value '.blocked_no_context.continuation_status')"
+    printf 'Blocked no-context next action: `%s`\n\n' "$(value '.blocked_no_context.continuation_next_action')"
+    printf 'Blocked no-context impact status: `%s`\n\n' "$(value '.blocked_no_context.impact_status')"
+    printf 'Blocked no-context execution statuses: `%s`\n\n' "$(value '.blocked_no_context.execution_plan_statuses | join(" -> ")')"
     printf 'Full JSON summary: `%s`\n\n' "$SUMMARY_JSON"
     if [ -n "$RUN_URL" ]; then
       printf 'Workflow run: [open run](%s)\n\n' "$RUN_URL"

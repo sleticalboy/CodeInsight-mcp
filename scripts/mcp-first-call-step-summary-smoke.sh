@@ -117,6 +117,18 @@ main() {
     "impact_status": "skipped_no_seed",
     "execution_plan_actions": ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"],
     "execution_plan_statuses": ["blocked_no_reading_plan", "blocked_no_current_reading_step", "manual_after_selected_context", "skipped_no_seed"]
+  },
+  "blocked_no_context": {
+    "route_step_status": "blocked_no_context",
+    "continuation_status": "blocked_no_context",
+    "continuation_next_action": "provide_matching_seed_file_or_symbol",
+    "truncation_reason": "no_context_for_explicit_seed",
+    "context_files": 0,
+    "reading_plan_steps": 0,
+    "has_current_reading_step": false,
+    "impact_status": "skipped_no_context",
+    "execution_plan_actions": ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"],
+    "execution_plan_statuses": ["blocked_no_reading_plan", "blocked_no_current_reading_step", "manual_after_selected_context", "skipped_no_context"]
   }
 }
 EOF
@@ -170,6 +182,10 @@ EOF
   require_literal "$summary_md" 'Blocked no-seed status: `blocked_no_seed`' "blocked no-seed status"
   require_literal "$summary_md" 'Blocked no-seed next action: `provide_seed_file_or_symbol`' "blocked no-seed next action"
   require_literal "$summary_md" 'Blocked no-seed execution statuses: `blocked_no_reading_plan -> blocked_no_current_reading_step -> manual_after_selected_context -> skipped_no_seed`' "blocked no-seed execution statuses"
+  require_literal "$summary_md" 'Blocked no-context status: `blocked_no_context`' "blocked no-context status"
+  require_literal "$summary_md" 'Blocked no-context next action: `provide_matching_seed_file_or_symbol`' "blocked no-context next action"
+  require_literal "$summary_md" 'Blocked no-context impact status: `skipped_no_context`' "blocked no-context impact status"
+  require_literal "$summary_md" 'Blocked no-context execution statuses: `blocked_no_reading_plan -> blocked_no_current_reading_step -> manual_after_selected_context -> skipped_no_context`' "blocked no-context execution statuses"
   require_literal "$summary_md" 'Workflow artifact: [`codeinsight-mcp-first-call`](https://example.com/artifact)' "artifact link"
 
   echo "mcp first-call step summary smoke passed"

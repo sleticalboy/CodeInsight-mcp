@@ -144,7 +144,17 @@ validate_summary_json() {
       and .blocked_no_seed.has_current_reading_step == false
       and .blocked_no_seed.impact_status == "skipped_no_seed"
       and .blocked_no_seed.execution_plan_actions == ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"]
-      and .blocked_no_seed.execution_plan_statuses == ["blocked_no_reading_plan", "blocked_no_current_reading_step", "manual_after_selected_context", "skipped_no_seed"]' \
+      and .blocked_no_seed.execution_plan_statuses == ["blocked_no_reading_plan", "blocked_no_current_reading_step", "manual_after_selected_context", "skipped_no_seed"]
+      and .blocked_no_context.route_step_status == "blocked_no_context"
+      and .blocked_no_context.continuation_status == "blocked_no_context"
+      and .blocked_no_context.continuation_next_action == "provide_matching_seed_file_or_symbol"
+      and .blocked_no_context.truncation_reason == "no_context_for_explicit_seed"
+      and .blocked_no_context.context_files == 0
+      and .blocked_no_context.reading_plan_steps == 0
+      and .blocked_no_context.has_current_reading_step == false
+      and .blocked_no_context.impact_status == "skipped_no_context"
+      and .blocked_no_context.execution_plan_actions == ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"]
+      and .blocked_no_context.execution_plan_statuses == ["blocked_no_reading_plan", "blocked_no_current_reading_step", "manual_after_selected_context", "skipped_no_context"]' \
     "$summary_file" >/dev/null; then
     fail "$summary_file does not match expected MCP first-call summary"
   fi
@@ -284,6 +294,9 @@ main() {
   echo "blocked_no_seed_status: $(jq -r '.blocked_no_seed.continuation_status' "$summary_file")"
   echo "blocked_no_seed_next_action: $(jq -r '.blocked_no_seed.continuation_next_action' "$summary_file")"
   echo "blocked_no_seed_impact_status: $(jq -r '.blocked_no_seed.impact_status' "$summary_file")"
+  echo "blocked_no_context_status: $(jq -r '.blocked_no_context.continuation_status' "$summary_file")"
+  echo "blocked_no_context_next_action: $(jq -r '.blocked_no_context.continuation_next_action' "$summary_file")"
+  echo "blocked_no_context_impact_status: $(jq -r '.blocked_no_context.impact_status' "$summary_file")"
 }
 
 main "$@"

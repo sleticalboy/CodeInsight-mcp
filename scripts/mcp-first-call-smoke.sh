@@ -660,6 +660,87 @@ try:
         f"unexpected blocked execution statuses: {blocked_execution_statuses}",
     )
 
+    unmatched_route = call_tool(
+        6,
+        "agent_route",
+        {
+            "root": root,
+            "task": "understand unmatched explicit symbol",
+            "symbols": ["ThisSymbolDoesNotExist"],
+            "token_budget": token_budget,
+            "impact_limit": 10,
+            "impact_depth": 2,
+            "impact_evidence_limit": 3,
+        },
+        "agent_route_blocked_contract",
+    )
+    unmatched_context_pack = unmatched_route.get("context_pack", {})
+    unmatched_continuation = unmatched_context_pack.get("continuation_summary", {})
+    unmatched_execution_plan = unmatched_route.get("execution_plan", [])
+    unmatched_route_steps = unmatched_route.get("route", [])
+    expect(
+        [step.get("tool") for step in unmatched_route_steps] == expected_route_tools,
+        "agent_route_blocked_contract",
+        "unmatched explicit seed route should preserve the default route tool order",
+    )
+    expect(
+        unmatched_route_steps[2].get("status") == "blocked_no_context",
+        "agent_route_blocked_contract",
+        f"unmatched explicit seed route step should be blocked_no_context: {unmatched_route_steps}",
+    )
+    expect(
+        unmatched_route.get("impact_status") == "skipped_no_context",
+        "agent_route_blocked_contract",
+        f"unmatched explicit seed impact_status should be skipped_no_context: {unmatched_route.get('impact_status')!r}",
+    )
+    expect(
+        unmatched_context_pack.get("files") == [],
+        "agent_route_blocked_contract",
+        "unmatched explicit seed context_pack.files should be empty",
+    )
+    expect(
+        unmatched_context_pack.get("reading_plan") == [],
+        "agent_route_blocked_contract",
+        "unmatched explicit seed context_pack.reading_plan should be empty",
+    )
+    expect(
+        unmatched_context_pack.get("budget", {}).get("truncation_reason") == "no_context_for_explicit_seed",
+        "agent_route_blocked_contract",
+        f"unmatched explicit seed truncation_reason should be no_context_for_explicit_seed: {unmatched_context_pack.get('budget')!r}",
+    )
+    expect(
+        "current_reading_step" not in unmatched_route,
+        "agent_route_blocked_contract",
+        "unmatched explicit seed route should omit current_reading_step",
+    )
+    expect(
+        unmatched_continuation.get("status") == "blocked_no_context",
+        "agent_route_blocked_contract",
+        f"unmatched explicit seed continuation status should be blocked_no_context: {unmatched_continuation}",
+    )
+    expect(
+        unmatched_continuation.get("next_action") == "provide_matching_seed_file_or_symbol",
+        "agent_route_blocked_contract",
+        f"unmatched explicit seed continuation next_action should ask for a matching seed: {unmatched_continuation}",
+    )
+    expect(
+        [step.get("action") for step in unmatched_execution_plan] == expected_execution_plan_actions,
+        "agent_route_blocked_contract",
+        f"unmatched explicit seed execution_plan actions should preserve client order: {unmatched_execution_plan}",
+    )
+    expected_unmatched_statuses = [
+        "blocked_no_reading_plan",
+        "blocked_no_current_reading_step",
+        "manual_after_selected_context",
+        "skipped_no_context",
+    ]
+    unmatched_execution_statuses = [step.get("status") for step in unmatched_execution_plan]
+    expect(
+        unmatched_execution_statuses == expected_unmatched_statuses,
+        "agent_route_blocked_contract",
+        f"unexpected unmatched explicit seed execution statuses: {unmatched_execution_statuses}",
+    )
+
     summary = {
         "status": "pass",
         "server": server_name,
@@ -732,6 +813,18 @@ try:
             "impact_status": blocked_route["impact_status"],
             "execution_plan_actions": [step["action"] for step in blocked_execution_plan],
             "execution_plan_statuses": blocked_execution_statuses,
+        },
+        "blocked_no_context": {
+            "route_step_status": unmatched_route_steps[2]["status"],
+            "continuation_status": unmatched_continuation["status"],
+            "continuation_next_action": unmatched_continuation["next_action"],
+            "truncation_reason": unmatched_context_pack["budget"]["truncation_reason"],
+            "context_files": len(unmatched_context_pack["files"]),
+            "reading_plan_steps": len(unmatched_context_pack["reading_plan"]),
+            "has_current_reading_step": "current_reading_step" in unmatched_route,
+            "impact_status": unmatched_route["impact_status"],
+            "execution_plan_actions": [step["action"] for step in unmatched_execution_plan],
+            "execution_plan_statuses": unmatched_execution_statuses,
         },
     }
     summary_json = json.dumps(summary, indent=2, sort_keys=True)

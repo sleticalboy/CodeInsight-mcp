@@ -80,6 +80,9 @@ It also asserts the MCP-facing structured fields that clients commonly render:
 - an empty repository returns a structured `blocked_no_seed` route with
   `provide_seed_file_or_symbol`, no selected context, no current reading step,
   and `skipped_no_seed` impact status
+- an unmatched explicit symbol returns a structured `blocked_no_context` route
+  with `provide_matching_seed_file_or_symbol`, no selected context, no current
+  reading step, and `skipped_no_context` impact status
 - continuation follow-ups remain gated behind selected-context reading even
   when omitted candidates expose ready MCP calls
 - `review_impact_before_edits` remains the pre-edit planning checkpoint, not a
@@ -146,6 +149,9 @@ agent_route_impact_first_check: review
 agent_route_blocked_no_seed_status: blocked_no_seed
 agent_route_blocked_no_seed_next_action: provide_seed_file_or_symbol
 agent_route_blocked_no_seed_impact_status: skipped_no_seed
+agent_route_blocked_no_context_status: blocked_no_context
+agent_route_blocked_no_context_next_action: provide_matching_seed_file_or_symbol
+agent_route_blocked_no_context_impact_status: skipped_no_context
 explicit_first_reading_selection_rank: 1
 explicit_source_lines_avoided: 164
 explicit_read_less_ratio: 10.1x
@@ -185,6 +191,10 @@ output for the same contract.
 `agent_route_blocked_no_seed_status` and
 `agent_route_blocked_no_seed_next_action` should remain present so MCP clients
 can handle empty or unsupported repositories without broad file reads.
+`agent_route_blocked_no_context_status` and
+`agent_route_blocked_no_context_next_action` should remain present so MCP
+clients can handle explicit seeds that produce no context without broad file
+reads.
 `agent_route_first_reading_selection_rank` and
 `explicit_first_omitted_omission_reason` should remain present so protocol
 smoke output exposes the same candidate-ranking and continuation evidence as
