@@ -1413,6 +1413,7 @@ pub fn context_pack_value(
         prefer_low_value_files: context_prefers_low_value_files(&task_keywords, &seed_files),
         prefer_agent_first_read_source_files: auto_seed_agent_first_read_task(&task_keywords)
             && !auto_seed_agent_first_read_evidence_task(&task_keywords),
+        prefer_indexing_pipeline_source_files: auto_seed_indexing_pipeline_task(&task_keywords),
     };
 
     for seed in &seed_symbols {
@@ -6077,6 +6078,7 @@ struct ContextFileCandidate {
 struct ContextScoringPolicy {
     prefer_low_value_files: bool,
     prefer_agent_first_read_source_files: bool,
+    prefer_indexing_pipeline_source_files: bool,
 }
 
 fn seed_file_ranges(
@@ -6482,6 +6484,8 @@ fn context_score_for_file(file: &str, score: i32, policy: &ContextScoringPolicy)
 
     if policy.prefer_agent_first_read_source_files {
         context_agent_first_read_source_score(file, score)
+    } else if policy.prefer_indexing_pipeline_source_files {
+        context_indexing_pipeline_source_score(file, score)
     } else {
         score
     }
@@ -6509,6 +6513,17 @@ fn context_agent_first_read_support_file(file: &str) -> bool {
         || normalized == "docs"
         || normalized.starts_with("docs/")
         || is_low_value_reference_file(file)
+}
+
+fn context_indexing_pipeline_source_score(file: &str, score: i32) -> i32 {
+    let priority = auto_seed_indexing_pipeline_file_priority(file);
+    if context_agent_first_read_support_file(file) {
+        score.saturating_sub(900)
+    } else if priority > 0 {
+        score.saturating_add(priority)
+    } else {
+        score
+    }
 }
 
 fn reference_score(reference: &ReferenceMatch) -> i32 {
@@ -6822,6 +6837,7 @@ fn auto_context_seed_files(
     let middleware_task = auto_seed_middleware_task(task_keywords);
     let route_dispatch_task = auto_seed_route_dispatch_task(task_keywords);
     let agent_first_read_task = auto_seed_agent_first_read_task(task_keywords);
+    let indexing_pipeline_task = auto_seed_indexing_pipeline_task(task_keywords);
     candidates.sort_by(|left, right| {
         if agent_first_read_task {
             auto_seed_agent_first_read_file_priority(&right.file, task_keywords)
@@ -6829,6 +6845,11 @@ fn auto_context_seed_files(
                     &left.file,
                     task_keywords,
                 ))
+                .then_with(|| right.score.cmp(&left.score))
+                .then_with(|| left.file.cmp(&right.file))
+        } else if indexing_pipeline_task {
+            auto_seed_indexing_pipeline_file_priority(&right.file)
+                .cmp(&auto_seed_indexing_pipeline_file_priority(&left.file))
                 .then_with(|| right.score.cmp(&left.score))
                 .then_with(|| left.file.cmp(&right.file))
         } else if route_miss_task {
@@ -6890,7 +6911,8 @@ fn auto_context_seed_files(
         || response_redirect_task
         || request_lifecycle_task
         || middleware_task
-        || route_dispatch_task;
+        || route_dispatch_task
+        || indexing_pipeline_task;
     let selected_candidate = if route_miss_task || auto_seed_prefers_entrypoint(task_keywords) {
         candidates.first()
     } else if priority_routed_task {
@@ -6944,6 +6966,8 @@ fn auto_context_seed_files(
                                     &entrypoint.file,
                                     task_keywords,
                                 ) >= 0)
+                            && (!indexing_pipeline_task
+                                || auto_seed_indexing_pipeline_file_priority(&entrypoint.file) >= 0)
                     })
                     .map(|entrypoint| AutoSeedCandidate {
                         file: entrypoint.file.clone(),
@@ -8978,6 +9002,9 @@ fn auto_seed_http_operation_file_priority(file: &str, task_keywords: &[String]) 
 
 fn auto_seed_priority_routed_file_priority(file: &str, task_keywords: &[String]) -> i32 {
     let mut priority = auto_seed_http_operation_file_priority(file, task_keywords);
+    if auto_seed_indexing_pipeline_task(task_keywords) {
+        priority = priority.max(auto_seed_indexing_pipeline_file_priority(file));
+    }
     if auto_seed_request_lifecycle_task(task_keywords) {
         priority = priority.max(auto_seed_request_lifecycle_file_priority(file));
     }
@@ -8987,6 +9014,58 @@ fn auto_seed_priority_routed_file_priority(file: &str, task_keywords: &[String])
     if auto_seed_route_dispatch_task(task_keywords) {
         priority = priority.max(auto_seed_route_dispatch_file_priority(file));
     }
+    priority
+}
+
+fn auto_seed_indexing_pipeline_task(task_keywords: &[String]) -> bool {
+    let indexing = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "index" | "indexing" | "indexer" | "indexed"
+        )
+    });
+    let pipeline = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "pipeline" | "project" | "source" | "sources" | "parse" | "parser" | "scan" | "scanner"
+        )
+    });
+
+    indexing && pipeline
+}
+
+fn auto_seed_indexing_pipeline_file_priority(file: &str) -> i32 {
+    let normalized = file.replace('\\', "/").to_ascii_lowercase();
+    if normalized == "scripts" || normalized.starts_with("scripts/") {
+        return -80;
+    }
+    if normalized == "docs" || normalized.starts_with("docs/") || is_low_value_reference_file(file)
+    {
+        return -30;
+    }
+
+    let source_file = normalized.starts_with("src/") || normalized.contains("/src/");
+    let file_name = normalized.rsplit('/').next().unwrap_or(normalized.as_str());
+    let stem = file_name.split('.').next().unwrap_or(file_name);
+
+    let mut priority = if source_file { 20 } else { 0 };
+    if matches!(stem, "index" | "indexer") {
+        priority = priority.max(150);
+    }
+    if auto_seed_field_matches(file, "parser")
+        || auto_seed_field_matches(file, "parse")
+        || auto_seed_field_matches(file, "scanner")
+        || auto_seed_field_matches(file, "scan")
+    {
+        priority = priority.max(110);
+    }
+    if auto_seed_field_matches(file, "storage") || auto_seed_field_matches(file, "store") {
+        priority = priority.max(90);
+    }
+    if source_file && matches!(stem, "main" | "lib" | "mod") {
+        priority = priority.max(45);
+    }
+
     priority
 }
 
@@ -9817,6 +9896,9 @@ fn task_keyword_aliases(keyword: &str) -> &'static [&'static str] {
         "generate" => &["generation", "generator"],
         "generation" => &["generate", "generator"],
         "generator" => &["generate", "generation"],
+        "indexing" => &["index", "indexer", "parser", "parse"],
+        "indexed" => &["index", "indexer"],
+        "indexer" => &["index", "indexing"],
         "join" => &["joining"],
         "joins" => &["join", "joining"],
         "joining" => &["join"],

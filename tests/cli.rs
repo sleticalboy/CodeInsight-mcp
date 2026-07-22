@@ -2632,6 +2632,54 @@ main "$@"
 }
 
 #[test]
+fn cli_context_pack_routes_indexing_tasks_to_index_source_over_demo_scripts() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        "src/index.ts",
+        r#"
+export function buildProjectIndex(root: string) {
+  return parseSourceFiles(root);
+}
+
+export function parseSourceFiles(root: string) {
+  return { root, indexedFiles: 42 };
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "scripts/agent-router-demo.sh",
+        r#"
+#!/usr/bin/env bash
+set -euo pipefail
+
+main() {
+  echo "indexing pipeline demo output"
+}
+
+main "$@"
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 2);
+
+    let context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand indexing pipeline",
+        "--token-budget",
+        "1200",
+    ]);
+
+    assert_eq!(context["seed_strategy"], "auto_task_match");
+    assert_eq!(context["selected_seeds"][0]["value"], "src/index.ts");
+    assert_eq!(context["files"][0]["file"], "src/index.ts");
+}
+
+#[test]
 fn cli_context_pack_expands_common_agent_task_aliases() {
     let fixture = TempDir::new().unwrap();
     std::fs::create_dir_all(fixture.path().join("src")).unwrap();
