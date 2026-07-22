@@ -6,13 +6,14 @@ use std::{
 };
 
 use anyhow::{Context, Result};
+use globset::{Glob, GlobSet, GlobSetBuilder};
 use ignore::WalkBuilder;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use tree_sitter::{Node, Parser, TreeCursor};
 
 use crate::{
-    config::load_project_config,
+    config::{IndexConfig, ProjectConfig, load_project_config},
     language::{detect_language, tree_sitter_language},
     model::{
         CallEdge, Dependency, IndexError, Language, ProjectIndexReport, SourceFile, Symbol,
@@ -38,19 +39,20 @@ fn default_package_conditions() -> Vec<String> {
         .collect()
 }
 
-fn project_package_conditions(root: &Path) -> Vec<String> {
-    match load_project_config(root) {
-        Ok(Some(config)) if !config.javascript.package_conditions.is_empty() => {
-            config.javascript.package_conditions
-        }
-        _ => default_package_conditions(),
+fn project_package_conditions(config: &ProjectConfig) -> Vec<String> {
+    if config.javascript.package_conditions.is_empty() {
+        default_package_conditions()
+    } else {
+        config.javascript.package_conditions.clone()
     }
 }
 
 pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
     let started = Instant::now();
     let root = root.canonicalize()?;
-    let package_conditions = project_package_conditions(&root);
+    let project_config = load_project_config(&root)?.unwrap_or_default();
+    let package_conditions = project_package_conditions(&project_config);
+    let path_scope = IndexPathScope::from_config(&project_config.index)?;
     let mut store = Store::open(&root)?;
     if force {
         store.reset()?;
@@ -88,6 +90,16 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
         }
 
         let path = entry.path();
+        let relative_path = path
+            .strip_prefix(&root)
+            .unwrap_or(path)
+            .to_string_lossy()
+            .replace('\\', "/");
+        if !path_scope.matches(&relative_path) {
+            skipped_files += 1;
+            continue;
+        }
+
         let Some(language) = detect_language(path) else {
             skipped_files += 1;
             continue;
@@ -102,11 +114,6 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
             }
         };
 
-        let relative_path = path
-            .strip_prefix(&root)
-            .unwrap_or(path)
-            .to_string_lossy()
-            .replace('\\', "/");
         seen_source_files.push(relative_path.clone());
         let hash = hash_source(&source);
         if !force && store.file_hash(&relative_path)?.as_deref() == Some(hash.as_str()) {
@@ -210,6 +217,81 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
         errors,
         duration_ms: started.elapsed().as_millis(),
     })
+}
+
+#[derive(Debug, Default)]
+struct IndexPathScope {
+    include: Option<GlobSet>,
+    exclude: Option<GlobSet>,
+}
+
+impl IndexPathScope {
+    fn from_config(config: &IndexConfig) -> Result<Self> {
+        Ok(Self {
+            include: build_scope_glob_set(&config.include, "index.include")?,
+            exclude: build_scope_glob_set(&config.exclude, "index.exclude")?,
+        })
+    }
+
+    fn matches(&self, relative_path: &str) -> bool {
+        let included = match &self.include {
+            Some(include) => include.is_match(relative_path),
+            None => true,
+        };
+        let excluded = self
+            .exclude
+            .as_ref()
+            .is_some_and(|exclude| exclude.is_match(relative_path));
+        included && !excluded
+    }
+}
+
+fn build_scope_glob_set(patterns: &[String], label: &str) -> Result<Option<GlobSet>> {
+    let mut builder = GlobSetBuilder::new();
+    let mut added = false;
+
+    for raw_pattern in patterns {
+        let pattern = normalize_scope_pattern(raw_pattern);
+        if pattern.is_empty() {
+            continue;
+        }
+
+        add_scope_glob(&mut builder, &pattern, label)?;
+        if !contains_glob_meta(&pattern) {
+            add_scope_glob(&mut builder, &format!("{pattern}/**"), label)?;
+        }
+        added = true;
+    }
+
+    if added {
+        Ok(Some(builder.build()?))
+    } else {
+        Ok(None)
+    }
+}
+
+fn add_scope_glob(builder: &mut GlobSetBuilder, pattern: &str, label: &str) -> Result<()> {
+    let glob =
+        Glob::new(pattern).with_context(|| format!("invalid {label} glob pattern `{pattern}`"))?;
+    builder.add(glob);
+    Ok(())
+}
+
+fn normalize_scope_pattern(pattern: &str) -> String {
+    let mut pattern = pattern.trim().replace('\\', "/");
+    while let Some(stripped) = pattern.strip_prefix("./") {
+        pattern = stripped.to_string();
+    }
+    while let Some(stripped) = pattern.strip_prefix('/') {
+        pattern = stripped.to_string();
+    }
+    pattern.trim_end_matches('/').to_string()
+}
+
+fn contains_glob_meta(pattern: &str) -> bool {
+    pattern
+        .bytes()
+        .any(|byte| matches!(byte, b'*' | b'?' | b'[' | b'{'))
 }
 
 fn index_error(path: &Path, stage: &str, error: impl std::fmt::Display) -> IndexError {

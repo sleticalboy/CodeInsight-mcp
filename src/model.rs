@@ -238,6 +238,8 @@ pub struct ConfigStatusReport {
     pub configured_test_commands: Vec<String>,
     pub configured_suggested_checks: usize,
     pub configured_package_conditions: Vec<String>,
+    pub configured_index_includes: Vec<String>,
+    pub configured_index_excludes: Vec<String>,
     pub detected_test_commands: Vec<String>,
     pub commands_override_builtin: bool,
 }

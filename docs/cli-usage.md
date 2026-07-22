@@ -18,6 +18,20 @@ Index a repository:
 codeinsight index /path/to/repo --force
 ```
 
+For large repositories, create `.codeinsight/config.toml` and restrict the
+indexed source scope:
+
+```toml
+[index]
+include = ["src/**", "packages/api/**"]
+exclude = ["**/*.generated.ts", "fixtures/**"]
+```
+
+When `include` is non-empty, only matching source files are kept in the local
+index. `exclude` always removes matching files. Running `index` after changing
+this scope replaces the previous index contents, so files outside the current
+scope are removed from CodeInsight's SQLite index.
+
 Print an overview:
 
 ```bash
@@ -111,6 +125,9 @@ Create and inspect project-specific validation command configuration:
 codeinsight init-config /path/to/repo
 codeinsight config-status /path/to/repo
 ```
+
+`config-status` also reports configured index include/exclude globs, which is
+useful when validating large-repository trial setup.
 
 For scoring, risk levels, and validation-command configuration, see
 [Impact analysis](impact-analysis.md).

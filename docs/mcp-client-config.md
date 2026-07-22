@@ -396,9 +396,10 @@ Example `config_status` call arguments:
 
 `config_status` returns whether `.codeinsight/config.toml` exists, whether it
 loaded successfully, any `parse_error`, configured JavaScript package
-conditions, configured impact-analysis commands, detected fallback test
-commands, and `commands_override_builtin` so clients can explain whether
-configured commands will take precedence over built-in inference.
+conditions, configured index include/exclude globs, configured impact-analysis
+commands, detected fallback test commands, and `commands_override_builtin` so
+clients can explain whether configured commands will take precedence over
+built-in inference.
 
 `context_pack` returns `files[]` entries with structured `source`, `score`,
 `selection_rank`, `reason`, and `ranges[]` fields. Each range also includes

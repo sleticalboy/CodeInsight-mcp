@@ -87,6 +87,20 @@ For large repositories or reports with a known expected area, pass repeatable
 `--file` and `--symbol` seeds so the first-read route starts from that
 subsystem instead of relying only on broad automatic seed selection.
 
+When broad indexing itself is too expensive or noisy, add a persistent local
+scope before generating evidence:
+
+```toml
+[index]
+include = ["packages/api/**", "src/**"]
+exclude = ["**/*.generated.ts", "fixtures/**"]
+```
+
+Then run `codeinsight config-status /path/to/repo` and confirm
+`configured_index_includes` / `configured_index_excludes` before collecting the
+route evidence. The configured scope defines the current local index contents;
+files outside the scope are removed on the next `index` run.
+
 When you need a short comparison for adoption notes:
 
 ```bash

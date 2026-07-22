@@ -123,11 +123,15 @@ codeinsight init-config /path/to/repo --force
 codeinsight config-status /path/to/repo
 ```
 
-`init-config` pre-fills `test_commands` from common repository metadata such as `Cargo.toml`, `pnpm-lock.yaml`, `pyproject.toml`, and `go.mod`. If no known metadata is found, it writes an empty command list plus commented examples. Without `--force`, `init-config` refuses to overwrite an existing config. `config-status` and MCP `config_status` report whether the config exists, loaded successfully, and will override built-in command inference. Malformed config files are reported through `parse_error` in status output; `impact_analysis` fails with the same parse context instead of silently ignoring bad configuration.
+`init-config` pre-fills `test_commands` from common repository metadata such as `Cargo.toml`, `pnpm-lock.yaml`, `pyproject.toml`, and `go.mod`. If no known metadata is found, it writes an empty command list plus commented examples. Without `--force`, `init-config` refuses to overwrite an existing config. `config-status` and MCP `config_status` report whether the config exists, loaded successfully, configured index scope, and whether validation commands override built-in command inference. Malformed config files are reported through `parse_error` in status output; tools that need project configuration, including `index_project` and `impact_analysis`, fail with the same parse context instead of silently ignoring bad configuration.
 
 Example:
 
 ```toml
+[index]
+include = ["src/**"]
+exclude = ["**/*.generated.ts", "fixtures/**"]
+
 [javascript]
 package_conditions = ["types", "import", "node", "default"]
 
@@ -141,7 +145,7 @@ languages = ["typescript", "tsx"]
 files = ["src/core"]
 ```
 
-`javascript.package_conditions` controls package `exports`/`imports` condition priority during indexing. `test_commands` are global project commands. `suggested_checks` entries can filter by impacted `languages` and impacted files. A `files` entry matches an exact path, a directory prefix such as `src/core/`, or an extensionless file stem such as `src/core` matching `src/core.ts`; it does not match sibling names such as `src/core2.ts`. Empty filters match any impact report.
+`index.include` and `index.exclude` restrict which source files are kept in the local index. `javascript.package_conditions` controls package `exports`/`imports` condition priority during indexing. `test_commands` are global project commands. `suggested_checks` entries can filter by impacted `languages` and impacted files. A `files` entry matches an exact path, a directory prefix such as `src/core/`, or an extensionless file stem such as `src/core` matching `src/core.ts`; it does not match sibling names such as `src/core2.ts`. Empty filters match any impact report.
 
 Missing config status:
 
@@ -152,6 +156,8 @@ Missing config status:
   "configured_test_commands": [],
   "configured_suggested_checks": 0,
   "configured_package_conditions": [],
+  "configured_index_includes": [],
+  "configured_index_excludes": [],
   "detected_test_commands": ["cargo test --locked"],
   "commands_override_builtin": false
 }
@@ -166,6 +172,8 @@ Loaded config status:
   "configured_test_commands": ["pnpm test"],
   "configured_suggested_checks": 1,
   "configured_package_conditions": ["types", "import", "node", "default"],
+  "configured_index_includes": ["src/**"],
+  "configured_index_excludes": ["**/*.generated.ts", "fixtures/**"],
   "detected_test_commands": ["pnpm test"],
   "commands_override_builtin": true
 }
@@ -181,6 +189,8 @@ Malformed config status:
   "configured_test_commands": [],
   "configured_suggested_checks": 0,
   "configured_package_conditions": [],
+  "configured_index_includes": [],
+  "configured_index_excludes": [],
   "detected_test_commands": ["pnpm test"],
   "commands_override_builtin": false
 }

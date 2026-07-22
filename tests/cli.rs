@@ -8728,6 +8728,9 @@ fn cli_init_config_creates_sample_project_config() {
         config_path.canonicalize().unwrap().to_str().unwrap()
     );
     let contents = std::fs::read_to_string(&config_path).unwrap();
+    assert!(contents.contains("[index]"));
+    assert!(contents.contains("include = ["));
+    assert!(contents.contains("exclude = ["));
     assert!(contents.contains("[javascript]"));
     assert!(contents.contains("package_conditions = ["));
     assert!(contents.contains("[impact_analysis]"));
@@ -8784,6 +8787,10 @@ fn cli_config_status_reports_loaded_and_detected_commands() {
 [javascript]
 package_conditions = ["types", "import", "default"]
 
+[index]
+include = ["src/**"]
+exclude = ["src/generated/**"]
+
 [impact_analysis]
 test_commands = ["cargo test -p core"]
 
@@ -8799,8 +8806,132 @@ languages = ["rust"]
     assert_eq!(loaded["configured_test_commands"][0], "cargo test -p core");
     assert_eq!(loaded["configured_suggested_checks"].as_u64(), Some(1));
     assert_eq!(loaded["configured_package_conditions"][0], "types");
+    assert_eq!(loaded["configured_index_includes"][0], "src/**");
+    assert_eq!(loaded["configured_index_excludes"][0], "src/generated/**");
     assert_eq!(loaded["commands_override_builtin"], true);
     assert!(loaded.get("parse_error").is_none());
+}
+
+#[test]
+fn cli_index_respects_configured_include_and_exclude_scope() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        ".codeinsight/config.toml",
+        r#"
+[index]
+include = ["src/**"]
+exclude = ["src/generated/**"]
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/app.ts",
+        r#"
+export function keepScopedRoute() {
+  return "keep";
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/generated/auto.ts",
+        r#"
+export function generatedScopedRoute() {
+  return "skip";
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "docs/helper.ts",
+        r#"
+export function docsScopedRoute() {
+  return "skip";
+}
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"].as_u64(), Some(1));
+    assert_eq!(index["changed_files"].as_u64(), Some(1));
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let kept = run_json([
+        "symbols",
+        fixture.path().to_str().unwrap(),
+        "keepScopedRoute",
+        "--limit",
+        "5",
+    ]);
+    assert_eq!(kept.as_array().unwrap().len(), 1);
+
+    let generated = run_json([
+        "symbols",
+        fixture.path().to_str().unwrap(),
+        "generatedScopedRoute",
+        "--limit",
+        "5",
+    ]);
+    assert!(generated.as_array().unwrap().is_empty());
+
+    let docs = run_json([
+        "symbols",
+        fixture.path().to_str().unwrap(),
+        "docsScopedRoute",
+        "--limit",
+        "5",
+    ]);
+    assert!(docs.as_array().unwrap().is_empty());
+}
+
+#[test]
+fn cli_index_scope_replaces_existing_full_index_contents() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        "src/app.ts",
+        r#"
+export function retainedScopedRoute() {
+  return "keep";
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "docs/helper.ts",
+        r#"
+export function staleScopedRoute() {
+  return "delete";
+}
+"#,
+    );
+
+    let full = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(full["indexed_files"].as_u64(), Some(2));
+
+    write_file(
+        &fixture,
+        ".codeinsight/config.toml",
+        r#"
+[index]
+include = ["src"]
+"#,
+    );
+
+    let scoped = run_json(["index", fixture.path().to_str().unwrap()]);
+    assert_eq!(scoped["indexed_files"].as_u64(), Some(1));
+    assert_eq!(scoped["unchanged_files"].as_u64(), Some(1));
+    assert_eq!(scoped["deleted_files"].as_u64(), Some(1));
+
+    let stale = run_json([
+        "symbols",
+        fixture.path().to_str().unwrap(),
+        "staleScopedRoute",
+        "--limit",
+        "5",
+    ]);
+    assert!(stale.as_array().unwrap().is_empty());
 }
 
 #[test]
@@ -8816,6 +8947,8 @@ export function leaf() {
 "#,
     );
     write_file(&fixture, "Cargo.toml", "[package]\nname = \"demo\"\n");
+
+    run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
     write_file(&fixture, ".codeinsight/config.toml", "[impact_analysis\n");
 
     let status = run_json(["config-status", fixture.path().to_str().unwrap()]);
@@ -8841,7 +8974,6 @@ export function leaf() {
             .is_some_and(|error| error.contains(".codeinsight/config.toml"))
     );
 
-    run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
     Command::cargo_bin("codeinsight")
         .unwrap()
         .env_remove("CODEINSIGHT_EMBEDDING_PROVIDER")

@@ -234,7 +234,7 @@ fn tool_definitions() -> Value {
         },
         {
             "name": "config_status",
-            "description": "Return project configuration status, configured impact-analysis checks, and detected test commands.",
+            "description": "Return project configuration status, configured index scope, impact-analysis checks, and detected test commands.",
             "inputSchema": {
                 "type": "object",
                 "properties": {

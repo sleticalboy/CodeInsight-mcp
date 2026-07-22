@@ -806,6 +806,8 @@ pub fn config_status_value(root: PathBuf) -> Result<ConfigStatusReport> {
         configured_test_commands,
         configured_suggested_checks,
         configured_package_conditions,
+        configured_index_includes,
+        configured_index_excludes,
     ) = if exists {
         match load_project_config(&root) {
             Ok(Some(config)) => (
@@ -814,12 +816,38 @@ pub fn config_status_value(root: PathBuf) -> Result<ConfigStatusReport> {
                 config.impact_analysis.test_commands,
                 config.impact_analysis.suggested_checks.len(),
                 config.javascript.package_conditions,
+                config.index.include,
+                config.index.exclude,
             ),
-            Ok(None) => (false, None, Vec::new(), 0, Vec::new()),
-            Err(error) => (false, Some(error.to_string()), Vec::new(), 0, Vec::new()),
+            Ok(None) => (
+                false,
+                None,
+                Vec::new(),
+                0,
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+            ),
+            Err(error) => (
+                false,
+                Some(error.to_string()),
+                Vec::new(),
+                0,
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+            ),
         }
     } else {
-        (false, None, Vec::new(), 0, Vec::new())
+        (
+            false,
+            None,
+            Vec::new(),
+            0,
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+        )
     };
     let commands_override_builtin =
         loaded && (!configured_test_commands.is_empty() || configured_suggested_checks > 0);
@@ -833,6 +861,8 @@ pub fn config_status_value(root: PathBuf) -> Result<ConfigStatusReport> {
         configured_test_commands,
         configured_suggested_checks,
         configured_package_conditions,
+        configured_index_includes,
+        configured_index_excludes,
         detected_test_commands,
         commands_override_builtin,
     })

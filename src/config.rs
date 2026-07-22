@@ -9,6 +9,12 @@ const SAMPLE_PROJECT_CONFIG_TEMPLATE: &str = r#"# CodeInsight project configurat
 # This file is optional. impact_analysis uses built-in suggested check
 # inference until you add project-specific commands here.
 
+[index]
+# Optional source scope for large repositories. When include is non-empty,
+# only matching source files are indexed; exclude always removes matches.
+# include = ["src/**", "packages/api/**"]
+# exclude = ["**/*.generated.ts", "fixtures/**"]
+
 [javascript]
 # Package exports/imports condition priority for package.json resolution.
 # package_conditions = ["types", "import", "node", "default"]
@@ -30,8 +36,16 @@ test_commands = {test_commands}
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct ProjectConfig {
+    pub index: IndexConfig,
     pub impact_analysis: ImpactAnalysisConfig,
     pub javascript: JavascriptConfig,
+}
+
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+#[serde(default)]
+pub struct IndexConfig {
+    pub include: Vec<String>,
+    pub exclude: Vec<String>,
 }
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]

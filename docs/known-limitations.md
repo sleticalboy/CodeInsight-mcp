@@ -27,6 +27,9 @@ These capabilities are expected to be reliable for common source files in suppor
 - Caching indexed files by content hash.
 - Skipping unchanged files during incremental indexing.
 - Removing stale index records for deleted files.
+- Applying optional `.codeinsight/config.toml` `[index]` include/exclude globs
+  before source parsing, so large-repository trials can focus on a package or
+  subsystem.
 
 ### Medium Confidence
 
@@ -51,6 +54,9 @@ These capabilities are intentionally basic in the MVP:
 - Generated code awareness.
 - Macro-expanded Rust code.
 - Type-driven references.
+- Index scope pruning still walks the repository tree. It avoids parsing and
+  storing out-of-scope files, but it is not yet a fully optimized workspace
+  discovery engine for very large monorepos.
 
 ## Tool-Specific Limitations
 

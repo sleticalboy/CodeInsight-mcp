@@ -9,6 +9,7 @@ repository = "https://github.com/sleticalboy/CodeInsight-mcp"
 [dependencies]
 anyhow = "1.0.100"
 clap = { version = "4.5.51", features = ["derive"] }
+globset = "0.4.18"
 ignore = "0.4.25"
 rusqlite = { version = "0.37.0", features = ["bundled"] }
 reqwest = { version = "0.12.24", default-features = false, features = ["blocking", "json", "rustls-tls"] }
