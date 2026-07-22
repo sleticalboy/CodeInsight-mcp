@@ -1418,6 +1418,7 @@ pub fn context_pack_value(
         prefer_semantic_context_source_files: auto_seed_semantic_context_task(&task_keywords),
         prefer_semantic_context_orchestration_files:
             auto_seed_semantic_context_prefers_orchestration(&task_keywords),
+        prefer_dependency_graph_source_files: auto_seed_dependency_graph_task(&task_keywords),
     };
 
     for seed in &seed_symbols {
@@ -6086,6 +6087,7 @@ struct ContextScoringPolicy {
     prefer_data_persistence_source_files: bool,
     prefer_semantic_context_source_files: bool,
     prefer_semantic_context_orchestration_files: bool,
+    prefer_dependency_graph_source_files: bool,
 }
 
 fn seed_file_ranges(
@@ -6501,6 +6503,8 @@ fn context_score_for_file(file: &str, score: i32, policy: &ContextScoringPolicy)
             score,
             policy.prefer_semantic_context_orchestration_files,
         )
+    } else if policy.prefer_dependency_graph_source_files {
+        context_dependency_graph_source_score(file, score)
     } else {
         score
     }
@@ -6558,6 +6562,17 @@ fn context_semantic_context_source_score(
     prefer_orchestration: bool,
 ) -> i32 {
     let priority = auto_seed_semantic_context_file_priority(file, prefer_orchestration);
+    if context_agent_first_read_support_file(file) {
+        score.saturating_sub(900)
+    } else if priority > 0 {
+        score.saturating_add(priority)
+    } else {
+        score
+    }
+}
+
+fn context_dependency_graph_source_score(file: &str, score: i32) -> i32 {
+    let priority = auto_seed_dependency_graph_file_priority(file);
     if context_agent_first_read_support_file(file) {
         score.saturating_sub(900)
     } else if priority > 0 {
@@ -6883,6 +6898,7 @@ fn auto_context_seed_files(
     let semantic_context_task = auto_seed_semantic_context_task(task_keywords);
     let semantic_context_prefers_orchestration =
         auto_seed_semantic_context_prefers_orchestration(task_keywords);
+    let dependency_graph_task = auto_seed_dependency_graph_task(task_keywords);
     candidates.sort_by(|left, right| {
         if agent_first_read_task {
             auto_seed_agent_first_read_file_priority(&right.file, task_keywords)
@@ -6913,6 +6929,11 @@ fn auto_context_seed_files(
             ))
             .then_with(|| right.score.cmp(&left.score))
             .then_with(|| left.file.cmp(&right.file))
+        } else if dependency_graph_task {
+            auto_seed_dependency_graph_file_priority(&right.file)
+                .cmp(&auto_seed_dependency_graph_file_priority(&left.file))
+                .then_with(|| right.score.cmp(&left.score))
+                .then_with(|| left.file.cmp(&right.file))
         } else if route_miss_task {
             auto_seed_route_miss_file_priority(&right.file)
                 .cmp(&auto_seed_route_miss_file_priority(&left.file))
@@ -6975,7 +6996,8 @@ fn auto_context_seed_files(
         || route_dispatch_task
         || indexing_pipeline_task
         || data_persistence_task
-        || semantic_context_task;
+        || semantic_context_task
+        || dependency_graph_task;
     let selected_candidate = if route_miss_task || auto_seed_prefers_entrypoint(task_keywords) {
         candidates.first()
     } else if priority_routed_task {
@@ -7038,6 +7060,8 @@ fn auto_context_seed_files(
                                     &entrypoint.file,
                                     semantic_context_prefers_orchestration,
                                 ) >= 0)
+                            && (!dependency_graph_task
+                                || auto_seed_dependency_graph_file_priority(&entrypoint.file) >= 0)
                     })
                     .map(|entrypoint| AutoSeedCandidate {
                         file: entrypoint.file.clone(),
@@ -9084,6 +9108,9 @@ fn auto_seed_priority_routed_file_priority(file: &str, task_keywords: &[String])
             auto_seed_semantic_context_prefers_orchestration(task_keywords),
         ));
     }
+    if auto_seed_dependency_graph_task(task_keywords) {
+        priority = priority.max(auto_seed_dependency_graph_file_priority(file));
+    }
     if auto_seed_request_lifecycle_task(task_keywords) {
         priority = priority.max(auto_seed_request_lifecycle_file_priority(file));
     }
@@ -9275,6 +9302,64 @@ fn auto_seed_semantic_context_file_priority(file: &str, prefer_orchestration: bo
     }
     if matches!(stem, "index" | "indexer") {
         priority = priority.max(80);
+    }
+    if source_file && matches!(stem, "main" | "lib" | "mod") {
+        priority = priority.max(45);
+    }
+
+    priority
+}
+
+fn auto_seed_dependency_graph_task(task_keywords: &[String]) -> bool {
+    let dependency = task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "dependency" | "dependencies"));
+    let graph = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "graph"
+                | "graphs"
+                | "generation"
+                | "generate"
+                | "generator"
+                | "extract"
+                | "extraction"
+                | "import"
+                | "imports"
+                | "edge"
+                | "edges"
+        )
+    });
+
+    dependency && graph
+}
+
+fn auto_seed_dependency_graph_file_priority(file: &str) -> i32 {
+    let normalized = file.replace('\\', "/").to_ascii_lowercase();
+    if normalized == "scripts" || normalized.starts_with("scripts/") {
+        return -80;
+    }
+    if normalized == "docs" || normalized.starts_with("docs/") || is_low_value_reference_file(file)
+    {
+        return -30;
+    }
+
+    let source_file = normalized.starts_with("src/") || normalized.contains("/src/");
+    let file_name = normalized.rsplit('/').next().unwrap_or(normalized.as_str());
+    let stem = file_name.split('.').next().unwrap_or(file_name);
+
+    let mut priority = if source_file { 20 } else { 0 };
+    if matches!(stem, "index" | "indexer") {
+        priority = priority.max(170);
+    }
+    if matches!(stem, "storage" | "store" | "database" | "db") {
+        priority = priority.max(145);
+    }
+    if matches!(stem, "tools" | "tool") {
+        priority = priority.max(125);
+    }
+    if matches!(stem, "mcp") {
+        priority = priority.max(55);
     }
     if source_file && matches!(stem, "main" | "lib" | "mod") {
         priority = priority.max(45);
