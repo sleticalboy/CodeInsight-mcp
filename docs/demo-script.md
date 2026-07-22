@@ -115,6 +115,14 @@ Promise: route the agent through agent_route before edits.
    first_execution_action: read_selected_context
    second_execution_action: use_current_reading_step_suggested_tool
    first_execution_suggested_tool: file_outline
+   routing_decision_seed_strategy: auto_task_match
+   routing_decision_first_seed: task_match:src/tools.rs
+   routing_decision_first_file: src/tools.rs
+   routing_decision_first_selection_rank: 1
+   routing_decision_suggested_tool: file_outline
+   routing_decision_read_less: 98.6%, 73.6x
+   routing_decision_continuation: complete
+   routing_decision_impact_status: complete
    first_next_action: inspect_seed_file
    first_reading_focus: Start with seed file context routing, first-read handoff, and read-less evidence.
    first_reading_question: Which seed selection, reading-plan handoff, or read-less evidence controls the agent first-read workflow here?
@@ -146,6 +154,7 @@ Promise: route the agent through agent_route before edits.
 Blind first-read baseline: 39357 source lines.
 Routed first-read: 535 source lines across 10 files.
 Read less: avoided 38822 source lines, 73.6x less text before follow-up tools.
+Routing decision: seed=task_match:src/tools.rs, first_file=src/tools.rs, rank=1, tool=file_outline, continuation=complete, impact=complete.
 agent_route selected 535/39357 source lines (98.6% reduction) across 10 files.
 First reading focus: Start with seed file context routing, first-read handoff, and read-less evidence.
 First reading question: Which seed selection, reading-plan handoff, or read-less evidence controls the agent first-read workflow here?
@@ -193,9 +202,12 @@ the same task intent.
 file to read first, which action to take, which tool to use for deeper evidence,
 and why `impact_analysis` is the pre-edit check after selected context is read.
 
-`selection_rank` and `selection_reason` make the first-read choice auditable.
-They show that the first file is not just a returned excerpt; it is the top
-candidate under the current task and token budget.
+`routing_decision` is the compact display row for the same first-read choice:
+seed source/value, first file, rank, suggested tool, read-less evidence,
+continuation state, and impact status. `selection_rank` and
+`selection_reason` make the first-read choice auditable. They show that the
+first file is not just a returned excerpt; it is the top candidate under the
+current task and token budget.
 
 `continuation_summary` and `omitted_candidates[]` tell the agent what to do
 after the selected context is consumed. In a complete context pack, the demo

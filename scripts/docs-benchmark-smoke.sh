@@ -2373,6 +2373,15 @@ main() {
     'first_next_action' \
     "agent-router next action output"
   require_pattern scripts/agent-router-demo.sh \
+    'routing_decision_first_seed' \
+    "agent-router routing decision first seed output"
+  require_pattern scripts/agent-router-demo.sh \
+    'routing_decision_read_less' \
+    "agent-router routing decision read-less output"
+  require_pattern scripts/agent-router-demo.sh \
+    'routing_decision_impact_status' \
+    "agent-router routing decision impact output"
+  require_pattern scripts/agent-router-demo.sh \
     'first_reading_question' \
     "agent-router first reading question output"
   require_pattern scripts/agent-router-demo.sh \
@@ -2396,6 +2405,9 @@ main() {
   require_pattern scripts/agent-router-demo.sh \
     'require_json_string "\$context_json" '\''\.reading_plan\[0\]\.next_action'\''' \
     "agent-router next action assertion"
+  require_pattern scripts/agent-router-demo.sh \
+    'require_json_string "\$route_json" '\''\.routing_decision\.first_file'\''' \
+    "agent-router routing decision assertion"
   require_pattern scripts/agent-router-demo.sh \
     'require_json_string "\$context_json" '\''\.reading_plan\[0\]\.question'\''' \
     "agent-router first reading question assertion"

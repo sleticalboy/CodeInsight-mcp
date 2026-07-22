@@ -106,6 +106,30 @@ main() {
     'first_execution_suggested_tool: file_outline' \
     "first execution suggested tool metric"
   require_pattern docs/demo-output.md \
+    'routing_decision_seed_strategy: auto_task_match' \
+    "routing decision seed strategy metric"
+  require_pattern docs/demo-output.md \
+    'routing_decision_first_seed: task_match:src/tools\.rs' \
+    "routing decision first seed metric"
+  require_pattern docs/demo-output.md \
+    'routing_decision_first_file: src/tools\.rs' \
+    "routing decision first file metric"
+  require_pattern docs/demo-output.md \
+    'routing_decision_first_selection_rank: [0-9]+' \
+    "routing decision first selection rank metric"
+  require_pattern docs/demo-output.md \
+    'routing_decision_suggested_tool: file_outline' \
+    "routing decision suggested tool metric"
+  require_pattern docs/demo-output.md \
+    'routing_decision_read_less: [0-9]+\.[0-9]%, [0-9]+\.[0-9]x' \
+    "routing decision read-less metric"
+  require_pattern docs/demo-output.md \
+    'routing_decision_continuation: complete' \
+    "routing decision continuation metric"
+  require_pattern docs/demo-output.md \
+    'routing_decision_impact_status: complete' \
+    "routing decision impact status metric"
+  require_pattern docs/demo-output.md \
     'first_next_action: inspect_seed_file' \
     "first next action metric"
   require_pattern docs/demo-output.md \
@@ -184,6 +208,9 @@ main() {
     'Read less: avoided [0-9]+ source lines, [0-9]+\.[0-9]x less text before follow-up tools\.' \
     "evidence summary read-less ratio"
   require_pattern docs/demo-output.md \
+    'Routing decision: seed=task_match:src/tools\.rs, first_file=src/tools\.rs, rank=[0-9]+, tool=file_outline, continuation=complete, impact=complete\.' \
+    "evidence summary routing decision"
+  require_pattern docs/demo-output.md \
     'agent_route selected [0-9]+/[0-9]+ source lines \([0-9]+\.[0-9]% reduction\) across [0-9]+ files\.' \
     "evidence summary line reduction"
   require_pattern docs/demo-output.md \
@@ -228,6 +255,9 @@ main() {
   require_pattern docs/demo-output.md \
     'The first execution-plan suggested tool is file_outline; offer it only after the selected file has been read\.' \
     "execution suggested tool talk track"
+  require_pattern docs/demo-output.md \
+    'routing_decision summarizes the same choice: seed=task_match:src/tools\.rs, first_file=src/tools\.rs, rank=[0-9]+, read_less=[0-9]+\.[0-9]%/[0-9]+\.[0-9]x\.' \
+    "routing decision talk track"
   require_pattern docs/demo-output.md \
     'The first reading-plan focus is: Start with seed file' \
     "reading focus talk track"

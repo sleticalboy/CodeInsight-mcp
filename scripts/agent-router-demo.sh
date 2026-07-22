@@ -85,10 +85,11 @@ main() {
   require_command jq
   build_binary_if_needed
 
-  local tmp_dir index_json overview_json context_json impact_json
+  local tmp_dir route_json index_json overview_json context_json impact_json
   tmp_dir="$(mktemp -d)"
   trap "rm -rf '$tmp_dir'" EXIT
 
+  route_json="$tmp_dir/agent-route.json"
   index_json="$tmp_dir/index.json"
   overview_json="$tmp_dir/overview.json"
   context_json="$tmp_dir/context.json"
@@ -100,17 +101,32 @@ main() {
   echo "token_budget: $TOKEN_BUDGET"
   echo
 
+  local args
+  args=(
+    "agent-route"
+    "$DEMO_ROOT"
+    "--task"
+    "$DEMO_TASK"
+    "--token-budget"
+    "$TOKEN_BUDGET"
+    "--impact-depth"
+    "2"
+    "--impact-evidence-limit"
+    "20"
+  )
   if [ "$FORCE_INDEX" = "1" ]; then
-    "$CODEINSIGHT_BIN" index "$DEMO_ROOT" --force >"$index_json"
-  else
-    "$CODEINSIGHT_BIN" index "$DEMO_ROOT" >"$index_json"
+    args+=("--force-index")
+  fi
+  if [ -n "$IMPACT_FILE" ]; then
+    args+=("--file" "$IMPACT_FILE")
   fi
 
-  "$CODEINSIGHT_BIN" overview "$DEMO_ROOT" >"$overview_json"
-  "$CODEINSIGHT_BIN" context-pack "$DEMO_ROOT" \
-    --task "$DEMO_TASK" \
-    --token-budget "$TOKEN_BUDGET" \
-    >"$context_json"
+  "$CODEINSIGHT_BIN" "${args[@]}" >"$route_json"
+
+  jq '.index_report' "$route_json" >"$index_json"
+  jq '.overview' "$route_json" >"$overview_json"
+  jq '.context_pack' "$route_json" >"$context_json"
+  jq '.impact_analysis // {}' "$route_json" >"$impact_json"
 
   require_json_number_gt_zero "$context_json" '.files | length' "context_pack selected files"
   require_json_number_gt_zero "$context_json" '.reading_plan | length' "context_pack reading plan steps"
@@ -121,22 +137,26 @@ main() {
   require_json_number_gt_zero "$context_json" '.reading_plan[0].selection_rank' "first reading-plan selection rank"
   require_json_string "$context_json" '.reading_plan[0].selection_reason' "first reading-plan selection reason"
   require_json_string "$context_json" '.continuation_summary.next_action' "continuation next action"
+  require_json_string "$route_json" '.routing_decision.seed_strategy' "routing decision seed strategy"
+  require_json_string "$route_json" '.routing_decision.first_seed_source' "routing decision first seed source"
+  require_json_string "$route_json" '.routing_decision.first_seed_value' "routing decision first seed value"
+  require_json_string "$route_json" '.routing_decision.first_file' "routing decision first file"
+  require_json_number_gt_zero "$route_json" '.routing_decision.first_selection_rank' "routing decision first selection rank"
+  require_json_string "$route_json" '.routing_decision.first_suggested_tool.tool' "routing decision first suggested tool"
+  require_json_string "$route_json" '.routing_decision.line_reduction' "routing decision line reduction"
+  require_json_string "$route_json" '.routing_decision.read_less_ratio' "routing decision read-less ratio"
+  require_json_string "$route_json" '.routing_decision.continuation_status' "routing decision continuation status"
+  require_json_string "$route_json" '.routing_decision.impact_status' "routing decision impact status"
 
   if [ -z "$IMPACT_FILE" ]; then
-    IMPACT_FILE="$(json_value "$context_json" '.files[0].file // empty')"
-  fi
-
-  if [ -n "$IMPACT_FILE" ]; then
-    "$CODEINSIGHT_BIN" impact-analysis "$DEMO_ROOT" \
-      --file "$IMPACT_FILE" \
-      --depth 2 \
-      --format summary \
-      >"$impact_json"
+    IMPACT_FILE="$(json_value "$route_json" '.impact_seed_files[0] // .context_pack.files[0].file // empty')"
   fi
 
   local total_lines selected_lines reduction first_entrypoint first_context_file
   local first_next_action first_reading_focus first_reading_question first_reading_plan_reason first_selection_rank
   local first_selection_reason continuation_next_action
+  local routing_seed_strategy routing_first_seed_source routing_first_seed_value routing_first_file routing_first_selection_rank
+  local routing_first_suggested_tool routing_line_reduction routing_read_less_ratio routing_continuation_status routing_impact_status
   total_lines="$(json_value "$overview_json" '.total_lines // 0')"
   selected_lines="$(selected_context_lines "$context_json")"
   reduction="$(line_reduction "$total_lines" "$selected_lines")"
@@ -149,6 +169,16 @@ main() {
   first_selection_rank="$(json_value "$context_json" '.reading_plan[0].selection_rank // 0')"
   first_selection_reason="$(json_value "$context_json" '.reading_plan[0].selection_reason // "-"')"
   continuation_next_action="$(json_value "$context_json" '.continuation_summary.next_action // "-"')"
+  routing_seed_strategy="$(json_value "$route_json" '.routing_decision.seed_strategy // "-"')"
+  routing_first_seed_source="$(json_value "$route_json" '.routing_decision.first_seed_source // "-"')"
+  routing_first_seed_value="$(json_value "$route_json" '.routing_decision.first_seed_value // "-"')"
+  routing_first_file="$(json_value "$route_json" '.routing_decision.first_file // "-"')"
+  routing_first_selection_rank="$(json_value "$route_json" '.routing_decision.first_selection_rank // "-"')"
+  routing_first_suggested_tool="$(json_value "$route_json" '.routing_decision.first_suggested_tool.tool // "-"')"
+  routing_line_reduction="$(json_value "$route_json" '.routing_decision.line_reduction // "-"')"
+  routing_read_less_ratio="$(json_value "$route_json" '.routing_decision.read_less_ratio // "-"')"
+  routing_continuation_status="$(json_value "$route_json" '.routing_decision.continuation_status // "-"')"
+  routing_impact_status="$(json_value "$route_json" '.routing_decision.impact_status // "-"')"
 
   echo "1. index_project"
   echo "   indexed_files: $(json_value "$index_json" '.indexed_files')"
@@ -169,6 +199,14 @@ main() {
   echo "   selected_ranges: $(json_value "$context_json" '[.files[].ranges | length] | add // 0')"
   echo "   reading_plan_steps: $(json_value "$context_json" '.reading_plan | length')"
   echo "   first_next_action: $first_next_action"
+  echo "   routing_decision_seed_strategy: $routing_seed_strategy"
+  echo "   routing_decision_first_seed: ${routing_first_seed_source}:${routing_first_seed_value}"
+  echo "   routing_decision_first_file: $routing_first_file"
+  echo "   routing_decision_first_selection_rank: $routing_first_selection_rank"
+  echo "   routing_decision_suggested_tool: $routing_first_suggested_tool"
+  echo "   routing_decision_read_less: $routing_line_reduction, $routing_read_less_ratio"
+  echo "   routing_decision_continuation: $routing_continuation_status"
+  echo "   routing_decision_impact_status: $routing_impact_status"
   echo "   first_reading_focus: $first_reading_focus"
   echo "   first_reading_question: $first_reading_question"
   echo "   selected_lines: $selected_lines"
@@ -182,7 +220,7 @@ main() {
   echo "   selection_reason: $first_selection_reason"
   echo
 
-  if [ -s "$impact_json" ]; then
+  if jq -e '.risk_level? != null' "$impact_json" >/dev/null; then
     echo "4. impact_analysis"
     echo "   seed_file: $IMPACT_FILE"
     echo "   risk_level: $(json_value "$impact_json" '.risk_level // "-"')"

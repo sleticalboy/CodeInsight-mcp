@@ -71,6 +71,19 @@ cat <<'JSON'
   "impact_seed_files": ["src/main.rs"],
   "impact_seed_symbols": [],
   "impact_status": "complete",
+  "routing_decision": {
+    "seed_strategy": "auto_entrypoint",
+    "first_seed_source": "entrypoint",
+    "first_seed_value": "src/main.rs",
+    "first_file": "src/main.rs",
+    "first_selection_rank": 1,
+    "first_suggested_tool": {"tool": "file_outline"},
+    "line_reduction": "98.4%",
+    "read_less_ratio": "63.1x",
+    "continuation_status": "complete",
+    "continuation_next_action": "read_selected_context",
+    "impact_status": "complete"
+  },
   "current_reading_step": {
     "order": 1,
     "file": "src/main.rs",
@@ -205,6 +218,22 @@ EOF
     fail "missing second execution action metric"
   grep -Fq 'first_execution_suggested_tool: file_outline' "$TEMP_DIR/output.log" ||
     fail "missing first execution suggested tool metric"
+  grep -Fq 'routing_decision_seed_strategy: auto_entrypoint' "$TEMP_DIR/output.log" ||
+    fail "missing routing decision seed strategy metric"
+  grep -Fq 'routing_decision_first_seed: entrypoint:src/main.rs' "$TEMP_DIR/output.log" ||
+    fail "missing routing decision first seed metric"
+  grep -Fq 'routing_decision_first_file: src/main.rs' "$TEMP_DIR/output.log" ||
+    fail "missing routing decision first file metric"
+  grep -Fq 'routing_decision_first_selection_rank: 1' "$TEMP_DIR/output.log" ||
+    fail "missing routing decision first rank metric"
+  grep -Fq 'routing_decision_suggested_tool: file_outline' "$TEMP_DIR/output.log" ||
+    fail "missing routing decision suggested tool metric"
+  grep -Fq 'routing_decision_read_less: 98.4%, 63.1x' "$TEMP_DIR/output.log" ||
+    fail "missing routing decision read-less metric"
+  grep -Fq 'routing_decision_continuation: complete' "$TEMP_DIR/output.log" ||
+    fail "missing routing decision continuation metric"
+  grep -Fq 'routing_decision_impact_status: complete' "$TEMP_DIR/output.log" ||
+    fail "missing routing decision impact status metric"
   grep -Fq 'first_reading_question: What entrypoints or setup code define the main flow here?' "$TEMP_DIR/output.log" ||
     fail "missing first reading question metric"
   grep -Fq 'first_selection_rank: 1' "$TEMP_DIR/output.log" ||
@@ -249,6 +278,8 @@ EOF
     fail "missing evidence summary routed first-read"
   grep -Fq 'Read less: avoided 27242 source lines, 63.1x less text before follow-up tools.' "$TEMP_DIR/output.log" ||
     fail "missing evidence summary read-less line"
+  grep -Fq 'Routing decision: seed=entrypoint:src/main.rs, first_file=src/main.rs, rank=1, tool=file_outline, continuation=complete, impact=complete.' "$TEMP_DIR/output.log" ||
+    fail "missing evidence summary routing decision line"
   grep -Fq 'agent_route selected 439/27681 source lines (98.4% reduction) across 1 files.' "$TEMP_DIR/output.log" ||
     fail "missing evidence summary line reduction"
   grep -Fq 'First reading question: What entrypoints or setup code define the main flow here?' "$TEMP_DIR/output.log" ||
@@ -271,6 +302,8 @@ EOF
     fail "missing execution plan talk track"
   grep -Fq 'The first execution-plan suggested tool is file_outline; offer it only after the selected file has been read.' "$TEMP_DIR/output.log" ||
     fail "missing execution suggested tool talk track"
+  grep -Fq 'routing_decision summarizes the same choice: seed=entrypoint:src/main.rs, first_file=src/main.rs, rank=1, read_less=98.4%/63.1x.' "$TEMP_DIR/output.log" ||
+    fail "missing routing decision talk track"
   grep -Fq 'The first reading-plan question is: What entrypoints or setup code define the main flow here?' "$TEMP_DIR/output.log" ||
     fail "missing reading question talk track"
   grep -Fq 'The first reading-plan action is inspect_seed_file; Read this step to answer: What entrypoints or setup code define the main flow here?' "$TEMP_DIR/output.log" ||
