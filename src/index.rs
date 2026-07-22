@@ -7036,7 +7036,7 @@ load_env() {
         std::fs::create_dir_all(dir.path().join("scripts/lib")).unwrap();
         std::fs::write(
             dir.path().join("scripts/bootstrap.sh"),
-            "source ./lib/common.sh\nrun_common\n",
+            "source ./lib/common.sh\nbootstrap() {\n  run_common\n}\n",
         )
         .unwrap();
         std::fs::write(
@@ -7057,6 +7057,12 @@ load_env() {
                 && dependency.target == "./lib/common.sh"
                 && dependency.kind == "source"
                 && dependency.resolved_file.as_deref() == Some("scripts/lib/common.sh")
+        }));
+
+        let calls = store.callees("bootstrap", 10).unwrap();
+        assert!(calls.iter().any(|call| {
+            call.callee == "run_common"
+                && call.callee_file.as_deref() == Some("scripts/lib/common.sh")
         }));
     }
 
