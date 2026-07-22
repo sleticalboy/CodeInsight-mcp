@@ -631,6 +631,7 @@ fn agent_route_skipped_impact_status(context_status: &str) -> &'static str {
     match context_status {
         "blocked_invalid_seed" => "skipped_invalid_seed",
         "blocked_no_context" => "skipped_no_context",
+        "blocked_unindexed_task_path" => "skipped_unindexed_task_path",
         _ => "skipped_no_seed",
     }
 }
@@ -643,6 +644,9 @@ fn agent_route_skipped_impact_reason(impact_status: &str) -> String {
         "skipped_no_context" => {
             "skipped because the explicit seed did not match any readable context".to_string()
         }
+        "skipped_unindexed_task_path" => {
+            "skipped because the task path seed is not indexed".to_string()
+        }
         _ => "skipped because no context file or symbol seed was available".to_string(),
     }
 }
@@ -654,6 +658,9 @@ fn agent_route_skipped_impact_instruction(impact_status: &str) -> String {
         }
         "skipped_no_context" => {
             "Impact analysis was skipped because the explicit seed did not match any readable context; provide a matching seed file or symbol before editing.".to_string()
+        }
+        "skipped_unindexed_task_path" => {
+            "Impact analysis was skipped because the task path seed is not indexed; update the index scope or pass an indexed seed before editing.".to_string()
         }
         _ => "Impact analysis was skipped because no file or symbol seed was available."
             .to_string(),
@@ -815,6 +822,72 @@ fn empty_context_pack_for_invalid_seed_route(
                 "Explicit seed file could not be resolved: {error_message}. Provide an existing --file path under the project root or use --symbol."
             ),
             next_action: "provide_existing_seed_file_or_symbol".to_string(),
+            omitted_candidate_count: 0,
+            first_omitted_file: None,
+            suggested_tool: None,
+        },
+        omitted_candidates: Vec::new(),
+        files: Vec::new(),
+        symbols: Vec::new(),
+        references: Vec::new(),
+        estimated_tokens,
+        truncated: false,
+    }
+}
+
+fn empty_context_pack_for_unindexed_task_path(
+    task: String,
+    requested_token_budget: usize,
+    baseline_source_lines: usize,
+    selected_seeds: Vec<ContextSeed>,
+) -> ContextPack {
+    let applied_token_budget = requested_token_budget.max(500);
+    let estimated_tokens = estimate_tokens(&task);
+    let task_paths = selected_seeds
+        .iter()
+        .map(|seed| seed.value.clone())
+        .collect::<Vec<_>>();
+    ContextPack {
+        task,
+        summary: format!(
+            "Context pack could not use task path seed files because they are not indexed: {}.",
+            task_paths.join(", ")
+        ),
+        seed_strategy: "auto_task_path_unindexed".to_string(),
+        selected_seeds,
+        reading_plan: Vec::new(),
+        semantic_status: ContextSemanticStatus {
+            provider: "disabled".to_string(),
+            model: "disabled".to_string(),
+            provider_configured: false,
+            vector_status: "skipped_unindexed_task_path".to_string(),
+            vector_candidates: 0,
+            fallback_candidates: 0,
+            selected_vector_ranges: 0,
+            selected_fallback_ranges: 0,
+            recommendation: "index the task path or update the configured index scope before semantic context expansion".to_string(),
+        },
+        budget: ContextBudget {
+            requested_token_budget,
+            applied_token_budget,
+            estimated_tokens,
+            candidate_files: 0,
+            selected_files: 0,
+            omitted_files: 0,
+            candidate_ranges: 0,
+            selected_ranges: 0,
+            omitted_ranges: 0,
+            truncated: false,
+            truncation_reason: "unindexed_task_path".to_string(),
+        },
+        read_less: context_read_less(baseline_source_lines, 0),
+        continuation_summary: ContextContinuationSummary {
+            status: "blocked_unindexed_task_path".to_string(),
+            message: format!(
+                "Task path seed files are not indexed: {}. Run index_project with a scope that includes them, or pass a different indexed --file/--symbol.",
+                task_paths.join(", ")
+            ),
+            next_action: "index_or_update_scope_for_task_path".to_string(),
             omitted_candidate_count: 0,
             first_omitted_file: None,
             suggested_tool: None,
@@ -1598,6 +1671,15 @@ pub fn context_pack_value(
         seed_files = auto_selection.files;
         selected_seeds = auto_selection.seeds;
         if seed_files.is_empty() {
+            if seed_strategy == "auto_task_path_unindexed" {
+                let baseline_source_lines = store.overview(&root)?.total_lines;
+                return Ok(empty_context_pack_for_unindexed_task_path(
+                    task,
+                    token_budget,
+                    baseline_source_lines,
+                    selected_seeds,
+                ));
+            }
             bail!(CONTEXT_PACK_NO_SEED_ERROR);
         }
     }
@@ -7518,6 +7600,25 @@ fn auto_context_seed_files(
             seeds,
         });
     }
+    let unindexed_task_path_files = auto_seed_unindexed_task_path_files(root, task, &indexed_files);
+    if !unindexed_task_path_files.is_empty() {
+        let seeds = unindexed_task_path_files
+            .iter()
+            .map(|file| ContextSeed {
+                kind: "file".to_string(),
+                value: file.clone(),
+                source: "task_path_unindexed".to_string(),
+                role: Some(auto_seed_file_role(file).to_string()),
+                matched_keywords: Vec::new(),
+                matched_symbols: Vec::new(),
+            })
+            .collect::<Vec<_>>();
+        return Ok(AutoContextSeedSelection {
+            strategy: "auto_task_path_unindexed".to_string(),
+            files: Vec::new(),
+            seeds,
+        });
+    }
 
     let overview = store.overview(root)?;
     let task_symbol_matches = auto_seed_task_symbol_matches(store, task_keywords)?;
@@ -7982,13 +8083,33 @@ fn auto_context_seed_files(
 
 fn auto_seed_task_path_files(task: &str, indexed_files: &[String]) -> Vec<String> {
     let indexed_file_set = indexed_files.iter().cloned().collect::<BTreeSet<_>>();
+    auto_seed_task_path_tokens(task)
+        .into_iter()
+        .filter(|token| indexed_file_set.contains(token))
+        .take(3)
+        .collect()
+}
+
+fn auto_seed_unindexed_task_path_files(
+    root: &Path,
+    task: &str,
+    indexed_files: &[String],
+) -> Vec<String> {
+    let indexed_file_set = indexed_files.iter().cloned().collect::<BTreeSet<_>>();
+    auto_seed_task_path_tokens(task)
+        .into_iter()
+        .filter(|token| !indexed_file_set.contains(token))
+        .filter(|token| root.join(token).is_file())
+        .take(3)
+        .collect()
+}
+
+fn auto_seed_task_path_tokens(task: &str) -> Vec<String> {
     let mut seen = BTreeSet::new();
     task.split(|character: char| !auto_seed_task_path_character(character))
         .map(normalize_auto_seed_task_path_token)
         .filter(|token| token.contains('/'))
-        .filter(|token| indexed_file_set.contains(token))
         .filter(|token| seen.insert(token.clone()))
-        .take(3)
         .collect()
 }
 

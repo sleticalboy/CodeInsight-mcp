@@ -538,7 +538,8 @@ Recommended MCP first-read flow:
    repository. If it is `blocked_invalid_seed`, ask for an existing seed file
    under the project root or a symbol, then retry. If it is
    `blocked_no_context`, ask for a seed file or symbol that actually matches
-   indexed source context.
+   indexed source context. If it is `blocked_unindexed_task_path`, update the
+   index scope or rerun indexing so the task path is indexed before retrying.
 3. Use `agent_route.current_reading_step` as the first checklist row, then read
    `context_pack.files[]` in `reading_plan[]` order.
 4. Use `reading_plan[].selection_rank` and `selection_reason` as the audit

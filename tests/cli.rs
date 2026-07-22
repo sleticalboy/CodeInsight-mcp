@@ -2677,6 +2677,140 @@ export function authOnly() {
 }
 
 #[test]
+fn cli_context_pack_blocks_existing_task_path_outside_index_scope() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        ".codeinsight/config.toml",
+        r#"
+[index]
+include = ["src/auth.ts"]
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/main.ts",
+        r#"
+export function main() {
+  return "skip";
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/auth.ts",
+        r#"
+export function authOnly() {
+  return "keep";
+}
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"].as_u64(), Some(1));
+
+    let context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "inspect src/main.ts before editing startup",
+        "--token-budget",
+        "1000",
+    ]);
+
+    assert_eq!(context["seed_strategy"], "auto_task_path_unindexed");
+    assert_eq!(context["selected_seeds"][0]["value"], "src/main.ts");
+    assert_eq!(
+        context["selected_seeds"][0]["source"],
+        "task_path_unindexed"
+    );
+    assert_eq!(
+        context["budget"]["truncation_reason"],
+        "unindexed_task_path"
+    );
+    assert_eq!(
+        context["continuation_summary"]["status"],
+        "blocked_unindexed_task_path"
+    );
+    assert_eq!(
+        context["continuation_summary"]["next_action"],
+        "index_or_update_scope_for_task_path"
+    );
+    assert!(context["files"].as_array().unwrap().is_empty());
+    assert!(context["reading_plan"].as_array().unwrap().is_empty());
+}
+
+#[test]
+fn cli_agent_route_blocks_existing_task_path_outside_index_scope() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        ".codeinsight/config.toml",
+        r#"
+[index]
+include = ["src/auth.ts"]
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/main.ts",
+        r#"
+export function main() {
+  return "skip";
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/auth.ts",
+        r#"
+export function authOnly() {
+  return "keep";
+}
+"#,
+    );
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "inspect src/main.ts before editing startup",
+        "--token-budget",
+        "1000",
+        "--force-index",
+    ]);
+
+    assert_eq!(route["index_report"]["indexed_files"].as_u64(), Some(1));
+    assert_eq!(route["route"][2]["status"], "blocked_unindexed_task_path");
+    assert_eq!(route["impact_status"], "skipped_unindexed_task_path");
+    assert_eq!(
+        route["context_pack"]["seed_strategy"],
+        "auto_task_path_unindexed"
+    );
+    assert_eq!(
+        route["context_pack"]["continuation_summary"]["next_action"],
+        "index_or_update_scope_for_task_path"
+    );
+    let continuation_message = route["context_pack"]["continuation_summary"]["message"]
+        .as_str()
+        .unwrap();
+    assert!(continuation_message.contains("src/main.ts"));
+    assert!(continuation_message.contains("Index scope is enabled"));
+    assert!(
+        route["execution_plan"][2]["instruction"]
+            .as_str()
+            .unwrap()
+            .contains("Index scope is enabled")
+    );
+    assert!(
+        route["execution_plan"][3]["instruction"]
+            .as_str()
+            .unwrap()
+            .contains("task path seed is not indexed")
+    );
+}
+
+#[test]
 fn cli_agent_route_keeps_entrypoint_companion_for_task_match() {
     let fixture = TempDir::new().unwrap();
     std::fs::create_dir_all(fixture.path().join("src")).unwrap();

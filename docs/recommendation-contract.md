@@ -87,6 +87,11 @@ If the task text names an indexed file path such as `src/auth.ts`,
 preferred before broader keyword or entrypoint inference, so agents can pass
 natural tasks like "inspect src/auth.ts before editing login" without also
 populating `files[]`.
+If the task text names a file that exists under the repository root but is not
+indexed, `context_pack.seed_strategy` becomes `auto_task_path_unindexed` and
+the continuation status is `blocked_unindexed_task_path`. Clients should update
+the configured index scope or rerun indexing before retrying instead of falling
+back to broad repository reads.
 
 The default action order is:
 
