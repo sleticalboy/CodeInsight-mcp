@@ -64,6 +64,22 @@ the result. Maintainers then reclassify the report as one of:
 The next public signal should be at least three non-maintainer reports filed
 through the GitHub issue form or copied from `issue-body.md`.
 
+Aggregate those reports with:
+
+```bash
+scripts/external-beta-cohort-summary.sh \
+  /tmp/codeinsight-external-beta-trial-1 \
+  /tmp/codeinsight-external-beta-trial-2 \
+  /tmp/codeinsight-external-beta-trial-3 \
+  --output /tmp/codeinsight-external-beta-cohort.md \
+  --json /tmp/codeinsight-external-beta-cohort.json \
+  --check
+```
+
+Each argument can be a trial output directory or a `beta-summary.json` file. In
+`--check` mode the command fails until at least three reports are present and
+none are still `needs_triage`.
+
 Prioritize the first fix in this order:
 
 1. `workflow_friction` that blocks the trial command or issue filing.

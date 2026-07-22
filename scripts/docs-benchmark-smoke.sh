@@ -272,6 +272,15 @@ main() {
     'scripts/external-beta-trial\.sh /path/to/repo' \
     "README external beta trial command"
   require_pattern README.md \
+    'scripts/external-beta-cohort-summary\.sh' \
+    "README external beta cohort summary command"
+  require_pattern README.md \
+    'fix workflow friction' \
+    "README external beta cohort workflow friction priority"
+  require_pattern README.md \
+    'route misses' \
+    "README external beta cohort route miss priority"
+  require_pattern README.md \
     'codeinsight-external-beta-trial' \
     "README external beta trial output directory"
   require_pattern README.md \
@@ -328,6 +337,15 @@ main() {
   require_pattern docs/adoption-checklist.md \
     'scripts/external-beta-trial\.sh /path/to/repo' \
     "adoption checklist external beta trial command"
+  require_pattern docs/adoption-checklist.md \
+    'scripts/external-beta-cohort-summary\.sh' \
+    "adoption checklist external beta cohort summary command"
+  require_pattern docs/adoption-checklist.md \
+    'at least three' \
+    "adoption checklist external beta minimum count"
+  require_pattern docs/adoption-checklist.md \
+    'External Beta reports' \
+    "adoption checklist external beta report wording"
   require_pattern docs/adoption-checklist.md \
     'issue-body\.md' \
     "adoption checklist external beta issue body artifact"
@@ -458,6 +476,9 @@ main() {
     'External Beta trial pack' \
     "docs index External Beta validation row"
   require_pattern docs/README.md \
+    'External Beta cohort summary' \
+    "docs index External Beta cohort validation row"
+  require_pattern docs/README.md \
     '\[Alpha feedback triage\]\(alpha-feedback-triage\.md\)' \
     "docs index Alpha feedback triage link"
   require_pattern docs/README.md \
@@ -487,6 +508,12 @@ main() {
   require_pattern docs/external-beta-trial.md \
     'scripts/external-beta-trial\.sh /path/to/repo' \
     "External Beta trial command"
+  require_pattern docs/external-beta-trial.md \
+    'scripts/external-beta-cohort-summary\.sh' \
+    "External Beta cohort summary command"
+  require_pattern docs/external-beta-trial.md \
+    'fails until at least three reports are present' \
+    "External Beta cohort check gate"
   require_pattern docs/external-beta-trial.md \
     'redaction-checklist\.md' \
     "External Beta redaction artifact"

@@ -52,6 +52,18 @@ scripts/external-beta-trial.sh /path/to/repo \
   --output-dir /tmp/codeinsight-external-beta-trial
 ```
 
+When you need to verify the first External Beta cohort:
+
+```bash
+scripts/external-beta-cohort-summary.sh \
+  /tmp/codeinsight-external-beta-trial-1 \
+  /tmp/codeinsight-external-beta-trial-2 \
+  /tmp/codeinsight-external-beta-trial-3 \
+  --output /tmp/codeinsight-external-beta-cohort.md \
+  --json /tmp/codeinsight-external-beta-cohort.json \
+  --check
+```
+
 When you need one uploadable handoff archive:
 
 ```bash
@@ -150,6 +162,11 @@ Pass criteria:
 - External users can choose `needs_triage` in the generated Beta report when
   they are unsure whether the result is a route hit, route miss, workflow
   friction, or over-trust risk.
+- `external-beta-cohort-summary.sh --check` passes only when at least three
+  External Beta reports are present and no report remains `needs_triage`.
+- The cohort summary JSON lists outcome counts, `needs_triage_count`, and the
+  next action priority so maintainers can fix workflow friction before route
+  misses and route misses before near misses.
 - `adoption-report.sh` writes `codeinsight-adoption-report.tar.gz` with the
   aggregate summaries, issue template, raw route JSON, MCP first-call JSON,
   manifest, and diagnostic stdout/stderr logs.

@@ -85,6 +85,7 @@ Choose the check by adoption stage:
 | MCP client wiring | `scripts/mcp-stdio-smoke.sh` |
 | Installed-binary adoption gate | `scripts/installed-quickstart-smoke.sh` |
 | External Beta trial pack | `scripts/external-beta-trial.sh /path/to/repo --output-dir /tmp/codeinsight-external-beta-trial` |
+| External Beta cohort summary | `scripts/external-beta-cohort-summary.sh /tmp/beta-1 /tmp/beta-2 /tmp/beta-3 --check` |
 | Adoption comparison evidence | `scripts/adoption-comparison.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-comparison` |
 | Uploadable adoption report | `scripts/adoption-report.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-report` |
 | Local task routing matrix | `scripts/task-routing-matrix.sh /path/to/repo --expect-file ./route-expectations.tsv` |
