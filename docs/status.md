@@ -36,7 +36,7 @@ workflow is implemented end to end.
 - Index metadata with schema and index version tracking.
 - Per-file indexing errors in reports without aborting the whole project scan.
 - Tree-sitter parsing for TypeScript/JavaScript, Python, Go, Rust, Java, C,
-  C++, C#, PHP, and Ruby.
+  C++, C#, PHP, Ruby, and Bash/Shell scripts.
 - Symbol extraction for common declarations.
 - Repository overview with dependency/call summaries, role-aware directories,
   entrypoint candidates, and MCP-ready recommended next tools.
@@ -52,14 +52,16 @@ workflow is implemented end to end.
 - Local dependency resolution for common import/include/use forms across the
   supported languages, including JavaScript/TypeScript package metadata,
   workspaces, Python relative imports, Rust modules, Go modules, Java/C#/PHP
-  namespace imports, Ruby `require_relative`, and C/C++ local includes.
+  namespace imports, Ruby `require_relative`, and C/C++ local includes. Bash
+  files are indexed for functions and same-file command calls; shell imports
+  are not modeled yet.
 - Direct type-relation extraction and routing for C#, Java,
   TypeScript/JavaScript, PHP, Ruby, and Rust trait implementations, exposed in
   `project_overview`, `dependency_graph`, `context_pack`, and
   `impact_analysis`.
 - Same-file `callee_file` hints for local calls that match symbols in the
   current file, plus imported `callee_file` hints for obvious local calls in
-  JavaScript/TypeScript, Python, Rust, Go, Java, C#, PHP, and Ruby.
+  JavaScript/TypeScript, Python, Rust, Go, Java, C#, PHP, Ruby, and Bash.
 - Embedding provider interface, provider status reporting, and local semantic
   search paths over local vectors.
 - Local semantic chunk index storage with optional deterministic local-hash

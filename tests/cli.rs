@@ -3528,6 +3528,106 @@ fn cli_context_pack_uses_task_signal_word_boundaries() {
 }
 
 #[test]
+fn cli_context_pack_routes_external_beta_tasks_to_shell_scripts() {
+    let fixture = TempDir::new().unwrap();
+    std::fs::create_dir_all(fixture.path().join("Formula")).unwrap();
+    std::fs::create_dir_all(fixture.path().join("scripts")).unwrap();
+    write_file(
+        &fixture,
+        "Formula/codeinsight.rb",
+        r#"
+class Codeinsight < Formula
+  desc "Local-first code intelligence MCP server for AI agents"
+
+  def install
+    bin.install "codeinsight"
+  end
+end
+"#,
+    );
+    write_file(
+        &fixture,
+        "scripts/external-beta-trial.sh",
+        r#"
+#!/usr/bin/env bash
+set -euo pipefail
+
+write_issue_body() {
+  echo "external beta trial evidence flow"
+}
+
+write_redaction_checklist() {
+  echo "redaction checklist"
+}
+
+main() {
+  write_issue_body
+  write_redaction_checklist
+}
+
+main "$@"
+"#,
+    );
+    write_file(
+        &fixture,
+        "scripts/external-beta-trial-smoke.sh",
+        r#"
+#!/usr/bin/env bash
+set -euo pipefail
+
+main() {
+  echo "external beta trial evidence flow smoke"
+}
+
+main "$@"
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 3);
+
+    let outline = run_json([
+        "outline",
+        fixture
+            .path()
+            .join("scripts/external-beta-trial.sh")
+            .to_str()
+            .unwrap(),
+    ]);
+    assert!(
+        outline
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|symbol| { symbol["name"] == "write_issue_body" && symbol["language"] == "bash" })
+    );
+
+    let context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand external beta trial evidence flow",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(
+        context["selected_seeds"][0]["value"], "scripts/external-beta-trial.sh",
+        "script path and function text should beat the generic Codeinsight formula"
+    );
+    assert!(
+        context["selected_seeds"][0]["matched_keywords"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|keyword| keyword == "external")
+    );
+    assert_eq!(
+        context["files"][0]["file"],
+        "scripts/external-beta-trial.sh"
+    );
+}
+
+#[test]
 fn cli_context_pack_uses_file_text_for_python_settings_tasks() {
     let fixture = TempDir::new().unwrap();
     std::fs::create_dir_all(fixture.path().join("src/requests")).unwrap();

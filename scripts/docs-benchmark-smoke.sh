@@ -269,6 +269,15 @@ main() {
     'scripts/adoption-evidence\.sh /path/to/repo' \
     "README adoption evidence command"
   require_pattern README.md \
+    'scripts/external-beta-trial\.sh /path/to/repo' \
+    "README external beta trial command"
+  require_pattern README.md \
+    'codeinsight-external-beta-trial' \
+    "README external beta trial output directory"
+  require_pattern README.md \
+    'can choose `needs_triage`' \
+    "README external beta needs triage guidance"
+  require_pattern README.md \
     'scripts/adoption-comparison\.sh /path/to/repo' \
     "README adoption comparison command"
   require_pattern README.md \
@@ -316,6 +325,15 @@ main() {
   require_pattern docs/adoption-checklist.md \
     '\-\-issue-template' \
     "adoption checklist issue template option"
+  require_pattern docs/adoption-checklist.md \
+    'scripts/external-beta-trial\.sh /path/to/repo' \
+    "adoption checklist external beta trial command"
+  require_pattern docs/adoption-checklist.md \
+    'issue-body\.md' \
+    "adoption checklist external beta issue body artifact"
+  require_pattern docs/adoption-checklist.md \
+    'External users can choose `needs_triage`' \
+    "adoption checklist external beta needs triage guidance"
   require_pattern docs/adoption-checklist.md \
     'failure category placeholder' \
     "adoption checklist issue template contents"
@@ -434,6 +452,12 @@ main() {
     '\[Public Adoption Alpha\]\(public-adoption-alpha\.md\)' \
     "docs index Public Adoption Alpha link"
   require_pattern docs/README.md \
+    '\[External Beta trial\]\(external-beta-trial\.md\)' \
+    "docs index External Beta trial link"
+  require_pattern docs/README.md \
+    'External Beta trial pack' \
+    "docs index External Beta validation row"
+  require_pattern docs/README.md \
     '\[Alpha feedback triage\]\(alpha-feedback-triage\.md\)' \
     "docs index Alpha feedback triage link"
   require_pattern docs/README.md \
@@ -445,12 +469,30 @@ main() {
   require_pattern README.md \
     '\[Alpha trial log\]\(docs/alpha-trial-log\.md\)' \
     "README Alpha trial log link"
+  require_pattern README.md \
+    '\[External Beta trial\]\(docs/external-beta-trial\.md\)' \
+    "README External Beta trial link"
   require_pattern docs/alpha-feedback-triage.md \
     'Do not close route misses only because the read-less ratio looks good' \
     "Alpha feedback triage route miss caveat"
   require_pattern docs/alpha-feedback-triage.md \
+    'External Beta Intake' \
+    "Alpha feedback triage External Beta intake section"
+  require_pattern docs/alpha-feedback-triage.md \
+    'replace it with `route_hit`' \
+    "Alpha feedback triage needs triage reclassification guidance"
+  require_pattern docs/alpha-feedback-triage.md \
     'Large Repository Friction' \
     "Alpha feedback triage large repository friction section"
+  require_pattern docs/external-beta-trial.md \
+    'scripts/external-beta-trial\.sh /path/to/repo' \
+    "External Beta trial command"
+  require_pattern docs/external-beta-trial.md \
+    'redaction-checklist\.md' \
+    "External Beta redaction artifact"
+  require_pattern docs/external-beta-trial.md \
+    'needs_triage' \
+    "External Beta needs triage outcome"
   require_pattern docs/alpha-feedback-triage.md \
     'to execute and return a valid outline for the selected file' \
     "Alpha feedback triage external MCP first-call rule"
@@ -475,6 +517,9 @@ main() {
   require_pattern .github/ISSUE_TEMPLATE/adoption-feedback.yml \
     'route_near_miss' \
     "GitHub adoption feedback outcome category"
+  require_pattern .github/ISSUE_TEMPLATE/adoption-feedback.yml \
+    'needs_triage' \
+    "GitHub adoption feedback needs triage category"
   require_pattern scripts/mcp-first-call-smoke.sh \
     'default_fixture = os\.environ\.get\("DEFAULT_FIXTURE"\) == "1"' \
     "MCP first-call default fixture flag"

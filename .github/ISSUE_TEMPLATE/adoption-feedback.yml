@@ -79,6 +79,7 @@ body:
     attributes:
       label: Outcome
       options:
+        - needs_triage
         - route_hit
         - route_near_miss
         - route_miss

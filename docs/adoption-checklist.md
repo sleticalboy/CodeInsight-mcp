@@ -44,6 +44,14 @@ scripts/adoption-evidence.sh /path/to/repo \
   --issue-template
 ```
 
+When you need a non-maintainer external Beta trial pack:
+
+```bash
+scripts/external-beta-trial.sh /path/to/repo \
+  --task "understand the main application entrypoint" \
+  --output-dir /tmp/codeinsight-external-beta-trial
+```
+
 When you need one uploadable handoff archive:
 
 ```bash
@@ -136,6 +144,12 @@ Pass criteria:
 - `--issue-template` writes `issue-template.md` with the copyable evidence
   snippet, failure category placeholder, artifact paths, and environment fields
   needed for a reproducible adoption report.
+- `external-beta-trial.sh` writes a non-maintainer trial pack with
+  `issue-body.md`, `beta-summary.json`, `redaction-checklist.md`,
+  `maintainer-triage.md`, and the underlying adoption evidence artifacts.
+- External users can choose `needs_triage` in the generated Beta report when
+  they are unsure whether the result is a route hit, route miss, workflow
+  friction, or over-trust risk.
 - `adoption-report.sh` writes `codeinsight-adoption-report.tar.gz` with the
   aggregate summaries, issue template, raw route JSON, MCP first-call JSON,
   manifest, and diagnostic stdout/stderr logs.

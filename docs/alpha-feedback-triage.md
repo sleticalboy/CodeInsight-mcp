@@ -32,6 +32,8 @@ If a user cannot share code, accept a redacted issue with:
 Use these labels:
 
 - `adoption-feedback`: every alpha trial report.
+- `needs-triage`: external Beta reports that have not yet been classified by
+  a maintainer.
 - `route-hit`: first selected file was useful.
 - `route-near-miss`: first selected file was close but not ideal.
 - `route-miss`: first selected file was wrong for the task.
@@ -49,6 +51,25 @@ Fix in this order:
 4. `route-near-miss` where a small routing heuristic can improve first file
    selection.
 5. `route-hit` reports that only need evidence aggregation.
+
+## External Beta Intake
+
+For non-maintainer feedback, prefer:
+
+```bash
+scripts/external-beta-trial.sh /path/to/repo \
+  --task "<reported task>" \
+  --output-dir /tmp/codeinsight-external-beta-trial
+```
+
+The generated `issue-body.md` is the copyable report. The generated
+`redaction-checklist.md` is required for private repositories, and
+`maintainer-triage.md` keeps the first classification step explicit.
+
+External users may start with `needs_triage` when they cannot confidently
+choose a route outcome. Maintainers should replace it with `route_hit`,
+`route_near_miss`, `route_miss`, `workflow_friction`, or `overtrust_risk`
+after reproducing or reviewing the attached evidence.
 
 ## MCP First-Call Checks
 

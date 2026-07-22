@@ -6,6 +6,7 @@ use crate::model::Language;
 
 pub fn detect_language(path: &Path) -> Option<Language> {
     match path.extension().and_then(|value| value.to_str()) {
+        Some("bash") | Some("sh") => Some(Language::Bash),
         Some("c") | Some("h") => Some(Language::C),
         Some("cc") | Some("cpp") | Some("cxx") | Some("hh") | Some("hpp") | Some("hxx") => {
             Some(Language::Cpp)
@@ -26,6 +27,7 @@ pub fn detect_language(path: &Path) -> Option<Language> {
 
 pub fn tree_sitter_language(language: Language) -> TsLanguage {
     match language {
+        Language::Bash => tree_sitter_bash::LANGUAGE.into(),
         Language::C => tree_sitter_c::LANGUAGE.into(),
         Language::Cpp => tree_sitter_cpp::LANGUAGE.into(),
         Language::CSharp => tree_sitter_c_sharp::LANGUAGE.into(),

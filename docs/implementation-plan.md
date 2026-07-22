@@ -309,6 +309,7 @@ Java、C/C++、C#、PHP 和 Ruby 已作为语法级基础索引语言纳入当�
 - C / C++
 - C#
 - PHP 或 Ruby
+- Bash / Shell 脚本
 
 ## 7. 长期规划
 

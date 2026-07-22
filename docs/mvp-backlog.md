@@ -19,6 +19,7 @@ Current MVP supported languages:
 - C#
 - PHP
 - Ruby
+- Bash / Shell scripts
 
 Rust is included early so the project can index itself during development.
 
@@ -166,7 +167,8 @@ Rust is included early so the project can index itself during development.
 ### v0.3.0
 
 - Basic call graph available.
-- More robust TypeScript, Python, Go, Rust, Java, C/C++, C#, PHP, and Ruby extraction.
+- More robust TypeScript, Python, Go, Rust, Java, C/C++, C#, PHP, Ruby, and
+  Bash/Shell extraction.
 - Benchmark report for token/context reduction.
 
 ### Release Readiness

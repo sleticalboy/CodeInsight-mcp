@@ -2753,6 +2753,7 @@ fn parse_symbol_kind(kind: &str) -> SymbolKind {
 
 fn parse_language(language: &str) -> Language {
     match language {
+        "bash" => Language::Bash,
         "c" => Language::C,
         "cpp" => Language::Cpp,
         "csharp" => Language::CSharp,

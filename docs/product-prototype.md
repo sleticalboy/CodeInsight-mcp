@@ -79,6 +79,7 @@ MVP 不追求“支持最多语言”，而追求“核心场景闭环可用”�
 - C#
 - PHP
 - Ruby
+- Bash / Shell scripts
 
 这些语言用于验证跨语言仓库中的 first-read 路由、文件大纲、依赖关系、引用查找、调用关系和上下文压缩。精度目标是 Agent 导航可用，不承诺 compiler-grade 或 LSP-grade 的完整语义分析。
 

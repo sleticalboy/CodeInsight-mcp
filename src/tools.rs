@@ -5661,6 +5661,9 @@ fn is_test_source_file(file: &str) -> bool {
         || normalized.ends_with("_test.rb")
         || normalized.ends_with("_test.php")
         || normalized.ends_with("_test.rs")
+        || normalized.ends_with("_smoke.sh")
+        || normalized.ends_with("-smoke.sh")
+        || normalized.ends_with(".smoke.sh")
         || normalized.ends_with("_spec.rb")
         || normalized.ends_with("test.java")
         || normalized.ends_with("test.cs")
@@ -6614,11 +6617,10 @@ fn auto_context_seed_files(
     let task_symbol_matches = auto_seed_task_symbol_matches(store, task_keywords)?;
     let mut candidates = BTreeMap::<String, AutoSeedCandidate>::new();
 
-    for entrypoint in overview
-        .entrypoints
-        .iter()
-        .filter(|entrypoint| auto_seed_role_allowed(&entrypoint.role, task_keywords))
-    {
+    for entrypoint in overview.entrypoints.iter().filter(|entrypoint| {
+        auto_seed_role_allowed(&entrypoint.role, task_keywords)
+            && auto_seed_role_allowed(auto_seed_file_role(&entrypoint.file), task_keywords)
+    }) {
         let matched_keywords = auto_seed_matched_keywords(
             &entrypoint.file,
             entrypoint.symbol.as_deref(),
@@ -9983,6 +9985,7 @@ fn normalize_dependency_languages(languages: &[String]) -> Result<Vec<String>> {
 fn normalize_dependency_language(language: &str) -> Result<String> {
     let normalized = language.trim().to_ascii_lowercase();
     let normalized = match normalized.as_str() {
+        "shell" | "sh" => "bash",
         "js" => "javascript",
         "ts" => "typescript",
         "c++" => "cpp",
@@ -9990,6 +9993,7 @@ fn normalize_dependency_language(language: &str) -> Result<String> {
         value => value,
     };
     let allowed = [
+        Language::Bash,
         Language::C,
         Language::Cpp,
         Language::CSharp,
@@ -11169,6 +11173,9 @@ fn is_low_value_reference_file(file: &str) -> bool {
         || normalized.ends_with("_test.rb")
         || normalized.ends_with("_test.php")
         || normalized.ends_with("_test.rs")
+        || normalized.ends_with("_smoke.sh")
+        || normalized.ends_with("-smoke.sh")
+        || normalized.ends_with(".smoke.sh")
         || normalized.ends_with("_spec.rb")
         || normalized.ends_with("test.java")
         || normalized.ends_with("test.cs")

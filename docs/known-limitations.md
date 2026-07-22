@@ -22,6 +22,7 @@ These capabilities are expected to be reliable for common source files in suppor
   - C# classes, interfaces, structs, enums, records, methods, constructors, properties, fields, using directives, and basic calls.
   - PHP classes, interfaces, traits, enums, functions, methods, properties, constants, namespace use declarations, and basic calls.
   - Ruby classes, modules, methods, singleton methods, constants, require directives, and basic calls.
+  - Bash/Shell function definitions and basic same-file command calls.
 - Caching indexed files by content hash.
 - Skipping unchanged files during incremental indexing.
 - Removing stale index records for deleted files.
@@ -154,7 +155,12 @@ Limitations:
 
 ### `callers` and `callees`
 
-`callers` and `callees` use a static call graph extracted from call expressions and Java method invocations. Same-file calls are recorded by normalized callee name; non-JavaScript and non-TypeScript same-file calls can also receive a `callee_file` hint when the callee matches a symbol declared in the current file. JavaScript, TypeScript, Python, Rust, Go, Java, C#, PHP, Ruby, C, and C++ calls can receive a `callee_file` hint when an obvious local import/export/include edge resolves to an indexed file with a matching symbol.
+`callers` and `callees` use a static call graph extracted from call expressions, Java method invocations, and Bash command nodes. Same-file calls are recorded by normalized callee name; non-JavaScript and non-TypeScript same-file calls can also receive a `callee_file` hint when the callee matches a symbol declared in the current file. JavaScript, TypeScript, Python, Rust, Go, Java, C#, PHP, Ruby, Bash, C, and C++ calls can receive a `callee_file` hint when the callee is same-file or when an obvious local import/export/include edge resolves to an indexed file with a matching symbol.
+
+Bash/Shell support is intentionally narrow: CodeInsight indexes `.sh` and
+`.bash` files, extracts shell functions, and records straightforward command
+calls. It does not resolve `source`, `. file`, PATH lookups, shell aliases,
+dynamic command construction, or environment-dependent script dispatch yet.
 
 Currently supported JavaScript/TypeScript imported target hints:
 
@@ -207,6 +213,7 @@ Current MVP support:
 - C#
 - PHP
 - Ruby
+- Bash / Shell scripts
 
 Rust support exists partly so the project can index itself during development.
 

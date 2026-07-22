@@ -39,7 +39,8 @@ bundle, and MCP first-call checks work on real repositories.
 ## Open Follow-Ups
 
 - Collect at least three non-maintainer external user reports through the
-  GitHub `Adoption feedback` issue form.
+  GitHub `Adoption feedback` issue form or the
+  [External Beta trial](external-beta-trial.md) wrapper.
 - Add one frontend or TypeScript routing adoption case that is small enough for
   the 10-minute Alpha trial path.
 - For every `route_miss` or `route_near_miss`, decide whether the fix belongs
@@ -54,6 +55,10 @@ scripts/adoption-evidence.sh /path/to/repo \
   --output-dir /tmp/codeinsight-adoption-evidence \
   --print-snippet \
   --issue-template
+
+scripts/external-beta-trial.sh /path/to/repo \
+  --task "<reported task>" \
+  --output-dir /tmp/codeinsight-external-beta-trial
 
 scripts/update-adoption-cases.sh --check
 scripts/docs-smoke.sh

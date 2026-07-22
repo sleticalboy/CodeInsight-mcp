@@ -389,6 +389,7 @@ fn has_descendant_kind(node: Node<'_>, kind: &str) -> bool {
 
 fn is_call_node(node: Node<'_>, language: Language) -> bool {
     match language {
+        Language::Bash => node.kind() == "command",
         Language::C
         | Language::Cpp
         | Language::Go
@@ -418,6 +419,9 @@ fn is_call_node(node: Node<'_>, language: Language) -> bool {
 }
 
 fn call_target_text(node: Node<'_>, source: &[u8], language: Language) -> Option<String> {
+    if language == Language::Bash {
+        return child_text(node, "name", source);
+    }
     if language == Language::Php
         && let Some(target) = php_call_target_text(node, source)
     {
@@ -519,6 +523,9 @@ fn csharp_call_target_text(node: Node<'_>, source: &[u8]) -> Option<String> {
 }
 
 fn normalize_callee(raw: &str, language: Language) -> Option<String> {
+    if language == Language::Bash {
+        return normalize_bash_callee(raw);
+    }
     if matches!(
         language,
         Language::JavaScript | Language::TypeScript | Language::Tsx
@@ -548,6 +555,24 @@ fn normalize_callee(raw: &str, language: Language) -> Option<String> {
     }
 
     normalize_simple_callee(raw)
+}
+
+fn normalize_bash_callee(raw: &str) -> Option<String> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() || trimmed.starts_with('$') {
+        return None;
+    }
+    let name = trimmed.rsplit('/').next().unwrap_or(trimmed);
+    let name =
+        name.trim_matches(|ch: char| matches!(ch, '"' | '\'' | '`') || ch.is_ascii_whitespace());
+    if name.is_empty()
+        || name
+            .chars()
+            .any(|ch| !(ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.')))
+    {
+        return None;
+    }
+    Some(name.to_string())
 }
 
 fn normalize_javascript_callee(raw: &str) -> Option<String> {
@@ -1072,6 +1097,7 @@ fn dependencies_from_node(
     javascript_bindings: Option<&HashMap<String, String>>,
 ) -> Vec<Dependency> {
     match language {
+        Language::Bash => Vec::new(),
         Language::C | Language::Cpp => c_like_dependencies(node, source, language, source_file),
         Language::CSharp => csharp_dependencies(node, source, language, source_file),
         Language::Php => php_dependencies(node, source, language, source_file),
@@ -2880,6 +2906,7 @@ fn resolve_dependency(
     package_conditions: &[String],
 ) -> Option<String> {
     match dependency.language {
+        Language::Bash => None,
         Language::JavaScript | Language::TypeScript | Language::Tsx => {
             resolve_javascript_like_target(root, dependency, package_conditions)
         }
@@ -5456,6 +5483,7 @@ fn symbol_from_node(
     language: Language,
 ) -> Option<(String, SymbolKind)> {
     match language {
+        Language::Bash => bash_symbol(node, source),
         Language::C | Language::Cpp => c_like_symbol(node, source),
         Language::CSharp => csharp_symbol(node, source),
         Language::Php => php_symbol(node, source),
@@ -5467,6 +5495,15 @@ fn symbol_from_node(
         Language::JavaScript | Language::TypeScript | Language::Tsx => {
             javascript_like_symbol(node, source)
         }
+    }
+}
+
+fn bash_symbol(node: Node<'_>, source: &[u8]) -> Option<(String, SymbolKind)> {
+    match node.kind() {
+        "function_definition" => {
+            child_text(node, "name", source).map(|name| (name, SymbolKind::Function))
+        }
+        _ => None,
     }
 }
 

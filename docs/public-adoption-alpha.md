@@ -77,6 +77,10 @@ platform.
 
 6. File feedback using [Public adoption feedback template](public-adoption-feedback-template.md).
 
+For non-maintainer Beta feedback, prefer the wrapper in
+[External Beta trial](external-beta-trial.md). It generates the same underlying
+evidence plus an issue body, redaction checklist, and maintainer triage note.
+
 ## Agent Prompt
 
 Use this prompt in Codex, Claude Code, Cursor, or another MCP client:
@@ -137,6 +141,7 @@ Current Alpha Feedback Loop documents:
 
 - [Alpha feedback triage](alpha-feedback-triage.md)
 - [Alpha trial log](alpha-trial-log.md)
+- [External Beta trial](external-beta-trial.md)
 - GitHub `Adoption feedback` issue form under `.github/ISSUE_TEMPLATE/`
 
 Current maintainer-run Alpha trial issues:

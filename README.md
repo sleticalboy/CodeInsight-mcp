@@ -120,6 +120,7 @@ hands the agent to precise local tools when the selected context is not enough.
    | MCP wiring | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/mcp-first-call-smoke.sh` | You want a compact JSON proof that stdio MCP accepts `agent_route`, returns the first context file, follows `reading_plan[]`, exposes read-less metrics, selection rank, and continuation evidence, runs the current step's suggested tool, includes impact suggested checks, and returns a structured `blocked_no_seed` route for empty repositories. |
    | Installed adoption | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh` | You want the installed binary to pass CLI `agent-route`, MCP stdio, and MCP `agent_route` against a temporary project with read-less, selection-rank, and continuation evidence. |
    | Local evidence | `scripts/adoption-evidence.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-evidence --print-snippet --issue-template` | You want one folder with local first-read evidence, raw route JSON, MCP first-call JSON, aggregate Markdown/JSON summaries, a copyable terminal snippet, and a ready-to-file issue template. |
+   | External Beta trial | `scripts/external-beta-trial.sh /path/to/repo --output-dir /tmp/codeinsight-external-beta-trial` | You want a non-maintainer trial pack with an issue body, redaction checklist, maintainer triage note, and the underlying adoption evidence artifacts. |
    | Adoption comparison | `scripts/adoption-comparison.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-comparison` | You want a shareable blind-read vs routed-first-read comparison showing source lines avoided, read-less ratio, seed strategy, first reading focus/question, selection rank, and continuation next action. |
    | Handoff report | `scripts/adoption-report.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-report --print-snippet` | You want a tar.gz report containing the evidence summaries, issue template, raw JSON, and diagnostic logs for upload or handoff. |
 
@@ -313,6 +314,19 @@ README automation, or issue templates need the same result without parsing
 Markdown; it includes `first_read_gating` for selected-context, continuation,
 and impact-review ordering.
 
+For non-maintainer feedback, use the external Beta wrapper:
+
+```bash
+scripts/external-beta-trial.sh /path/to/repo \
+  --task "understand the main application entrypoint" \
+  --output-dir /tmp/codeinsight-external-beta-trial
+```
+
+It writes `issue-body.md`, `beta-summary.json`, `redaction-checklist.md`, and
+`maintainer-triage.md` beside the underlying adoption evidence. External users
+can choose `needs_triage` when they are unsure whether the result is a
+`route_hit`, `route_miss`, or workflow issue.
+
 Use `scripts/adoption-report.sh` when you need one uploadable archive. It writes
 `codeinsight-adoption-report.tar.gz` with `adoption-evidence.md`,
 `issue-template.md`, `summary.json`, raw route JSON, MCP first-call JSON, a
@@ -372,6 +386,7 @@ Key docs:
 - [Documentation index](docs/README.md)
 - [MVP public readiness](docs/mvp-public-readiness.md)
 - [Public Adoption Alpha](docs/public-adoption-alpha.md)
+- [External Beta trial](docs/external-beta-trial.md)
 - [Alpha feedback triage](docs/alpha-feedback-triage.md)
 - [Alpha trial log](docs/alpha-trial-log.md)
 - [Public adoption feedback template](docs/public-adoption-feedback-template.md)
@@ -388,8 +403,8 @@ Latest verified release: `v0.1.12`.
 Current public route-quality evidence passes `86/86` first-file checks and
 selects 41,455 of 7,098,531 task source lines.
 
-Next focus: expand from maintainer-run Alpha trial issues to non-maintainer
-external feedback, then fix the highest priority route miss or workflow
+Next focus: use the external Beta trial wrapper to collect at least three
+non-maintainer reports, then fix the highest priority route miss or workflow
 friction.
 See [Current status](docs/status.md) for the full implemented capability list.
 

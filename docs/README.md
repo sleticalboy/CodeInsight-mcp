@@ -18,6 +18,7 @@ Default adoption path:
 - [Adoption checklist](adoption-checklist.md)
 - [MVP public readiness](mvp-public-readiness.md)
 - [Public Adoption Alpha](public-adoption-alpha.md)
+- [External Beta trial](external-beta-trial.md)
 - [Alpha feedback triage](alpha-feedback-triage.md)
 - [Alpha trial log](alpha-trial-log.md)
 - [Public adoption feedback template](public-adoption-feedback-template.md)
@@ -83,6 +84,7 @@ Choose the check by adoption stage:
 | Copyable MCP first-call JSON | `scripts/mcp-first-call-smoke.sh` |
 | MCP client wiring | `scripts/mcp-stdio-smoke.sh` |
 | Installed-binary adoption gate | `scripts/installed-quickstart-smoke.sh` |
+| External Beta trial pack | `scripts/external-beta-trial.sh /path/to/repo --output-dir /tmp/codeinsight-external-beta-trial` |
 | Adoption comparison evidence | `scripts/adoption-comparison.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-comparison` |
 | Uploadable adoption report | `scripts/adoption-report.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-report` |
 | Local task routing matrix | `scripts/task-routing-matrix.sh /path/to/repo --expect-file ./route-expectations.tsv` |
@@ -91,6 +93,7 @@ Choose the check by adoption stage:
 
 - [MVP public readiness](mvp-public-readiness.md)
 - [Public Adoption Alpha](public-adoption-alpha.md)
+- [External Beta trial](external-beta-trial.md)
 - [Alpha feedback triage](alpha-feedback-triage.md)
 - [Alpha trial log](alpha-trial-log.md)
 - [Public adoption feedback template](public-adoption-feedback-template.md)

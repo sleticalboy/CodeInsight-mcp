@@ -6,6 +6,7 @@ use serde_json::Value;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Language {
+    Bash,
     C,
     Cpp,
     #[serde(rename = "csharp")]
@@ -26,6 +27,7 @@ pub enum Language {
 impl Language {
     pub fn as_str(self) -> &'static str {
         match self {
+            Self::Bash => "bash",
             Self::C => "c",
             Self::Cpp => "cpp",
             Self::CSharp => "csharp",
