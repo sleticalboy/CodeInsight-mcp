@@ -98,10 +98,11 @@ scripts/task-routing-matrix.sh /path/to/repo \
 
 For longer matrices, put the expectations in a file. Line-based files can use
 `TASK=FILE` or tab-separated `TASK<TAB>FILE` rows. TSV rows can also include
-per-task explicit seeds as columns 3 and 4:
+per-task explicit seeds as columns 3 and 4, plus optional seed evidence checks
+as columns 5 and 6:
 
 ```text
-TASK<TAB>EXPECTED_FIRST_FILE<TAB>SEED_FILE<TAB>SEED_SYMBOL
+TASK<TAB>EXPECTED_FIRST_FILE<TAB>SEED_FILE<TAB>SEED_SYMBOL<TAB>EXPECTED_SEED_STRATEGY<TAB>EXPECTED_FIRST_SEED_VALUE
 ```
 
 ```text
@@ -128,6 +129,7 @@ understand documentation usage	docs/usage.ts
 understand request lifecycle before after request handling	src/application.ts
 understand middleware behavior	src/middleware.ts
 improve AI agent first-read routing quality evidence	src/agent_workflow.ts
+inspect src/auth.ts before editing login behavior	src/auth.ts			auto_task_path	src/auth.ts
 ```
 
 Then run:
@@ -145,14 +147,24 @@ JSON expectation files are also supported:
     "task": "understand routing behavior",
     "expected_first_file": "src/router.ts",
     "seed_file": "src/router.ts",
-    "seed_symbol": "createRouter"
+    "seed_symbol": "createRouter",
+    "expected_seed_strategy": "explicit",
+    "expected_first_seed_value": "createRouter"
+  },
+  {
+    "task": "inspect src/auth.ts before editing login behavior",
+    "expected_first_file": "src/auth.ts",
+    "expected_seed_strategy": "auto_task_path",
+    "expected_first_seed_value": "src/auth.ts"
   }
 ]
 ```
 
 Expectation files automatically add their tasks to the matrix. Per-task seeds
 are passed only to their own route. Global `--file` and `--symbol` seeds are
-still applied to every task.
+still applied to every task. `expected_seed_strategy` and
+`expected_first_seed_value` are assertions only; they let CI prove automatic
+task-path seed selection without passing an explicit seed.
 Expectation failures return a non-zero exit code after writing the summary, so
 the failed expected/actual pair is still available as an artifact.
 
@@ -245,6 +257,10 @@ When `--expect` or `--expect-file` is used, it also includes:
 - `expectations.checks[].task`
 - `expectations.checks[].expected_first_file`
 - `expectations.checks[].actual_first_file`
+- `expectations.checks[].expected_seed_strategy`
+- `expectations.checks[].actual_seed_strategy`
+- `expectations.checks[].expected_first_seed_value`
+- `expectations.checks[].actual_first_seed_value`
 - `expectations.checks[].status`
 
 ## Example

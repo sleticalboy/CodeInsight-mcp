@@ -7398,7 +7398,7 @@ fn context_binding_validation_source_score(file: &str, score: i32) -> i32 {
     context_priority_source_score(
         file,
         score,
-        auto_seed_binding_validation_file_priority(file),
+        auto_seed_binding_validation_file_priority_for_task(file, &[]),
     )
 }
 
@@ -7861,8 +7861,11 @@ fn auto_context_seed_files(
                 .then_with(|| right.score.cmp(&left.score))
                 .then_with(|| left.file.cmp(&right.file))
         } else if binding_validation_task {
-            auto_seed_binding_validation_file_priority(&right.file)
-                .cmp(&auto_seed_binding_validation_file_priority(&left.file))
+            auto_seed_binding_validation_file_priority_for_task(&right.file, task_keywords)
+                .cmp(&auto_seed_binding_validation_file_priority_for_task(
+                    &left.file,
+                    task_keywords,
+                ))
                 .then_with(|| right.score.cmp(&left.score))
                 .then_with(|| left.file.cmp(&right.file))
         } else if import_resolution_task {
@@ -8011,8 +8014,10 @@ fn auto_context_seed_files(
                             && (!file_parsing_task
                                 || auto_seed_file_parsing_file_priority(&entrypoint.file) >= 0)
                             && (!binding_validation_task
-                                || auto_seed_binding_validation_file_priority(&entrypoint.file)
-                                    >= 0)
+                                || auto_seed_binding_validation_file_priority_for_task(
+                                    &entrypoint.file,
+                                    task_keywords,
+                                ) >= 0)
                             && (!import_resolution_task
                                 || auto_seed_import_resolution_file_priority(&entrypoint.file) >= 0)
                     })
@@ -8426,6 +8431,28 @@ fn auto_seed_task_focus_boost(
             score += 1900;
         } else if framework_file_match {
             score += 1400;
+        }
+    }
+
+    if auto_seed_binding_validation_task(task_keywords) {
+        let priority = auto_seed_binding_validation_file_priority_for_task(file, task_keywords);
+        let symbol_validation_match = symbol
+            .map(|symbol| {
+                auto_seed_field_matches(symbol, "validation")
+                    || auto_seed_field_matches(symbol, "validator")
+                    || auto_seed_field_matches(symbol, "schema")
+                    || auto_seed_field_matches(symbol, "json")
+                    || auto_seed_field_matches(symbol, "binding")
+            })
+            .unwrap_or(false);
+
+        if priority >= 240 {
+            score += 2400;
+        } else if priority >= 160 {
+            score += 1200;
+        }
+        if symbol_validation_match {
+            score += 900;
         }
     }
 
@@ -10185,7 +10212,10 @@ fn auto_seed_priority_routed_file_priority(file: &str, task_keywords: &[String])
         priority = priority.max(auto_seed_file_parsing_file_priority(file));
     }
     if auto_seed_binding_validation_task(task_keywords) {
-        priority = priority.max(auto_seed_binding_validation_file_priority(file));
+        priority = priority.max(auto_seed_binding_validation_file_priority_for_task(
+            file,
+            task_keywords,
+        ));
     }
     if auto_seed_import_resolution_task(task_keywords) {
         priority = priority.max(auto_seed_import_resolution_file_priority(file));
@@ -10872,36 +10902,80 @@ fn auto_seed_binding_validation_task(task_keywords: &[String]) -> bool {
             "validation" | "validate" | "validator" | "schema" | "schemas"
         )
     });
-    let binding = task_keywords.iter().any(|keyword| {
-        matches!(
-            keyword.as_str(),
-            "binding" | "bindings" | "bind" | "json" | "payload"
-        )
-    });
+    let binding = task_keywords
+        .iter()
+        .any(|keyword| matches!(keyword.as_str(), "binding" | "bindings" | "bind" | "json"));
 
     validation && binding
 }
 
-fn auto_seed_binding_validation_file_priority(file: &str) -> i32 {
+fn auto_seed_binding_validation_file_priority_for_task(
+    file: &str,
+    task_keywords: &[String],
+) -> i32 {
     let normalized = file.replace('\\', "/").to_ascii_lowercase();
     if normalized == "scripts" || normalized.starts_with("scripts/") {
         return -80;
     }
-    if normalized == "docs" || normalized.starts_with("docs/") || is_low_value_reference_file(file)
+    if normalized == "docs"
+        || normalized.starts_with("docs/")
+        || normalized == "docs_src"
+        || normalized.starts_with("docs_src/")
+        || normalized == "examples"
+        || normalized.starts_with("examples/")
     {
+        return -30;
+    }
+
+    let low_value = is_low_value_reference_file(file);
+    let coverage_task = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "test" | "tests" | "testing" | "spec" | "specs" | "coverage" | "regression"
+        )
+    });
+    if low_value && !coverage_task {
         return -30;
     }
 
     let source_file = normalized.starts_with("src/") || normalized.contains("/src/");
     let file_name = normalized.rsplit('/').next().unwrap_or(normalized.as_str());
     let stem = file_name.split('.').next().unwrap_or(file_name);
+    let json_task = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "json" | "serialize" | "serialization" | "deserialize" | "deserialization"
+        )
+    });
+    let validation_task = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "validation" | "validate" | "validator" | "validators" | "schema" | "schemas"
+        )
+    });
 
     let mut priority = if source_file { 20 } else { 0 };
-    if matches!(
-        stem,
-        "validation" | "validator" | "validators" | "schema" | "binding" | "bindings"
-    ) {
-        priority = priority.max(180);
+    if low_value && coverage_task {
+        priority = priority.max(220);
+    }
+    if json_task && auto_seed_field_matches(file, "json") {
+        priority = priority.max(if low_value { 290 } else { 260 });
+    }
+    if validation_task
+        && (auto_seed_field_matches(file, "validation")
+            || auto_seed_field_matches(file, "validator")
+            || auto_seed_field_matches(file, "schema"))
+    {
+        priority = priority.max(if low_value { 285 } else { 250 });
+    }
+    if matches!(stem, "validation" | "validator" | "validators" | "schema") {
+        priority = priority.max(210);
+    }
+    if matches!(stem, "binding" | "bindings") {
+        priority = priority.max(170);
+    }
+    if auto_seed_field_matches(file, "binding") || auto_seed_field_matches(file, "bindings") {
+        priority = priority.max(160);
     }
     if matches!(stem, "mcp") {
         priority = priority.max(130);
@@ -12538,6 +12612,15 @@ mod tests {
         assert!(validation_keywords.contains(&"schema".to_string()));
         assert!(validation_keywords.contains(&"deserialize".to_string()));
 
+        let request_body_validation_keywords =
+            task_keywords("understand fastapi request body validation behavior");
+        assert!(auto_seed_request_body_parsing_task(
+            &request_body_validation_keywords
+        ));
+        assert!(!auto_seed_binding_validation_task(
+            &request_body_validation_keywords
+        ));
+
         let tls_keywords = task_keywords("understand ssl certificate verification behavior");
         assert!(tls_keywords.contains(&"ssl".to_string()));
         assert!(tls_keywords.contains(&"certificate".to_string()));
@@ -12937,6 +13020,43 @@ mod tests {
         assert!(
             auto_seed_response_cookies_file_priority("context.go")
                 > auto_seed_response_cookies_file_priority("response_writer.go")
+        );
+    }
+
+    #[test]
+    fn binding_validation_tasks_prioritize_specific_binding_files() {
+        let validation_keywords = task_keywords("understand binding validation behavior");
+        assert!(auto_seed_binding_validation_task(&validation_keywords));
+        assert!(
+            auto_seed_binding_validation_file_priority_for_task(
+                "binding/default_validator.go",
+                &validation_keywords
+            ) > auto_seed_binding_validation_file_priority_for_task(
+                "binding/binding.go",
+                &validation_keywords
+            )
+        );
+
+        let json_keywords = task_keywords("understand json binding behavior");
+        assert!(auto_seed_binding_validation_task(&json_keywords));
+        assert!(
+            auto_seed_binding_validation_file_priority_for_task("binding/json.go", &json_keywords)
+                > auto_seed_binding_validation_file_priority_for_task(
+                    "binding/default_validator.go",
+                    &json_keywords
+                )
+        );
+
+        let coverage_keywords = task_keywords("understand binding validation test coverage");
+        assert!(auto_seed_binding_validation_task(&coverage_keywords));
+        assert!(
+            auto_seed_binding_validation_file_priority_for_task(
+                "binding/default_validator_test.go",
+                &coverage_keywords
+            ) > auto_seed_binding_validation_file_priority_for_task(
+                "binding/default_validator.go",
+                &coverage_keywords
+            )
         );
     }
 

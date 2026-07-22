@@ -167,6 +167,7 @@ main() {
   require_jq "$summary_json" '.aggregate.total_task_source_lines > .aggregate.total_selected_lines' "aggregate should include source line baseline"
   require_jq "$summary_json" '.aggregate.line_reduction > 0' "aggregate should include line reduction"
   require_jq "$summary_json" '.cases[] | select(.case == "express" and .task_count == 17)' "express case should be present"
+  require_jq "$summary_json" 'all(.cases[].routes[]; (.first_seed_value | type == "string" and length > 0))' "routes should expose first seed values"
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand express application routing behavior" and .first_file == "lib/express.js")' "routing task should choose express entry"
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand middleware behavior" and .first_file == "lib/application.js")' "middleware task should choose application"
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand startup flow" and .first_file == "index.js")' "startup task should choose index"
@@ -193,6 +194,8 @@ main() {
     fail "terminal output should include first file summary"
   grep -Fq "## Evidence Summary" "$output_dir/public-task-routing-matrix.md" ||
     fail "markdown output should include evidence summary"
+  grep -Fq '| Task | First file | Focus | Question | Suggested tool | Seed strategy | First seed | Reduction | Tokens | Impact |' "$output_dir/public-task-routing-matrix.md" ||
+    fail "markdown output should include first seed column"
 
   echo "public task routing matrix smoke passed"
 }

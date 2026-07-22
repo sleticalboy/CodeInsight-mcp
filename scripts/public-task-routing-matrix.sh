@@ -342,6 +342,7 @@ run_case() {
         first_next_action,
         first_suggested_tool,
         seed_strategy,
+        first_seed_value,
         total_lines,
         line_reduction,
         estimated_tokens,
@@ -391,7 +392,8 @@ write_summary() {
         and (.expectation_count | type == "number")
         and (.expectation_count == .task_count)
         and (.routes | type == "array" and length > 0)
-        and all(.routes[]; (.first_suggested_tool | type == "string" and length > 0)))' \
+        and all(.routes[]; (.first_suggested_tool | type == "string" and length > 0)
+          and (.first_seed_value | type == "string" and length > 0)))' \
     "$SUMMARY_JSON" >/dev/null ||
     fail "aggregate summary JSON does not match the public matrix contract"
 }
@@ -423,10 +425,10 @@ write_markdown() {
     echo
     jq -r '.cases[] as $case |
       "### " + $case.case + "\n\n" +
-      "| Task | First file | Focus | Question | Suggested tool | Seed strategy | Reduction | Tokens | Impact |\n" +
-      "| --- | --- | --- | --- | --- | --- | ---: | ---: | ---: |\n" +
+      "| Task | First file | Focus | Question | Suggested tool | Seed strategy | First seed | Reduction | Tokens | Impact |\n" +
+      "| --- | --- | --- | --- | --- | --- | --- | ---: | ---: | ---: |\n" +
       ($case.routes | map(
-        "| \(.task) | `\(.first_file)` | \(.first_reading_focus | gsub("\\|"; "\\|")) | \(.first_reading_question | gsub("\\|"; "\\|")) | `\(.first_suggested_tool)` | `\(.seed_strategy)` | `\(.line_reduction)` | `\(.estimated_tokens)` | `\(.risk_level) / \(.impacted_files)` |"
+        "| \(.task) | `\(.first_file)` | \(.first_reading_focus | gsub("\\|"; "\\|")) | \(.first_reading_question | gsub("\\|"; "\\|")) | `\(.first_suggested_tool)` | `\(.seed_strategy)` | `\(.first_seed_value)` | `\(.line_reduction)` | `\(.estimated_tokens)` | `\(.risk_level) / \(.impacted_files)` |"
       ) | join("\n")) +
       "\n"' "$SUMMARY_JSON"
     echo "## Artifacts"

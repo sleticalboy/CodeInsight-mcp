@@ -37,7 +37,8 @@ Options:
   --expect TASK=FILE    Assert that TASK selects FILE as the first file. Can be repeated.
   --expect-file PATH    Read expectations from PATH and add those tasks to the matrix.
                         Supports JSON array objects or line-based TASK=FILE / TSV.
-                        TSV columns 3 and 4 are optional seed_file and seed_symbol.
+                        TSV columns 3-6 are optional seed_file, seed_symbol,
+                        expected_seed_strategy, and expected_first_seed_value.
   --bin PATH            Use a specific codeinsight binary.
   --no-force-index      Reuse the existing index for the first task too.
   -h, --help            Show this help text.
@@ -227,7 +228,7 @@ add_expectation() {
     fail "expectation must include non-empty task and file: $expectation"
   fi
   add_task "$task"
-  EXPECTATIONS+=("$task=$expected")
+  EXPECTATIONS+=("$task"$'\t'"$expected"$'\t\t')
 }
 
 add_expectation_with_seeds() {
@@ -235,16 +236,20 @@ add_expectation_with_seeds() {
   local expected="$2"
   local seed_file="${3:-}"
   local seed_symbol="${4:-}"
+  local expected_seed_strategy="${5:-}"
+  local expected_first_seed_value="${6:-}"
 
   if [ -z "$task" ] || [ -z "$expected" ]; then
     fail "expectation must include non-empty task and file"
   fi
-  add_expectation "$task=$expected"
+  add_task "$task"
+  EXPECTATIONS+=("$task"$'\t'"$expected"$'\t'"$expected_seed_strategy"$'\t'"$expected_first_seed_value")
   set_task_seed "$task" "$seed_file" "$seed_symbol"
 }
 
 load_expectation_file() {
   local file="$1"
+  local line
 
   if [ ! -f "$file" ]; then
     fail "expectation file does not exist: $file"
@@ -257,25 +262,28 @@ load_expectation_file() {
         and all(.[]; (.task | type == "string" and length > 0)
           and (((.expected_first_file // .first_file) | type == "string") and ((.expected_first_file // .first_file) | length > 0))
           and ((.seed_file // "") | type == "string")
-          and ((.seed_symbol // "") | type == "string"))
+          and ((.seed_symbol // "") | type == "string")
+          and ((.expected_seed_strategy // "") | type == "string")
+          and ((.expected_first_seed_value // .first_seed_value // "") | type == "string"))
       ' "$file" >/dev/null ||
-        fail "JSON expectation file must be an array of objects with task and expected_first_file or first_file, plus optional seed_file and seed_symbol: $file"
-      while IFS=$'\t' read -r task expected seed_file seed_symbol; do
-        add_expectation_with_seeds "$task" "$expected" "$seed_file" "$seed_symbol"
-      done < <(jq -r '.[] | [.task, (.expected_first_file // .first_file), (.seed_file // ""), (.seed_symbol // "")] | @tsv' "$file")
+        fail "JSON expectation file must be an array of objects with task and expected_first_file or first_file, plus optional seed_file, seed_symbol, expected_seed_strategy, and expected_first_seed_value: $file"
+      while IFS= read -r line; do
+        split_tsv_row "$line" task expected seed_file seed_symbol expected_seed_strategy expected_first_seed_value
+        add_expectation_with_seeds "$task" "$expected" "$seed_file" "$seed_symbol" "$expected_seed_strategy" "$expected_first_seed_value"
+      done < <(jq -r '.[] | [.task, (.expected_first_file // .first_file), (.seed_file // ""), (.seed_symbol // ""), (.expected_seed_strategy // ""), (.expected_first_seed_value // .first_seed_value // "")] | @tsv' "$file")
       ;;
     *)
-      local line task expected seed_file seed_symbol extra
+      local task expected seed_file seed_symbol expected_seed_strategy expected_first_seed_value extra
       while IFS= read -r line || [ -n "$line" ]; do
         case "$line" in
           ''|'#'*) continue ;;
         esac
         if [[ "$line" == *$'\t'* ]]; then
-          IFS=$'\t' read -r task expected seed_file seed_symbol extra <<<"$line"
+          split_tsv_row "$line" task expected seed_file seed_symbol expected_seed_strategy expected_first_seed_value extra
           if [ -n "${extra:-}" ]; then
-            fail "TSV expectation rows support at most four columns: $line"
+            fail "TSV expectation rows support at most six columns: $line"
           fi
-          add_expectation_with_seeds "$task" "$expected" "${seed_file:-}" "${seed_symbol:-}"
+          add_expectation_with_seeds "$task" "$expected" "${seed_file:-}" "${seed_symbol:-}" "${expected_seed_strategy:-}" "${expected_first_seed_value:-}"
         else
           add_expectation "$line"
         fi
@@ -316,6 +324,16 @@ read_less_ratio() {
       printf "%.1fx", baseline / routed
     }
   }'
+}
+
+split_tsv_row() {
+  local row="$1"
+  local separator=$'\034'
+  local converted
+  shift
+
+  converted="${row//$'\t'/$separator}"
+  IFS="$separator" read -r "$@" <<<"$converted"
 }
 
 build_binary_if_needed() {
@@ -480,21 +498,28 @@ validate_expectations() {
     return
   fi
 
-  local expectations_jsonl expectations_json expectation task expected actual status tmp failures
+  local expectations_jsonl expectations_json expectation task expected expected_seed_strategy expected_first_seed_value
+  local actual actual_seed_strategy actual_first_seed_value status tmp failures
   expectations_jsonl="$OUTPUT_DIR/expectations.jsonl"
   expectations_json="$OUTPUT_DIR/expectations.json"
   : >"$expectations_jsonl"
 
   for expectation in "${EXPECTATIONS[@]}"; do
-    case "$expectation" in
-      *=*)
-        task="${expectation%%=*}"
-        expected="${expectation#*=}"
-        ;;
-      *)
-        fail "--expect must use TASK=FILE: $expectation"
-        ;;
-    esac
+    if [[ "$expectation" == *$'\t'* ]]; then
+      split_tsv_row "$expectation" task expected expected_seed_strategy expected_first_seed_value
+    else
+      case "$expectation" in
+        *=*)
+          task="${expectation%%=*}"
+          expected="${expectation#*=}"
+          expected_seed_strategy=""
+          expected_first_seed_value=""
+          ;;
+        *)
+          fail "--expect must use TASK=FILE: $expectation"
+          ;;
+      esac
+    fi
     if [ -z "$task" ] || [ -z "$expected" ]; then
       fail "--expect must include non-empty task and file: $expectation"
     fi
@@ -504,7 +529,13 @@ validate_expectations() {
     if [ -z "$actual" ]; then
       fail "--expect task was not run: $task"
     fi
-    if [ "$actual" = "$expected" ]; then
+    actual_seed_strategy="$(jq -r --arg task "$task" \
+      '.tasks[] | select(.task == $task) | .seed_strategy' "$SUMMARY_JSON")"
+    actual_first_seed_value="$(jq -r --arg task "$task" \
+      '.tasks[] | select(.task == $task) | .first_seed_value' "$SUMMARY_JSON")"
+    if [ "$actual" = "$expected" ] &&
+      { [ -z "${expected_seed_strategy:-}" ] || [ "$actual_seed_strategy" = "$expected_seed_strategy" ]; } &&
+      { [ -z "${expected_first_seed_value:-}" ] || [ "$actual_first_seed_value" = "$expected_first_seed_value" ]; }; then
       status="pass"
     else
       status="fail"
@@ -513,11 +544,19 @@ validate_expectations() {
       --arg task "$task" \
       --arg expected_first_file "$expected" \
       --arg actual_first_file "$actual" \
+      --arg expected_seed_strategy "${expected_seed_strategy:-}" \
+      --arg actual_seed_strategy "$actual_seed_strategy" \
+      --arg expected_first_seed_value "${expected_first_seed_value:-}" \
+      --arg actual_first_seed_value "$actual_first_seed_value" \
       --arg status "$status" \
       '{
         task: $task,
         expected_first_file: $expected_first_file,
         actual_first_file: $actual_first_file,
+        expected_seed_strategy: (if $expected_seed_strategy == "" then null else $expected_seed_strategy end),
+        actual_seed_strategy: $actual_seed_strategy,
+        expected_first_seed_value: (if $expected_first_seed_value == "" then null else $expected_first_seed_value end),
+        actual_first_seed_value: $actual_first_seed_value,
         status: $status
       }' >>"$expectations_jsonl"
   done
@@ -535,7 +574,9 @@ validate_expectations() {
   mv "$tmp" "$SUMMARY_JSON"
 
   failures="$(jq -r '.expectations.checks[] | select(.status == "fail") |
-    "- " + .task + ": expected `" + .expected_first_file + "`, got `" + .actual_first_file + "`"' \
+    "- " + .task + ": expected `" + .expected_first_file + "`, got `" + .actual_first_file + "`"
+    + (if .expected_seed_strategy == null then "" else "; expected seed strategy `" + .expected_seed_strategy + "`, got `" + .actual_seed_strategy + "`" end)
+    + (if .expected_first_seed_value == null then "" else "; expected first seed `" + .expected_first_seed_value + "`, got `" + .actual_first_seed_value + "`" end)' \
     "$SUMMARY_JSON")"
   if [ -n "$failures" ]; then
     printf "task routing matrix expectation failures:\n%s\n" "$failures" >&2
@@ -573,10 +614,10 @@ write_markdown() {
       echo
       echo "## Expectations"
       echo
-      echo "| Task | Expected first file | Actual first file | Status |"
-      echo "| --- | --- | --- | --- |"
+      echo "| Task | Expected first file | Actual first file | Expected seed strategy | Actual seed strategy | Expected first seed | Actual first seed | Status |"
+      echo "| --- | --- | --- | --- | --- | --- | --- | --- |"
       jq -r '.expectations.checks[] |
-        "| \(.task) | `\(.expected_first_file)` | `\(.actual_first_file)` | `\(.status)` |"' \
+        "| \(.task) | `\(.expected_first_file)` | `\(.actual_first_file)` | `\((.expected_seed_strategy // "-"))` | `\(.actual_seed_strategy)` | `\((.expected_first_seed_value // "-"))` | `\(.actual_first_seed_value)` | `\(.status)` |"' \
         "$SUMMARY_JSON"
     fi
     echo

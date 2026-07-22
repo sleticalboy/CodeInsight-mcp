@@ -183,7 +183,7 @@ main() {
   TEMP_DIR="$(mktemp -d)"
   trap cleanup EXIT INT TERM
 
-  local repo output_dir summary_json default_output_dir default_summary_json seed_output_dir seed_summary_json seeded_expect_output_dir seeded_expect_summary_json seeded_json_output_dir seeded_json_summary_json bad_output_dir bad_summary_json expectations_tsv seeded_expectations_tsv seeded_expectations_json bad_expectations_json
+  local repo output_dir summary_json default_output_dir default_summary_json seed_output_dir seed_summary_json task_path_output_dir task_path_summary_json seeded_expect_output_dir seeded_expect_summary_json seeded_json_output_dir seeded_json_summary_json bad_output_dir bad_summary_json expectations_tsv seeded_expectations_tsv task_path_expectations_tsv seeded_expectations_json bad_expectations_json
   repo="$TEMP_DIR/repo"
   output_dir="$TEMP_DIR/matrix"
   summary_json="$output_dir/summary.json"
@@ -191,6 +191,8 @@ main() {
   default_summary_json="$default_output_dir/summary.json"
   seed_output_dir="$TEMP_DIR/matrix-seed"
   seed_summary_json="$seed_output_dir/summary.json"
+  task_path_output_dir="$TEMP_DIR/matrix-task-path"
+  task_path_summary_json="$task_path_output_dir/summary.json"
   seeded_expect_output_dir="$TEMP_DIR/matrix-seeded-expect"
   seeded_expect_summary_json="$seeded_expect_output_dir/summary.json"
   seeded_json_output_dir="$TEMP_DIR/matrix-seeded-json"
@@ -199,6 +201,7 @@ main() {
   bad_summary_json="$bad_output_dir/summary.json"
   expectations_tsv="$TEMP_DIR/expectations.tsv"
   seeded_expectations_tsv="$TEMP_DIR/seeded-expectations.tsv"
+  task_path_expectations_tsv="$TEMP_DIR/task-path-expectations.tsv"
   seeded_expectations_json="$TEMP_DIR/seeded-expectations.json"
   bad_expectations_json="$TEMP_DIR/bad-expectations.json"
   create_fixture "$repo"
@@ -227,6 +230,7 @@ understand request lifecycle before after request handling	src/application.ts
 understand middleware behavior	src/middleware.ts
 improve AI agent first-read routing quality evidence	src/agent_workflow.ts'
   write_file "$seeded_expectations_tsv" 'understand the known security sanitizer	src/security.ts	src/security.ts	sanitizeSecurityInput'
+  write_file "$task_path_expectations_tsv" 'inspect src/auth.ts before editing login behavior	src/auth.ts			auto_task_path	src/auth.ts'
   write_file "$seeded_expectations_json" '[
   {
     "task": "understand the known security sanitizer",
@@ -357,6 +361,16 @@ improve AI agent first-read routing quality evidence	src/agent_workflow.ts'
   require_jq "$seed_summary_json" '.tasks[] | select(.task == "understand the known security sanitizer" and .seed_strategy == "explicit" and .first_file == "src/security.ts" and .first_seed_value == "sanitizeSecurityInput")' "seeded matrix should pass explicit seeds to local evidence"
   grep -Fq -- '- Explicit seed files: `src/security.ts`' "$seed_output_dir/task-routing-matrix.md" ||
     fail "seeded matrix markdown should list explicit seed files"
+
+  CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/task-routing-matrix.sh" "$repo" \
+    --output-dir "$task_path_output_dir" \
+    --token-budget 1600 \
+    --expect-file "$task_path_expectations_tsv"
+  require_jq "$task_path_summary_json" '.status == "pass" and .task_count == 1 and .expectations.status == "pass"' "task-path expectation matrix summary should pass"
+  require_jq "$task_path_summary_json" '.tasks[] | select(.task == "inspect src/auth.ts before editing login behavior" and .explicit_seed_file == null and .explicit_seed_symbol == null and .seed_strategy == "auto_task_path" and .first_file == "src/auth.ts" and .first_seed_value == "src/auth.ts")' "task-path expectation should prove automatic path seed selection"
+  require_jq "$task_path_summary_json" '.expectations.checks[] | select(.task == "inspect src/auth.ts before editing login behavior" and .expected_seed_strategy == "auto_task_path" and .actual_seed_strategy == "auto_task_path" and .expected_first_seed_value == "src/auth.ts" and .actual_first_seed_value == "src/auth.ts" and .status == "pass")' "task-path expectation should report seed strategy and first seed evidence"
+  grep -Fq '| inspect src/auth.ts before editing login behavior | `src/auth.ts` | `src/auth.ts` | `auto_task_path` | `auto_task_path` | `src/auth.ts` | `src/auth.ts` | `pass` |' "$task_path_output_dir/task-routing-matrix.md" ||
+    fail "task-path expectation markdown should show expected and actual seed evidence"
 
   CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/task-routing-matrix.sh" "$repo" \
     --output-dir "$seeded_expect_output_dir" \

@@ -5026,6 +5026,44 @@ type BindingBody interface {
 "#,
     )
     .unwrap();
+    std::fs::write(
+        fixture.path().join("binding/default_validator.go"),
+        r#"package binding
+
+// defaultValidator applies binding validation rules after request binding.
+type defaultValidator struct {}
+
+func (v *defaultValidator) ValidateStruct(obj any) error {
+  return nil
+}
+"#,
+    )
+    .unwrap();
+    std::fs::write(
+        fixture.path().join("binding/default_validator_test.go"),
+        r#"package binding
+
+// TestDefaultValidator covers binding validation regressions.
+func TestDefaultValidator(t any) {
+  validator := defaultValidator{}
+  _ = validator.ValidateStruct(nil)
+}
+"#,
+    )
+    .unwrap();
+    std::fs::write(
+        fixture.path().join("binding/json.go"),
+        r#"package binding
+
+// jsonBinding deserializes JSON payloads during request binding.
+type jsonBinding struct {}
+
+func (jsonBinding) BindBody(body []byte, obj any) error {
+  return nil
+}
+"#,
+    )
+    .unwrap();
     std::fs::create_dir_all(fixture.path().join("render")).unwrap();
     std::fs::write(
         fixture.path().join("render/render.go"),
@@ -5097,6 +5135,37 @@ type ResponseWriter interface {
         assert_eq!(
             operation_context["files"][0]["file"], "context.go",
             "task should read framework context first: {task}"
+        );
+    }
+
+    for (task, expected_file) in [
+        (
+            "understand binding validation behavior",
+            "binding/default_validator.go",
+        ),
+        ("understand json binding behavior", "binding/json.go"),
+        (
+            "understand binding validation test coverage",
+            "binding/default_validator_test.go",
+        ),
+    ] {
+        let validation_context = run_json([
+            "context-pack",
+            fixture.path().to_str().unwrap(),
+            "--task",
+            task,
+            "--token-budget",
+            "1600",
+        ]);
+
+        assert_eq!(validation_context["seed_strategy"], "auto_task_match");
+        assert_eq!(
+            validation_context["selected_seeds"][0]["value"], expected_file,
+            "task should start from the specific binding validation file: {task}"
+        );
+        assert_eq!(
+            validation_context["files"][0]["file"], expected_file,
+            "task should read the specific binding validation file first: {task}"
         );
     }
 

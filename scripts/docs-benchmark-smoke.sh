@@ -1383,17 +1383,20 @@ main() {
     'expectations: 86/86' \
     "public task routing matrix expectations evidence"
   require_pattern docs/public-task-routing-matrix.md \
-    'source_lines: 7098531' \
+    'source_lines: 7101630' \
     "public task routing matrix source-line evidence"
   require_pattern docs/public-task-routing-matrix.md \
-    'selected_lines: 41455' \
+    'selected_lines: 40636' \
     "public task routing matrix selected-line evidence"
   require_pattern docs/public-task-routing-matrix.md \
-    'line_reduction: 99\.41%' \
+    'line_reduction: 99\.42%' \
     "public task routing matrix line-reduction evidence"
   require_pattern docs/public-task-routing-matrix.md \
-    'Aggregate line reduction: `99\.41%`' \
+    'Aggregate line reduction: `99\.42%`' \
     "public task routing matrix aggregate line-reduction summary"
+  require_pattern docs/public-task-routing-matrix.md \
+    '\| Task \| First file \| Focus \| Question \| Suggested tool \| Seed strategy \| First seed \| Reduction \| Tokens \| Impact \|' \
+    "public task routing matrix first seed column"
   require_pattern docs/task-routing-matrix.md \
     'pinned Express, FastAPI, Flask, Gin, Requests, and Streamlit commits' \
     "task routing matrix default public cases"
@@ -1409,6 +1412,9 @@ main() {
   require_pattern docs/public-task-routing-matrix-summary.json \
     '"first_suggested_tool": "file_outline"' \
     "public task routing matrix JSON first suggested tool evidence"
+  require_pattern docs/public-task-routing-matrix-summary.json \
+    '"first_seed_value":' \
+    "public task routing matrix JSON first seed evidence"
   require_pattern docs/public-task-routing-matrix-summary.json \
     '"repository": "<case-root>/express"' \
     "public task routing matrix JSON normalized repository path"
