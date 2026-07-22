@@ -1097,7 +1097,7 @@ fn dependencies_from_node(
     javascript_bindings: Option<&HashMap<String, String>>,
 ) -> Vec<Dependency> {
     match language {
-        Language::Bash => Vec::new(),
+        Language::Bash => bash_dependencies(node, source, language, source_file),
         Language::C | Language::Cpp => c_like_dependencies(node, source, language, source_file),
         Language::CSharp => csharp_dependencies(node, source, language, source_file),
         Language::Php => php_dependencies(node, source, language, source_file),
@@ -1171,6 +1171,57 @@ fn visit_node(
     }
 
     visit_children(node, source, language, file, scope, symbols);
+}
+
+fn bash_dependencies(
+    node: Node<'_>,
+    source: &[u8],
+    language: Language,
+    source_file: &str,
+) -> Vec<Dependency> {
+    if node.kind() != "command" {
+        return Vec::new();
+    }
+
+    let text = node.utf8_text(source).unwrap_or_default();
+    let Some(target) = bash_source_target(text) else {
+        return Vec::new();
+    };
+
+    vec![Dependency {
+        source_file: source_file.to_string(),
+        target,
+        resolved_file: None,
+        local_alias: None,
+        imported_symbol: None,
+        kind: "source".to_string(),
+        language,
+        line: node.start_position().row + 1,
+    }]
+}
+
+fn bash_source_target(text: &str) -> Option<String> {
+    let mut parts = text.split_whitespace();
+    let command = parts.next()?.trim();
+    if command != "source" && command != "." {
+        return None;
+    }
+
+    let target = parts
+        .find(|part| !part.starts_with('-'))?
+        .trim_matches(|ch| matches!(ch, '"' | '\''));
+    if target.is_empty()
+        || target.contains('$')
+        || target.contains('*')
+        || target.contains('?')
+        || target.contains('`')
+        || target.starts_with('<')
+        || target.starts_with('>')
+    {
+        return None;
+    }
+
+    Some(target.to_string())
 }
 
 fn python_dependencies(
@@ -2906,7 +2957,7 @@ fn resolve_dependency(
     package_conditions: &[String],
 ) -> Option<String> {
     match dependency.language {
-        Language::Bash => None,
+        Language::Bash => resolve_bash_target(root, dependency),
         Language::JavaScript | Language::TypeScript | Language::Tsx => {
             resolve_javascript_like_target(root, dependency, package_conditions)
         }
@@ -2919,6 +2970,35 @@ fn resolve_dependency(
         Language::Rust => resolve_rust_target(root, dependency),
         Language::Php => resolve_php_target(root, dependency),
     }
+}
+
+fn resolve_bash_target(root: &Path, dependency: &Dependency) -> Option<String> {
+    if dependency.kind != "source" {
+        return None;
+    }
+
+    const EXTENSIONS: &[&str] = &["sh", "bash"];
+    if let Some(resolved) = resolve_relative_target(
+        root,
+        &dependency.source_file,
+        &dependency.target,
+        EXTENSIONS,
+    ) {
+        return Some(resolved);
+    }
+
+    let source_dir = Path::new(&dependency.source_file)
+        .parent()
+        .unwrap_or(Path::new(""));
+    if let Some(resolved) = resolve_base(root, source_dir.join(&dependency.target), EXTENSIONS) {
+        return Some(resolved);
+    }
+
+    if dependency.target.contains('/') {
+        return resolve_base(root, PathBuf::from(&dependency.target), EXTENSIONS);
+    }
+
+    None
 }
 
 fn resolve_go_target(root: &Path, dependency: &Dependency) -> Option<String> {
@@ -6899,6 +6979,85 @@ export default function renderDefault() {
 
         assert!(names.contains(&"default"));
         assert!(names.contains(&"renderDefault"));
+    }
+
+    #[test]
+    fn extracts_bash_symbols_dependencies_and_calls() {
+        let source = r#"
+source ./lib/common.sh
+. ../shared/env.bash
+source "$DYNAMIC_ROOT/runtime.sh"
+
+bootstrap() {
+  load_env
+  ./scripts/build.sh
+}
+
+load_env() {
+  echo ready
+}
+"#;
+        let symbols = extract_symbols(source, Language::Bash, "scripts/bootstrap.sh").unwrap();
+        assert!(
+            symbols.iter().any(|symbol| {
+                symbol.name == "bootstrap" && symbol.kind == SymbolKind::Function
+            })
+        );
+
+        let deps = extract_dependencies(source, Language::Bash, "scripts/bootstrap.sh").unwrap();
+        let targets = deps
+            .iter()
+            .map(|dependency| dependency.target.as_str())
+            .collect::<Vec<_>>();
+        assert!(targets.contains(&"./lib/common.sh"));
+        assert!(targets.contains(&"../shared/env.bash"));
+        assert!(
+            !targets.contains(&"$DYNAMIC_ROOT/runtime.sh"),
+            "dynamic source targets should not become deterministic dependencies"
+        );
+        assert!(deps.iter().all(|dependency| dependency.kind == "source"));
+
+        let calls = extract_calls(source, Language::Bash, "scripts/bootstrap.sh", &symbols);
+        assert!(calls.iter().any(|call| {
+            call.caller == "bootstrap"
+                && call.callee == "load_env"
+                && call.callee_file.as_deref() == Some("scripts/bootstrap.sh")
+        }));
+        assert!(
+            calls
+                .iter()
+                .any(|call| { call.caller == "bootstrap" && call.callee == "build.sh" })
+        );
+    }
+
+    #[test]
+    fn resolves_bash_source_dependencies() {
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::create_dir_all(dir.path().join("scripts/lib")).unwrap();
+        std::fs::write(
+            dir.path().join("scripts/bootstrap.sh"),
+            "source ./lib/common.sh\nrun_common\n",
+        )
+        .unwrap();
+        std::fs::write(
+            dir.path().join("scripts/lib/common.sh"),
+            "run_common() {\n  echo ok\n}\n",
+        )
+        .unwrap();
+
+        let report = index_project(dir.path(), false).unwrap();
+        assert_eq!(report.errors.len(), 0);
+
+        let store = Store::open(dir.path()).unwrap();
+        let graph = store
+            .dependency_graph(dir.path(), 10, 0, &[], &[], &[])
+            .unwrap();
+        assert!(graph.dependencies.iter().any(|dependency| {
+            dependency.source_file == "scripts/bootstrap.sh"
+                && dependency.target == "./lib/common.sh"
+                && dependency.kind == "source"
+                && dependency.resolved_file.as_deref() == Some("scripts/lib/common.sh")
+        }));
     }
 
     #[test]
