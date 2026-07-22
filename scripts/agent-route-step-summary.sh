@@ -68,6 +68,24 @@ require_summary_contract() {
       and (.metrics.continuation_next_action | type == "string")
       and (.metrics.context_route_reason | type == "string")
       and (.metrics.impact_route_reason | type == "string")
+      and (.metrics.routing_decision_seed_strategy | type == "string")
+      and (.metrics.routing_decision_first_seed_source | type == "string")
+      and (.metrics.routing_decision_first_seed_value | type == "string")
+      and (.metrics.routing_decision_first_file | type == "string")
+      and (.metrics.routing_decision_first_selection_rank | type == "number")
+      and (.metrics.routing_decision_first_suggested_tool | type == "string")
+      and (.metrics.routing_decision_line_reduction | type == "string")
+      and (.metrics.routing_decision_read_less_ratio | type == "string")
+      and (.metrics.routing_decision_continuation_status | type == "string")
+      and .metrics.routing_decision_seed_strategy == .metrics.seed_strategy
+      and .metrics.routing_decision_first_seed_source == .metrics.first_seed_source
+      and .metrics.routing_decision_first_seed_value == .metrics.first_seed_value
+      and .metrics.routing_decision_first_file == .metrics.first_reading_file
+      and .metrics.routing_decision_first_selection_rank == .metrics.first_selection_rank
+      and .metrics.routing_decision_first_suggested_tool == .metrics.first_execution_suggested_tool
+      and .metrics.routing_decision_line_reduction == .metrics.line_reduction
+      and .metrics.routing_decision_read_less_ratio == .metrics.read_less_ratio
+      and .metrics.routing_decision_continuation_status == .metrics.continuation_status
       and (.metrics.impact_status | type == "string")
       and (.metrics.impacted_files | type == "number")
       and (.metrics.suggested_checks | type == "number")
@@ -112,6 +130,16 @@ main() {
     printf 'Task: `%s`\n\n' "$(metric '.task')"
     printf 'Route: `%s`\n\n' "$(metric '.route_tools | join(" -> ")')"
     printf 'Execution plan: `%s`\n\n' "$(metric '.execution_plan_actions | join(" -> ")')"
+    printf 'Routing decision: `seed=%s:%s, first_file=%s, rank=%s, tool=%s, read_less=%s/%s, continuation=%s, impact=%s`\n\n' \
+      "$(metric '.metrics.routing_decision_first_seed_source')" \
+      "$(metric '.metrics.routing_decision_first_seed_value')" \
+      "$(metric '.metrics.routing_decision_first_file')" \
+      "$(metric '.metrics.routing_decision_first_selection_rank')" \
+      "$(metric '.metrics.routing_decision_first_suggested_tool')" \
+      "$(metric '.metrics.routing_decision_line_reduction')" \
+      "$(metric '.metrics.routing_decision_read_less_ratio')" \
+      "$(metric '.metrics.routing_decision_continuation_status')" \
+      "$(metric '.metrics.impact_status')"
     printf 'Full JSON summary: `%s`\n\n' "$SUMMARY_JSON"
     if [ -n "$RUN_URL" ]; then
       printf 'Workflow run: [open run](%s)\n\n' "$RUN_URL"
@@ -141,6 +169,13 @@ main() {
     printf '| Selected seeds | `%s` |\n' "$(metric '.metrics.selected_seed_count')"
     printf '| First seed source | `%s` |\n' "$(metric '.metrics.first_seed_source')"
     printf '| First seed value | `%s` |\n' "$(metric '.metrics.first_seed_value')"
+    printf '| Routing decision seed strategy | `%s` |\n' "$(metric '.metrics.routing_decision_seed_strategy')"
+    printf '| Routing decision first seed | `%s:%s` |\n' "$(metric '.metrics.routing_decision_first_seed_source')" "$(metric '.metrics.routing_decision_first_seed_value')"
+    printf '| Routing decision first file | `%s` |\n' "$(metric '.metrics.routing_decision_first_file')"
+    printf '| Routing decision selection rank | `%s` |\n' "$(metric '.metrics.routing_decision_first_selection_rank')"
+    printf '| Routing decision suggested tool | `%s` |\n' "$(metric '.metrics.routing_decision_first_suggested_tool')"
+    printf '| Routing decision read less | `%s, %s` |\n' "$(metric '.metrics.routing_decision_line_reduction')" "$(metric '.metrics.routing_decision_read_less_ratio')"
+    printf '| Routing decision continuation | `%s` |\n' "$(metric '.metrics.routing_decision_continuation_status')"
     printf '| Companion entrypoint | `%s` |\n' "$(metric '(.metrics.companion_entrypoint // "") as $value | if $value == "" then "-" else $value end')"
     printf '| First context file | `%s` |\n' "$(metric '.metrics.first_context_file')"
     printf '| First reading file | `%s` |\n' "$(metric '.metrics.first_reading_file')"

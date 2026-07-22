@@ -78,6 +78,15 @@ main() {
 	    "continuation_status": "complete",
 	    "continuation_next_action": "read_selected_context",
 	    "context_route_reason": "selected 2 files, 2 ranges, and 2 reading-plan steps within the token budget; read src/main.ts first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; no omitted candidate follow-up is needed before the selected context is read; continuation read_selected_context",
+    "routing_decision_seed_strategy": "auto_task_match",
+    "routing_decision_first_seed_source": "task_match",
+    "routing_decision_first_seed_value": "src/router.ts",
+    "routing_decision_first_file": "src/main.ts",
+    "routing_decision_first_selection_rank": 1,
+    "routing_decision_first_suggested_tool": "file_outline",
+    "routing_decision_line_reduction": "93.3%",
+    "routing_decision_read_less_ratio": "15.0x",
+    "routing_decision_continuation_status": "complete",
     "impact_route_reason": "after selected context is read, pre-edit impact check estimated 2 impacted files at medium risk, including 1 call-related files, 1 dependency-related files, 1 call paths, and 1 dependency paths",
     "impact_status": "complete",
     "impacted_files": 2,
@@ -100,6 +109,7 @@ EOF
   require_literal "$summary_md" "## Agent Route Smoke" "summary heading"
   require_literal "$summary_md" 'Route: `index_project -> project_overview -> context_pack -> impact_analysis`' "route line"
   require_literal "$summary_md" 'Execution plan: `read_selected_context -> use_current_reading_step_suggested_tool -> use_continuation_if_needed -> review_impact_before_edits`' "execution plan line"
+  require_literal "$summary_md" 'Routing decision: `seed=task_match:src/router.ts, first_file=src/main.ts, rank=1, tool=file_outline, read_less=93.3%/15.0x, continuation=complete, impact=complete`' "routing decision line"
   require_literal "$summary_md" 'Workflow artifact: [`codeinsight-agent-route-smoke`](https://example.com/artifact)' "artifact link"
   require_literal "$summary_md" '| Indexed files | `3` |' "indexed files metric"
   require_literal "$summary_md" '| Blind first-read baseline | `1200` source lines |' "blind first-read baseline metric"
@@ -111,6 +121,13 @@ EOF
   require_literal "$summary_md" '| Selected seeds | `2` |' "selected seeds metric"
   require_literal "$summary_md" '| First seed source | `task_match` |' "first seed source metric"
   require_literal "$summary_md" '| First seed value | `src/router.ts` |' "first seed value metric"
+  require_literal "$summary_md" '| Routing decision seed strategy | `auto_task_match` |' "routing decision seed strategy metric"
+  require_literal "$summary_md" '| Routing decision first seed | `task_match:src/router.ts` |' "routing decision first seed metric"
+  require_literal "$summary_md" '| Routing decision first file | `src/main.ts` |' "routing decision first file metric"
+  require_literal "$summary_md" '| Routing decision selection rank | `1` |' "routing decision selection rank metric"
+  require_literal "$summary_md" '| Routing decision suggested tool | `file_outline` |' "routing decision suggested tool metric"
+  require_literal "$summary_md" '| Routing decision read less | `93.3%, 15.0x` |' "routing decision read-less metric"
+  require_literal "$summary_md" '| Routing decision continuation | `complete` |' "routing decision continuation metric"
   require_literal "$summary_md" '| Companion entrypoint | `src/main.ts` |' "companion entrypoint metric"
   require_literal "$summary_md" '| First reading file | `src/main.ts` |' "first reading file metric"
   require_literal "$summary_md" '| Current reading step mirrors reading plan | `true` |' "current reading step mirror metric"

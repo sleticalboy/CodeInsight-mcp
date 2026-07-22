@@ -1962,7 +1962,7 @@ main() {
     'scripts/mcp-first-call-artifact-smoke\.sh <ci-run-id>' \
     "maintainer MCP first-call artifact smoke command"
   require_pattern docs/maintainer-checklist.md \
-    'context-pack metrics, first reading focus/question, selection rank, continuation next' \
+    'compact `routing_decision` line, context-pack metrics, first reading' \
     "maintainer agent-route first-read evidence summary"
   require_pattern docs/maintenance-commands.md \
     'first reading focus/question, selection rank, continuation next action' \

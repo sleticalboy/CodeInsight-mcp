@@ -206,6 +206,7 @@ write_summary_json() {
       routing_decision_first_selection_rank: (.routing_decision.first_selection_rank // 0),
       routing_decision_first_suggested_tool: (.routing_decision.first_suggested_tool.tool // ""),
       routing_decision_line_reduction: (.routing_decision.line_reduction // ""),
+      routing_decision_read_less_ratio: (.routing_decision.read_less_ratio // ""),
       routing_decision_continuation_status: (.routing_decision.continuation_status // ""),
       impact_status,
       impacted_files: (.impact_analysis.impact_counts.impacted_files // 0),
@@ -241,6 +242,7 @@ write_summary_json() {
       and .metrics.routing_decision_first_selection_rank == .metrics.first_selection_rank
       and .metrics.routing_decision_first_suggested_tool == .metrics.first_execution_suggested_tool
       and .metrics.routing_decision_line_reduction == .metrics.line_reduction
+      and .metrics.routing_decision_read_less_ratio == .metrics.read_less_ratio
       and .metrics.routing_decision_continuation_status == .metrics.continuation_status
       and .metrics.first_execution_action == "read_selected_context"
       and .metrics.current_reading_step_matches_reading_plan == true
