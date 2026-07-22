@@ -2358,6 +2358,9 @@ fn context_seed_file_focus(signals: ContextTaskSignals) -> String {
     } else if signals.dependency_graph {
         "Start with seed file dependency graph extraction, local edge resolution, and graph output."
             .to_string()
+    } else if signals.embedding_provider_status {
+        "Start with seed file embedding provider status, diagnostics, and reporting boundaries."
+            .to_string()
     } else if signals.semantic_context_orchestration {
         "Start with seed file semantic search orchestration, chunk fallback, and embedding context flow."
             .to_string()
@@ -2482,6 +2485,9 @@ fn context_symbol_definition_focus(signals: ContextTaskSignals) -> String {
             .to_string()
     } else if signals.dependency_graph {
         "Read symbol definitions that implement dependency graph extraction, local edge resolution, filtering, or graph output."
+            .to_string()
+    } else if signals.embedding_provider_status {
+        "Read symbol definitions that implement embedding provider status, diagnostics, or reporting behavior."
             .to_string()
     } else if signals.semantic_context_orchestration {
         "Read symbol definitions that implement semantic search orchestration, chunk selection, fallback, or embedding context flow."
@@ -2680,6 +2686,9 @@ fn context_call_graph_focus(signals: ContextTaskSignals) -> String {
     } else if signals.dependency_graph {
         "Follow call graph evidence for dependency graph extraction, local edge resolution, and graph output."
             .to_string()
+    } else if signals.embedding_provider_status {
+        "Follow call graph evidence for embedding provider status, diagnostics, and reporting flow."
+            .to_string()
     } else if signals.semantic_context_orchestration {
         "Follow call graph evidence for semantic search orchestration, chunk fallback, and embedding context flow."
             .to_string()
@@ -2839,6 +2848,9 @@ fn context_semantic_focus(signals: ContextTaskSignals) -> String {
             .to_string()
     } else if signals.tls_certificate {
         "Review semantic matches for TLS, SSL, certificates, CA bundles, or verification."
+            .to_string()
+    } else if signals.embedding_provider_status {
+        "Review semantic matches for embedding provider status, diagnostics, or reporting."
             .to_string()
     } else if signals.reference_search {
         "Review semantic matches for reference search, usage classification, or definition filtering."
@@ -3010,6 +3022,9 @@ fn context_dependency_focus(signals: ContextTaskSignals) -> String {
     } else if signals.dependency_graph {
         "Check local dependencies that supply dependency edges, local resolution, filtering, or graph output."
             .to_string()
+    } else if signals.embedding_provider_status {
+        "Check local dependencies that supply embedding provider status, diagnostics, or reporting data."
+            .to_string()
     } else if signals.semantic_context_orchestration {
         "Check local dependencies that supply semantic chunks, embeddings, fallback ranges, or context assembly."
             .to_string()
@@ -3129,6 +3144,9 @@ fn context_seed_file_question(task: &str) -> String {
             .to_string()
     } else if signals.dependency_graph {
         "Where are dependency edges extracted, resolved, filtered, or formatted into graph output here?"
+            .to_string()
+    } else if signals.embedding_provider_status {
+        "Where is embedding provider status detected, diagnosed, normalized, or reported here?"
             .to_string()
     } else if signals.semantic_context_orchestration {
         "Where are semantic searches routed, chunks selected, embedding fallback applied, or context results assembled here?"
@@ -3253,6 +3271,8 @@ fn context_symbol_definition_question(task: &str) -> String {
         "What source scanning, parsing, symbol extraction, dependency extraction, or index-write behavior does this definition establish?".to_string()
     } else if signals.dependency_graph {
         "What dependency graph extraction, local edge resolution, filtering, or graph output behavior does this definition establish?".to_string()
+    } else if signals.embedding_provider_status {
+        "What embedding provider status, diagnostic, normalization, or reporting behavior does this definition establish?".to_string()
     } else if signals.semantic_context_orchestration {
         "What semantic search orchestration, chunk selection, fallback, or embedding context behavior does this definition establish?".to_string()
     } else if signals.validation_binding {
@@ -3439,6 +3459,9 @@ fn context_call_graph_question(task: &str) -> String {
     } else if signals.dependency_graph {
         "Which callers or callees extract dependency edges, resolve local targets, filter graph data, or format graph output?"
             .to_string()
+    } else if signals.embedding_provider_status {
+        "Which callers or callees detect provider status, assemble diagnostics, normalize settings, or report embedding readiness?"
+            .to_string()
     } else if signals.semantic_context_orchestration {
         "Which callers or callees route semantic search, select chunks, apply fallback, or assemble context results?"
             .to_string()
@@ -3553,6 +3576,9 @@ fn context_dependency_question(task: &str) -> String {
             .to_string()
     } else if signals.dependency_graph {
         "What imported local dependency behavior supplies dependency edges, local target resolution, filtering, or graph output?"
+            .to_string()
+    } else if signals.embedding_provider_status {
+        "What imported local dependency behavior supplies embedding provider status, diagnostics, settings, or reporting data?"
             .to_string()
     } else if signals.semantic_context_orchestration {
         "What imported local dependency behavior supplies semantic chunks, embeddings, fallback ranges, or context assembly?"
@@ -3718,6 +3744,9 @@ fn context_semantic_question(task: &str) -> String {
     } else if signals.tls_certificate {
         "Which semantic matches describe TLS, SSL, certificates, CA bundles, or verification?"
             .to_string()
+    } else if signals.embedding_provider_status {
+        "Which semantic matches describe embedding provider status, diagnostics, readiness, or reporting?"
+            .to_string()
     } else if signals.reference_search {
         "Which semantic matches describe reference search, usage classification, or definition filtering?"
             .to_string()
@@ -3800,6 +3829,7 @@ struct ContextTaskSignals {
     indexing_pipeline: bool,
     dependency_graph: bool,
     semantic_context_orchestration: bool,
+    embedding_provider_status: bool,
     reference_search: bool,
     call_graph_traversal: bool,
     file_parsing_language: bool,
@@ -4721,6 +4751,7 @@ impl ContextTaskSignals {
             dependency_graph: auto_seed_dependency_graph_task(&keywords),
             semantic_context_orchestration: auto_seed_semantic_context_task(&keywords)
                 && auto_seed_semantic_context_prefers_orchestration(&keywords),
+            embedding_provider_status: auto_seed_embedding_provider_status_task(&keywords),
             reference_search: auto_seed_reference_search_task(&keywords),
             call_graph_traversal: auto_seed_call_graph_traversal_task(&keywords),
             file_parsing_language,
@@ -9652,6 +9683,29 @@ fn auto_seed_semantic_context_prefers_orchestration(task_keywords: &[String]) ->
     orchestration && !provider_configuration
 }
 
+fn auto_seed_embedding_provider_status_task(task_keywords: &[String]) -> bool {
+    let embedding_provider = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "embedding" | "embeddings" | "provider" | "providers"
+        )
+    });
+    let status_reporting = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "status" | "report" | "reports" | "reporting" | "diagnostic" | "diagnostics"
+        )
+    });
+    let configuration = task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "config" | "configuration" | "setting" | "settings"
+        )
+    });
+
+    embedding_provider && status_reporting && !configuration
+}
+
 fn auto_seed_semantic_context_file_priority(file: &str, prefer_orchestration: bool) -> i32 {
     let normalized = file.replace('\\', "/").to_ascii_lowercase();
     if normalized == "scripts" || normalized.starts_with("scripts/") {
@@ -11488,6 +11542,21 @@ mod tests {
         let impact_keywords = task_keywords("understand impact analysis risk scoring");
         assert!(impact_keywords.contains(&"impact".to_string()));
         assert!(!auto_seed_call_graph_traversal_task(&impact_keywords));
+
+        let embedding_status_keywords =
+            task_keywords("understand embedding provider status reporting");
+        assert!(embedding_status_keywords.contains(&"embedding".to_string()));
+        assert!(embedding_status_keywords.contains(&"provider".to_string()));
+        assert!(auto_seed_embedding_provider_status_task(
+            &embedding_status_keywords
+        ));
+
+        let embedding_config_keywords =
+            task_keywords("understand embedding provider configuration");
+        assert!(embedding_config_keywords.contains(&"configuration".to_string()));
+        assert!(!auto_seed_embedding_provider_status_task(
+            &embedding_config_keywords
+        ));
 
         let background_keywords = task_keywords("understand background job queue");
         assert!(background_keywords.contains(&"background".to_string()));

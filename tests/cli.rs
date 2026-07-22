@@ -3100,6 +3100,15 @@ export function detectLanguage(path: string) {
     );
     write_file(
         &fixture,
+        "src/embedding.ts",
+        r#"
+export function embeddingProviderStatus(provider: string) {
+  return { provider, status: "ready", diagnostics: [] };
+}
+"#,
+    );
+    write_file(
+        &fixture,
         "src/mcp.ts",
         r#"
 export function optionalStringArray(argumentsJson: unknown, key: string) {
@@ -3127,7 +3136,7 @@ echo "json binding validation package import resolution demo"
     );
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 7);
+    assert_eq!(index["indexed_files"], 8);
 
     for (task, expected_file) in [
         (
@@ -3139,6 +3148,10 @@ echo "json binding validation package import resolution demo"
         (
             "understand callers callees call graph traversal",
             "src/tools.ts",
+        ),
+        (
+            "understand embedding provider status reporting",
+            "src/embedding.ts",
         ),
         ("understand file parsing language support", "src/index.ts"),
         ("understand package import resolution", "src/index.ts"),
@@ -3221,6 +3234,21 @@ echo "json binding validation package import resolution demo"
                     .unwrap()
                     .contains("callers or callees traversed"),
                 "call graph traversal tasks should get call-graph-specific reading guidance"
+            );
+        } else if task == "understand embedding provider status reporting" {
+            assert!(
+                context["reading_plan"][0]["focus"]
+                    .as_str()
+                    .unwrap()
+                    .contains("embedding provider status"),
+                "embedding provider status tasks should get provider-specific reading focus"
+            );
+            assert!(
+                context["reading_plan"][0]["question"]
+                    .as_str()
+                    .unwrap()
+                    .contains("provider status detected"),
+                "embedding provider status tasks should get provider-specific reading guidance"
             );
         } else if task == "understand package import resolution" {
             assert!(

@@ -707,6 +707,7 @@ run_core_analysis_question_scenario() {
   local semantic_json="$TEMP_DIR/core-analysis-semantic-context.json"
   local references_json="$TEMP_DIR/core-analysis-references-context.json"
   local calls_json="$TEMP_DIR/core-analysis-calls-context.json"
+  local embedding_status_json="$TEMP_DIR/core-analysis-embedding-status-context.json"
 
   "$CODEINSIGHT_BIN" index "$ROOT_DIR" --force >"$index_json"
   require_jq "$index_json" '.indexed_files > 0' "core analysis scenario should index this repository"
@@ -774,6 +775,19 @@ run_core_analysis_question_scenario() {
     "call graph traversal reading question should be core-analysis-aware"
   QUESTION_CHECKS_PASSED=$((QUESTION_CHECKS_PASSED + 1))
   record_question_check "core_call_graph_traversal_question" "$calls_json" '.reading_plan[0]'
+
+  "$CODEINSIGHT_BIN" context-pack "$ROOT_DIR" \
+    --task "understand embedding provider status reporting" \
+    --token-budget 2600 \
+    >"$embedding_status_json"
+  require_jq "$embedding_status_json" \
+    '.reading_plan[0].next_action == "inspect_seed_file"
+      and (.reading_plan[0].focus | contains("embedding provider status"))
+      and (.reading_plan[0].question | contains("provider status detected"))
+      and (.reading_plan[0].question | contains("reported"))' \
+    "embedding provider status reading question should be core-analysis-aware"
+  QUESTION_CHECKS_PASSED=$((QUESTION_CHECKS_PASSED + 1))
+  record_question_check "core_embedding_provider_status_question" "$embedding_status_json" '.reading_plan[0]'
 
   SCENARIOS_PASSED=$((SCENARIOS_PASSED + 1))
   record_scenario "core_analysis_question_coverage" "$semantic_json" \
