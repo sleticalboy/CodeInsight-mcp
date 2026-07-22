@@ -151,6 +151,8 @@ EOF
     fail "missing first selected file"
   grep -Fq -- '- First reading focus: Start with seed file context and primary symbols.' "$TEMP_DIR/evidence.md" ||
     fail "missing first reading focus"
+  [ "$(grep -Fc -- '- First reading focus:' "$TEMP_DIR/evidence.md")" -eq 1 ] ||
+    fail "first reading focus should be printed once"
   grep -Fq -- '- Seed strategy: `auto_task_match`' "$TEMP_DIR/evidence.md" ||
     fail "missing seed strategy"
   grep -Fq -- '- Selected seeds: `2`' "$TEMP_DIR/evidence.md" ||
