@@ -2582,6 +2582,81 @@ fn cli_agent_route_returns_blocked_plan_for_unmatched_explicit_symbol() {
 }
 
 #[test]
+fn cli_agent_route_points_blocked_context_at_configured_index_scope() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        ".codeinsight/config.toml",
+        r#"
+[index]
+include = ["src/auth.ts"]
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/main.ts",
+        r#"
+export function main() {
+  return "skip";
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/auth.ts",
+        r#"
+export function authOnly() {
+  return "keep";
+}
+"#,
+    );
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand scoped missing main",
+        "--symbol",
+        "main",
+        "--token-budget",
+        "1000",
+        "--force-index",
+    ]);
+
+    assert_eq!(route["index_report"]["indexed_files"].as_u64(), Some(1));
+    assert_eq!(
+        route["index_report"]["index_scope"]["enabled"].as_bool(),
+        Some(true)
+    );
+    assert_eq!(
+        route["index_report"]["index_scope"]["walk_roots"][0],
+        "src/auth.ts"
+    );
+    assert_eq!(route["route"][2]["status"], "blocked_no_context");
+    assert_eq!(
+        route["context_pack"]["continuation_summary"]["next_action"],
+        "check_index_scope_or_provide_matching_seed"
+    );
+    let continuation_message = route["context_pack"]["continuation_summary"]["message"]
+        .as_str()
+        .unwrap();
+    assert!(continuation_message.contains("Index scope is enabled"));
+    assert!(continuation_message.contains("src/auth.ts"));
+    assert!(
+        route["route"][2]["reason"]
+            .as_str()
+            .unwrap()
+            .contains("check_index_scope_or_provide_matching_seed")
+    );
+    assert!(
+        route["execution_plan"][2]["instruction"]
+            .as_str()
+            .unwrap()
+            .contains("Index scope is enabled")
+    );
+}
+
+#[test]
 fn cli_agent_route_keeps_entrypoint_companion_for_task_match() {
     let fixture = TempDir::new().unwrap();
     std::fs::create_dir_all(fixture.path().join("src")).unwrap();

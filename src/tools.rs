@@ -23,10 +23,10 @@ use crate::{
         ContextReadingStep, ContextSeed, ContextSemanticStatus, ContextSourceCount,
         ContextSuggestedTool, Dependency, DependencyGraph, EmbeddingProviderStatus,
         ImpactAnalysisReport, ImpactBreakdown, ImpactCounts, ImpactFile, ImpactPath, IndexError,
-        Language, OllamaEmbeddingStatus, OpenAiEmbeddingStatus, ProjectIndexReport,
-        ProjectOverview, ReferenceMatch, SemanticChunk, SemanticChunkInput, SemanticEmbeddingInput,
-        SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus, SemanticSearchResult,
-        SuggestedCheck, Symbol, SymbolKind, VersionInfo,
+        IndexScopeReport, Language, OllamaEmbeddingStatus, OpenAiEmbeddingStatus,
+        ProjectIndexReport, ProjectOverview, ReferenceMatch, SemanticChunk, SemanticChunkInput,
+        SemanticEmbeddingInput, SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus,
+        SemanticSearchResult, SuggestedCheck, Symbol, SymbolKind, VersionInfo,
     },
     storage::Store,
 };
@@ -235,7 +235,7 @@ pub fn agent_route_value(
     let root = root.canonicalize()?;
     let index_report = index_project_value(root.clone(), force_index)?;
     let overview = project_overview_value(root.clone())?;
-    let context_pack = match context_pack_value(
+    let mut context_pack = match context_pack_value(
         root.clone(),
         task.clone(),
         symbols.clone(),
@@ -257,6 +257,7 @@ pub fn agent_route_value(
         }
         Err(error) => return Err(error),
     };
+    add_index_scope_hint_to_blocked_context(&mut context_pack, &index_report.index_scope);
 
     let blocked_context_status = context_pack
         .reading_plan
@@ -565,9 +566,53 @@ fn agent_route_continuation_instruction(context_pack: &ContextPack) -> String {
     }
 
     format!(
-        "Use continuation_summary only after selected context has been read. Current continuation status is {} with next_action {}.",
-        continuation.status, continuation.next_action
+        "Use continuation_summary only after selected context has been read. Current continuation status is {} with next_action {}. Message: {}",
+        continuation.status, continuation.next_action, continuation.message
     )
+}
+
+fn add_index_scope_hint_to_blocked_context(
+    context_pack: &mut ContextPack,
+    index_scope: &IndexScopeReport,
+) {
+    if !index_scope.enabled
+        || !context_pack.reading_plan.is_empty()
+        || !context_pack
+            .continuation_summary
+            .status
+            .starts_with("blocked_")
+    {
+        return;
+    }
+
+    let hint = format!(
+        "Index scope is enabled; includes: {}; excludes: {}; walk_roots: {}. If the expected code is outside this scope, update .codeinsight/config.toml and rerun index_project or agent_route with force_index.",
+        summarize_index_scope_values(&index_scope.includes),
+        summarize_index_scope_values(&index_scope.excludes),
+        summarize_index_scope_values(&index_scope.walk_roots),
+    );
+    if !context_pack
+        .continuation_summary
+        .message
+        .contains("Index scope is enabled")
+    {
+        context_pack.continuation_summary.message =
+            format!("{} {}", context_pack.continuation_summary.message, hint);
+    }
+    context_pack.continuation_summary.next_action =
+        match context_pack.continuation_summary.status.as_str() {
+            "blocked_no_context" => "check_index_scope_or_provide_matching_seed".to_string(),
+            "blocked_no_seed" => "check_index_scope_or_provide_seed".to_string(),
+            _ => context_pack.continuation_summary.next_action.clone(),
+        };
+}
+
+fn summarize_index_scope_values(values: &[String]) -> String {
+    if values.is_empty() {
+        "-".to_string()
+    } else {
+        values.join(", ")
+    }
 }
 
 fn agent_route_impact_reason(report: &ImpactAnalysisReport) -> String {
