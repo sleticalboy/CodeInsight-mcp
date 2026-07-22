@@ -198,8 +198,14 @@ RUBY
 
 main() {
   require_pattern README.md \
+    '\[public demo one-pager\]\(docs/public-demo-one-pager\.md\)' \
+    "public demo one-pager README link"
+  require_pattern README.md \
     '\[two-minute demo script\]\(docs/demo-script\.md\)' \
     "demo script link"
+  require_pattern docs/README.md \
+    '\[Public demo one-pager\]\(public-demo-one-pager\.md\)' \
+    "public demo one-pager docs index link"
   require_pattern README.md \
     '\[Smoke benchmark\]\(docs/benchmark-v0\.1\.md\).*p-limit, itsdangerous, Go example,' \
     "smoke benchmark link and repository list"
