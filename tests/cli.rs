@@ -2530,6 +2530,92 @@ export function impactSuggestedChecksRouter() {
 }
 
 #[test]
+fn cli_context_pack_routes_agent_context_tasks_to_core_source_over_evidence_scripts() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        "src/main.ts",
+        r#"
+import { createContextRouter } from "./tools";
+
+export function main() {
+  return createContextRouter("agent context routing");
+}
+
+main();
+"#,
+    );
+    write_file(
+        &fixture,
+        "src/tools.ts",
+        r#"
+export function createContextRouter(task: string) {
+  return routeAgentContextPack(task);
+}
+
+export function routeAgentContextPack(task: string) {
+  return {
+    task,
+    contextPack: "bounded",
+    readingPlan: "handoff",
+    routeQuality: "implementation"
+  };
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "scripts/agent-context-routing-evidence.sh",
+        r#"
+#!/usr/bin/env bash
+set -euo pipefail
+
+agent_route_metric() {
+  echo "agent context route router routing metric"
+}
+
+validate_context_pack_quality_artifact() {
+  echo "agent context pack quality evidence"
+}
+
+main() {
+  agent_route_metric
+  validate_context_pack_quality_artifact
+}
+
+main "$@"
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 3);
+
+    let context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand agent context routing",
+        "--token-budget",
+        "1600",
+    ]);
+
+    assert_eq!(context["seed_strategy"], "auto_task_match");
+    assert_eq!(
+        context["selected_seeds"][0]["value"], "src/tools.ts",
+        "agent context routing should start from the implementation, not evidence scripts"
+    );
+    assert_eq!(context["files"][0]["file"], "src/tools.ts");
+    assert!(
+        !context["files"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|file| file["file"] == "scripts/agent-context-routing-evidence.sh"),
+        "non-evidence agent context routing should not spend context budget on evidence scripts"
+    );
+}
+
+#[test]
 fn cli_context_pack_expands_common_agent_task_aliases() {
     let fixture = TempDir::new().unwrap();
     std::fs::create_dir_all(fixture.path().join("src")).unwrap();

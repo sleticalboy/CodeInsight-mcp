@@ -1409,6 +1409,8 @@ pub fn context_pack_value(
         .collect::<BTreeMap<_, _>>();
     let scoring_policy = ContextScoringPolicy {
         prefer_low_value_files: context_prefers_low_value_files(&task_keywords, &seed_files),
+        prefer_agent_first_read_source_files: auto_seed_agent_first_read_task(&task_keywords)
+            && !auto_seed_agent_first_read_evidence_task(&task_keywords),
     };
 
     for seed in &seed_symbols {
@@ -1678,6 +1680,12 @@ pub fn context_pack_value(
     }
     semantic_status.status.recommendation =
         context_semantic_recommendation(&semantic_status.status);
+
+    if scoring_policy.prefer_agent_first_read_source_files {
+        ranges_by_file.retain(|file, _| {
+            seed_file_set.contains(file) || !context_agent_first_read_support_file(file)
+        });
+    }
 
     let mut candidates = ranges_by_file
         .into_iter()
@@ -6066,6 +6074,7 @@ struct ContextFileCandidate {
 #[derive(Debug, Clone, Copy)]
 struct ContextScoringPolicy {
     prefer_low_value_files: bool,
+    prefer_agent_first_read_source_files: bool,
 }
 
 fn seed_file_ranges(
@@ -6440,13 +6449,43 @@ fn importance_for_score(score: i32) -> &'static str {
 }
 
 fn context_score_for_file(file: &str, score: i32, policy: &ContextScoringPolicy) -> i32 {
-    if is_low_value_reference_file(file) && policy.prefer_low_value_files {
+    let score = if is_low_value_reference_file(file) && policy.prefer_low_value_files {
         score.saturating_add(CONTEXT_SCORE_LOW_VALUE_FILE_TEST_BOOST)
     } else if is_low_value_reference_file(file) {
         score.saturating_sub(CONTEXT_SCORE_LOW_VALUE_FILE_PENALTY)
     } else {
         score
+    };
+
+    if policy.prefer_agent_first_read_source_files {
+        context_agent_first_read_source_score(file, score)
+    } else {
+        score
     }
+}
+
+fn context_agent_first_read_source_score(file: &str, score: i32) -> i32 {
+    if context_agent_first_read_support_file(file) {
+        score.saturating_sub(1000)
+    } else {
+        let normalized = file.replace('\\', "/").to_ascii_lowercase();
+        if (normalized.starts_with("src/") || normalized.contains("/src/"))
+            && auto_seed_agent_first_read_core_file_matches(file)
+        {
+            score.saturating_add(120)
+        } else {
+            score
+        }
+    }
+}
+
+fn context_agent_first_read_support_file(file: &str) -> bool {
+    let normalized = file.replace('\\', "/").to_ascii_lowercase();
+    normalized == "scripts"
+        || normalized.starts_with("scripts/")
+        || normalized == "docs"
+        || normalized.starts_with("docs/")
+        || is_low_value_reference_file(file)
 }
 
 fn reference_score(reference: &ReferenceMatch) -> i32 {
@@ -6759,8 +6798,17 @@ fn auto_context_seed_files(
     let request_lifecycle_task = auto_seed_request_lifecycle_task(task_keywords);
     let middleware_task = auto_seed_middleware_task(task_keywords);
     let route_dispatch_task = auto_seed_route_dispatch_task(task_keywords);
+    let agent_first_read_task = auto_seed_agent_first_read_task(task_keywords);
     candidates.sort_by(|left, right| {
-        if route_miss_task {
+        if agent_first_read_task {
+            auto_seed_agent_first_read_file_priority(&right.file, task_keywords)
+                .cmp(&auto_seed_agent_first_read_file_priority(
+                    &left.file,
+                    task_keywords,
+                ))
+                .then_with(|| right.score.cmp(&left.score))
+                .then_with(|| left.file.cmp(&right.file))
+        } else if route_miss_task {
             auto_seed_route_miss_file_priority(&right.file)
                 .cmp(&auto_seed_route_miss_file_priority(&left.file))
                 .then_with(|| right.score.cmp(&left.score))
@@ -6864,6 +6912,15 @@ fn auto_context_seed_files(
                         entrypoint.role == "source"
                             && entrypoint.file != file
                             && auto_seed_role_allowed(&entrypoint.role, task_keywords)
+                            && auto_seed_role_allowed(
+                                auto_seed_file_role(&entrypoint.file),
+                                task_keywords,
+                            )
+                            && (!agent_first_read_task
+                                || auto_seed_agent_first_read_file_priority(
+                                    &entrypoint.file,
+                                    task_keywords,
+                                ) >= 0)
                     })
                     .map(|entrypoint| AutoSeedCandidate {
                         file: entrypoint.file.clone(),
@@ -7951,9 +8008,96 @@ fn auto_seed_agent_first_read_field_matches(field: &str) -> bool {
     auto_seed_field_matches(field, "agent")
         || auto_seed_field_matches(field, "workflow")
         || auto_seed_field_matches(field, "context")
+        || auto_seed_field_matches(field, "pack")
         || auto_seed_field_matches(field, "readless")
         || auto_seed_field_matches(field, "evidence")
         || auto_seed_field_matches(field, "adoption")
+}
+
+fn auto_seed_agent_first_read_file_priority(file: &str, task_keywords: &[String]) -> i32 {
+    let normalized = file.replace('\\', "/").to_ascii_lowercase();
+    let evidence_task = auto_seed_agent_first_read_evidence_task(task_keywords);
+
+    if normalized == "docs" || normalized.starts_with("docs/") {
+        return if evidence_task { 20 } else { -10 };
+    }
+
+    if normalized == "scripts" || normalized.starts_with("scripts/") {
+        return if evidence_task && auto_seed_agent_first_read_evidence_file(&normalized) {
+            25
+        } else if evidence_task {
+            5
+        } else {
+            -80
+        };
+    }
+
+    if is_low_value_reference_file(file) {
+        return if evidence_task { 10 } else { -30 };
+    }
+
+    let source_file = normalized.starts_with("src/") || normalized.contains("/src/");
+    let core_file = auto_seed_agent_first_read_core_file_matches(file);
+
+    if source_file && core_file {
+        120
+    } else if core_file {
+        70
+    } else if source_file {
+        20
+    } else {
+        0
+    }
+}
+
+fn auto_seed_agent_first_read_core_file_matches(file: &str) -> bool {
+    auto_seed_field_matches(file, "agent")
+        || auto_seed_field_matches(file, "workflow")
+        || auto_seed_field_matches(file, "context")
+        || auto_seed_field_matches(file, "pack")
+        || auto_seed_field_matches(file, "router")
+        || auto_seed_field_matches(file, "routing")
+        || auto_seed_field_matches(file, "route")
+        || auto_seed_field_matches(file, "tool")
+        || auto_seed_field_matches(file, "tools")
+        || auto_seed_field_matches(file, "mcp")
+}
+
+fn auto_seed_agent_first_read_evidence_task(task_keywords: &[String]) -> bool {
+    task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "adoption"
+                | "benchmark"
+                | "benchmarks"
+                | "beta"
+                | "demo"
+                | "demos"
+                | "evidence"
+                | "external"
+                | "report"
+                | "reports"
+                | "release"
+                | "releases"
+                | "smoke"
+                | "smokes"
+                | "trial"
+                | "trials"
+        )
+    })
+}
+
+fn auto_seed_agent_first_read_evidence_file(normalized_file: &str) -> bool {
+    normalized_file.contains("adoption")
+        || normalized_file.contains("benchmark")
+        || normalized_file.contains("beta")
+        || normalized_file.contains("demo")
+        || normalized_file.contains("evidence")
+        || normalized_file.contains("report")
+        || normalized_file.contains("release")
+        || normalized_file.contains("smoke")
+        || normalized_file.contains("summary")
+        || normalized_file.contains("trial")
 }
 
 fn auto_seed_request_query_params_task(task_keywords: &[String]) -> bool {
