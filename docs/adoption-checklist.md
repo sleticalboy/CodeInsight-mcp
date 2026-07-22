@@ -76,10 +76,16 @@ When you only need local first-read evidence artifacts:
 
 ```bash
 scripts/local-repo-evidence.sh /path/to/repo \
+  --file src/main.ts \
+  --symbol main \
   --output /tmp/codeinsight-local-evidence.md \
   --json /tmp/codeinsight-agent-route.json \
   --summary-json /tmp/codeinsight-local-evidence.json
 ```
+
+For large repositories or reports with a known expected area, pass repeatable
+`--file` and `--symbol` seeds so the first-read route starts from that
+subsystem instead of relying only on broad automatic seed selection.
 
 When you need a short comparison for adoption notes:
 
