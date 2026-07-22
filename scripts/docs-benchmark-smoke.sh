@@ -491,6 +491,12 @@ main() {
     'redaction-checklist\.md' \
     "External Beta redaction artifact"
   require_pattern docs/external-beta-trial.md \
+    'Adoption feedback' \
+    "External Beta GitHub issue form guidance"
+  require_pattern docs/external-beta-trial.md \
+    'paste `issue-body\.md` into' \
+    "External Beta issue body paste guidance"
+  require_pattern docs/external-beta-trial.md \
     'needs_triage' \
     "External Beta needs triage outcome"
   require_pattern docs/alpha-feedback-triage.md \
@@ -514,6 +520,12 @@ main() {
   require_pattern .github/ISSUE_TEMPLATE/adoption-feedback.yml \
     'name: Adoption feedback' \
     "GitHub adoption feedback issue form"
+  require_pattern .github/ISSUE_TEMPLATE/adoption-feedback.yml \
+    'scripts/external-beta-trial\.sh' \
+    "GitHub adoption feedback External Beta command"
+  require_pattern .github/ISSUE_TEMPLATE/adoption-feedback.yml \
+    'issue-body\.md' \
+    "GitHub adoption feedback External Beta issue body guidance"
   require_pattern .github/ISSUE_TEMPLATE/adoption-feedback.yml \
     'route_near_miss' \
     "GitHub adoption feedback outcome category"

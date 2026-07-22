@@ -37,6 +37,17 @@ The command writes:
 - `adoption-evidence.md`, `summary.json`, `agent-route.json`, and
   `mcp-first-call.json`: underlying first-read route evidence.
 
+## Filing Feedback
+
+Open the GitHub `Adoption feedback` issue form and paste `issue-body.md` into
+the `CodeInsight result` field. Attach the generated folder or paste the
+artifact paths listed in the issue body.
+
+For private repositories, do not upload raw paths, raw snippets, or repository
+URLs until `redaction-checklist.md` is complete. It is fine to file the issue
+with `needs_triage` and a redacted first selected file if the route quality is
+unclear.
+
 ## Outcome
 
 External users may choose `needs_triage` when they are unsure how to classify

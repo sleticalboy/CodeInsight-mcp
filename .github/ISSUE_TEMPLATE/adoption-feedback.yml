@@ -6,7 +6,9 @@ body:
   - type: markdown
     attributes:
       value: |
-        Use this form for Public Adoption Alpha trials. Attach the evidence folder from `scripts/adoption-evidence.sh` when possible.
+        Use this form for Public Adoption Alpha or External Beta trials.
+        For External Beta, paste `issue-body.md` from `scripts/external-beta-trial.sh` and attach the generated evidence folder when possible.
+        For maintainer Alpha checks, attach the evidence folder from `scripts/adoption-evidence.sh`.
   - type: input
     id: version
     attributes:
@@ -65,13 +67,15 @@ body:
     id: codeinsight_result
     attributes:
       label: CodeInsight result
-      description: Paste the issue-ready snippet from `scripts/adoption-evidence.sh --issue-template`.
+      description: Paste `issue-body.md` from `scripts/external-beta-trial.sh`, or the issue-ready snippet from `scripts/adoption-evidence.sh --issue-template`.
       render: markdown
       placeholder: |
-        First selected file:
-        First reading focus:
-        Read-less ratio:
-        Impact risk:
+        # External Beta Trial
+        - Outcome: `needs_triage`
+        - First selected file:
+        - First reading focus:
+        - Read-less ratio:
+        - Impact risk:
     validations:
       required: true
   - type: dropdown
@@ -94,6 +98,10 @@ body:
       description: Include the command and list attached artifacts.
       render: bash
       placeholder: |
+        scripts/external-beta-trial.sh /path/to/repo \
+          --task "..." \
+          --output-dir /tmp/codeinsight-external-beta-trial
+
         scripts/adoption-evidence.sh /path/to/repo \
           --task "..." \
           --output-dir /tmp/codeinsight-adoption-evidence \
