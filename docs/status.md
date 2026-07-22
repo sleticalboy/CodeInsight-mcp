@@ -82,9 +82,10 @@ workflow is implemented end to end.
   `continuation_summary.next_action` that lets MCP clients expose a single next
   action after the initial reading plan.
 - Structured `blocked_no_seed` first-read responses for empty or unsupported
-  repositories, and `blocked_invalid_seed` responses for unresolved explicit
-  seed files, with client policy documentation that asks for a usable seed file
-  or symbol instead of falling back to broad repository reads.
+  repositories, `blocked_invalid_seed` responses for unresolved explicit seed
+  files, and `blocked_no_context` responses when explicit seeds do not match
+  readable context, with client policy documentation that asks for a usable seed
+  file or symbol instead of falling back to broad repository reads.
 - Focused `context_pack` follow-up suggestions preserve the original task when
   narrowing semantic-match or fallback context to a selected file.
 - `agent_route.execution_plan[0].instruction` carries the first reading file,

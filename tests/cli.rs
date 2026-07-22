@@ -2479,6 +2479,109 @@ fn cli_agent_route_returns_blocked_plan_for_invalid_seed_file() {
 }
 
 #[test]
+fn cli_context_pack_returns_blocked_summary_for_unmatched_explicit_symbol() {
+    let fixture = fixture_project();
+
+    let context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand nonexistent explicit symbol",
+        "--symbol",
+        "ThisSymbolDoesNotExist",
+        "--token-budget",
+        "1000",
+    ]);
+
+    assert_eq!(context["seed_strategy"], "explicit");
+    assert_eq!(
+        context["budget"]["truncation_reason"],
+        "no_context_for_explicit_seed"
+    );
+    assert_eq!(
+        context["continuation_summary"]["status"],
+        "blocked_no_context"
+    );
+    assert_eq!(
+        context["continuation_summary"]["next_action"],
+        "provide_matching_seed_file_or_symbol"
+    );
+    assert!(
+        context["continuation_summary"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("ThisSymbolDoesNotExist")
+    );
+    assert_eq!(context["files"].as_array().unwrap().len(), 0);
+    assert_eq!(context["reading_plan"].as_array().unwrap().len(), 0);
+}
+
+#[test]
+fn cli_agent_route_returns_blocked_plan_for_unmatched_explicit_symbol() {
+    let fixture = fixture_project();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand nonexistent explicit symbol",
+        "--symbol",
+        "ThisSymbolDoesNotExist",
+        "--token-budget",
+        "1000",
+        "--force-index",
+    ]);
+
+    assert_eq!(route["impact_status"], "skipped_no_context");
+    assert_eq!(route["route"][2]["status"], "blocked_no_context");
+    assert_eq!(route["route"][3]["status"], "skipped_no_context");
+    assert!(
+        route["route"][2]["reason"]
+            .as_str()
+            .unwrap()
+            .contains("provide_matching_seed_file_or_symbol")
+    );
+    assert_eq!(
+        route["context_pack"]["budget"]["truncation_reason"],
+        "no_context_for_explicit_seed"
+    );
+    assert_eq!(
+        route["context_pack"]["continuation_summary"]["status"],
+        "blocked_no_context"
+    );
+    assert_eq!(
+        route["context_pack"]["continuation_summary"]["next_action"],
+        "provide_matching_seed_file_or_symbol"
+    );
+    assert_eq!(
+        route["context_pack"]["selected_seeds"][0]["value"],
+        "ThisSymbolDoesNotExist"
+    );
+    assert_eq!(route["context_pack"]["files"].as_array().unwrap().len(), 0);
+    assert_eq!(
+        route["context_pack"]["reading_plan"]
+            .as_array()
+            .unwrap()
+            .len(),
+        0
+    );
+    assert!(route["current_reading_step"].is_null());
+    assert_eq!(route["impact_seed_files"].as_array().unwrap().len(), 0);
+    assert_eq!(route["impact_seed_symbols"].as_array().unwrap().len(), 0);
+    assert_eq!(
+        route["execution_plan"][0]["status"],
+        "blocked_no_reading_plan"
+    );
+    assert_eq!(route["execution_plan"][3]["status"], "skipped_no_context");
+    assert!(
+        route["execution_plan"][3]["instruction"]
+            .as_str()
+            .unwrap()
+            .contains("explicit seed did not match any readable context")
+    );
+}
+
+#[test]
 fn cli_agent_route_keeps_entrypoint_companion_for_task_match() {
     let fixture = TempDir::new().unwrap();
     std::fs::create_dir_all(fixture.path().join("src")).unwrap();
@@ -10691,6 +10794,52 @@ fn mcp_stdio_agent_route_returns_blocked_plan_for_invalid_seed_file() {
         "blocked_no_reading_plan"
     );
     assert_eq!(route["execution_plan"][3]["status"], "skipped_invalid_seed");
+}
+
+#[test]
+fn mcp_stdio_agent_route_returns_blocked_plan_for_unmatched_explicit_symbol() {
+    let fixture = fixture_project();
+    let request = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 34,
+        "method": "tools/call",
+        "params": {
+            "name": "agent_route",
+            "arguments": {
+                "root": fixture.path(),
+                "task": "understand nonexistent explicit symbol",
+                "symbols": ["ThisSymbolDoesNotExist"],
+                "token_budget": 1000,
+                "force_index": true
+            }
+        }
+    });
+
+    let mut command = Command::cargo_bin("codeinsight").unwrap();
+    command.args(["serve", "--transport", "stdio"]);
+    command.write_stdin(format!("{request}\n"));
+    let output = command.assert().success().get_output().stdout.clone();
+    let response: Value = serde_json::from_slice(&output).unwrap();
+    let route = &response["result"]["structuredContent"];
+
+    assert_eq!(response["id"], 34);
+    assert!(response["error"].is_null());
+    assert_eq!(route["route"][2]["status"], "blocked_no_context");
+    assert_eq!(route["impact_status"], "skipped_no_context");
+    assert_eq!(
+        route["context_pack"]["budget"]["truncation_reason"],
+        "no_context_for_explicit_seed"
+    );
+    assert_eq!(
+        route["context_pack"]["continuation_summary"]["next_action"],
+        "provide_matching_seed_file_or_symbol"
+    );
+    assert!(route["current_reading_step"].is_null());
+    assert_eq!(
+        route["execution_plan"][0]["status"],
+        "blocked_no_reading_plan"
+    );
+    assert_eq!(route["execution_plan"][3]["status"], "skipped_no_context");
 }
 
 #[test]

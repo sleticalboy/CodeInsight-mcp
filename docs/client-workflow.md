@@ -104,6 +104,13 @@ tool failure. In that case, expect:
   statuses
 - `impact_status` set to `skipped_no_seed`
 
+For explicit seeds that cannot be used, keep the same structured shape:
+
+- `blocked_invalid_seed`: the seed file could not be resolved under the project
+  root; ask for an existing seed file or symbol.
+- `blocked_no_context`: the explicit seed resolved as input but produced no
+  readable context; ask for a matching seed file or symbol.
+
 ## Agent Policy Prompt
 
 Use this policy in MCP client instructions or agent system prompts when
@@ -264,6 +271,8 @@ Important statuses:
 - `complete`: read the selected context first; no continuation is required.
 - `blocked_no_seed`: provide a seed file or symbol, then retry `context_pack`
   or `agent_route`.
+- `blocked_invalid_seed`: provide an existing seed file or symbol, then retry.
+- `blocked_no_context`: provide a matching seed file or symbol, then retry.
 - `omitted_candidates_available`: offer the included `suggested_tool` as a
   "continue" action.
 - `token_budget_exhausted`: ask for a larger budget or a narrower task.

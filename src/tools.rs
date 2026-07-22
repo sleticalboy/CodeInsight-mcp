@@ -585,6 +585,7 @@ fn agent_route_impact_reason(report: &ImpactAnalysisReport) -> String {
 fn agent_route_skipped_impact_status(context_status: &str) -> &'static str {
     match context_status {
         "blocked_invalid_seed" => "skipped_invalid_seed",
+        "blocked_no_context" => "skipped_no_context",
         _ => "skipped_no_seed",
     }
 }
@@ -594,6 +595,9 @@ fn agent_route_skipped_impact_reason(impact_status: &str) -> String {
         "skipped_invalid_seed" => {
             "skipped because the explicit seed file could not be resolved".to_string()
         }
+        "skipped_no_context" => {
+            "skipped because the explicit seed did not match any readable context".to_string()
+        }
         _ => "skipped because no context file or symbol seed was available".to_string(),
     }
 }
@@ -602,6 +606,9 @@ fn agent_route_skipped_impact_instruction(impact_status: &str) -> String {
     match impact_status {
         "skipped_invalid_seed" => {
             "Impact analysis was skipped because the explicit seed file could not be resolved; provide an existing seed file or symbol before editing.".to_string()
+        }
+        "skipped_no_context" => {
+            "Impact analysis was skipped because the explicit seed did not match any readable context; provide a matching seed file or symbol before editing.".to_string()
         }
         _ => "Impact analysis was skipped because no file or symbol seed was available."
             .to_string(),
@@ -1998,7 +2005,8 @@ pub fn context_pack_value(
         truncated,
         CONTEXT_OMITTED_CANDIDATE_LIMIT,
     );
-    let budget_summary = ContextBudget {
+    let no_context_for_explicit_seed = !auto_seeded && files.is_empty();
+    let mut budget_summary = ContextBudget {
         requested_token_budget: token_budget,
         applied_token_budget: budget,
         estimated_tokens,
@@ -2019,7 +2027,14 @@ pub fn context_pack_value(
             selected_ranges,
         ),
     };
-    let continuation_summary = context_continuation_summary(&budget_summary, &omitted_candidates);
+    if no_context_for_explicit_seed {
+        budget_summary.truncation_reason = "no_context_for_explicit_seed".to_string();
+    }
+    let continuation_summary = if no_context_for_explicit_seed {
+        context_no_context_continuation_summary(&seed_symbols, &seed_files)
+    } else {
+        context_continuation_summary(&budget_summary, &omitted_candidates)
+    };
 
     Ok(ContextPack {
         task,
@@ -2197,6 +2212,33 @@ fn context_continuation_summary(
         message: "Selected context fits the applied token budget; follow the reading_plan first."
             .to_string(),
         next_action: "read_selected_context".to_string(),
+        omitted_candidate_count: 0,
+        first_omitted_file: None,
+        suggested_tool: None,
+    }
+}
+
+fn context_no_context_continuation_summary(
+    seed_symbols: &[String],
+    seed_files: &[String],
+) -> ContextContinuationSummary {
+    let seed_summary = if seed_symbols.is_empty() {
+        format!("seed files: {}", seed_files.join(", "))
+    } else if seed_files.is_empty() {
+        format!("seed symbols: {}", seed_symbols.join(", "))
+    } else {
+        format!(
+            "seed symbols: {}; seed files: {}",
+            seed_symbols.join(", "),
+            seed_files.join(", ")
+        )
+    };
+    ContextContinuationSummary {
+        status: "blocked_no_context".to_string(),
+        message: format!(
+            "Explicit {seed_summary} did not match any readable context; provide a matching --file or --symbol."
+        ),
+        next_action: "provide_matching_seed_file_or_symbol".to_string(),
         omitted_candidate_count: 0,
         first_omitted_file: None,
         suggested_tool: None,

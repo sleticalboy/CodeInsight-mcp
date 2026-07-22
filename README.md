@@ -98,6 +98,7 @@ hands the agent to precise local tools when the selected context is not enough.
    ```text
    Call agent_route with root, task, and token_budget 6000 before reading files directly.
    If continuation_summary.status is blocked_no_seed, ask for a seed file or symbol instead of broad-reading.
+   If it is blocked_invalid_seed or blocked_no_context, ask for an existing or matching seed and retry.
    Read selected files in reading_plan order and use selection_rank as the audit trail.
    Use reading_plan.focus as the compact scan label for the selected file.
    Treat reading_plan.question as the local checklist for the selected file.
@@ -117,7 +118,7 @@ hands the agent to precise local tools when the selected context is not enough.
    | Framework entrypoints | `scripts/framework-entrypoint-demo.sh` | You want local proof that Next.js, Rails, Django, and C# web entrypoints can be detected and routed as first context for matching tasks. |
    | Task routing matrix | `scripts/task-routing-matrix.sh /path/to/repo --expect-file ./route-expectations.tsv` | You want a multi-task first-read matrix showing first selected file, seed strategy, line reduction, token estimate, impact preview, and optional expected-file gates for one repository. |
    | Public route matrix | `scripts/public-task-routing-matrix.sh` | You want one aggregate route-quality summary across pinned checked-in Express, FastAPI, Flask, Gin, Requests, and Streamlit expectation files. Add `--case django` for the heavier manual Django route-quality probe. See the checked-in [public routing snapshot](docs/public-task-routing-matrix.md). |
-   | MCP wiring | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/mcp-first-call-smoke.sh` | You want a compact JSON proof that stdio MCP accepts `agent_route`, returns the first context file, follows `reading_plan[]`, exposes read-less metrics, selection rank, and continuation evidence, runs the current step's suggested tool, includes impact suggested checks, and returns a structured `blocked_no_seed` route for empty repositories. |
+   | MCP wiring | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/mcp-first-call-smoke.sh` | You want a compact JSON proof that stdio MCP accepts `agent_route`, returns the first context file, follows `reading_plan[]`, exposes read-less metrics, selection rank, and continuation evidence, runs the current step's suggested tool, includes impact suggested checks, and returns structured blocked routes for empty repositories and unusable explicit seeds. |
    | Installed adoption | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh` | You want the installed binary to pass CLI `agent-route`, MCP stdio, and MCP `agent_route` against a temporary project with read-less, selection-rank, and continuation evidence. |
    | Local evidence | `scripts/adoption-evidence.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-evidence --print-snippet --issue-template` | You want one folder with local first-read evidence, raw route JSON, MCP first-call JSON, aggregate Markdown/JSON summaries, a copyable terminal snippet, and a ready-to-file issue template. |
    | External Beta trial | `scripts/external-beta-trial.sh /path/to/repo --output-dir /tmp/codeinsight-external-beta-trial` | You want a non-maintainer trial pack with an issue body, redaction checklist, maintainer triage note, and the underlying adoption evidence artifacts. |
@@ -507,7 +508,9 @@ Recommended MCP first-read flow:
 2. If `context_pack.continuation_summary.status` is `blocked_no_seed`, ask for
    a seed file or symbol and retry `agent_route` instead of broad-reading the
    repository. If it is `blocked_invalid_seed`, ask for an existing seed file
-   under the project root or a symbol, then retry.
+   under the project root or a symbol, then retry. If it is
+   `blocked_no_context`, ask for a seed file or symbol that actually matches
+   indexed source context.
 3. Use `agent_route.current_reading_step` as the first checklist row, then read
    `context_pack.files[]` in `reading_plan[]` order.
 4. Use `reading_plan[].selection_rank` and `selection_reason` as the audit

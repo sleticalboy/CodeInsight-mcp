@@ -250,9 +250,10 @@ Near-term improvements:
   expected first-file checks per framework and language.
 - Improve task-aware ranking for security, configuration, test, and
   performance prompts without treating lexical matches as semantic proof.
-- Extend blocked/empty-state contracts beyond `blocked_no_seed` and
-  `blocked_invalid_seed` so agents receive actionable next steps instead of
-  broad-reading when other context routes cannot be inferred.
+- Extend blocked/empty-state contracts beyond `blocked_no_seed`,
+  `blocked_invalid_seed`, and explicit-seed `blocked_no_context` so agents
+  receive actionable next steps instead of broad-reading when other context
+  routes cannot be inferred.
 - Strengthen optional semantic-index adoption with local provider examples and
   quality checks, while keeping deterministic routing useful by default.
 - Add fixture repositories for supported languages that still rely mainly on
