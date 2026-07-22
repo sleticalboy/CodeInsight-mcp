@@ -17,6 +17,8 @@ Default adoption path:
 - [Quickstart](quickstart.md)
 - [Adoption checklist](adoption-checklist.md)
 - [MVP public readiness](mvp-public-readiness.md)
+- [Public Adoption Alpha](public-adoption-alpha.md)
+- [Public adoption feedback template](public-adoption-feedback-template.md)
 - [Demo script](demo-script.md)
 - [Demo output snapshot](demo-output.md)
 - [Adoption cases](adoption-cases.md)
@@ -32,6 +34,7 @@ Default adoption path:
   [Requests](task-routing-expectations/requests.tsv),
   [Streamlit](task-routing-expectations/streamlit.tsv)
 - [CodeInsight self adoption report](adoption-report-codeinsight.md)
+- [Django adoption case](adoption-case-django.md)
 - [Express adoption case](adoption-case-express.md)
 - [Gin adoption case](adoption-case-gin.md)
 - [Memchr adoption case](adoption-case-memchr.md)
@@ -84,6 +87,8 @@ Choose the check by adoption stage:
 | Local repository benchmark | `CODEINSIGHT_BENCH_PROFILE=local ... scripts/benchmark-smoke.sh` |
 
 - [MVP public readiness](mvp-public-readiness.md)
+- [Public Adoption Alpha](public-adoption-alpha.md)
+- [Public adoption feedback template](public-adoption-feedback-template.md)
 - [Maintenance commands](maintenance-commands.md)
 - Two-minute demo: `scripts/two-minute-demo.sh`
 - MCP first-call JSON summary: `scripts/mcp-first-call-smoke.sh`
@@ -98,6 +103,7 @@ Choose the check by adoption stage:
 - [Benchmark methodology](benchmark-methodology.md)
 - [Adoption cases](adoption-cases.md)
 - [CodeInsight self adoption report](adoption-report-codeinsight.md)
+- [Django adoption case](adoption-case-django.md)
 - [Express adoption case](adoption-case-express.md)
 - [Gin adoption case](adoption-case-gin.md)
 - [Memchr adoption case](adoption-case-memchr.md)

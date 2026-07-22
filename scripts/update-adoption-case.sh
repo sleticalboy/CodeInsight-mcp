@@ -23,6 +23,7 @@ usage: scripts/update-adoption-case.sh CASE [options]
 Refreshes a checked-in adoption case from a live adoption-comparison run.
 
 Supported cases:
+  django
   express
   gin
   memchr
@@ -70,7 +71,7 @@ require_command() {
 parse_args() {
   while [ "$#" -gt 0 ]; do
     case "$1" in
-      express|gin|memchr|requests)
+      django|express|gin|memchr|requests)
         if [ -n "$CASE_NAME" ] && [ "$CASE_NAME" != "$1" ]; then
           fail "case specified more than once"
         fi
@@ -142,6 +143,14 @@ configure_case() {
   fi
 
   case "$CASE_NAME" in
+    django)
+      CASE_TITLE="Django Adoption Comparison"
+      CASE_SUBJECT="Django"
+      REPO_URL="${REPO_URL:-https://github.com/django/django.git}"
+      WORK_DIR="${WORK_DIR:-/tmp/codeinsight-adoption-case-django}"
+      OUTPUT_FILE="${OUTPUT_FILE:-$ROOT_DIR/docs/adoption-case-django.md}"
+      TASK="${TASK:-understand django URL routing behavior}"
+      ;;
     express)
       CASE_TITLE="Express Adoption Comparison"
       CASE_SUBJECT="Express"
@@ -226,8 +235,13 @@ write_case_doc() {
   local seed_strategy first_seed_source first_seed_value companion first_file first_question first_tool risk impacted
   local wrapper_note_section
 
-  commit_full="$(git_value "rev-parse HEAD" "local")"
-  commit_short="$(git_value "rev-parse --short HEAD" "local")"
+  if [ -n "$COMMIT_REF" ]; then
+    commit_full="$COMMIT_REF"
+    commit_short="${COMMIT_REF:0:7}"
+  else
+    commit_full="$(git_value "rev-parse HEAD" "local")"
+    commit_short="$(git_value "rev-parse --short HEAD" "local")"
+  fi
   blind_lines="$(json_value "$summary_json" '.metrics.blind_first_read_lines')"
   routed_lines="$(json_value "$summary_json" '.metrics.routed_first_read_lines')"
   avoided="$(json_value "$summary_json" '.metrics.source_lines_avoided')"

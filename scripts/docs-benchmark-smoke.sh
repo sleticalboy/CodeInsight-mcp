@@ -216,7 +216,7 @@ main() {
     '\[CodeInsight self adoption report\]\(docs/adoption-report-codeinsight\.md\)' \
     "README self adoption report link"
   require_pattern README.md \
-    '1,361 of 126,990 source lines' \
+    '1,954 of 656,393 source lines' \
     "README adoption cases aggregate snapshot"
   require_pattern docs/impact-analysis.md \
     'PHP Composer scripts are intentionally broad-only by default' \
@@ -225,7 +225,7 @@ main() {
     'does not match sibling names such as `src/core2\.ts`' \
     "configured suggested-check file filter boundary"
   require_pattern README.md \
-    '93\.3x aggregate read-less ratio' \
+    '335\.9x aggregate read-less ratio' \
     "README adoption cases aggregate read-less ratio"
   require_self_adoption_summary_sync
   require_pattern README.md \
@@ -335,6 +335,9 @@ main() {
     '\[Adoption cases\]\(adoption-cases\.md\)' \
     "adoption checklist adoption cases summary link"
   require_pattern docs/adoption-checklist.md \
+    '\[Django adoption case\]\(adoption-case-django\.md\)' \
+    "adoption checklist Django case link"
+  require_pattern docs/adoption-checklist.md \
     '\[Express adoption case\]\(adoption-case-express\.md\)' \
     "adoption checklist Express case link"
   require_pattern docs/adoption-checklist.md \
@@ -349,6 +352,9 @@ main() {
   require_pattern docs/adoption-checklist.md \
     '\[CodeInsight self adoption report\]\(adoption-report-codeinsight\.md\)' \
     "adoption checklist self report link"
+  require_pattern docs/adoption-checklist.md \
+    'scripts/update-adoption-case\.sh django' \
+    "adoption checklist Django refresh command"
   require_pattern docs/adoption-checklist.md \
     'scripts/update-adoption-case\.sh express' \
     "adoption checklist Express refresh command"
@@ -419,6 +425,9 @@ main() {
     'Uploadable adoption report' \
     "docs index uploadable adoption report validation row"
   require_pattern docs/README.md \
+    '\[Django adoption case\]\(adoption-case-django\.md\)' \
+    "docs index Django adoption case link"
+  require_pattern docs/README.md \
     '\[Express adoption case\]\(adoption-case-express\.md\)' \
     "docs index Express adoption case link"
   require_pattern docs/README.md \
@@ -433,6 +442,27 @@ main() {
   require_pattern docs/README.md \
     'Local repository benchmark' \
     "docs index local benchmark validation row"
+  require_pattern docs/adoption-case-django.md \
+    'Commit: `dca76b15c62a1118325b71678ce3235e2231198d`' \
+    "Django adoption case commit"
+  require_pattern docs/adoption-case-django.md \
+    'Read less | `892\.8x`' \
+    "Django adoption case read-less metric"
+  require_pattern docs/adoption-case-django.md \
+    'First selected file \| `django/urls/resolvers\.py`' \
+    "Django adoption case first selected file"
+  require_pattern docs/adoption-case-django.md \
+    'First reading focus \| Start with seed file route registration, matching, or handler dispatch boundaries\.' \
+    "Django adoption case first reading focus"
+  require_pattern docs/adoption-case-django.md \
+    'Generated with: `scripts/update-adoption-case\.sh django`' \
+    "Django adoption case generator"
+  require_pattern docs/adoption-case-django.md \
+    'scripts/update-adoption-case\.sh django --commit dca76b15c62a1118325b71678ce3235e2231198d' \
+    "Django adoption case exact refresh command"
+  require_pattern docs/adoption-case-django.md \
+    'scripts/adoption-comparison\.sh /tmp/codeinsight-case-django' \
+    "Django adoption case reproduce command"
   require_pattern docs/adoption-case-express.md \
     'Commit: `ae6dd37680e3a00618d6c8a3e522f0ee4eeba1a4`' \
     "Express adoption case commit"
@@ -515,13 +545,13 @@ main() {
     'scripts/adoption-comparison\.sh /tmp/codeinsight-case-requests' \
     "Requests adoption case reproduce command"
   require_pattern docs/adoption-cases.md \
-    'Blind first-read baseline: `126,990` source lines' \
+    'Blind first-read baseline: `656,393` source lines' \
     "adoption cases aggregate baseline"
   require_pattern docs/adoption-cases.md \
-    'Aggregate first-read reduction: `98\.9%`' \
+    'Aggregate first-read reduction: `99\.7%`' \
     "adoption cases aggregate reduction"
   require_pattern docs/adoption-cases.md \
-    'Aggregate read-less ratio: `93\.3x`' \
+    'Aggregate read-less ratio: `335\.9x`' \
     "adoption cases aggregate read-less ratio"
   require_pattern docs/adoption-cases.md \
     '\| Case \| Commit \| Seed strategy \| First selected file \| First reading focus \|' \
@@ -538,6 +568,9 @@ main() {
   require_pattern docs/adoption-cases.md \
     'code conclusions still need normal local verification' \
     "adoption cases verification caveat"
+  require_pattern docs/adoption-cases.md \
+    '\[case\]\(adoption-case-django\.md\)' \
+    "adoption cases Django detail link"
   require_pattern docs/adoption-cases.md \
     '\[case\]\(adoption-case-express\.md\)' \
     "adoption cases Express detail link"
@@ -860,6 +893,9 @@ main() {
   require_pattern scripts/update-adoption-case.sh \
     'Refreshes a checked-in adoption case from a live adoption-comparison run' \
     "Express adoption case update script purpose"
+  require_pattern scripts/update-adoption-case.sh \
+    'django\)' \
+    "Django adoption case update script branch"
   require_pattern scripts/update-adoption-case.sh \
     'gin\)' \
     "Gin adoption case update script branch"

@@ -95,6 +95,7 @@ Pass criteria:
   includes source lines avoided, read-less ratio, seed strategy, first selected
   file, first reading focus/question, and artifact paths.
 - Use the [Adoption cases](adoption-cases.md) summary plus the
+  [Django adoption case](adoption-case-django.md),
   [Express adoption case](adoption-case-express.md),
   [Gin adoption case](adoption-case-gin.md),
   [Memchr adoption case](adoption-case-memchr.md), and
@@ -110,6 +111,8 @@ Pass criteria:
 - Run `scripts/update-adoption-case.sh express` to refresh that checked-in case
   from a live `adoption-comparison` run. The older
   `scripts/update-adoption-case-express.sh` wrapper delegates to the same path.
+- Run `scripts/update-adoption-case.sh django` to refresh the Python web
+  framework routing adoption case.
 - Run `scripts/update-adoption-case.sh gin` to refresh the Go adoption case.
 - Run `scripts/update-adoption-case.sh memchr` to refresh the Rust library
   adoption case.

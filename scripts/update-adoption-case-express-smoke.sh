@@ -134,6 +134,27 @@ EOF
     fail "wrapper did not delegate to generic updater"
 
   "$ROOT_DIR/scripts/update-adoption-case.sh" \
+    django \
+    --root "$TEMP_DIR/repo" \
+    --repo-url "https://github.com/django/django.git" \
+    --commit "dca76b15c62a1118325b71678ce3235e2231198d" \
+    --comparison-script "$TEMP_DIR/adoption-comparison" \
+    --output "$TEMP_DIR/adoption-case-django.md" \
+    --work-dir "$TEMP_DIR/django-work" \
+    >"$TEMP_DIR/django-output.log"
+
+  grep -Fq "updated adoption case: $TEMP_DIR/adoption-case-django.md" "$TEMP_DIR/django-output.log" ||
+    fail "django case did not use generic updater"
+  grep -Fq '# Django Adoption Comparison' "$TEMP_DIR/adoption-case-django.md" ||
+    fail "missing django case title"
+  grep -Fq -- "- Repository: \`https://github.com/django/django.git\`" "$TEMP_DIR/adoption-case-django.md" ||
+    fail "missing django repository"
+  grep -Fq -- "- Commit: \`dca76b15c62a1118325b71678ce3235e2231198d\`" "$TEMP_DIR/adoption-case-django.md" ||
+    fail "missing django explicit commit"
+  grep -Fq -- "- Generated with: \`scripts/update-adoption-case.sh django\`" "$TEMP_DIR/adoption-case-django.md" ||
+    fail "missing django generator line"
+
+  "$ROOT_DIR/scripts/update-adoption-case.sh" \
     gin \
     --root "$TEMP_DIR/repo" \
     --repo-url "https://github.com/gin-gonic/gin.git" \
@@ -189,6 +210,7 @@ EOF
 
   "$ROOT_DIR/scripts/update-adoption-cases.sh" \
     --output "$TEMP_DIR/adoption-cases.md" \
+    "$TEMP_DIR/adoption-case-django.md" \
     "$TEMP_DIR/adoption-case-express.md" \
     "$TEMP_DIR/adoption-case-gin.md" \
     "$TEMP_DIR/adoption-case-memchr.md" \
@@ -197,13 +219,14 @@ EOF
 
   grep -Fq "updated adoption cases summary: $TEMP_DIR/adoption-cases.md" "$TEMP_DIR/summary-output.log" ||
     fail "summary updater did not report output path"
-  grep -Fq 'Blind first-read baseline: `85,912` source lines' "$TEMP_DIR/adoption-cases.md" ||
+  grep -Fq 'Blind first-read baseline: `107,390` source lines' "$TEMP_DIR/adoption-cases.md" ||
     fail "summary updater did not aggregate baselines"
   grep -Fq 'Aggregate read-less ratio: `92.6x`' "$TEMP_DIR/adoption-cases.md" ||
     fail "summary updater did not aggregate read-less ratio"
   "$ROOT_DIR/scripts/update-adoption-cases.sh" \
     --check \
     --output "$TEMP_DIR/adoption-cases.md" \
+    "$TEMP_DIR/adoption-case-django.md" \
     "$TEMP_DIR/adoption-case-express.md" \
     "$TEMP_DIR/adoption-case-gin.md" \
     "$TEMP_DIR/adoption-case-memchr.md" \

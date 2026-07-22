@@ -93,6 +93,7 @@ def format_number(value)
 end
 
 def ecosystem_for(title, repo)
+  return "Python web framework" if title == "Django" || repo.include?("django/django")
   return "JavaScript web framework" if title == "Express" || repo.include?("expressjs/express")
   return "Go web framework" if title == "Gin" || repo.include?("gin-gonic/gin")
   return "Rust search library" if title == "Memchr" || repo.include?("BurntSushi/memchr")

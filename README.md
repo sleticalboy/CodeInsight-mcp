@@ -211,7 +211,7 @@ entrypoint and recommended-tool routing decisions from `project_overview`:
   and Tokio.
 - [Adoption cases](docs/adoption-cases.md): public repository blind-read vs
   routed-first-read comparison summary across JavaScript, Go, Rust, and Python
-  public repositories.
+  public repositories, including a heavyweight Django routing case.
 - [CodeInsight self adoption report](docs/adoption-report-codeinsight.md): a
   complete report bundle snapshot with issue template, manifest, raw MCP
   first-call JSON, and diagnostic logs.
@@ -231,9 +231,9 @@ Current benchmark snapshot:
   select 709 of 75,753 source lines, a 99.1% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and
   select 1,781 of 241,724 source lines, a 99.3% aggregate line reduction.
-- The adoption case summary covers 4 public repositories and routes a first read
-  to 1,361 of 126,990 source lines, avoiding 125,629 lines before broad file
-  reading, a 98.9% aggregate reduction and 93.3x aggregate read-less ratio.
+- The adoption case summary covers 5 public repositories and routes a first read
+  to 1,954 of 656,393 source lines, avoiding 654,439 lines before broad file
+  reading, a 99.7% aggregate reduction and 335.9x aggregate read-less ratio.
 - The CodeInsight self adoption report packages a full tar.gz handoff and
   routes the entrypoint task to 440 of 39,357 source lines, avoiding 38,917
   source lines before broad reading for a 98.9% reduction and 89.4x read-less
@@ -349,6 +349,7 @@ Key docs:
 - [Public task routing matrix](docs/public-task-routing-matrix.md)
 - [Public task routing matrix JSON](docs/public-task-routing-matrix-summary.json)
 - [CodeInsight self adoption report](docs/adoption-report-codeinsight.md)
+- [Django adoption case](docs/adoption-case-django.md)
 - [Express adoption case](docs/adoption-case-express.md)
 - [Gin adoption case](docs/adoption-case-gin.md)
 - [Memchr adoption case](docs/adoption-case-memchr.md)
@@ -368,6 +369,8 @@ Key docs:
 - [Known limitations](docs/known-limitations.md)
 - [Documentation index](docs/README.md)
 - [MVP public readiness](docs/mvp-public-readiness.md)
+- [Public Adoption Alpha](docs/public-adoption-alpha.md)
+- [Public adoption feedback template](docs/public-adoption-feedback-template.md)
 
 ## Current Status
 
@@ -381,8 +384,8 @@ Latest verified release: `v0.1.12`.
 Current public route-quality evidence passes `86/86` first-file checks and
 selects 41,455 of 7,098,531 task source lines.
 
-Next focus: strengthen real-repository demos and route-quality evidence around
-the AI-agent first-read workflow.
+Next focus: run Public Adoption Alpha trials with external users and collect
+route-quality feedback using the checked-in feedback template.
 See [Current status](docs/status.md) for the full implemented capability list.
 
 ## Install From Release

@@ -12,6 +12,7 @@ show what an AI coding agent can read first before opening files broadly.
 
 | Case | Ecosystem | Task | Blind lines | Routed lines | Avoided lines | Reduction | Read less | Details |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| Django | Python web framework | understand django URL routing behavior | `529,403` | `593` | `528,810` | `99.9%` | `892.8x` | [case](adoption-case-django.md) |
 | Express | JavaScript web framework | understand express application routing behavior | `21,478` | `232` | `21,246` | `98.9%` | `92.6x` | [case](adoption-case-express.md) |
 | Gin | Go web framework | understand gin engine routing behavior | `24,099` | `248` | `23,851` | `99.0%` | `97.2x` | [case](adoption-case-gin.md) |
 | Memchr | Rust search library | understand memchr search implementation flow | `69,381` | `230` | `69,151` | `99.7%` | `301.7x` | [case](adoption-case-memchr.md) |
@@ -19,16 +20,16 @@ show what an AI coding agent can read first before opening files broadly.
 
 Aggregate snapshot:
 
-- Public repositories: `4`
-- Blind first-read baseline: `126,990` source lines
-- CodeInsight routed first-read: `1,361` source lines
-- Source lines avoided before broad file reading: `125,629`
-- Aggregate first-read reduction: `98.9%`
-- Aggregate read-less ratio: `93.3x`
-- Selected files: `29`
-- Selected ranges: `50`
-- Estimated tokens: `12,209`
-- Impacted files reported before edits: `61`
+- Public repositories: `5`
+- Blind first-read baseline: `656,393` source lines
+- CodeInsight routed first-read: `1,954` source lines
+- Source lines avoided before broad file reading: `654,439`
+- Aggregate first-read reduction: `99.7%`
+- Aggregate read-less ratio: `335.9x`
+- Selected files: `31`
+- Selected ranges: `62`
+- Estimated tokens: `18,209`
+- Impacted files reported before edits: `111`
 
 ## How To Read These Numbers
 
@@ -47,6 +48,7 @@ compiler, test runner, and language-specific tools.
 
 | Case | Commit | Seed strategy | First selected file | First reading focus | Companion entrypoint | First suggested tool | Impact risk |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| Django | `dca76b15c62a1118325b71678ce3235e2231198d` | `auto_task_match` | `django/urls/resolvers.py` | Start with seed file route registration, matching, or handler dispatch boundaries. | `scripts/archive_eol_stable_branches.py` | `file_outline` | `high` |
 | Express | `ae6dd37680e3a00618d6c8a3e522f0ee4eeba1a4` | `auto_task_match` | `lib/express.js` | Start with seed file context and primary symbols. | `-` | `file_outline` | `high` |
 | Gin | `34dac209ffb6ef85cc78c5d217bbb7ad001d68fd` | `auto_task_match` | `routergroup.go` | Start with seed file context and primary symbols. | `context.go` | `file_outline` | `high` |
 | Memchr | `bce7df7140acff420478a358cde5587904000cb1` | `auto_task_match` | `benchmarks/engines/rust-memchr/main.rs` | Start with seed file context and primary symbols. | `benchmarks/engines/rust-jetscii/main.rs` | `file_outline` | `high` |
@@ -57,6 +59,7 @@ compiler, test runner, and language-specific tools.
 Refresh checked-in snapshots:
 
 ```bash
+scripts/update-adoption-case.sh django
 scripts/update-adoption-case.sh express
 scripts/update-adoption-case.sh gin
 scripts/update-adoption-case.sh memchr
