@@ -3133,6 +3133,21 @@ echo "json binding validation package import resolution demo"
                     .contains("symbol queries matched"),
                 "symbol search tasks should get symbol-specific reading guidance"
             );
+        } else if task == "understand package import resolution" {
+            assert!(
+                context["reading_plan"][0]["focus"]
+                    .as_str()
+                    .unwrap()
+                    .contains("import parsing"),
+                "import resolution tasks should get import-specific reading focus"
+            );
+            assert!(
+                context["reading_plan"][0]["question"]
+                    .as_str()
+                    .unwrap()
+                    .contains("imports parsed"),
+                "import resolution tasks should get import-specific reading guidance"
+            );
         }
     }
 }
