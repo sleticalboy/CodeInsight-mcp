@@ -8,6 +8,7 @@ FIRST_CALL_TASK="${CODEINSIGHT_FIRST_CALL_TASK:-understand app entrypoint flow}"
 FIRST_CALL_TOKEN_BUDGET="${CODEINSIGHT_FIRST_CALL_TOKEN_BUDGET:-1600}"
 SUMMARY_JSON=""
 TEMP_DIR=""
+DEFAULT_FIXTURE="0"
 
 fail_with() {
   local category="$1"
@@ -87,6 +88,7 @@ build_binary_if_needed() {
 }
 
 create_fixture() {
+  DEFAULT_FIXTURE="1"
   TEMP_DIR="$(mktemp -d)"
   FIRST_CALL_ROOT="$TEMP_DIR/repo"
   mkdir -p "$FIRST_CALL_ROOT/src"
@@ -151,6 +153,7 @@ main() {
     FIRST_CALL_TASK="$FIRST_CALL_TASK" \
     FIRST_CALL_TOKEN_BUDGET="$FIRST_CALL_TOKEN_BUDGET" \
     SUMMARY_JSON="$SUMMARY_JSON" \
+    DEFAULT_FIXTURE="$DEFAULT_FIXTURE" \
     python3 <<'PY'
 import json
 import os
@@ -163,6 +166,7 @@ root = os.environ["FIRST_CALL_ROOT"]
 task = os.environ["FIRST_CALL_TASK"]
 token_budget = int(os.environ["FIRST_CALL_TOKEN_BUDGET"])
 summary_json_path = os.environ.get("SUMMARY_JSON", "")
+default_fixture = os.environ.get("DEFAULT_FIXTURE") == "1"
 
 
 class SmokeFailure(Exception):
@@ -517,13 +521,29 @@ try:
         "suggested_tool",
     )
     suggested_tool_executed = True
+    suggested_tool_result_names = []
     if suggested_tool["tool"] == "file_outline":
-        names = [symbol.get("name") for symbol in suggested_result]
         expect(
-            "main" in names,
+            isinstance(suggested_result, list),
             "suggested_tool",
-            f"file_outline suggested tool did not return main; names={names}",
+            f"file_outline should return a list, got {type(suggested_result).__name__}",
         )
+        suggested_tool_result_names = [
+            symbol.get("name")
+            for symbol in suggested_result
+            if isinstance(symbol, dict) and symbol.get("name")
+        ]
+        expect(
+            suggested_tool_result_names,
+            "suggested_tool",
+            "file_outline suggested tool returned no symbols",
+        )
+        if default_fixture:
+            expect(
+                "main" in suggested_tool_result_names,
+                "suggested_tool",
+                f"file_outline suggested tool did not return main; names={suggested_tool_result_names}",
+            )
 
     expect(
         route.get("impact_status") == "complete",
@@ -692,6 +712,7 @@ try:
             "tool": suggested_tool["tool"],
             "arguments": suggested_tool["suggested_arguments"],
         },
+        "suggested_tool_result_names": suggested_tool_result_names,
         "suggested_tool_executed": suggested_tool_executed,
         "impact_status": route["impact_status"],
         "impact_counts": impact_counts,

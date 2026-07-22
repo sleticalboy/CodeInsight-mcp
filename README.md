@@ -388,9 +388,9 @@ Latest verified release: `v0.1.12`.
 Current public route-quality evidence passes `86/86` first-file checks and
 selects 41,455 of 7,098,531 task source lines.
 
-Next focus: run Alpha Feedback Loop trials with external users, collect
-route-quality feedback through the checked-in issue form, and fix the highest
-priority route miss or workflow friction.
+Next focus: expand from maintainer-run Alpha trial issues to non-maintainer
+external feedback, then fix the highest priority route miss or workflow
+friction.
 See [Current status](docs/status.md) for the full implemented capability list.
 
 ## Install From Release

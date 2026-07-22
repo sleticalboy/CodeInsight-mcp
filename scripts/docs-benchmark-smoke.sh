@@ -451,15 +451,36 @@ main() {
   require_pattern docs/alpha-feedback-triage.md \
     'Large Repository Friction' \
     "Alpha feedback triage large repository friction section"
+  require_pattern docs/alpha-feedback-triage.md \
+    'to execute and return a valid outline for the selected file' \
+    "Alpha feedback triage external MCP first-call rule"
   require_pattern docs/alpha-trial-log.md \
     'Next\.js app router' \
     "Alpha trial log Next.js workflow friction row"
+  require_pattern docs/alpha-trial-log.md \
+    'Maintainer-Run Cohort' \
+    "Alpha trial log maintainer-run cohort section"
+  require_pattern docs/alpha-trial-log.md \
+    '\[#1\]\(https://github\.com/sleticalboy/CodeInsight-mcp/issues/1\)' \
+    "Alpha trial log ip2region issue link"
+  require_pattern docs/alpha-trial-log.md \
+    '\[#2\]\(https://github\.com/sleticalboy/CodeInsight-mcp/issues/2\)' \
+    "Alpha trial log mcp-hub issue link"
+  require_pattern docs/alpha-trial-log.md \
+    '\[#3\]\(https://github\.com/sleticalboy/CodeInsight-mcp/issues/3\)' \
+    "Alpha trial log lazy-mcp-wrapper issue link"
   require_pattern .github/ISSUE_TEMPLATE/adoption-feedback.yml \
     'name: Adoption feedback' \
     "GitHub adoption feedback issue form"
   require_pattern .github/ISSUE_TEMPLATE/adoption-feedback.yml \
     'route_near_miss' \
     "GitHub adoption feedback outcome category"
+  require_pattern scripts/mcp-first-call-smoke.sh \
+    'default_fixture = os\.environ\.get\("DEFAULT_FIXTURE"\) == "1"' \
+    "MCP first-call default fixture flag"
+  require_pattern scripts/mcp-first-call-failure-smoke.sh \
+    'external first-call root without a main symbol should pass' \
+    "MCP first-call external non-main regression"
   require_pattern docs/README.md \
     '\[Django adoption case\]\(adoption-case-django\.md\)' \
     "docs index Django adoption case link"

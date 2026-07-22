@@ -16,10 +16,30 @@ reproduce route quality and prioritize fixes.
 | Requests session flow | `psf/requests` | Python HTTP library | `understand requests session request flow` | Session request implementation | `src/requests/sessions.py` | `route_hit` | Checked in as [Requests adoption case](adoption-case-requests.md). |
 | Next.js app router | `vercel/next.js` | TypeScript web framework | `understand nextjs app router rendering flow` | App router rendering code | n/a | `workflow_friction` | Full-repo route generation was interrupted after repeated multi-minute runs; keep as a future large-repo filtering/performance probe. |
 
+## Maintainer-Run Cohort
+
+The first Alpha Feedback Loop cohort uses maintainer-run trials to validate the
+same issue-form path expected from external users. These reports are not a
+substitute for external feedback, but they prove the intake, labels, evidence
+bundle, and MCP first-call checks work on real repositories.
+
+| Issue | Repository | Ecosystem | Task | First selected file | Evidence | Outcome |
+| --- | --- | --- | --- | --- | --- | --- |
+| [#1](https://github.com/sleticalboy/CodeInsight-mcp/issues/1) | `lionsoul2014/ip2region` | Multi-language IP lookup library | `understand ip2region java search flow` | `binding/java/src/main/java/org/lionsoul/ip2region/service/Ip2Region.java` | 641 of 19,379 lines, 96.7% reduction, 30.2x read-less | `route_hit` |
+| [#2](https://github.com/sleticalboy/CodeInsight-mcp/issues/2) | `ravitemer/mcp-hub` | JavaScript MCP hub | `understand mcp hub server routing flow` | `src/utils/router.js` | 601 of 9,111 lines, 93.4% reduction, 15.2x read-less | `route_hit` |
+| [#3](https://github.com/sleticalboy/CodeInsight-mcp/issues/3) | `sleticalboy/lazy-mcp-wrapper` | Go MCP wrapper | `understand lazy mcp wrapper daemon startup flow` | `cmd/lazy-mcp-wrapper/main.go` | 713 of 15,119 lines, 95.3% reduction, 21.2x read-less | `route_hit` |
+
+## Fixes From Cohort
+
+- `scripts/mcp-first-call-smoke.sh` no longer requires external repository
+  `file_outline` results to contain a `main` symbol. The default built-in
+  fixture still checks `main`, while external roots only need a valid non-empty
+  outline. This fixed adoption evidence generation for mcp-hub and ip2region.
+
 ## Open Follow-Ups
 
-- Collect at least three external user reports through the GitHub
-  `Adoption feedback` issue form.
+- Collect at least three non-maintainer external user reports through the
+  GitHub `Adoption feedback` issue form.
 - Add one frontend or TypeScript routing adoption case that is small enough for
   the 10-minute Alpha trial path.
 - For every `route_miss` or `route_near_miss`, decide whether the fix belongs

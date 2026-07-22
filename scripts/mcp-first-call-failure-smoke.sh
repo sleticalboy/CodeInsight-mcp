@@ -65,11 +65,46 @@ expect_help() {
   done
 }
 
+expect_external_outline_without_main() {
+  local repo="$TEMP_DIR/external-repo"
+  local summary="$TEMP_DIR/external-summary.json"
+
+  mkdir -p "$repo/src"
+  cat >"$repo/src/router.ts" <<'EOF'
+export function routes() {
+  return ["/health"];
+}
+
+export function registerRoute(path: string) {
+  return { path };
+}
+EOF
+
+  CODEINSIGHT_FIRST_CALL_ROOT="$repo" \
+  CODEINSIGHT_FIRST_CALL_TASK="understand route registration behavior" \
+  CODEINSIGHT_FIRST_CALL_TOKEN_BUDGET=1600 \
+    "$ROOT_DIR/scripts/mcp-first-call-smoke.sh" --summary-json "$summary" >"$TEMP_DIR/external.out" 2>"$TEMP_DIR/external.err" ||
+    {
+      echo "stderr:" >&2
+      cat "$TEMP_DIR/external.err" >&2
+      fail "external first-call root without a main symbol should pass"
+    }
+
+  jq -e \
+    '.status == "pass"
+      and .suggested_tool.tool == "file_outline"
+      and (.suggested_tool_result_names | index("routes"))
+      and (.suggested_tool_result_names | index("main") | not)' \
+    "$summary" >/dev/null ||
+    fail "external first-call summary should accept non-main outline symbols"
+}
+
 main() {
   TEMP_DIR="$(mktemp -d)"
   trap cleanup EXIT INT TERM
 
   expect_help
+  expect_external_outline_without_main
 
   expect_failure \
     invalid-binary \

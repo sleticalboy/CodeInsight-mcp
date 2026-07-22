@@ -139,6 +139,12 @@ Current Alpha Feedback Loop documents:
 - [Alpha trial log](alpha-trial-log.md)
 - GitHub `Adoption feedback` issue form under `.github/ISSUE_TEMPLATE/`
 
+Current maintainer-run Alpha trial issues:
+
+- [#1 ip2region Java search flow](https://github.com/sleticalboy/CodeInsight-mcp/issues/1)
+- [#2 mcp-hub server routing flow](https://github.com/sleticalboy/CodeInsight-mcp/issues/2)
+- [#3 lazy-mcp-wrapper daemon startup route](https://github.com/sleticalboy/CodeInsight-mcp/issues/3)
+
 ## Triage Policy
 
 Classify alpha feedback as:

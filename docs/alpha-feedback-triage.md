@@ -50,6 +50,18 @@ Fix in this order:
    selection.
 5. `route-hit` reports that only need evidence aggregation.
 
+## MCP First-Call Checks
+
+The MCP first-call smoke is an adoption gate, not a fixture-specific assertion.
+When it runs against the built-in temporary fixture, it may require the
+`file_outline` result to include `main`. When it runs against a real repository
+through `scripts/adoption-evidence.sh`, it must only require the suggested tool
+to execute and return a valid outline for the selected file.
+
+If a real repository fails only because the first selected file has no `main`
+symbol, classify that as `workflow_friction` in the evidence pipeline, then fix
+the smoke contract rather than changing the repository task or route result.
+
 ## Reproduction Checklist
 
 For each non-trivial report, reproduce with:
