@@ -3104,9 +3104,33 @@ main() {
 main "$@"
 "#,
     );
+    write_file(
+        &fixture,
+        "scripts/demo-output-live-sync-smoke.sh",
+        r#"
+#!/usr/bin/env bash
+set -euo pipefail
+
+sync_live_agent_route_demo_output() {
+  echo "agent_route context_pack routing_decision first-read read-less evidence"
+  echo "context routing demo output should stay synchronized"
+}
+
+validate_demo_context_router_contract() {
+  echo "selected context route quality reading plan impact analysis"
+}
+
+main() {
+  sync_live_agent_route_demo_output
+  validate_demo_context_router_contract
+}
+
+main "$@"
+"#,
+    );
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 3);
+    assert_eq!(index["indexed_files"], 4);
 
     let context = run_json([
         "context-pack",
