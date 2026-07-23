@@ -206,6 +206,27 @@ main() {
   require_pattern docs/README.md \
     '\[Public demo one-pager\]\(public-demo-one-pager\.md\)' \
     "public demo one-pager docs index link"
+  require_pattern docs/public-demo-one-pager.md \
+    'agent_route -> selected context -> executable suggested_tool -> impact check' \
+    "public demo one-pager workflow"
+  require_pattern docs/public-demo-one-pager.md \
+    '`routing_decision` gives one compact audit row' \
+    "public demo one-pager routing decision framing"
+  require_pattern docs/public-demo-one-pager.md \
+    'pass `86/86` expected' \
+    "public demo one-pager route-quality snapshot"
+  require_pattern docs/public-demo-one-pager.md \
+    '`99\.41%` aggregate first-read line reduction' \
+    "public demo one-pager aggregate line reduction snapshot"
+  require_pattern docs/public-demo-one-pager.md \
+    'Treat these numbers as first-read routing and token-discipline evidence' \
+    "public demo one-pager evidence caveat"
+  require_pattern docs/public-demo-one-pager.md \
+    'Do not say:' \
+    "public demo one-pager guardrail heading"
+  require_pattern docs/public-demo-one-pager.md \
+    'Compiler-grade static analysis' \
+    "public demo one-pager compiler-grade guardrail"
   require_pattern README.md \
     '\[Smoke benchmark\]\(docs/benchmark-v0\.1\.md\).*p-limit, itsdangerous, Go example,' \
     "smoke benchmark link and repository list"
