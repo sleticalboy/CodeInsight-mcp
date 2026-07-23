@@ -99,6 +99,7 @@ def ecosystem_for(title, repo)
   return "Multi-language IP lookup library" if title == "ip2region" || repo.include?("lionsoul2014/ip2region")
   return "Rust search library" if title == "Memchr" || repo.include?("BurntSushi/memchr")
   return "Python HTTP library" if title == "Requests" || repo.include?("psf/requests")
+  return "TypeScript frontend routing library" if title == "Wouter" || repo.include?("molefrog/wouter")
 
   "Public repository"
 end

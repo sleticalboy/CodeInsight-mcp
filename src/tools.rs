@@ -7920,7 +7920,7 @@ fn auto_context_seed_files(
             .iter()
             .filter(|file| auto_seed_role_allowed(auto_seed_file_role(file), task_keywords))
         {
-            let priority = auto_seed_route_dispatch_file_priority(file);
+            let priority = auto_seed_route_dispatch_file_priority(file, task_keywords);
             if priority < 3 {
                 continue;
             }
@@ -8111,8 +8111,11 @@ fn auto_context_seed_files(
                 .then_with(|| right.score.cmp(&left.score))
                 .then_with(|| left.file.cmp(&right.file))
         } else if route_dispatch_task {
-            auto_seed_route_dispatch_file_priority(&right.file)
-                .cmp(&auto_seed_route_dispatch_file_priority(&left.file))
+            auto_seed_route_dispatch_file_priority(&right.file, task_keywords)
+                .cmp(&auto_seed_route_dispatch_file_priority(
+                    &left.file,
+                    task_keywords,
+                ))
                 .then_with(|| right.score.cmp(&left.score))
                 .then_with(|| left.file.cmp(&right.file))
         } else {
@@ -10215,7 +10218,7 @@ fn auto_seed_route_dispatch_framework_file_matches(file: &str) -> bool {
         || auto_seed_file_stem_matches(file, "resolvers")
 }
 
-fn auto_seed_route_dispatch_file_priority(file: &str) -> i32 {
+fn auto_seed_route_dispatch_file_priority(file: &str, task_keywords: &[String]) -> i32 {
     let normalized = file.replace('\\', "/").to_ascii_lowercase();
     if normalized.contains("/checks/")
         || normalized.starts_with("checks/")
@@ -10227,6 +10230,8 @@ fn auto_seed_route_dispatch_file_priority(file: &str) -> i32 {
         || normalized.starts_with("tests/")
     {
         -2
+    } else if auto_seed_task_named_package_source_file_priority(&normalized, task_keywords) > 0 {
+        auto_seed_task_named_package_source_file_priority(&normalized, task_keywords)
     } else if auto_seed_file_stem_matches(file, "express")
         || auto_seed_file_stem_matches(file, "gin")
         || auto_seed_file_stem_matches(file, "scaffold")
@@ -10253,6 +10258,34 @@ fn auto_seed_route_dispatch_file_priority(file: &str) -> i32 {
     } else {
         0
     }
+}
+
+fn auto_seed_task_named_package_source_file_priority(
+    normalized_file: &str,
+    task_keywords: &[String],
+) -> i32 {
+    if !normalized_file.contains("/src/") {
+        return 0;
+    }
+
+    let segments = normalized_file.split('/').collect::<Vec<_>>();
+    for window in segments.windows(3) {
+        let [parent, package, source] = window else {
+            continue;
+        };
+        if !matches!(*parent, "packages" | "crates" | "libs" | "modules") || *source != "src" {
+            continue;
+        }
+        if task_keywords.iter().any(|keyword| {
+            keyword.len() >= 3
+                && auto_seed_package_name_keyword_allowed(keyword)
+                && keyword.eq_ignore_ascii_case(package)
+        }) {
+            return 5;
+        }
+    }
+
+    0
 }
 
 fn auto_seed_route_dispatch_symbol_matches(symbol: &str) -> bool {
@@ -10425,7 +10458,7 @@ fn auto_seed_priority_routed_file_priority(file: &str, task_keywords: &[String])
         priority = priority.max(auto_seed_middleware_file_priority(file));
     }
     if auto_seed_route_dispatch_task(task_keywords) {
-        priority = priority.max(auto_seed_route_dispatch_file_priority(file));
+        priority = priority.max(auto_seed_route_dispatch_file_priority(file, task_keywords));
     }
     priority
 }
@@ -12048,6 +12081,30 @@ fn auto_seed_text_keyword_allowed(keyword: &str) -> bool {
     )
 }
 
+fn auto_seed_package_name_keyword_allowed(keyword: &str) -> bool {
+    keyword.len() >= 3
+        && !matches!(
+            keyword,
+            "app"
+                | "application"
+                | "behavior"
+                | "dispatch"
+                | "flow"
+                | "handler"
+                | "handlers"
+                | "main"
+                | "match"
+                | "matching"
+                | "route"
+                | "router"
+                | "routes"
+                | "routing"
+                | "start"
+                | "startup"
+                | "understand"
+        )
+}
+
 fn explicit_context_seeds(seed_symbols: &[String], seed_files: &[String]) -> Vec<ContextSeed> {
     let mut seeds = seed_symbols
         .iter()
@@ -13394,17 +13451,23 @@ mod tests {
         assert!(auto_seed_route_dispatch_task(&task_keywords(
             "understand django URL routing behavior"
         )));
+        let django_keywords = task_keywords("understand django URL routing behavior");
+        let express_keywords = task_keywords("understand express routing behavior");
+        let routing_keywords = task_keywords("understand routing behavior");
         assert!(
-            auto_seed_route_dispatch_file_priority("django/urls/resolvers.py")
-                > auto_seed_route_dispatch_file_priority("django/core/checks/urls.py")
+            auto_seed_route_dispatch_file_priority("django/urls/resolvers.py", &django_keywords)
+                > auto_seed_route_dispatch_file_priority(
+                    "django/core/checks/urls.py",
+                    &django_keywords
+                )
         );
         assert!(
-            auto_seed_route_dispatch_file_priority("lib/express.js")
-                > auto_seed_route_dispatch_file_priority("lib/router/index.js")
+            auto_seed_route_dispatch_file_priority("lib/express.js", &express_keywords)
+                > auto_seed_route_dispatch_file_priority("lib/router/index.js", &express_keywords)
         );
         assert!(
-            auto_seed_route_dispatch_file_priority("src/router.ts")
-                > auto_seed_route_dispatch_file_priority("src/application.ts")
+            auto_seed_route_dispatch_file_priority("src/router.ts", &routing_keywords)
+                > auto_seed_route_dispatch_file_priority("src/application.ts", &routing_keywords)
         );
     }
 

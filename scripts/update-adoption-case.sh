@@ -29,6 +29,7 @@ Supported cases:
   ip2region
   memchr
   requests
+  wouter
 
 Options:
   --root PATH           Existing repository checkout. Skips clone.
@@ -72,7 +73,7 @@ require_command() {
 parse_args() {
   while [ "$#" -gt 0 ]; do
     case "$1" in
-      django|express|gin|ip2region|memchr|requests)
+      django|express|gin|ip2region|memchr|requests|wouter)
         if [ -n "$CASE_NAME" ] && [ "$CASE_NAME" != "$1" ]; then
           fail "case specified more than once"
         fi
@@ -192,6 +193,14 @@ configure_case() {
       WORK_DIR="${WORK_DIR:-/tmp/codeinsight-adoption-case-requests}"
       OUTPUT_FILE="${OUTPUT_FILE:-$ROOT_DIR/docs/adoption-case-requests.md}"
       TASK="${TASK:-understand requests session request flow}"
+      ;;
+    wouter)
+      CASE_TITLE="Wouter Adoption Comparison"
+      CASE_SUBJECT="Wouter"
+      REPO_URL="${REPO_URL:-https://github.com/molefrog/wouter.git}"
+      WORK_DIR="${WORK_DIR:-/tmp/codeinsight-adoption-case-wouter}"
+      OUTPUT_FILE="${OUTPUT_FILE:-$ROOT_DIR/docs/adoption-case-wouter.md}"
+      TASK="${TASK:-understand wouter route matching flow}"
       ;;
     *)
       fail "unsupported adoption case: $CASE_NAME"

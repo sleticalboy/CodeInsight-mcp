@@ -26,17 +26,17 @@ first-call contract that a client or issue triage flow needs.
 | Metric | Value |
 | --- | ---: |
 | Indexed files | `138` |
-| Symbols | `1946` |
+| Symbols | `1949` |
 | Index errors | `0` |
 | Entrypoints | `12` |
 | Type-relation edges | `7` |
 | Top type-relation target | `EmbeddingProvider` |
 | Type-relation graph filter | `base_type` |
-| Blind first-read baseline | `77878` source lines |
+| Blind first-read baseline | `78019` source lines |
 | CodeInsight routed first-read | `540` source lines |
-| Source lines avoided | `77338` |
+| Source lines avoided | `77479` |
 | First-read reduction | `99.3%` |
-| Read less | `144.2x` |
+| Read less | `144.5x` |
 | Selected files | `30` |
 | Selected ranges | `32` |
 | Estimated tokens | `4826` |
@@ -117,9 +117,9 @@ The `--print-snippet` output from the refreshed report was:
 
 - Status: `pass`
 - Route: `index_project -> project_overview -> context_pack -> impact_analysis`
-- Selected context: `540/77878` source lines, `99.3%` reduction
-- Source lines avoided: `77338`
-- Read less: `144.2x`
+- Selected context: `540/78019` source lines, `99.3%` reduction
+- Source lines avoided: `77479`
+- Read less: `144.5x`
 - Seed strategy: `auto_entrypoint`
 - Selected seeds: `1`
 - First seed source: `overview_entrypoint`
@@ -167,9 +167,9 @@ scripts/adoption-report.sh . \
 Expected summary lines:
 
 ```text
-- Selected context: `540/77878` source lines, `99.3%` reduction
-- Source lines avoided: `77338`
-- Read less: `144.2x`
+- Selected context: `540/78019` source lines, `99.3%` reduction
+- Source lines avoided: `77479`
+- Read less: `144.5x`
 - MCP route quality: `high` (`100/100`, `7` evidence signals), next=`read_selected_context`
 - MCP first-call contract: reading_order=`true`, current_reading_step=`true`, read_less_instruction=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`
 - First-read gating: suggested_tool_after_selected_context=`true`, continuation_after_selected_context=`true`, impact_review_before_edits=`true`

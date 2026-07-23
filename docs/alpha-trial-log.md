@@ -14,6 +14,7 @@ reproduce route quality and prioritize fixes.
 | ip2region Java search | `lionsoul2014/ip2region` | Multi-language IP lookup library | `understand ip2region java search flow` | Java search implementation | `binding/java/src/main/java/org/lionsoul/ip2region/service/Ip2Region.java` | `route_hit` | Checked in as [ip2region adoption case](adoption-case-ip2region.md). |
 | Memchr search flow | `BurntSushi/memchr` | Rust search library | `understand memchr search implementation flow` | Search implementation entrypoint | `src/lib.rs` | `route_hit` | Checked in as [Memchr adoption case](adoption-case-memchr.md). |
 | Requests session flow | `psf/requests` | Python HTTP library | `understand requests session request flow` | Session request implementation | `src/requests/sessions.py` | `route_hit` | Checked in as [Requests adoption case](adoption-case-requests.md). |
+| Wouter route matching | `molefrog/wouter` | TypeScript frontend routing library | `understand wouter route matching flow` | Core Wouter route matching source | `packages/wouter/src/index.js` | `route_hit` | Fixed package-source routing priority and checked in as [Wouter adoption case](adoption-case-wouter.md). |
 | Next.js app router | `vercel/next.js` | TypeScript web framework | `understand nextjs app router rendering flow` | App router rendering code | n/a | `workflow_friction` | Full-repo route generation was interrupted after repeated multi-minute runs; explicit `--file` / `--symbol` seeds are now available for targeted large-repo retry, while full-repo performance remains a future probe. |
 
 ## Maintainer-Run Cohort
@@ -39,14 +40,16 @@ bundle, and MCP first-call checks work on real repositories.
   `--file` and `--symbol` seeds through local CLI and MCP first-call checks.
   This gives large repositories such as Next.js a targeted retry path when
   broad automatic routing is too slow for the 10-minute trial.
+- Route-dispatch tasks now prefer task-named package source roots such as
+  `packages/wouter/src` over demo app packages, turning the Wouter route
+  matching trial from a near-miss on `packages/magazin/App.tsx` into a
+  route-hit on `packages/wouter/src/index.js`.
 
 ## Open Follow-Ups
 
 - Collect at least three non-maintainer external user reports through the
   GitHub `Adoption feedback` issue form or the
   [External Beta trial](external-beta-trial.md) wrapper.
-- Add one frontend or TypeScript routing adoption case that is small enough for
-  the 10-minute Alpha trial path.
 - For every `route_miss` or `route_near_miss`, decide whether the fix belongs
   in task seeding, framework entrypoint hints, reading-plan wording, or
   limitations.

@@ -9742,6 +9742,65 @@ main "$@"
 }
 
 #[test]
+fn cli_context_pack_prefers_task_named_package_source_over_demo_app_routes() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        "packages/magazin/App.tsx",
+        r#"
+import { Route, Router } from "wouter";
+
+export function App() {
+  return (
+    <Router>
+      <Route path="/magazin">Magazine</Route>
+    </Router>
+  );
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "packages/magazin/index.tsx",
+        r#"
+import { App } from "./App";
+import { mount } from "wouter";
+
+mount(App);
+"#,
+    );
+    write_file(
+        &fixture,
+        "packages/wouter/src/index.js",
+        r#"
+export function matchRoute(pattern, path) {
+  return pattern === path;
+}
+
+export function route(pattern, component) {
+  return { pattern, component, match: matchRoute };
+}
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 3);
+
+    let context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand wouter route matching flow",
+        "--token-budget",
+        "1200",
+    ]);
+    assert_eq!(
+        context["reading_plan"][0]["file"],
+        "packages/wouter/src/index.js"
+    );
+}
+
+#[test]
 fn cli_impact_analysis_reports_depth_paths() {
     let fixture = TempDir::new().unwrap();
     write_file(

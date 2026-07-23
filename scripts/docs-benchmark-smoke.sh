@@ -316,7 +316,7 @@ main() {
     '\[CodeInsight self adoption report\]\(docs/adoption-report-codeinsight\.md\)' \
     "README self adoption report link"
   require_pattern README.md \
-    '2,595 of 675,772 source lines' \
+    '2,999 of 682,538 source lines' \
     "README adoption cases aggregate snapshot"
   require_pattern docs/impact-analysis.md \
     'PHP Composer scripts are intentionally broad-only by default' \
@@ -325,7 +325,7 @@ main() {
     'does not match sibling names such as `src/core2\.ts`' \
     "configured suggested-check file filter boundary"
   require_pattern README.md \
-    '260\.4x aggregate read-less ratio' \
+    '227\.6x aggregate read-less ratio' \
     "README adoption cases aggregate read-less ratio"
   require_self_adoption_summary_sync
   require_pattern README.md \
@@ -341,7 +341,7 @@ main() {
     'clients can render a pre-edit' \
     "README MCP impact checklist evidence"
   require_pattern README.md \
-    'of 77,878 source lines, avoiding 77,325 source lines before broad reading' \
+    'of 78,019 source lines, avoiding 77,466 source lines before broad reading' \
     "README two-minute demo read-less metric"
   "$ROOT_DIR/scripts/readme-adoption-summary-smoke.sh" >/dev/null
   require_pattern README.md \
@@ -807,14 +807,23 @@ main() {
     'scripts/adoption-comparison\.sh /tmp/codeinsight-case-requests' \
     "Requests adoption case reproduce command"
   require_pattern docs/adoption-cases.md \
-    'Blind first-read baseline: `675,772` source lines' \
+    'Blind first-read baseline: `682,538` source lines' \
     "adoption cases aggregate baseline"
   require_pattern docs/adoption-cases.md \
     'Aggregate first-read reduction: `99\.6%`' \
     "adoption cases aggregate reduction"
   require_pattern docs/adoption-cases.md \
-    'Aggregate read-less ratio: `260\.4x`' \
+    'Aggregate read-less ratio: `227\.6x`' \
     "adoption cases aggregate read-less ratio"
+  require_pattern docs/adoption-case-wouter.md \
+    'First selected file \| `packages/wouter/src/index\.js`' \
+    "Wouter adoption case first selected file"
+  require_pattern docs/adoption-cases.md \
+    '\| Wouter \| TypeScript frontend routing library \|' \
+    "Wouter adoption case aggregate row"
+  require_pattern scripts/update-adoption-case.sh \
+    'wouter' \
+    "Wouter adoption case generator"
   require_pattern docs/adoption-cases.md \
     '\| Case \| Commit \| Seed strategy \| First selected file \| First reading focus \|' \
     "adoption cases route focus column"
@@ -1786,16 +1795,16 @@ main() {
     'first_next_action' \
     "reading plan next action demo metric"
   require_pattern docs/demo-script.md \
-    'source_lines_avoided: 77325' \
+    'source_lines_avoided: 77466' \
     "demo script source lines avoided metric"
   require_pattern docs/demo-script.md \
-    'read_less_ratio: 140\.8x' \
+    'read_less_ratio: 141\.1x' \
     "demo script read-less metric"
   require_pattern docs/demo-script.md \
     'routing_decision_quality: high \(100/100, 22 evidence signals\)' \
     "demo script route quality metric"
   require_pattern docs/demo-script.md \
-    'Read less: avoided 77325 source lines, 140\.8x less text before follow-up tools\.' \
+    'Read less: avoided 77466 source lines, 141\.1x less text before follow-up tools\.' \
     "demo script evidence summary read-less line"
   require_pattern docs/demo-script.md \
     'impact_analysis' \

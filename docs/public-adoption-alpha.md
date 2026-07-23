@@ -132,9 +132,10 @@ Checked-in adoption cases:
   ratio.
 - [Memchr](adoption-case-memchr.md): Rust search implementation flow.
 - [Requests](adoption-case-requests.md): Python HTTP session request flow.
+- [Wouter](adoption-case-wouter.md): TypeScript frontend route matching flow.
 
-The aggregate public adoption snapshot covers six public repositories and
-routes 2,595 of 675,772 source lines before broad reading, a 99.6% aggregate
+The aggregate public adoption snapshot covers seven public repositories and
+routes 2,999 of 682,538 source lines before broad reading, a 99.6% aggregate
 first-read reduction.
 
 Current Alpha Feedback Loop documents:
