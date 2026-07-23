@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO_ROOT="${CODEINSIGHT_SELF_ADOPTION_ROOT:-$ROOT_DIR}"
-TASK="${CODEINSIGHT_SELF_ADOPTION_TASK:-inspect src/main.rs before changing MCP server startup behavior}"
+TASK="${CODEINSIGHT_SELF_ADOPTION_TASK:-understand the CodeInsight MCP server Rust entrypoint}"
 TOKEN_BUDGET="${CODEINSIGHT_SELF_ADOPTION_TOKEN_BUDGET:-6000}"
 OUTPUT_FILE="${CODEINSIGHT_SELF_ADOPTION_OUTPUT:-$ROOT_DIR/docs/adoption-report-codeinsight.md}"
 REPORT_OUTPUT_DIR="${CODEINSIGHT_SELF_ADOPTION_REPORT_OUTPUT_DIR:-/tmp/codeinsight-self-adoption-report}"

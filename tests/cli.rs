@@ -9695,6 +9695,53 @@ main "$@"
 }
 
 #[test]
+fn cli_context_pack_prefers_rust_entrypoint_over_script_helpers() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        "src/main.rs",
+        r#"
+fn main() {
+    run_server();
+}
+
+fn run_server() {}
+"#,
+    );
+    write_file(
+        &fixture,
+        "scripts/framework-entrypoint-demo.sh",
+        r#"
+#!/usr/bin/env bash
+set -euo pipefail
+
+main() {
+  echo "framework entrypoint helper"
+}
+
+main "$@"
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 2);
+
+    let context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand the CodeInsight MCP server Rust entrypoint",
+        "--token-budget",
+        "1200",
+    ]);
+    assert_eq!(context["reading_plan"][0]["file"], "src/main.rs");
+    assert_eq!(
+        context["selected_seeds"][0]["source"],
+        "overview_entrypoint"
+    );
+}
+
+#[test]
 fn cli_impact_analysis_reports_depth_paths() {
     let fixture = TempDir::new().unwrap();
     write_file(

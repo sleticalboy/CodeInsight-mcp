@@ -7987,6 +7987,8 @@ fn auto_context_seed_files(
     let file_parsing_task = auto_seed_file_parsing_task(task_keywords);
     let binding_validation_task = auto_seed_binding_validation_task(task_keywords);
     let import_resolution_task = auto_seed_import_resolution_task(task_keywords);
+    let startup_entrypoint_task = auto_seed_startup_entrypoint_task(task_keywords);
+    let startup_flow_task = auto_seed_startup_flow_task(task_keywords);
     candidates.sort_by(|left, right| {
         if agent_first_read_task {
             auto_seed_agent_first_read_file_priority(&right.file, task_keywords)
@@ -8053,6 +8055,19 @@ fn auto_context_seed_files(
         } else if import_resolution_task {
             auto_seed_import_resolution_file_priority(&right.file)
                 .cmp(&auto_seed_import_resolution_file_priority(&left.file))
+                .then_with(|| right.score.cmp(&left.score))
+                .then_with(|| left.file.cmp(&right.file))
+        } else if startup_entrypoint_task {
+            auto_seed_startup_entrypoint_file_priority(&right.file, task_keywords)
+                .cmp(&auto_seed_startup_entrypoint_file_priority(
+                    &left.file,
+                    task_keywords,
+                ))
+                .then_with(|| right.score.cmp(&left.score))
+                .then_with(|| left.file.cmp(&right.file))
+        } else if startup_flow_task {
+            auto_seed_startup_flow_file_priority(&right.file)
+                .cmp(&auto_seed_startup_flow_file_priority(&left.file))
                 .then_with(|| right.score.cmp(&left.score))
                 .then_with(|| left.file.cmp(&right.file))
         } else if route_miss_task {
@@ -8125,26 +8140,27 @@ fn auto_context_seed_files(
         || file_parsing_task
         || binding_validation_task
         || import_resolution_task;
-    let selected_candidate = if route_miss_task || auto_seed_prefers_entrypoint(task_keywords) {
-        candidates.first()
-    } else if priority_routed_task {
-        candidates
-            .first()
-            .filter(|candidate| {
-                auto_seed_priority_routed_file_priority(&candidate.file, task_keywords) > 0
-            })
-            .or_else(|| {
-                candidates
-                    .iter()
-                    .find(|candidate| candidate.source == "task_match")
-            })
-            .or_else(|| candidates.first())
-    } else {
-        candidates
-            .iter()
-            .find(|candidate| candidate.source == "task_match")
-            .or_else(|| candidates.first())
-    };
+    let selected_candidate =
+        if route_miss_task || auto_seed_prefers_entrypoint(task_keywords) || startup_flow_task {
+            candidates.first()
+        } else if priority_routed_task {
+            candidates
+                .first()
+                .filter(|candidate| {
+                    auto_seed_priority_routed_file_priority(&candidate.file, task_keywords) > 0
+                })
+                .or_else(|| {
+                    candidates
+                        .iter()
+                        .find(|candidate| candidate.source == "task_match")
+                })
+                .or_else(|| candidates.first())
+        } else {
+            candidates
+                .iter()
+                .find(|candidate| candidate.source == "task_match")
+                .or_else(|| candidates.first())
+        };
 
     if let Some(candidate) = selected_candidate {
         let file = candidate.file.clone();
@@ -11850,10 +11866,94 @@ fn auto_seed_lifecycle_keyword(keyword: &str) -> bool {
     )
 }
 
-fn auto_seed_prefers_entrypoint(task_keywords: &[String]) -> bool {
-    (task_keywords
+fn auto_seed_startup_entrypoint_task(task_keywords: &[String]) -> bool {
+    task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "entrypoint" | "entrypoints" | "entry" | "entries" | "main"
+        )
+    }) && !task_keywords
         .iter()
-        .any(|keyword| auto_seed_lifecycle_keyword(keyword))
+        .any(|keyword| matches!(keyword.as_str(), "package" | "packages"))
+}
+
+fn auto_seed_startup_flow_task(task_keywords: &[String]) -> bool {
+    !auto_seed_startup_entrypoint_task(task_keywords)
+        && task_keywords
+            .iter()
+            .any(|keyword| matches!(keyword.as_str(), "startup" | "start" | "boot" | "bootstrap"))
+        && !task_keywords
+            .iter()
+            .any(|keyword| matches!(keyword.as_str(), "package" | "packages"))
+}
+
+fn auto_seed_startup_entrypoint_file_priority(file: &str, task_keywords: &[String]) -> i32 {
+    let normalized = file.replace('\\', "/").to_ascii_lowercase();
+    if normalized == "scripts" || normalized.starts_with("scripts/") {
+        return -80;
+    }
+    if is_low_value_reference_file(file) {
+        return -30;
+    }
+
+    let source_file = normalized.starts_with("src/") || normalized.contains("/src/");
+    let entrypoint_file = auto_seed_entrypoint_file_matches(file);
+    let rust_task = task_keywords
+        .iter()
+        .any(|keyword| keyword == "rust" || keyword == "rs");
+    let rust_file = normalized.ends_with(".rs");
+
+    let mut score = if source_file && auto_seed_file_stem_matches(file, "main") {
+        160
+    } else if source_file && entrypoint_file {
+        130
+    } else if entrypoint_file {
+        90
+    } else if source_file {
+        20
+    } else {
+        0
+    };
+
+    if rust_task {
+        score += if rust_file { 40 } else { -20 };
+    }
+
+    score
+}
+
+fn auto_seed_startup_flow_file_priority(file: &str) -> i32 {
+    let normalized = file.replace('\\', "/").to_ascii_lowercase();
+    if normalized == "scripts" || normalized.starts_with("scripts/") {
+        return -80;
+    }
+    if is_low_value_reference_file(file) {
+        return -30;
+    }
+
+    let source_file = normalized.starts_with("src/") || normalized.contains("/src/");
+    if source_file
+        && (auto_seed_file_stem_matches(file, "startup")
+            || auto_seed_file_stem_matches(file, "bootstrap")
+            || auto_seed_file_stem_matches(file, "boot"))
+    {
+        160
+    } else if auto_seed_file_stem_matches(file, "startup")
+        || auto_seed_file_stem_matches(file, "bootstrap")
+        || auto_seed_file_stem_matches(file, "boot")
+    {
+        120
+    } else if source_file && auto_seed_entrypoint_file_matches(file) {
+        80
+    } else if source_file {
+        20
+    } else {
+        0
+    }
+}
+
+fn auto_seed_prefers_entrypoint(task_keywords: &[String]) -> bool {
+    (auto_seed_startup_entrypoint_task(task_keywords)
         || auto_seed_request_lifecycle_task(task_keywords))
         && !task_keywords
             .iter()
