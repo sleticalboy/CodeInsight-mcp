@@ -7845,16 +7845,9 @@ fn cli_resolves_csharp_using_imports() {
         call["callee"] != "this.BaseTag"
             || call["callee_file"] != "src/App/Controllers/BaseController.cs"
     }));
-    assert!(
-        callees
-            .as_array()
-            .unwrap()
-            .iter()
-            .any(|call| { call["callee"] == "base.RootTag" && call["callee_file"].is_null() })
-    );
-    assert!(callees.as_array().unwrap().iter().all(|call| {
-        call["callee"] != "base.RootTag"
-            || call["callee_file"] != "src/App/Controllers/RootController.cs"
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "base.RootTag"
+            && call["callee_file"] == "src/App/Controllers/RootController.cs"
     }));
     assert!(
         callees

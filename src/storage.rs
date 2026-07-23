@@ -1925,6 +1925,104 @@ impl Store {
                     select
                         c.id as call_id,
                         target_files.path as callee_file,
+                        s.qualified_name as qualified_name,
+                        inherited_base_types.line as dependency_line,
+                        s.start_line as start_line,
+                        1 as match_rank
+                    from calls c
+                    join dependencies base_types
+                      on base_types.source_file_id = c.source_file_id
+                    join files base_files
+                      on base_files.path like '%' ||
+                        replace(base_types.target, '.', '/') ||
+                        '.cs'
+                    join dependencies inherited_base_types
+                      on inherited_base_types.source_file_id = base_files.id
+                    join dependencies inherited_scopes
+                      on inherited_scopes.source_file_id = base_files.id
+                    join files target_files
+                      on target_files.path like '%' ||
+                        replace(inherited_scopes.target, '.', '/') ||
+                        '/' ||
+                        inherited_base_types.target ||
+                        '.cs'
+                    join symbols s on s.file_id = target_files.id
+                    where c.callee_file is null
+                      and c.language = 'csharp'
+                      and base_types.language = 'csharp'
+                      and base_types.kind = 'base_type'
+                      and base_types.local_alias is not null
+                      and base_types.target like '%.%'
+                      and inherited_base_types.language = 'csharp'
+                      and inherited_base_types.kind = 'base_type'
+                      and inherited_scopes.language = 'csharp'
+                      and inherited_scopes.kind in ('using', 'namespace')
+                      and c.caller like base_types.local_alias || '.%'
+                      and c.callee like 'base.%'
+                      and instr(substr(c.callee, length('base') + 2), '.') = 0
+                      and (
+                        s.name = substr(c.callee, length('base') + 2)
+                        or s.qualified_name = substr(c.callee, length('base') + 2)
+                        or s.qualified_name like '%.' || substr(c.callee, length('base') + 2)
+                      )
+
+                    union all
+
+                    select
+                        c.id as call_id,
+                        target_files.path as callee_file,
+                        s.qualified_name as qualified_name,
+                        inherited_base_types.line as dependency_line,
+                        s.start_line as start_line,
+                        1 as match_rank
+                    from calls c
+                    join dependencies base_types
+                      on base_types.source_file_id = c.source_file_id
+                    join dependencies base_scopes
+                      on base_scopes.source_file_id = c.source_file_id
+                    join files base_files
+                      on base_files.path like '%' ||
+                        replace(base_scopes.target, '.', '/') ||
+                        '/' ||
+                        base_types.target ||
+                        '.cs'
+                    join dependencies inherited_base_types
+                      on inherited_base_types.source_file_id = base_files.id
+                    join dependencies inherited_scopes
+                      on inherited_scopes.source_file_id = base_files.id
+                    join files target_files
+                      on target_files.path like '%' ||
+                        replace(inherited_scopes.target, '.', '/') ||
+                        '/' ||
+                        inherited_base_types.target ||
+                        '.cs'
+                    join symbols s on s.file_id = target_files.id
+                    where c.callee_file is null
+                      and c.language = 'csharp'
+                      and base_types.language = 'csharp'
+                      and base_types.kind = 'base_type'
+                      and base_types.local_alias is not null
+                      and base_types.target not like '%.%'
+                      and base_scopes.language = 'csharp'
+                      and base_scopes.kind in ('using', 'namespace')
+                      and inherited_base_types.language = 'csharp'
+                      and inherited_base_types.kind = 'base_type'
+                      and inherited_scopes.language = 'csharp'
+                      and inherited_scopes.kind in ('using', 'namespace')
+                      and c.caller like base_types.local_alias || '.%'
+                      and c.callee like 'base.%'
+                      and instr(substr(c.callee, length('base') + 2), '.') = 0
+                      and (
+                        s.name = substr(c.callee, length('base') + 2)
+                        or s.qualified_name = substr(c.callee, length('base') + 2)
+                        or s.qualified_name like '%.' || substr(c.callee, length('base') + 2)
+                      )
+
+                    union all
+
+                    select
+                        c.id as call_id,
+                        target_files.path as callee_file,
                         s.qualified_name,
                         property_types.line as dependency_line,
                         s.start_line as start_line,
