@@ -39,8 +39,8 @@ LSP, compiler, test runner, and language-specific tools for precise diagnostics,
 type checks, and final verification.
 
 Current public routing snapshot: pinned Express, FastAPI, Flask, Gin, Requests,
-Streamlit, and Wouter route-quality expectations pass `88/88`, selecting
-41,278 of 7,115,162 task source lines for a `99.41%` aggregate first-read line reduction,
+Streamlit, and Wouter route-quality expectations pass `92/92`, selecting
+41,664 of 7,142,226 task source lines for a `99.41%` aggregate first-read line reduction,
 with each route carrying a first suggested tool such as `file_outline`. See the
 checked-in [Markdown snapshot](docs/public-task-routing-matrix.md) and
 [JSON summary](docs/public-task-routing-matrix-summary.json). A heavyweight
@@ -259,7 +259,7 @@ accuracy, or proof that unselected code is irrelevant.
 
 Current benchmark snapshot:
 
-- The two-minute demo for this repository shows the agent route selecting 553 of 78,072 source lines, avoiding 77,519 source lines before broad reading for a 99.3% reduction and 141.2x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
+- The two-minute demo for this repository shows the agent route selecting 553 of 78,200 source lines, avoiding 77,647 source lines before broad reading for a 99.3% reduction and 141.4x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
 - Smoke repositories route `context_pack` first for 4/4 repositories and
   select 709 of 75,753 source lines, a 99.1% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and
@@ -274,8 +274,8 @@ Current benchmark snapshot:
   filter, reporting high route quality from 7 evidence signals, while the MCP
   first-call contract fields all pass, including the `current_reading_step` mirror and read-less instruction evidence.
 - The public route-quality snapshot pins Express, FastAPI, Flask, Gin,
-  Requests, Streamlit, and Wouter and passes 88/88 expected first-file checks,
-  selecting 41,278 of 7,115,162 task source lines, a 99.41% aggregate
+  Requests, Streamlit, and Wouter and passes 92/92 expected first-file checks,
+  selecting 41,664 of 7,142,226 task source lines, a 99.41% aggregate
   first-read line reduction, and records the first suggested tool for each
   route.
 - An optional heavyweight Django route-quality case is available with
@@ -449,8 +449,8 @@ edits.
 
 Latest verified release: `v0.1.12`.
 
-Current public route-quality evidence passes `88/88` first-file checks and
-selects 41,278 of 7,115,162 task source lines.
+Current public route-quality evidence passes `92/92` first-file checks and
+selects 41,664 of 7,142,226 task source lines.
 
 Next focus: use the external Beta trial wrapper and cohort summary to collect
 at least three non-maintainer reports, then fix the highest priority route miss

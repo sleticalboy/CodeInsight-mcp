@@ -1,2 +1,6 @@
 understand wouter route matching flow	packages/wouter/src/index.js
+understand wouter path parser behavior	packages/wouter/src/paths.js
+understand wouter browser location behavior	packages/wouter/src/use-browser-location.js
+understand wouter memory location behavior	packages/wouter/src/memory-location.js
+understand wouter hash location behavior	packages/wouter/src/use-hash-location.js
 understand wouter router context behavior	packages/wouter/src/index.js

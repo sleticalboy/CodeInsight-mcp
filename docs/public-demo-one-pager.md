@@ -56,7 +56,7 @@ Expected output shape:
    routing_decision_first_file: src/tools.rs
    routing_decision_first_selection_rank: 1
    routing_decision_suggested_tool: file_outline
-   routing_decision_read_less: 99.3%, 141.2x
+   routing_decision_read_less: 99.3%, 141.4x
    routing_decision_continuation: omitted_candidates_available
    routing_decision_impact_status: complete
    routing_decision_quality: high (100/100, 22 evidence signals)
@@ -93,9 +93,9 @@ evidence, suggested tool handoff, continuation status, and pre-edit impact.
 
 Current public route-quality snapshot:
 
-- Express, FastAPI, Flask, Gin, Requests, Streamlit, and Wouter pass `88/88` expected
+- Express, FastAPI, Flask, Gin, Requests, Streamlit, and Wouter pass `92/92` expected
   first-file checks.
-- The public matrix selects `41,278` of `7,115,162` task source lines for a
+- The public matrix selects `41,664` of `7,142,226` task source lines for a
   `99.41%` aggregate first-read line reduction.
 - A heavyweight Django probe passes `3/3` expected first-file checks and shows a
   `99.87%` aggregate first-read line reduction in the latest local verification.

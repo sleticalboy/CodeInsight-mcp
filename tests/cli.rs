@@ -9782,9 +9782,62 @@ export function route(pattern, component) {
 }
 "#,
     );
+    write_file(
+        &fixture,
+        "packages/wouter/src/use-browser-location.js",
+        r#"
+export function useBrowserLocation() {
+  const path = window.location.pathname;
+  return [path, nextPath => window.history.pushState(null, "", nextPath)];
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "packages/wouter-preact/types/use-browser-location.d.ts",
+        r#"
+export declare function useBrowserLocation(): [
+  path: string,
+  navigate: (path: string) => void
+];
+"#,
+    );
+    write_file(
+        &fixture,
+        "packages/wouter/src/paths.js",
+        r#"
+export function relativePath(base, path) {
+  return path.startsWith(base) ? path.slice(base.length) : path;
+}
+
+export function absolutePath(path, base) {
+  return path.startsWith("~") ? path.slice(1) : base + path;
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "packages/wouter/src/memory-location.js",
+        r#"
+export function memoryLocation(path = "/") {
+  let currentPath = path;
+  return [() => currentPath, nextPath => { currentPath = nextPath; }];
+}
+"#,
+    );
+    write_file(
+        &fixture,
+        "packages/wouter/src/memory-location.d.ts",
+        r#"
+export declare function memoryLocation(path?: string): [
+  getPath: () => string,
+  navigate: (path: string) => void
+];
+"#,
+    );
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 3);
+    assert_eq!(index["indexed_files"], 8);
 
     let context = run_json([
         "context-pack",
@@ -9804,6 +9857,32 @@ export function route(pattern, component) {
             .unwrap()
             .iter()
             .any(|seed| seed["value"] == "packages/magazin/index.tsx")
+    );
+
+    let location_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand wouter browser location behavior",
+        "--token-budget",
+        "1200",
+    ]);
+    assert_eq!(
+        location_context["reading_plan"][0]["file"],
+        "packages/wouter/src/use-browser-location.js"
+    );
+
+    let path_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand wouter path parser behavior",
+        "--token-budget",
+        "1200",
+    ]);
+    assert_eq!(
+        path_context["reading_plan"][0]["file"],
+        "packages/wouter/src/paths.js"
     );
 }
 

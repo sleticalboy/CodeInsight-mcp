@@ -8494,6 +8494,33 @@ fn auto_seed_task_match_score(file: &str, symbol: Option<&str>, task_keywords: &
     score
 }
 
+fn auto_seed_task_file_stem_score(file: &str, task_keywords: &[String]) -> i32 {
+    let Some(stem) = Path::new(file).file_stem().and_then(|stem| stem.to_str()) else {
+        return 0;
+    };
+
+    task_keywords
+        .iter()
+        .filter(|keyword| auto_seed_text_keyword_allowed(keyword))
+        .map(|keyword| auto_seed_field_match_weight(stem, keyword) * 420)
+        .sum()
+}
+
+fn auto_seed_type_declaration_file(normalized_file: &str) -> bool {
+    normalized_file.ends_with(".d.ts")
+        || normalized_file.ends_with(".d.mts")
+        || normalized_file.ends_with(".d.cts")
+}
+
+fn auto_seed_type_declaration_task(task_keywords: &[String]) -> bool {
+    task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "type" | "types" | "declaration" | "declarations" | "interface" | "interfaces"
+        )
+    })
+}
+
 fn auto_seed_task_focus_boost(
     file: &str,
     symbol: Option<&str>,
@@ -8501,6 +8528,17 @@ fn auto_seed_task_focus_boost(
     overview_entrypoint: bool,
 ) -> i32 {
     let mut score = 0;
+    let normalized_file = file.replace('\\', "/").to_ascii_lowercase();
+
+    if auto_seed_task_named_package_source_root(&normalized_file, task_keywords).is_some() {
+        score += 900;
+        score += auto_seed_task_file_stem_score(file, task_keywords);
+    }
+    if auto_seed_type_declaration_file(&normalized_file)
+        && !auto_seed_type_declaration_task(task_keywords)
+    {
+        score -= 1400;
+    }
 
     if auto_seed_agent_first_read_task(task_keywords) {
         let file_match = auto_seed_agent_first_read_field_matches(file);

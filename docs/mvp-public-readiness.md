@@ -62,8 +62,8 @@ scripts/update-public-task-routing-matrix.sh --check
 Current checked-in snapshot:
 
 - Repositories: Express, FastAPI, Flask, Gin, Requests, Streamlit, and Wouter.
-- Expected first-file checks: `88/88`.
-- Selected lines: `41,278` of `7,115,162` task source lines.
+- Expected first-file checks: `92/92`.
+- Selected lines: `41,664` of `7,142,226` task source lines.
 - Aggregate first-read line reduction: `99.41%`.
 - Output:
   [public-task-routing-matrix.md](public-task-routing-matrix.md) and
