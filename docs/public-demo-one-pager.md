@@ -56,7 +56,7 @@ Expected output shape:
    routing_decision_first_file: src/tools.rs
    routing_decision_first_selection_rank: 1
    routing_decision_suggested_tool: file_outline
-   routing_decision_read_less: 99.3%, 141.9x
+   routing_decision_read_less: 99.3%, 142.1x
    routing_decision_continuation: omitted_candidates_available
    routing_decision_impact_status: complete
    first_reading_focus: Start with seed file context routing, first-read handoff, and read-less evidence.

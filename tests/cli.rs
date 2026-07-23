@@ -7864,6 +7864,33 @@ fn cli_resolves_csharp_using_imports() {
 }
 
 #[test]
+fn cli_resolves_csharp_unqualified_base_inherited_calls() {
+    let fixture = csharp_unqualified_base_fixture_project();
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 3);
+    assert_eq!(index["changed_files"], 3);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "AuthController.Login",
+        "--limit",
+        "10",
+    ]);
+
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "base.BaseTag"
+            && call["callee_file"] == "src/App/Controllers/BaseController.cs"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "base.RootTag"
+            && call["callee_file"] == "src/App/Controllers/RootController.cs"
+    }));
+}
+
+#[test]
 fn cli_leaves_csharp_nested_temporary_wrappers_unresolved() {
     let fixture = csharp_nested_temporary_wrapper_fixture_project();
 
@@ -14331,6 +14358,50 @@ namespace App.Conflicts;
 public static class LocalFormatter {
     public static string Normalize(string name) {
         return name;
+    }
+}
+"#,
+    );
+    dir
+}
+
+fn csharp_unqualified_base_fixture_project() -> TempDir {
+    let dir = TempDir::new().unwrap();
+    write_file(
+        &dir,
+        "src/App/Controllers/AuthController.cs",
+        r#"
+namespace App.Controllers;
+
+public class AuthController : BaseController {
+    public string Login(string id) {
+        return base.BaseTag(id) + base.RootTag(id);
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/App/Controllers/BaseController.cs",
+        r#"
+namespace App.Controllers;
+
+public class BaseController : RootController {
+    protected string BaseTag(string id) {
+        return id;
+    }
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/App/Controllers/RootController.cs",
+        r#"
+namespace App.Controllers;
+
+public class RootController {
+    protected string RootTag(string id) {
+        return id;
     }
 }
 "#,
