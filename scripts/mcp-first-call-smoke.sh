@@ -513,6 +513,34 @@ try:
         "agent_route_contract",
         "routing_decision read-less metrics should mirror context_pack.read_less",
     )
+    route_quality = routing_decision.get("route_quality", {})
+    expect(
+        isinstance(route_quality, dict),
+        "agent_route_contract",
+        "routing_decision.route_quality is missing",
+    )
+    expect(
+        isinstance(route_quality.get("level"), str)
+        and len(route_quality["level"]) > 0
+        and isinstance(route_quality.get("score"), int)
+        and isinstance(route_quality.get("evidence_count"), int)
+        and isinstance(route_quality.get("evidence_sources"), list)
+        and isinstance(route_quality.get("warnings"), list)
+        and isinstance(route_quality.get("recommended_action"), str)
+        and len(route_quality["recommended_action"]) > 0,
+        "agent_route_contract",
+        f"routing_decision.route_quality should expose level, score, evidence, warnings, and action: {route_quality!r}",
+    )
+    if default_fixture and not seed_files and not seed_symbols:
+        expect(
+            route_quality["level"] == "high"
+            and route_quality["score"] >= 80
+            and route_quality["evidence_count"] >= 1
+            and route_quality["recommended_action"]
+            in ("read_selected_context", "read_selected_context_then_use_continuation_if_needed"),
+            "agent_route_contract",
+            f"default route_quality should be high-confidence first-read evidence: {route_quality!r}",
+        )
 
     suggested_tool = execution_plan[1].get("suggested_tool", {})
     expect(suggested_tool.get("tool"), "suggested_tool", "execution_plan suggested_tool.tool is missing")
@@ -737,6 +765,7 @@ try:
         f"unexpected blocked execution statuses: {blocked_execution_statuses}",
     )
     blocked_routing_decision = blocked_route.get("routing_decision", {})
+    blocked_route_quality = blocked_routing_decision.get("route_quality", {})
     expect(
         blocked_routing_decision.get("seed_strategy") == "auto_no_seed"
         and blocked_routing_decision.get("selected_file_count") == 0
@@ -744,6 +773,14 @@ try:
         and blocked_routing_decision.get("impact_status") == "skipped_no_seed",
         "agent_route_blocked_contract",
         f"blocked routing_decision should expose no-seed status: {blocked_routing_decision!r}",
+    )
+    expect(
+        blocked_route_quality.get("level") == "blocked"
+        and blocked_route_quality.get("score") == 0
+        and blocked_route_quality.get("evidence_count") == 0
+        and blocked_route_quality.get("recommended_action") == "provide_seed_file_or_symbol",
+        "agent_route_blocked_contract",
+        f"blocked routing_decision.route_quality should expose no-seed recovery action: {blocked_route_quality!r}",
     )
 
     unmatched_route = call_tool(
@@ -827,12 +864,21 @@ try:
         f"unexpected unmatched explicit seed execution statuses: {unmatched_execution_statuses}",
     )
     unmatched_routing_decision = unmatched_route.get("routing_decision", {})
+    unmatched_route_quality = unmatched_routing_decision.get("route_quality", {})
     expect(
         unmatched_routing_decision.get("selected_file_count") == 0
         and unmatched_routing_decision.get("continuation_status") == "blocked_no_context"
         and unmatched_routing_decision.get("impact_status") == "skipped_no_context",
         "agent_route_blocked_contract",
         f"unmatched routing_decision should expose no-context status: {unmatched_routing_decision!r}",
+    )
+    expect(
+        unmatched_route_quality.get("level") == "blocked"
+        and unmatched_route_quality.get("score") == 0
+        and unmatched_route_quality.get("evidence_count") == 0
+        and unmatched_route_quality.get("recommended_action") == "provide_matching_seed_file_or_symbol",
+        "agent_route_blocked_contract",
+        f"unmatched routing_decision.route_quality should expose no-context recovery action: {unmatched_route_quality!r}",
     )
 
     with tempfile.TemporaryDirectory(prefix="codeinsight-unindexed-first-call-") as scoped_root:
@@ -944,6 +990,7 @@ try:
         f"unexpected unindexed task-path execution statuses: {unindexed_execution_statuses}",
     )
     unindexed_routing_decision = unindexed_route.get("routing_decision", {})
+    unindexed_route_quality = unindexed_routing_decision.get("route_quality", {})
     expect(
         unindexed_routing_decision.get("seed_strategy") == "auto_task_path_unindexed"
         and unindexed_routing_decision.get("first_seed_source") == "task_path_unindexed"
@@ -953,6 +1000,14 @@ try:
         and unindexed_routing_decision.get("impact_status") == "skipped_unindexed_task_path",
         "agent_route_blocked_contract",
         f"unindexed routing_decision should expose task-path block status: {unindexed_routing_decision!r}",
+    )
+    expect(
+        unindexed_route_quality.get("level") == "blocked"
+        and unindexed_route_quality.get("score") == 0
+        and unindexed_route_quality.get("evidence_count") == 0
+        and unindexed_route_quality.get("recommended_action") == "index_or_update_scope_for_task_path",
+        "agent_route_blocked_contract",
+        f"unindexed routing_decision.route_quality should expose scope recovery action: {unindexed_route_quality!r}",
     )
     expect(
         "task path seed is not indexed" in unindexed_execution_plan[3].get("instruction", ""),
@@ -975,8 +1030,14 @@ try:
         "first_context_file": first_context_file,
         "first_reading_file": first_reading_file,
         "first_reading_selection_rank": reading_plan[0]["selection_rank"],
+        "route_quality": route_quality,
+        "route_quality_level": route_quality["level"],
+        "route_quality_score": route_quality["score"],
+        "route_quality_evidence_count": route_quality["evidence_count"],
+        "route_quality_recommended_action": route_quality["recommended_action"],
         "routing_decision": {
             "seed_strategy": routing_decision["seed_strategy"],
+            "route_quality": route_quality,
             "first_seed_source": routing_decision.get("first_seed_source", ""),
             "first_seed_value": routing_decision.get("first_seed_value", ""),
             "first_file": routing_decision.get("first_file", ""),
@@ -1046,6 +1107,7 @@ try:
             "context_files": len(blocked_context_pack["files"]),
             "reading_plan_steps": len(blocked_context_pack["reading_plan"]),
             "has_current_reading_step": "current_reading_step" in blocked_route,
+            "route_quality": blocked_route_quality,
             "impact_status": blocked_route["impact_status"],
             "execution_plan_actions": [step["action"] for step in blocked_execution_plan],
             "execution_plan_statuses": blocked_execution_statuses,
@@ -1058,6 +1120,7 @@ try:
             "context_files": len(unmatched_context_pack["files"]),
             "reading_plan_steps": len(unmatched_context_pack["reading_plan"]),
             "has_current_reading_step": "current_reading_step" in unmatched_route,
+            "route_quality": unmatched_route_quality,
             "impact_status": unmatched_route["impact_status"],
             "execution_plan_actions": [step["action"] for step in unmatched_execution_plan],
             "execution_plan_statuses": unmatched_execution_statuses,
@@ -1073,6 +1136,7 @@ try:
             "context_files": len(unindexed_context_pack["files"]),
             "reading_plan_steps": len(unindexed_context_pack["reading_plan"]),
             "has_current_reading_step": "current_reading_step" in unindexed_route,
+            "route_quality": unindexed_route_quality,
             "impact_status": unindexed_route["impact_status"],
             "execution_plan_actions": [step["action"] for step in unindexed_execution_plan],
             "execution_plan_statuses": unindexed_execution_statuses,

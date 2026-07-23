@@ -44,6 +44,39 @@ write_summary_json() {
   "first_context_file": "src/auth.ts",
   "first_reading_file": "src/auth.ts",
   "first_reading_selection_rank": 1,
+  "route_quality": {
+    "level": "high",
+    "score": 96,
+    "evidence_count": 4,
+    "evidence_sources": ["seed file", "call graph"],
+    "warnings": [],
+    "recommended_action": "read_selected_context"
+  },
+  "route_quality_level": "high",
+  "route_quality_score": 96,
+  "route_quality_evidence_count": 4,
+  "route_quality_recommended_action": "read_selected_context",
+  "routing_decision": {
+    "seed_strategy": "auto_task_path",
+    "route_quality": {
+      "level": "high",
+      "score": 96,
+      "evidence_count": 4,
+      "evidence_sources": ["seed file", "call graph"],
+      "warnings": [],
+      "recommended_action": "read_selected_context"
+    },
+    "first_seed_source": "task_path",
+    "first_seed_value": "src/auth.ts",
+    "first_file": "src/auth.ts",
+    "first_selection_rank": 1,
+    "first_suggested_tool": "file_outline",
+    "line_reduction": "90.0%",
+    "read_less_ratio": "10.0x",
+    "continuation_status": "complete",
+    "continuation_next_action": "read_selected_context",
+    "impact_status": "complete"
+  },
   "context_pack_read_less": {
     "baseline_source_lines": 120,
     "selected_source_lines": 12,
@@ -120,6 +153,14 @@ write_summary_json() {
     "context_files": 0,
     "reading_plan_steps": 0,
     "has_current_reading_step": false,
+    "route_quality": {
+      "level": "blocked",
+      "score": 0,
+      "evidence_count": 0,
+      "evidence_sources": [],
+      "warnings": ["No reading plan was produced; context status is blocked_no_seed."],
+      "recommended_action": "provide_seed_file_or_symbol"
+    },
     "impact_status": "skipped_no_seed",
     "execution_plan_actions": [
       "read_selected_context",
@@ -142,6 +183,14 @@ write_summary_json() {
     "context_files": 0,
     "reading_plan_steps": 0,
     "has_current_reading_step": false,
+    "route_quality": {
+      "level": "blocked",
+      "score": 0,
+      "evidence_count": 0,
+      "evidence_sources": [],
+      "warnings": ["No reading plan was produced; context status is blocked_no_context."],
+      "recommended_action": "provide_matching_seed_file_or_symbol"
+    },
     "impact_status": "skipped_no_context",
     "execution_plan_actions": [
       "read_selected_context",
@@ -167,6 +216,14 @@ write_summary_json() {
     "context_files": 0,
     "reading_plan_steps": 0,
     "has_current_reading_step": false,
+    "route_quality": {
+      "level": "blocked",
+      "score": 0,
+      "evidence_count": 0,
+      "evidence_sources": [],
+      "warnings": ["No reading plan was produced; context status is blocked_unindexed_task_path."],
+      "recommended_action": "index_or_update_scope_for_task_path"
+    },
     "impact_status": "skipped_unindexed_task_path",
     "execution_plan_actions": [
       "read_selected_context",
@@ -255,6 +312,10 @@ EOF
     fail "missing first reading focus output"
   grep -Fq 'first_reading_question: Where are authentication decisions, credentials, or session boundaries handled here?' "$TEMP_DIR/output.log" ||
     fail "missing first reading question output"
+  grep -Fq 'route_quality: high 96/100 evidence=4' "$TEMP_DIR/output.log" ||
+    fail "missing route quality output"
+  grep -Fq 'route_quality_recommended_action: read_selected_context' "$TEMP_DIR/output.log" ||
+    fail "missing route quality recommended action output"
   grep -Fq 'current_reading_step_matches_reading_plan: true' "$TEMP_DIR/output.log" ||
     fail "missing current reading step mirror output"
   grep -Fq 'first_execution_instruction_has_focus: true' "$TEMP_DIR/output.log" ||
@@ -277,12 +338,16 @@ EOF
     fail "missing blocked no-seed status output"
   grep -Fq 'blocked_no_seed_next_action: provide_seed_file_or_symbol' "$TEMP_DIR/output.log" ||
     fail "missing blocked no-seed next action output"
+  grep -Fq 'blocked_no_seed_route_quality: blocked 0/100 -> provide_seed_file_or_symbol' "$TEMP_DIR/output.log" ||
+    fail "missing blocked no-seed route quality output"
   grep -Fq 'blocked_no_seed_impact_status: skipped_no_seed' "$TEMP_DIR/output.log" ||
     fail "missing blocked no-seed impact status output"
   grep -Fq 'blocked_no_context_status: blocked_no_context' "$TEMP_DIR/output.log" ||
     fail "missing blocked no-context status output"
   grep -Fq 'blocked_no_context_next_action: provide_matching_seed_file_or_symbol' "$TEMP_DIR/output.log" ||
     fail "missing blocked no-context next action output"
+  grep -Fq 'blocked_no_context_route_quality: blocked 0/100 -> provide_matching_seed_file_or_symbol' "$TEMP_DIR/output.log" ||
+    fail "missing blocked no-context route quality output"
   grep -Fq 'blocked_no_context_impact_status: skipped_no_context' "$TEMP_DIR/output.log" ||
     fail "missing blocked no-context impact status output"
   grep -Fq 'blocked_unindexed_task_path_status: blocked_unindexed_task_path' "$TEMP_DIR/output.log" ||
@@ -295,6 +360,8 @@ EOF
     fail "missing blocked unindexed task path first seed value output"
   grep -Fq 'blocked_unindexed_task_path_next_action: index_or_update_scope_for_task_path' "$TEMP_DIR/output.log" ||
     fail "missing blocked unindexed task path next action output"
+  grep -Fq 'blocked_unindexed_task_path_route_quality: blocked 0/100 -> index_or_update_scope_for_task_path' "$TEMP_DIR/output.log" ||
+    fail "missing blocked unindexed task path route quality output"
   grep -Fq 'blocked_unindexed_task_path_impact_status: skipped_unindexed_task_path' "$TEMP_DIR/output.log" ||
     fail "missing blocked unindexed task path impact status output"
   grep -Fq 'blocked_unindexed_task_path_scope_hint: true' "$TEMP_DIR/output.log" ||
@@ -325,6 +392,10 @@ EOF
     fail "missing latest first reading question output"
   grep -Fq 'first_reading_focus: Start with seed file authentication and session boundaries.' "$TEMP_DIR/latest-output.log" ||
     fail "missing latest first reading focus output"
+  grep -Fq 'route_quality: high 96/100 evidence=4' "$TEMP_DIR/latest-output.log" ||
+    fail "missing latest route quality output"
+  grep -Fq 'route_quality_recommended_action: read_selected_context' "$TEMP_DIR/latest-output.log" ||
+    fail "missing latest route quality recommended action output"
   grep -Fq 'current_reading_step_matches_reading_plan: true' "$TEMP_DIR/latest-output.log" ||
     fail "missing latest current reading step mirror output"
   grep -Fq 'first_execution_instruction_has_focus: true' "$TEMP_DIR/latest-output.log" ||
@@ -345,6 +416,8 @@ EOF
     fail "missing latest blocked no-seed status output"
   grep -Fq 'blocked_no_seed_next_action: provide_seed_file_or_symbol' "$TEMP_DIR/latest-output.log" ||
     fail "missing latest blocked no-seed next action output"
+  grep -Fq 'blocked_no_seed_route_quality: blocked 0/100 -> provide_seed_file_or_symbol' "$TEMP_DIR/latest-output.log" ||
+    fail "missing latest blocked no-seed route quality output"
   grep -Fq 'blocked_unindexed_task_path_status: blocked_unindexed_task_path' "$TEMP_DIR/latest-output.log" ||
     fail "missing latest blocked unindexed task path status output"
   grep -Fq 'blocked_unindexed_task_path_seed_strategy: auto_task_path_unindexed' "$TEMP_DIR/latest-output.log" ||
@@ -353,12 +426,16 @@ EOF
     fail "missing latest blocked unindexed task path first seed value output"
   grep -Fq 'blocked_unindexed_task_path_next_action: index_or_update_scope_for_task_path' "$TEMP_DIR/latest-output.log" ||
     fail "missing latest blocked unindexed task path next action output"
+  grep -Fq 'blocked_unindexed_task_path_route_quality: blocked 0/100 -> index_or_update_scope_for_task_path' "$TEMP_DIR/latest-output.log" ||
+    fail "missing latest blocked unindexed task path route quality output"
   grep -Fq 'blocked_no_seed_impact_status: skipped_no_seed' "$TEMP_DIR/latest-output.log" ||
     fail "missing latest blocked no-seed impact status output"
   grep -Fq 'blocked_no_context_status: blocked_no_context' "$TEMP_DIR/latest-output.log" ||
     fail "missing latest blocked no-context status output"
   grep -Fq 'blocked_no_context_next_action: provide_matching_seed_file_or_symbol' "$TEMP_DIR/latest-output.log" ||
     fail "missing latest blocked no-context next action output"
+  grep -Fq 'blocked_no_context_route_quality: blocked 0/100 -> provide_matching_seed_file_or_symbol' "$TEMP_DIR/latest-output.log" ||
+    fail "missing latest blocked no-context route quality output"
   grep -Fq 'blocked_no_context_impact_status: skipped_no_context' "$TEMP_DIR/latest-output.log" ||
     fail "missing latest blocked no-context impact status output"
 

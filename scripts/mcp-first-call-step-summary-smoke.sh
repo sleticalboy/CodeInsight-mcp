@@ -55,8 +55,28 @@ main() {
   "first_context_file": "src/auth.ts",
   "first_reading_file": "src/auth.ts",
   "first_reading_selection_rank": 1,
+  "route_quality": {
+    "level": "high",
+    "score": 96,
+    "evidence_count": 4,
+    "evidence_sources": ["seed file", "call graph"],
+    "warnings": [],
+    "recommended_action": "read_selected_context"
+  },
+  "route_quality_level": "high",
+  "route_quality_score": 96,
+  "route_quality_evidence_count": 4,
+  "route_quality_recommended_action": "read_selected_context",
   "routing_decision": {
     "seed_strategy": "auto_task_path",
+    "route_quality": {
+      "level": "high",
+      "score": 96,
+      "evidence_count": 4,
+      "evidence_sources": ["seed file", "call graph"],
+      "warnings": [],
+      "recommended_action": "read_selected_context"
+    },
     "first_seed_source": "task_path",
     "first_seed_value": "src/auth.ts",
     "first_file": "src/auth.ts",
@@ -138,6 +158,14 @@ main() {
     "context_files": 0,
     "reading_plan_steps": 0,
     "has_current_reading_step": false,
+    "route_quality": {
+      "level": "blocked",
+      "score": 0,
+      "evidence_count": 0,
+      "evidence_sources": [],
+      "warnings": ["No reading plan was produced; context status is blocked_no_seed."],
+      "recommended_action": "provide_seed_file_or_symbol"
+    },
     "impact_status": "skipped_no_seed",
     "execution_plan_actions": ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"],
     "execution_plan_statuses": ["blocked_no_reading_plan", "blocked_no_current_reading_step", "manual_after_selected_context", "skipped_no_seed"]
@@ -150,6 +178,14 @@ main() {
     "context_files": 0,
     "reading_plan_steps": 0,
     "has_current_reading_step": false,
+    "route_quality": {
+      "level": "blocked",
+      "score": 0,
+      "evidence_count": 0,
+      "evidence_sources": [],
+      "warnings": ["No reading plan was produced; context status is blocked_no_context."],
+      "recommended_action": "provide_matching_seed_file_or_symbol"
+    },
     "impact_status": "skipped_no_context",
     "execution_plan_actions": ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"],
     "execution_plan_statuses": ["blocked_no_reading_plan", "blocked_no_current_reading_step", "manual_after_selected_context", "skipped_no_context"]
@@ -165,6 +201,14 @@ main() {
     "context_files": 0,
     "reading_plan_steps": 0,
     "has_current_reading_step": false,
+    "route_quality": {
+      "level": "blocked",
+      "score": 0,
+      "evidence_count": 0,
+      "evidence_sources": [],
+      "warnings": ["No reading plan was produced; context status is blocked_unindexed_task_path."],
+      "recommended_action": "index_or_update_scope_for_task_path"
+    },
     "impact_status": "skipped_unindexed_task_path",
     "execution_plan_actions": ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"],
     "execution_plan_statuses": ["blocked_no_reading_plan", "blocked_no_current_reading_step", "manual_after_selected_context", "skipped_unindexed_task_path"],
@@ -193,8 +237,13 @@ EOF
   require_literal "$summary_md" 'First context file: `src/auth.ts`' "first context file"
   require_literal "$summary_md" 'First reading file: `src/auth.ts`' "first reading file"
   require_literal "$summary_md" 'First reading selection rank: `1`' "first reading selection rank"
+  require_literal "$summary_md" 'Route quality: `high` (`96/100`, `4` evidence signals)' "route quality"
+  require_literal "$summary_md" 'Route quality recommended action: `read_selected_context`' "route quality action"
+  require_literal "$summary_md" 'Route quality evidence sources: `seed file`, `call graph`' "route quality evidence sources"
+  require_literal "$summary_md" 'Route quality warnings: `-`' "route quality warnings"
   require_literal "$summary_md" 'Routing decision first seed: `task_path:src/auth.ts`' "routing decision first seed"
   require_literal "$summary_md" 'Routing decision first file: `src/auth.ts`' "routing decision first file"
+  require_literal "$summary_md" 'Routing decision quality: `high` (`96/100`)' "routing decision quality"
   require_literal "$summary_md" 'Routing decision suggested tool: `file_outline`' "routing decision suggested tool"
   require_literal "$summary_md" 'Routing decision continuation: `complete -> read_selected_context`' "routing decision continuation"
   require_literal "$summary_md" 'Routing decision impact status: `complete`' "routing decision impact status"
@@ -230,15 +279,18 @@ EOF
   require_literal "$summary_md" 'Impact first suggested check: `cargo test --locked`' "impact first suggested check"
   require_literal "$summary_md" 'Blocked no-seed status: `blocked_no_seed`' "blocked no-seed status"
   require_literal "$summary_md" 'Blocked no-seed next action: `provide_seed_file_or_symbol`' "blocked no-seed next action"
+  require_literal "$summary_md" 'Blocked no-seed route quality: `blocked` (`0/100`) -> `provide_seed_file_or_symbol`' "blocked no-seed route quality"
   require_literal "$summary_md" 'Blocked no-seed execution statuses: `blocked_no_reading_plan -> blocked_no_current_reading_step -> manual_after_selected_context -> skipped_no_seed`' "blocked no-seed execution statuses"
   require_literal "$summary_md" 'Blocked no-context status: `blocked_no_context`' "blocked no-context status"
   require_literal "$summary_md" 'Blocked no-context next action: `provide_matching_seed_file_or_symbol`' "blocked no-context next action"
+  require_literal "$summary_md" 'Blocked no-context route quality: `blocked` (`0/100`) -> `provide_matching_seed_file_or_symbol`' "blocked no-context route quality"
   require_literal "$summary_md" 'Blocked no-context impact status: `skipped_no_context`' "blocked no-context impact status"
   require_literal "$summary_md" 'Blocked no-context execution statuses: `blocked_no_reading_plan -> blocked_no_current_reading_step -> manual_after_selected_context -> skipped_no_context`' "blocked no-context execution statuses"
   require_literal "$summary_md" 'Blocked unindexed path status: `blocked_unindexed_task_path`' "blocked unindexed path status"
   require_literal "$summary_md" 'Blocked unindexed path seed strategy: `auto_task_path_unindexed`' "blocked unindexed path seed strategy"
   require_literal "$summary_md" 'Blocked unindexed path first seed: `task_path_unindexed:src/main.ts`' "blocked unindexed path first seed"
   require_literal "$summary_md" 'Blocked unindexed path next action: `index_or_update_scope_for_task_path`' "blocked unindexed path next action"
+  require_literal "$summary_md" 'Blocked unindexed path route quality: `blocked` (`0/100`) -> `index_or_update_scope_for_task_path`' "blocked unindexed path route quality"
   require_literal "$summary_md" 'Blocked unindexed path impact status: `skipped_unindexed_task_path`' "blocked unindexed path impact status"
   require_literal "$summary_md" 'Blocked unindexed path scope hint: `true`' "blocked unindexed path scope hint"
   require_literal "$summary_md" 'Workflow artifact: [`codeinsight-mcp-first-call`](https://example.com/artifact)' "artifact link"

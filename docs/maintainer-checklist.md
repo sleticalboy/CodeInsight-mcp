@@ -92,10 +92,11 @@ optional external checks, see [Maintenance commands](maintenance-commands.md).
   the `codeinsight-agent-route-smoke` artifact link.
   Open the
   `mcp-first-call-smoke` job summary and confirm it includes selected files,
-  task-path seed evidence, the first context file, first reading file, read-less
-  metrics, selection rank, first next action, omitted-candidate continuation fields,
-  reading-order and suggested-tool handoff contracts, impact status, blocked
-  no-seed/no-context/unindexed-path handling, and the
+  task-path seed evidence, the first context file, first reading file, route
+  quality, read-less metrics, selection rank, first next action,
+  omitted-candidate continuation fields, reading-order and suggested-tool
+  handoff contracts, impact status, blocked no-seed/no-context/unindexed-path
+  recovery actions, and the
   `codeinsight-mcp-first-call` artifact link.
 
   ```bash

@@ -340,7 +340,7 @@ main() {
     'clients can render a pre-edit' \
     "README MCP impact checklist evidence"
   require_pattern README.md \
-    'of 77,336 source lines, avoiding 76,783 source lines before broad reading' \
+    'of 77,600 source lines, avoiding 77,047 source lines before broad reading' \
     "README two-minute demo read-less metric"
   "$ROOT_DIR/scripts/readme-adoption-summary-smoke.sh" >/dev/null
   require_pattern README.md \
@@ -1443,7 +1443,7 @@ main() {
     'CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/mcp-first-call-smoke\.sh' \
     "README MCP first-call smoke command"
   require_pattern README.md \
-    'exposes read-less metrics, selection rank, and continuation evidence' \
+    'exposes route quality, read-less metrics, selection rank, and continuation evidence' \
     "README MCP first-call candidate evidence proof"
   require_pattern README.md \
     'CLI `agent-route`, MCP stdio, and MCP `agent_route`' \
@@ -1779,16 +1779,16 @@ main() {
     'first_next_action' \
     "reading plan next action demo metric"
   require_pattern docs/demo-script.md \
-    'source_lines_avoided: 76783' \
+    'source_lines_avoided: 77047' \
     "demo script source lines avoided metric"
   require_pattern docs/demo-script.md \
-    'read_less_ratio: 139\.8x' \
+    'read_less_ratio: 140\.3x' \
     "demo script read-less metric"
   require_pattern docs/demo-script.md \
     'routing_decision_quality: high \(100/100, 22 evidence signals\)' \
     "demo script route quality metric"
   require_pattern docs/demo-script.md \
-    'Read less: avoided 76783 source lines, 139\.8x less text before follow-up tools\.' \
+    'Read less: avoided 77047 source lines, 140\.3x less text before follow-up tools\.' \
     "demo script evidence summary read-less line"
   require_pattern docs/demo-script.md \
     'impact_analysis' \
@@ -1920,7 +1920,7 @@ main() {
     '\| First MCP call onboarding changed \| `scripts/mcp-first-call-smoke\.sh --summary-json /tmp/codeinsight-mcp-first-call\.json` \|' \
     "maintenance MCP first-call smoke chooser"
   require_pattern docs/maintenance-commands.md \
-    'first context file, task-path seed evidence, read-less metrics, selection rank, reading-question handoff, continuation summary, reading-plan order, suggested-tool handoff, impact status, blocked no-seed/no-context/unindexed-path handling, and saved artifacts' \
+    'first context file, task-path seed evidence, route quality, read-less metrics, selection rank, reading-question handoff, continuation summary, reading-plan order, suggested-tool handoff, impact status, blocked no-seed/no-context/unindexed-path recovery actions, and saved artifacts' \
     "maintenance MCP first-call artifact scope"
   require_pattern docs/maintenance-commands.md \
     'scripts/mcp-first-call-step-summary-smoke\.sh' \
@@ -1929,7 +1929,7 @@ main() {
     '\| First MCP call Actions summary changed \| `scripts/mcp-first-call-step-summary-smoke\.sh` \|' \
     "maintenance MCP first-call step summary chooser"
   require_pattern docs/maintenance-commands.md \
-    'Actions Summary section for selected files, task-path seed evidence, first context file, first reading file, read-less metrics, selection rank, reading-question handoff, omitted-candidate continuation fields, reading-plan order, suggested-tool handoff, continuation timing, impact status, blocked no-seed/no-context/unindexed-path handling, and artifact link' \
+    'Actions Summary section for selected files, task-path seed evidence, first context file, first reading file, route quality, read-less metrics, selection rank, reading-question handoff, omitted-candidate continuation fields, reading-plan order, suggested-tool handoff, continuation timing, impact status, blocked no-seed/no-context/unindexed-path recovery actions, and artifact link' \
     "maintenance MCP first-call step summary scope"
   require_pattern scripts/mcp-first-call-step-summary-smoke.sh \
     'Seed strategy: `auto_task_path`' \
@@ -1943,6 +1943,9 @@ main() {
   require_pattern scripts/mcp-first-call-step-summary-smoke.sh \
     'First reading selection rank: `1`' \
     "MCP first-call step summary first reading selection rank"
+  require_pattern scripts/mcp-first-call-step-summary-smoke.sh \
+    'Route quality: `high`' \
+    "MCP first-call step summary route quality"
   require_pattern scripts/mcp-first-call-step-summary-smoke.sh \
     'Read less: `10\.0x`' \
     "MCP first-call step summary read-less metric"
@@ -2106,6 +2109,9 @@ main() {
     'first_reading_selection_rank' \
     "MCP first-call artifact first reading selection rank output"
   require_pattern scripts/mcp-first-call-artifact-smoke.sh \
+    'route_quality: \$\(jq' \
+    "MCP first-call artifact route quality output"
+  require_pattern scripts/mcp-first-call-artifact-smoke.sh \
     'read_less_ratio' \
     "MCP first-call artifact read-less output"
   require_pattern scripts/mcp-first-call-artifact-smoke.sh \
@@ -2115,11 +2121,14 @@ main() {
     'blocked_unindexed_task_path_status' \
     "MCP first-call artifact unindexed task path output"
   require_pattern docs/maintainer-checklist.md \
-    'task-path seed evidence, the first context file, first reading file, read-less' \
+    'task-path seed evidence, the first context file, first reading file, route' \
     "maintainer MCP first-call route contract summary"
   require_pattern docs/release-readiness.md \
     'task-path seed evidence,' \
     "release readiness MCP first-call route contract summary"
+  require_pattern docs/release-readiness.md \
+    'route quality, selection rank' \
+    "release readiness MCP first-call route quality summary"
   require_pattern docs/release-commands.md \
     'scripts/release-pretag-check\.sh main' \
     "release commands benchmark artifact gate"

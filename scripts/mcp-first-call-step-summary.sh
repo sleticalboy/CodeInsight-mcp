@@ -38,8 +38,20 @@ require_summary_contract() {
       and (.first_context_file | type == "string" and length > 0)
       and .first_reading_file == .first_context_file
       and (.first_reading_selection_rank | type == "number")
+      and (.route_quality | type == "object")
+      and .route_quality.level == .route_quality_level
+      and .route_quality.score == .route_quality_score
+      and .route_quality.evidence_count == .route_quality_evidence_count
+      and .route_quality.recommended_action == .route_quality_recommended_action
+      and (.route_quality.level | type == "string" and length > 0)
+      and (.route_quality.score | type == "number")
+      and (.route_quality.evidence_count | type == "number")
+      and (.route_quality.evidence_sources | type == "array")
+      and (.route_quality.warnings | type == "array")
+      and (.route_quality.recommended_action | type == "string" and length > 0)
       and (.routing_decision | type == "object")
       and .routing_decision.seed_strategy == .seed_strategy
+      and .routing_decision.route_quality == .route_quality
       and .routing_decision.first_seed_source == .first_seed_source
       and .routing_decision.first_seed_value == .first_seed_value
       and .routing_decision.first_file == .first_reading_file
@@ -106,6 +118,10 @@ require_summary_contract() {
       and .blocked_no_seed.context_files == 0
       and .blocked_no_seed.reading_plan_steps == 0
       and .blocked_no_seed.has_current_reading_step == false
+      and .blocked_no_seed.route_quality.level == "blocked"
+      and .blocked_no_seed.route_quality.score == 0
+      and .blocked_no_seed.route_quality.evidence_count == 0
+      and .blocked_no_seed.route_quality.recommended_action == "provide_seed_file_or_symbol"
       and .blocked_no_seed.impact_status == "skipped_no_seed"
       and .blocked_no_seed.execution_plan_actions == ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"]
       and .blocked_no_seed.execution_plan_statuses == ["blocked_no_reading_plan", "blocked_no_current_reading_step", "manual_after_selected_context", "skipped_no_seed"]
@@ -116,6 +132,10 @@ require_summary_contract() {
       and .blocked_no_context.context_files == 0
       and .blocked_no_context.reading_plan_steps == 0
       and .blocked_no_context.has_current_reading_step == false
+      and .blocked_no_context.route_quality.level == "blocked"
+      and .blocked_no_context.route_quality.score == 0
+      and .blocked_no_context.route_quality.evidence_count == 0
+      and .blocked_no_context.route_quality.recommended_action == "provide_matching_seed_file_or_symbol"
       and .blocked_no_context.impact_status == "skipped_no_context"
       and .blocked_no_context.execution_plan_actions == ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"]
       and .blocked_no_context.execution_plan_statuses == ["blocked_no_reading_plan", "blocked_no_current_reading_step", "manual_after_selected_context", "skipped_no_context"]
@@ -129,6 +149,10 @@ require_summary_contract() {
       and .blocked_unindexed_task_path.context_files == 0
       and .blocked_unindexed_task_path.reading_plan_steps == 0
       and .blocked_unindexed_task_path.has_current_reading_step == false
+      and .blocked_unindexed_task_path.route_quality.level == "blocked"
+      and .blocked_unindexed_task_path.route_quality.score == 0
+      and .blocked_unindexed_task_path.route_quality.evidence_count == 0
+      and .blocked_unindexed_task_path.route_quality.recommended_action == "index_or_update_scope_for_task_path"
       and .blocked_unindexed_task_path.impact_status == "skipped_unindexed_task_path"
       and .blocked_unindexed_task_path.execution_plan_actions == ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"]
       and .blocked_unindexed_task_path.execution_plan_statuses == ["blocked_no_reading_plan", "blocked_no_current_reading_step", "manual_after_selected_context", "skipped_unindexed_task_path"]
@@ -178,8 +202,13 @@ main() {
     printf 'First context file: `%s`\n\n' "$(value '.first_context_file')"
     printf 'First reading file: `%s`\n\n' "$(value '.first_reading_file')"
     printf 'First reading selection rank: `%s`\n\n' "$(value '.first_reading_selection_rank')"
+    printf 'Route quality: `%s` (`%s/100`, `%s` evidence signals)\n\n' "$(value '.route_quality.level')" "$(value '.route_quality.score')" "$(value '.route_quality.evidence_count')"
+    printf 'Route quality recommended action: `%s`\n\n' "$(value '.route_quality.recommended_action')"
+    printf 'Route quality evidence sources: `%s`\n\n' "$(value '.route_quality.evidence_sources | if length == 0 then "-" else join("`, `") end')"
+    printf 'Route quality warnings: `%s`\n\n' "$(value '.route_quality.warnings | if length == 0 then "-" else join("`, `") end')"
     printf 'Routing decision first seed: `%s:%s`\n\n' "$(value '.routing_decision.first_seed_source')" "$(value '.routing_decision.first_seed_value')"
     printf 'Routing decision first file: `%s`\n\n' "$(value '.routing_decision.first_file')"
+    printf 'Routing decision quality: `%s` (`%s/100`)\n\n' "$(value '.routing_decision.route_quality.level')" "$(value '.routing_decision.route_quality.score')"
     printf 'Routing decision suggested tool: `%s`\n\n' "$(value '.routing_decision.first_suggested_tool')"
     printf 'Routing decision continuation: `%s -> %s`\n\n' "$(value '.routing_decision.continuation_status')" "$(value '.routing_decision.continuation_next_action')"
     printf 'Routing decision impact status: `%s`\n\n' "$(value '.routing_decision.impact_status')"
@@ -215,15 +244,18 @@ main() {
     printf 'Impact first suggested check: `%s`\n\n' "$(value '.impact_first_suggested_check.command // .impact_first_suggested_check.file // .impact_first_suggested_check.kind')"
     printf 'Blocked no-seed status: `%s`\n\n' "$(value '.blocked_no_seed.continuation_status')"
     printf 'Blocked no-seed next action: `%s`\n\n' "$(value '.blocked_no_seed.continuation_next_action')"
+    printf 'Blocked no-seed route quality: `%s` (`%s/100`) -> `%s`\n\n' "$(value '.blocked_no_seed.route_quality.level')" "$(value '.blocked_no_seed.route_quality.score')" "$(value '.blocked_no_seed.route_quality.recommended_action')"
     printf 'Blocked no-seed execution statuses: `%s`\n\n' "$(value '.blocked_no_seed.execution_plan_statuses | join(" -> ")')"
     printf 'Blocked no-context status: `%s`\n\n' "$(value '.blocked_no_context.continuation_status')"
     printf 'Blocked no-context next action: `%s`\n\n' "$(value '.blocked_no_context.continuation_next_action')"
+    printf 'Blocked no-context route quality: `%s` (`%s/100`) -> `%s`\n\n' "$(value '.blocked_no_context.route_quality.level')" "$(value '.blocked_no_context.route_quality.score')" "$(value '.blocked_no_context.route_quality.recommended_action')"
     printf 'Blocked no-context impact status: `%s`\n\n' "$(value '.blocked_no_context.impact_status')"
     printf 'Blocked no-context execution statuses: `%s`\n\n' "$(value '.blocked_no_context.execution_plan_statuses | join(" -> ")')"
     printf 'Blocked unindexed path status: `%s`\n\n' "$(value '.blocked_unindexed_task_path.continuation_status')"
     printf 'Blocked unindexed path seed strategy: `%s`\n\n' "$(value '.blocked_unindexed_task_path.seed_strategy')"
     printf 'Blocked unindexed path first seed: `%s:%s`\n\n' "$(value '.blocked_unindexed_task_path.first_seed_source')" "$(value '.blocked_unindexed_task_path.first_seed_value')"
     printf 'Blocked unindexed path next action: `%s`\n\n' "$(value '.blocked_unindexed_task_path.continuation_next_action')"
+    printf 'Blocked unindexed path route quality: `%s` (`%s/100`) -> `%s`\n\n' "$(value '.blocked_unindexed_task_path.route_quality.level')" "$(value '.blocked_unindexed_task_path.route_quality.score')" "$(value '.blocked_unindexed_task_path.route_quality.recommended_action')"
     printf 'Blocked unindexed path impact status: `%s`\n\n' "$(value '.blocked_unindexed_task_path.impact_status')"
     printf 'Blocked unindexed path scope hint: `%s`\n\n' "$(value '.blocked_unindexed_task_path.continuation_message_has_scope_hint')"
     printf 'Full JSON summary: `%s`\n\n' "$SUMMARY_JSON"

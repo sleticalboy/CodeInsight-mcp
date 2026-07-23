@@ -93,6 +93,19 @@ validate_summary_json() {
       and .first_context_file == "src/auth.ts"
       and .first_reading_file == .first_context_file
       and (.first_reading_selection_rank | type == "number")
+      and (.route_quality | type == "object")
+      and .route_quality.level == .route_quality_level
+      and .route_quality.score == .route_quality_score
+      and .route_quality.evidence_count == .route_quality_evidence_count
+      and .route_quality.recommended_action == .route_quality_recommended_action
+      and .route_quality.level == "high"
+      and .route_quality.score >= 80
+      and .route_quality.evidence_count >= 1
+      and (.route_quality.evidence_sources | type == "array")
+      and (.route_quality.warnings | type == "array")
+      and (.route_quality.recommended_action | type == "string" and length > 0)
+      and (.routing_decision | type == "object")
+      and .routing_decision.route_quality == .route_quality
       and (.context_pack_read_less | type == "object")
       and (.context_pack_read_less.baseline_source_lines | type == "number")
       and (.context_pack_read_less.selected_source_lines | type == "number")
@@ -148,6 +161,10 @@ validate_summary_json() {
       and .blocked_no_seed.context_files == 0
       and .blocked_no_seed.reading_plan_steps == 0
       and .blocked_no_seed.has_current_reading_step == false
+      and .blocked_no_seed.route_quality.level == "blocked"
+      and .blocked_no_seed.route_quality.score == 0
+      and .blocked_no_seed.route_quality.evidence_count == 0
+      and .blocked_no_seed.route_quality.recommended_action == "provide_seed_file_or_symbol"
       and .blocked_no_seed.impact_status == "skipped_no_seed"
       and .blocked_no_seed.execution_plan_actions == ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"]
       and .blocked_no_seed.execution_plan_statuses == ["blocked_no_reading_plan", "blocked_no_current_reading_step", "manual_after_selected_context", "skipped_no_seed"]
@@ -158,6 +175,10 @@ validate_summary_json() {
       and .blocked_no_context.context_files == 0
       and .blocked_no_context.reading_plan_steps == 0
       and .blocked_no_context.has_current_reading_step == false
+      and .blocked_no_context.route_quality.level == "blocked"
+      and .blocked_no_context.route_quality.score == 0
+      and .blocked_no_context.route_quality.evidence_count == 0
+      and .blocked_no_context.route_quality.recommended_action == "provide_matching_seed_file_or_symbol"
       and .blocked_no_context.impact_status == "skipped_no_context"
       and .blocked_no_context.execution_plan_actions == ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"]
       and .blocked_no_context.execution_plan_statuses == ["blocked_no_reading_plan", "blocked_no_current_reading_step", "manual_after_selected_context", "skipped_no_context"]
@@ -171,6 +192,10 @@ validate_summary_json() {
       and .blocked_unindexed_task_path.context_files == 0
       and .blocked_unindexed_task_path.reading_plan_steps == 0
       and .blocked_unindexed_task_path.has_current_reading_step == false
+      and .blocked_unindexed_task_path.route_quality.level == "blocked"
+      and .blocked_unindexed_task_path.route_quality.score == 0
+      and .blocked_unindexed_task_path.route_quality.evidence_count == 0
+      and .blocked_unindexed_task_path.route_quality.recommended_action == "index_or_update_scope_for_task_path"
       and .blocked_unindexed_task_path.impact_status == "skipped_unindexed_task_path"
       and .blocked_unindexed_task_path.execution_plan_actions == ["read_selected_context", "use_current_reading_step_suggested_tool", "use_continuation_if_needed", "review_impact_before_edits"]
       and .blocked_unindexed_task_path.execution_plan_statuses == ["blocked_no_reading_plan", "blocked_no_current_reading_step", "manual_after_selected_context", "skipped_unindexed_task_path"]
@@ -306,6 +331,8 @@ main() {
   echo "first_seed_value: $(jq -r '.first_seed_value' "$summary_file")"
   echo "first_reading_focus: $(jq -r '.reading_plan[0].focus' "$summary_file")"
   echo "first_reading_question: $(jq -r '.reading_plan[0].question' "$summary_file")"
+  echo "route_quality: $(jq -r '.route_quality.level + " " + (.route_quality.score | tostring) + "/100 evidence=" + (.route_quality.evidence_count | tostring)' "$summary_file")"
+  echo "route_quality_recommended_action: $(jq -r '.route_quality.recommended_action' "$summary_file")"
   echo "current_reading_step_matches_reading_plan: $(jq -r '.current_reading_step_matches_reading_plan' "$summary_file")"
   echo "first_execution_instruction_has_focus: $(jq -r '.first_execution_instruction_has_focus' "$summary_file")"
   echo "first_execution_instruction_has_read_less: $(jq -r '.first_execution_instruction_has_read_less' "$summary_file")"
@@ -317,15 +344,18 @@ main() {
   echo "first_omitted_omission_reason: $(jq -r 'if .first_omitted_omission_reason == "" then "-" else .first_omitted_omission_reason end' "$summary_file")"
   echo "blocked_no_seed_status: $(jq -r '.blocked_no_seed.continuation_status' "$summary_file")"
   echo "blocked_no_seed_next_action: $(jq -r '.blocked_no_seed.continuation_next_action' "$summary_file")"
+  echo "blocked_no_seed_route_quality: $(jq -r '.blocked_no_seed.route_quality.level + " " + (.blocked_no_seed.route_quality.score | tostring) + "/100 -> " + .blocked_no_seed.route_quality.recommended_action' "$summary_file")"
   echo "blocked_no_seed_impact_status: $(jq -r '.blocked_no_seed.impact_status' "$summary_file")"
   echo "blocked_no_context_status: $(jq -r '.blocked_no_context.continuation_status' "$summary_file")"
   echo "blocked_no_context_next_action: $(jq -r '.blocked_no_context.continuation_next_action' "$summary_file")"
+  echo "blocked_no_context_route_quality: $(jq -r '.blocked_no_context.route_quality.level + " " + (.blocked_no_context.route_quality.score | tostring) + "/100 -> " + .blocked_no_context.route_quality.recommended_action' "$summary_file")"
   echo "blocked_no_context_impact_status: $(jq -r '.blocked_no_context.impact_status' "$summary_file")"
   echo "blocked_unindexed_task_path_status: $(jq -r '.blocked_unindexed_task_path.continuation_status' "$summary_file")"
   echo "blocked_unindexed_task_path_seed_strategy: $(jq -r '.blocked_unindexed_task_path.seed_strategy' "$summary_file")"
   echo "blocked_unindexed_task_path_first_seed_source: $(jq -r '.blocked_unindexed_task_path.first_seed_source' "$summary_file")"
   echo "blocked_unindexed_task_path_first_seed_value: $(jq -r '.blocked_unindexed_task_path.first_seed_value' "$summary_file")"
   echo "blocked_unindexed_task_path_next_action: $(jq -r '.blocked_unindexed_task_path.continuation_next_action' "$summary_file")"
+  echo "blocked_unindexed_task_path_route_quality: $(jq -r '.blocked_unindexed_task_path.route_quality.level + " " + (.blocked_unindexed_task_path.route_quality.score | tostring) + "/100 -> " + .blocked_unindexed_task_path.route_quality.recommended_action' "$summary_file")"
   echo "blocked_unindexed_task_path_impact_status: $(jq -r '.blocked_unindexed_task_path.impact_status' "$summary_file")"
   echo "blocked_unindexed_task_path_scope_hint: $(jq -r '.blocked_unindexed_task_path.continuation_message_has_scope_hint' "$summary_file")"
 }
