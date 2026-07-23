@@ -9798,6 +9798,13 @@ export function route(pattern, component) {
         context["reading_plan"][0]["file"],
         "packages/wouter/src/index.js"
     );
+    assert!(
+        !context["selected_seeds"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|seed| seed["value"] == "packages/magazin/index.tsx")
+    );
 }
 
 #[test]

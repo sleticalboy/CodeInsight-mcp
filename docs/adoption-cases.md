@@ -17,20 +17,20 @@ show what an AI coding agent can read first before opening files broadly.
 | Gin | Go web framework | understand gin engine routing behavior | `24,099` | `248` | `23,851` | `99.0%` | `97.2x` | [case](adoption-case-gin.md) |
 | Memchr | Rust search library | understand memchr search implementation flow | `69,381` | `230` | `69,151` | `99.7%` | `301.7x` | [case](adoption-case-memchr.md) |
 | Requests | Python HTTP library | understand requests session request flow | `12,032` | `651` | `11,381` | `94.6%` | `18.5x` | [case](adoption-case-requests.md) |
-| Wouter | TypeScript frontend routing library | understand wouter route matching flow | `6,766` | `404` | `6,362` | `94.0%` | `16.7x` | [case](adoption-case-wouter.md) |
+| Wouter | TypeScript frontend routing library | understand wouter route matching flow | `6,766` | `321` | `6,445` | `95.3%` | `21.1x` | [case](adoption-case-wouter.md) |
 | ip2region | Multi-language IP lookup library | understand ip2region java search flow | `19,379` | `641` | `18,738` | `96.7%` | `30.2x` | [case](adoption-case-ip2region.md) |
 
 Aggregate snapshot:
 
 - Public repositories: `7`
 - Blind first-read baseline: `682,538` source lines
-- CodeInsight routed first-read: `2,999` source lines
-- Source lines avoided before broad file reading: `679,539`
+- CodeInsight routed first-read: `2,916` source lines
+- Source lines avoided before broad file reading: `679,622`
 - Aggregate first-read reduction: `99.6%`
-- Aggregate read-less ratio: `227.6x`
-- Selected files: `47`
-- Selected ranges: `92`
-- Estimated tokens: `28,048`
+- Aggregate read-less ratio: `234.1x`
+- Selected files: `45`
+- Selected ranges: `89`
+- Estimated tokens: `27,286`
 - Impacted files reported before edits: `178`
 
 ## How To Read These Numbers
@@ -55,7 +55,7 @@ compiler, test runner, and language-specific tools.
 | Gin | `34dac209ffb6ef85cc78c5d217bbb7ad001d68fd` | `auto_task_match` | `routergroup.go` | Start with seed file context and primary symbols. | `context.go` | `file_outline` | `high` |
 | Memchr | `bce7df7140acff420478a358cde5587904000cb1` | `auto_task_match` | `benchmarks/engines/rust-memchr/main.rs` | Start with seed file context and primary symbols. | `benchmarks/engines/rust-jetscii/main.rs` | `file_outline` | `high` |
 | Requests | `f361ead047be5cb873174218582f7d8b9fcd9f49` | `auto_task_match` | `src/requests/sessions.py` | Start with seed file context and primary symbols. | `src/requests/help.py` | `file_outline` | `high` |
-| Wouter | `e74a8095601d028234e4bbd2dc9ef0849f5cea8f` | `auto_task_match` | `packages/wouter/src/index.js` | Start with seed file route registration, matching, or handler dispatch boundaries. | `packages/magazin/index.tsx` | `file_outline` | `high` |
+| Wouter | `e74a8095601d028234e4bbd2dc9ef0849f5cea8f` | `auto_task_match` | `packages/wouter/src/index.js` | Start with seed file route registration, matching, or handler dispatch boundaries. | `packages/wouter/src/index.d.ts` | `file_outline` | `high` |
 | ip2region | `1a29562c2ddab00e26609f401afa921ed89af263` | `auto_task_match` | `binding/java/src/main/java/org/lionsoul/ip2region/service/Ip2Region.java` | Start with seed file context and primary symbols. | `binding/c/main.c` | `file_outline` | `high` |
 
 ## Refresh

@@ -135,7 +135,7 @@ Checked-in adoption cases:
 - [Wouter](adoption-case-wouter.md): TypeScript frontend route matching flow.
 
 The aggregate public adoption snapshot covers seven public repositories and
-routes 2,999 of 682,538 source lines before broad reading, a 99.6% aggregate
+routes 2,916 of 682,538 source lines before broad reading, a 99.6% aggregate
 first-read reduction.
 
 Current Alpha Feedback Loop documents:

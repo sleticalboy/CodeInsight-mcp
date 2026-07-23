@@ -8192,6 +8192,11 @@ fn auto_context_seed_files(
                                 auto_seed_file_role(&entrypoint.file),
                                 task_keywords,
                             )
+                            && auto_seed_companion_entrypoint_allowed(
+                                &file,
+                                &entrypoint.file,
+                                task_keywords,
+                            )
                             && (!agent_first_read_task
                                 || auto_seed_agent_first_read_file_priority(
                                     &entrypoint.file,
@@ -10264,8 +10269,19 @@ fn auto_seed_task_named_package_source_file_priority(
     normalized_file: &str,
     task_keywords: &[String],
 ) -> i32 {
+    if auto_seed_task_named_package_source_root(normalized_file, task_keywords).is_some() {
+        5
+    } else {
+        0
+    }
+}
+
+fn auto_seed_task_named_package_source_root(
+    normalized_file: &str,
+    task_keywords: &[String],
+) -> Option<String> {
     if !normalized_file.contains("/src/") {
-        return 0;
+        return None;
     }
 
     let segments = normalized_file.split('/').collect::<Vec<_>>();
@@ -10281,11 +10297,41 @@ fn auto_seed_task_named_package_source_file_priority(
                 && auto_seed_package_name_keyword_allowed(keyword)
                 && keyword.eq_ignore_ascii_case(package)
         }) {
-            return 5;
+            return Some(format!("{parent}/{package}"));
         }
     }
 
-    0
+    None
+}
+
+fn auto_seed_companion_entrypoint_allowed(
+    seed_file: &str,
+    entrypoint_file: &str,
+    task_keywords: &[String],
+) -> bool {
+    let seed_normalized = seed_file.replace('\\', "/").to_ascii_lowercase();
+    let Some(seed_package_root) =
+        auto_seed_task_named_package_source_root(&seed_normalized, task_keywords)
+    else {
+        return true;
+    };
+    let entrypoint_normalized = entrypoint_file.replace('\\', "/").to_ascii_lowercase();
+    auto_seed_workspace_package_root(&entrypoint_normalized)
+        .as_deref()
+        .is_some_and(|entrypoint_package_root| entrypoint_package_root == seed_package_root)
+}
+
+fn auto_seed_workspace_package_root(normalized_file: &str) -> Option<String> {
+    let segments = normalized_file.split('/').collect::<Vec<_>>();
+    for window in segments.windows(2) {
+        let [parent, package] = window else {
+            continue;
+        };
+        if matches!(*parent, "packages" | "crates" | "libs" | "modules") {
+            return Some(format!("{parent}/{package}"));
+        }
+    }
+    None
 }
 
 fn auto_seed_route_dispatch_symbol_matches(symbol: &str) -> bool {

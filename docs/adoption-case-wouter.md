@@ -23,13 +23,13 @@ to show what an AI coding agent can read first before opening files broadly.
 | Metric | Value |
 | --- | ---: |
 | Blind first-read baseline | `6766` source lines |
-| CodeInsight routed first-read | `404` source lines |
-| Source lines avoided | `6362` |
-| First-read reduction | `94.0%` |
-| Read less | `16.7x` |
-| Selected files | `8` |
-| Selected ranges | `14` |
-| Estimated tokens | `3915` |
+| CodeInsight routed first-read | `321` source lines |
+| Source lines avoided | `6445` |
+| First-read reduction | `95.3%` |
+| Read less | `21.1x` |
+| Selected files | `6` |
+| Selected ranges | `11` |
+| Estimated tokens | `3153` |
 | Impacted files | `28` |
 
 ## First-Read Route
@@ -39,7 +39,7 @@ to show what an AI coding agent can read first before opening files broadly.
 | Seed strategy | `auto_task_match` |
 | First seed source | `task_match` |
 | First seed value | `packages/wouter/src/index.js` |
-| Companion entrypoint | `packages/magazin/index.tsx` |
+| Companion entrypoint | `packages/wouter/src/index.d.ts` |
 | First selected file | `packages/wouter/src/index.js` |
 | First reading focus | Start with seed file route registration, matching, or handler dispatch boundaries. |
 | First suggested tool | `file_outline` |

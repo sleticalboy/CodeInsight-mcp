@@ -259,17 +259,17 @@ accuracy, or proof that unselected code is irrelevant.
 
 Current benchmark snapshot:
 
-- The two-minute demo for this repository shows the agent route selecting 553 of 78,019 source lines, avoiding 77,466 source lines before broad reading for a 99.3% reduction and 141.1x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
+- The two-minute demo for this repository shows the agent route selecting 553 of 78,072 source lines, avoiding 77,519 source lines before broad reading for a 99.3% reduction and 141.2x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
 - Smoke repositories route `context_pack` first for 4/4 repositories and
   select 709 of 75,753 source lines, a 99.1% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and
   select 1,781 of 241,724 source lines, a 99.3% aggregate line reduction.
 - The adoption case summary covers 7 public repositories and routes a first read
-  to 2,999 of 682,538 source lines, avoiding 679,539 lines before broad file
-  reading, a 99.6% aggregate reduction and 227.6x aggregate read-less ratio.
+  to 2,916 of 682,538 source lines, avoiding 679,622 lines before broad file
+  reading, a 99.6% aggregate reduction and 234.1x aggregate read-less ratio.
 - The CodeInsight self adoption report packages a full tar.gz handoff and
-  routes the entrypoint task to 540 of 78,019 source lines, avoiding 77,479
-  source lines before broad reading for a 99.3% reduction and 144.5x read-less
+  routes the entrypoint task to 540 of 78,072 source lines, avoiding 77,532
+  source lines before broad reading for a 99.3% reduction and 144.6x read-less
   ratio, with 7 type-relation edges surfaced through the `base_type` graph
   filter, reporting high route quality from 7 evidence signals, while the MCP
   first-call contract fields all pass, including the `current_reading_step` mirror and read-less instruction evidence.

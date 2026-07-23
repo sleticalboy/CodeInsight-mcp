@@ -14,7 +14,7 @@ workflow is implemented end to end.
   and selects 40,636 of 7,101,630 task source lines for a 99.42% read-less
   reduction.
 - The checked-in adoption cases now cover Django, Express, Gin, ip2region,
-  Memchr, Requests, and Wouter, routing a first read to 2,999 of 682,538
+  Memchr, Requests, and Wouter, routing a first read to 2,916 of 682,538
   source lines before broad reading for a 99.6% aggregate reduction.
 - The public matrix records the first selected file, reading focus, reading
   question, and first suggested tool for every route.
