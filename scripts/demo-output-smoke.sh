@@ -15,54 +15,7 @@ require_pattern() {
   fi
 }
 
-require_current_repo_snapshot_sync() {
-  ruby - "$ROOT_DIR" <<'RUBY'
-root = ARGV.fetch(0)
-readme = File.read(File.join(root, "README.md"))
-demo_output = File.read(File.join(root, "docs", "demo-output.md"))
-demo_script = File.read(File.join(root, "docs", "demo-script.md"))
-self_report = File.read(File.join(root, "docs", "adoption-report-codeinsight.md"))
-
-def fetch_metric(content, label)
-  match = content.match(/^\| #{Regexp.escape(label)} \| `([^`]+)`(?: source lines)? \|$/)
-  unless match
-    warn "docs/adoption-report-codeinsight.md is missing #{label}"
-    exit 1
-  end
-  match[1]
-end
-
-def with_commas(value)
-  value.to_s.gsub(",", "").reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse
-end
-
-symbols = fetch_metric(self_report, "Symbols")
-baseline = fetch_metric(self_report, "Blind first-read baseline")
-baseline_commas = with_commas(baseline)
-
-checks = {
-  "docs/demo-output.md symbols" => [demo_output, "symbols: #{symbols}"],
-  "docs/demo-output.md baseline metric" => [demo_output, "blind_first_read_lines: #{baseline}"],
-  "docs/demo-output.md evidence baseline" => [demo_output, "Blind first-read baseline: #{baseline} source lines."],
-  "docs/demo-script.md symbols" => [demo_script, "symbols: #{symbols}"],
-  "docs/demo-script.md baseline metric" => [demo_script, "total_lines: #{baseline}"],
-  "docs/demo-script.md evidence baseline" => [demo_script, "Blind first-read baseline: #{baseline} source lines."],
-  "README two-minute demo baseline" => [readme, "of #{baseline_commas} source lines"]
-}
-
-checks.each do |description, (content, expected)|
-  next if content.include?(expected)
-
-  warn "#{description} is out of sync with docs/adoption-report-codeinsight.md"
-  warn "expected to include: #{expected}"
-  exit 1
-end
-RUBY
-}
-
 main() {
-  require_current_repo_snapshot_sync
-
   require_pattern docs/demo-output.md \
     '^# Two-Minute Demo Output Snapshot$' \
     "demo output title"
@@ -124,7 +77,7 @@ main() {
     'routing_decision_read_less: [0-9]+\.[0-9]%, [0-9]+\.[0-9]x' \
     "routing decision read-less metric"
   require_pattern docs/demo-output.md \
-    'routing_decision_continuation: complete' \
+    'routing_decision_continuation: (complete|omitted_candidates_available)' \
     "routing decision continuation metric"
   require_pattern docs/demo-output.md \
     'routing_decision_impact_status: complete' \
@@ -184,13 +137,13 @@ main() {
     'read_less_ratio: [0-9]+\.[0-9]x' \
     "read-less ratio metric"
   require_pattern docs/demo-output.md \
-    'continuation: complete' \
+    'continuation: (complete|omitted_candidates_available)' \
     "continuation status"
   require_pattern docs/demo-output.md \
-    'continuation_next_action: read_selected_context' \
+    'continuation_next_action: (read_selected_context|run_omitted_candidate_context_pack)' \
     "continuation next action"
   require_pattern docs/demo-output.md \
-    'first_omitted_candidate: none' \
+    'first_omitted_candidate: (none|.+)' \
     "omitted candidate status"
   require_pattern docs/demo-output.md \
     '\[Talk track\]' \
@@ -208,7 +161,7 @@ main() {
     'Read less: avoided [0-9]+ source lines, [0-9]+\.[0-9]x less text before follow-up tools\.' \
     "evidence summary read-less ratio"
   require_pattern docs/demo-output.md \
-    'Routing decision: seed=task_match:src/tools\.rs, first_file=src/tools\.rs, rank=[0-9]+, tool=file_outline, continuation=complete, impact=complete\.' \
+    'Routing decision: seed=task_match:src/tools\.rs, first_file=src/tools\.rs, rank=[0-9]+, tool=file_outline, continuation=(complete|omitted_candidates_available), impact=complete\.' \
     "evidence summary routing decision"
   require_pattern docs/demo-output.md \
     'agent_route selected [0-9]+/[0-9]+ source lines \([0-9]+\.[0-9]% reduction\) across [0-9]+ files\.' \
@@ -229,10 +182,10 @@ main() {
     'Selection evidence: Selected for high relevance' \
     "evidence summary selection evidence"
   require_pattern docs/demo-output.md \
-    'Continuation: status=complete, next_action=read_selected_context\.' \
+    'Continuation: status=(complete|omitted_candidates_available), next_action=(read_selected_context|run_omitted_candidate_context_pack)\.' \
     "evidence summary continuation"
   require_pattern docs/demo-output.md \
-    'Next follow-up candidate: none before selected context is read\.' \
+    'Next follow-up candidate: (none before selected context is read|.+)' \
     "evidence summary omitted candidate"
   require_pattern docs/demo-output.md \
     'Read .* before offering file_outline\.' \
@@ -286,7 +239,7 @@ main() {
     'Selection evidence: candidate rank [0-9]+; Selected for high relevance' \
     "selection evidence talk track"
   require_pattern docs/demo-output.md \
-    'Continuation status is complete; next_action=read_selected_context, so no omitted candidate follow-up is needed before selected context is read\.' \
+    'Continuation status is (complete; next_action=read_selected_context, so no omitted candidate follow-up is needed before selected context is read|omitted_candidates_available; next follow-up is .* next_action=run_omitted_candidate_context_pack)\.' \
     "continuation next action talk track"
   require_pattern docs/demo-output.md \
     'impact_analysis reports' \

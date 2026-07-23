@@ -40,6 +40,7 @@ jobs:
         with:
           key: agent-router-demo
       - run: scripts/agent-router-demo.sh
+      - run: scripts/demo-output-live-sync-smoke.sh
 
   agent-route-smoke:
     runs-on: ubuntu-latest
