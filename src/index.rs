@@ -977,11 +977,14 @@ fn normalize_csharp_new_chain(raw: &str) -> Option<String> {
             let member_tail = member_tail
                 .strip_prefix(wrapper_member)?
                 .strip_prefix('.')?;
-            (clean_csharp_type_name(target)?, member_tail)
+            (target, member_tail.to_string())
         } else {
-            (clean_csharp_type_name(raw_type)?, member_tail)
+            (
+                clean_csharp_type_name(raw_type)?.to_string(),
+                member_tail.to_string(),
+            )
         };
-    let member_tail = normalize_csharp_dot_callee(member_tail)?;
+    let member_tail = normalize_csharp_dot_callee(&member_tail)?;
     Some(format!("{target}.{member_tail}"))
 }
 
@@ -5253,10 +5256,7 @@ fn csharp_type_bindings(text: &str) -> Vec<(String, String, Option<String>)> {
         };
         (Some(target), wrapper_member)
     } else if let Some((target, wrapper_member)) = csharp_value_wrapper_type(raw_type) {
-        (
-            clean_csharp_type_name(target).map(ToOwned::to_owned),
-            Some(wrapper_member.to_string()),
-        )
+        (Some(target), Some(wrapper_member.to_string()))
     } else {
         (
             clean_csharp_type_name(raw_type).map(ToOwned::to_owned),
@@ -5386,7 +5386,7 @@ fn csharp_dictionary_value_type(value: &str) -> Option<&str> {
     csharp_dictionary_type(dictionary_name).then_some(value_type)
 }
 
-fn csharp_value_wrapper_type(value: &str) -> Option<(&str, &str)> {
+fn csharp_value_wrapper_type(value: &str) -> Option<(String, &'static str)> {
     let value = value
         .trim()
         .strip_prefix("global::")
@@ -5397,9 +5397,6 @@ fn csharp_value_wrapper_type(value: &str) -> Option<(&str, &str)> {
         return None;
     }
     let inner_type = arguments[0];
-    if inner_type.contains('<') || inner_type.contains('>') {
-        return None;
-    }
 
     let wrapper_name = wrapper_type
         .trim()
@@ -5407,7 +5404,9 @@ fn csharp_value_wrapper_type(value: &str) -> Option<(&str, &str)> {
         .next_back()
         .unwrap_or(wrapper_type)
         .trim();
-    csharp_value_wrapper_member(wrapper_name).map(|member| (inner_type, member))
+    csharp_value_wrapper_member(wrapper_name).and_then(|member| {
+        clean_csharp_type_name(inner_type).map(|target| (target.to_string(), member))
+    })
 }
 
 fn csharp_generic_type_arguments(value: &str) -> Option<(&str, Vec<&str>)> {
@@ -5475,8 +5474,7 @@ fn csharp_new_expression_binding(value: &str) -> Option<(String, Option<String>)
         .unwrap_or_default()
         .trim();
     if let Some((target, wrapper_member)) = csharp_value_wrapper_type(target) {
-        return clean_csharp_type_name(target)
-            .map(|target| (target.to_string(), Some(wrapper_member.to_string())));
+        return Some((target, Some(wrapper_member.to_string())));
     }
 
     clean_csharp_type_name(target).map(|target| (target.to_string(), None))
@@ -7748,29 +7746,45 @@ public class BaseAuthService {
             csharp_type_bindings("List<Dictionary<string, UserService>> nestedUsers = new();")
                 .is_empty()
         );
-        assert!(
+        assert_eq!(
             csharp_type_bindings(
                 "Task<List<UserService>> taskListUsers = Task.FromResult(listUsers);"
-            )
-            .is_empty()
+            ),
+            vec![(
+                "UserService".to_string(),
+                "taskListUsers".to_string(),
+                Some("Result".to_string())
+            )]
         );
-        assert!(
+        assert_eq!(
             csharp_type_bindings(
                 "Lazy<Dictionary<string, UserService>> lazyMappedUsers = new(() => usersById);"
-            )
-            .is_empty()
+            ),
+            vec![(
+                "UserService".to_string(),
+                "lazyMappedUsers".to_string(),
+                Some("Value".to_string())
+            )]
         );
-        assert!(
+        assert_eq!(
             csharp_type_bindings(
                 "var taskListUsers = new Task<List<UserService>>(() => listUsers);"
-            )
-            .is_empty()
+            ),
+            vec![(
+                "UserService".to_string(),
+                "taskListUsers".to_string(),
+                Some("Result".to_string())
+            )]
         );
-        assert!(
+        assert_eq!(
             csharp_type_bindings(
                 "var lazyMappedUsers = new Lazy<Dictionary<string, UserService>>(() => usersById);"
-            )
-            .is_empty()
+            ),
+            vec![(
+                "UserService".to_string(),
+                "lazyMappedUsers".to_string(),
+                Some("Value".to_string())
+            )]
         );
         assert!(csharp_type_bindings("var users = GetUsers();").is_empty());
     }

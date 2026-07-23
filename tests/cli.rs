@@ -7410,13 +7410,8 @@ fn cli_resolves_csharp_using_imports() {
                     && dependency["resolved_file"].is_null()
             })
     );
-    for local_alias in [
-        "nestedUsers",
-        "taskListUsers",
-        "lazyMappedUsers",
-        "inferredTaskListUsers",
-        "inferredLazyMappedUsers",
-    ] {
+    {
+        let local_alias = "nestedUsers";
         assert!(
             deps["dependencies"]
                 .as_array()
@@ -7424,6 +7419,26 @@ fn cli_resolves_csharp_using_imports() {
                 .iter()
                 .all(|dependency| {
                     dependency["local_alias"] != local_alias || dependency["kind"] != "type_binding"
+                })
+        );
+    }
+    for (local_alias, wrapper_member) in [
+        ("taskListUsers", "Result"),
+        ("lazyMappedUsers", "Value"),
+        ("inferredTaskListUsers", "Result"),
+        ("inferredLazyMappedUsers", "Value"),
+    ] {
+        assert!(
+            deps["dependencies"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|dependency| {
+                    dependency["target"] == "UserService"
+                        && dependency["kind"] == "type_binding"
+                        && dependency["local_alias"] == local_alias
+                        && dependency["imported_symbol"] == wrapper_member
+                        && dependency["resolved_file"].is_null()
                 })
         );
     }
@@ -7589,29 +7604,27 @@ fn cli_resolves_csharp_using_imports() {
         call["callee"] == "inferredValueTaskUsers.Result.Find"
             && call["callee_file"] == "src/App/Services/UserService.cs"
     }));
-    for unresolved_callee in [
+    for resolved_callee in [
         "taskListUsers.Result.Find",
         "lazyMappedUsers.Value.Find",
         "inferredTaskListUsers.Result.Find",
         "inferredLazyMappedUsers.Value.Find",
     ] {
-        assert!(
-            callees.as_array().unwrap().iter().any(|call| {
-                call["callee"] == unresolved_callee && call["callee_file"].is_null()
-            })
-        );
+        assert!(callees.as_array().unwrap().iter().any(|call| {
+            call["callee"] == resolved_callee
+                && call["callee_file"] == "src/App/Services/UserService.cs"
+        }));
     }
-    for unresolved_callee in [
+    for resolved_callee in [
         "taskListUsers.Result.ExternalProfile.Load",
         "lazyMappedUsers.Value.ExternalProfile.Load",
         "inferredTaskListUsers.Result.ExternalProfile.Load",
         "inferredLazyMappedUsers.Value.ExternalProfile.Load",
     ] {
-        assert!(
-            callees.as_array().unwrap().iter().any(|call| {
-                call["callee"] == unresolved_callee && call["callee_file"].is_null()
-            })
-        );
+        assert!(callees.as_array().unwrap().iter().any(|call| {
+            call["callee"] == resolved_callee
+                && call["callee_file"] == "src/App/Profiles/ExternalProfile.cs"
+        }));
     }
     for (unresolved_callee, expected_count) in [
         ("users.FormatForDisplay", 2),
