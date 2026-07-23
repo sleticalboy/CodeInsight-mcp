@@ -36,7 +36,8 @@ Default adoption path:
   [Flask](task-routing-expectations/flask.tsv),
   [Gin](task-routing-expectations/gin.tsv),
   [Requests](task-routing-expectations/requests.tsv),
-  [Streamlit](task-routing-expectations/streamlit.tsv)
+  [Streamlit](task-routing-expectations/streamlit.tsv),
+  [Wouter](task-routing-expectations/wouter.tsv)
 - [CodeInsight self adoption report](adoption-report-codeinsight.md)
 - [Django adoption case](adoption-case-django.md)
 - [Express adoption case](adoption-case-express.md)

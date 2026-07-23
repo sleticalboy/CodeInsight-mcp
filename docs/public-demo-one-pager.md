@@ -93,10 +93,10 @@ evidence, suggested tool handoff, continuation status, and pre-edit impact.
 
 Current public route-quality snapshot:
 
-- Express, FastAPI, Flask, Gin, Requests, and Streamlit pass `86/86` expected
+- Express, FastAPI, Flask, Gin, Requests, Streamlit, and Wouter pass `88/88` expected
   first-file checks.
-- The public matrix selects `40,636` of `7,101,630` task source lines for a
-  `99.42%` aggregate first-read line reduction.
+- The public matrix selects `41,278` of `7,115,162` task source lines for a
+  `99.41%` aggregate first-read line reduction.
 - A heavyweight Django probe passes `3/3` expected first-file checks and shows a
   `99.87%` aggregate first-read line reduction in the latest local verification.
 

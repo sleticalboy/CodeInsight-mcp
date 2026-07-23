@@ -39,8 +39,8 @@ LSP, compiler, test runner, and language-specific tools for precise diagnostics,
 type checks, and final verification.
 
 Current public routing snapshot: pinned Express, FastAPI, Flask, Gin, Requests,
-and Streamlit route-quality expectations pass `86/86`, selecting 40,636 of
-7,101,630 task source lines for a `99.42%` aggregate first-read line reduction,
+Streamlit, and Wouter route-quality expectations pass `88/88`, selecting
+41,278 of 7,115,162 task source lines for a `99.41%` aggregate first-read line reduction,
 with each route carrying a first suggested tool such as `file_outline`. See the
 checked-in [Markdown snapshot](docs/public-task-routing-matrix.md) and
 [JSON summary](docs/public-task-routing-matrix-summary.json). A heavyweight
@@ -119,7 +119,7 @@ hands the agent to precise local tools when the selected context is not enough.
    | First look | `scripts/two-minute-demo.sh` | You want a visible `agent_route -> context_pack -> impact_analysis` walkthrough with an `[Evidence summary]`. |
    | Framework entrypoints | `scripts/framework-entrypoint-demo.sh` | You want local proof that Next.js, Rails, Django, and C# web entrypoints can be detected and routed as first context for matching tasks. |
    | Task routing matrix | `scripts/task-routing-matrix.sh /path/to/repo --expect-file ./route-expectations.tsv` | You want a multi-task first-read matrix showing first selected file, seed strategy, line reduction, token estimate, impact preview, optional explicit `--file` / `--symbol` seeds, and optional expected-file gates for one repository. |
-   | Public route matrix | `scripts/public-task-routing-matrix.sh` | You want one aggregate route-quality summary across pinned checked-in Express, FastAPI, Flask, Gin, Requests, and Streamlit expectation files. Add `--case django` for the heavier manual Django route-quality probe. See the checked-in [public routing snapshot](docs/public-task-routing-matrix.md). |
+   | Public route matrix | `scripts/public-task-routing-matrix.sh` | You want one aggregate route-quality summary across pinned checked-in Express, FastAPI, Flask, Gin, Requests, Streamlit, and Wouter expectation files. Add `--case django` for the heavier manual Django route-quality probe. See the checked-in [public routing snapshot](docs/public-task-routing-matrix.md). |
    | MCP wiring | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/mcp-first-call-smoke.sh` | You want a compact JSON proof that stdio MCP accepts `agent_route`, returns the first context file, follows `reading_plan[]`, exposes route quality, read-less metrics, selection rank, and continuation evidence, runs the current step's suggested tool, includes impact suggested checks, and returns structured blocked routes with recovery actions for empty repositories, unusable explicit seeds, and unindexed task-path seeds. |
    | Installed adoption | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh` | You want the installed binary to pass CLI `agent-route`, MCP stdio, and MCP `agent_route` against a temporary project with read-less, selection-rank, and continuation evidence. |
    | Local evidence | `scripts/adoption-evidence.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-evidence --print-snippet --issue-template` | You want one folder with local first-read evidence, raw route JSON, MCP first-call JSON, aggregate Markdown/JSON summaries, a copyable terminal snippet, and a ready-to-file issue template. |
@@ -274,8 +274,8 @@ Current benchmark snapshot:
   filter, reporting high route quality from 7 evidence signals, while the MCP
   first-call contract fields all pass, including the `current_reading_step` mirror and read-less instruction evidence.
 - The public route-quality snapshot pins Express, FastAPI, Flask, Gin,
-  Requests, and Streamlit and passes 86/86 expected first-file checks,
-  selecting 40,636 of 7,101,630 task source lines, a 99.42% aggregate
+  Requests, Streamlit, and Wouter and passes 88/88 expected first-file checks,
+  selecting 41,278 of 7,115,162 task source lines, a 99.41% aggregate
   first-read line reduction, and records the first suggested tool for each
   route.
 - An optional heavyweight Django route-quality case is available with
@@ -449,8 +449,8 @@ edits.
 
 Latest verified release: `v0.1.12`.
 
-Current public route-quality evidence passes `86/86` first-file checks and
-selects 40,636 of 7,101,630 task source lines.
+Current public route-quality evidence passes `88/88` first-file checks and
+selects 41,278 of 7,115,162 task source lines.
 
 Next focus: use the external Beta trial wrapper and cohort summary to collect
 at least three non-maintainer reports, then fix the highest priority route miss

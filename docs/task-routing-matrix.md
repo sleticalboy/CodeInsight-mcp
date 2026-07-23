@@ -177,6 +177,7 @@ Checked-in examples:
 - [Gin](task-routing-expectations/gin.tsv)
 - [Requests](task-routing-expectations/requests.tsv)
 - [Streamlit](task-routing-expectations/streamlit.tsv)
+- [Wouter](task-routing-expectations/wouter.tsv)
 
 Run the pinned fast public matrices in one pass:
 
@@ -184,8 +185,9 @@ Run the pinned fast public matrices in one pass:
 scripts/public-task-routing-matrix.sh
 ```
 
-The default set uses pinned Express, FastAPI, Flask, Gin, Requests, and Streamlit commits
-so expectation files do not drift with upstream default branches.
+The default set uses pinned Express, FastAPI, Flask, Gin, Requests, Streamlit,
+and Wouter commits so expectation files do not drift with upstream default
+branches.
 
 Django is available as a pinned heavyweight manual case. It is not part of the
 default public matrix because indexing and routing the full repository is slower
@@ -221,7 +223,8 @@ The command writes:
 with case count, expectation pass count, selected lines, estimated tokens, max
 impacted files, and the distinct first files selected for each public case.
 The checked-in [public task routing matrix](public-task-routing-matrix.md)
-captures the current pinned Express, FastAPI, Flask, Gin, Requests, and Streamlit result.
+captures the current pinned Express, FastAPI, Flask, Gin, Requests, Streamlit,
+and Wouter result.
 Refresh it with:
 
 ```bash

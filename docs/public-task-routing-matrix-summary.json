@@ -3,7 +3,7 @@
   "token_budget": 6000,
   "output": "<output-dir>/public-task-routing-matrix.md",
   "output_dir": "<output-dir>",
-  "case_count": 6,
+  "case_count": 7,
   "cases": [
     {
       "case": "express",
@@ -1384,16 +1384,61 @@
           "impacted_files": 39
         }
       ]
+    },
+    {
+      "case": "wouter",
+      "repository": "<case-root>/wouter",
+      "ref": "e74a8095601d028234e4bbd2dc9ef0849f5cea8f",
+      "expect_file": "docs/task-routing-expectations/wouter.tsv",
+      "summary_json": "<output-dir>/wouter/summary.json",
+      "task_count": 2,
+      "expectation_count": 2,
+      "total_task_source_lines": 13532,
+      "total_selected_lines": 642,
+      "total_estimated_tokens": 6307,
+      "max_impacted_files": 28,
+      "routes": [
+        {
+          "task": "understand wouter route matching flow",
+          "first_file": "packages/wouter/src/index.js",
+          "first_reading_focus": "Start with seed file route registration, matching, or handler dispatch boundaries.",
+          "first_reading_question": "Where are routes registered, matched, and dispatched to handlers here?",
+          "first_next_action": "inspect_seed_file",
+          "first_suggested_tool": "file_outline",
+          "seed_strategy": "auto_task_match",
+          "first_seed_value": "packages/wouter/src/index.js",
+          "total_lines": 6766,
+          "line_reduction": "95.3%",
+          "estimated_tokens": 3153,
+          "risk_level": "high",
+          "impacted_files": 28
+        },
+        {
+          "task": "understand wouter router context behavior",
+          "first_file": "packages/wouter/src/index.js",
+          "first_reading_focus": "Start with seed file route registration, matching, or handler dispatch boundaries.",
+          "first_reading_question": "Where are routes registered, matched, and dispatched to handlers here?",
+          "first_next_action": "inspect_seed_file",
+          "first_suggested_tool": "file_outline",
+          "seed_strategy": "auto_task_match",
+          "first_seed_value": "packages/wouter/src/index.js",
+          "total_lines": 6766,
+          "line_reduction": "95.3%",
+          "estimated_tokens": 3154,
+          "risk_level": "high",
+          "impacted_files": 28
+        }
+      ]
     }
   ],
   "aggregate": {
-    "task_count": 86,
-    "expectation_count": 86,
-    "total_task_source_lines": 7101630,
-    "total_selected_lines": 40636,
-    "total_estimated_tokens": 363786,
+    "task_count": 88,
+    "expectation_count": 88,
+    "total_task_source_lines": 7115162,
+    "total_selected_lines": 41278,
+    "total_estimated_tokens": 370093,
     "max_impacted_files": 50,
-    "line_reduction": 99.42
+    "line_reduction": 99.41
   },
   "generated_by": "scripts/update-public-task-routing-matrix.sh"
 }

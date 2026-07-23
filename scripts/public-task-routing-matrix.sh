@@ -24,7 +24,7 @@ and writes one aggregate route-quality summary.
 
 Options:
   --case NAME          Run one case. Can be repeated. Defaults to pinned fast cases.
-                       Supported: django, express, fastapi, flask, gin, requests, streamlit.
+                       Supported: django, express, fastapi, flask, gin, requests, streamlit, wouter.
   --root NAME=PATH     Use an existing checkout for a case. Can be repeated.
   --ref NAME=REF       Checkout a specific ref for a case. Can be repeated.
   --expect-file NAME=PATH
@@ -76,7 +76,7 @@ add_case() {
 
 validate_case() {
   case "$1" in
-    django|express|fastapi|flask|gin|requests|streamlit) ;;
+    django|express|fastapi|flask|gin|requests|streamlit|wouter) ;;
     *) fail "unsupported case: $1" ;;
   esac
 }
@@ -182,6 +182,7 @@ case_repo_url() {
     gin) printf "https://github.com/gin-gonic/gin.git" ;;
     requests) printf "https://github.com/psf/requests.git" ;;
     streamlit) printf "https://github.com/streamlit/streamlit.git" ;;
+    wouter) printf "https://github.com/molefrog/wouter.git" ;;
     *) fail "unsupported case: $1" ;;
   esac
 }
@@ -195,6 +196,7 @@ case_default_ref() {
     gin) printf "34dac209ffb6ef85cc78c5d217bbb7ad001d68fd" ;;
     requests) printf "f361ead047be5cb873174218582f7d8b9fcd9f49" ;;
     streamlit) printf "a45904234a8f438f615ac7f11b0a96ce07e06721" ;;
+    wouter) printf "e74a8095601d028234e4bbd2dc9ef0849f5cea8f" ;;
     *) fail "unsupported case: $1" ;;
   esac
 }
@@ -480,7 +482,7 @@ main() {
     fail "--token-budget must be greater than zero"
   fi
   if [ "${#CASES[@]}" -eq 0 ]; then
-    CASES=(express fastapi flask gin requests streamlit)
+    CASES=(express fastapi flask gin requests streamlit wouter)
   fi
 
   OUTPUT_DIR="${OUTPUT_DIR:-$WORK_DIR/matrix}"
