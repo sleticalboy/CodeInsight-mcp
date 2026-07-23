@@ -6962,8 +6962,8 @@ fn cli_resolves_csharp_using_imports() {
     let fixture = csharp_using_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 14);
-    assert_eq!(index["changed_files"], 14);
+    assert_eq!(index["indexed_files"], 15);
+    assert_eq!(index["changed_files"], 15);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let base_symbols = run_json([
@@ -7069,6 +7069,7 @@ fn cli_resolves_csharp_using_imports() {
                 dependency["target"] == "App.Controllers.BaseController"
                     && dependency["kind"] == "base_type"
                     && dependency["local_alias"] == "AuthController"
+                    && dependency["imported_symbol"] == "base"
             })
     );
     assert!(
@@ -7100,10 +7101,11 @@ fn cli_resolves_csharp_using_imports() {
             .as_array()
             .unwrap()
             .iter()
-            .all(|dependency| {
-                dependency["target"] != "IAuthController"
-                    || dependency["kind"] != "base_type"
-                    || dependency["local_alias"] != "AuthController"
+            .any(|dependency| {
+                dependency["target"] == "IAuthController"
+                    && dependency["kind"] == "base_type"
+                    && dependency["local_alias"] == "AuthController"
+                    && dependency["imported_symbol"] == "implements"
             })
     );
     assert!(
@@ -7153,7 +7155,7 @@ fn cli_resolves_csharp_using_imports() {
             .iter()
             .any(|dependency| {
                 dependency["target"] == "App.Contracts"
-                    && dependency["resolved_file"] == "src/App/Contracts/IUserDirectory.cs"
+                    && dependency["resolved_file"] == "src/App/Contracts/IAuthController.cs"
             })
     );
     assert!(
@@ -10879,7 +10881,7 @@ fn cli_context_pack_routes_csharp_base_type_relations() {
     let fixture = csharp_using_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 14);
+    assert_eq!(index["indexed_files"], 15);
 
     let context = run_json([
         "context-pack",
@@ -10931,6 +10933,25 @@ fn cli_context_pack_routes_csharp_base_type_relations() {
             .as_str()
             .unwrap()
             .contains("authentication")
+    );
+
+    let interface_file = context["files"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|file| file["file"] == "src/App/Contracts/IAuthController.cs")
+        .expect("implemented interface should be selected through type relation evidence");
+    assert!(
+        interface_file["ranges"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|range| {
+                range["source"] == "type_relation"
+                    && range["reason"]
+                        .as_str()
+                        .is_some_and(|reason| reason.contains("base type IAuthController"))
+            })
     );
 }
 
@@ -14091,6 +14112,14 @@ public class AuthController : App.Controllers.BaseController, IAuthController {
         return id;
     }
 }
+
+"#,
+    );
+    write_file(
+        &dir,
+        "src/App/Contracts/IAuthController.cs",
+        r#"
+namespace App.Contracts;
 
 public interface IAuthController {}
 "#,

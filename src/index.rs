@@ -1627,7 +1627,7 @@ fn csharp_dependencies(
             "namespace",
             csharp_namespace_targets,
         ),
-        "class_declaration" | "record_declaration" => {
+        "class_declaration" | "interface_declaration" | "record_declaration" => {
             csharp_base_type_dependencies(node, source, language, source_file)
         }
         "property_declaration" => {
@@ -1726,14 +1726,14 @@ fn csharp_base_type_dependencies(
         return Vec::new();
     };
     let text = node.utf8_text(source).unwrap_or_default();
-    csharp_direct_base_type(text)
+    csharp_direct_base_types(text)
         .into_iter()
-        .map(|target| Dependency {
+        .map(|(target, relation)| Dependency {
             source_file: source_file.to_string(),
             resolved_file: None,
             target,
             local_alias: Some(local_alias.clone()),
-            imported_symbol: Some("base".to_string()),
+            imported_symbol: Some(relation.to_string()),
             kind: "base_type".to_string(),
             language,
             line: node.start_position().row + 1,
@@ -5188,20 +5188,27 @@ fn csharp_namespace_targets(text: &str) -> Vec<String> {
         .unwrap_or_default()
 }
 
-fn csharp_direct_base_type(text: &str) -> Option<String> {
-    let (_, rest) = text.split_once(':')?;
-    let candidate = rest
-        .split(['{', ';'])
-        .next()
-        .unwrap_or_default()
-        .split(',')
-        .next()
-        .unwrap_or_default()
-        .split_whitespace()
-        .next()
-        .unwrap_or_default()
-        .trim();
-    clean_csharp_type_name(candidate).map(ToOwned::to_owned)
+fn csharp_direct_base_types(text: &str) -> Vec<(String, &'static str)> {
+    let Some((_, rest)) = text.split_once(':') else {
+        return Vec::new();
+    };
+    let candidates = rest.split(['{', ';']).next().unwrap_or_default();
+
+    split_type_relation_targets(candidates)
+        .into_iter()
+        .enumerate()
+        .filter_map(|(index, candidate)| {
+            let candidate = candidate
+                .split_whitespace()
+                .next()
+                .unwrap_or_default()
+                .trim();
+            clean_csharp_type_name(candidate).map(|target| {
+                let relation = if index == 0 { "base" } else { "implements" };
+                (target.to_string(), relation)
+            })
+        })
+        .collect()
 }
 
 fn csharp_extension_receiver_type(text: &str) -> Option<String> {
@@ -7507,6 +7514,13 @@ public class BaseAuthService {
             dependency.target == "Example.Auth.BaseAuthService"
                 && dependency.kind == "base_type"
                 && dependency.local_alias.as_deref() == Some("AuthService")
+                && dependency.imported_symbol.as_deref() == Some("base")
+        }));
+        assert!(deps.iter().any(|dependency| {
+            dependency.target == "IUserService"
+                && dependency.kind == "base_type"
+                && dependency.local_alias.as_deref() == Some("AuthService")
+                && dependency.imported_symbol.as_deref() == Some("implements")
         }));
         assert!(deps.iter().any(|dependency| {
             dependency.target == "ProfileService"
@@ -7514,9 +7528,6 @@ public class BaseAuthService {
                 && dependency.local_alias.as_deref() == Some("Profile")
                 && dependency.imported_symbol.as_deref() == Some("AuthService")
         }));
-        assert!(deps.iter().all(
-            |dependency| dependency.target != "IUserService" || dependency.kind != "base_type"
-        ));
 
         let calls = extract_calls(source, Language::CSharp, "AuthService.cs", &symbols);
         assert!(
