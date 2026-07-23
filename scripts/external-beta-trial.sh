@@ -254,6 +254,7 @@ write_issue_body() {
     echo "- Read-less ratio: \`$(json_value "$summary_json" '.local_evidence.metrics.read_less_ratio // "n/a"')\`"
     echo "- Impact risk: \`$(json_value "$summary_json" '.local_evidence.metrics.risk_level')\`"
     echo "- Suggested checks: \`$(json_value "$summary_json" '.local_evidence.metrics.suggested_checks')\`"
+    echo "- MCP route quality: \`$(json_value "$summary_json" '.mcp_first_call.route_quality.level')\` (\`$(json_value "$summary_json" '.mcp_first_call.route_quality.score')/100\`, \`$(json_value "$summary_json" '.mcp_first_call.route_quality.evidence_count')\` evidence signals), next=\`$(json_value "$summary_json" '.mcp_first_call.route_quality.recommended_action')\`"
     echo "- MCP suggested tool executed: \`$(json_value "$summary_json" '.mcp_first_call.suggested_tool_executed')\`"
     echo "- First-read gating: suggested_tool_after_selected_context=\`$(json_value "$summary_json" '.first_read_gating.suggested_tool_after_selected_context')\`, continuation_after_selected_context=\`$(json_value "$summary_json" '.first_read_gating.continuation_after_selected_context')\`, impact_review_before_edits=\`$(json_value "$summary_json" '.first_read_gating.impact_review_before_edits')\`"
     echo
@@ -326,6 +327,7 @@ write_maintainer_triage() {
     echo "- If outcome is \`needs_triage\`, reclassify as \`route-hit\`, \`route-near-miss\`, \`route-miss\`, \`workflow-friction\`, or \`overtrust-risk\`."
     echo "- First selected file: \`$(json_value "$summary_json" '.local_evidence.metrics.first_file')\`"
     echo "- Read-less ratio: \`$(json_value "$summary_json" '.local_evidence.metrics.read_less_ratio // "n/a"')\`"
+    echo "- MCP route quality: \`$(json_value "$summary_json" '.mcp_first_call.route_quality.level')\` (\`$(json_value "$summary_json" '.mcp_first_call.route_quality.score')/100\`), next=\`$(json_value "$summary_json" '.mcp_first_call.route_quality.recommended_action')\`"
     echo "- MCP first-call status: \`$(json_value "$summary_json" '.mcp_first_call.status')\`"
     echo "- Priority rule: fix workflow friction before route misses, and route misses before near misses."
   } >"$target"

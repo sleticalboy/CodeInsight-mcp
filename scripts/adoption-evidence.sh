@@ -184,6 +184,7 @@ write_markdown_summary() {
     echo "- Impact risk: \`$(json_value "$local_summary" '.metrics.risk_level')\`"
     echo "- Impacted files: \`$(json_value "$local_summary" '.metrics.impacted_files')\`"
     echo "- MCP server: \`$(json_value "$mcp_summary" '.server')\`"
+    echo "- MCP route quality: \`$(json_value "$mcp_summary" '.route_quality.level')\` (\`$(json_value "$mcp_summary" '.route_quality.score')/100\`, \`$(json_value "$mcp_summary" '.route_quality.evidence_count')\` evidence signals), next=\`$(json_value "$mcp_summary" '.route_quality.recommended_action')\`"
     echo "- MCP first-call contract: reading_order=\`$(json_value "$mcp_summary" '.execution_plan_reads_in_reading_plan_order')\`, current_reading_step=\`$(json_value "$mcp_summary" '.current_reading_step_matches_reading_plan')\`, read_less_instruction=\`$(json_value "$mcp_summary" '.first_execution_instruction_has_read_less')\`, suggested_tool_handoff=\`$(json_value "$mcp_summary" '.current_step_suggested_tool_matches_reading_plan')\`, continuation_after_selected_context=\`$(json_value "$mcp_summary" '.continuation_after_selected_context')\`"
     echo "- First-read gating: suggested_tool_after_selected_context=\`$(json_value "$mcp_summary" '(.execution_plan_reads_in_reading_plan_order == true and .current_step_suggested_tool_matches_reading_plan == true and .suggested_tool_executed == true)')\`, continuation_after_selected_context=\`$(json_value "$mcp_summary" '.continuation_after_selected_context')\`, impact_review_before_edits=\`$(json_value "$mcp_summary" '((.execution_plan_actions | index("review_impact_before_edits")) != null and .impact_status == "complete")')\`"
     echo "- MCP suggested tool executed: \`$(json_value "$mcp_summary" '.suggested_tool_executed')\`"
@@ -235,6 +236,13 @@ write_summary_json() {
       local_evidence: $local[0],
       mcp_first_call: $mcp[0],
       first_read_gating: {
+        route_quality_available: (
+          ($mcp[0].route_quality.level | type) == "string"
+          and ($mcp[0].route_quality.score | type) == "number"
+          and ($mcp[0].route_quality.evidence_count | type) == "number"
+          and ($mcp[0].route_quality.recommended_action | type) == "string"
+          and ($mcp[0].routing_decision.route_quality == $mcp[0].route_quality)
+        ),
         suggested_tool_after_selected_context: (
           $mcp[0].execution_plan_reads_in_reading_plan_order == true
           and $mcp[0].current_step_suggested_tool_matches_reading_plan == true
@@ -274,6 +282,12 @@ write_summary_json() {
       and .local_evidence.route_tools == ["index_project", "project_overview", "context_pack", "impact_analysis"]
       and .mcp_first_call.route_tools == ["index_project", "project_overview", "context_pack", "impact_analysis"]
       and .mcp_first_call.execution_plan_reads_in_reading_plan_order == true
+      and (.mcp_first_call.route_quality.level | type) == "string"
+      and (.mcp_first_call.route_quality.score | type) == "number"
+      and (.mcp_first_call.route_quality.evidence_count | type) == "number"
+      and (.mcp_first_call.route_quality.recommended_action | type) == "string"
+      and .mcp_first_call.routing_decision.route_quality == .mcp_first_call.route_quality
+      and .first_read_gating.route_quality_available == true
       and .mcp_first_call.current_reading_step_matches_reading_plan == true
       and .mcp_first_call.first_execution_instruction_has_read_less == true
       and .mcp_first_call.current_step_suggested_tool_matches_reading_plan == true
@@ -308,6 +322,7 @@ print_snippet() {
 - First reading focus: $(json_value "$summary_json" '.local_evidence.metrics.first_reading_focus')
 - First reading question: $(json_value "$summary_json" '.local_evidence.metrics.first_reading_question')
 - MCP server: \`$(json_value "$summary_json" '.mcp_first_call.server')\`
+- MCP route quality: \`$(json_value "$summary_json" '.mcp_first_call.route_quality.level')\` (\`$(json_value "$summary_json" '.mcp_first_call.route_quality.score')/100\`, \`$(json_value "$summary_json" '.mcp_first_call.route_quality.evidence_count')\` evidence signals), next=\`$(json_value "$summary_json" '.mcp_first_call.route_quality.recommended_action')\`
 - MCP first-call contract: reading_order=\`$(json_value "$summary_json" '.mcp_first_call.execution_plan_reads_in_reading_plan_order')\`, current_reading_step=\`$(json_value "$summary_json" '.mcp_first_call.current_reading_step_matches_reading_plan')\`, read_less_instruction=\`$(json_value "$summary_json" '.mcp_first_call.first_execution_instruction_has_read_less')\`, suggested_tool_handoff=\`$(json_value "$summary_json" '.mcp_first_call.current_step_suggested_tool_matches_reading_plan')\`, continuation_after_selected_context=\`$(json_value "$summary_json" '.mcp_first_call.continuation_after_selected_context')\`
 - First-read gating: suggested_tool_after_selected_context=\`$(json_value "$summary_json" '.first_read_gating.suggested_tool_after_selected_context')\`, continuation_after_selected_context=\`$(json_value "$summary_json" '.first_read_gating.continuation_after_selected_context')\`, impact_review_before_edits=\`$(json_value "$summary_json" '.first_read_gating.impact_review_before_edits')\`
 - MCP suggested tool executed: \`$(json_value "$summary_json" '.mcp_first_call.suggested_tool_executed')\`

@@ -177,7 +177,8 @@ read_less = fetch_metric(self_report, "Read less")
 expected_readme = "- The CodeInsight self adoption report packages a full tar.gz handoff and\n" \
   "  routes the entrypoint task to #{with_commas(selected)} of #{with_commas(total)} source lines, avoiding #{with_commas(avoided)}\n" \
   "  source lines before broad reading for a #{reduction} reduction and #{read_less} read-less\n" \
-  "  ratio, with 7 type-relation edges surfaced through the `base_type` graph"
+  "  ratio, with 7 type-relation edges surfaced through the `base_type` graph\n" \
+  "  filter, reporting high route quality from 4 evidence signals"
 unless readme.include?(expected_readme)
   warn "README self adoption summary is out of sync with docs/adoption-report-codeinsight.md"
   warn "expected:"
@@ -186,7 +187,7 @@ unless readme.include?(expected_readme)
 end
 
 expected_release_metric = "`/tmp/codeinsight-self-adoption-report.tar.gz` archive path, `#{selected}/#{total}`\n" \
-  "routed first-read metric"
+  "routed first-read metric, route-quality summary"
 unless release_commands.include?(expected_release_metric)
   warn "docs/release-commands.md self adoption metric is out of sync"
   warn "expected:"
@@ -340,7 +341,7 @@ main() {
     'clients can render a pre-edit' \
     "README MCP impact checklist evidence"
   require_pattern README.md \
-    'of 77,600 source lines, avoiding 77,047 source lines before broad reading' \
+    'of 77,731 source lines, avoiding 77,178 source lines before broad reading' \
     "README two-minute demo read-less metric"
   "$ROOT_DIR/scripts/readme-adoption-summary-smoke.sh" >/dev/null
   require_pattern README.md \
@@ -1109,14 +1110,20 @@ main() {
     '\| understand configuration settings \| `lib/streamlit/config\.py` \|' \
     "task routing matrix Streamlit settings example"
   require_pattern docs/adoption-report-codeinsight.md \
-    'CodeInsight routed first-read \| `440` source lines' \
+    'CodeInsight routed first-read \| `540` source lines' \
     "CodeInsight self adoption report routed lines"
   require_pattern docs/adoption-report-codeinsight.md \
     'Source lines avoided \| `[0-9]+`' \
     "CodeInsight self adoption report avoided lines"
   require_pattern docs/adoption-report-codeinsight.md \
-    'First-read reduction \| `98\.9%`' \
+    'First-read reduction \| `99\.3%`' \
     "CodeInsight self adoption report reduction"
+  require_pattern docs/adoption-report-codeinsight.md \
+    'Route quality \| `high` \(`100/100`, `4` evidence signals\)' \
+    "CodeInsight self adoption report route quality"
+  require_pattern docs/adoption-report-codeinsight.md \
+    'MCP route quality: `high` \(`100/100`, `4` evidence signals\), next=`read_selected_context`' \
+    "CodeInsight self adoption report route quality snippet"
   require_pattern docs/adoption-report-codeinsight.md \
     'Read less \| `[0-9.]+x`' \
     "CodeInsight self adoption report read-less ratio"
@@ -1779,16 +1786,16 @@ main() {
     'first_next_action' \
     "reading plan next action demo metric"
   require_pattern docs/demo-script.md \
-    'source_lines_avoided: 77047' \
+    'source_lines_avoided: 77178' \
     "demo script source lines avoided metric"
   require_pattern docs/demo-script.md \
-    'read_less_ratio: 140\.3x' \
+    'read_less_ratio: 140\.6x' \
     "demo script read-less metric"
   require_pattern docs/demo-script.md \
     'routing_decision_quality: high \(100/100, 22 evidence signals\)' \
     "demo script route quality metric"
   require_pattern docs/demo-script.md \
-    'Read less: avoided 77047 source lines, 140\.3x less text before follow-up tools\.' \
+    'Read less: avoided 77178 source lines, 140\.6x less text before follow-up tools\.' \
     "demo script evidence summary read-less line"
   require_pattern docs/demo-script.md \
     'impact_analysis' \

@@ -212,6 +212,12 @@ main() {
       and .artifacts.issue_template
       and .artifacts.local_stderr
       and .artifacts.mcp_stderr
+      and (.mcp_first_call.route_quality.level | type) == "string"
+      and (.mcp_first_call.route_quality.score | type) == "number"
+      and (.mcp_first_call.route_quality.evidence_count | type) == "number"
+      and (.mcp_first_call.route_quality.recommended_action | type) == "string"
+      and .mcp_first_call.routing_decision.route_quality == .mcp_first_call.route_quality
+      and .first_read_gating.route_quality_available == true
       and .mcp_first_call.execution_plan_reads_in_reading_plan_order == true
       and .mcp_first_call.current_reading_step_matches_reading_plan == true
       and .mcp_first_call.first_execution_instruction_has_read_less == true

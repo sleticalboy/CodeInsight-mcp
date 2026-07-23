@@ -259,7 +259,7 @@ accuracy, or proof that unselected code is irrelevant.
 
 Current benchmark snapshot:
 
-- The two-minute demo for this repository shows the agent route selecting 553 of 77,600 source lines, avoiding 77,047 source lines before broad reading for a 99.3% reduction and 140.3x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
+- The two-minute demo for this repository shows the agent route selecting 553 of 77,731 source lines, avoiding 77,178 source lines before broad reading for a 99.3% reduction and 140.6x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
 - Smoke repositories route `context_pack` first for 4/4 repositories and
   select 709 of 75,753 source lines, a 99.1% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and
@@ -268,11 +268,11 @@ Current benchmark snapshot:
   to 2,595 of 675,772 source lines, avoiding 673,177 lines before broad file
   reading, a 99.6% aggregate reduction and 260.4x aggregate read-less ratio.
 - The CodeInsight self adoption report packages a full tar.gz handoff and
-  routes the entrypoint task to 440 of 39,357 source lines, avoiding 38,917
-  source lines before broad reading for a 98.9% reduction and 89.4x read-less
+  routes the entrypoint task to 540 of 77,731 source lines, avoiding 77,191
+  source lines before broad reading for a 99.3% reduction and 143.9x read-less
   ratio, with 7 type-relation edges surfaced through the `base_type` graph
-  filter, while the MCP first-call contract fields all pass, including the
-  `current_reading_step` mirror and read-less instruction evidence.
+  filter, reporting high route quality from 4 evidence signals, while the MCP
+  first-call contract fields all pass, including the `current_reading_step` mirror and read-less instruction evidence.
 - The public route-quality snapshot pins Express, FastAPI, Flask, Gin,
   Requests, and Streamlit and passes 86/86 expected first-file checks,
   selecting 40,636 of 7,101,630 task source lines, a 99.42% aggregate
@@ -332,6 +332,7 @@ and `/tmp/codeinsight-adoption-evidence/issue-template.md`, then prints this cop
 - Continuation next action: `<next_action>`
 - First omitted candidate: `<file-or-none>`
 - MCP server: `codeinsight`
+- MCP route quality: `<level>` (`<score>/100`, `<evidence>` evidence signals), next=`<action>`
 - MCP first-call contract: reading_order=`true`, current_reading_step=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`
 - First-read gating: suggested_tool_after_selected_context=`true`, continuation_after_selected_context=`true`, impact_review_before_edits=`true`
 - MCP suggested tool executed: `true`

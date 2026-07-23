@@ -123,6 +123,20 @@ cat >"$output_dir/summary.json" <<JSON
   "repository": "$repo_root",
   "task": "$task",
   "mcp_first_call": {
+    "route_quality": {
+      "level": "high",
+      "score": 96,
+      "evidence_count": 4,
+      "recommended_action": "read_selected_context"
+    },
+    "routing_decision": {
+      "route_quality": {
+        "level": "high",
+        "score": 96,
+        "evidence_count": 4,
+        "recommended_action": "read_selected_context"
+      }
+    },
     "execution_plan_reads_in_reading_plan_order": true,
     "current_reading_step_matches_reading_plan": true,
     "first_execution_instruction_has_read_less": true,
@@ -130,6 +144,7 @@ cat >"$output_dir/summary.json" <<JSON
     "continuation_after_selected_context": true
   },
   "first_read_gating": {
+    "route_quality_available": true,
     "suggested_tool_after_selected_context": true,
     "continuation_after_selected_context": true,
     "impact_review_before_edits": true
@@ -203,6 +218,12 @@ EOF
   jq -e \
     '.status == "pass"
       and .mcp_first_call.execution_plan_reads_in_reading_plan_order == true
+      and .mcp_first_call.route_quality.level == "high"
+      and .mcp_first_call.route_quality.score == 96
+      and .mcp_first_call.route_quality.evidence_count == 4
+      and .mcp_first_call.route_quality.recommended_action == "read_selected_context"
+      and .mcp_first_call.routing_decision.route_quality == .mcp_first_call.route_quality
+      and .first_read_gating.route_quality_available == true
       and .mcp_first_call.current_reading_step_matches_reading_plan == true
       and .mcp_first_call.first_execution_instruction_has_read_less == true
       and .mcp_first_call.current_step_suggested_tool_matches_reading_plan == true

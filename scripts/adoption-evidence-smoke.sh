@@ -177,6 +177,28 @@ cat >"$summary_json" <<'JSON'
   "token_budget": 6000,
   "route_tools": ["index_project", "project_overview", "context_pack", "impact_analysis"],
   "selected_files": ["src/main.ts"],
+  "route_quality": {
+    "level": "high",
+    "score": 96,
+    "evidence_count": 4,
+    "evidence_sources": ["seed file", "call graph"],
+    "warnings": [],
+    "recommended_action": "read_selected_context"
+  },
+  "route_quality_level": "high",
+  "route_quality_score": 96,
+  "route_quality_evidence_count": 4,
+  "route_quality_recommended_action": "read_selected_context",
+  "routing_decision": {
+    "route_quality": {
+      "level": "high",
+      "score": 96,
+      "evidence_count": 4,
+      "evidence_sources": ["seed file", "call graph"],
+      "warnings": [],
+      "recommended_action": "read_selected_context"
+    }
+  },
   "reading_plan": [
     {
       "file": "src/main.ts",
@@ -245,6 +267,8 @@ EOF
     fail "missing first reading focus line"
   grep -Fq -- '- MCP suggested tool executed: `true`' "$TEMP_DIR/evidence/adoption-evidence.md" ||
     fail "missing MCP suggested tool execution line"
+  grep -Fq -- '- MCP route quality: `high` (`96/100`, `4` evidence signals), next=`read_selected_context`' "$TEMP_DIR/evidence/adoption-evidence.md" ||
+    fail "missing MCP route quality line"
   grep -Fq -- '- MCP first-call contract: reading_order=`true`, current_reading_step=`true`, read_less_instruction=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`' "$TEMP_DIR/evidence/adoption-evidence.md" ||
     fail "missing MCP first-call contract line"
   grep -Fq -- '- First-read gating: suggested_tool_after_selected_context=`true`, continuation_after_selected_context=`true`, impact_review_before_edits=`true`' "$TEMP_DIR/evidence/adoption-evidence.md" ||
@@ -260,6 +284,11 @@ EOF
     '.status == "pass"
       and .local_evidence.status == "pass"
       and .mcp_first_call.status == "pass"
+      and .mcp_first_call.route_quality.level == "high"
+      and .mcp_first_call.route_quality.score == 96
+      and .mcp_first_call.route_quality.evidence_count == 4
+      and .mcp_first_call.route_quality.recommended_action == "read_selected_context"
+      and .mcp_first_call.routing_decision.route_quality == .mcp_first_call.route_quality
       and .local_evidence.metrics.line_reduction == "90.0%"
       and .local_evidence.metrics.source_lines_avoided == 108
       and .local_evidence.metrics.read_less_ratio == "10.0x"
@@ -274,6 +303,7 @@ EOF
       and .mcp_first_call.current_step_suggested_tool_matches_reading_plan == true
       and .mcp_first_call.continuation_after_selected_context == true
       and .mcp_first_call.suggested_tool_executed == true
+      and .first_read_gating.route_quality_available == true
       and .first_read_gating.suggested_tool_after_selected_context == true
       and .first_read_gating.continuation_after_selected_context == true
       and .first_read_gating.impact_review_before_edits == true
@@ -311,6 +341,8 @@ EOF
     fail "missing issue template MCP stderr artifact"
   grep -Fq -- '- First-read gating: suggested_tool_after_selected_context=`true`, continuation_after_selected_context=`true`, impact_review_before_edits=`true`' "$TEMP_DIR/evidence/issue-template.md" ||
     fail "missing issue template first-read gating line"
+  grep -Fq -- '- MCP route quality: `high` (`96/100`, `4` evidence signals), next=`read_selected_context`' "$TEMP_DIR/evidence/issue-template.md" ||
+    fail "missing issue template MCP route quality line"
   grep -Fq '## Environment' "$TEMP_DIR/evidence/issue-template.md" ||
     fail "missing issue template environment section"
   grep -Fq -- '- CodeInsight version:' "$TEMP_DIR/evidence/issue-template.md" ||
@@ -335,6 +367,8 @@ EOF
     fail "missing printed companion entrypoint line"
   grep -Fq -- '- MCP suggested tool executed: `true`' "$TEMP_DIR/snippet.log" ||
     fail "missing printed MCP suggested tool execution line"
+  grep -Fq -- '- MCP route quality: `high` (`96/100`, `4` evidence signals), next=`read_selected_context`' "$TEMP_DIR/snippet.log" ||
+    fail "missing printed MCP route quality line"
   grep -Fq -- '- MCP first-call contract: reading_order=`true`, current_reading_step=`true`, read_less_instruction=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`' "$TEMP_DIR/snippet.log" ||
     fail "missing printed MCP first-call contract line"
   grep -Fq -- '- First-read gating: suggested_tool_after_selected_context=`true`, continuation_after_selected_context=`true`, impact_review_before_edits=`true`' "$TEMP_DIR/snippet.log" ||

@@ -113,6 +113,20 @@ cat >"$summary_path" <<JSON
     "status": "pass",
     "server": "codeinsight",
     "route_tools": ["index_project", "project_overview", "context_pack", "impact_analysis"],
+    "route_quality": {
+      "level": "high",
+      "score": 96,
+      "evidence_count": 4,
+      "recommended_action": "read_selected_context"
+    },
+    "routing_decision": {
+      "route_quality": {
+        "level": "high",
+        "score": 96,
+        "evidence_count": 4,
+        "recommended_action": "read_selected_context"
+      }
+    },
     "execution_plan_reads_in_reading_plan_order": true,
     "current_reading_step_matches_reading_plan": true,
     "first_execution_instruction_has_read_less": true,
@@ -130,6 +144,7 @@ cat >"$summary_path" <<JSON
     }
   },
   "first_read_gating": {
+    "route_quality_available": true,
     "suggested_tool_after_selected_context": true,
     "continuation_after_selected_context": true,
     "impact_review_before_edits": true
@@ -204,6 +219,10 @@ EOF
     fail "missing current reading step mirror metric"
   grep -Fq '| First execution instruction carries read-less evidence | `true` |' "$TEMP_DIR/adoption-report-codeinsight.md" ||
     fail "missing read-less instruction contract metric"
+  grep -Fq '| Route quality | `high` (`96/100`, `4` evidence signals) |' "$TEMP_DIR/adoption-report-codeinsight.md" ||
+    fail "missing route quality contract metric"
+  grep -Fq '| Route quality next action | `read_selected_context` |' "$TEMP_DIR/adoption-report-codeinsight.md" ||
+    fail "missing route quality action metric"
   grep -Fq -- '- First reading focus: Start with Rust entrypoint wiring.' "$TEMP_DIR/adoption-report-codeinsight.md" ||
     fail "missing generated snippet first reading focus"
   grep -Fq -- '- Source lines avoided: `1120`' "$TEMP_DIR/adoption-report-codeinsight.md" ||
@@ -214,6 +233,8 @@ EOF
     fail "missing generated snippet type-relation edges"
   grep -Fq -- '- Type-relation graph filter: `base_type`' "$TEMP_DIR/adoption-report-codeinsight.md" ||
     fail "missing generated snippet type-relation filter"
+  grep -Fq -- '- MCP route quality: `high` (`96/100`, `4` evidence signals), next=`read_selected_context`' "$TEMP_DIR/adoption-report-codeinsight.md" ||
+    fail "missing generated snippet MCP route quality"
   grep -Fq -- '- MCP first-call contract: reading_order=`true`, current_reading_step=`true`, read_less_instruction=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`' "$TEMP_DIR/adoption-report-codeinsight.md" ||
     fail "missing generated snippet read-less instruction contract"
   grep -Fq 'The generated manifest reported `status: pass` and listed the same 13 files' "$TEMP_DIR/adoption-report-codeinsight.md" ||

@@ -116,6 +116,12 @@ cat >"$output_dir/summary.json" <<JSON
   },
   "mcp_first_call": {
     "status": "pass",
+    "route_quality": {
+      "level": "high",
+      "score": 96,
+      "evidence_count": 4,
+      "recommended_action": "read_selected_context"
+    },
     "suggested_tool_executed": true
   },
   "first_read_gating": {
@@ -173,6 +179,8 @@ EOF
     fail "issue body is missing needs_triage outcome"
   grep -Fq -- '- First selected file: `src/router.ts`' "$TEMP_DIR/beta/issue-body.md" ||
     fail "issue body is missing first selected file"
+  grep -Fq -- '- MCP route quality: `high` (`96/100`, `4` evidence signals), next=`read_selected_context`' "$TEMP_DIR/beta/issue-body.md" ||
+    fail "issue body is missing MCP route quality"
   grep -Fq -- '  --file "src/router.ts" \' "$TEMP_DIR/beta/issue-body.md" ||
     fail "issue body reproduction command is missing seed file"
   grep -Fq -- '  --symbol "routes" \' "$TEMP_DIR/beta/issue-body.md" ||
@@ -183,6 +191,8 @@ EOF
     fail "redaction checklist is missing path guidance"
   grep -Fq 'reclassify as `route-hit`, `route-near-miss`, `route-miss`, `workflow-friction`, or `overtrust-risk`' "$TEMP_DIR/beta/maintainer-triage.md" ||
     fail "maintainer triage note is missing reclassification guidance"
+  grep -Fq -- '- MCP route quality: `high` (`96/100`), next=`read_selected_context`' "$TEMP_DIR/beta/maintainer-triage.md" ||
+    fail "maintainer triage note is missing MCP route quality"
 
   jq -e \
     '.status == "pass"
@@ -196,6 +206,10 @@ EOF
       and .outcome == "needs_triage"
       and .private_repo == false
       and .adoption_summary.status == "pass"
+      and .adoption_summary.mcp_first_call.route_quality.level == "high"
+      and .adoption_summary.mcp_first_call.route_quality.score == 96
+      and .adoption_summary.mcp_first_call.route_quality.evidence_count == 4
+      and .adoption_summary.mcp_first_call.route_quality.recommended_action == "read_selected_context"
       and .artifacts.issue_body == "'"$TEMP_DIR"'/beta/issue-body.md"
       and .artifacts.redaction_checklist == "'"$TEMP_DIR"'/beta/redaction-checklist.md"
       and .artifacts.maintainer_triage == "'"$TEMP_DIR"'/beta/maintainer-triage.md"' \

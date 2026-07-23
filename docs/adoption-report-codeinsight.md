@@ -13,11 +13,11 @@ first-call contract that a client or issue triage flow needs.
 
 - Repository: `CodeInsight-mcp`
 - Root: `/Users/binlee/code/open-source/CodeInsight-mcp`
-- Task: `understand the main application entrypoint`
+- Task: `inspect src/main.rs before changing MCP server startup behavior`
 - Token budget: `6000`
 - Route: `index_project -> project_overview -> context_pack -> impact_analysis`
 - Generated with: `scripts/adoption-report.sh`
-- Refreshed on: `2026-07-21`
+- Refreshed on: `2026-07-23`
 - Source summary: `/tmp/codeinsight-self-adoption-report/summary.json`
 - Source manifest: `/tmp/codeinsight-self-adoption-report/manifest.json`
 
@@ -25,48 +25,50 @@ first-call contract that a client or issue triage flow needs.
 
 | Metric | Value |
 | --- | ---: |
-| Indexed files | `23` |
-| Symbols | `1148` |
+| Indexed files | `138` |
+| Symbols | `1941` |
 | Index errors | `0` |
-| Entrypoints | `7` |
+| Entrypoints | `12` |
 | Type-relation edges | `7` |
 | Top type-relation target | `EmbeddingProvider` |
 | Type-relation graph filter | `base_type` |
-| Blind first-read baseline | `39357` source lines |
-| CodeInsight routed first-read | `440` source lines |
-| Source lines avoided | `38917` |
-| First-read reduction | `98.9%` |
-| Read less | `89.4x` |
-| Selected files | `10` |
-| Selected ranges | `11` |
-| Estimated tokens | `4397` |
+| Blind first-read baseline | `77731` source lines |
+| CodeInsight routed first-read | `540` source lines |
+| Source lines avoided | `77191` |
+| First-read reduction | `99.3%` |
+| Read less | `143.9x` |
+| Selected files | `30` |
+| Selected ranges | `32` |
+| Estimated tokens | `4828` |
 | Reading plan steps | `8` |
-| Impacted files | `11` |
+| Impacted files | `50` |
 
 ## First-Read Route
 
 | Field | Value |
 | --- | --- |
-| Seed strategy | `auto_entrypoint` |
-| First seed source | `overview_entrypoint` |
+| Seed strategy | `auto_task_path` |
+| First seed source | `task_path` |
 | First seed value | `src/main.rs` |
 | Companion entrypoint | `-` |
 | First selected file | `src/main.rs` |
 | First next action | `inspect_seed_file` |
-| First reading focus | Start with seed file context and primary symbols. |
+| First reading focus | Start with seed file startup and initialization flow. |
 | First suggested tool | `file_outline` |
 | Impact risk | `high` |
 
 First reading question:
 
 ```text
-What entrypoints, exported symbols, or setup code define the main flow here?
+What startup entrypoint or initialization sequence creates the requested flow?
 ```
 
 ## MCP First-Call Contract
 
 | Contract | Value |
 | --- | --- |
+| Route quality | `high` (`100/100`, `4` evidence signals) |
+| Route quality next action | `read_selected_context` |
 | Reading order starts with selected context | `true` |
 | Current reading step mirrors reading plan | `true` |
 | First execution instruction carries read-less evidence | `true` |
@@ -115,20 +117,21 @@ The `--print-snippet` output from the refreshed report was:
 
 - Status: `pass`
 - Route: `index_project -> project_overview -> context_pack -> impact_analysis`
-- Selected context: `440/39357` source lines, `98.9%` reduction
-- Source lines avoided: `38917`
-- Read less: `89.4x`
-- Seed strategy: `auto_entrypoint`
+- Selected context: `540/77731` source lines, `99.3%` reduction
+- Source lines avoided: `77191`
+- Read less: `143.9x`
+- Seed strategy: `auto_task_path`
 - Selected seeds: `1`
-- First seed source: `overview_entrypoint`
+- First seed source: `task_path`
 - Companion entrypoint: `-`
 - Type-relation edges: `7`
 - Top type-relation target: `EmbeddingProvider`
 - Type-relation graph filter: `base_type`
 - First selected file: `src/main.rs`
-- First reading focus: Start with seed file context and primary symbols.
-- First reading question: What entrypoints, exported symbols, or setup code define the main flow here?
+- First reading focus: Start with seed file startup and initialization flow.
+- First reading question: What startup entrypoint or initialization sequence creates the requested flow?
 - MCP server: `codeinsight`
+- MCP route quality: `high` (`100/100`, `4` evidence signals), next=`read_selected_context`
 - MCP first-call contract: reading_order=`true`, current_reading_step=`true`, read_less_instruction=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`
 - First-read gating: suggested_tool_after_selected_context=`true`, continuation_after_selected_context=`true`, impact_review_before_edits=`true`
 - MCP suggested tool executed: `true`
@@ -154,7 +157,7 @@ Run from a CodeInsight checkout:
 ```bash
 rm -rf /tmp/codeinsight-self-adoption-report /tmp/codeinsight-self-adoption-report.tar.gz
 scripts/adoption-report.sh . \
-  --task "understand the main application entrypoint" \
+  --task "inspect src/main.rs before changing MCP server startup behavior" \
   --token-budget 6000 \
   --output-dir /tmp/codeinsight-self-adoption-report \
   --archive /tmp/codeinsight-self-adoption-report.tar.gz \
@@ -164,9 +167,10 @@ scripts/adoption-report.sh . \
 Expected summary lines:
 
 ```text
-- Selected context: `440/39357` source lines, `98.9%` reduction
-- Source lines avoided: `38917`
-- Read less: `89.4x`
+- Selected context: `540/77731` source lines, `99.3%` reduction
+- Source lines avoided: `77191`
+- Read less: `143.9x`
+- MCP route quality: `high` (`100/100`, `4` evidence signals), next=`read_selected_context`
 - MCP first-call contract: reading_order=`true`, current_reading_step=`true`, read_less_instruction=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`
 - First-read gating: suggested_tool_after_selected_context=`true`, continuation_after_selected_context=`true`, impact_review_before_edits=`true`
 ```
