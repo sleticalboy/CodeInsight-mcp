@@ -39,8 +39,8 @@ LSP, compiler, test runner, and language-specific tools for precise diagnostics,
 type checks, and final verification.
 
 Current public routing snapshot: pinned Express, FastAPI, Flask, Gin, Requests,
-and Streamlit route-quality expectations pass `86/86`, selecting 41,455 of
-7,098,531 task source lines for a `99.41%` aggregate first-read line reduction,
+and Streamlit route-quality expectations pass `86/86`, selecting 40,636 of
+7,101,630 task source lines for a `99.42%` aggregate first-read line reduction,
 with each route carrying a first suggested tool such as `file_outline`. See the
 checked-in [Markdown snapshot](docs/public-task-routing-matrix.md) and
 [JSON summary](docs/public-task-routing-matrix-summary.json). A heavyweight
@@ -275,7 +275,7 @@ Current benchmark snapshot:
   `current_reading_step` mirror and read-less instruction evidence.
 - The public route-quality snapshot pins Express, FastAPI, Flask, Gin,
   Requests, and Streamlit and passes 86/86 expected first-file checks,
-  selecting 41,455 of 7,098,531 task source lines, a 99.41% aggregate
+  selecting 40,636 of 7,101,630 task source lines, a 99.42% aggregate
   first-read line reduction, and records the first suggested tool for each
   route.
 - An optional heavyweight Django route-quality case is available with
@@ -448,7 +448,7 @@ edits.
 Latest verified release: `v0.1.12`.
 
 Current public route-quality evidence passes `86/86` first-file checks and
-selects 41,455 of 7,098,531 task source lines.
+selects 40,636 of 7,101,630 task source lines.
 
 Next focus: use the external Beta trial wrapper and cohort summary to collect
 at least three non-maintainer reports, then fix the highest priority route miss

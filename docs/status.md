@@ -11,7 +11,7 @@ workflow is implemented end to end.
 
 - The checked-in public route-quality snapshot covers Express, FastAPI, Flask,
   Gin, Requests, and Streamlit tasks, passes `86/86` expected first-file checks,
-  and selects 41,455 of 7,098,531 task source lines for a 99.41% read-less
+  and selects 40,636 of 7,101,630 task source lines for a 99.42% read-less
   reduction.
 - The checked-in adoption cases now cover Django, Express, Gin, ip2region,
   Memchr, and Requests, routing a first read to 2,595 of 675,772 source lines

@@ -196,6 +196,77 @@ end
 RUBY
 }
 
+require_public_route_quality_summary_sync() {
+  ruby - "$ROOT_DIR" <<'RUBY'
+require "json"
+
+root = ARGV.fetch(0)
+summary = JSON.parse(File.read(File.join(root, "docs", "public-task-routing-matrix-summary.json")))
+aggregate = summary.fetch("aggregate")
+
+def with_commas(value)
+  value.to_s.gsub(",", "").reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse
+end
+
+def assert_includes(root, file, expected)
+  content = File.read(File.join(root, file)).gsub(/\s+/, " ")
+  normalized = expected.gsub(/\s+/, " ")
+  return if content.include?(normalized)
+
+  warn "#{file} public route-quality summary is out of sync"
+  warn "expected:"
+  warn expected
+  exit 1
+end
+
+checks = "#{aggregate.fetch("expectation_count")}/#{aggregate.fetch("task_count")}"
+selected = with_commas(aggregate.fetch("total_selected_lines"))
+total = with_commas(aggregate.fetch("total_task_source_lines"))
+reduction = format("%.2f", aggregate.fetch("line_reduction"))
+
+assert_includes(
+  root,
+  "README.md",
+  "route-quality expectations pass `#{checks}`, selecting #{selected} of #{total} task source lines for a `#{reduction}%` aggregate first-read line reduction"
+)
+assert_includes(
+  root,
+  "README.md",
+  "passes #{checks} expected first-file checks, selecting #{selected} of #{total} task source lines, a #{reduction}% aggregate first-read line reduction"
+)
+assert_includes(
+  root,
+  "README.md",
+  "Current public route-quality evidence passes `#{checks}` first-file checks and selects #{selected} of #{total} task source lines."
+)
+assert_includes(
+  root,
+  "docs/status.md",
+  "passes `#{checks}` expected first-file checks, and selects #{selected} of #{total} task source lines for a #{reduction}% read-less reduction."
+)
+assert_includes(
+  root,
+  "docs/mvp-public-readiness.md",
+  "Selected lines: `#{selected}` of `#{total}` task source lines."
+)
+assert_includes(
+  root,
+  "docs/mvp-public-readiness.md",
+  "Aggregate first-read line reduction: `#{reduction}%`."
+)
+assert_includes(
+  root,
+  "docs/public-demo-one-pager.md",
+  "Express, FastAPI, Flask, Gin, Requests, and Streamlit pass `#{checks}` expected first-file checks."
+)
+assert_includes(
+  root,
+  "docs/public-demo-one-pager.md",
+  "The public matrix selects `#{selected}` of `#{total}` task source lines for a `#{reduction}%` aggregate first-read line reduction."
+)
+RUBY
+}
+
 main() {
   require_pattern README.md \
     '\[public demo one-pager\]\(docs/public-demo-one-pager\.md\)' \
@@ -216,7 +287,7 @@ main() {
     'pass `86/86` expected' \
     "public demo one-pager route-quality snapshot"
   require_pattern docs/public-demo-one-pager.md \
-    '`99\.41%` aggregate first-read line reduction' \
+    '`99\.42%` aggregate first-read line reduction' \
     "public demo one-pager aggregate line reduction snapshot"
   require_pattern docs/public-demo-one-pager.md \
     'Treat these numbers as first-read routing and token-discipline evidence' \
@@ -227,6 +298,7 @@ main() {
   require_pattern docs/public-demo-one-pager.md \
     'Compiler-grade static analysis' \
     "public demo one-pager compiler-grade guardrail"
+  require_public_route_quality_summary_sync
   require_pattern README.md \
     '\[Smoke benchmark\]\(docs/benchmark-v0\.1\.md\).*p-limit, itsdangerous, Go example,' \
     "smoke benchmark link and repository list"
@@ -1344,7 +1416,7 @@ main() {
     '\-\-expect-file \./route-expectations\.tsv' \
     "README task routing matrix expectation file"
   require_pattern README.md \
-    '7,098,531 task source lines' \
+    '7,101,630 task source lines' \
     "README public route-quality headline"
   require_pattern README.md \
     'Express, FastAPI, Flask, Gin, Requests, and Streamlit expectation files' \
@@ -1770,7 +1842,7 @@ main() {
     'passes `86/86` expected first-file checks' \
     "status public route-quality pass count"
   require_pattern docs/status.md \
-    '41,455 of 7,098,531 task source lines' \
+    '40,636 of 7,101,630 task source lines' \
     "status public route-quality read-less evidence"
   require_pattern docs/status.md \
     'first suggested tool for every route' \

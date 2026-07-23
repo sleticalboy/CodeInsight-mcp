@@ -63,8 +63,8 @@ Current checked-in snapshot:
 
 - Repositories: Express, FastAPI, Flask, Gin, Requests, and Streamlit.
 - Expected first-file checks: `86/86`.
-- Selected lines: `41,455` of `7,098,531` task source lines.
-- Aggregate first-read line reduction: `99.41%`.
+- Selected lines: `40,636` of `7,101,630` task source lines.
+- Aggregate first-read line reduction: `99.42%`.
 - Output:
   [public-task-routing-matrix.md](public-task-routing-matrix.md) and
   [public-task-routing-matrix-summary.json](public-task-routing-matrix-summary.json).
