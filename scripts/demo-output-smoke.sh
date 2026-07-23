@@ -83,6 +83,12 @@ main() {
     'routing_decision_impact_status: complete' \
     "routing decision impact status metric"
   require_pattern docs/demo-output.md \
+    'routing_decision_quality: high \(100/100, 22 evidence signals\)' \
+    "routing decision route quality metric"
+  require_pattern docs/demo-output.md \
+    'routing_decision_recommended_action: read_selected_context_then_use_continuation_if_needed' \
+    "routing decision route quality action"
+  require_pattern docs/demo-output.md \
     'first_next_action: inspect_seed_file' \
     "first next action metric"
   require_pattern docs/demo-output.md \

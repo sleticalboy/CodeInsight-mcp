@@ -17,16 +17,17 @@ use crate::{
     embedding, index,
     language::detect_language,
     model::{
-        AgentRouteExecutionStep, AgentRouteReport, AgentRouteRoutingDecision, AgentRouteStep,
-        CallEdge, ConfigInitReport, ConfigStatusReport, ContextBudget, ContextContinuationSummary,
-        ContextFile, ContextOmittedCandidate, ContextPack, ContextRange, ContextReadLess,
-        ContextReadingRange, ContextReadingStep, ContextSeed, ContextSemanticStatus,
-        ContextSourceCount, ContextSuggestedTool, Dependency, DependencyGraph,
-        EmbeddingProviderStatus, ImpactAnalysisReport, ImpactBreakdown, ImpactCounts, ImpactFile,
-        ImpactPath, IndexError, IndexScopeReport, Language, OllamaEmbeddingStatus,
-        OpenAiEmbeddingStatus, ProjectIndexReport, ProjectOverview, ReferenceMatch, SemanticChunk,
-        SemanticChunkInput, SemanticEmbeddingInput, SemanticEmbeddingMatch, SemanticIndexReport,
-        SemanticIndexStatus, SemanticSearchResult, SuggestedCheck, Symbol, SymbolKind, VersionInfo,
+        AgentRouteExecutionStep, AgentRouteQuality, AgentRouteReport, AgentRouteRoutingDecision,
+        AgentRouteStep, CallEdge, ConfigInitReport, ConfigStatusReport, ContextBudget,
+        ContextContinuationSummary, ContextFile, ContextOmittedCandidate, ContextPack,
+        ContextRange, ContextReadLess, ContextReadingRange, ContextReadingStep, ContextSeed,
+        ContextSemanticStatus, ContextSourceCount, ContextSuggestedTool, Dependency,
+        DependencyGraph, EmbeddingProviderStatus, ImpactAnalysisReport, ImpactBreakdown,
+        ImpactCounts, ImpactFile, ImpactPath, IndexError, IndexScopeReport, Language,
+        OllamaEmbeddingStatus, OpenAiEmbeddingStatus, ProjectIndexReport, ProjectOverview,
+        ReferenceMatch, SemanticChunk, SemanticChunkInput, SemanticEmbeddingInput,
+        SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus, SemanticSearchResult,
+        SuggestedCheck, Symbol, SymbolKind, VersionInfo,
     },
     storage::Store,
 };
@@ -384,6 +385,7 @@ fn agent_route_routing_decision(
 
     AgentRouteRoutingDecision {
         seed_strategy: context_pack.seed_strategy.clone(),
+        route_quality: agent_route_quality(context_pack, impact_status),
         first_seed_kind: first_seed.map(|seed| seed.kind.clone()),
         first_seed_source: first_seed.map(|seed| seed.source.clone()),
         first_seed_value: first_seed.map(|seed| seed.value.clone()),
@@ -412,6 +414,144 @@ fn agent_route_routing_decision(
         continuation_status: context_pack.continuation_summary.status.clone(),
         continuation_next_action: context_pack.continuation_summary.next_action.clone(),
         impact_status: impact_status.to_string(),
+    }
+}
+
+fn agent_route_quality(context_pack: &ContextPack, impact_status: &str) -> AgentRouteQuality {
+    let Some(first_step) = context_pack.reading_plan.first() else {
+        return AgentRouteQuality {
+            level: "blocked".to_string(),
+            score: 0,
+            evidence_count: 0,
+            evidence_sources: Vec::new(),
+            warnings: vec![format!(
+                "No reading plan was produced; context status is {}.",
+                context_pack.continuation_summary.status
+            )],
+            recommended_action: context_pack.continuation_summary.next_action.clone(),
+        };
+    };
+
+    let first_seed = context_pack.selected_seeds.first();
+    let source_count = first_step
+        .source_mix
+        .iter()
+        .map(|source| source.count)
+        .sum::<usize>();
+    let seed_evidence_count = first_seed
+        .map(|seed| seed.matched_keywords.len() + seed.matched_symbols.len())
+        .unwrap_or_default();
+    let evidence_count = source_count + seed_evidence_count + first_step.ranges.len();
+    let evidence_sources = first_step
+        .source_mix
+        .iter()
+        .map(|source| source.source.clone())
+        .collect::<Vec<_>>();
+
+    let mut score: i32 = 50;
+    let mut warnings = Vec::new();
+
+    if first_step.selection_rank == 1 {
+        score += 15;
+    } else if first_step.selection_rank <= 3 {
+        score += 8;
+        warnings.push(format!(
+            "First selected file is candidate rank {}, not rank 1.",
+            first_step.selection_rank
+        ));
+    } else {
+        warnings.push(format!(
+            "First selected file is candidate rank {}; verify before editing.",
+            first_step.selection_rank
+        ));
+    }
+
+    if first_seed.is_some() {
+        score += 8;
+    }
+    if seed_evidence_count > 0 {
+        score += 8;
+    }
+    if first_step
+        .source_mix
+        .iter()
+        .any(|source| matches!(source.source.as_str(), "seed file" | "symbol definition"))
+    {
+        score += 12;
+    }
+    if first_step.source_mix.iter().any(|source| {
+        matches!(
+            source.source.as_str(),
+            "call graph" | "type relation" | "reference" | "dependency"
+        )
+    }) {
+        score += 8;
+    }
+    if first_step.source_mix.len() >= 2 {
+        score += 5;
+    }
+    if !first_step.ranges.is_empty() {
+        score += 5;
+    }
+    if impact_status == "complete" {
+        score += 7;
+    } else if impact_status.starts_with("skipped_") {
+        warnings.push(format!(
+            "Impact preview is {}; review impact before editing when a seed is available.",
+            impact_status
+        ));
+    }
+    if context_pack.continuation_summary.status == "complete" {
+        score += 3;
+    } else if context_pack.continuation_summary.status == "omitted_candidates_available" {
+        warnings.push(
+            "Lower-ranked candidates were omitted; use continuation after selected context."
+                .to_string(),
+        );
+    } else if context_pack
+        .continuation_summary
+        .status
+        .starts_with("blocked_")
+    {
+        warnings.push(format!(
+            "Continuation status is {}; follow {} before broad reading.",
+            context_pack.continuation_summary.status, context_pack.continuation_summary.next_action
+        ));
+    }
+
+    if context_pack.truncated {
+        score -= 10;
+        warnings.push(
+            "Context was truncated by the token budget; continue with omitted candidates if the first read is insufficient."
+                .to_string(),
+        );
+    }
+    if evidence_count <= 1 {
+        score -= 8;
+        warnings.push("Only one evidence signal supported the first selected file.".to_string());
+    }
+
+    let score = score.clamp(0, 100) as u8;
+    let level = if score >= 80 {
+        "high"
+    } else if score >= 60 {
+        "medium"
+    } else {
+        "low"
+    };
+    let recommended_action = if context_pack.continuation_summary.status == "complete" {
+        "read_selected_context".to_string()
+    } else {
+        "read_selected_context_then_use_continuation_if_needed".to_string()
+    };
+
+    AgentRouteQuality {
+        level: level.to_string(),
+        score,
+        evidence_count,
+        evidence_sources,
+        warnings,
+        recommended_action,
     }
 }
 

@@ -208,6 +208,10 @@ write_summary_json() {
       routing_decision_line_reduction: (.routing_decision.line_reduction // ""),
       routing_decision_read_less_ratio: (.routing_decision.read_less_ratio // ""),
       routing_decision_continuation_status: (.routing_decision.continuation_status // ""),
+      routing_decision_quality_level: (.routing_decision.route_quality.level // ""),
+      routing_decision_quality_score: (.routing_decision.route_quality.score // 0),
+      routing_decision_quality_evidence_count: (.routing_decision.route_quality.evidence_count // 0),
+      routing_decision_quality_recommended_action: (.routing_decision.route_quality.recommended_action // ""),
       impact_status,
       impacted_files: (.impact_analysis.impact_counts.impacted_files // 0),
       suggested_checks: (.impact_analysis.suggested_checks | length),
@@ -244,6 +248,10 @@ write_summary_json() {
       and .metrics.routing_decision_line_reduction == .metrics.line_reduction
       and .metrics.routing_decision_read_less_ratio == .metrics.read_less_ratio
       and .metrics.routing_decision_continuation_status == .metrics.continuation_status
+      and .metrics.routing_decision_quality_level == "high"
+      and .metrics.routing_decision_quality_score >= 80
+      and .metrics.routing_decision_quality_evidence_count >= 2
+      and .metrics.routing_decision_quality_recommended_action != ""
       and .metrics.first_execution_action == "read_selected_context"
       and .metrics.current_reading_step_matches_reading_plan == true
       and .metrics.first_execution_instruction_has_focus == true
@@ -408,6 +416,16 @@ main() {
   require_jq "$route_json" '.context_pack.budget.requested_token_budget == 1600' "context_pack should preserve requested budget"
   require_jq "$route_json" '.context_pack.budget.applied_token_budget == 1600' "context_pack should apply requested budget"
   require_jq "$route_json" '.route[2].reason as $reason | .context_pack.reading_plan[0] as $step | $reason | contains("read \($step.file) first") and contains("candidate rank \($step.selection_rank)") and contains($step.next_action) and contains($step.suggested_tool.tool) and contains("continuation")' "context route step should explain the first read path"
+  require_jq "$route_json" '.routing_decision.route_quality.level == "high"' \
+    "routing decision should expose high route quality for a path seed"
+  require_jq "$route_json" '.routing_decision.route_quality.score >= 80' \
+    "routing decision should expose a useful route quality score"
+  require_jq "$route_json" '.routing_decision.route_quality.evidence_count >= 2' \
+    "routing decision should expose route quality evidence count"
+  require_jq "$route_json" '.routing_decision.route_quality.recommended_action == "read_selected_context" or .routing_decision.route_quality.recommended_action == "read_selected_context_then_use_continuation_if_needed"' \
+    "routing decision should expose a client-ready route quality action"
+  require_jq "$route_json" '.routing_decision.route_quality.evidence_sources | index("seed file")' \
+    "routing decision should expose route quality evidence sources"
   require_jq "$route_json" '.route[3].reason | contains("pre-edit impact check")' "impact route step should frame impact analysis as a pre-edit check"
   require_jq "$route_json" '.route[3].reason | contains("call-related files") and contains("dependency-related files") and contains("call paths") and contains("dependency paths")' "impact route step should summarize the impact breakdown"
   require_jq "$route_json" '.impact_status == "complete"' "impact_analysis should run when context has a seed"
@@ -505,6 +523,10 @@ main() {
   echo "first_reading_question: $(json_value "$route_json" '.context_pack.reading_plan[0].question')"
   echo "first_selection_rank: $(json_value "$route_json" '.context_pack.reading_plan[0].selection_rank')"
   echo "first_selection_reason: $(json_value "$route_json" '.context_pack.reading_plan[0].selection_reason')"
+  echo "route_quality_level: $(json_value "$route_json" '.routing_decision.route_quality.level')"
+  echo "route_quality_score: $(json_value "$route_json" '.routing_decision.route_quality.score')"
+  echo "route_quality_evidence_count: $(json_value "$route_json" '.routing_decision.route_quality.evidence_count')"
+  echo "route_quality_recommended_action: $(json_value "$route_json" '.routing_decision.route_quality.recommended_action')"
   echo "continuation_status: $(json_value "$route_json" '.context_pack.continuation_summary.status')"
   echo "continuation_next_action: $(json_value "$route_json" '.context_pack.continuation_summary.next_action')"
   echo "noisy_entrypoint_first_file: $(json_value "$noisy_route_json" '.context_pack.files[0].file')"

@@ -70,12 +70,22 @@ client or agent after `agent_route` returns. It is different from `route[]`:
 - `seed_strategy`, first seed kind/source/value/role, and matched task evidence.
 - First reading file, rank, focus, question, next action, raw selection reason,
   and suggested follow-up tool.
+- `route_quality` with a compact level, numeric score, evidence count, evidence
+  sources, warnings, and recommended client action.
 - Selected/omitted counts, read-less metrics, continuation status/next action,
   and impact status.
 
 Clients should treat `routing_decision` as a compact read-only projection. The
 source of truth remains `context_pack`, `current_reading_step`,
 `execution_plan[]`, and `impact_analysis`.
+
+`routing_decision.route_quality` is an agent-facing confidence hint, not a
+compiler-grade proof. `high` means the first selected file has strong local
+evidence such as seed-file or symbol-definition ranges, rank-1 selection, and
+usable follow-up actions. `blocked` means no reading plan was produced; use
+`recommended_action` before broad-reading the repository. Warnings explain when
+the first read is still useful but should be followed by continuation, impact
+review, or a more specific seed.
 
 Each execution step includes:
 

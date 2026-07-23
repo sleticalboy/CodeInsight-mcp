@@ -289,6 +289,7 @@ pub struct AgentRouteExecutionStep {
 #[derive(Debug, Serialize)]
 pub struct AgentRouteRoutingDecision {
     pub seed_strategy: String,
+    pub route_quality: AgentRouteQuality,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub first_seed_kind: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -326,6 +327,16 @@ pub struct AgentRouteRoutingDecision {
     pub continuation_status: String,
     pub continuation_next_action: String,
     pub impact_status: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct AgentRouteQuality {
+    pub level: String,
+    pub score: u8,
+    pub evidence_count: usize,
+    pub evidence_sources: Vec<String>,
+    pub warnings: Vec<String>,
+    pub recommended_action: String,
 }
 
 #[derive(Debug, Clone)]

@@ -182,6 +182,10 @@ main() {
   require_json_string "$route_json" '.routing_decision.read_less_ratio' "routing decision read-less ratio"
   require_json_string "$route_json" '.routing_decision.continuation_status' "routing decision continuation status"
   require_json_string "$route_json" '.routing_decision.impact_status' "routing decision impact status"
+  require_json_string "$route_json" '.routing_decision.route_quality.level' "routing decision route quality level"
+  require_json_number_gt_zero "$route_json" '.routing_decision.route_quality.score' "routing decision route quality score"
+  require_json_number_gt_zero "$route_json" '.routing_decision.route_quality.evidence_count' "routing decision route quality evidence count"
+  require_json_string "$route_json" '.routing_decision.route_quality.recommended_action' "routing decision route quality recommended action"
   require_json_string "$route_json" '.execution_plan[0].action' "first execution-plan action"
   require_json_string "$route_json" '.execution_plan[1].suggested_tool.tool' "first execution-plan suggested tool"
   require_json_true "$route_json" \
@@ -215,6 +219,7 @@ main() {
   local first_selection_rank continuation_next_action first_omitted_file first_omitted_rank first_omitted_reason first_omitted_next_action
   local routing_seed_strategy routing_first_seed_source routing_first_seed_value routing_first_file routing_first_selection_rank
   local routing_first_suggested_tool routing_line_reduction routing_read_less_ratio routing_continuation_status routing_impact_status
+  local routing_quality_level routing_quality_score routing_quality_evidence_count routing_quality_recommended_action
   local reading_order_contract read_less_instruction_contract current_reading_step_contract suggested_tool_handoff_contract continuation_timing_contract
   local continuation risk_level impacted_files suggested_checks impact_seed_file
 
@@ -260,6 +265,10 @@ main() {
   routing_read_less_ratio="$(json_value "$route_json" '.routing_decision.read_less_ratio // "-"')"
   routing_continuation_status="$(json_value "$route_json" '.routing_decision.continuation_status // "-"')"
   routing_impact_status="$(json_value "$route_json" '.routing_decision.impact_status // "-"')"
+  routing_quality_level="$(json_value "$route_json" '.routing_decision.route_quality.level // "-"')"
+  routing_quality_score="$(json_value "$route_json" '.routing_decision.route_quality.score // "-"')"
+  routing_quality_evidence_count="$(json_value "$route_json" '.routing_decision.route_quality.evidence_count // "-"')"
+  routing_quality_recommended_action="$(json_value "$route_json" '.routing_decision.route_quality.recommended_action // "-"')"
   continuation_next_action="$(json_value "$route_json" '.context_pack.continuation_summary.next_action // "-"')"
   first_omitted_file="$(json_value "$route_json" '.context_pack.omitted_candidates[0].file // ""')"
   first_omitted_rank="$(json_value "$route_json" '.context_pack.omitted_candidates[0].selection_rank // ""')"
@@ -308,6 +317,8 @@ main() {
   echo "   routing_decision_read_less: $routing_line_reduction, $routing_read_less_ratio"
   echo "   routing_decision_continuation: $routing_continuation_status"
   echo "   routing_decision_impact_status: $routing_impact_status"
+  echo "   routing_decision_quality: $routing_quality_level (${routing_quality_score}/100, ${routing_quality_evidence_count} evidence signals)"
+  echo "   routing_decision_recommended_action: $routing_quality_recommended_action"
   echo "   first_next_action: $first_next_action"
   echo "   first_reading_focus: $first_reading_focus"
   echo "   first_reading_question: $first_reading_question"
@@ -366,6 +377,7 @@ main() {
   echo "Routed first-read: ${selected_lines} source lines across ${selected_files} files."
   echo "Read less: avoided ${avoided_lines} source lines, ${read_less} less text before follow-up tools."
   echo "Routing decision: seed=${routing_first_seed_source}:${routing_first_seed_value}, first_file=${routing_first_file}, rank=${routing_first_selection_rank}, tool=${routing_first_suggested_tool}, continuation=${routing_continuation_status}, impact=${routing_impact_status}."
+  echo "Route quality: ${routing_quality_level} (${routing_quality_score}/100) from ${routing_quality_evidence_count} evidence signals; next=${routing_quality_recommended_action}."
   echo "agent_route selected ${selected_lines}/${total_lines} source lines (${reduction} reduction) across ${selected_files} files."
   echo "First reading focus: ${first_reading_focus}"
   echo "First reading question: ${first_reading_question}"
@@ -392,25 +404,26 @@ main() {
   echo "4. execution_plan starts with ${first_execution_action}, then ${second_execution_action}; this keeps suggested tools behind selected-context reading."
   echo "5. The first execution-plan suggested tool is ${first_execution_suggested_tool}; offer it only after the selected file has been read."
   echo "6. routing_decision summarizes the same choice: seed=${routing_first_seed_source}:${routing_first_seed_value}, first_file=${routing_first_file}, rank=${routing_first_selection_rank}, read_less=${routing_line_reduction}/${routing_read_less_ratio}."
-  echo "7. The first reading-plan focus is: ${first_reading_focus}"
-  echo "8. The first reading-plan question is: ${first_reading_question}"
-  echo "9. The first reading-plan action is ${first_next_action}; ${first_reading_reason}"
-  echo "10. Reading order contract is ${reading_order_contract}; execution_plan[0].files follows reading_plan[] order."
-  echo "11. Read-less instruction contract is ${read_less_instruction_contract}; execution_plan[0].instruction carries selected lines, baseline lines, avoided lines, and read-less ratio."
-  echo "12. Current reading step contract is ${current_reading_step_contract}; agent_route.current_reading_step mirrors reading_plan[0]."
-  echo "13. Suggested-tool handoff contract is ${suggested_tool_handoff_contract}; execution_plan[1] points to the current reading step."
-  echo "14. Continuation timing contract is ${continuation_timing_contract}; continuation is only considered after selected context is read."
-  echo "15. The selected context avoided ${avoided_lines} source lines (${reduction}, ${read_less} less text); ${context_route_reason}"
-  echo "16. Selection evidence: candidate rank ${first_selection_rank}; ${first_selection_reason}"
+  echo "7. route_quality is ${routing_quality_level} (${routing_quality_score}/100) from ${routing_quality_evidence_count} evidence signals; recommended_action=${routing_quality_recommended_action}."
+  echo "8. The first reading-plan focus is: ${first_reading_focus}"
+  echo "9. The first reading-plan question is: ${first_reading_question}"
+  echo "10. The first reading-plan action is ${first_next_action}; ${first_reading_reason}"
+  echo "11. Reading order contract is ${reading_order_contract}; execution_plan[0].files follows reading_plan[] order."
+  echo "12. Read-less instruction contract is ${read_less_instruction_contract}; execution_plan[0].instruction carries selected lines, baseline lines, avoided lines, and read-less ratio."
+  echo "13. Current reading step contract is ${current_reading_step_contract}; agent_route.current_reading_step mirrors reading_plan[0]."
+  echo "14. Suggested-tool handoff contract is ${suggested_tool_handoff_contract}; execution_plan[1] points to the current reading step."
+  echo "15. Continuation timing contract is ${continuation_timing_contract}; continuation is only considered after selected context is read."
+  echo "16. The selected context avoided ${avoided_lines} source lines (${reduction}, ${read_less} less text); ${context_route_reason}"
+  echo "17. Selection evidence: candidate rank ${first_selection_rank}; ${first_selection_reason}"
   if [ -n "$first_omitted_file" ]; then
-    echo "17. Continuation status is ${continuation}; next follow-up is ${first_omitted_file} at candidate rank ${first_omitted_rank} because ${first_omitted_reason}; next_action=${first_omitted_next_action}."
+    echo "18. Continuation status is ${continuation}; next follow-up is ${first_omitted_file} at candidate rank ${first_omitted_rank} because ${first_omitted_reason}; next_action=${first_omitted_next_action}."
   else
-    echo "17. Continuation status is ${continuation}; next_action=${continuation_next_action}, so no omitted candidate follow-up is needed before selected context is read."
+    echo "18. Continuation status is ${continuation}; next_action=${continuation_next_action}, so no omitted candidate follow-up is needed before selected context is read."
   fi
   if [ -n "$risk_level" ]; then
-    echo "18. impact_analysis reports ${risk_level} risk across ${impacted_files} impacted files with ${suggested_checks} suggested checks; ${impact_route_reason}"
+    echo "19. impact_analysis reports ${risk_level} risk across ${impacted_files} impacted files with ${suggested_checks} suggested checks; ${impact_route_reason}"
   else
-    echo "18. impact_analysis is the pre-edit step when context_pack selects a file seed."
+    echo "19. impact_analysis is the pre-edit step when context_pack selects a file seed."
   fi
   echo
   echo "[Agent policy]"

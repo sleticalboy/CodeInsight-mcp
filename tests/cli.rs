@@ -2100,6 +2100,30 @@ fn cli_agent_route_runs_first_read_pipeline() {
         route["context_pack"]["reading_plan"][0]["file"],
         "src/main.ts"
     );
+    assert_eq!(route["routing_decision"]["route_quality"]["level"], "high");
+    assert!(
+        route["routing_decision"]["route_quality"]["score"]
+            .as_u64()
+            .unwrap()
+            >= 80
+    );
+    assert!(
+        route["routing_decision"]["route_quality"]["evidence_count"]
+            .as_u64()
+            .unwrap()
+            >= 2
+    );
+    assert_eq!(
+        route["routing_decision"]["route_quality"]["recommended_action"],
+        "read_selected_context"
+    );
+    assert!(
+        route["routing_decision"]["route_quality"]["evidence_sources"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|source| source == "seed file")
+    );
     assert_eq!(route["impact_status"], "complete");
     assert_eq!(route["impact_analysis"]["format"], "summary");
     assert_eq!(route["impact_analysis"]["depth"].as_u64(), Some(2));
@@ -2384,6 +2408,24 @@ fn cli_agent_route_returns_blocked_plan_for_empty_repository() {
     assert_eq!(
         route["context_pack"]["continuation_summary"]["next_action"],
         "provide_seed_file_or_symbol"
+    );
+    assert_eq!(
+        route["routing_decision"]["route_quality"]["level"],
+        "blocked"
+    );
+    assert_eq!(
+        route["routing_decision"]["route_quality"]["score"].as_u64(),
+        Some(0)
+    );
+    assert_eq!(
+        route["routing_decision"]["route_quality"]["recommended_action"],
+        "provide_seed_file_or_symbol"
+    );
+    assert!(
+        route["routing_decision"]["route_quality"]["warnings"][0]
+            .as_str()
+            .unwrap()
+            .contains("No reading plan")
     );
     assert!(route["current_reading_step"].is_null());
     let actions = route["execution_plan"]

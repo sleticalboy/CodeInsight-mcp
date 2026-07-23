@@ -73,6 +73,14 @@ cat <<'JSON'
   "impact_status": "complete",
   "routing_decision": {
     "seed_strategy": "auto_entrypoint",
+    "route_quality": {
+      "level": "high",
+      "score": 100,
+      "evidence_count": 3,
+      "evidence_sources": ["seed file"],
+      "warnings": [],
+      "recommended_action": "read_selected_context"
+    },
     "first_seed_source": "entrypoint",
     "first_seed_value": "src/main.rs",
     "first_file": "src/main.rs",
@@ -234,6 +242,10 @@ EOF
     fail "missing routing decision continuation metric"
   grep -Fq 'routing_decision_impact_status: complete' "$TEMP_DIR/output.log" ||
     fail "missing routing decision impact status metric"
+  grep -Fq 'routing_decision_quality: high (100/100, 3 evidence signals)' "$TEMP_DIR/output.log" ||
+    fail "missing routing decision route quality metric"
+  grep -Fq 'routing_decision_recommended_action: read_selected_context' "$TEMP_DIR/output.log" ||
+    fail "missing routing decision route quality action"
   grep -Fq 'first_reading_question: What entrypoints or setup code define the main flow here?' "$TEMP_DIR/output.log" ||
     fail "missing first reading question metric"
   grep -Fq 'first_selection_rank: 1' "$TEMP_DIR/output.log" ||
@@ -280,6 +292,8 @@ EOF
     fail "missing evidence summary read-less line"
   grep -Fq 'Routing decision: seed=entrypoint:src/main.rs, first_file=src/main.rs, rank=1, tool=file_outline, continuation=complete, impact=complete.' "$TEMP_DIR/output.log" ||
     fail "missing evidence summary routing decision line"
+  grep -Fq 'Route quality: high (100/100) from 3 evidence signals; next=read_selected_context.' "$TEMP_DIR/output.log" ||
+    fail "missing evidence summary route quality line"
   grep -Fq 'agent_route selected 439/27681 source lines (98.4% reduction) across 1 files.' "$TEMP_DIR/output.log" ||
     fail "missing evidence summary line reduction"
   grep -Fq 'First reading question: What entrypoints or setup code define the main flow here?' "$TEMP_DIR/output.log" ||
@@ -304,6 +318,8 @@ EOF
     fail "missing execution suggested tool talk track"
   grep -Fq 'routing_decision summarizes the same choice: seed=entrypoint:src/main.rs, first_file=src/main.rs, rank=1, read_less=98.4%/63.1x.' "$TEMP_DIR/output.log" ||
     fail "missing routing decision talk track"
+  grep -Fq 'route_quality is high (100/100) from 3 evidence signals; recommended_action=read_selected_context.' "$TEMP_DIR/output.log" ||
+    fail "missing route quality talk track"
   grep -Fq 'The first reading-plan question is: What entrypoints or setup code define the main flow here?' "$TEMP_DIR/output.log" ||
     fail "missing reading question talk track"
   grep -Fq 'The first reading-plan action is inspect_seed_file; Read this step to answer: What entrypoints or setup code define the main flow here?' "$TEMP_DIR/output.log" ||

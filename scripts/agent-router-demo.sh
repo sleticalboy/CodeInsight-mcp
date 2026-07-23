@@ -147,6 +147,10 @@ main() {
   require_json_string "$route_json" '.routing_decision.read_less_ratio' "routing decision read-less ratio"
   require_json_string "$route_json" '.routing_decision.continuation_status' "routing decision continuation status"
   require_json_string "$route_json" '.routing_decision.impact_status' "routing decision impact status"
+  require_json_string "$route_json" '.routing_decision.route_quality.level' "routing decision route quality level"
+  require_json_number_gt_zero "$route_json" '.routing_decision.route_quality.score' "routing decision route quality score"
+  require_json_number_gt_zero "$route_json" '.routing_decision.route_quality.evidence_count' "routing decision route quality evidence count"
+  require_json_string "$route_json" '.routing_decision.route_quality.recommended_action' "routing decision route quality recommended action"
 
   if [ -z "$IMPACT_FILE" ]; then
     IMPACT_FILE="$(json_value "$route_json" '.impact_seed_files[0] // .context_pack.files[0].file // empty')"
@@ -157,6 +161,7 @@ main() {
   local first_selection_reason continuation_next_action
   local routing_seed_strategy routing_first_seed_source routing_first_seed_value routing_first_file routing_first_selection_rank
   local routing_first_suggested_tool routing_line_reduction routing_read_less_ratio routing_continuation_status routing_impact_status
+  local routing_quality_level routing_quality_score routing_quality_evidence_count routing_quality_recommended_action
   total_lines="$(json_value "$overview_json" '.total_lines // 0')"
   selected_lines="$(selected_context_lines "$context_json")"
   reduction="$(line_reduction "$total_lines" "$selected_lines")"
@@ -179,6 +184,10 @@ main() {
   routing_read_less_ratio="$(json_value "$route_json" '.routing_decision.read_less_ratio // "-"')"
   routing_continuation_status="$(json_value "$route_json" '.routing_decision.continuation_status // "-"')"
   routing_impact_status="$(json_value "$route_json" '.routing_decision.impact_status // "-"')"
+  routing_quality_level="$(json_value "$route_json" '.routing_decision.route_quality.level // "-"')"
+  routing_quality_score="$(json_value "$route_json" '.routing_decision.route_quality.score // "-"')"
+  routing_quality_evidence_count="$(json_value "$route_json" '.routing_decision.route_quality.evidence_count // "-"')"
+  routing_quality_recommended_action="$(json_value "$route_json" '.routing_decision.route_quality.recommended_action // "-"')"
 
   echo "1. index_project"
   echo "   indexed_files: $(json_value "$index_json" '.indexed_files')"
@@ -207,6 +216,8 @@ main() {
   echo "   routing_decision_read_less: $routing_line_reduction, $routing_read_less_ratio"
   echo "   routing_decision_continuation: $routing_continuation_status"
   echo "   routing_decision_impact_status: $routing_impact_status"
+  echo "   routing_decision_quality: $routing_quality_level (${routing_quality_score}/100, ${routing_quality_evidence_count} evidence signals)"
+  echo "   routing_decision_recommended_action: $routing_quality_recommended_action"
   echo "   first_reading_focus: $first_reading_focus"
   echo "   first_reading_question: $first_reading_question"
   echo "   selected_lines: $selected_lines"
