@@ -2118,11 +2118,37 @@ fn cli_agent_route_runs_first_read_pipeline() {
         "read_selected_context"
     );
     assert!(
+        route["routing_decision"]["route_quality"]["decision_summary"]
+            .as_str()
+            .unwrap()
+            .contains("Read src/main.ts first with high confidence")
+    );
+    assert!(
+        route["routing_decision"]["route_quality"]["decision_summary"]
+            .as_str()
+            .unwrap()
+            .contains("candidate rank 1")
+    );
+    assert!(
         route["routing_decision"]["route_quality"]["evidence_sources"]
             .as_array()
             .unwrap()
             .iter()
             .any(|source| source == "seed file")
+    );
+    assert!(
+        route["routing_decision"]["route_quality"]["confidence_factors"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|factor| factor == "first selected file is candidate rank 1")
+    );
+    assert!(
+        route["routing_decision"]["route_quality"]["verification_steps"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|step| step.as_str().unwrap().contains("Review impact_analysis"))
     );
     assert_eq!(route["impact_status"], "complete");
     assert_eq!(route["impact_analysis"]["format"], "summary");
@@ -2420,6 +2446,18 @@ fn cli_agent_route_returns_blocked_plan_for_empty_repository() {
     assert_eq!(
         route["routing_decision"]["route_quality"]["recommended_action"],
         "provide_seed_file_or_symbol"
+    );
+    assert!(
+        route["routing_decision"]["route_quality"]["decision_summary"]
+            .as_str()
+            .unwrap()
+            .contains("No first-read route was produced")
+    );
+    assert!(
+        route["routing_decision"]["route_quality"]["verification_steps"][0]
+            .as_str()
+            .unwrap()
+            .contains("provide a concrete seed")
     );
     assert!(
         route["routing_decision"]["route_quality"]["warnings"][0]

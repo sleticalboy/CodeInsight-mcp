@@ -422,11 +422,20 @@ fn agent_route_quality(context_pack: &ContextPack, impact_status: &str) -> Agent
         return AgentRouteQuality {
             level: "blocked".to_string(),
             score: 0,
+            decision_summary: format!(
+                "No first-read route was produced because context status is {}; ask for a seed file or symbol before broad reading.",
+                context_pack.continuation_summary.status
+            ),
             evidence_count: 0,
             evidence_sources: Vec::new(),
+            confidence_factors: Vec::new(),
             warnings: vec![format!(
                 "No reading plan was produced; context status is {}.",
                 context_pack.continuation_summary.status
+            )],
+            verification_steps: vec![format!(
+                "Follow {} and provide a concrete seed before editing.",
+                context_pack.continuation_summary.next_action
             )],
             recommended_action: context_pack.continuation_summary.next_action.clone(),
         };
@@ -447,16 +456,31 @@ fn agent_route_quality(context_pack: &ContextPack, impact_status: &str) -> Agent
         .iter()
         .map(|source| source.source.clone())
         .collect::<Vec<_>>();
+    let evidence_sources_summary = if evidence_sources.is_empty() {
+        "no source mix".to_string()
+    } else {
+        evidence_sources.join(", ")
+    };
 
     let mut score: i32 = 50;
     let mut warnings = Vec::new();
+    let mut confidence_factors = Vec::new();
+    let mut verification_steps = vec![format!(
+        "Read {} first and answer: {}",
+        first_step.file, first_step.question
+    )];
 
     if first_step.selection_rank == 1 {
         score += 15;
+        confidence_factors.push("first selected file is candidate rank 1".to_string());
     } else if first_step.selection_rank <= 3 {
         score += 8;
         warnings.push(format!(
             "First selected file is candidate rank {}, not rank 1.",
+            first_step.selection_rank
+        ));
+        confidence_factors.push(format!(
+            "first selected file is a top-{} candidate",
             first_step.selection_rank
         ));
     } else {
@@ -468,9 +492,19 @@ fn agent_route_quality(context_pack: &ContextPack, impact_status: &str) -> Agent
 
     if first_seed.is_some() {
         score += 8;
+        if let Some(seed) = first_seed {
+            confidence_factors.push(format!(
+                "seed evidence came from {} {}",
+                seed.source, seed.value
+            ));
+        }
     }
     if seed_evidence_count > 0 {
         score += 8;
+        confidence_factors.push(format!(
+            "{} matched task keyword or symbol signals",
+            seed_evidence_count
+        ));
     }
     if first_step
         .source_mix
@@ -478,6 +512,8 @@ fn agent_route_quality(context_pack: &ContextPack, impact_status: &str) -> Agent
         .any(|source| matches!(source.source.as_str(), "seed file" | "symbol definition"))
     {
         score += 12;
+        confidence_factors
+            .push("selected context includes direct seed or symbol evidence".to_string());
     }
     if first_step.source_mix.iter().any(|source| {
         matches!(
@@ -486,28 +522,51 @@ fn agent_route_quality(context_pack: &ContextPack, impact_status: &str) -> Agent
         )
     }) {
         score += 8;
+        confidence_factors.push(format!(
+            "selected context is supported by structural sources: {}",
+            evidence_sources_summary
+        ));
     }
     if first_step.source_mix.len() >= 2 {
         score += 5;
+        confidence_factors.push(format!(
+            "{} independent source groups support the first file",
+            first_step.source_mix.len()
+        ));
     }
     if !first_step.ranges.is_empty() {
         score += 5;
+        confidence_factors.push(format!(
+            "{} selected source ranges are available for the first read",
+            first_step.ranges.len()
+        ));
     }
     if impact_status == "complete" {
         score += 7;
+        confidence_factors.push("pre-edit impact preview completed".to_string());
+        verification_steps.push("Review impact_analysis before editing.".to_string());
     } else if impact_status.starts_with("skipped_") {
         warnings.push(format!(
             "Impact preview is {}; review impact before editing when a seed is available.",
             impact_status
         ));
+        verification_steps.push(format!(
+            "Resolve {} before treating impact scope as complete.",
+            impact_status
+        ));
     }
     if context_pack.continuation_summary.status == "complete" {
         score += 3;
+        confidence_factors.push("no omitted continuation candidate is required".to_string());
     } else if context_pack.continuation_summary.status == "omitted_candidates_available" {
         warnings.push(
             "Lower-ranked candidates were omitted; use continuation after selected context."
                 .to_string(),
         );
+        verification_steps.push(format!(
+            "If the first file is insufficient, run {}.",
+            context_pack.continuation_summary.next_action
+        ));
     } else if context_pack
         .continuation_summary
         .status
@@ -517,12 +576,20 @@ fn agent_route_quality(context_pack: &ContextPack, impact_status: &str) -> Agent
             "Continuation status is {}; follow {} before broad reading.",
             context_pack.continuation_summary.status, context_pack.continuation_summary.next_action
         ));
+        verification_steps.push(format!(
+            "Follow continuation action {} before broad reading.",
+            context_pack.continuation_summary.next_action
+        ));
     }
 
     if context_pack.truncated {
         score -= 10;
         warnings.push(
             "Context was truncated by the token budget; continue with omitted candidates if the first read is insufficient."
+                .to_string(),
+        );
+        verification_steps.push(
+            "Treat the selected context as a starting point, not a complete repository proof."
                 .to_string(),
         );
     }
@@ -544,13 +611,34 @@ fn agent_route_quality(context_pack: &ContextPack, impact_status: &str) -> Agent
     } else {
         "read_selected_context_then_use_continuation_if_needed".to_string()
     };
+    let warning_note = if warnings.is_empty() {
+        "No route-quality warnings were raised.".to_string()
+    } else {
+        format!(
+            "Review {} route-quality warning(s) before editing.",
+            warnings.len()
+        )
+    };
+    let decision_summary = format!(
+        "Read {} first with {} confidence (score {}, candidate rank {}, sources: {}). Then {}. {}",
+        first_step.file,
+        level,
+        score,
+        first_step.selection_rank,
+        evidence_sources_summary,
+        recommended_action,
+        warning_note
+    );
 
     AgentRouteQuality {
         level: level.to_string(),
         score,
+        decision_summary,
         evidence_count,
         evidence_sources,
+        confidence_factors,
         warnings,
+        verification_steps,
         recommended_action,
     }
 }

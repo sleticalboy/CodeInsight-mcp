@@ -84,6 +84,11 @@ For repositories where CodeInsight can infer a source seed, expect:
 - `context_pack.read_less` for first-read source-line reduction evidence
 - `context_pack.continuation_summary.next_action` for the post-read
   continuation decision
+- `routing_decision.route_quality.decision_summary` for a one-line route
+  explanation that can be shown directly in an agent UI
+- `routing_decision.route_quality.confidence_factors[]`, `warnings[]`, and
+  `verification_steps[]` for why the first file was selected, what still needs
+  review, and what the agent should verify before editing
 - `execution_plan[0].action` set to `read_selected_context`
 - `execution_plan[0].instruction` naming the first reading file, candidate
   rank, and first reading focus/question
@@ -127,20 +132,23 @@ When working in a repository with CodeInsight MCP available:
    reading_plan.question as the local reading checklist,
    reading_plan.selection_rank as the candidate rank audit trail, and
    reading_plan.selection_reason as the selection evidence.
-3. Use context_pack.read_less as reporting evidence for first-read source-line
+3. Use routing_decision.route_quality.decision_summary, confidence_factors,
+   warnings, and verification_steps to explain why the route was chosen and
+   what still needs review before editing.
+4. Use context_pack.read_less as reporting evidence for first-read source-line
    reduction; do not use it as a substitute for selected context.
-4. Prefer reading_plan[].suggested_tool for deeper evidence on the current
+5. Prefer reading_plan[].suggested_tool for deeper evidence on the current
    file. Prefer continuation_summary.suggested_tool only after the selected
    context has been consumed.
-5. If continuation_summary.status is complete, do not fetch more context unless
+6. If continuation_summary.status is complete, do not fetch more context unless
    the user asks a narrower follow-up or the selected context does not answer
    the task.
-6. Before editing, review the included impact_analysis preview. If the edit
+7. Before editing, review the included impact_analysis preview. If the edit
    target differs from the first-read seed, call impact_analysis with the
    selected files or symbols and run or report the suggested_checks that apply.
-7. Use index_project, project_overview, context_pack, and impact_analysis
+8. Use index_project, project_overview, context_pack, and impact_analysis
    directly only when custom routing or partial refresh control is needed.
-8. Treat CodeInsight call graphs and references as best-effort navigation
+9. Treat CodeInsight call graphs and references as best-effort navigation
    evidence, not compiler-grade proof.
 ```
 

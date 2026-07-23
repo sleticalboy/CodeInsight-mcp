@@ -333,9 +333,12 @@ pub struct AgentRouteRoutingDecision {
 pub struct AgentRouteQuality {
     pub level: String,
     pub score: u8,
+    pub decision_summary: String,
     pub evidence_count: usize,
     pub evidence_sources: Vec<String>,
+    pub confidence_factors: Vec<String>,
     pub warnings: Vec<String>,
+    pub verification_steps: Vec<String>,
     pub recommended_action: String,
 }
 
