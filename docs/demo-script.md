@@ -100,8 +100,8 @@ Problem: AI agents waste the first read by scanning broad files and guessing ent
 Promise: route the agent through agent_route before edits.
 
 1. index_project
-   indexed_files: 137
-   symbols: 1930
+   indexed_files: 138
+   symbols: 1939
 
 2. project_overview
    entrypoints: 12
@@ -120,7 +120,7 @@ Promise: route the agent through agent_route before edits.
    routing_decision_first_file: src/tools.rs
    routing_decision_first_selection_rank: 1
    routing_decision_suggested_tool: file_outline
-   routing_decision_read_less: 99.3%, 142.1x
+   routing_decision_read_less: 99.3%, 142.5x
    routing_decision_continuation: omitted_candidates_available
    routing_decision_impact_status: complete
    first_next_action: inspect_seed_file
@@ -134,11 +134,11 @@ Promise: route the agent through agent_route before edits.
    current_reading_step_contract: true
    suggested_tool_handoff_contract: true
    continuation_timing_contract: true
-   total_lines: 76862
+   total_lines: 77072
    selected_lines: 541
-   source_lines_avoided: 76321
+   source_lines_avoided: 76531
    line_reduction: 99.3%
-   read_less_ratio: 142.1x
+   read_less_ratio: 142.5x
    continuation: omitted_candidates_available
    continuation_next_action: run_omitted_candidate_context_pack
    first_omitted_candidate: src/config.rs (candidate rank 5)
@@ -153,11 +153,11 @@ Promise: route the agent through agent_route before edits.
    route_reason: after selected context is read, pre-edit impact check estimated 12 impacted files at high risk, including 11 call-related files, 3 dependency-related files, 50 call paths, and 0 dependency paths
 
 [Evidence summary]
-Blind first-read baseline: 76862 source lines.
+Blind first-read baseline: 77072 source lines.
 Routed first-read: 541 source lines across 4 files.
-Read less: avoided 76321 source lines, 142.1x less text before follow-up tools.
+Read less: avoided 76531 source lines, 142.5x less text before follow-up tools.
 Routing decision: seed=task_match:src/tools.rs, first_file=src/tools.rs, rank=1, tool=file_outline, continuation=omitted_candidates_available, impact=complete.
-agent_route selected 541/76862 source lines (99.3% reduction) across 4 files.
+agent_route selected 541/77072 source lines (99.3% reduction) across 4 files.
 First reading focus: Start with seed file context routing, first-read handoff, and read-less evidence.
 First reading question: Which seed selection, reading-plan handoff, or read-less evidence controls the agent first-read workflow here?
 The first selected file is src/tools.rs; reading_plan starts at src/tools.rs as candidate rank 1.
@@ -176,7 +176,7 @@ Before edits, impact_analysis reports high risk across 12 impacted files.
 5. The first execution-plan suggested tool is file_outline; offer it only after the selected file has been read.
 6. The first reading-plan focus is: Start with seed file context routing, first-read handoff, and read-less evidence.
 7. The first reading-plan question is: Which seed selection, reading-plan handoff, or read-less evidence controls the agent first-read workflow here?
-8. The first reading-plan action is inspect_seed_file; the selected context avoided 76321 source lines (99.3%, 142.1x less text); selected 4 files, 12 ranges, and 4 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; first omitted candidate src/config.rs (candidate rank 5, reason token_budget_exhausted) can be revisited via run_omitted_candidate_context_pack using context_pack after selected context; continuation run_omitted_candidate_context_pack
+8. The first reading-plan action is inspect_seed_file; the selected context avoided 76531 source lines (99.3%, 142.5x less text); selected 4 files, 12 ranges, and 4 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; first omitted candidate src/config.rs (candidate rank 5, reason token_budget_exhausted) can be revisited via run_omitted_candidate_context_pack using context_pack after selected context; continuation run_omitted_candidate_context_pack
 9. Reading order contract is true; execution_plan[0].files follows reading_plan[] order.
 10. Read-less instruction contract is true; execution_plan[0].instruction carries selected lines, baseline lines, avoided lines, and read-less ratio.
 11. Current reading step contract is true; agent_route.current_reading_step mirrors reading_plan[0].

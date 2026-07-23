@@ -259,7 +259,7 @@ accuracy, or proof that unselected code is irrelevant.
 
 Current benchmark snapshot:
 
-- The two-minute demo for this repository shows the agent route selecting 541 of 76,862 source lines, avoiding 76,321 source lines before broad reading for a 99.3% reduction and 142.1x read-less ratio, then surfacing candidate rank 1, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
+- The two-minute demo for this repository shows the agent route selecting 541 of 77,072 source lines, avoiding 76,531 source lines before broad reading for a 99.3% reduction and 142.5x read-less ratio, then surfacing candidate rank 1, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
 - Smoke repositories route `context_pack` first for 4/4 repositories and
   select 709 of 75,753 source lines, a 99.1% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and
@@ -410,6 +410,7 @@ Key docs:
 - [Task routing matrix](docs/task-routing-matrix.md)
 - [Public task routing matrix](docs/public-task-routing-matrix.md)
 - [Public task routing matrix JSON](docs/public-task-routing-matrix-summary.json)
+- [codebase-memory-mcp comparison](docs/competitive-analysis-codebase-memory.md)
 - [CodeInsight self adoption report](docs/adoption-report-codeinsight.md)
 - [Django adoption case](docs/adoption-case-django.md)
 - [Express adoption case](docs/adoption-case-express.md)

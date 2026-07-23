@@ -340,7 +340,7 @@ main() {
     'clients can render a pre-edit' \
     "README MCP impact checklist evidence"
   require_pattern README.md \
-    'of 76,862 source lines, avoiding 76,321 source lines before broad reading' \
+    'of 77,072 source lines, avoiding 76,531 source lines before broad reading' \
     "README two-minute demo read-less metric"
   "$ROOT_DIR/scripts/readme-adoption-summary-smoke.sh" >/dev/null
   require_pattern README.md \
@@ -1779,13 +1779,13 @@ main() {
     'first_next_action' \
     "reading plan next action demo metric"
   require_pattern docs/demo-script.md \
-    'source_lines_avoided: 76321' \
+    'source_lines_avoided: 76531' \
     "demo script source lines avoided metric"
   require_pattern docs/demo-script.md \
-    'read_less_ratio: 142\.1x' \
+    'read_less_ratio: 142\.5x' \
     "demo script read-less metric"
   require_pattern docs/demo-script.md \
-    'Read less: avoided 76321 source lines, 142\.1x less text before follow-up tools\.' \
+    'Read less: avoided 76531 source lines, 142\.5x less text before follow-up tools\.' \
     "demo script evidence summary read-less line"
   require_pattern docs/demo-script.md \
     'impact_analysis' \
