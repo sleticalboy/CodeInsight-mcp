@@ -129,6 +129,7 @@ hands the agent to precise local tools when the selected context is not enough.
    | Adoption comparison | `scripts/adoption-comparison.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-comparison` | You want a shareable blind-read vs routed-first-read comparison showing source lines avoided, read-less ratio, seed strategy, optional explicit `--file` / `--symbol` seeds, first reading focus/question, selection rank, and continuation next action. |
    | Backend evidence bridge | `scripts/codebase-memory-backend-evidence-smoke.sh` | You want proof that exported codebase-memory `search_graph`, `search_code`, and `get_architecture` JSON can become `agent_route --backend-evidence` and appear in route quality. |
    | Backend agreement report | `scripts/codebase-memory-bridge-report.sh --backend-evidence /tmp/codeinsight-backend-evidence.json --agent-route-json /tmp/codeinsight-agent-route.json --output-dir /tmp/codeinsight-codebase-memory-bridge` | You want a shareable backend/local agreement summary after running `agent_route` with advisory codebase-memory evidence. |
+   | Backend cohort summary | `scripts/codebase-memory-bridge-cohort-summary.sh /tmp/bridge-task-1 /tmp/bridge-task-2 --check` | You want aggregate first-file agreement and conflict evidence across multiple backend/local bridge reports. |
    | Handoff report | `scripts/adoption-report.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-report --print-snippet` | You want a tar.gz report containing the evidence summaries, issue template, raw JSON, and diagnostic logs for upload or handoff. |
 
 ## Two-Minute Demo
@@ -206,6 +207,16 @@ scripts/codebase-memory-bridge-report.sh \
   --backend-evidence /tmp/codeinsight-backend-evidence.json \
   --agent-route-json /tmp/codeinsight-agent-route.json \
   --output-dir /tmp/codeinsight-codebase-memory-bridge
+```
+
+Aggregate multiple bridge reports into one cohort summary:
+
+```bash
+scripts/codebase-memory-bridge-cohort-summary.sh \
+  /tmp/codeinsight-codebase-memory-bridge/task-1 \
+  /tmp/codeinsight-codebase-memory-bridge/task-2 \
+  --min-reports 2 \
+  --check
 ```
 
 The same object can be passed as MCP `backend_evidence`. See
@@ -296,7 +307,7 @@ accuracy, or proof that unselected code is irrelevant.
 
 Current benchmark snapshot:
 
-- The two-minute demo for this repository shows the agent route selecting 533 of 79,529 source lines, avoiding 78,996 source lines before broad reading for a 99.3% reduction and 149.2x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
+- The two-minute demo for this repository shows the agent route selecting 533 of 79,872 source lines, avoiding 79,339 source lines before broad reading for a 99.3% reduction and 149.9x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
 - Smoke repositories route `context_pack` first for 4/4 repositories and
   select 709 of 75,753 source lines, a 99.1% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and

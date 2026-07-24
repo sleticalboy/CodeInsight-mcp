@@ -137,3 +137,6 @@ Current bridge status:
   `backend_evidence` plus raw `agent-route` JSON into a shareable agreement
   report, so real comparison runs can focus on first-file agreement, selected
   backend candidate coverage, route-quality evidence, and conflict review.
+- `scripts/codebase-memory-bridge-cohort-summary.sh` aggregates multiple bridge
+  reports into first-file match rates and conflict counts, which is the metric
+  layer we need before deciding whether to add a native adapter.

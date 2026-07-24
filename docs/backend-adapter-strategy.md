@@ -108,6 +108,16 @@ whether selected context covers backend candidates, whether backend evidence is
 visible in `route_quality`, and whether the advisory verification step survived
 into the agent-facing route.
 
+For multi-task evidence, aggregate several bridge reports:
+
+```bash
+scripts/codebase-memory-bridge-cohort-summary.sh \
+  /tmp/codeinsight-codebase-memory-bridge/task-1 \
+  /tmp/codeinsight-codebase-memory-bridge/task-2 \
+  --min-reports 2 \
+  --check
+```
+
 The native backend can keep using CodeInsight's current index. A future
 codebase-memory adapter can call `search_graph`, `search_code`, `trace_path`,
 or `get_architecture`, then hand candidates to CodeInsight's existing
@@ -128,6 +138,8 @@ to make the route evidence format backend-ready:
   codebase-memory results into `backend_evidence`
 - `scripts/codebase-memory-bridge-report.sh` summarizes real backend/local
   agreement artifacts after `agent-route`
+- `scripts/codebase-memory-bridge-cohort-summary.sh` aggregates multiple
+  agreement reports into first-file match rates and conflict counts
 - comparison docs describe codebase-memory as a possible provider, not just a
   competitor
 
