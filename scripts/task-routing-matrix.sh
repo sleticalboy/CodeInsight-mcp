@@ -426,6 +426,14 @@ run_task() {
       first_selection_reason: .metrics.first_selection_reason,
       first_next_action: .metrics.first_next_action,
       first_suggested_tool: .metrics.first_suggested_tool,
+      route_quality_level: .metrics.route_quality_level,
+      route_quality_score: .metrics.route_quality_score,
+      route_quality_evidence_count: .metrics.route_quality_evidence_count,
+      route_quality_recommended_action: .metrics.route_quality_recommended_action,
+      route_quality_decision_summary: .metrics.route_quality_decision_summary,
+      route_quality_confidence_factors: .metrics.route_quality_confidence_factors,
+      route_quality_verification_steps: .metrics.route_quality_verification_steps,
+      route_quality_warnings: .metrics.route_quality_warnings,
       continuation_next_action: .metrics.continuation_next_action,
       risk_level: .metrics.risk_level,
       impacted_files: .metrics.impacted_files,
@@ -487,6 +495,14 @@ write_summary() {
         and (.first_reading_question | type == "string" and length > 0)
         and (.first_next_action | type == "string" and length > 0)
         and (.first_suggested_tool | type == "string" and length > 0)
+        and (.route_quality_level | type == "string" and length > 0)
+        and (.route_quality_score | type == "number")
+        and (.route_quality_evidence_count | type == "number")
+        and (.route_quality_recommended_action | type == "string" and length > 0)
+        and (.route_quality_decision_summary | type == "string" and length > 0)
+        and (.route_quality_confidence_factors | type == "array")
+        and (.route_quality_verification_steps | type == "array")
+        and (.route_quality_warnings | type == "array")
         and (.seed_strategy | type == "string" and length > 0)
         and (.line_reduction | type == "string" and length > 0))' \
     "$SUMMARY_JSON" >/dev/null ||
@@ -599,16 +615,22 @@ write_markdown() {
     echo
     echo "## Results"
     echo
-    echo "| Task | Seed strategy | First file | Focus | Question | Suggested tool | First seed | Companion | Lines | Reduction | Tokens | Impact |"
-    echo "| --- | --- | --- | --- | --- | --- | --- | --- | ---: | ---: | ---: | ---: |"
+    echo "| Task | Seed strategy | First file | Focus | Question | Suggested tool | Quality | First seed | Companion | Lines | Reduction | Tokens | Impact |"
+    echo "| --- | --- | --- | --- | --- | --- | --- | --- | --- | ---: | ---: | ---: | ---: |"
     jq -r '.tasks[] |
-      "| \(.task) | `\(.seed_strategy)` | `\(.first_file)` | \(.first_reading_focus) | \(.first_reading_question) | `\(.first_suggested_tool)` | `\(.first_seed_value)` | `\((.companion_entrypoint // "") as $value | if $value == "" then "-" else $value end)` | `\(.selected_lines)/\(.total_lines)` | `\(.line_reduction)` | `\(.estimated_tokens)` | `\(.risk_level) / \(.impacted_files)` |"' \
+      "| \(.task) | `\(.seed_strategy)` | `\(.first_file)` | \(.first_reading_focus) | \(.first_reading_question) | `\(.first_suggested_tool)` | `\(.route_quality_level) / \(.route_quality_score)` | `\(.first_seed_value)` | `\((.companion_entrypoint // "") as $value | if $value == "" then "-" else $value end)` | `\(.selected_lines)/\(.total_lines)` | `\(.line_reduction)` | `\(.estimated_tokens)` | `\(.risk_level) / \(.impacted_files)` |"' \
       "$SUMMARY_JSON"
     echo
     echo "## Read Order Evidence"
     echo
     jq -r '.tasks[] |
       "- `\(.task)`: read `\(.first_file)` first (rank \(.first_selection_rank)); \(.first_selection_reason)"' \
+      "$SUMMARY_JSON"
+    echo
+    echo "## Route Quality Evidence"
+    echo
+    jq -r '.tasks[] |
+      "- `\(.task)`: \(.route_quality_decision_summary) Confidence: \((.route_quality_confidence_factors[0] // "-")) Verification: \((.route_quality_verification_steps[0] // "-"))"' \
       "$SUMMARY_JSON"
     if jq -e '.expectations? | type == "object"' "$SUMMARY_JSON" >/dev/null; then
       echo

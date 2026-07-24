@@ -151,6 +151,25 @@ cat <<'JSON'
       }
     ]
   },
+  "routing_decision": {
+    "route_quality": {
+      "level": "high",
+      "score": 96,
+      "evidence_count": 4,
+      "recommended_action": "read_selected_context",
+      "decision_summary": "Route selected src/main.ts first with high confidence from seed and reading-plan evidence.",
+      "evidence_sources": ["seed_file", "reading_plan"],
+      "confidence_factors": [
+        "First file is candidate rank 1.",
+        "Selected context has a focused reading question."
+      ],
+      "verification_steps": [
+        "Read src/main.ts first and answer the reading-plan question.",
+        "Review impact_analysis before editing."
+      ],
+      "warnings": []
+    }
+  },
   "impact_analysis": {
     "risk_level": "medium",
     "impact_counts": {
@@ -219,6 +238,18 @@ EOF
     fail "missing first selection reason"
   grep -Fq -- '- First suggested tool: `file_outline`' "$TEMP_DIR/evidence.md" ||
     fail "missing first suggested tool"
+  grep -Fq -- '- Route decision summary: Route selected src/main.ts first with high confidence from seed and reading-plan evidence.' "$TEMP_DIR/evidence.md" ||
+    fail "missing route decision summary"
+  grep -Fq -- '- Route quality: `high` (`96/100`, `4` evidence signals)' "$TEMP_DIR/evidence.md" ||
+    fail "missing route quality"
+  grep -Fq -- '- Route recommended action: `read_selected_context`' "$TEMP_DIR/evidence.md" ||
+    fail "missing route quality recommended action"
+  grep -Fq -- '- Route confidence factors: `First file is candidate rank 1. | Selected context has a focused reading question.`' "$TEMP_DIR/evidence.md" ||
+    fail "missing route confidence factors"
+  grep -Fq -- '- Route verification steps: `Read src/main.ts first and answer the reading-plan question. | Review impact_analysis before editing.`' "$TEMP_DIR/evidence.md" ||
+    fail "missing route verification steps"
+  grep -Fq -- '- Route warnings: `-`' "$TEMP_DIR/evidence.md" ||
+    fail "missing route warnings"
   grep -Fq -- 'Use `reading_plan[].focus` as the compact scan label' "$TEMP_DIR/evidence.md" ||
     fail "missing focus policy"
   grep -Fq -- '- Continuation next action: `read_selected_context`' "$TEMP_DIR/evidence.md" ||
@@ -256,6 +287,14 @@ EOF
       and .metrics.first_selection_rank == 1
       and .metrics.first_selection_reason == "Selected for high relevance via seed_file"
       and .metrics.first_suggested_tool == "file_outline"
+      and .metrics.route_quality_level == "high"
+      and .metrics.route_quality_score == 96
+      and .metrics.route_quality_evidence_count == 4
+      and .metrics.route_quality_recommended_action == "read_selected_context"
+      and .metrics.route_quality_decision_summary == "Route selected src/main.ts first with high confidence from seed and reading-plan evidence."
+      and .metrics.route_quality_confidence_factors[0] == "First file is candidate rank 1."
+      and .metrics.route_quality_verification_steps[0] == "Read src/main.ts first and answer the reading-plan question."
+      and .metrics.route_quality_warnings == []
       and .metrics.continuation_status == "complete"
       and .metrics.continuation_next_action == "read_selected_context"
       and .metrics.first_omitted_file == ""

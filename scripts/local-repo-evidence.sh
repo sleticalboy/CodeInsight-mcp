@@ -257,6 +257,12 @@ write_markdown() {
     echo "- First selection reason: $(json_value "$route_json" '.context_pack.reading_plan[0].selection_reason // "-"')"
     echo "- First next action: \`$(json_value "$route_json" '.context_pack.reading_plan[0].next_action // "-"')\`"
     echo "- First suggested tool: \`$(json_value "$route_json" '.execution_plan[1].suggested_tool.tool // "-"')\`"
+    echo "- Route decision summary: $(json_value "$route_json" '.routing_decision.route_quality.decision_summary // "-"')"
+    echo "- Route quality: \`$(json_value "$route_json" '.routing_decision.route_quality.level // "-"')\` (\`$(json_value "$route_json" '.routing_decision.route_quality.score // 0')/100\`, \`$(json_value "$route_json" '.routing_decision.route_quality.evidence_count // 0')\` evidence signals)"
+    echo "- Route recommended action: \`$(json_value "$route_json" '.routing_decision.route_quality.recommended_action // "-"')\`"
+    echo "- Route confidence factors: \`$(json_value "$route_json" '(.routing_decision.route_quality.confidence_factors // []) | if length == 0 then "-" else join(" | ") end')\`"
+    echo "- Route verification steps: \`$(json_value "$route_json" '(.routing_decision.route_quality.verification_steps // []) | if length == 0 then "-" else join(" | ") end')\`"
+    echo "- Route warnings: \`$(json_value "$route_json" '(.routing_decision.route_quality.warnings // []) | if length == 0 then "-" else join(" | ") end')\`"
     echo "- Continuation status: \`$(json_value "$route_json" '.context_pack.continuation_summary.status // "-"')\`"
     echo "- Continuation next action: \`$(json_value "$route_json" '.context_pack.continuation_summary.next_action // "-"')\`"
     if jq -e '(.context_pack.omitted_candidates // []) | length > 0' "$route_json" >/dev/null; then
@@ -365,6 +371,14 @@ write_summary_json() {
         first_selection_reason: (.context_pack.reading_plan[0].selection_reason // ""),
         first_next_action: (.context_pack.reading_plan[0].next_action // ""),
         first_suggested_tool: (.execution_plan[1].suggested_tool.tool // ""),
+        route_quality_level: (.routing_decision.route_quality.level // ""),
+        route_quality_score: (.routing_decision.route_quality.score // 0),
+        route_quality_evidence_count: (.routing_decision.route_quality.evidence_count // 0),
+        route_quality_recommended_action: (.routing_decision.route_quality.recommended_action // ""),
+        route_quality_decision_summary: (.routing_decision.route_quality.decision_summary // ""),
+        route_quality_confidence_factors: (.routing_decision.route_quality.confidence_factors // []),
+        route_quality_verification_steps: (.routing_decision.route_quality.verification_steps // []),
+        route_quality_warnings: (.routing_decision.route_quality.warnings // []),
         continuation_status: (.context_pack.continuation_summary.status // ""),
         continuation_next_action: (.context_pack.continuation_summary.next_action // ""),
         first_omitted_file: (.context_pack.omitted_candidates[0].file // ""),
@@ -404,6 +418,14 @@ write_summary_json() {
       and (.metrics.first_reading_question | type == "string" and length > 0)
       and (.metrics.first_selection_rank | type == "number" and . >= 1)
       and (.metrics.first_selection_reason | type == "string" and length > 0)
+      and (.metrics.route_quality_level | type == "string" and length > 0)
+      and (.metrics.route_quality_score | type == "number")
+      and (.metrics.route_quality_evidence_count | type == "number")
+      and (.metrics.route_quality_recommended_action | type == "string" and length > 0)
+      and (.metrics.route_quality_decision_summary | type == "string" and length > 0)
+      and (.metrics.route_quality_confidence_factors | type == "array")
+      and (.metrics.route_quality_verification_steps | type == "array")
+      and (.metrics.route_quality_warnings | type == "array")
       and (.metrics.continuation_status | type == "string" and length > 0)
       and (.metrics.continuation_next_action | type == "string" and length > 0)
       and (.metrics.risk_level | type == "string" and length > 0)' \

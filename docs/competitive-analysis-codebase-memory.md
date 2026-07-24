@@ -115,7 +115,10 @@ trying to clone every graph backend feature:
 - improve route explanations and confidence signals
 - keep benchmark evidence reproducible
 - expose optional provider boundaries cleanly
-- consider third-party graph backends as inputs later
+- treat codebase-memory-mcp as a possible future graph provider
+- keep CodeInsight responsible for route, budget, confidence, continuation, and
+  verification evidence
 
-That leaves room for codebase-memory-mcp to be treated as a possible future
-graph provider instead of only as a competitor.
+That leaves room for codebase-memory-mcp to be treated as an upstream retrieval
+backend instead of only as a competitor. See
+[Backend adapter strategy](backend-adapter-strategy.md) for the MVP boundary.

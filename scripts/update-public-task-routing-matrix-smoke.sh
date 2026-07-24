@@ -159,12 +159,12 @@ main() {
     fail "snapshot should include aggregate line reduction"
   grep -Fq 'Summary JSON: `<output-dir>/summary.json`' "$snapshot" ||
     fail "snapshot should normalize summary path"
-  grep -Fq '| Task | First file | Focus | Question | Suggested tool | Seed strategy | First seed | Reduction | Tokens | Impact |' "$snapshot" ||
-    fail "snapshot should include first-read focus, question, and first seed columns"
+  grep -Fq '| Task | First file | Focus | Question | Suggested tool | Quality | Seed strategy | First seed | Reduction | Tokens | Impact |' "$snapshot" ||
+    fail "snapshot should include first-read focus, question, quality, and first seed columns"
   grep -Fq '| understand express application routing behavior | `lib/express.js` |' "$snapshot" ||
     fail "snapshot should include express first-read route"
-  grep -Fq '| `file_outline` | `auto_task_match` |' "$snapshot" ||
-    fail "snapshot should include suggested tool handoff"
+  grep -Fq '| `file_outline` | `high / ' "$snapshot" ||
+    fail "snapshot should include suggested tool handoff and route quality"
   grep -Fq 'docs/task-routing-expectations/express.tsv' "$snapshot" ||
     fail "snapshot should normalize expectation file path"
   if grep -Fq "$TEMP_DIR" "$snapshot"; then
@@ -183,6 +183,11 @@ main() {
       and (.cases[0].routes[0].first_reading_focus | type == "string" and length > 0)
       and (.cases[0].routes[0].first_reading_question | type == "string" and length > 0)
       and (.cases[0].routes[0].first_suggested_tool | type == "string" and length > 0)
+      and (.cases[0].routes[0].route_quality_level | type == "string" and length > 0)
+      and (.cases[0].routes[0].route_quality_score | type == "number")
+      and (.cases[0].routes[0].route_quality_decision_summary | type == "string" and length > 0)
+      and (.cases[0].routes[0].route_quality_confidence_factors | type == "array" and length > 0)
+      and (.cases[0].routes[0].route_quality_verification_steps | type == "array" and length > 0)
       and (.cases[0].routes[0].first_seed_value | type == "string" and length > 0)' \
     "$summary_snapshot" >/dev/null ||
     fail "summary snapshot should be normalized JSON evidence"

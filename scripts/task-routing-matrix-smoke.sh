@@ -253,6 +253,16 @@ improve AI agent first-read routing quality evidence	src/agent_workflow.ts'
 
   require_jq "$summary_json" '.status == "pass" and .task_count == 24' "matrix summary should pass"
   require_jq "$summary_json" '.expectations.status == "pass" and .expectations.count == 24' "matrix expectations should pass"
+  require_jq "$summary_json" 'all(.tasks[]; (.route_quality_level | type == "string" and length > 0)
+    and (.route_quality_score | type == "number")
+    and (.route_quality_evidence_count | type == "number")
+    and (.route_quality_recommended_action | type == "string" and length > 0)
+    and (.route_quality_decision_summary | type == "string" and length > 0)
+    and (.route_quality_confidence_factors | type == "array")
+    and (.route_quality_confidence_factors | length > 0)
+    and (.route_quality_verification_steps | type == "array")
+    and (.route_quality_verification_steps | length > 0)
+    and (.route_quality_warnings | type == "array"))' "each task should expose route quality evidence"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand routing behavior" and .first_file == "src/router.ts")' "routing task should choose router"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand authentication behavior" and .first_file == "src/auth.ts")' "authentication task should choose auth"
   require_jq "$summary_json" '.tasks[] | select(.task == "understand authorization permissions" and .first_file == "src/permissions.ts")' "authorization task should choose permissions"
@@ -326,6 +336,8 @@ improve AI agent first-read routing quality evidence	src/agent_workflow.ts'
   require_jq "$summary_json" '.tasks[] | select(.task == "improve AI agent first-read routing quality evidence" and (.first_reading_focus | contains("first-read handoff")))' "agent first-read task should report an agent workflow reading focus"
   grep -Fq '| Task | Seed strategy | First file | Focus | Question |' "$output_dir/task-routing-matrix.md" ||
     fail "matrix markdown should include the Focus column"
+  grep -Fq '## Route Quality Evidence' "$output_dir/task-routing-matrix.md" ||
+    fail "matrix markdown should include route quality evidence"
 
   CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/task-routing-matrix.sh" "$repo" \
     --output-dir "$default_output_dir" \

@@ -168,6 +168,16 @@ main() {
   require_jq "$summary_json" '.aggregate.line_reduction > 0' "aggregate should include line reduction"
   require_jq "$summary_json" '.cases[] | select(.case == "express" and .task_count == 17)' "express case should be present"
   require_jq "$summary_json" 'all(.cases[].routes[]; (.first_seed_value | type == "string" and length > 0))' "routes should expose first seed values"
+  require_jq "$summary_json" 'all(.cases[].routes[]; (.route_quality_level | type == "string" and length > 0)
+    and (.route_quality_score | type == "number")
+    and (.route_quality_evidence_count | type == "number")
+    and (.route_quality_recommended_action | type == "string" and length > 0)
+    and (.route_quality_decision_summary | type == "string" and length > 0)
+    and (.route_quality_confidence_factors | type == "array")
+    and (.route_quality_confidence_factors | length > 0)
+    and (.route_quality_verification_steps | type == "array")
+    and (.route_quality_verification_steps | length > 0)
+    and (.route_quality_warnings | type == "array"))' "public routes should expose route quality evidence"
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand express application routing behavior" and .first_file == "lib/express.js")' "routing task should choose express entry"
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand middleware behavior" and .first_file == "lib/application.js")' "middleware task should choose application"
   require_jq "$summary_json" '.cases[].routes[] | select(.task == "understand startup flow" and .first_file == "index.js")' "startup task should choose index"
@@ -194,8 +204,10 @@ main() {
     fail "terminal output should include first file summary"
   grep -Fq "## Evidence Summary" "$output_dir/public-task-routing-matrix.md" ||
     fail "markdown output should include evidence summary"
-  grep -Fq '| Task | First file | Focus | Question | Suggested tool | Seed strategy | First seed | Reduction | Tokens | Impact |' "$output_dir/public-task-routing-matrix.md" ||
-    fail "markdown output should include first seed column"
+  grep -Fq '| Task | First file | Focus | Question | Suggested tool | Quality | Seed strategy | First seed | Reduction | Tokens | Impact |' "$output_dir/public-task-routing-matrix.md" ||
+    fail "markdown output should include quality and first seed columns"
+  grep -Fq "## Route Quality Evidence" "$output_dir/public-task-routing-matrix.md" ||
+    fail "markdown output should include route quality evidence section"
 
   echo "public task routing matrix smoke passed"
 }
