@@ -75,6 +75,24 @@ arguments. CodeInsight uses this evidence to adjust route confidence, warnings,
 and verification steps. It does not blindly override the local `context_pack`
 selection; conflicting backend candidates are surfaced as warnings.
 
+The first bridge prototype is script-level and runtime-agnostic:
+
+```bash
+scripts/codebase-memory-backend-evidence.sh \
+  --root /path/to/repo \
+  --search-graph-json /tmp/codebase-memory-search-graph.json \
+  --search-code-json /tmp/codebase-memory-search-code.json \
+  --architecture-json /tmp/codebase-memory-architecture.json \
+  --output /tmp/codeinsight-backend-evidence.json
+```
+
+This script expects exported JSON responses from `search_graph`, `search_code`,
+and `get_architecture`, normalizes candidate file paths relative to `--root`,
+and emits the `backend_evidence` object consumed by CLI `agent-route` and MCP
+`agent_route`. It deliberately does not call codebase-memory-mcp itself; Codex,
+Claude Code, Cursor, CI jobs, or manual benchmark runs can supply those exported
+tool responses.
+
 The native backend can keep using CodeInsight's current index. A future
 codebase-memory adapter can call `search_graph`, `search_code`, `trace_path`,
 or `get_architecture`, then hand candidates to CodeInsight's existing
@@ -91,6 +109,8 @@ to make the route evidence format backend-ready:
 - every public route snapshot shows route quality beside first-file results
 - `agent_route` accepts optional backend evidence and reflects it in
   `routing_decision.route_quality`
+- `scripts/codebase-memory-backend-evidence.sh` normalizes exported
+  codebase-memory results into `backend_evidence`
 - comparison docs describe codebase-memory as a possible provider, not just a
   competitor
 

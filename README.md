@@ -127,6 +127,7 @@ hands the agent to precise local tools when the selected context is not enough.
    | External Beta trial | `scripts/external-beta-trial.sh /path/to/repo --output-dir /tmp/codeinsight-external-beta-trial` | You want a non-maintainer trial pack with an issue body, redaction checklist, maintainer triage note, and the underlying adoption evidence artifacts. |
    | External Beta cohort | `scripts/external-beta-cohort-summary.sh /tmp/beta-1 /tmp/beta-2 /tmp/beta-3 --check` | You want to aggregate at least three External Beta reports, count outcomes, and pick the next fix priority. |
    | Adoption comparison | `scripts/adoption-comparison.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-comparison` | You want a shareable blind-read vs routed-first-read comparison showing source lines avoided, read-less ratio, seed strategy, optional explicit `--file` / `--symbol` seeds, first reading focus/question, selection rank, and continuation next action. |
+   | Backend evidence bridge | `scripts/codebase-memory-backend-evidence-smoke.sh` | You want proof that exported codebase-memory `search_graph`, `search_code`, and `get_architecture` JSON can become `agent_route --backend-evidence` and appear in route quality. |
    | Handoff report | `scripts/adoption-report.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-report --print-snippet` | You want a tar.gz report containing the evidence summaries, issue template, raw JSON, and diagnostic logs for upload or handoff. |
 
 ## Two-Minute Demo
@@ -177,8 +178,19 @@ scripts/local-repo-evidence.sh /path/to/repo \
 ```
 
 When comparing CodeInsight with a stronger local code graph, keep CodeInsight in
-the agent workflow layer. `agent_route` accepts optional backend evidence from a
-JSON file on the CLI:
+the agent workflow layer. Convert exported codebase-memory responses into
+CodeInsight evidence:
+
+```bash
+scripts/codebase-memory-backend-evidence.sh \
+  --root /path/to/repo \
+  --search-graph-json /tmp/search-graph.json \
+  --search-code-json /tmp/search-code.json \
+  --architecture-json /tmp/architecture.json \
+  --output /tmp/codeinsight-backend-evidence.json
+```
+
+Then pass that advisory evidence to the CLI:
 
 ```bash
 codeinsight agent-route /path/to/repo \
@@ -274,7 +286,7 @@ accuracy, or proof that unselected code is irrelevant.
 
 Current benchmark snapshot:
 
-- The two-minute demo for this repository shows the agent route selecting 533 of 78,719 source lines, avoiding 78,186 source lines before broad reading for a 99.3% reduction and 147.7x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
+- The two-minute demo for this repository shows the agent route selecting 533 of 79,201 source lines, avoiding 78,668 source lines before broad reading for a 99.3% reduction and 148.6x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
 - Smoke repositories route `context_pack` first for 4/4 repositories and
   select 709 of 75,753 source lines, a 99.1% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and

@@ -122,3 +122,14 @@ trying to clone every graph backend feature:
 That leaves room for codebase-memory-mcp to be treated as an upstream retrieval
 backend instead of only as a competitor. See
 [Backend adapter strategy](backend-adapter-strategy.md) for the MVP boundary.
+
+Current bridge status:
+
+- CodeInsight `agent_route` accepts advisory `backend_evidence`.
+- `scripts/codebase-memory-backend-evidence.sh` converts exported
+  codebase-memory `search_graph`, `search_code`, and `get_architecture` JSON
+  into that evidence object.
+- `scripts/codebase-memory-backend-evidence-smoke.sh` verifies the bridge
+  end-to-end against a temporary repository: normalized backend candidates are
+  passed to `agent-route`, backend agreement is reflected in `route_quality`,
+  and the evidence remains advisory rather than overriding local routing.

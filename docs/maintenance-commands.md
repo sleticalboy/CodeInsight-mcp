@@ -76,6 +76,7 @@ scripts/mcp-first-call-failure-smoke.sh
 scripts/mcp-stdio-smoke.sh
 scripts/semantic-smoke.sh
 scripts/installed-quickstart-smoke.sh
+scripts/codebase-memory-backend-evidence-smoke.sh
 scripts/public-task-routing-matrix-smoke.sh
 scripts/update-public-task-routing-matrix-smoke.sh
 scripts/competitive-routing-smoke.sh
@@ -95,6 +96,7 @@ Choose the narrowest check for the change:
 | Public route expectations changed | `scripts/public-task-routing-matrix.sh --case express --root express=/path/to/express` | Checked-in public repository expectation files aggregated into one route-quality summary. Defaults include pinned Express, FastAPI, Flask, Gin, Requests, Streamlit, and Wouter cases. Use `scripts/public-task-routing-matrix-smoke.sh` for a deterministic no-network contract check. |
 | Public route snapshot changed | `scripts/update-public-task-routing-matrix.sh --check` | Checked-in public route-quality snapshot freshness. Use `scripts/update-public-task-routing-matrix-smoke.sh` for a deterministic no-network contract check. |
 | Competitive positioning changed | `scripts/competitive-routing-smoke.sh` | Deterministic no-network scaffold for comparing CodeInsight's agent first-read route quality against generic code-memory tools without requiring the competitor to be installed. |
+| codebase-memory bridge changed | `scripts/codebase-memory-backend-evidence-smoke.sh` | Converts exported `search_graph`, `search_code`, and `get_architecture` JSON into `agent_route --backend-evidence`, then verifies backend agreement appears in `route_quality`. |
 | Installed-binary adoption path changed | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh` | CLI and MCP first-read routes through the installed binary, including read-less metrics, selection rank, and continuation evidence. |
 | One-call `agent_route` JSON contract changed | `scripts/agent-route-smoke.sh` | Route order, execution plan, context pack, and impact-analysis preview. |
 | Context ranking or continuation changed | `scripts/context-pack-quality-smoke.sh` | Deterministic context-pack quality regressions. |
@@ -110,7 +112,9 @@ repository multi-prompt route-quality gates, `public-task-routing-matrix.sh`
 when refreshing all checked-in public route expectation cases, and
 `update-public-task-routing-matrix.sh` when refreshing the checked-in public
 snapshot. Use `task-routing-matrix-smoke.sh` for deterministic alias/seed-order
-regressions. Use `competitive-routing-smoke.sh` when updating
+regressions. Use `codebase-memory-backend-evidence-smoke.sh` when changing the
+script-level bridge from exported codebase-memory JSON to CodeInsight
+`backend_evidence`. Use `competitive-routing-smoke.sh` when updating
 [codebase-memory-mcp comparison](competitive-analysis-codebase-memory.md) or
 other competitive positioning docs.
 Use `demo-output-smoke.sh` after refreshing [Demo output snapshot](demo-output.md).
