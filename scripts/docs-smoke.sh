@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SMOKE_TOTAL=17
+SMOKE_TOTAL=18
 
 source "$ROOT_DIR/scripts/smoke-lib.sh"
 
@@ -24,6 +24,7 @@ main() {
   smoke_run_step "$SMOKE_TOTAL" 15 "codebase-memory backend evidence smoke" "$ROOT_DIR/scripts/codebase-memory-backend-evidence-smoke.sh"
   smoke_run_step "$SMOKE_TOTAL" 16 "codebase-memory bridge report smoke" "$ROOT_DIR/scripts/codebase-memory-bridge-report-smoke.sh"
   smoke_run_step "$SMOKE_TOTAL" 17 "codebase-memory bridge cohort summary smoke" "$ROOT_DIR/scripts/codebase-memory-bridge-cohort-summary-smoke.sh"
+  smoke_run_step "$SMOKE_TOTAL" 18 "codebase-memory bridge cohort report smoke" "$ROOT_DIR/scripts/codebase-memory-bridge-cohort-report-smoke.sh"
 
   echo "docs smoke passed"
 }

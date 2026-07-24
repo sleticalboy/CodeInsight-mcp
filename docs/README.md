@@ -94,6 +94,7 @@ Choose the check by adoption stage:
 | Local task routing matrix | `scripts/task-routing-matrix.sh /path/to/repo --expect-file ./route-expectations.tsv` |
 | Public route-quality snapshot | `scripts/update-public-task-routing-matrix.sh` |
 | codebase-memory bridge cohort | `scripts/codebase-memory-bridge-cohort-summary.sh /tmp/task-1 /tmp/task-2 /tmp/task-3 --min-reports 3 --check` |
+| codebase-memory bridge cohort report | `scripts/codebase-memory-bridge-cohort-report.sh --manifest /tmp/bridge.tsv --output-dir /tmp/bridge-cohort --min-reports 3 --check` |
 | Local repository benchmark | `CODEINSIGHT_BENCH_PROFILE=local ... scripts/benchmark-smoke.sh` |
 
 - [MVP public readiness](mvp-public-readiness.md)

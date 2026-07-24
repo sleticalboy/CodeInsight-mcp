@@ -118,6 +118,20 @@ scripts/codebase-memory-bridge-cohort-summary.sh \
   --check
 ```
 
+If raw evidence and route JSON pairs are already collected, generate all
+per-task reports and the aggregate cohort with one manifest:
+
+```bash
+scripts/codebase-memory-bridge-cohort-report.sh \
+  --manifest /tmp/codeinsight-codebase-memory-bridge.tsv \
+  --output-dir /tmp/codeinsight-codebase-memory-bridge-cohort \
+  --min-reports 3 \
+  --check
+```
+
+Manifest rows use
+`slug<TAB>task<TAB>backend_evidence_json<TAB>agent_route_json`.
+
 The native backend can keep using CodeInsight's current index. A future
 codebase-memory adapter can call `search_graph`, `search_code`, `trace_path`,
 or `get_architecture`, then hand candidates to CodeInsight's existing
@@ -147,6 +161,8 @@ to make the route evidence format backend-ready:
   agreement artifacts after `agent-route`
 - `scripts/codebase-memory-bridge-cohort-summary.sh` aggregates multiple
   agreement reports into first-file match rates and conflict counts
+- `scripts/codebase-memory-bridge-cohort-report.sh` batch-generates per-task
+  agreement reports and the aggregate cohort from a TSV manifest
 - comparison docs describe codebase-memory as a possible provider, not just a
   competitor
 

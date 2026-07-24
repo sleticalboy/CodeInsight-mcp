@@ -315,9 +315,15 @@ main() {
   require_pattern README.md \
     '\[codebase-memory bridge cohort example\]\(docs/codebase-memory-bridge-cohort-example\.md\)' \
     "README codebase-memory bridge cohort example link"
+  require_pattern README.md \
+    'scripts/codebase-memory-bridge-cohort-report\.sh --manifest /tmp/bridge\.tsv' \
+    "README codebase-memory bridge cohort report command"
   require_pattern docs/README.md \
     '\[codebase-memory bridge cohort example\]\(codebase-memory-bridge-cohort-example\.md\)' \
     "docs index codebase-memory bridge cohort example link"
+  require_pattern docs/README.md \
+    'codebase-memory bridge cohort report' \
+    "docs index codebase-memory bridge cohort report validation row"
   require_pattern docs/codebase-memory-bridge-cohort-example.md \
     'Reports: `3/3`' \
     "codebase-memory bridge cohort report count snapshot"
@@ -330,6 +336,12 @@ main() {
   require_pattern docs/backend-adapter-strategy.md \
     '\[codebase-memory bridge cohort example\]\(codebase-memory-bridge-cohort-example\.md\)' \
     "backend adapter strategy bridge cohort example link"
+  require_pattern docs/backend-adapter-strategy.md \
+    'slug<TAB>task<TAB>backend_evidence_json<TAB>agent_route_json' \
+    "backend adapter strategy bridge cohort manifest shape"
+  require_pattern docs/maintenance-commands.md \
+    'scripts/codebase-memory-bridge-cohort-report-smoke\.sh' \
+    "maintenance codebase-memory bridge cohort report smoke command"
   require_pattern README.md \
     '\[CodeInsight self adoption report\]\(docs/adoption-report-codeinsight\.md\)' \
     "README self adoption report link"
@@ -359,7 +371,7 @@ main() {
     'clients can render a pre-edit' \
     "README MCP impact checklist evidence"
   require_pattern README.md \
-    'of 79,890 source lines, avoiding 79,357 source lines before broad reading' \
+    'of 80,206 source lines, avoiding 79,673 source lines before broad reading' \
     "README two-minute demo read-less metric"
   "$ROOT_DIR/scripts/readme-adoption-summary-smoke.sh" >/dev/null
   require_pattern README.md \
@@ -1822,16 +1834,16 @@ main() {
     'first_next_action' \
     "reading plan next action demo metric"
   require_pattern docs/demo-script.md \
-    'source_lines_avoided: 79357' \
+    'source_lines_avoided: 79673' \
     "demo script source lines avoided metric"
   require_pattern docs/demo-script.md \
-    'read_less_ratio: 149\.9x' \
+    'read_less_ratio: 150\.5x' \
     "demo script read-less metric"
   require_pattern docs/demo-script.md \
     'routing_decision_quality: high \(100/100, 22 evidence signals\)' \
     "demo script route quality metric"
   require_pattern docs/demo-script.md \
-    'Read less: avoided 79357 source lines, 149\.9x less text before follow-up tools\.' \
+    'Read less: avoided 79673 source lines, 150\.5x less text before follow-up tools\.' \
     "demo script evidence summary read-less line"
   require_pattern docs/demo-script.md \
     'impact_analysis' \
