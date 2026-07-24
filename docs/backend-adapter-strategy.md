@@ -93,6 +93,21 @@ and emits the `backend_evidence` object consumed by CLI `agent-route` and MCP
 Claude Code, Cursor, CI jobs, or manual benchmark runs can supply those exported
 tool responses.
 
+After running `agent-route`, summarize backend/local agreement:
+
+```bash
+scripts/codebase-memory-bridge-report.sh \
+  --backend-evidence /tmp/codeinsight-backend-evidence.json \
+  --agent-route-json /tmp/codeinsight-agent-route.json \
+  --task "understand agent context routing" \
+  --output-dir /tmp/codeinsight-codebase-memory-bridge
+```
+
+The report records whether the local first file matches the backend top file,
+whether selected context covers backend candidates, whether backend evidence is
+visible in `route_quality`, and whether the advisory verification step survived
+into the agent-facing route.
+
 The native backend can keep using CodeInsight's current index. A future
 codebase-memory adapter can call `search_graph`, `search_code`, `trace_path`,
 or `get_architecture`, then hand candidates to CodeInsight's existing
@@ -111,6 +126,8 @@ to make the route evidence format backend-ready:
   `routing_decision.route_quality`
 - `scripts/codebase-memory-backend-evidence.sh` normalizes exported
   codebase-memory results into `backend_evidence`
+- `scripts/codebase-memory-bridge-report.sh` summarizes real backend/local
+  agreement artifacts after `agent-route`
 - comparison docs describe codebase-memory as a possible provider, not just a
   competitor
 

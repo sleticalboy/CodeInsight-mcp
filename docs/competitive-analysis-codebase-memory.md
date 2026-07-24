@@ -133,3 +133,7 @@ Current bridge status:
   end-to-end against a temporary repository: normalized backend candidates are
   passed to `agent-route`, backend agreement is reflected in `route_quality`,
   and the evidence remains advisory rather than overriding local routing.
+- `scripts/codebase-memory-bridge-report.sh` turns the resulting
+  `backend_evidence` plus raw `agent-route` JSON into a shareable agreement
+  report, so real comparison runs can focus on first-file agreement, selected
+  backend candidate coverage, route-quality evidence, and conflict review.
