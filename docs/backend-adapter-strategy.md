@@ -123,6 +123,13 @@ codebase-memory adapter can call `search_graph`, `search_code`, `trace_path`,
 or `get_architecture`, then hand candidates to CodeInsight's existing
 `context_pack` and `agent_route` quality logic.
 
+A maintainer-run 3-task bridge example is checked in at
+[codebase-memory bridge cohort example](codebase-memory-bridge-cohort-example.md).
+It records a live codebase-memory `fast` index over this repository, three
+precise backend queries, three `agent-route --backend-evidence` runs, and an
+aggregate bridge cohort with `3/3` pass reports and `100%` first-file top match
+rate.
+
 ## Near-Term MVP
 
 Do not add a hard runtime dependency on codebase-memory-mcp yet. The MVP step is

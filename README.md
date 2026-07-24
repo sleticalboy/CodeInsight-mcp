@@ -219,6 +219,12 @@ scripts/codebase-memory-bridge-cohort-summary.sh \
   --check
 ```
 
+See the checked-in
+[codebase-memory bridge cohort example](docs/codebase-memory-bridge-cohort-example.md)
+for a 3-task maintainer run where codebase-memory supplied candidate files and
+CodeInsight matched the backend top file in all reports while preserving
+advisory route-quality checks.
+
 The same object can be passed as MCP `backend_evidence`. See
 [Backend adapter strategy](docs/backend-adapter-strategy.md) for the evidence
 shape and conflict-handling rule.
@@ -307,7 +313,7 @@ accuracy, or proof that unselected code is irrelevant.
 
 Current benchmark snapshot:
 
-- The two-minute demo for this repository shows the agent route selecting 533 of 79,872 source lines, avoiding 79,339 source lines before broad reading for a 99.3% reduction and 149.9x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
+- The two-minute demo for this repository shows the agent route selecting 533 of 79,890 source lines, avoiding 79,357 source lines before broad reading for a 99.3% reduction and 149.9x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
 - Smoke repositories route `context_pack` first for 4/4 repositories and
   select 709 of 75,753 source lines, a 99.1% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and

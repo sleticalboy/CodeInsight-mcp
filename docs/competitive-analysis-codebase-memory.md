@@ -140,3 +140,7 @@ Current bridge status:
 - `scripts/codebase-memory-bridge-cohort-summary.sh` aggregates multiple bridge
   reports into first-file match rates and conflict counts, which is the metric
   layer we need before deciding whether to add a native adapter.
+- [codebase-memory bridge cohort example](codebase-memory-bridge-cohort-example.md)
+  records a real 3-task maintainer run on this repository: CodeInsight matched
+  the backend top file for `src/tools.rs`, `src/mcp.rs`, and `src/embedding.rs`
+  while still preserving advisory verification steps in route quality.

@@ -313,6 +313,24 @@ main() {
     '\[Task routing matrix\]\(docs/task-routing-matrix\.md\)' \
     "README task routing matrix link"
   require_pattern README.md \
+    '\[codebase-memory bridge cohort example\]\(docs/codebase-memory-bridge-cohort-example\.md\)' \
+    "README codebase-memory bridge cohort example link"
+  require_pattern docs/README.md \
+    '\[codebase-memory bridge cohort example\]\(codebase-memory-bridge-cohort-example\.md\)' \
+    "docs index codebase-memory bridge cohort example link"
+  require_pattern docs/codebase-memory-bridge-cohort-example.md \
+    'Reports: `3/3`' \
+    "codebase-memory bridge cohort report count snapshot"
+  require_pattern docs/codebase-memory-bridge-cohort-example.md \
+    'First-file top match rate: `100%`' \
+    "codebase-memory bridge cohort first-file top match snapshot"
+  require_pattern docs/codebase-memory-bridge-cohort-example.md \
+    'Selected backend candidate rate: `66\.66%`' \
+    "codebase-memory bridge cohort selected candidate snapshot"
+  require_pattern docs/backend-adapter-strategy.md \
+    '\[codebase-memory bridge cohort example\]\(codebase-memory-bridge-cohort-example\.md\)' \
+    "backend adapter strategy bridge cohort example link"
+  require_pattern README.md \
     '\[CodeInsight self adoption report\]\(docs/adoption-report-codeinsight\.md\)' \
     "README self adoption report link"
   require_pattern README.md \
@@ -341,7 +359,7 @@ main() {
     'clients can render a pre-edit' \
     "README MCP impact checklist evidence"
   require_pattern README.md \
-    'of 79,872 source lines, avoiding 79,339 source lines before broad reading' \
+    'of 79,890 source lines, avoiding 79,357 source lines before broad reading' \
     "README two-minute demo read-less metric"
   "$ROOT_DIR/scripts/readme-adoption-summary-smoke.sh" >/dev/null
   require_pattern README.md \
@@ -1804,7 +1822,7 @@ main() {
     'first_next_action' \
     "reading plan next action demo metric"
   require_pattern docs/demo-script.md \
-    'source_lines_avoided: 79339' \
+    'source_lines_avoided: 79357' \
     "demo script source lines avoided metric"
   require_pattern docs/demo-script.md \
     'read_less_ratio: 149\.9x' \
@@ -1813,7 +1831,7 @@ main() {
     'routing_decision_quality: high \(100/100, 22 evidence signals\)' \
     "demo script route quality metric"
   require_pattern docs/demo-script.md \
-    'Read less: avoided 79339 source lines, 149\.9x less text before follow-up tools\.' \
+    'Read less: avoided 79357 source lines, 149\.9x less text before follow-up tools\.' \
     "demo script evidence summary read-less line"
   require_pattern docs/demo-script.md \
     'impact_analysis' \

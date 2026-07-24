@@ -29,6 +29,7 @@ Default adoption path:
 - [Task routing matrix](task-routing-matrix.md)
 - [Public task routing matrix](public-task-routing-matrix.md) and
   [JSON summary](public-task-routing-matrix-summary.json)
+- [codebase-memory bridge cohort example](codebase-memory-bridge-cohort-example.md)
 - Task routing expectations:
   [Django](task-routing-expectations/django.tsv),
   [Express](task-routing-expectations/express.tsv),
@@ -92,6 +93,7 @@ Choose the check by adoption stage:
 | Uploadable adoption report | `scripts/adoption-report.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-report` |
 | Local task routing matrix | `scripts/task-routing-matrix.sh /path/to/repo --expect-file ./route-expectations.tsv` |
 | Public route-quality snapshot | `scripts/update-public-task-routing-matrix.sh` |
+| codebase-memory bridge cohort | `scripts/codebase-memory-bridge-cohort-summary.sh /tmp/task-1 /tmp/task-2 /tmp/task-3 --min-reports 3 --check` |
 | Local repository benchmark | `CODEINSIGHT_BENCH_PROFILE=local ... scripts/benchmark-smoke.sh` |
 
 - [MVP public readiness](mvp-public-readiness.md)
@@ -123,6 +125,7 @@ Choose the check by adoption stage:
 - [Requests adoption case](adoption-case-requests.md)
 - [Smoke benchmark](benchmark-v0.1.md)
 - [Large repository benchmark](benchmark-large.md)
+- [codebase-memory bridge cohort example](codebase-memory-bridge-cohort-example.md)
 
 ## Release
 
