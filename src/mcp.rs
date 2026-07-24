@@ -4,7 +4,7 @@ use anyhow::{Context, Result, bail};
 use serde_json::{Value, json};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
-use crate::{cli::Transport, tools};
+use crate::{cli::Transport, model::AgentRouteBackendEvidence, tools};
 
 pub async fn serve(transport: Transport) -> Result<()> {
     match transport {
@@ -180,6 +180,8 @@ fn handle_tool_call(params: Value) -> Result<Value> {
             let impact_depth = optional_positive_usize(&arguments, "impact_depth", 1)?;
             let impact_evidence_limit =
                 optional_positive_usize(&arguments, "impact_evidence_limit", 20)?;
+            let backend_evidence: Option<AgentRouteBackendEvidence> =
+                optional_json_object(&arguments, "backend_evidence")?;
             serde_json::to_value(tools::agent_route_value(
                 root,
                 task,
@@ -190,6 +192,7 @@ fn handle_tool_call(params: Value) -> Result<Value> {
                 impact_limit,
                 impact_depth,
                 impact_evidence_limit,
+                backend_evidence,
             )?)?
         }
         "callers" => {
@@ -425,7 +428,30 @@ fn tool_definitions() -> Value {
                     "force_index": {"type": "boolean"},
                     "impact_limit": {"type": "integer", "minimum": 1},
                     "impact_depth": {"type": "integer", "minimum": 1},
-                    "impact_evidence_limit": {"type": "integer", "minimum": 1}
+                    "impact_evidence_limit": {"type": "integer", "minimum": 1},
+                    "backend_evidence": {
+                        "type": "object",
+                        "description": "Optional advisory evidence from an external code graph backend. CodeInsight uses it to explain route confidence; it does not blindly override the local route.",
+                        "properties": {
+                            "provider": {"type": "string"},
+                            "candidate_files": {
+                                "type": "array",
+                                "items": {"type": "string"}
+                            },
+                            "evidence_sources": {
+                                "type": "array",
+                                "items": {"type": "string"}
+                            },
+                            "evidence_count": {"type": "integer", "minimum": 0},
+                            "latency_ms": {"type": "integer", "minimum": 0},
+                            "confidence": {"type": "number"},
+                            "notes": {
+                                "type": "array",
+                                "items": {"type": "string"}
+                            }
+                        },
+                        "required": ["provider"]
+                    }
                 },
                 "required": ["root", "task"]
             }
@@ -517,6 +543,19 @@ fn optional_string_array(arguments: &Value, key: &str) -> Result<Vec<String>> {
             .collect::<Result<Vec<_>>>(),
         Some(_) => bail!("invalid string array argument: {key}"),
         None => Ok(Vec::new()),
+    }
+}
+
+fn optional_json_object<T>(arguments: &Value, key: &str) -> Result<Option<T>>
+where
+    T: serde::de::DeserializeOwned,
+{
+    match arguments.get(key) {
+        Some(value) if value.is_object() => serde_json::from_value(value.clone())
+            .with_context(|| format!("invalid object argument: {key}"))
+            .map(Some),
+        Some(_) => bail!("invalid object argument: {key}"),
+        None => Ok(None),
     }
 }
 

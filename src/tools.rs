@@ -17,11 +17,11 @@ use crate::{
     embedding, index,
     language::detect_language,
     model::{
-        AgentRouteExecutionStep, AgentRouteQuality, AgentRouteReport, AgentRouteRoutingDecision,
-        AgentRouteStep, CallEdge, ConfigInitReport, ConfigStatusReport, ContextBudget,
-        ContextContinuationSummary, ContextFile, ContextOmittedCandidate, ContextPack,
-        ContextRange, ContextReadLess, ContextReadingRange, ContextReadingStep, ContextSeed,
-        ContextSemanticStatus, ContextSourceCount, ContextSuggestedTool, Dependency,
+        AgentRouteBackendEvidence, AgentRouteExecutionStep, AgentRouteQuality, AgentRouteReport,
+        AgentRouteRoutingDecision, AgentRouteStep, CallEdge, ConfigInitReport, ConfigStatusReport,
+        ContextBudget, ContextContinuationSummary, ContextFile, ContextOmittedCandidate,
+        ContextPack, ContextRange, ContextReadLess, ContextReadingRange, ContextReadingStep,
+        ContextSeed, ContextSemanticStatus, ContextSourceCount, ContextSuggestedTool, Dependency,
         DependencyGraph, EmbeddingProviderStatus, ImpactAnalysisReport, ImpactBreakdown,
         ImpactCounts, ImpactFile, ImpactPath, IndexError, IndexScopeReport, Language,
         OllamaEmbeddingStatus, OpenAiEmbeddingStatus, ProjectIndexReport, ProjectOverview,
@@ -180,6 +180,7 @@ pub fn agent_route(
     impact_limit: usize,
     impact_depth: usize,
     impact_evidence_limit: usize,
+    backend_evidence: Option<AgentRouteBackendEvidence>,
 ) -> Result<()> {
     let report = agent_route_value(
         root,
@@ -191,8 +192,16 @@ pub fn agent_route(
         impact_limit,
         impact_depth,
         impact_evidence_limit,
+        backend_evidence,
     )?;
     print_json(&report)
+}
+
+pub fn read_agent_route_backend_evidence(path: &Path) -> Result<AgentRouteBackendEvidence> {
+    let contents = fs::read_to_string(path)
+        .with_context(|| format!("failed to read backend evidence file: {}", path.display()))?;
+    serde_json::from_str(&contents)
+        .with_context(|| format!("failed to parse backend evidence file: {}", path.display()))
 }
 
 pub fn callers(root: PathBuf, symbol: String, limit: usize) -> Result<()> {
@@ -232,6 +241,7 @@ pub fn agent_route_value(
     impact_limit: usize,
     impact_depth: usize,
     impact_evidence_limit: usize,
+    backend_evidence: Option<AgentRouteBackendEvidence>,
 ) -> Result<AgentRouteReport> {
     let root = root.canonicalize()?;
     let index_report = index_project_value(root.clone(), force_index)?;
@@ -356,7 +366,8 @@ pub fn agent_route_value(
     let execution_plan =
         agent_route_execution_plan(&context_pack, &impact_status, impact_analysis.as_ref());
     let current_reading_step = context_pack.reading_plan.first().cloned();
-    let routing_decision = agent_route_routing_decision(&context_pack, &impact_status);
+    let routing_decision =
+        agent_route_routing_decision(&context_pack, &impact_status, backend_evidence);
 
     Ok(AgentRouteReport {
         root: root.display().to_string(),
@@ -379,13 +390,15 @@ pub fn agent_route_value(
 fn agent_route_routing_decision(
     context_pack: &ContextPack,
     impact_status: &str,
+    backend_evidence: Option<AgentRouteBackendEvidence>,
 ) -> AgentRouteRoutingDecision {
     let first_seed = context_pack.selected_seeds.first();
     let first_step = context_pack.reading_plan.first();
 
     AgentRouteRoutingDecision {
         seed_strategy: context_pack.seed_strategy.clone(),
-        route_quality: agent_route_quality(context_pack, impact_status),
+        route_quality: agent_route_quality(context_pack, impact_status, backend_evidence.as_ref()),
+        backend_evidence,
         first_seed_kind: first_seed.map(|seed| seed.kind.clone()),
         first_seed_source: first_seed.map(|seed| seed.source.clone()),
         first_seed_value: first_seed.map(|seed| seed.value.clone()),
@@ -417,7 +430,11 @@ fn agent_route_routing_decision(
     }
 }
 
-fn agent_route_quality(context_pack: &ContextPack, impact_status: &str) -> AgentRouteQuality {
+fn agent_route_quality(
+    context_pack: &ContextPack,
+    impact_status: &str,
+    backend_evidence: Option<&AgentRouteBackendEvidence>,
+) -> AgentRouteQuality {
     let Some(first_step) = context_pack.reading_plan.first() else {
         return AgentRouteQuality {
             level: "blocked".to_string(),
@@ -426,9 +443,21 @@ fn agent_route_quality(context_pack: &ContextPack, impact_status: &str) -> Agent
                 "No first-read route was produced because context status is {}; ask for a seed file or symbol before broad reading.",
                 context_pack.continuation_summary.status
             ),
-            evidence_count: 0,
-            evidence_sources: Vec::new(),
-            confidence_factors: Vec::new(),
+            evidence_count: backend_evidence
+                .map(|backend| backend.evidence_count + backend.candidate_files.len())
+                .unwrap_or_default(),
+            evidence_sources: backend_evidence
+                .map(backend_evidence_sources)
+                .unwrap_or_default(),
+            confidence_factors: backend_evidence
+                .map(|backend| {
+                    vec![format!(
+                        "backend {} supplied {} candidate file(s) but local routing was blocked",
+                        backend.provider,
+                        backend.candidate_files.len()
+                    )]
+                })
+                .unwrap_or_default(),
             warnings: vec![format!(
                 "No reading plan was produced; context status is {}.",
                 context_pack.continuation_summary.status
@@ -450,13 +479,13 @@ fn agent_route_quality(context_pack: &ContextPack, impact_status: &str) -> Agent
     let seed_evidence_count = first_seed
         .map(|seed| seed.matched_keywords.len() + seed.matched_symbols.len())
         .unwrap_or_default();
-    let evidence_count = source_count + seed_evidence_count + first_step.ranges.len();
-    let evidence_sources = first_step
+    let mut evidence_count = source_count + seed_evidence_count + first_step.ranges.len();
+    let mut evidence_sources = first_step
         .source_mix
         .iter()
         .map(|source| source.source.clone())
         .collect::<Vec<_>>();
-    let evidence_sources_summary = if evidence_sources.is_empty() {
+    let local_evidence_sources_summary = if evidence_sources.is_empty() {
         "no source mix".to_string()
     } else {
         evidence_sources.join(", ")
@@ -524,7 +553,7 @@ fn agent_route_quality(context_pack: &ContextPack, impact_status: &str) -> Agent
         score += 8;
         confidence_factors.push(format!(
             "selected context is supported by structural sources: {}",
-            evidence_sources_summary
+            local_evidence_sources_summary
         ));
     }
     if first_step.source_mix.len() >= 2 {
@@ -597,7 +626,62 @@ fn agent_route_quality(context_pack: &ContextPack, impact_status: &str) -> Agent
         score -= 8;
         warnings.push("Only one evidence signal supported the first selected file.".to_string());
     }
+    if let Some(backend) = backend_evidence {
+        let backend_sources = backend_evidence_sources(backend);
+        evidence_count += backend.evidence_count + backend.candidate_files.len();
+        evidence_sources.extend(backend_sources.clone());
+        evidence_sources.sort();
+        evidence_sources.dedup();
+        if backend.evidence_count > 0 || !backend_sources.is_empty() {
+            score += 5;
+            confidence_factors.push(format!(
+                "backend {} supplied {} evidence signal(s)",
+                backend.provider, backend.evidence_count
+            ));
+        }
+        if backend
+            .candidate_files
+            .iter()
+            .any(|file| file == &first_step.file)
+        {
+            score += 10;
+            confidence_factors.push(format!(
+                "backend {} independently selected the same first file",
+                backend.provider
+            ));
+        } else if let Some(first_backend_file) = backend.candidate_files.first() {
+            warnings.push(format!(
+                "Backend {} preferred {}; verify before editing because local routing selected {}.",
+                backend.provider, first_backend_file, first_step.file
+            ));
+            verification_steps.push(format!(
+                "Compare local route with backend {} candidate {} before editing.",
+                backend.provider, first_backend_file
+            ));
+        }
+        if let Some(confidence) = backend.confidence {
+            confidence_factors.push(format!(
+                "backend {} reported confidence {:.2}",
+                backend.provider, confidence
+            ));
+        }
+        if let Some(latency_ms) = backend.latency_ms {
+            confidence_factors.push(format!(
+                "backend {} returned evidence in {} ms",
+                backend.provider, latency_ms
+            ));
+        }
+        verification_steps.push(format!(
+            "Treat backend {} evidence as advisory unless the selected file and verification checks agree.",
+            backend.provider
+        ));
+    }
 
+    let evidence_sources_summary = if evidence_sources.is_empty() {
+        "no source mix".to_string()
+    } else {
+        evidence_sources.join(", ")
+    };
     let score = score.clamp(0, 100) as u8;
     let level = if score >= 80 {
         "high"
@@ -641,6 +725,20 @@ fn agent_route_quality(context_pack: &ContextPack, impact_status: &str) -> Agent
         verification_steps,
         recommended_action,
     }
+}
+
+fn backend_evidence_sources(backend: &AgentRouteBackendEvidence) -> Vec<String> {
+    let mut sources = backend
+        .evidence_sources
+        .iter()
+        .map(|source| format!("backend:{}:{source}", backend.provider))
+        .collect::<Vec<_>>();
+    if backend.evidence_count > 0 || !backend.candidate_files.is_empty() {
+        sources.push(format!("backend:{}", backend.provider));
+    }
+    sources.sort();
+    sources.dedup();
+    sources
 }
 
 fn agent_route_execution_plan(

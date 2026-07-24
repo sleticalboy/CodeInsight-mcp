@@ -2221,6 +2221,73 @@ fn cli_agent_route_runs_first_read_pipeline() {
 }
 
 #[test]
+fn cli_agent_route_accepts_backend_evidence_file() {
+    let fixture = fixture_project();
+    let evidence_path = fixture.path().join("backend-evidence.json");
+    std::fs::write(
+        &evidence_path,
+        serde_json::json!({
+            "provider": "codebase-memory-mcp",
+            "candidate_files": ["src/main.ts", "src/server.ts"],
+            "evidence_sources": ["entry_points", "call_graph"],
+            "evidence_count": 7,
+            "latency_ms": 42,
+            "confidence": 0.91,
+            "notes": ["external graph backend agreed with local first-read route"]
+        })
+        .to_string(),
+    )
+    .unwrap();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand app entrypoint flow",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence",
+        evidence_path.to_str().unwrap(),
+    ]);
+
+    assert_eq!(
+        route["routing_decision"]["backend_evidence"]["provider"],
+        "codebase-memory-mcp"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_evidence"]["candidate_files"][0],
+        "src/main.ts"
+    );
+    assert!(
+        route["routing_decision"]["route_quality"]["evidence_sources"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|source| source == "backend:codebase-memory-mcp:call_graph")
+    );
+    assert!(
+        route["routing_decision"]["route_quality"]["confidence_factors"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|factor| factor.as_str().unwrap().contains(
+                "backend codebase-memory-mcp independently selected the same first file"
+            ))
+    );
+    assert!(
+        route["routing_decision"]["route_quality"]["verification_steps"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|step| step
+                .as_str()
+                .unwrap()
+                .contains("Treat backend codebase-memory-mcp evidence as advisory"))
+    );
+}
+
+#[test]
 fn cli_agent_route_preserves_requested_minimum_token_budget() {
     let fixture = fixture_project();
 
@@ -11548,7 +11615,15 @@ fn mcp_stdio_executes_agent_route() {
                 "force_index": true,
                 "impact_limit": 10,
                 "impact_depth": 2,
-                "impact_evidence_limit": 3
+                "impact_evidence_limit": 3,
+                "backend_evidence": {
+                    "provider": "codebase-memory-mcp",
+                    "candidate_files": ["src/main.ts"],
+                    "evidence_sources": ["entry_points"],
+                    "evidence_count": 4,
+                    "latency_ms": 19,
+                    "confidence": 0.88
+                }
             }
         }
     });
@@ -11571,6 +11646,19 @@ fn mcp_stdio_executes_agent_route() {
     assert_eq!(
         route["route"][3]["tool"],
         serde_json::Value::String("impact_analysis".to_string())
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_evidence"]["provider"],
+        "codebase-memory-mcp"
+    );
+    assert!(
+        route["routing_decision"]["route_quality"]["confidence_factors"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|factor| factor.as_str().unwrap().contains(
+                "backend codebase-memory-mcp independently selected the same first file"
+            ))
     );
     let context_reason = route["route"][2]["reason"].as_str().unwrap();
     assert!(context_reason.contains("read src/main.ts first"));

@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -291,6 +291,8 @@ pub struct AgentRouteRoutingDecision {
     pub seed_strategy: String,
     pub route_quality: AgentRouteQuality,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub backend_evidence: Option<AgentRouteBackendEvidence>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub first_seed_kind: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub first_seed_source: Option<String>,
@@ -340,6 +342,23 @@ pub struct AgentRouteQuality {
     pub warnings: Vec<String>,
     pub verification_steps: Vec<String>,
     pub recommended_action: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AgentRouteBackendEvidence {
+    pub provider: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub candidate_files: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub evidence_sources: Vec<String>,
+    #[serde(default)]
+    pub evidence_count: usize,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub latency_ms: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub confidence: Option<f64>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub notes: Vec<String>,
 }
 
 #[derive(Debug, Clone)]

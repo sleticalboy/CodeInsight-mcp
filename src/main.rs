@@ -59,17 +59,25 @@ async fn main() -> Result<()> {
             args.files,
             args.token_budget,
         )?,
-        Command::AgentRoute(args) => tools::agent_route(
-            args.root,
-            args.task,
-            args.symbols,
-            args.files,
-            args.token_budget,
-            args.force_index,
-            args.impact_limit,
-            args.impact_depth,
-            args.impact_evidence_limit,
-        )?,
+        Command::AgentRoute(args) => {
+            let backend_evidence = args
+                .backend_evidence
+                .as_deref()
+                .map(tools::read_agent_route_backend_evidence)
+                .transpose()?;
+            tools::agent_route(
+                args.root,
+                args.task,
+                args.symbols,
+                args.files,
+                args.token_budget,
+                args.force_index,
+                args.impact_limit,
+                args.impact_depth,
+                args.impact_evidence_limit,
+                backend_evidence,
+            )?
+        }
         Command::Callers(args) => tools::callers(args.root, args.symbol, args.limit)?,
         Command::Callees(args) => tools::callees(args.root, args.symbol, args.limit)?,
         Command::Serve(args) => mcp::serve(args.transport).await?,

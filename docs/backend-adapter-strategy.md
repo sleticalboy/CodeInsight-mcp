@@ -47,6 +47,34 @@ candidate:
   evidence[]
 ```
 
+The current MVP contract accepts advisory backend evidence directly in
+`agent_route`:
+
+```json
+{
+  "provider": "codebase-memory-mcp",
+  "candidate_files": ["src/main.ts"],
+  "evidence_sources": ["entry_points", "call_graph"],
+  "evidence_count": 7,
+  "latency_ms": 42,
+  "confidence": 0.91,
+  "notes": ["external backend agreed with the local first-read route"]
+}
+```
+
+CLI usage:
+
+```bash
+codeinsight agent-route /path/to/repo \
+  --task "understand app entrypoint flow" \
+  --backend-evidence /tmp/codeinsight-backend-evidence.json
+```
+
+MCP usage passes the same object as `backend_evidence` in the `agent_route`
+arguments. CodeInsight uses this evidence to adjust route confidence, warnings,
+and verification steps. It does not blindly override the local `context_pack`
+selection; conflicting backend candidates are surfaced as warnings.
+
 The native backend can keep using CodeInsight's current index. A future
 codebase-memory adapter can call `search_graph`, `search_code`, `trace_path`,
 or `get_architecture`, then hand candidates to CodeInsight's existing
@@ -61,6 +89,8 @@ to make the route evidence format backend-ready:
 - every matrix row exposes `route_quality_confidence_factors`
 - every matrix row exposes `route_quality_verification_steps`
 - every public route snapshot shows route quality beside first-file results
+- `agent_route` accepts optional backend evidence and reflects it in
+  `routing_decision.route_quality`
 - comparison docs describe codebase-memory as a possible provider, not just a
   competitor
 

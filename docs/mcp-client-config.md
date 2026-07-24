@@ -188,10 +188,23 @@ After the MCP server is configured, the first broad repository task should call
   "arguments": {
     "root": "/absolute/path/to/repo",
     "task": "understand the main application entrypoint",
-    "token_budget": 6000
+    "token_budget": 6000,
+    "backend_evidence": {
+      "provider": "codebase-memory-mcp",
+      "candidate_files": ["src/main.ts"],
+      "evidence_sources": ["entry_points", "call_graph"],
+      "evidence_count": 7,
+      "latency_ms": 42,
+      "confidence": 0.91
+    }
   }
 }
 ```
+
+`backend_evidence` is optional. Use it only when another local graph backend has
+already produced advisory candidate files or graph facts. CodeInsight uses it
+to explain route confidence and warnings; it does not blindly override the
+selected `context_pack` route.
 
 The response is the default first-read bundle. A minimal client should:
 
@@ -206,6 +219,8 @@ The response is the default first-read bundle. A minimal client should:
 5. Offer `execution_plan[].suggested_tool` only after the selected file has
    been read.
 6. Review the included `impact_analysis` before edits.
+7. If `routing_decision.route_quality.warnings[]` says backend and local
+   candidates disagree, compare both files before editing.
 
 UI gating rules:
 

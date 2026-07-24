@@ -107,6 +107,7 @@ hands the agent to precise local tools when the selected context is not enough.
    Use continuation_summary only after selected context is consumed.
    Follow agent_route.execution_plan[] in order.
    Use agent_route.routing_decision for a compact display of the first seed, first file, read-less metrics, continuation, and impact status.
+   If another local graph backend already produced candidate files, pass its advisory evidence as agent_route.backend_evidence; use route_quality warnings to compare backend and local routes before editing.
    ```
 
    The first MCP `tools/call` payload is shown in
@@ -174,6 +175,20 @@ scripts/local-repo-evidence.sh /path/to/repo \
   --json /tmp/codeinsight-agent-route.json \
   --summary-json /tmp/codeinsight-local-evidence.json
 ```
+
+When comparing CodeInsight with a stronger local code graph, keep CodeInsight in
+the agent workflow layer. `agent_route` accepts optional backend evidence from a
+JSON file on the CLI:
+
+```bash
+codeinsight agent-route /path/to/repo \
+  --task "understand app entrypoint flow" \
+  --backend-evidence /tmp/codeinsight-backend-evidence.json
+```
+
+The same object can be passed as MCP `backend_evidence`. See
+[Backend adapter strategy](docs/backend-adapter-strategy.md) for the evidence
+shape and conflict-handling rule.
 
 For a large repository or a known subsystem, scope the local index before
 collecting evidence:
@@ -259,7 +274,7 @@ accuracy, or proof that unselected code is irrelevant.
 
 Current benchmark snapshot:
 
-- The two-minute demo for this repository shows the agent route selecting 540 of 78,465 source lines, avoiding 77,925 source lines before broad reading for a 99.3% reduction and 145.3x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
+- The two-minute demo for this repository shows the agent route selecting 533 of 78,719 source lines, avoiding 78,186 source lines before broad reading for a 99.3% reduction and 147.7x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
 - Smoke repositories route `context_pack` first for 4/4 repositories and
   select 709 of 75,753 source lines, a 99.1% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and

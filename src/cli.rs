@@ -179,6 +179,8 @@ pub struct AgentRouteArgs {
     pub impact_depth: usize,
     #[arg(long, default_value_t = 20)]
     pub impact_evidence_limit: usize,
+    #[arg(long)]
+    pub backend_evidence: Option<PathBuf>,
 }
 
 #[derive(Debug, Args)]
