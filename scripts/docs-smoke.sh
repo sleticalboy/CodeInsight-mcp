@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SMOKE_TOTAL=18
+SMOKE_TOTAL=19
 
 source "$ROOT_DIR/scripts/smoke-lib.sh"
 
@@ -19,12 +19,13 @@ main() {
   smoke_run_step "$SMOKE_TOTAL" 10 "adoption evidence smoke" "$ROOT_DIR/scripts/adoption-evidence-smoke.sh"
   smoke_run_step "$SMOKE_TOTAL" 11 "external beta trial smoke" "$ROOT_DIR/scripts/external-beta-trial-smoke.sh"
   smoke_run_step "$SMOKE_TOTAL" 12 "external beta cohort summary smoke" "$ROOT_DIR/scripts/external-beta-cohort-summary-smoke.sh"
-  smoke_run_step "$SMOKE_TOTAL" 13 "adoption report smoke" "$ROOT_DIR/scripts/adoption-report-smoke.sh"
-  smoke_run_step "$SMOKE_TOTAL" 14 "competitive routing smoke" "$ROOT_DIR/scripts/competitive-routing-smoke.sh"
-  smoke_run_step "$SMOKE_TOTAL" 15 "codebase-memory backend evidence smoke" "$ROOT_DIR/scripts/codebase-memory-backend-evidence-smoke.sh"
-  smoke_run_step "$SMOKE_TOTAL" 16 "codebase-memory bridge report smoke" "$ROOT_DIR/scripts/codebase-memory-bridge-report-smoke.sh"
-  smoke_run_step "$SMOKE_TOTAL" 17 "codebase-memory bridge cohort summary smoke" "$ROOT_DIR/scripts/codebase-memory-bridge-cohort-summary-smoke.sh"
-  smoke_run_step "$SMOKE_TOTAL" 18 "codebase-memory bridge cohort report smoke" "$ROOT_DIR/scripts/codebase-memory-bridge-cohort-report-smoke.sh"
+  smoke_run_step "$SMOKE_TOTAL" 13 "external beta fix queue smoke" "$ROOT_DIR/scripts/external-beta-fix-queue-smoke.sh"
+  smoke_run_step "$SMOKE_TOTAL" 14 "adoption report smoke" "$ROOT_DIR/scripts/adoption-report-smoke.sh"
+  smoke_run_step "$SMOKE_TOTAL" 15 "competitive routing smoke" "$ROOT_DIR/scripts/competitive-routing-smoke.sh"
+  smoke_run_step "$SMOKE_TOTAL" 16 "codebase-memory backend evidence smoke" "$ROOT_DIR/scripts/codebase-memory-backend-evidence-smoke.sh"
+  smoke_run_step "$SMOKE_TOTAL" 17 "codebase-memory bridge report smoke" "$ROOT_DIR/scripts/codebase-memory-bridge-report-smoke.sh"
+  smoke_run_step "$SMOKE_TOTAL" 18 "codebase-memory bridge cohort summary smoke" "$ROOT_DIR/scripts/codebase-memory-bridge-cohort-summary-smoke.sh"
+  smoke_run_step "$SMOKE_TOTAL" 19 "codebase-memory bridge cohort report smoke" "$ROOT_DIR/scripts/codebase-memory-bridge-cohort-report-smoke.sh"
 
   echo "docs smoke passed"
 }

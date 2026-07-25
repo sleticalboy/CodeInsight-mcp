@@ -46,11 +46,12 @@ Use these labels:
 Fix in this order:
 
 1. `workflow-friction` that prevents the 10-minute trial.
-2. `route-miss` in common frameworks or high-signal public repositories.
-3. `overtrust-risk` wording in README, docs, CLI, or MCP tool output.
-4. `route-near-miss` where a small routing heuristic can improve first file
+2. Low route quality that keeps first-read evidence below the cohort gate.
+3. `route-miss` in common frameworks or high-signal public repositories.
+4. `overtrust-risk` wording in README, docs, CLI, or MCP tool output.
+5. `route-near-miss` where a small routing heuristic can improve first file
    selection.
-5. `route-hit` reports that only need evidence aggregation.
+6. `route-hit` reports that only need evidence aggregation.
 
 ## External Beta Intake
 
@@ -70,6 +71,18 @@ External users may start with `needs_triage` when they cannot confidently
 choose a route outcome. Maintainers should replace it with `route_hit`,
 `route_near_miss`, `route_miss`, `workflow_friction`, or `overtrust_risk`
 after reproducing or reviewing the attached evidence.
+
+After aggregating at least three reports, run:
+
+```bash
+scripts/external-beta-fix-queue.sh \
+  /tmp/codeinsight-external-beta-cohort.json \
+  --output /tmp/codeinsight-external-beta-fix-queue.md \
+  --check
+```
+
+Use the generated queue as the first maintainer work list before publishing the
+cohort as success evidence.
 
 ## MCP First-Call Checks
 

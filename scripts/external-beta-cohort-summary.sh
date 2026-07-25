@@ -224,10 +224,10 @@ next_action =
     "collect_more_external_beta_reports"
   elsif needs_triage.positive?
     "triage_needs_triage_reports"
-  elsif quality_failures.any?
-    "fix_low_quality_routes"
   elsif counts.fetch("workflow_friction").positive?
     "fix_workflow_friction"
+  elsif quality_failures.any?
+    "fix_low_quality_routes"
   elsif counts.fetch("route_miss").positive?
     "fix_route_miss"
   elsif counts.fetch("overtrust_risk").positive?
@@ -241,8 +241,8 @@ next_action =
 priority_outcome =
   case next_action
   when "triage_needs_triage_reports" then "needs_triage"
-  when "fix_low_quality_routes" then "route_quality_below_threshold"
   when "fix_workflow_friction" then "workflow_friction"
+  when "fix_low_quality_routes" then "route_quality_below_threshold"
   when "fix_route_miss" then "route_miss"
   when "fix_overtrust_risk" then "overtrust_risk"
   when "improve_route_near_miss" then "route_near_miss"

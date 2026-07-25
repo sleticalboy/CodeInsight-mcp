@@ -167,10 +167,11 @@ Classify alpha feedback as:
 Prioritize fixes in this order:
 
 1. Workflow blockers that prevent a 10-minute trial.
-2. Route misses on common frameworks or high-signal public repositories.
-3. Output-shape issues that make agents ignore `reading_plan[]` or
+2. Low route quality that keeps first-read evidence below the cohort gate.
+3. Route misses on common frameworks or high-signal public repositories.
+4. Output-shape issues that make agents ignore `reading_plan[]` or
    `execution_plan[]`.
-4. Documentation gaps that make users over-trust best-effort analysis.
+5. Documentation gaps that make users over-trust best-effort analysis.
 
 ## Maintainer Checks
 

@@ -120,3 +120,16 @@ Prioritize the first fix in this order:
 3. `route_miss` where the first selected file is wrong for a common task.
 4. `overtrust_risk` in user-facing wording.
 5. `route_near_miss` with a small, testable routing improvement.
+
+Generate a maintainer queue from the cohort JSON:
+
+```bash
+scripts/external-beta-fix-queue.sh \
+  /tmp/codeinsight-external-beta-cohort.json \
+  --output /tmp/codeinsight-external-beta-fix-queue.md \
+  --json /tmp/codeinsight-external-beta-fix-queue.json \
+  --check
+```
+
+The queue preserves the same priority order and points each item at its
+`beta-summary.json`, issue body, and maintainer triage note.

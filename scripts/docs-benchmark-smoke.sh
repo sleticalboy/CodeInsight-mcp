@@ -371,7 +371,7 @@ main() {
     'clients can render a pre-edit' \
     "README MCP impact checklist evidence"
   require_pattern README.md \
-    'of 80,654 source lines, avoiding 80,121 source lines before broad reading' \
+    'of 81,070 source lines, avoiding 80,537 source lines before broad reading' \
     "README two-minute demo read-less metric"
   "$ROOT_DIR/scripts/readme-adoption-summary-smoke.sh" >/dev/null
   require_pattern README.md \
@@ -405,8 +405,14 @@ main() {
     'scripts/external-beta-cohort-summary\.sh' \
     "README external beta cohort summary command"
   require_pattern README.md \
+    'scripts/external-beta-fix-queue\.sh' \
+    "README external beta fix queue command"
+  require_pattern README.md \
     'fix workflow friction' \
     "README external beta cohort workflow friction priority"
+  require_pattern README.md \
+    'workflow, route-quality, route-miss, or wording item' \
+    "README external beta fix queue next focus"
   require_pattern README.md \
     'route misses' \
     "README external beta cohort route miss priority"
@@ -645,8 +651,14 @@ main() {
     'scripts/external-beta-cohort-summary\.sh' \
     "External Beta cohort summary command"
   require_pattern docs/external-beta-trial.md \
+    'scripts/external-beta-fix-queue\.sh' \
+    "External Beta fix queue command"
+  require_pattern docs/external-beta-trial.md \
     'fails until at least three reports are present' \
     "External Beta cohort check gate"
+  require_pattern docs/external-beta-trial.md \
+    'The queue preserves the same priority order' \
+    "External Beta fix queue priority explanation"
   require_pattern docs/external-beta-trial.md \
     'redaction-checklist\.md' \
     "External Beta redaction artifact"
@@ -662,6 +674,12 @@ main() {
   require_pattern docs/alpha-feedback-triage.md \
     'to execute and return a valid outline for the selected file' \
     "Alpha feedback triage external MCP first-call rule"
+  require_pattern docs/alpha-feedback-triage.md \
+    'scripts/external-beta-fix-queue\.sh' \
+    "Alpha feedback triage fix queue command"
+  require_pattern docs/public-adoption-alpha.md \
+    'Low route quality that keeps first-read evidence below the cohort gate' \
+    "Public adoption alpha low quality priority"
   require_pattern docs/alpha-trial-log.md \
     'Next\.js app router' \
     "Alpha trial log Next.js workflow friction row"
@@ -1834,16 +1852,16 @@ main() {
     'first_next_action' \
     "reading plan next action demo metric"
   require_pattern docs/demo-script.md \
-    'source_lines_avoided: 80121' \
+    'source_lines_avoided: 80537' \
     "demo script source lines avoided metric"
   require_pattern docs/demo-script.md \
-    'read_less_ratio: 151\.3x' \
+    'read_less_ratio: 152\.1x' \
     "demo script read-less metric"
   require_pattern docs/demo-script.md \
     'routing_decision_quality: high \(100/100, 22 evidence signals\)' \
     "demo script route quality metric"
   require_pattern docs/demo-script.md \
-    'Read less: avoided 80121 source lines, 151\.3x less text before follow-up tools\.' \
+    'Read less: avoided 80537 source lines, 152\.1x less text before follow-up tools\.' \
     "demo script evidence summary read-less line"
   require_pattern docs/demo-script.md \
     'impact_analysis' \
