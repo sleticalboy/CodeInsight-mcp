@@ -371,7 +371,7 @@ main() {
     'clients can render a pre-edit' \
     "README MCP impact checklist evidence"
   require_pattern README.md \
-    'of 82,033 source lines, avoiding 81,501 source lines before broad reading' \
+    'of 82,045 source lines, avoiding 81,513 source lines before broad reading' \
     "README two-minute demo read-less metric"
   "$ROOT_DIR/scripts/readme-adoption-summary-smoke.sh" >/dev/null
   require_pattern README.md \
@@ -926,6 +926,18 @@ main() {
   require_pattern docs/adoption-cases.md \
     'Blind first-read baseline: `682,538` source lines' \
     "adoption cases aggregate baseline"
+  require_pattern docs/task-coverage-evidence.md \
+    'Task Coverage Evidence' \
+    "task coverage evidence title"
+  require_pattern docs/task-coverage-evidence.md \
+    'Coverage \| `1/1`' \
+    "task coverage evidence gate"
+  require_pattern docs/task-coverage-evidence.md \
+    'CodeInsight routed first-read \| `541` source lines' \
+    "task coverage evidence routed lines"
+  require_pattern README.md \
+    '\[task coverage evidence\]\(docs/task-coverage-evidence\.md\)' \
+    "README task coverage evidence link"
   require_pattern docs/adoption-cases.md \
     'Aggregate first-read reduction: `99\.6%`' \
     "adoption cases aggregate reduction"
@@ -1918,7 +1930,7 @@ main() {
     'first_next_action' \
     "reading plan next action demo metric"
   require_pattern docs/demo-script.md \
-    'source_lines_avoided: 81501' \
+    'source_lines_avoided: 81513' \
     "demo script source lines avoided metric"
   require_pattern docs/demo-script.md \
     'read_less_ratio: 154\.2x' \
@@ -1927,7 +1939,7 @@ main() {
     'routing_decision_quality: high \(100/100, 22 evidence signals\)' \
     "demo script route quality metric"
   require_pattern docs/demo-script.md \
-    'Read less: avoided 81501 source lines, 154\.2x less text before follow-up tools\.' \
+    'Read less: avoided 81513 source lines, 154\.2x less text before follow-up tools\.' \
     "demo script evidence summary read-less line"
   require_pattern docs/demo-script.md \
     'impact_analysis' \
