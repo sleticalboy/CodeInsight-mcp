@@ -149,10 +149,12 @@ main() {
   TEMP_DIR="$(mktemp -d)"
   trap cleanup EXIT INT TERM
 
-  local repo evidence route_json
+  local repo evidence route_json conflict_evidence conflict_route_json
   repo="$TEMP_DIR/repo"
   evidence="$TEMP_DIR/backend-evidence.json"
   route_json="$TEMP_DIR/agent-route.json"
+  conflict_evidence="$TEMP_DIR/backend-conflict-evidence.json"
+  conflict_route_json="$TEMP_DIR/agent-route-conflict.json"
 
   create_fixture "$repo"
   write_codebase_memory_exports "$repo" "$TEMP_DIR"
@@ -186,9 +188,24 @@ main() {
   require_jq "$route_json" 'any(.routing_decision.route_quality.confidence_factors[]; contains("backend codebase-memory-mcp independently selected the same first file"))' "route quality should record backend agreement"
   require_jq "$route_json" 'any(.routing_decision.route_quality.verification_steps[]; contains("Treat backend codebase-memory-mcp evidence as advisory"))' "route quality should keep backend evidence advisory"
 
+  jq '.candidate_files = ["src/main.ts"] | .notes += ["conflict fixture: backend preferred app entrypoint"]' \
+    "$evidence" >"$conflict_evidence"
+
+  "$CODEINSIGHT_BIN" agent-route "$repo" \
+    --task "inspect src/auth.ts before editing login behavior" \
+    --token-budget 1600 \
+    --force-index \
+    --backend-evidence "$conflict_evidence" >"$conflict_route_json"
+
+  require_jq "$conflict_route_json" '.routing_decision.first_file == "src/auth.ts"' "conflict route should keep local auth seed file"
+  require_jq "$conflict_route_json" '.routing_decision.route_quality.recommended_action == "compare_backend_route_before_edits"' "backend conflict should change recommended action"
+  require_jq "$conflict_route_json" 'any(.routing_decision.route_quality.warnings[]; contains("Backend codebase-memory-mcp preferred src/main.ts"))' "backend conflict should create a warning"
+  require_jq "$conflict_route_json" 'any(.routing_decision.route_quality.verification_steps[]; contains("Compare local route with backend codebase-memory-mcp candidate src/main.ts"))' "backend conflict should require route comparison"
+
   echo "codebase-memory backend evidence smoke passed"
   echo "evidence: $evidence"
   echo "route: $route_json"
+  echo "conflict_route: $conflict_route_json"
 }
 
 main "$@"

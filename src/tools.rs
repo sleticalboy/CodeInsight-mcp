@@ -498,6 +498,7 @@ fn agent_route_quality(
         "Read {} first and answer: {}",
         first_step.file, first_step.question
     )];
+    let mut backend_route_conflict = false;
 
     if first_step.selection_rank == 1 {
         score += 15;
@@ -650,6 +651,8 @@ fn agent_route_quality(
                 backend.provider
             ));
         } else if let Some(first_backend_file) = backend.candidate_files.first() {
+            backend_route_conflict = true;
+            score -= 5;
             warnings.push(format!(
                 "Backend {} preferred {}; verify before editing because local routing selected {}.",
                 backend.provider, first_backend_file, first_step.file
@@ -691,7 +694,13 @@ fn agent_route_quality(
         "low"
     };
     let recommended_action = if context_pack.continuation_summary.status == "complete" {
-        "read_selected_context".to_string()
+        if backend_route_conflict {
+            "compare_backend_route_before_edits".to_string()
+        } else {
+            "read_selected_context".to_string()
+        }
+    } else if backend_route_conflict {
+        "compare_backend_route_then_read_selected_context".to_string()
     } else {
         "read_selected_context_then_use_continuation_if_needed".to_string()
     };

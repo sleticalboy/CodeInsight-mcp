@@ -133,6 +133,7 @@ Current bridge status:
 - `scripts/codebase-memory-backend-evidence-smoke.sh` verifies the bridge
   end-to-end against a temporary repository: normalized backend candidates are
   passed to `agent-route`, backend agreement is reflected in `route_quality`,
+  backend/local first-file conflicts require `compare_backend_route_before_edits`,
   and the evidence remains advisory rather than overriding local routing.
 - `scripts/codebase-memory-bridge-report.sh` turns the resulting
   `backend_evidence` plus raw `agent-route` JSON into a shareable agreement

@@ -2288,6 +2288,71 @@ fn cli_agent_route_accepts_backend_evidence_file() {
 }
 
 #[test]
+fn cli_agent_route_flags_backend_evidence_conflict_before_edits() {
+    let fixture = fixture_project();
+    let evidence_path = fixture.path().join("backend-conflict-evidence.json");
+    std::fs::write(
+        &evidence_path,
+        serde_json::json!({
+            "provider": "codebase-memory-mcp",
+            "candidate_files": ["src/server.ts"],
+            "evidence_sources": ["search_graph"],
+            "evidence_count": 4,
+            "confidence": 0.88,
+            "notes": ["external graph backend preferred a different first file"]
+        })
+        .to_string(),
+    )
+    .unwrap();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand app entrypoint flow",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence",
+        evidence_path.to_str().unwrap(),
+    ]);
+
+    assert_eq!(
+        route["routing_decision"]["first_file"], "src/main.ts",
+        "fixture should keep the local first-read route stable"
+    );
+    assert_eq!(
+        route["routing_decision"]["route_quality"]["recommended_action"],
+        "compare_backend_route_before_edits"
+    );
+    assert!(
+        route["routing_decision"]["route_quality"]["warnings"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|warning| warning
+                .as_str()
+                .unwrap()
+                .contains("Backend codebase-memory-mcp preferred src/server.ts"))
+    );
+    assert!(
+        route["routing_decision"]["route_quality"]["verification_steps"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|step| step.as_str().unwrap().contains(
+                "Compare local route with backend codebase-memory-mcp candidate src/server.ts"
+            ))
+    );
+    assert!(
+        route["routing_decision"]["route_quality"]["decision_summary"]
+            .as_str()
+            .unwrap()
+            .contains("Then compare_backend_route_before_edits.")
+    );
+}
+
+#[test]
 fn cli_agent_route_preserves_requested_minimum_token_budget() {
     let fixture = fixture_project();
 

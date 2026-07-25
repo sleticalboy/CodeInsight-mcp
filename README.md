@@ -207,6 +207,12 @@ codeinsight agent-route /path/to/repo \
   --backend-evidence /tmp/codeinsight-backend-evidence.json
 ```
 
+If the backend and local route agree on the first file, `route_quality` records
+that agreement as confidence evidence. If the backend prefers a different first
+file, `route_quality.warnings` names the conflict and
+`route_quality.recommended_action` becomes
+`compare_backend_route_before_edits` before the agent edits code.
+
 For a shareable agreement artifact, save the raw `agent-route` JSON and run:
 
 ```bash
@@ -336,7 +342,7 @@ accuracy, or proof that unselected code is irrelevant.
 
 Current benchmark snapshot:
 
-- The two-minute demo for this repository shows the agent route selecting 533 of 81,672 source lines, avoiding 81,139 source lines before broad reading for a 99.3% reduction and 153.2x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
+- The two-minute demo for this repository shows the agent route selecting 532 of 81,763 source lines, avoiding 81,231 source lines before broad reading for a 99.3% reduction and 153.7x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
 - Smoke repositories route `context_pack` first for 4/4 repositories and
   select 709 of 75,753 source lines, a 99.1% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and

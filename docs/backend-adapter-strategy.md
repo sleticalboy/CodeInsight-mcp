@@ -73,7 +73,10 @@ codeinsight agent-route /path/to/repo \
 MCP usage passes the same object as `backend_evidence` in the `agent_route`
 arguments. CodeInsight uses this evidence to adjust route confidence, warnings,
 and verification steps. It does not blindly override the local `context_pack`
-selection; conflicting backend candidates are surfaced as warnings.
+selection. When the backend agrees on the first file, `route_quality` records
+that as confidence evidence. When the backend prefers a different first file,
+`route_quality.warnings` names the mismatch and `recommended_action` changes to
+`compare_backend_route_before_edits` before the agent edits code.
 
 The first bridge prototype is script-level and runtime-agnostic:
 
@@ -155,6 +158,8 @@ to make the route evidence format backend-ready:
 - every public route snapshot shows route quality beside first-file results
 - `agent_route` accepts optional backend evidence and reflects it in
   `routing_decision.route_quality`
+- backend/local first-file conflicts change `route_quality.recommended_action`
+  to `compare_backend_route_before_edits`
 - `scripts/codebase-memory-backend-evidence.sh` normalizes exported
   codebase-memory results into `backend_evidence`
 - `scripts/codebase-memory-bridge-report.sh` summarizes real backend/local
