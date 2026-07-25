@@ -149,11 +149,16 @@ main() {
   TEMP_DIR="$(mktemp -d)"
   trap cleanup EXIT INT TERM
 
-  local repo output_dir summary_json output_log
+  local repo output_dir summary_json output_log gate_output_dir gate_summary_json gate_output_log fail_output_dir fail_case_summary_json
   repo="$TEMP_DIR/repo"
   output_dir="$TEMP_DIR/output"
   summary_json="$output_dir/summary.json"
   output_log="$TEMP_DIR/output.log"
+  gate_output_dir="$TEMP_DIR/output-gated"
+  gate_summary_json="$gate_output_dir/summary.json"
+  gate_output_log="$TEMP_DIR/output-gated.log"
+  fail_output_dir="$TEMP_DIR/output-gated-fail"
+  fail_case_summary_json="$fail_output_dir/express/summary.json"
   create_express_like_fixture "$repo"
 
   CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/public-task-routing-matrix.sh" \
@@ -208,6 +213,38 @@ main() {
     fail "markdown output should include quality and first seed columns"
   grep -Fq "## Route Quality Evidence" "$output_dir/public-task-routing-matrix.md" ||
     fail "markdown output should include route quality evidence section"
+
+  CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/public-task-routing-matrix.sh" \
+    --case express \
+    --root "express=$repo" \
+    --output-dir "$gate_output_dir" \
+    --token-budget 1600 \
+    --min-route-quality-score 70 | tee "$gate_output_log"
+
+  require_jq "$gate_summary_json" '.status == "pass"
+    and .quality_gate.status == "pass"
+    and .quality_gate.min_route_quality_score == 70
+    and .quality_gate.failure_count == 0
+    and (.quality_gate.cases[] | select(.case == "express" and .status == "pass" and .failure_count == 0))' \
+    "aggregate quality gate should pass and preserve case evidence"
+  grep -Fq "quality_gate: pass >= 70" "$gate_output_log" ||
+    fail "terminal output should include aggregate quality gate"
+  grep -Fq -- "- Minimum route quality score: \`70\`" "$gate_output_dir/public-task-routing-matrix.md" ||
+    fail "markdown output should include minimum route quality score"
+
+  if CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/public-task-routing-matrix.sh" \
+    --case express \
+    --root "express=$repo" \
+    --output-dir "$fail_output_dir" \
+    --token-budget 1600 \
+    --min-route-quality-score 101 >/dev/null 2>&1; then
+    fail "public matrix should fail when a case route falls below the configured route quality score"
+  fi
+  require_jq "$fail_case_summary_json" '.quality_gate.status == "fail"
+    and .quality_gate.min_route_quality_score == 101
+    and .quality_gate.failure_count == 17
+    and (.quality_gate.failures[] | select(.task == "understand express application routing behavior" and .route_quality_score == 100))' \
+    "failed case summary should preserve route quality gate failures"
 
   echo "public task routing matrix smoke passed"
 }

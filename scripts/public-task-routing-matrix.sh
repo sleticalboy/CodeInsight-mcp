@@ -10,6 +10,7 @@ TOKEN_BUDGET="${CODEINSIGHT_PUBLIC_TASK_MATRIX_TOKEN_BUDGET:-6000}"
 CODEINSIGHT_BIN="${CODEINSIGHT_BIN:-}"
 MATRIX_SCRIPT="${CODEINSIGHT_TASK_ROUTING_MATRIX_SCRIPT:-$ROOT_DIR/scripts/task-routing-matrix.sh}"
 FORCE_CLONE="${CODEINSIGHT_PUBLIC_TASK_MATRIX_FORCE_CLONE:-0}"
+MIN_ROUTE_QUALITY_SCORE="${CODEINSIGHT_PUBLIC_TASK_MATRIX_MIN_ROUTE_QUALITY_SCORE:-}"
 CASES=()
 ROOT_OVERRIDES=()
 EXPECTATION_OVERRIDES=()
@@ -34,6 +35,8 @@ Options:
   --output PATH        Aggregate Markdown path. Default: <output-dir>/public-task-routing-matrix.md.
   --summary-json PATH  Aggregate JSON path. Default: <output-dir>/summary.json.
   --token-budget N     Token budget per route. Default: 6000.
+  --min-route-quality-score N
+                       Fail when any case route reports route_quality_score below N.
   --bin PATH           Use a specific codeinsight binary.
   --force-clone        Reclone public repositories even when the clone exists.
   -h, --help           Show this help text.
@@ -45,6 +48,7 @@ Environment:
   CODEINSIGHT_PUBLIC_TASK_MATRIX_SUMMARY_JSON
   CODEINSIGHT_PUBLIC_TASK_MATRIX_TOKEN_BUDGET
   CODEINSIGHT_PUBLIC_TASK_MATRIX_FORCE_CLONE
+  CODEINSIGHT_PUBLIC_TASK_MATRIX_MIN_ROUTE_QUALITY_SCORE
   CODEINSIGHT_TASK_ROUTING_MATRIX_SCRIPT
   CODEINSIGHT_BIN
 EOF
@@ -148,6 +152,11 @@ parse_args() {
       --token-budget)
         [ "$#" -ge 2 ] || fail "--token-budget requires a number"
         TOKEN_BUDGET="$2"
+        shift 2
+        ;;
+      --min-route-quality-score)
+        [ "$#" -ge 2 ] || fail "--min-route-quality-score requires a number"
+        MIN_ROUTE_QUALITY_SCORE="$2"
         shift 2
         ;;
       --bin)
@@ -306,6 +315,7 @@ run_case() {
     --token-budget "$TOKEN_BUDGET" \
     --output-dir "$case_output_dir" \
     --summary-json "$case_summary" \
+    ${MIN_ROUTE_QUALITY_SCORE:+--min-route-quality-score "$MIN_ROUTE_QUALITY_SCORE"} \
     ${CODEINSIGHT_BIN:+--bin "$CODEINSIGHT_BIN"} >&2; then
     fail "task routing matrix failed for case: $case_name"
   fi
@@ -336,6 +346,7 @@ run_case() {
       total_selected_lines: .aggregate.total_selected_lines,
       total_estimated_tokens: .aggregate.total_estimated_tokens,
       max_impacted_files: .aggregate.max_impacted_files,
+      quality_gate: (.quality_gate // null),
       routes: [.tasks[] | {
         task,
         first_file,
@@ -370,6 +381,7 @@ write_summary() {
     --arg output "$OUTPUT_FILE" \
     --arg output_dir "$OUTPUT_DIR" \
     --argjson token_budget "$TOKEN_BUDGET" \
+    --arg min_route_quality_score "$MIN_ROUTE_QUALITY_SCORE" \
     '{
       status: "pass",
       token_budget: $token_budget,
@@ -390,7 +402,19 @@ write_summary() {
           if $total > 0 then (((($total - $selected) * 10000 / $total) | floor) / 100) else 0 end
         )
       }
-    }' $(cat "$rows_file") >"$SUMMARY_JSON"
+    }
+    + (if $min_route_quality_score != "" then {
+      quality_gate: {
+        min_route_quality_score: ($min_route_quality_score | tonumber),
+        status: (if (map(.quality_gate.failure_count // 0) | add // 0) == 0 then "pass" else "fail" end),
+        failure_count: (map(.quality_gate.failure_count // 0) | add // 0),
+        cases: [.[] | select(.quality_gate != null) | {
+          case,
+          status: .quality_gate.status,
+          failure_count: .quality_gate.failure_count
+        }]
+      }
+    } else {} end)' $(cat "$rows_file") >"$SUMMARY_JSON"
 
   jq -e \
     '.status == "pass"
@@ -423,6 +447,9 @@ write_markdown() {
     echo "- Cases: \`$(jq -r '.case_count' "$SUMMARY_JSON")\`"
     echo "- Tasks: \`$(jq -r '.aggregate.task_count' "$SUMMARY_JSON")\`"
     echo "- Token budget: \`$TOKEN_BUDGET\`"
+    if [ -n "$MIN_ROUTE_QUALITY_SCORE" ]; then
+      echo "- Minimum route quality score: \`$MIN_ROUTE_QUALITY_SCORE\`"
+    fi
     echo "- Aggregate line reduction: \`$(jq -r '.aggregate.line_reduction' "$SUMMARY_JSON")%\`"
     echo "- Summary JSON: \`$SUMMARY_JSON\`"
     echo
@@ -486,6 +513,9 @@ write_evidence_summary() {
   echo "${prefix}line_reduction: $(jq -r '.aggregate.line_reduction' "$SUMMARY_JSON")%"
   echo "${prefix}estimated_tokens: $(jq -r '.aggregate.total_estimated_tokens' "$SUMMARY_JSON")"
   echo "${prefix}max_impacted_files: $(jq -r '.aggregate.max_impacted_files' "$SUMMARY_JSON")"
+  if jq -e '.quality_gate? | type == "object"' "$SUMMARY_JSON" >/dev/null; then
+    echo "${prefix}quality_gate: $(jq -r '.quality_gate.status' "$SUMMARY_JSON") >= $(jq -r '.quality_gate.min_route_quality_score' "$SUMMARY_JSON")"
+  fi
   jq -r --arg prefix "$case_prefix" '.cases[] |
     $prefix + .case + ": " + (.task_count | tostring) + " tasks, first files " +
     ([.routes[].first_file] | unique | join(", "))' "$SUMMARY_JSON"
@@ -504,6 +534,13 @@ main() {
   esac
   if [ "$TOKEN_BUDGET" -le 0 ]; then
     fail "--token-budget must be greater than zero"
+  fi
+  if [ -n "$MIN_ROUTE_QUALITY_SCORE" ]; then
+    case "$MIN_ROUTE_QUALITY_SCORE" in
+      ''|*[!0-9]*)
+        fail "--min-route-quality-score must be a non-negative integer"
+        ;;
+    esac
   fi
   if [ "${#CASES[@]}" -eq 0 ]; then
     CASES=(express fastapi flask gin requests streamlit wouter)

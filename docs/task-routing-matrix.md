@@ -211,6 +211,13 @@ Run the pinned fast public matrices in one pass:
 scripts/public-task-routing-matrix.sh
 ```
 
+Use a public score gate when the snapshot should fail on weak first-read
+evidence:
+
+```bash
+scripts/public-task-routing-matrix.sh --min-route-quality-score 70
+```
+
 The default set uses pinned Express, FastAPI, Flask, Gin, Requests, Streamlit,
 and Wouter commits so expectation files do not drift with upstream default
 branches.
