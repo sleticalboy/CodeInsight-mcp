@@ -10,6 +10,7 @@ TOKEN_BUDGET="${CODEINSIGHT_PUBLIC_TASK_MATRIX_TOKEN_BUDGET:-6000}"
 CODEINSIGHT_BIN="${CODEINSIGHT_BIN:-}"
 MATRIX_SCRIPT="${CODEINSIGHT_TASK_ROUTING_MATRIX_SCRIPT:-$ROOT_DIR/scripts/task-routing-matrix.sh}"
 FORCE_CLONE="${CODEINSIGHT_PUBLIC_TASK_MATRIX_FORCE_CLONE:-0}"
+REQUIRE_ROOTS="${CODEINSIGHT_PUBLIC_TASK_MATRIX_REQUIRE_ROOTS:-0}"
 MIN_ROUTE_QUALITY_SCORE="${CODEINSIGHT_PUBLIC_TASK_MATRIX_MIN_ROUTE_QUALITY_SCORE:-}"
 CASES=()
 ROOT_OVERRIDES=()
@@ -39,6 +40,7 @@ Options:
                        Fail when any case route reports route_quality_score below N.
   --bin PATH           Use a specific codeinsight binary.
   --force-clone        Reclone public repositories even when the clone exists.
+  --require-roots      Require --root NAME=PATH for every case; never clone or fetch.
   -h, --help           Show this help text.
 
 Environment:
@@ -48,6 +50,7 @@ Environment:
   CODEINSIGHT_PUBLIC_TASK_MATRIX_SUMMARY_JSON
   CODEINSIGHT_PUBLIC_TASK_MATRIX_TOKEN_BUDGET
   CODEINSIGHT_PUBLIC_TASK_MATRIX_FORCE_CLONE
+  CODEINSIGHT_PUBLIC_TASK_MATRIX_REQUIRE_ROOTS
   CODEINSIGHT_PUBLIC_TASK_MATRIX_MIN_ROUTE_QUALITY_SCORE
   CODEINSIGHT_TASK_ROUTING_MATRIX_SCRIPT
   CODEINSIGHT_BIN
@@ -168,6 +171,10 @@ parse_args() {
         FORCE_CLONE="1"
         shift
         ;;
+      --require-roots)
+        REQUIRE_ROOTS="1"
+        shift
+        ;;
       -h|--help)
         usage
         exit 0
@@ -265,6 +272,9 @@ prepare_case_repo() {
     [ -d "$override" ] || fail "case root does not exist for $case_name: $override"
     (cd "$override" && pwd)
     return
+  fi
+  if [ "$REQUIRE_ROOTS" = "1" ]; then
+    fail "--require-roots requires --root $case_name=PATH"
   fi
 
   repo_dir="$WORK_DIR/repos/$case_name"
@@ -541,6 +551,13 @@ main() {
         fail "--min-route-quality-score must be a non-negative integer"
         ;;
     esac
+  fi
+  case "$REQUIRE_ROOTS" in
+    0|1) ;;
+    *) fail "CODEINSIGHT_PUBLIC_TASK_MATRIX_REQUIRE_ROOTS must be 0 or 1" ;;
+  esac
+  if [ "$REQUIRE_ROOTS" = "1" ] && [ "$FORCE_CLONE" = "1" ]; then
+    fail "--require-roots cannot be combined with --force-clone"
   fi
   if [ "${#CASES[@]}" -eq 0 ]; then
     CASES=(express fastapi flask gin requests streamlit wouter)

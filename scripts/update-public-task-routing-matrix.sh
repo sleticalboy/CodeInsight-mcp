@@ -31,6 +31,7 @@ Common pass-through options:
   --ref NAME=REF
   --bin PATH
   --force-clone
+  --require-roots
 
 Environment:
   CODEINSIGHT_PUBLIC_TASK_ROUTING_MATRIX_SCRIPT=scripts/public-task-routing-matrix.sh

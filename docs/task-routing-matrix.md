@@ -272,6 +272,9 @@ scripts/update-public-task-routing-matrix.sh --check
 
 When publishing a gated public route-quality snapshot, add
 `--min-route-quality-score 70` to either command.
+When all public repositories are already available locally, also pass
+`--require-roots` and one `--root NAME=PATH` per case to prevent clone/fetch
+during the refresh.
 
 ## Output Contract
 

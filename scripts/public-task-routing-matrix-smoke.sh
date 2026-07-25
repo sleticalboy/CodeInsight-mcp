@@ -161,9 +161,20 @@ main() {
   fail_case_summary_json="$fail_output_dir/express/summary.json"
   create_express_like_fixture "$repo"
 
+  if CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/public-task-routing-matrix.sh" \
+    --case express \
+    --require-roots \
+    --output-dir "$TEMP_DIR/missing-root-output" \
+    --token-budget 1600 >/dev/null 2>"$TEMP_DIR/missing-root.log"; then
+    fail "--require-roots should fail when a case root is missing"
+  fi
+  grep -Fq -- '--require-roots requires --root express=PATH' "$TEMP_DIR/missing-root.log" ||
+    fail "--require-roots failure should name the missing case root"
+
   CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/public-task-routing-matrix.sh" \
     --case express \
     --root "express=$repo" \
+    --require-roots \
     --output-dir "$output_dir" \
     --token-budget 1600 | tee "$output_log"
 
@@ -217,6 +228,7 @@ main() {
   CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/public-task-routing-matrix.sh" \
     --case express \
     --root "express=$repo" \
+    --require-roots \
     --output-dir "$gate_output_dir" \
     --token-budget 1600 \
     --min-route-quality-score 70 | tee "$gate_output_log"
@@ -235,6 +247,7 @@ main() {
   if CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/public-task-routing-matrix.sh" \
     --case express \
     --root "express=$repo" \
+    --require-roots \
     --output-dir "$fail_output_dir" \
     --token-budget 1600 \
     --min-route-quality-score 101 >/dev/null 2>&1; then
