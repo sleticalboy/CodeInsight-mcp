@@ -208,10 +208,12 @@ codeinsight agent-route /path/to/repo \
 ```
 
 If the backend and local route agree on the first file, `route_quality` records
-that agreement as confidence evidence. If the backend prefers a different first
-file, `route_quality.warnings` names the conflict and
-`route_quality.recommended_action` becomes
-`compare_backend_route_before_edits` before the agent edits code.
+that agreement as confidence evidence and
+`routing_decision.backend_route_agreement.status` is `agree`. If the backend
+prefers a different first file, `backend_route_agreement.status` is `conflict`,
+`route_quality.warnings` names the conflict, and
+`route_quality.recommended_action` becomes `compare_backend_route_before_edits`
+before the agent edits code.
 
 For a shareable agreement artifact, save the raw `agent-route` JSON and run:
 
@@ -345,7 +347,7 @@ accuracy, or proof that unselected code is irrelevant.
 
 Current benchmark snapshot:
 
-- The two-minute demo for this repository shows the agent route selecting 532 of 82,045 source lines, avoiding 81,513 source lines before broad reading for a 99.4% reduction and 154.2x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
+- The two-minute demo for this repository shows the agent route selecting 531 of 82,312 source lines, avoiding 81,781 source lines before broad reading for a 99.4% reduction and 155.0x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 21 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
 - Smoke repositories route `context_pack` first for 4/4 repositories and
   select 709 of 75,753 source lines, a 99.1% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and

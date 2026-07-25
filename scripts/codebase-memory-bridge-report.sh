@@ -105,6 +105,7 @@ write_summary() {
       (route_selected_files($r)) as $selected |
       ($r.routing_decision.first_file // "") as $first_file |
       ($r.routing_decision.route_quality // {}) as $quality |
+      ($r.routing_decision.backend_route_agreement // {}) as $backend_agreement |
       (($quality.evidence_sources // []) | map(select(startswith("backend:" + $provider)))) as $backend_quality_sources |
       ([$selected[] as $file | select($candidates | index($file)) | $file]) as $selected_backend_candidates |
       ($candidates[0] // "") as $backend_top_file |
@@ -141,9 +142,21 @@ write_summary() {
           route_quality_warnings: ($quality.warnings // []),
           backend_evidence_sources_in_route_quality: $backend_quality_sources,
           backend_advisory_verification_step_present: $advisory_step,
-          route_preserved_backend_evidence: $route_preserved_backend_evidence
+          route_preserved_backend_evidence: $route_preserved_backend_evidence,
+          backend_route_agreement: {
+            status: ($backend_agreement.status // (if $matches_top then "agree" elif $in_candidates then "overlap" else "conflict" end)),
+            recommended_action: ($backend_agreement.recommended_action // (if $matches_top then "read_selected_context" elif $in_candidates then "read_selected_context_then_compare_backend_rank" else "compare_backend_route_before_edits" end)),
+            message: ($backend_agreement.message // ""),
+            provider: ($backend_agreement.provider // $provider),
+            local_first_file: ($backend_agreement.local_first_file // $first_file),
+            backend_first_file: ($backend_agreement.backend_first_file // $backend_top_file),
+            candidate_file_count: ($backend_agreement.candidate_file_count // ($candidates | length)),
+            common_files: ($backend_agreement.common_files // [])
+          }
         },
         agreement: {
+          backend_route_agreement_status: ($backend_agreement.status // (if $matches_top then "agree" elif $in_candidates then "overlap" else "conflict" end)),
+          backend_route_agreement_recommended_action: ($backend_agreement.recommended_action // (if $matches_top then "read_selected_context" elif $in_candidates then "read_selected_context_then_compare_backend_rank" else "compare_backend_route_before_edits" end)),
           first_file_matches_backend_top: $matches_top,
           first_file_in_backend_candidates: $in_candidates,
           selected_backend_candidate_files: $selected_backend_candidates,
@@ -171,6 +184,8 @@ write_markdown() {
     "- CodeInsight first file: " + tick(.route.first_file),
     "- First file matches backend top: " + tick(.agreement.first_file_matches_backend_top),
     "- First file appears in backend candidates: " + tick(.agreement.first_file_in_backend_candidates),
+    "- Backend route agreement: " + tick(.agreement.backend_route_agreement_status),
+    "- Backend route agreement action: " + tick(.agreement.backend_route_agreement_recommended_action),
     "- Selected backend candidates: " + tick((.agreement.selected_backend_candidate_files | join(", "))),
     "- Route quality: " + tick(.route.route_quality_level + " " + (.route.route_quality_score | tostring) + "/100"),
     "- Agent route action: " + tick(if .route.route_quality_recommended_action == "" then "n/a" else .route.route_quality_recommended_action end),

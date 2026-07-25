@@ -72,6 +72,10 @@ client or agent after `agent_route` returns. It is different from `route[]`:
   and suggested follow-up tool.
 - `route_quality` with a compact level, numeric score, evidence count, evidence
   sources, warnings, and recommended client action.
+- `backend_route_agreement` with a machine-readable comparison between the
+  local first file and optional backend candidate files. Status values include
+  `no_backend`, `agree`, `overlap`, `conflict`, `backend_only`,
+  `no_local_route`, and `backend_without_candidates`.
 - Selected/omitted counts, read-less metrics, continuation status/next action,
   and impact status.
 
@@ -86,6 +90,13 @@ usable follow-up actions. `blocked` means no reading plan was produced; use
 `recommended_action` before broad-reading the repository. Warnings explain when
 the first read is still useful but should be followed by continuation, impact
 review, or a more specific seed.
+
+When a client passes `backend_evidence`, use
+`routing_decision.backend_route_agreement` before parsing warning text. `agree`
+means the backend and local route choose the same first file. `overlap` means the
+local first file appears in the backend candidate list, but not as the backend's
+top candidate. `conflict` means the backend top candidate and local first file
+diverge; clients should follow `recommended_action` before editing.
 
 Each execution step includes:
 

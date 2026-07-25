@@ -290,6 +290,7 @@ pub struct AgentRouteExecutionStep {
 pub struct AgentRouteRoutingDecision {
     pub seed_strategy: String,
     pub route_quality: AgentRouteQuality,
+    pub backend_route_agreement: AgentRouteBackendAgreement,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub backend_evidence: Option<AgentRouteBackendEvidence>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -342,6 +343,22 @@ pub struct AgentRouteQuality {
     pub warnings: Vec<String>,
     pub verification_steps: Vec<String>,
     pub recommended_action: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct AgentRouteBackendAgreement {
+    pub status: String,
+    pub message: String,
+    pub recommended_action: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub provider: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub local_first_file: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub backend_first_file: Option<String>,
+    pub candidate_file_count: usize,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub common_files: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

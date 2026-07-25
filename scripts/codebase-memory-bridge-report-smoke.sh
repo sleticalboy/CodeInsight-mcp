@@ -73,6 +73,16 @@ JSON
   },
   "routing_decision": {
     "first_file": "src/auth.ts",
+    "backend_route_agreement": {
+      "status": "agree",
+      "message": "Backend codebase-memory-mcp and local routing agree on first-read file src/auth.ts.",
+      "recommended_action": "read_selected_context",
+      "provider": "codebase-memory-mcp",
+      "local_first_file": "src/auth.ts",
+      "backend_first_file": "src/auth.ts",
+      "candidate_file_count": 3,
+      "common_files": ["src/auth.ts"]
+    },
     "backend_evidence": {
       "provider": "codebase-memory-mcp",
       "candidate_files": ["src/auth.ts", "src/audit.ts", "src/main.ts"],
@@ -114,6 +124,8 @@ JSON
   require_jq "$summary_json" '.status == "pass"' "summary should pass"
   require_jq "$summary_json" '.provider == "codebase-memory-mcp"' "provider should be preserved"
   require_jq "$summary_json" '.agreement.first_file_matches_backend_top == true' "first file should match backend top"
+  require_jq "$summary_json" '.agreement.backend_route_agreement_status == "agree"' "backend route agreement should be surfaced"
+  require_jq "$summary_json" '.route.backend_route_agreement.recommended_action == "read_selected_context"' "backend route agreement action should be surfaced"
   require_jq "$summary_json" '.agreement.first_file_in_backend_candidates == true' "first file should appear in backend candidates"
   require_jq "$summary_json" '.agreement.selected_backend_candidate_count == 2' "selected backend candidate count should be measured"
   require_jq "$summary_json" '.route.backend_advisory_verification_step_present == true' "advisory verification step should be detected"
@@ -122,6 +134,8 @@ JSON
 
   grep -Fq 'First file matches backend top: `true`' "$report_md" ||
     fail "markdown should summarize top-file agreement"
+  grep -Fq 'Backend route agreement: `agree`' "$report_md" ||
+    fail "markdown should summarize backend route agreement"
   grep -Fq 'Agent route action: `read_selected_context`' "$report_md" ||
     fail "markdown should include route quality recommended action"
   grep -Fq 'Backend evidence preserved in route JSON' "$report_md" ||
@@ -149,6 +163,15 @@ JSON
   },
   "routing_decision": {
     "first_file": "src/auth.ts",
+    "backend_route_agreement": {
+      "status": "conflict",
+      "message": "Local routing selected src/auth.ts, but backend codebase-memory-mcp preferred src/server.ts.",
+      "recommended_action": "compare_backend_route_before_edits",
+      "provider": "codebase-memory-mcp",
+      "local_first_file": "src/auth.ts",
+      "backend_first_file": "src/server.ts",
+      "candidate_file_count": 2
+    },
     "backend_evidence": {
       "provider": "codebase-memory-mcp",
       "candidate_files": ["src/server.ts", "src/main.ts"],
@@ -190,6 +213,8 @@ JSON
   [ -f "$conflict_report_md" ] || fail "conflict markdown report missing"
 
   require_jq "$conflict_summary_json" '.status == "warn"' "conflict summary should warn"
+  require_jq "$conflict_summary_json" '.agreement.backend_route_agreement_status == "conflict"' "conflict backend route agreement should be surfaced"
+  require_jq "$conflict_summary_json" '.route.backend_route_agreement.recommended_action == "compare_backend_route_before_edits"' "conflict backend route agreement action should be surfaced"
   require_jq "$conflict_summary_json" '.agreement.first_file_matches_backend_top == false' "conflict first file should not match backend top"
   require_jq "$conflict_summary_json" '.agreement.first_file_in_backend_candidates == false' "conflict first file should not be in backend candidates"
   require_jq "$conflict_summary_json" '.route.route_quality_recommended_action == "compare_backend_route_before_edits"' "conflict route action should be preserved"
@@ -198,6 +223,8 @@ JSON
 
   grep -Fq 'Agent route action: `compare_backend_route_before_edits`' "$conflict_report_md" ||
     fail "conflict markdown should include route quality recommended action"
+  grep -Fq 'Backend route agreement: `conflict`' "$conflict_report_md" ||
+    fail "conflict markdown should include backend route agreement"
   grep -Fq 'Route warning count | `1`' "$conflict_report_md" ||
     fail "conflict markdown should include route warning count"
 

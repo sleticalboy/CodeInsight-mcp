@@ -2259,6 +2259,30 @@ fn cli_agent_route_accepts_backend_evidence_file() {
         route["routing_decision"]["backend_evidence"]["candidate_files"][0],
         "src/main.ts"
     );
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["status"],
+        "agree"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["provider"],
+        "codebase-memory-mcp"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["local_first_file"],
+        "src/main.ts"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["backend_first_file"],
+        "src/main.ts"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["recommended_action"],
+        "read_selected_context"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["common_files"][0],
+        "src/main.ts"
+    );
     assert!(
         route["routing_decision"]["route_quality"]["evidence_sources"]
             .as_array()
@@ -2325,6 +2349,26 @@ fn cli_agent_route_flags_backend_evidence_conflict_before_edits() {
         route["routing_decision"]["route_quality"]["recommended_action"],
         "compare_backend_route_before_edits"
     );
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["status"],
+        "conflict"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["local_first_file"],
+        "src/main.ts"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["backend_first_file"],
+        "src/server.ts"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["recommended_action"],
+        "compare_backend_route_before_edits"
+    );
+    assert!(
+        route["routing_decision"]["backend_route_agreement"]["common_files"].is_null(),
+        "empty common_files should be omitted from JSON"
+    );
     assert!(
         route["routing_decision"]["route_quality"]["warnings"]
             .as_array()
@@ -2349,6 +2393,62 @@ fn cli_agent_route_flags_backend_evidence_conflict_before_edits() {
             .as_str()
             .unwrap()
             .contains("Then compare_backend_route_before_edits.")
+    );
+}
+
+#[test]
+fn cli_agent_route_reports_backend_only_when_local_route_is_blocked() {
+    let fixture = fixture_project();
+    let evidence_path = fixture.path().join("backend-only-evidence.json");
+    std::fs::write(
+        &evidence_path,
+        serde_json::json!({
+            "provider": "codebase-memory-mcp",
+            "candidate_files": ["src/main.ts"],
+            "evidence_sources": ["search_graph"],
+            "evidence_count": 3,
+            "notes": ["external graph backend still had an entry candidate"]
+        })
+        .to_string(),
+    )
+    .unwrap();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand invalid explicit seed",
+        "--file",
+        "does/not/exist.ts",
+        "--token-budget",
+        "1000",
+        "--force-index",
+        "--backend-evidence",
+        evidence_path.to_str().unwrap(),
+    ]);
+
+    assert_eq!(route["impact_status"], "skipped_invalid_seed");
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["status"],
+        "backend_only"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["local_first_file"],
+        serde_json::Value::Null
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["backend_first_file"],
+        "src/main.ts"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["recommended_action"],
+        "provide_seed_or_use_backend_candidate"
+    );
+    assert!(
+        route["routing_decision"]["backend_route_agreement"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("Local routing produced no first-read file")
     );
 }
 

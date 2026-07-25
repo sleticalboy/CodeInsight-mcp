@@ -17,17 +17,17 @@ use crate::{
     embedding, index,
     language::detect_language,
     model::{
-        AgentRouteBackendEvidence, AgentRouteExecutionStep, AgentRouteQuality, AgentRouteReport,
-        AgentRouteRoutingDecision, AgentRouteStep, CallEdge, ConfigInitReport, ConfigStatusReport,
-        ContextBudget, ContextContinuationSummary, ContextFile, ContextOmittedCandidate,
-        ContextPack, ContextRange, ContextReadLess, ContextReadingRange, ContextReadingStep,
-        ContextSeed, ContextSemanticStatus, ContextSourceCount, ContextSuggestedTool, Dependency,
-        DependencyGraph, EmbeddingProviderStatus, ImpactAnalysisReport, ImpactBreakdown,
-        ImpactCounts, ImpactFile, ImpactPath, IndexError, IndexScopeReport, Language,
-        OllamaEmbeddingStatus, OpenAiEmbeddingStatus, ProjectIndexReport, ProjectOverview,
-        ReferenceMatch, SemanticChunk, SemanticChunkInput, SemanticEmbeddingInput,
-        SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus, SemanticSearchResult,
-        SuggestedCheck, Symbol, SymbolKind, VersionInfo,
+        AgentRouteBackendAgreement, AgentRouteBackendEvidence, AgentRouteExecutionStep,
+        AgentRouteQuality, AgentRouteReport, AgentRouteRoutingDecision, AgentRouteStep, CallEdge,
+        ConfigInitReport, ConfigStatusReport, ContextBudget, ContextContinuationSummary,
+        ContextFile, ContextOmittedCandidate, ContextPack, ContextRange, ContextReadLess,
+        ContextReadingRange, ContextReadingStep, ContextSeed, ContextSemanticStatus,
+        ContextSourceCount, ContextSuggestedTool, Dependency, DependencyGraph,
+        EmbeddingProviderStatus, ImpactAnalysisReport, ImpactBreakdown, ImpactCounts, ImpactFile,
+        ImpactPath, IndexError, IndexScopeReport, Language, OllamaEmbeddingStatus,
+        OpenAiEmbeddingStatus, ProjectIndexReport, ProjectOverview, ReferenceMatch, SemanticChunk,
+        SemanticChunkInput, SemanticEmbeddingInput, SemanticEmbeddingMatch, SemanticIndexReport,
+        SemanticIndexStatus, SemanticSearchResult, SuggestedCheck, Symbol, SymbolKind, VersionInfo,
     },
     storage::Store,
 };
@@ -394,10 +394,15 @@ fn agent_route_routing_decision(
 ) -> AgentRouteRoutingDecision {
     let first_seed = context_pack.selected_seeds.first();
     let first_step = context_pack.reading_plan.first();
+    let backend_route_agreement = agent_route_backend_agreement(
+        first_step.map(|step| step.file.as_str()),
+        backend_evidence.as_ref(),
+    );
 
     AgentRouteRoutingDecision {
         seed_strategy: context_pack.seed_strategy.clone(),
         route_quality: agent_route_quality(context_pack, impact_status, backend_evidence.as_ref()),
+        backend_route_agreement,
         backend_evidence,
         first_seed_kind: first_seed.map(|seed| seed.kind.clone()),
         first_seed_source: first_seed.map(|seed| seed.source.clone()),
@@ -427,6 +432,104 @@ fn agent_route_routing_decision(
         continuation_status: context_pack.continuation_summary.status.clone(),
         continuation_next_action: context_pack.continuation_summary.next_action.clone(),
         impact_status: impact_status.to_string(),
+    }
+}
+
+fn agent_route_backend_agreement(
+    local_first_file: Option<&str>,
+    backend_evidence: Option<&AgentRouteBackendEvidence>,
+) -> AgentRouteBackendAgreement {
+    let Some(backend) = backend_evidence else {
+        return AgentRouteBackendAgreement {
+            status: "no_backend".to_string(),
+            message: "No external graph backend evidence was provided.".to_string(),
+            recommended_action: "read_selected_context".to_string(),
+            provider: None,
+            local_first_file: local_first_file.map(str::to_string),
+            backend_first_file: None,
+            candidate_file_count: 0,
+            common_files: Vec::new(),
+        };
+    };
+
+    let backend_first_file = backend.candidate_files.first().cloned();
+    let local_first_file = local_first_file.map(str::to_string);
+    let local_first_file_ref = local_first_file.as_deref();
+    let common_files = local_first_file_ref
+        .map(|local| {
+            backend
+                .candidate_files
+                .iter()
+                .filter(|candidate| candidate.as_str() == local)
+                .cloned()
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+
+    let (status, recommended_action, message) = match (
+        local_first_file_ref,
+        backend_first_file.as_deref(),
+        common_files.is_empty(),
+    ) {
+        (None, Some(backend_first), _) => (
+            "backend_only",
+            "provide_seed_or_use_backend_candidate",
+            format!(
+                "Local routing produced no first-read file, but backend {} suggested {}.",
+                backend.provider, backend_first
+            ),
+        ),
+        (None, None, _) => (
+            "no_local_route",
+            "provide_seed_file_or_symbol",
+            format!(
+                "Local routing produced no first-read file and backend {} supplied no candidate files.",
+                backend.provider
+            ),
+        ),
+        (Some(local), None, _) => (
+            "backend_without_candidates",
+            "read_selected_context",
+            format!(
+                "Local routing selected {}, but backend {} supplied no candidate files.",
+                local, backend.provider
+            ),
+        ),
+        (Some(local), Some(backend_first), false) if local == backend_first => (
+            "agree",
+            "read_selected_context",
+            format!(
+                "Backend {} and local routing agree on first-read file {}.",
+                backend.provider, local
+            ),
+        ),
+        (Some(local), Some(backend_first), false) => (
+            "overlap",
+            "read_selected_context_then_compare_backend_rank",
+            format!(
+                "Local routing selected {}, and backend {} included it after preferring {}.",
+                local, backend.provider, backend_first
+            ),
+        ),
+        (Some(local), Some(backend_first), true) => (
+            "conflict",
+            "compare_backend_route_before_edits",
+            format!(
+                "Local routing selected {}, but backend {} preferred {}.",
+                local, backend.provider, backend_first
+            ),
+        ),
+    };
+
+    AgentRouteBackendAgreement {
+        status: status.to_string(),
+        message,
+        recommended_action: recommended_action.to_string(),
+        provider: Some(backend.provider.clone()),
+        local_first_file,
+        backend_first_file,
+        candidate_file_count: backend.candidate_files.len(),
+        common_files,
     }
 }
 

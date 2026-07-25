@@ -409,6 +409,11 @@ try:
     assert agent_route_result["impact_analysis"]["format"] == "summary"
     assert agent_route_result["impact_analysis"]["depth"] == 2
     assert agent_route_result["impact_analysis"]["evidence_limit"] == 3
+    agent_route_backend_agreement = agent_route_result["routing_decision"]["backend_route_agreement"]
+    assert agent_route_backend_agreement["status"] == "no_backend"
+    assert agent_route_backend_agreement["recommended_action"] == "read_selected_context"
+    assert agent_route_backend_agreement["candidate_file_count"] == 0
+    assert agent_route_backend_agreement["local_first_file"] == agent_route_result["routing_decision"]["first_file"]
     agent_route_impact_step = agent_route_result["execution_plan"][3]
     agent_route_impact_checks = agent_route_result["impact_analysis"]["suggested_checks"]
     assert len(agent_route_impact_checks) >= 1
