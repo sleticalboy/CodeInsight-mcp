@@ -94,7 +94,7 @@ write_report() {
     echo "agent-first routing comparison. A competitor export can be added later"
     echo "without changing the CodeInsight success criteria."
     echo
-    echo "| Tool | Task | First File | Expected | Match | Routed Lines | Baseline Lines | Read Less | Reading Plan | Suggested Tool | Impact Risk |"
+    echo "| Tool | Task | First File | Expected | Match | Routed Lines | Baseline Lines | Read Less | Quality | Suggested Tool | Impact Risk |"
     echo "| --- | --- | --- | --- | --- | ---: | ---: | --- | --- | --- | --- |"
     jq -r '
       .tasks[]
@@ -107,15 +107,25 @@ write_report() {
           (.selected_lines | tostring),
           (.total_lines | tostring),
           .read_less_ratio,
-          (.reading_plan_steps | tostring),
+          (.route_quality_level + " / " + (.route_quality_score | tostring)),
           .first_suggested_tool,
           .risk_level
         ]
       | @tsv
-    ' "$summary" | while IFS=$'\t' read -r tool task first_file expected match selected total ratio reading_plan suggested_tool risk_level; do
-      printf '| %s | `%s` | `%s` | `%s` | %s | %s | %s | `%s` | %s | `%s` | `%s` |\n' \
-        "$tool" "$task" "$first_file" "$expected" "$match" "$selected" "$total" "$ratio" "$reading_plan" "$suggested_tool" "$risk_level"
+    ' "$summary" | while IFS=$'\t' read -r tool task first_file expected match selected total ratio quality suggested_tool risk_level; do
+      printf '| %s | `%s` | `%s` | `%s` | %s | %s | %s | `%s` | `%s` | `%s` | `%s` |\n' \
+        "$tool" "$task" "$first_file" "$expected" "$match" "$selected" "$total" "$ratio" "$quality" "$suggested_tool" "$risk_level"
     done
+    echo
+    echo "## Route Quality Evidence"
+    echo
+    jq -r '
+      .tasks[]
+      | "- `" + .task + "`: " + .route_quality_decision_summary
+        + " Confidence: " + (.route_quality_confidence_factors[0] // "-")
+        + " Verification: " + (.route_quality_verification_steps[0] // "-")
+        + " Warnings: " + (if (.route_quality_warnings | length) == 0 then "-" else (.route_quality_warnings | join(" | ")) end)
+    ' "$summary"
   } >"$report"
 }
 
@@ -180,6 +190,12 @@ main() {
           read_less_ratio,
           reading_plan_steps,
           first_suggested_tool,
+          route_quality_level,
+          route_quality_score,
+          route_quality_decision_summary,
+          route_quality_confidence_factors,
+          route_quality_verification_steps,
+          route_quality_warnings,
           risk_level,
           impacted_files,
           first_selection_rank,
@@ -192,6 +208,7 @@ main() {
   require_jq "$summary" '.metrics.task_count == 3 and .metrics.matched_expectations == 3' "competitive summary should preserve expectation metrics"
   require_jq "$summary" '.tasks[] | select(.task == "understand routing behavior" and .first_file == "src/router.ts" and .first_suggested_tool == "file_outline")' "routing comparison row should preserve first file and tool"
   require_jq "$summary" '.tasks[] | select(.task == "understand authentication behavior" and .first_file == "src/auth.ts" and (.risk_level | type == "string" and length > 0))' "authentication comparison row should preserve impact risk"
+  require_jq "$summary" '.tasks[] | select(.route_quality_level == "high" and .route_quality_score == 100 and (.route_quality_decision_summary | type == "string" and length > 0) and (.route_quality_verification_steps | length > 0))' "competitive summary should preserve route quality evidence"
 
   write_report "$summary" "$report"
   grep -Fq '| CodeInsight | `understand routing behavior` | `src/router.ts` | `src/router.ts` | yes |' "$report" ||
@@ -200,6 +217,10 @@ main() {
     fail "report should include authentication comparison row"
   grep -Fq '| CodeInsight | `understand application settings` | `src/config.ts` | `src/config.ts` | yes |' "$report" ||
     fail "report should include config comparison row"
+  grep -Fq '| `high / 100` | `file_outline` | `high` |' "$report" ||
+    fail "report should include route quality evidence"
+  grep -Fq 'No route-quality warnings were raised.' "$report" ||
+    fail "report should include route quality warning summary"
 
   echo "competitive routing smoke passed"
   echo "summary: $summary"

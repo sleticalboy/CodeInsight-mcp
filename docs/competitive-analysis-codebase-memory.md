@@ -101,10 +101,11 @@ scripts/competitive-routing-smoke.sh
 ```
 
 The smoke does not require codebase-memory-mcp to be installed. It verifies that
-CodeInsight can produce the local first-read metrics and JSON shape needed for a
-fair side-by-side comparison. If a competitor result export exists later, use
-the same task and repository fields and add it to the report instead of changing
-the success criteria.
+CodeInsight can produce the local first-read metrics, route-quality score,
+decision summary, confidence factors, and verification steps needed for a fair
+side-by-side comparison. If a competitor result export exists later, use the
+same task and repository fields and add it to the report instead of changing the
+success criteria.
 
 ## Strategic Implication
 
