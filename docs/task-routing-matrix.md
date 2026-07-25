@@ -136,7 +136,8 @@ Then run:
 
 ```bash
 scripts/task-routing-matrix.sh /path/to/repo \
-  --expect-file ./route-expectations.tsv
+  --expect-file ./route-expectations.tsv \
+  --min-route-quality-score 80
 ```
 
 JSON expectation files are also supported:
@@ -167,6 +168,31 @@ still applied to every task. `expected_seed_strategy` and
 task-path seed selection without passing an explicit seed.
 Expectation failures return a non-zero exit code after writing the summary, so
 the failed expected/actual pair is still available as an artifact.
+
+Use `--min-route-quality-score` when the first file is correct but the route
+still needs enough evidence to be trusted by an agent:
+
+```bash
+scripts/task-routing-matrix.sh /path/to/repo \
+  --expect-file ./route-expectations.tsv \
+  --min-route-quality-score 80
+```
+
+When a task falls below the threshold, the command returns a non-zero exit code
+after writing `summary.json`. The summary includes:
+
+- `quality_gate.min_route_quality_score`
+- `quality_gate.status`
+- `quality_gate.failure_count`
+- `quality_gate.failures[].task`
+- `quality_gate.failures[].first_file`
+- `quality_gate.failures[].route_quality_score`
+- `quality_gate.failures[].route_quality_decision_summary`
+
+This gate complements expected first-file checks. `--expect-file` proves the
+route starts in the intended owner file; `--min-route-quality-score` proves the
+route carried enough local evidence, confidence, and verification guidance to be
+safe for first-read automation.
 
 Checked-in examples:
 
@@ -253,6 +279,13 @@ Each task row reports:
 - impact risk and impacted file count
 
 The JSON summary is intended for CI artifacts and regression checks.
+When `--min-route-quality-score` is used, it also includes:
+
+- `quality_gate.min_route_quality_score`
+- `quality_gate.status`
+- `quality_gate.failure_count`
+- `quality_gate.failures[]`
+
 When `--expect` or `--expect-file` is used, it also includes:
 
 - `expectations.status`

@@ -183,12 +183,16 @@ main() {
   TEMP_DIR="$(mktemp -d)"
   trap cleanup EXIT INT TERM
 
-  local repo output_dir summary_json default_output_dir default_summary_json seed_output_dir seed_summary_json task_path_output_dir task_path_summary_json seeded_expect_output_dir seeded_expect_summary_json seeded_json_output_dir seeded_json_summary_json bad_output_dir bad_summary_json expectations_tsv seeded_expectations_tsv task_path_expectations_tsv seeded_expectations_json bad_expectations_json
+  local repo output_dir summary_json default_output_dir default_summary_json quality_output_dir quality_summary_json quality_fail_output_dir quality_fail_summary_json seed_output_dir seed_summary_json task_path_output_dir task_path_summary_json seeded_expect_output_dir seeded_expect_summary_json seeded_json_output_dir seeded_json_summary_json bad_output_dir bad_summary_json expectations_tsv seeded_expectations_tsv task_path_expectations_tsv seeded_expectations_json bad_expectations_json
   repo="$TEMP_DIR/repo"
   output_dir="$TEMP_DIR/matrix"
   summary_json="$output_dir/summary.json"
   default_output_dir="$TEMP_DIR/matrix-default"
   default_summary_json="$default_output_dir/summary.json"
+  quality_output_dir="$TEMP_DIR/matrix-quality"
+  quality_summary_json="$quality_output_dir/summary.json"
+  quality_fail_output_dir="$TEMP_DIR/matrix-quality-fail"
+  quality_fail_summary_json="$quality_fail_output_dir/summary.json"
   seed_output_dir="$TEMP_DIR/matrix-seed"
   seed_summary_json="$seed_output_dir/summary.json"
   task_path_output_dir="$TEMP_DIR/matrix-task-path"
@@ -361,6 +365,27 @@ improve AI agent first-read routing quality evidence	src/agent_workflow.ts'
   require_jq "$default_summary_json" '.tasks[] | select(.task == "understand request lifecycle before after request handling" and .first_file == "src/application.ts")' "default matrix should include request lifecycle task"
   require_jq "$default_summary_json" '.tasks[] | select(.task == "understand middleware behavior" and .first_file == "src/middleware.ts")' "default matrix should include middleware task"
   require_jq "$default_summary_json" '.tasks[] | select(.task == "improve AI agent first-read routing quality evidence" and .first_file == "src/agent_workflow.ts")' "default matrix should include agent first-read task"
+
+  CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/task-routing-matrix.sh" "$repo" \
+    --output-dir "$quality_output_dir" \
+    --token-budget 1600 \
+    --expect-file "$expectations_tsv" \
+    --min-route-quality-score 80
+  require_jq "$quality_summary_json" '.status == "pass" and .quality_gate.status == "pass" and .quality_gate.min_route_quality_score == 80 and .quality_gate.failure_count == 0' "quality gate matrix should pass with a reachable minimum score"
+  grep -Fq -- '- Minimum route quality score: `80`' "$quality_output_dir/task-routing-matrix.md" ||
+    fail "quality gate markdown should include the minimum score"
+  grep -Fq -- '- Status: `pass`' "$quality_output_dir/task-routing-matrix.md" ||
+    fail "quality gate markdown should include pass status"
+
+  if CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/task-routing-matrix.sh" "$repo" \
+    --output-dir "$quality_fail_output_dir" \
+    --token-budget 1600 \
+    --expect-file "$expectations_tsv" \
+    --min-route-quality-score 101 >/dev/null 2>&1; then
+    fail "matrix should fail when route quality score is below the configured gate"
+  fi
+  require_jq "$quality_fail_summary_json" '.quality_gate.status == "fail" and .quality_gate.min_route_quality_score == 101 and .quality_gate.failure_count == 24' "quality gate failure summary should report all below-threshold routes"
+  require_jq "$quality_fail_summary_json" '.quality_gate.failures[] | select(.task == "understand routing behavior" and .route_quality_score == 100 and .first_file == "src/router.ts")' "quality gate failure should preserve task route quality evidence"
 
   CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/task-routing-matrix.sh" "$repo" \
     --output-dir "$seed_output_dir" \

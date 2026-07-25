@@ -10,6 +10,7 @@ SUMMARY_JSON="${CODEINSIGHT_TASK_MATRIX_SUMMARY_JSON:-}"
 CODEINSIGHT_BIN="${CODEINSIGHT_BIN:-}"
 LOCAL_EVIDENCE_SCRIPT="${CODEINSIGHT_LOCAL_REPO_EVIDENCE_SCRIPT:-$ROOT_DIR/scripts/local-repo-evidence.sh}"
 FORCE_INDEX="${CODEINSIGHT_TASK_MATRIX_FORCE_INDEX:-1}"
+MIN_ROUTE_QUALITY_SCORE="${CODEINSIGHT_TASK_MATRIX_MIN_ROUTE_QUALITY_SCORE:-}"
 TASKS=()
 TASK_SEED_FILES=()
 TASK_SEED_SYMBOLS=()
@@ -39,6 +40,8 @@ Options:
                         Supports JSON array objects or line-based TASK=FILE / TSV.
                         TSV columns 3-6 are optional seed_file, seed_symbol,
                         expected_seed_strategy, and expected_first_seed_value.
+  --min-route-quality-score N
+                        Fail when any task reports route_quality_score below N.
   --bin PATH            Use a specific codeinsight binary.
   --no-force-index      Reuse the existing index for the first task too.
   -h, --help            Show this help text.
@@ -50,6 +53,7 @@ Environment:
   CODEINSIGHT_TASK_MATRIX_OUTPUT
   CODEINSIGHT_TASK_MATRIX_SUMMARY_JSON
   CODEINSIGHT_TASK_MATRIX_FORCE_INDEX
+  CODEINSIGHT_TASK_MATRIX_MIN_ROUTE_QUALITY_SCORE
   CODEINSIGHT_LOCAL_REPO_EVIDENCE_SCRIPT
   CODEINSIGHT_BIN
 EOF
@@ -119,6 +123,11 @@ parse_args() {
       --expect-file)
         [ "$#" -ge 2 ] || fail "--expect-file requires a path"
         EXPECTATION_FILES+=("$2")
+        shift 2
+        ;;
+      --min-route-quality-score)
+        [ "$#" -ge 2 ] || fail "--min-route-quality-score requires a number"
+        MIN_ROUTE_QUALITY_SCORE="$2"
         shift 2
         ;;
       --bin)
@@ -600,6 +609,49 @@ validate_expectations() {
   fi
 }
 
+validate_quality_gate() {
+  if [ -z "$MIN_ROUTE_QUALITY_SCORE" ]; then
+    return
+  fi
+
+  local failures_json tmp failures
+  failures_json="$OUTPUT_DIR/quality-gate-failures.json"
+  jq --argjson min_score "$MIN_ROUTE_QUALITY_SCORE" \
+    '[.tasks[]
+      | select(.route_quality_score < $min_score)
+      | {
+          task,
+          first_file,
+          route_quality_level,
+          route_quality_score,
+          route_quality_decision_summary
+        }]' \
+    "$SUMMARY_JSON" >"$failures_json"
+
+  tmp="$SUMMARY_JSON.tmp"
+  jq \
+    --argjson min_score "$MIN_ROUTE_QUALITY_SCORE" \
+    --slurpfile failures "$failures_json" \
+    '. + {
+      quality_gate: {
+        min_route_quality_score: $min_score,
+        status: (if ($failures[0] | length) == 0 then "pass" else "fail" end),
+        failure_count: ($failures[0] | length),
+        failures: $failures[0]
+      }
+    }' "$SUMMARY_JSON" >"$tmp"
+  mv "$tmp" "$SUMMARY_JSON"
+
+  if jq -e '.quality_gate.status == "fail"' "$SUMMARY_JSON" >/dev/null; then
+    failures="$(jq -r --argjson min_score "$MIN_ROUTE_QUALITY_SCORE" '.quality_gate.failures[] |
+      "- " + .task + ": score " + (.route_quality_score | tostring)
+      + " below minimum " + ($min_score | tostring)
+      + " (first_file `" + .first_file + "`)"' "$SUMMARY_JSON")"
+    printf "task routing matrix quality gate failures:\n%s\n" "$failures" >&2
+    fail "one or more routes fell below the minimum route quality score"
+  fi
+}
+
 write_markdown() {
   {
     echo "# CodeInsight Task Routing Matrix"
@@ -607,6 +659,9 @@ write_markdown() {
     echo "- Repository: \`$REPO_ROOT\`"
     echo "- Token budget: \`$TOKEN_BUDGET\`"
     echo "- Tasks: \`$(json_value "$SUMMARY_JSON" '.task_count')\`"
+    if [ -n "$MIN_ROUTE_QUALITY_SCORE" ]; then
+      echo "- Minimum route quality score: \`$MIN_ROUTE_QUALITY_SCORE\`"
+    fi
     if [ "${#SEED_FILES[@]}" -gt 0 ] || [ "${#SEED_SYMBOLS[@]}" -gt 0 ]; then
       echo "- Explicit seed files: \`$(json_value "$SUMMARY_JSON" '.explicit_seed_files | join(", ")')\`"
       echo "- Explicit seed symbols: \`$(json_value "$SUMMARY_JSON" '.explicit_seed_symbols | join(", ")')\`"
@@ -642,6 +697,14 @@ write_markdown() {
         "| \(.task) | `\(.expected_first_file)` | `\(.actual_first_file)` | `\((.expected_seed_strategy // "-"))` | `\(.actual_seed_strategy)` | `\((.expected_first_seed_value // "-"))` | `\(.actual_first_seed_value)` | `\(.status)` |"' \
         "$SUMMARY_JSON"
     fi
+    if jq -e '.quality_gate? | type == "object"' "$SUMMARY_JSON" >/dev/null; then
+      echo
+      echo "## Quality Gate"
+      echo
+      echo "- Minimum route quality score: \`$(json_value "$SUMMARY_JSON" '.quality_gate.min_route_quality_score')\`"
+      echo "- Status: \`$(json_value "$SUMMARY_JSON" '.quality_gate.status')\`"
+      echo "- Failures: \`$(json_value "$SUMMARY_JSON" '.quality_gate.failure_count')\`"
+    fi
     echo
     echo "## Artifacts"
     echo
@@ -671,6 +734,13 @@ main() {
   esac
   if [ "$TOKEN_BUDGET" -le 0 ]; then
     fail "--token-budget must be greater than zero"
+  fi
+  if [ -n "$MIN_ROUTE_QUALITY_SCORE" ]; then
+    case "$MIN_ROUTE_QUALITY_SCORE" in
+      ''|*[!0-9]*)
+        fail "--min-route-quality-score must be a non-negative integer"
+        ;;
+    esac
   fi
 
   load_expectation_files
@@ -730,6 +800,7 @@ main() {
 
   write_summary "$rows_file"
   validate_expectations
+  validate_quality_gate
   write_markdown
 
   echo "task routing matrix written to $OUTPUT_FILE"
