@@ -133,3 +133,20 @@ scripts/external-beta-fix-queue.sh \
 
 The queue preserves the same priority order and points each item at its
 `beta-summary.json`, issue body, and maintainer triage note.
+
+Package the cohort summary and fix queue into one handoff folder with:
+
+```bash
+scripts/external-beta-cohort-report.sh \
+  /tmp/codeinsight-external-beta-trial-1 \
+  /tmp/codeinsight-external-beta-trial-2 \
+  /tmp/codeinsight-external-beta-trial-3 \
+  --output-dir /tmp/codeinsight-external-beta-handoff \
+  --min-route-quality-score 70 \
+  --check
+```
+
+The handoff folder contains `external-beta-cohort.md`,
+`external-beta-cohort-summary.json`, `external-beta-fix-queue.md`,
+`external-beta-fix-queue.json`, and a short `README.md` with the cohort status,
+route-quality gate, next action, and fix queue size.
