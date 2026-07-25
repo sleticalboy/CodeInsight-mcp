@@ -104,7 +104,7 @@ Choose the narrowest check for the change:
 | codebase-memory bridge report changed | `scripts/codebase-memory-bridge-report-smoke.sh` | Consumes `backend_evidence` plus raw `agent-route` JSON and emits agreement/conflict summary artifacts. |
 | codebase-memory bridge cohort changed | `scripts/codebase-memory-bridge-cohort-summary-smoke.sh` | Aggregates multiple bridge report summaries into first-file match rates, candidate coverage, and conflict review gates. |
 | codebase-memory bridge cohort report changed | `scripts/codebase-memory-bridge-cohort-report-smoke.sh` | Batch-generates per-task bridge reports plus the aggregate cohort from a TSV manifest. |
-| External Beta handoff changed | `scripts/external-beta-cohort-report-smoke.sh` | Packages existing External Beta trial summaries into a cohort summary, fix queue, handoff README, and machine-readable manifest. |
+| External Beta handoff changed | `scripts/external-beta-cohort-report-smoke.sh` | Packages existing External Beta trial summaries into a cohort summary, fix queue, handoff README, machine-readable manifest, and optional printed snippet. |
 | Installed-binary adoption path changed | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh` | CLI and MCP first-read routes through the installed binary, including read-less metrics, selection rank, and continuation evidence. |
 | One-call `agent_route` JSON contract changed | `scripts/agent-route-smoke.sh` | Route order, execution plan, context pack, and impact-analysis preview. |
 | Context ranking or continuation changed | `scripts/context-pack-quality-smoke.sh` | Deterministic context-pack quality regressions. |

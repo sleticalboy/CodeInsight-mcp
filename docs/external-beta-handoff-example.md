@@ -28,7 +28,8 @@ scripts/external-beta-cohort-report.sh \
   /tmp/codeinsight-external-beta-trial-3 \
   --output-dir /tmp/codeinsight-external-beta-handoff \
   --min-route-quality-score 70 \
-  --check
+  --check \
+  --print-snippet
 ```
 
 ## Output Folder
@@ -54,6 +55,23 @@ scripts/external-beta-cohort-report.sh \
 - Next action: `fix_workflow_friction`
 - Fix queue status: `actionable`
 - Fix queue items: `2`
+```
+
+## Printed Snippet Snapshot
+
+With `--print-snippet`, the command prints a compact Markdown block for an
+issue, discussion, or release-readiness note:
+
+```text
+# External Beta Cohort Handoff
+
+- Status: `pass`
+- Cohort status: `complete`
+- Reports: `3/3`
+- Route-quality gate: `pass >= 70`
+- Next action: `fix_workflow_friction`
+- Fix queue: `actionable` (`2` items)
+- Manifest: `/tmp/codeinsight-external-beta-handoff/manifest.json`
 ```
 
 ## Manifest Snapshot

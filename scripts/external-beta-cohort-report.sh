@@ -7,6 +7,7 @@ MIN_REPORTS=3
 MIN_ROUTE_QUALITY_SCORE="${CODEINSIGHT_EXTERNAL_BETA_COHORT_MIN_ROUTE_QUALITY_SCORE:-70}"
 MAX_ITEMS=""
 CHECK=false
+PRINT_SNIPPET=false
 
 fail() {
   echo "external beta cohort report failed: $*" >&2
@@ -33,6 +34,7 @@ Options:
   --min-route-quality-score N   Route-quality gate. Default: 70.
   --max-items N                 Maximum fix queue items to emit.
   --check                       Fail unless the cohort is complete and the fix queue is actionable when fixes exist.
+  --print-snippet               Print a copyable Markdown handoff summary after writing files.
   -h, --help                    Show this help text.
 
 Output:
@@ -70,6 +72,10 @@ parse_args() {
         ;;
       --check)
         CHECK=true
+        shift
+        ;;
+      --print-snippet)
+        PRINT_SNIPPET=true
         shift
         ;;
       -h|--help)
@@ -211,6 +217,31 @@ write_manifest() {
     }' >"$manifest_json"
 }
 
+json_value() {
+  local file="$1"
+  local query="$2"
+  jq -r "$query" "$file"
+}
+
+print_snippet() {
+  local manifest_json="$1"
+
+  cat <<EOF
+# External Beta Cohort Handoff
+
+- Status: \`$(json_value "$manifest_json" '.status')\`
+- Cohort status: \`$(json_value "$manifest_json" '.cohort.status')\`
+- Reports: \`$(json_value "$manifest_json" '.cohort.report_count')/$(json_value "$manifest_json" '.options.min_reports')\`
+- Route-quality gate: \`$(json_value "$manifest_json" '.cohort.quality_gate') >= $(json_value "$manifest_json" '.options.min_route_quality_score')\`
+- Next action: \`$(json_value "$manifest_json" '.cohort.next_action')\`
+- Fix queue: \`$(json_value "$manifest_json" '.fix_queue.status')\` (\`$(json_value "$manifest_json" '.fix_queue.item_count')\` items)
+- Handoff README: \`$(json_value "$manifest_json" '.artifacts.readme')\`
+- Cohort summary: \`$(json_value "$manifest_json" '.artifacts.cohort_json')\`
+- Fix queue JSON: \`$(json_value "$manifest_json" '.artifacts.fix_queue_json')\`
+- Manifest: \`$(json_value "$manifest_json" '.artifacts.manifest')\`
+EOF
+}
+
 main() {
   local -a INPUTS=()
   parse_args "$@"
@@ -256,6 +287,11 @@ main() {
   echo "fix_queue: $queue_md"
   echo "fix_queue_json: $queue_json"
   echo "manifest: $manifest_json"
+
+  if [ "$PRINT_SNIPPET" = true ]; then
+    echo
+    print_snippet "$manifest_json"
+  fi
 }
 
 main "$@"

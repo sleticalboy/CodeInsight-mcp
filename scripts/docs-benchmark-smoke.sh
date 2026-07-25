@@ -371,7 +371,7 @@ main() {
     'clients can render a pre-edit' \
     "README MCP impact checklist evidence"
   require_pattern README.md \
-    'of 81,533 source lines, avoiding 81,000 source lines before broad reading' \
+    'of 81,609 source lines, avoiding 81,076 source lines before broad reading' \
     "README two-minute demo read-less metric"
   "$ROOT_DIR/scripts/readme-adoption-summary-smoke.sh" >/dev/null
   require_pattern README.md \
@@ -410,6 +410,9 @@ main() {
   require_pattern README.md \
     'scripts/external-beta-cohort-report\.sh' \
     "README external beta handoff command"
+  require_pattern README.md \
+    '\-\-print-snippet' \
+    "README external beta handoff print snippet option"
   require_pattern README.md \
     'codeinsight-external-beta-handoff' \
     "README external beta handoff output directory"
@@ -666,6 +669,9 @@ main() {
     'scripts/external-beta-cohort-report\.sh' \
     "External Beta handoff command"
   require_pattern docs/external-beta-trial.md \
+    '\-\-print-snippet' \
+    "External Beta handoff print snippet option"
+  require_pattern docs/external-beta-trial.md \
     'external-beta-fix-queue\.json' \
     "External Beta handoff fix queue artifact"
   require_pattern docs/external-beta-trial.md \
@@ -681,8 +687,14 @@ main() {
     'scripts/external-beta-cohort-report\.sh' \
     "External Beta handoff example command"
   require_pattern docs/external-beta-handoff-example.md \
+    '\-\-print-snippet' \
+    "External Beta handoff example print snippet option"
+  require_pattern docs/external-beta-handoff-example.md \
     'Next action: `fix_workflow_friction`' \
     "External Beta handoff example next action"
+  require_pattern docs/external-beta-handoff-example.md \
+    'Fix queue: `actionable` \(`2` items\)' \
+    "External Beta handoff example printed fix queue"
   require_pattern docs/external-beta-handoff-example.md \
     'external-beta-fix-queue\.json' \
     "External Beta handoff example fix queue artifact"
@@ -1906,16 +1918,16 @@ main() {
     'first_next_action' \
     "reading plan next action demo metric"
   require_pattern docs/demo-script.md \
-    'source_lines_avoided: 81000' \
+    'source_lines_avoided: 81076' \
     "demo script source lines avoided metric"
   require_pattern docs/demo-script.md \
-    'read_less_ratio: 153\.0x' \
+    'read_less_ratio: 153\.1x' \
     "demo script read-less metric"
   require_pattern docs/demo-script.md \
     'routing_decision_quality: high \(100/100, 22 evidence signals\)' \
     "demo script route quality metric"
   require_pattern docs/demo-script.md \
-    'Read less: avoided 81000 source lines, 153\.0x less text before follow-up tools\.' \
+    'Read less: avoided 81076 source lines, 153\.1x less text before follow-up tools\.' \
     "demo script evidence summary read-less line"
   require_pattern docs/demo-script.md \
     'impact_analysis' \

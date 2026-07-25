@@ -143,7 +143,8 @@ scripts/external-beta-cohort-report.sh \
   /tmp/codeinsight-external-beta-trial-3 \
   --output-dir /tmp/codeinsight-external-beta-handoff \
   --min-route-quality-score 70 \
-  --check
+  --check \
+  --print-snippet
 ```
 
 The handoff folder contains `external-beta-cohort.md`,
@@ -151,6 +152,7 @@ The handoff folder contains `external-beta-cohort.md`,
 `external-beta-fix-queue.json`, `manifest.json`, and a short `README.md` with
 the cohort status, route-quality gate, next action, and fix queue size. The
 manifest records the handoff stage, inputs, options, output files, cohort
-status, and fix queue status for automation. See the
+status, and fix queue status for automation. `--print-snippet` prints a compact
+Markdown summary for a GitHub issue or discussion. See the
 [External Beta handoff example](external-beta-handoff-example.md) for the
 expected artifact shape.

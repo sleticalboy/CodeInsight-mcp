@@ -85,6 +85,9 @@ main() {
 
   grep -Fq "external beta cohort report written to $TEMP_DIR/handoff/README.md" "$TEMP_DIR/output.log" ||
     fail "missing handoff README output"
+  if grep -Fq '# External Beta Cohort Handoff' "$TEMP_DIR/output.log"; then
+    fail "default run should not print handoff snippet"
+  fi
   [ -f "$TEMP_DIR/handoff/external-beta-cohort.md" ] || fail "cohort markdown missing"
   [ -f "$TEMP_DIR/handoff/external-beta-cohort-summary.json" ] || fail "cohort JSON missing"
   [ -f "$TEMP_DIR/handoff/external-beta-fix-queue.md" ] || fail "fix queue markdown missing"
@@ -138,6 +141,31 @@ main() {
       and .artifacts.manifest == "'"$TEMP_DIR"'/handoff/manifest.json"' \
     "$TEMP_DIR/handoff/manifest.json" >/dev/null ||
     fail "handoff manifest JSON contract mismatch"
+
+  "$ROOT_DIR/scripts/external-beta-cohort-report.sh" \
+    "$TEMP_DIR/hit" \
+    "$TEMP_DIR/friction/beta-summary.json" \
+    "$TEMP_DIR/miss" \
+    --output-dir "$TEMP_DIR/handoff-with-snippet" \
+    --min-route-quality-score 70 \
+    --max-items 2 \
+    --check \
+    --print-snippet >"$TEMP_DIR/snippet.log"
+
+  grep -Fq '# External Beta Cohort Handoff' "$TEMP_DIR/snippet.log" ||
+    fail "missing printed handoff snippet title"
+  grep -Fq -- '- Status: `pass`' "$TEMP_DIR/snippet.log" ||
+    fail "missing printed handoff status"
+  grep -Fq -- '- Reports: `3/3`' "$TEMP_DIR/snippet.log" ||
+    fail "missing printed handoff report count"
+  grep -Fq -- '- Route-quality gate: `pass >= 70`' "$TEMP_DIR/snippet.log" ||
+    fail "missing printed route-quality gate"
+  grep -Fq -- '- Next action: `fix_workflow_friction`' "$TEMP_DIR/snippet.log" ||
+    fail "missing printed next action"
+  grep -Fq -- '- Fix queue: `actionable` (`2` items)' "$TEMP_DIR/snippet.log" ||
+    fail "missing printed fix queue summary"
+  grep -Fq -- "- Manifest: \`$TEMP_DIR/handoff-with-snippet/manifest.json\`" "$TEMP_DIR/snippet.log" ||
+    fail "missing printed manifest path"
 
   echo "external beta cohort report smoke passed"
 }

@@ -131,7 +131,7 @@ hands the agent to precise local tools when the selected context is not enough.
    | External Beta trial | `scripts/external-beta-trial.sh /path/to/repo --output-dir /tmp/codeinsight-external-beta-trial` | You want a non-maintainer trial pack with an issue body, redaction checklist, maintainer triage note, and the underlying adoption evidence artifacts. |
    | External Beta cohort | `scripts/external-beta-cohort-summary.sh /tmp/beta-1 /tmp/beta-2 /tmp/beta-3 --min-route-quality-score 70 --check` | You want to aggregate at least three External Beta reports, gate low-confidence routes, count outcomes, and pick the next fix priority. |
    | External Beta fix queue | `scripts/external-beta-fix-queue.sh /tmp/codeinsight-external-beta-cohort.json --check` | You want to turn cohort outcomes into maintainer work items ordered by feedback priority. |
-   | External Beta handoff | `scripts/external-beta-cohort-report.sh /tmp/beta-1 /tmp/beta-2 /tmp/beta-3 --output-dir /tmp/codeinsight-external-beta-handoff --check` | You want one folder with the cohort summary, route-quality gate, fix queue, README, and machine-readable manifest for public Beta handoff. |
+   | External Beta handoff | `scripts/external-beta-cohort-report.sh /tmp/beta-1 /tmp/beta-2 /tmp/beta-3 --output-dir /tmp/codeinsight-external-beta-handoff --check --print-snippet` | You want one folder with the cohort summary, route-quality gate, fix queue, README, machine-readable manifest, and copyable public Beta handoff snippet. |
    | Adoption comparison | `scripts/adoption-comparison.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-comparison` | You want a shareable blind-read vs routed-first-read comparison showing source lines avoided, read-less ratio, seed strategy, optional explicit `--file` / `--symbol` seeds, first reading focus/question, selection rank, and continuation next action. |
    | Backend evidence bridge | `scripts/codebase-memory-backend-evidence-smoke.sh` | You want proof that exported codebase-memory `search_graph`, `search_code`, and `get_architecture` JSON can become `agent_route --backend-evidence` and appear in route quality. |
    | Backend agreement report | `scripts/codebase-memory-bridge-report.sh --backend-evidence /tmp/codeinsight-backend-evidence.json --agent-route-json /tmp/codeinsight-agent-route.json --output-dir /tmp/codeinsight-codebase-memory-bridge` | You want a shareable backend/local agreement summary after running `agent_route` with advisory codebase-memory evidence. |
@@ -336,7 +336,7 @@ accuracy, or proof that unselected code is irrelevant.
 
 Current benchmark snapshot:
 
-- The two-minute demo for this repository shows the agent route selecting 533 of 81,533 source lines, avoiding 81,000 source lines before broad reading for a 99.3% reduction and 153.0x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
+- The two-minute demo for this repository shows the agent route selecting 533 of 81,609 source lines, avoiding 81,076 source lines before broad reading for a 99.3% reduction and 153.1x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
 - Smoke repositories route `context_pack` first for 4/4 repositories and
   select 709 of 75,753 source lines, a 99.1% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and
@@ -473,13 +473,16 @@ scripts/external-beta-cohort-report.sh \
   /tmp/codeinsight-external-beta-trial-3 \
   --output-dir /tmp/codeinsight-external-beta-handoff \
   --min-route-quality-score 70 \
-  --check
+  --check \
+  --print-snippet
 ```
 
 The handoff folder contains `external-beta-cohort.md`,
 `external-beta-cohort-summary.json`, `external-beta-fix-queue.md`,
 `external-beta-fix-queue.json`, `manifest.json`, and a short `README.md` with
-the cohort status and next action.
+the cohort status and next action. `--print-snippet` prints the same public
+handoff status, route-quality gate, next action, fix queue, and artifact paths
+for a GitHub issue or discussion.
 
 Use `scripts/adoption-report.sh` when you need one uploadable archive. It writes
 `codeinsight-adoption-report.tar.gz` with `adoption-evidence.md`,
