@@ -89,7 +89,16 @@ cat >"$output" <<'MARKDOWN'
 # CodeInsight Local Repository Evidence
 MARKDOWN
 cat >"$json" <<'JSON'
-{"route":[{"tool":"index_project"},{"tool":"project_overview"},{"tool":"context_pack"},{"tool":"impact_analysis"}]}
+{
+  "route":[{"tool":"index_project"},{"tool":"project_overview"},{"tool":"context_pack"},{"tool":"impact_analysis"}],
+  "context_pack": {
+    "files": [
+      {"file": "src/router.ts"},
+      {"file": "src/auth.ts"},
+      {"file": "src/main.ts"}
+    ]
+  }
+}
 JSON
 cat >"$summary_json" <<JSON
 {
@@ -136,6 +145,8 @@ EOF
     --task "understand login routing" \
     --file "src/main.ts" \
     --symbol "main" \
+    --expected-file "src/router.ts" \
+    --expected-file "src/auth.ts" \
     --token-budget 6000 \
     --output-dir "$TEMP_DIR/comparison" \
     >"$TEMP_DIR/output.log"
@@ -165,6 +176,14 @@ EOF
     fail "missing continuation next action"
   grep -Fq -- '- First omitted candidate: none' "$TEMP_DIR/comparison/adoption-comparison.md" ||
     fail "missing omitted candidate status"
+  grep -Fq -- '- Expected selected files: `src/auth.ts, src/router.ts`' "$TEMP_DIR/comparison/adoption-comparison.md" ||
+    fail "missing expected selected files"
+  grep -Fq -- '- Coverage: `2/2`' "$TEMP_DIR/comparison/adoption-comparison.md" ||
+    fail "missing task coverage"
+  grep -Fq -- '- Coverage status: `pass`' "$TEMP_DIR/comparison/adoption-comparison.md" ||
+    fail "missing task coverage status"
+  grep -Fq -- '- Missing expected files: none' "$TEMP_DIR/comparison/adoption-comparison.md" ||
+    fail "missing expected file pass status"
 
   jq -e \
     '.status == "pass"
@@ -181,9 +200,29 @@ EOF
       and .metrics.continuation_status == "complete"
       and .metrics.continuation_next_action == "read_selected_context"
       and .metrics.first_omitted_file == ""
+      and .task_coverage.status == "pass"
+      and .task_coverage.coverage_label == "2/2"
+      and .task_coverage.expected_files == ["src/auth.ts", "src/router.ts"]
+      and .task_coverage.missing_files == []
       and .artifacts.raw_agent_route_json == "'"$TEMP_DIR"'/comparison/agent-route.json"' \
     "$TEMP_DIR/comparison/summary.json" >/dev/null ||
     fail "summary JSON does not match expected contract"
+
+  if CODEINSIGHT_LOCAL_REPO_EVIDENCE_SCRIPT="$TEMP_DIR/local-repo-evidence" \
+    "$ROOT_DIR/scripts/adoption-comparison.sh" \
+    "$TEMP_DIR/repo" \
+    --task "understand login routing" \
+    --file "src/main.ts" \
+    --symbol "main" \
+    --expected-file "src/missing.ts" \
+    --token-budget 6000 \
+    --output-dir "$TEMP_DIR/comparison-missing" \
+    >"$TEMP_DIR/missing-output.log" \
+    2>"$TEMP_DIR/missing-error.log"; then
+    fail "missing expected file should fail the comparison"
+  fi
+  grep -Fq "routed first-read context is missing expected files: src/missing.ts" "$TEMP_DIR/missing-error.log" ||
+    fail "missing expected file failure should name the missing file"
 
   test -f "$TEMP_DIR/comparison/local-repo-evidence.out" ||
     fail "missing local evidence stdout log"

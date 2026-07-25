@@ -110,12 +110,15 @@ When you need a short comparison for adoption notes:
 scripts/adoption-comparison.sh /path/to/repo \
   --file src/main.ts \
   --symbol main \
+  --expected-file src/router.ts \
   --output-dir /tmp/codeinsight-adoption-comparison
 ```
 
 Omit `--file` and `--symbol` when you want to evaluate broad automatic routing.
 Keep them when you want the adoption comparison to reflect a known feature area
-or a large-repository retry path.
+or a large-repository retry path. Add repeated `--expected-file` values when
+the task has known critical files; the comparison then fails if the routed
+first-read context does not include them.
 
 Pass criteria:
 
@@ -142,7 +145,8 @@ Pass criteria:
   report with source-line savings, read-less ratio, first reading focus/question,
   first selection rank/reason, and continuation next action. Its `summary.json`
   includes source lines avoided, read-less ratio, seed strategy, first selected
-  file, first reading focus/question, and artifact paths.
+  file, first reading focus/question, optional `task_coverage`, and artifact
+  paths.
 - Use the [Adoption cases](adoption-cases.md) summary plus the
   [Django adoption case](adoption-case-django.md),
   [Express adoption case](adoption-case-express.md),
@@ -458,3 +462,5 @@ CodeInsight is successfully adopted when:
 - `impact_analysis` is used before edits.
 - Local smoke or benchmark evidence can be reproduced on at least one real
   repository.
+- For known real tasks, `adoption-comparison.sh --expected-file` proves the
+  routed first-read includes the task-critical files before the agent edits.

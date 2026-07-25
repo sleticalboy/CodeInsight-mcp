@@ -132,7 +132,7 @@ hands the agent to precise local tools when the selected context is not enough.
    | External Beta cohort | `scripts/external-beta-cohort-summary.sh /tmp/beta-1 /tmp/beta-2 /tmp/beta-3 --min-route-quality-score 70 --check` | You want to aggregate at least three External Beta reports, gate low-confidence routes, count outcomes, and pick the next fix priority. |
    | External Beta fix queue | `scripts/external-beta-fix-queue.sh /tmp/codeinsight-external-beta-cohort.json --check` | You want to turn cohort outcomes into maintainer work items ordered by feedback priority. |
    | External Beta handoff | `scripts/external-beta-cohort-report.sh /tmp/beta-1 /tmp/beta-2 /tmp/beta-3 --output-dir /tmp/codeinsight-external-beta-handoff --check --print-snippet` | You want one folder with the cohort summary, route-quality gate, fix queue, README, machine-readable manifest, a ready-to-file issue body, and copyable public Beta handoff snippet. |
-   | Adoption comparison | `scripts/adoption-comparison.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-comparison` | You want a shareable blind-read vs routed-first-read comparison showing source lines avoided, read-less ratio, seed strategy, optional explicit `--file` / `--symbol` seeds, first reading focus/question, selection rank, and continuation next action. |
+   | Adoption comparison | `scripts/adoption-comparison.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-comparison` | You want a shareable blind-read vs routed-first-read comparison showing source lines avoided, read-less ratio, seed strategy, optional explicit `--file` / `--symbol` seeds, optional task-critical `--expected-file` coverage, first reading focus/question, selection rank, and continuation next action. |
    | Backend evidence bridge | `scripts/codebase-memory-backend-evidence-smoke.sh` | You want proof that exported codebase-memory `search_graph`, `search_code`, and `get_architecture` JSON can become `agent_route --backend-evidence` and appear in route quality. |
    | Backend agreement report | `scripts/codebase-memory-bridge-report.sh --backend-evidence /tmp/codeinsight-backend-evidence.json --agent-route-json /tmp/codeinsight-agent-route.json --output-dir /tmp/codeinsight-codebase-memory-bridge` | You want a shareable backend/local agreement summary, including the agent-facing route action, after running `agent_route` with advisory codebase-memory evidence. |
    | Backend cohort summary | `scripts/codebase-memory-bridge-cohort-summary.sh /tmp/bridge-task-1 /tmp/bridge-task-2 --check` | You want aggregate first-file agreement and conflict evidence across multiple backend/local bridge reports. |
@@ -288,12 +288,15 @@ Generate a blind-read vs routed-first-read comparison for adoption notes:
 
 ```bash
 scripts/adoption-comparison.sh /path/to/repo \
+  --expected-file src/router.ts \
   --output-dir /tmp/codeinsight-adoption-comparison
 ```
 
 It writes `adoption-comparison.md`, `summary.json`, the local evidence summary,
 and the raw `agent_route` JSON. Use it when you need to show how many source
-lines CodeInsight avoided before the agent starts opening files.
+lines CodeInsight avoided before the agent starts opening files. Add repeated
+`--expected-file` values for task-critical files; the report then records
+coverage in `task_coverage` and fails when routed first-read context misses one.
 
 The demo executes the same product path an MCP client should follow:
 `agent_route`, which runs `index_project -> project_overview -> context_pack ->
@@ -342,7 +345,7 @@ accuracy, or proof that unselected code is irrelevant.
 
 Current benchmark snapshot:
 
-- The two-minute demo for this repository shows the agent route selecting 532 of 81,865 source lines, avoiding 81,333 source lines before broad reading for a 99.4% reduction and 153.9x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
+- The two-minute demo for this repository shows the agent route selecting 532 of 82,033 source lines, avoiding 81,501 source lines before broad reading for a 99.4% reduction and 154.2x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
 - Smoke repositories route `context_pack` first for 4/4 repositories and
   select 709 of 75,753 source lines, a 99.1% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and
@@ -368,6 +371,9 @@ Current benchmark snapshot:
   aggregate first-read line reduction in the latest local verification.
 - Per-repository adoption metrics, commits, and refresh commands live in
   [Adoption cases](docs/adoption-cases.md).
+- `adoption-comparison.sh --expected-file` turns a real task's known critical
+  files into a first-read coverage gate, so adoption evidence can show whether
+  the route selected the files an agent should inspect before editing.
 - Generated reports include a `Key Results` section with routing,
   compression, token-budget, indexing, guardrail, and truncation evidence.
 - Per-repository details include a `Context reading plan` table with candidate

@@ -13,6 +13,7 @@ FORCE_INDEX="${CODEINSIGHT_ADOPTION_COMPARE_FORCE_INDEX:-1}"
 LOCAL_EVIDENCE_SCRIPT="${CODEINSIGHT_LOCAL_REPO_EVIDENCE_SCRIPT:-$ROOT_DIR/scripts/local-repo-evidence.sh}"
 SEED_FILES=()
 SEED_SYMBOLS=()
+EXPECTED_FILES=()
 
 usage() {
   cat <<'EOF'
@@ -26,6 +27,8 @@ Options:
   --task TEXT           Task for agent_route.
   --file PATH           Add an explicit seed file for the route. Can be repeated.
   --symbol NAME         Add an explicit seed symbol for the route. Can be repeated.
+  --expected-file PATH  Assert that the routed first-read context includes this
+                        task-critical file. Can be repeated.
   --token-budget N      Token budget for context routing. Default: 6000.
   --output-dir PATH     Output directory. Default: /tmp/codeinsight-adoption-comparison.
   --output PATH         Markdown comparison path.
@@ -81,6 +84,12 @@ parse_args() {
         [ "$#" -ge 2 ] || fail "--symbol requires a name"
         [ -n "$2" ] || fail "--symbol must not be empty"
         SEED_SYMBOLS+=("$2")
+        shift 2
+        ;;
+      --expected-file)
+        [ "$#" -ge 2 ] || fail "--expected-file requires a path"
+        [ -n "$2" ] || fail "--expected-file must not be empty"
+        EXPECTED_FILES+=("$2")
         shift 2
         ;;
       --token-budget)
@@ -149,10 +158,65 @@ read_less_ratio() {
   }'
 }
 
+expected_files_json() {
+  if [ "${#EXPECTED_FILES[@]}" -eq 0 ]; then
+    printf '[]\n'
+    return
+  fi
+
+  printf '%s\n' "${EXPECTED_FILES[@]}" | jq -R . | jq -s .
+}
+
+task_coverage_json() {
+  local local_summary="$1"
+  local route_json="$2"
+  local expected_json
+
+  expected_json="$(expected_files_json)"
+  jq -n \
+    --argjson expected "$expected_json" \
+    --slurpfile local "$local_summary" \
+    --slurpfile route "$route_json" \
+    '
+      def non_empty_strings:
+        map(select(type == "string" and length > 0));
+
+      ($local[0]) as $local_summary |
+      ($route[0]) as $route_payload |
+      (($route_payload.context_pack.files // []) | map(.file) | non_empty_strings) as $context_files |
+      ([($local_summary.metrics.first_file // "")] | non_empty_strings) as $fallback_files |
+      (($context_files + $fallback_files) | unique) as $selected_files |
+      ($expected | non_empty_strings | unique) as $expected_files |
+      ($expected_files - $selected_files) as $missing_files |
+      (($expected_files | length) - ($missing_files | length)) as $covered_count |
+      ($expected_files | length) as $total_count |
+      {
+        status: (
+          if $total_count == 0 then "not_configured"
+          elif ($missing_files | length) == 0 then "pass"
+          else "fail"
+          end
+        ),
+        expected_files: $expected_files,
+        selected_files: $selected_files,
+        covered_count: $covered_count,
+        total_count: $total_count,
+        coverage_label: (
+          if $total_count == 0 then "n/a"
+          else "\($covered_count)/\($total_count)"
+          end
+        ),
+        missing_files: $missing_files
+      }
+    '
+}
+
 write_markdown() {
   local local_summary="$1"
-  local target="$2"
+  local route_json="$2"
+  local target="$3"
   local baseline_lines routed_lines saved_lines ratio
+  local coverage_json coverage_status coverage_total
 
   baseline_lines="$(json_value "$local_summary" '.metrics.total_lines')"
   routed_lines="$(json_value "$local_summary" '.metrics.selected_lines')"
@@ -161,6 +225,9 @@ write_markdown() {
     saved_lines=0
   fi
   ratio="$(read_less_ratio "$baseline_lines" "$routed_lines")"
+  coverage_json="$(task_coverage_json "$local_summary" "$route_json")"
+  coverage_status="$(jq -r '.status' <<<"$coverage_json")"
+  coverage_total="$(jq -r '.total_count' <<<"$coverage_json")"
 
   {
     echo "# CodeInsight Adoption Comparison"
@@ -201,6 +268,20 @@ write_markdown() {
     echo "- Impact risk: \`$(json_value "$local_summary" '.metrics.risk_level')\`"
     echo "- Impacted files: \`$(json_value "$local_summary" '.metrics.impacted_files')\`"
     echo
+    if [ "$coverage_total" -gt 0 ]; then
+      echo "## Task Coverage"
+      echo
+      echo "- Expected selected files: \`$(jq -r '.expected_files | join(", ")' <<<"$coverage_json")\`"
+      echo "- Routed selected files: \`$(jq -r '.selected_files | join(", ")' <<<"$coverage_json")\`"
+      echo "- Coverage: \`$(jq -r '.coverage_label' <<<"$coverage_json")\`"
+      echo "- Coverage status: \`${coverage_status}\`"
+      if [ "$coverage_status" = "pass" ]; then
+        echo "- Missing expected files: none"
+      else
+        echo "- Missing expected files: \`$(jq -r '.missing_files | join(", ")' <<<"$coverage_json")\`"
+      fi
+      echo
+    fi
     echo "## Interpretation"
     echo
     echo "Use the routed first-read count as the context an AI agent should inspect before broad file reading. The blind baseline is the repository source-line total from \`project_overview\`; the delta is the amount of source text avoided for the first pass."
@@ -215,8 +296,10 @@ write_markdown() {
 
 write_summary_json() {
   local local_summary="$1"
-  local target="$2"
+  local route_json="$2"
+  local target="$3"
   local baseline_lines routed_lines saved_lines ratio
+  local coverage_json
 
   baseline_lines="$(json_value "$local_summary" '.metrics.total_lines')"
   routed_lines="$(json_value "$local_summary" '.metrics.selected_lines')"
@@ -225,6 +308,7 @@ write_summary_json() {
     saved_lines=0
   fi
   ratio="$(read_less_ratio "$baseline_lines" "$routed_lines")"
+  coverage_json="$(task_coverage_json "$local_summary" "$route_json")"
 
   jq \
     --arg repository "$REPO_ROOT" \
@@ -236,6 +320,7 @@ write_summary_json() {
     --argjson baseline_lines "$baseline_lines" \
     --argjson routed_lines "$routed_lines" \
     --argjson saved_lines "$saved_lines" \
+    --argjson task_coverage "$coverage_json" \
     --arg read_less_ratio "$ratio" \
     '{
       status: "pass",
@@ -271,6 +356,7 @@ write_summary_json() {
         risk_level: .metrics.risk_level,
         impacted_files: .metrics.impacted_files
       },
+      task_coverage: $task_coverage,
       artifacts: {
         markdown: $output,
         local_evidence_markdown: $local_markdown,
@@ -291,9 +377,18 @@ write_summary_json() {
       and (.metrics.first_selection_reason | type == "string" and length > 0)
       and (.metrics.continuation_status | type == "string" and length > 0)
       and (.metrics.continuation_next_action | type == "string" and length > 0)
+      and (.task_coverage.status | type == "string" and length > 0)
+      and (.task_coverage.expected_files | type == "array")
+      and (.task_coverage.selected_files | type == "array")
+      and (.task_coverage.coverage_label | type == "string" and length > 0)
       and (.artifacts.local_evidence_summary | type == "string" and length > 0)' \
     "$target" >/dev/null ||
     fail "summary JSON does not match the adoption comparison contract"
+
+  jq -e \
+    '.task_coverage.status == "not_configured" or .task_coverage.status == "pass"' \
+    "$target" >/dev/null ||
+    fail "routed first-read context is missing expected files: $(jq -r '.task_coverage.missing_files | join(", ")' "$target")"
 }
 
 main() {
@@ -367,8 +462,8 @@ main() {
     "$OUTPUT_DIR/local-repo-evidence.json" >/dev/null ||
     fail "local evidence summary does not contain comparison metrics"
 
-  write_markdown "$OUTPUT_DIR/local-repo-evidence.json" "$OUTPUT_FILE"
-  write_summary_json "$OUTPUT_DIR/local-repo-evidence.json" "$SUMMARY_JSON"
+  write_summary_json "$OUTPUT_DIR/local-repo-evidence.json" "$OUTPUT_DIR/agent-route.json" "$SUMMARY_JSON"
+  write_markdown "$OUTPUT_DIR/local-repo-evidence.json" "$OUTPUT_DIR/agent-route.json" "$OUTPUT_FILE"
 
   echo "adoption comparison written to $OUTPUT_FILE"
   echo "summary: $SUMMARY_JSON"

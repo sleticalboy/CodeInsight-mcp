@@ -15,6 +15,7 @@ COMPARISON_OUTPUT_DIR="${CODEINSIGHT_ADOPTION_CASE_OUTPUT_DIR:-}"
 CASE_TITLE=""
 CASE_SUBJECT=""
 CASE_WRAPPER_NOTE=""
+EXPECTED_FILES=()
 
 usage() {
   cat <<'EOF'
@@ -40,6 +41,8 @@ Options:
   --output-dir PATH     adoption-comparison output directory. Default: <work-dir>/evidence.
   --task TEXT           Task passed to adoption-comparison.
   --token-budget N      Token budget passed to adoption-comparison. Default: 6000.
+  --expected-file PATH  Assert that the routed first-read context includes this
+                        task-critical file. Can be repeated.
   --comparison-script PATH
                         adoption-comparison-compatible script to execute.
   -h, --help            Show this help text.
@@ -118,6 +121,12 @@ parse_args() {
       --token-budget)
         [ "$#" -ge 2 ] || fail "--token-budget requires a number"
         TOKEN_BUDGET="$2"
+        shift 2
+        ;;
+      --expected-file)
+        [ "$#" -ge 2 ] || fail "--expected-file requires a path"
+        [ -n "$2" ] || fail "--expected-file must not be empty"
+        EXPECTED_FILES+=("$2")
         shift 2
         ;;
       --comparison-script)
@@ -251,7 +260,7 @@ write_case_doc() {
   local commit_full commit_short
   local blind_lines routed_lines avoided reduction read_less selected_files selected_ranges tokens
   local seed_strategy first_seed_source first_seed_value companion first_file first_question first_tool risk impacted
-  local wrapper_note_section
+  local wrapper_note_section coverage_section
 
   if [ -n "$COMMIT_REF" ]; then
     commit_full="$COMMIT_REF"
@@ -278,6 +287,20 @@ write_case_doc() {
   first_tool="$(json_value "$summary_json" '.metrics.first_suggested_tool')"
   risk="$(json_value "$summary_json" '.metrics.risk_level')"
   impacted="$(json_value "$summary_json" '.metrics.impacted_files')"
+  coverage_section=""
+  if jq -e '(.task_coverage.total_count // 0) > 0' "$summary_json" >/dev/null; then
+    coverage_section="## Task Coverage
+
+| Field | Value |
+| --- | --- |
+| Expected selected files | \`$(json_value "$summary_json" '.task_coverage.expected_files | join(", ")')\` |
+| Routed selected files | \`$(json_value "$summary_json" '.task_coverage.selected_files | join(", ")')\` |
+| Coverage | \`$(json_value "$summary_json" '.task_coverage.coverage_label')\` |
+| Coverage status | \`$(json_value "$summary_json" '.task_coverage.status')\` |
+| Missing expected files | \`$(json_value "$summary_json" '(.task_coverage.missing_files | join(", ")) as $value | if $value == "" then "none" else $value end')\` |
+
+"
+  fi
   wrapper_note_section="Generate a fresh comparison against the current $CASE_SUBJECT default branch:"
   if [ -n "$CASE_WRAPPER_NOTE" ]; then
     wrapper_note_section="$CASE_WRAPPER_NOTE
@@ -340,6 +363,7 @@ First reading question:
 $first_question
 \`\`\`
 
+$coverage_section
 ## Reproduce
 
 Refresh this checked-in snapshot:
@@ -400,10 +424,20 @@ main() {
   rm -rf "$COMPARISON_OUTPUT_DIR"
   mkdir -p "$COMPARISON_OUTPUT_DIR"
 
-  "$COMPARISON_SCRIPT" "$REPO_ROOT" \
-    --task "$TASK" \
-    --token-budget "$TOKEN_BUDGET" \
+  local comparison_args expected_file
+  comparison_args=(
+    "$REPO_ROOT"
+    --task "$TASK"
+    --token-budget "$TOKEN_BUDGET"
     --output-dir "$COMPARISON_OUTPUT_DIR"
+  )
+  if [ "${#EXPECTED_FILES[@]}" -gt 0 ]; then
+    for expected_file in "${EXPECTED_FILES[@]}"; do
+      comparison_args+=(--expected-file "$expected_file")
+    done
+  fi
+
+  "$COMPARISON_SCRIPT" "${comparison_args[@]}"
 
   jq -e \
     '.status == "pass"
