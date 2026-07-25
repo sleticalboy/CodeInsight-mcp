@@ -2,7 +2,7 @@
 
 This is a checked-in example for the External Beta maintainer workflow. It
 shows how three trial reports become one handoff folder with a cohort summary,
-route-quality gate, and prioritized fix queue.
+route-quality gate, prioritized fix queue, and a ready-to-file handoff issue.
 
 The example is intentionally small and redacted. It documents the artifact
 shape maintainers should expect from `scripts/external-beta-cohort-report.sh`;
@@ -41,6 +41,7 @@ scripts/external-beta-cohort-report.sh \
 ├── external-beta-cohort-summary.json
 ├── external-beta-fix-queue.md
 ├── external-beta-fix-queue.json
+├── external-beta-handoff-issue.md
 └── manifest.json
 ```
 
@@ -71,7 +72,31 @@ issue, discussion, or release-readiness note:
 - Route-quality gate: `pass >= 70`
 - Next action: `fix_workflow_friction`
 - Fix queue: `actionable` (`2` items)
+- Handoff issue: `/tmp/codeinsight-external-beta-handoff/external-beta-handoff-issue.md`
 - Manifest: `/tmp/codeinsight-external-beta-handoff/manifest.json`
+```
+
+## Handoff Issue Snapshot
+
+`external-beta-handoff-issue.md` is the copyable issue or discussion body:
+
+```text
+# External Beta Cohort Handoff
+
+## Summary
+
+- Status: `pass`
+- Cohort status: `complete`
+- Reports: `3/3`
+- Route-quality gate: `pass >= 70`
+- Next action: `fix_workflow_friction`
+- Fix queue: `actionable` (`2` items)
+
+## Maintainer Action
+
+- Start with `fix_workflow_friction`.
+- Use the fix queue before changing routing rules.
+- Keep route-quality failures out of success evidence until each miss is reproduced with a regression fixture.
 ```
 
 ## Manifest Snapshot
@@ -105,6 +130,7 @@ or downstream dashboards:
     "external-beta-cohort-summary.json",
     "external-beta-fix-queue.md",
     "external-beta-fix-queue.json",
+    "external-beta-handoff-issue.md",
     "manifest.json"
   ]
 }

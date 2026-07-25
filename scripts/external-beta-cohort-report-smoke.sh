@@ -92,6 +92,7 @@ main() {
   [ -f "$TEMP_DIR/handoff/external-beta-cohort-summary.json" ] || fail "cohort JSON missing"
   [ -f "$TEMP_DIR/handoff/external-beta-fix-queue.md" ] || fail "fix queue markdown missing"
   [ -f "$TEMP_DIR/handoff/external-beta-fix-queue.json" ] || fail "fix queue JSON missing"
+  [ -f "$TEMP_DIR/handoff/external-beta-handoff-issue.md" ] || fail "handoff issue missing"
   [ -f "$TEMP_DIR/handoff/README.md" ] || fail "handoff README missing"
   [ -f "$TEMP_DIR/handoff/manifest.json" ] || fail "handoff manifest missing"
 
@@ -105,6 +106,17 @@ main() {
     fail "handoff README max-items count missing"
   grep -Fq '`manifest.json`: machine-readable handoff package manifest.' "$TEMP_DIR/handoff/README.md" ||
     fail "handoff README manifest entry missing"
+  grep -Fq '`external-beta-handoff-issue.md`: ready-to-file issue or discussion body.' "$TEMP_DIR/handoff/README.md" ||
+    fail "handoff README issue entry missing"
+
+  grep -Fq '# External Beta Cohort Handoff' "$TEMP_DIR/handoff/external-beta-handoff-issue.md" ||
+    fail "handoff issue title missing"
+  grep -Fq '## Maintainer Action' "$TEMP_DIR/handoff/external-beta-handoff-issue.md" ||
+    fail "handoff issue maintainer action missing"
+  grep -Fq -- '- Start with `fix_workflow_friction`.' "$TEMP_DIR/handoff/external-beta-handoff-issue.md" ||
+    fail "handoff issue next action missing"
+  grep -Fq -- "- Manifest: \`$TEMP_DIR/handoff/manifest.json\`" "$TEMP_DIR/handoff/external-beta-handoff-issue.md" ||
+    fail "handoff issue manifest path missing"
 
   jq -e \
     '.status == "complete"
@@ -137,7 +149,9 @@ main() {
       and .cohort.quality_gate == "pass"
       and .fix_queue.status == "actionable"
       and .fix_queue.item_count == 2
+      and (.files | index("external-beta-handoff-issue.md") != null)
       and (.files | index("manifest.json") != null)
+      and .artifacts.handoff_issue == "'"$TEMP_DIR"'/handoff/external-beta-handoff-issue.md"
       and .artifacts.manifest == "'"$TEMP_DIR"'/handoff/manifest.json"' \
     "$TEMP_DIR/handoff/manifest.json" >/dev/null ||
     fail "handoff manifest JSON contract mismatch"
@@ -164,6 +178,8 @@ main() {
     fail "missing printed next action"
   grep -Fq -- '- Fix queue: `actionable` (`2` items)' "$TEMP_DIR/snippet.log" ||
     fail "missing printed fix queue summary"
+  grep -Fq -- "- Handoff issue: \`$TEMP_DIR/handoff-with-snippet/external-beta-handoff-issue.md\`" "$TEMP_DIR/snippet.log" ||
+    fail "missing printed handoff issue path"
   grep -Fq -- "- Manifest: \`$TEMP_DIR/handoff-with-snippet/manifest.json\`" "$TEMP_DIR/snippet.log" ||
     fail "missing printed manifest path"
 

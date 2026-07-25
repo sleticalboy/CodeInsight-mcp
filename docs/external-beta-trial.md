@@ -149,10 +149,13 @@ scripts/external-beta-cohort-report.sh \
 
 The handoff folder contains `external-beta-cohort.md`,
 `external-beta-cohort-summary.json`, `external-beta-fix-queue.md`,
-`external-beta-fix-queue.json`, `manifest.json`, and a short `README.md` with
-the cohort status, route-quality gate, next action, and fix queue size. The
-manifest records the handoff stage, inputs, options, output files, cohort
-status, and fix queue status for automation. `--print-snippet` prints a compact
-Markdown summary for a GitHub issue or discussion. See the
+`external-beta-fix-queue.json`, `external-beta-handoff-issue.md`,
+`manifest.json`, and a short `README.md` with the cohort status,
+route-quality gate, next action, and fix queue size.
+`external-beta-handoff-issue.md` is the ready-to-file GitHub issue or discussion
+body. The manifest records the handoff stage, inputs, options, output files,
+cohort status, fix queue status, and handoff issue path for automation.
+`--print-snippet` prints a compact Markdown summary for quick terminal handoff.
+See the
 [External Beta handoff example](external-beta-handoff-example.md) for the
 expected artifact shape.

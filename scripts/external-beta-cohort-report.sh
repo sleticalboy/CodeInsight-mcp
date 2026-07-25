@@ -42,6 +42,7 @@ Output:
   <output-dir>/external-beta-cohort-summary.json
   <output-dir>/external-beta-fix-queue.md
   <output-dir>/external-beta-fix-queue.json
+  <output-dir>/external-beta-handoff-issue.md
   <output-dir>/README.md
   <output-dir>/manifest.json
 EOF
@@ -149,6 +150,7 @@ routing workflow.
 - \`external-beta-cohort-summary.json\`: machine-readable cohort summary.
 - \`external-beta-fix-queue.md\`: maintainer fix queue.
 - \`external-beta-fix-queue.json\`: machine-readable fix queue.
+- \`external-beta-handoff-issue.md\`: ready-to-file issue or discussion body.
 - \`manifest.json\`: machine-readable handoff package manifest.
 
 ## Reproduce
@@ -204,6 +206,7 @@ write_manifest() {
         "external-beta-cohort-summary.json",
         "external-beta-fix-queue.md",
         "external-beta-fix-queue.json",
+        "external-beta-handoff-issue.md",
         "manifest.json"
       ],
       artifacts: {
@@ -212,6 +215,7 @@ write_manifest() {
         cohort_json: ($output_dir + "/external-beta-cohort-summary.json"),
         fix_queue_markdown: ($output_dir + "/external-beta-fix-queue.md"),
         fix_queue_json: ($output_dir + "/external-beta-fix-queue.json"),
+        handoff_issue: ($output_dir + "/external-beta-handoff-issue.md"),
         manifest: ($output_dir + "/manifest.json")
       }
     }' >"$manifest_json"
@@ -223,12 +227,10 @@ json_value() {
   jq -r "$query" "$file"
 }
 
-print_snippet() {
+print_snippet_body() {
   local manifest_json="$1"
 
   cat <<EOF
-# External Beta Cohort Handoff
-
 - Status: \`$(json_value "$manifest_json" '.status')\`
 - Cohort status: \`$(json_value "$manifest_json" '.cohort.status')\`
 - Reports: \`$(json_value "$manifest_json" '.cohort.report_count')/$(json_value "$manifest_json" '.options.min_reports')\`
@@ -238,8 +240,50 @@ print_snippet() {
 - Handoff README: \`$(json_value "$manifest_json" '.artifacts.readme')\`
 - Cohort summary: \`$(json_value "$manifest_json" '.artifacts.cohort_json')\`
 - Fix queue JSON: \`$(json_value "$manifest_json" '.artifacts.fix_queue_json')\`
+- Handoff issue: \`$(json_value "$manifest_json" '.artifacts.handoff_issue')\`
 - Manifest: \`$(json_value "$manifest_json" '.artifacts.manifest')\`
 EOF
+}
+
+print_snippet() {
+  local manifest_json="$1"
+
+  cat <<EOF
+# External Beta Cohort Handoff
+
+$(print_snippet_body "$manifest_json")
+EOF
+}
+
+write_handoff_issue() {
+  local target="$1"
+  local manifest_json="$2"
+
+  {
+    echo "# External Beta Cohort Handoff"
+    echo
+    echo "## Summary"
+    echo
+    print_snippet_body "$manifest_json"
+    echo
+    echo "## Maintainer Action"
+    echo
+    echo "- Start with \`$(json_value "$manifest_json" '.cohort.next_action')\`."
+    echo "- Use the fix queue before changing routing rules: \`$(json_value "$manifest_json" '.artifacts.fix_queue_markdown')\`."
+    echo "- Keep route-quality failures out of success evidence until each miss is reproduced with a regression fixture."
+    echo
+    echo "## Artifacts"
+    echo
+    echo "- Cohort summary: \`$(json_value "$manifest_json" '.artifacts.cohort_markdown')\`"
+    echo "- Cohort summary JSON: \`$(json_value "$manifest_json" '.artifacts.cohort_json')\`"
+    echo "- Fix queue: \`$(json_value "$manifest_json" '.artifacts.fix_queue_markdown')\`"
+    echo "- Fix queue JSON: \`$(json_value "$manifest_json" '.artifacts.fix_queue_json')\`"
+    echo "- Manifest: \`$(json_value "$manifest_json" '.artifacts.manifest')\`"
+    echo
+    echo "## Public Note"
+    echo
+    echo "Generated from redacted External Beta trial summaries. Check source trial folders for private repository names, paths, and logs before posting publicly."
+  } >"$target"
 }
 
 main() {
@@ -253,6 +297,7 @@ main() {
   local cohort_json="$OUTPUT_DIR/external-beta-cohort-summary.json"
   local queue_md="$OUTPUT_DIR/external-beta-fix-queue.md"
   local queue_json="$OUTPUT_DIR/external-beta-fix-queue.json"
+  local handoff_issue_md="$OUTPUT_DIR/external-beta-handoff-issue.md"
   local manifest_json="$OUTPUT_DIR/manifest.json"
   local -a check_args=()
   local -a queue_args=()
@@ -280,12 +325,14 @@ main() {
 
   write_readme "$cohort_json" "$queue_json"
   write_manifest "$cohort_json" "$queue_json" "$manifest_json"
+  write_handoff_issue "$handoff_issue_md" "$manifest_json"
 
   echo "external beta cohort report written to $OUTPUT_DIR/README.md"
   echo "cohort: $cohort_md"
   echo "cohort_json: $cohort_json"
   echo "fix_queue: $queue_md"
   echo "fix_queue_json: $queue_json"
+  echo "handoff_issue: $handoff_issue_md"
   echo "manifest: $manifest_json"
 
   if [ "$PRINT_SNIPPET" = true ]; then

@@ -197,9 +197,10 @@ Pass criteria:
   next action priority so maintainers can fix workflow friction before route
   misses and route misses before near misses.
 - `external-beta-cohort-report.sh` packages the cohort summary JSON/Markdown,
-  fix queue JSON/Markdown, handoff README, and `manifest.json` into one folder
-  for public Beta review; add `--print-snippet` to print a compact Markdown
-  summary for an issue or discussion.
+  fix queue JSON/Markdown, handoff README, ready-to-file handoff issue, and
+  `manifest.json` into one folder for public Beta review; add
+  `--print-snippet` to print a compact Markdown summary for quick terminal
+  handoff.
 - `adoption-report.sh` writes `codeinsight-adoption-report.tar.gz` with the
   aggregate summaries, issue template, raw route JSON, MCP first-call JSON,
   manifest, and diagnostic stdout/stderr logs.
