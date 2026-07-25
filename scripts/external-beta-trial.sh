@@ -329,7 +329,7 @@ write_maintainer_triage() {
     echo "- Read-less ratio: \`$(json_value "$summary_json" '.local_evidence.metrics.read_less_ratio // "n/a"')\`"
     echo "- MCP route quality: \`$(json_value "$summary_json" '.mcp_first_call.route_quality.level')\` (\`$(json_value "$summary_json" '.mcp_first_call.route_quality.score')/100\`), next=\`$(json_value "$summary_json" '.mcp_first_call.route_quality.recommended_action')\`"
     echo "- MCP first-call status: \`$(json_value "$summary_json" '.mcp_first_call.status')\`"
-    echo "- Priority rule: fix workflow friction before route misses, and route misses before near misses."
+    echo "- Priority rule: fix workflow friction before low route quality, route misses, overtrust wording, and near misses."
   } >"$target"
 }
 

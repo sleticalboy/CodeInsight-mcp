@@ -371,7 +371,7 @@ main() {
     'clients can render a pre-edit' \
     "README MCP impact checklist evidence"
   require_pattern README.md \
-    'of 81,070 source lines, avoiding 80,537 source lines before broad reading' \
+    'of 81,087 source lines, avoiding 80,554 source lines before broad reading' \
     "README two-minute demo read-less metric"
   "$ROOT_DIR/scripts/readme-adoption-summary-smoke.sh" >/dev/null
   require_pattern README.md \
@@ -710,6 +710,21 @@ main() {
   require_pattern .github/ISSUE_TEMPLATE/adoption-feedback.yml \
     'needs_triage' \
     "GitHub adoption feedback needs triage category"
+  require_pattern docs/public-adoption-feedback-template.md \
+    'scripts/external-beta-trial\.sh /path/to/repo' \
+    "public adoption feedback template External Beta command"
+  require_pattern docs/public-adoption-feedback-template.md \
+    '`needs_triage`: external user is unsure' \
+    "public adoption feedback template needs triage outcome"
+  require_pattern docs/public-adoption-feedback-template.md \
+    'MCP route quality' \
+    "public adoption feedback template MCP route quality"
+  require_pattern docs/public-adoption-feedback-template.md \
+    '`beta-summary\.json`, for External Beta reports' \
+    "public adoption feedback template beta summary artifact"
+  require_pattern scripts/external-beta-trial.sh \
+    'fix workflow friction before low route quality' \
+    "external beta maintainer triage priority rule"
   require_pattern scripts/mcp-first-call-smoke.sh \
     'default_fixture = os\.environ\.get\("DEFAULT_FIXTURE"\) == "1"' \
     "MCP first-call default fixture flag"
@@ -1852,7 +1867,7 @@ main() {
     'first_next_action' \
     "reading plan next action demo metric"
   require_pattern docs/demo-script.md \
-    'source_lines_avoided: 80537' \
+    'source_lines_avoided: 80554' \
     "demo script source lines avoided metric"
   require_pattern docs/demo-script.md \
     'read_less_ratio: 152\.1x' \
@@ -1861,7 +1876,7 @@ main() {
     'routing_decision_quality: high \(100/100, 22 evidence signals\)' \
     "demo script route quality metric"
   require_pattern docs/demo-script.md \
-    'Read less: avoided 80537 source lines, 152\.1x less text before follow-up tools\.' \
+    'Read less: avoided 80554 source lines, 152\.1x less text before follow-up tools\.' \
     "demo script evidence summary read-less line"
   require_pattern docs/demo-script.md \
     'impact_analysis' \

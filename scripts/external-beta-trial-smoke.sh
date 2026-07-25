@@ -193,6 +193,8 @@ EOF
     fail "maintainer triage note is missing reclassification guidance"
   grep -Fq -- '- MCP route quality: `high` (`96/100`), next=`read_selected_context`' "$TEMP_DIR/beta/maintainer-triage.md" ||
     fail "maintainer triage note is missing MCP route quality"
+  grep -Fq 'fix workflow friction before low route quality' "$TEMP_DIR/beta/maintainer-triage.md" ||
+    fail "maintainer triage note is missing updated priority rule"
 
   jq -e \
     '.status == "pass"

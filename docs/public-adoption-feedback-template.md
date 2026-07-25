@@ -1,7 +1,9 @@
 # Public Adoption Feedback Template
 
-Use this template when trying CodeInsight on a real repository. Attach the
-generated evidence folder when possible.
+Use this template when trying CodeInsight on a real repository. For External
+Beta, prefer the generated `issue-body.md` from
+`scripts/external-beta-trial.sh` and attach the generated evidence folder when
+possible.
 
 ## Environment
 
@@ -25,6 +27,7 @@ generated evidence folder when possible.
 
 ## CodeInsight Result
 
+- Outcome:
 - First selected file:
 - First reading focus:
 - First reading question:
@@ -34,6 +37,9 @@ generated evidence folder when possible.
 - Source lines avoided:
 - Line reduction:
 - Read-less ratio:
+- MCP route quality:
+- MCP suggested tool executed:
+- First-read gating:
 - Impact risk:
 - Suggested checks:
 
@@ -41,6 +47,7 @@ generated evidence folder when possible.
 
 Choose one:
 
+- `needs_triage`: external user is unsure and wants maintainer classification.
 - `route_hit`: first selected file was useful.
 - `route_near_miss`: first selected file was close but not ideal.
 - `route_miss`: first selected file was wrong.
@@ -58,6 +65,14 @@ What happened:
 Preferred command:
 
 ```bash
+scripts/external-beta-trial.sh /path/to/repo \
+  --task "<task>" \
+  --output-dir /tmp/codeinsight-external-beta-trial
+```
+
+Maintainer fallback command:
+
+```bash
 scripts/adoption-evidence.sh /path/to/repo \
   --task "<task>" \
   --output-dir /tmp/codeinsight-adoption-evidence \
@@ -67,10 +82,14 @@ scripts/adoption-evidence.sh /path/to/repo \
 
 Attach or link:
 
+- `issue-body.md`, for External Beta reports
+- `beta-summary.json`, for External Beta reports
 - `adoption-evidence.md`
 - `summary.json`
 - `agent-route.json`
 - `mcp-first-call.json`, when available
+- `redaction-checklist.md`, for private repositories
+- `maintainer-triage.md`, for maintainer follow-up
 
 ## Notes
 
