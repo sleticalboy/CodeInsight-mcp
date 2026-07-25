@@ -136,9 +136,9 @@ Promise: route the agent through agent_route before edits.
    current_reading_step_contract: true
    suggested_tool_handoff_contract: true
    continuation_timing_contract: true
-   total_lines: 80206
+   total_lines: 80227
    selected_lines: 533
-   source_lines_avoided: 79673
+   source_lines_avoided: 79694
    line_reduction: 99.3%
    read_less_ratio: 150.5x
    continuation: omitted_candidates_available
@@ -155,12 +155,12 @@ Promise: route the agent through agent_route before edits.
    route_reason: after selected context is read, pre-edit impact check estimated 16 impacted files at high risk, including 15 call-related files, 3 dependency-related files, 50 call paths, and 0 dependency paths
 
 [Evidence summary]
-Blind first-read baseline: 80206 source lines.
+Blind first-read baseline: 80227 source lines.
 Routed first-read: 533 source lines across 3 files.
-Read less: avoided 79673 source lines, 150.5x less text before follow-up tools.
+Read less: avoided 79694 source lines, 150.5x less text before follow-up tools.
 Routing decision: seed=task_match:src/tools.rs, first_file=src/tools.rs, rank=1, tool=file_outline, continuation=omitted_candidates_available, impact=complete.
 Route quality: high (100/100) from 22 evidence signals; next=read_selected_context_then_use_continuation_if_needed.
-agent_route selected 533/80206 source lines (99.3% reduction) across 3 files.
+agent_route selected 533/80227 source lines (99.3% reduction) across 3 files.
 First reading focus: Start with seed file context routing, first-read handoff, and read-less evidence.
 First reading question: Which seed selection, reading-plan handoff, or read-less evidence controls the agent first-read workflow here?
 The first selected file is src/tools.rs; reading_plan starts at src/tools.rs as candidate rank 1.
@@ -180,7 +180,7 @@ Before edits, impact_analysis reports high risk across 16 impacted files.
 6. route_quality is high (100/100) from 22 evidence signals; recommended_action=read_selected_context_then_use_continuation_if_needed.
 7. The first reading-plan focus is: Start with seed file context routing, first-read handoff, and read-less evidence.
 8. The first reading-plan question is: Which seed selection, reading-plan handoff, or read-less evidence controls the agent first-read workflow here?
-9. The first reading-plan action is inspect_seed_file; the selected context avoided 79673 source lines (99.3%, 150.5x less text); selected 3 files, 12 ranges, and 3 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; first omitted candidate src/embedding.rs (candidate rank 4, reason token_budget_exhausted) can be revisited via run_omitted_candidate_context_pack using context_pack after selected context; continuation run_omitted_candidate_context_pack
+9. The first reading-plan action is inspect_seed_file; the selected context avoided 79694 source lines (99.3%, 150.5x less text); selected 3 files, 12 ranges, and 3 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; first omitted candidate src/embedding.rs (candidate rank 4, reason token_budget_exhausted) can be revisited via run_omitted_candidate_context_pack using context_pack after selected context; continuation run_omitted_candidate_context_pack
 10. Reading order contract is true; execution_plan[0].files follows reading_plan[] order.
 11. Read-less instruction contract is true; execution_plan[0].instruction carries selected lines, baseline lines, avoided lines, and read-less ratio.
 12. Current reading step contract is true; agent_route.current_reading_step mirrors reading_plan[0].
