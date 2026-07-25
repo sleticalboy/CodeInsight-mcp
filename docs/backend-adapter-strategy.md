@@ -109,7 +109,9 @@ scripts/codebase-memory-bridge-report.sh \
 The report records whether the local first file matches the backend top file,
 whether selected context covers backend candidates, whether backend evidence is
 visible in `route_quality`, and whether the advisory verification step survived
-into the agent-facing route.
+into the agent-facing route. The Markdown report also surfaces the
+`route_quality.recommended_action` value and route warning count so conflicts
+are visible without opening the raw `agent-route` JSON.
 
 For multi-task evidence, aggregate several bridge reports:
 

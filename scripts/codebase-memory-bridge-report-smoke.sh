@@ -39,11 +39,17 @@ main() {
   trap cleanup EXIT INT TERM
 
   local backend_json route_json output_dir summary_json report_md
+  local conflict_backend_json conflict_route_json conflict_output_dir conflict_summary_json conflict_report_md
   backend_json="$TEMP_DIR/backend-evidence.json"
   route_json="$TEMP_DIR/agent-route.json"
   output_dir="$TEMP_DIR/report"
   summary_json="$output_dir/summary.json"
   report_md="$output_dir/codebase-memory-bridge-report.md"
+  conflict_backend_json="$TEMP_DIR/backend-conflict-evidence.json"
+  conflict_route_json="$TEMP_DIR/agent-route-conflict.json"
+  conflict_output_dir="$TEMP_DIR/conflict-report"
+  conflict_summary_json="$conflict_output_dir/summary.json"
+  conflict_report_md="$conflict_output_dir/codebase-memory-bridge-report.md"
 
   cat >"$backend_json" <<'JSON'
 {
@@ -116,8 +122,84 @@ JSON
 
   grep -Fq 'First file matches backend top: `true`' "$report_md" ||
     fail "markdown should summarize top-file agreement"
+  grep -Fq 'Agent route action: `read_selected_context`' "$report_md" ||
+    fail "markdown should include route quality recommended action"
   grep -Fq 'Backend evidence preserved in route JSON' "$report_md" ||
     fail "markdown should include preservation check"
+
+  cat >"$conflict_backend_json" <<'JSON'
+{
+  "provider": "codebase-memory-mcp",
+  "candidate_files": ["src/server.ts", "src/main.ts"],
+  "evidence_sources": ["search_graph", "get_architecture:entry_points"],
+  "evidence_count": 3,
+  "latency_ms": 28,
+  "confidence": 0.81,
+  "notes": ["backend preferred a different first file"]
+}
+JSON
+
+  cat >"$conflict_route_json" <<'JSON'
+{
+  "context_pack": {
+    "files": [
+      {"file": "src/auth.ts"},
+      {"file": "src/audit.ts"}
+    ]
+  },
+  "routing_decision": {
+    "first_file": "src/auth.ts",
+    "backend_evidence": {
+      "provider": "codebase-memory-mcp",
+      "candidate_files": ["src/server.ts", "src/main.ts"],
+      "evidence_sources": ["search_graph", "get_architecture:entry_points"],
+      "evidence_count": 3,
+      "latency_ms": 28,
+      "confidence": 0.81,
+      "notes": ["backend preferred a different first file"]
+    },
+    "route_quality": {
+      "level": "medium",
+      "score": 74,
+      "evidence_count": 11,
+      "evidence_sources": [
+        "seed file",
+        "backend:codebase-memory-mcp",
+        "backend:codebase-memory-mcp:search_graph"
+      ],
+      "warnings": [
+        "Backend codebase-memory-mcp preferred src/server.ts; verify before editing because local routing selected src/auth.ts."
+      ],
+      "verification_steps": [
+        "Treat backend codebase-memory-mcp evidence as advisory unless the selected file and verification checks agree.",
+        "Compare local route with backend codebase-memory-mcp candidate src/server.ts before editing."
+      ],
+      "recommended_action": "compare_backend_route_before_edits"
+    }
+  }
+}
+JSON
+
+  "$ROOT_DIR/scripts/codebase-memory-bridge-report.sh" \
+    --backend-evidence "$conflict_backend_json" \
+    --agent-route-json "$conflict_route_json" \
+    --task "inspect authentication routing" \
+    --output-dir "$conflict_output_dir" >/dev/null
+
+  [ -f "$conflict_summary_json" ] || fail "conflict summary.json missing"
+  [ -f "$conflict_report_md" ] || fail "conflict markdown report missing"
+
+  require_jq "$conflict_summary_json" '.status == "warn"' "conflict summary should warn"
+  require_jq "$conflict_summary_json" '.agreement.first_file_matches_backend_top == false' "conflict first file should not match backend top"
+  require_jq "$conflict_summary_json" '.agreement.first_file_in_backend_candidates == false' "conflict first file should not be in backend candidates"
+  require_jq "$conflict_summary_json" '.route.route_quality_recommended_action == "compare_backend_route_before_edits"' "conflict route action should be preserved"
+  require_jq "$conflict_summary_json" '.route.route_quality_warnings | length == 1' "conflict route warning should be preserved"
+  require_jq "$conflict_summary_json" '.next_action == "investigate_backend_local_conflict"' "conflict report next action should require investigation"
+
+  grep -Fq 'Agent route action: `compare_backend_route_before_edits`' "$conflict_report_md" ||
+    fail "conflict markdown should include route quality recommended action"
+  grep -Fq 'Route warning count | `1`' "$conflict_report_md" ||
+    fail "conflict markdown should include route warning count"
 
   echo "codebase-memory bridge report smoke passed"
 }

@@ -173,6 +173,7 @@ write_markdown() {
     "- First file appears in backend candidates: " + tick(.agreement.first_file_in_backend_candidates),
     "- Selected backend candidates: " + tick((.agreement.selected_backend_candidate_files | join(", "))),
     "- Route quality: " + tick(.route.route_quality_level + " " + (.route.route_quality_score | tostring) + "/100"),
+    "- Agent route action: " + tick(if .route.route_quality_recommended_action == "" then "n/a" else .route.route_quality_recommended_action end),
     "- Backend evidence sources in route quality: " + tick((.route.backend_evidence_sources_in_route_quality | join(", "))),
     "- Advisory verification step present: " + tick(.route.backend_advisory_verification_step_present),
     "- Next action: " + tick(.next_action),
@@ -182,6 +183,7 @@ write_markdown() {
     "| Backend candidate count | " + tick(.agreement.backend_candidate_count) + " |",
     "| Selected backend candidate count | " + tick(.agreement.selected_backend_candidate_count) + " |",
     "| Backend evidence preserved in route JSON | " + tick(.route.route_preserved_backend_evidence) + " |",
+    "| Route warning count | " + tick((.route.route_quality_warnings // []) | length) + " |",
     "| Backend evidence count | " + tick(.backend.evidence_count) + " |",
     "| Backend latency ms | " + tick(.backend.latency_ms // "n/a") + " |",
     "| Backend confidence | " + tick(.backend.confidence // "n/a") + " |"
