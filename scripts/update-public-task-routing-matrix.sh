@@ -6,6 +6,7 @@ PUBLIC_TASK_ROUTING_MATRIX_SCRIPT="${CODEINSIGHT_PUBLIC_TASK_ROUTING_MATRIX_SCRI
 OUTPUT_FILE="$ROOT_DIR/docs/public-task-routing-matrix.md"
 SUMMARY_OUTPUT_FILE="$ROOT_DIR/docs/public-task-routing-matrix-summary.json"
 CHECK=0
+MIN_ROUTE_QUALITY_SCORE="${CODEINSIGHT_UPDATE_PUBLIC_TASK_ROUTING_MATRIX_MIN_ROUTE_QUALITY_SCORE:-}"
 PUBLIC_ARGS=()
 TEMP_DIR=""
 
@@ -19,6 +20,8 @@ Options:
   --check                Fail when checked-in snapshots are stale.
   --output PATH          Write the normalized Markdown snapshot to PATH.
   --summary-output PATH  Write the normalized JSON summary snapshot to PATH.
+  --min-route-quality-score N
+                         Fail when any public route quality score is below N.
   -h, --help             Show this help text.
 
 All other options are passed through to scripts/public-task-routing-matrix.sh.
@@ -31,6 +34,7 @@ Common pass-through options:
 
 Environment:
   CODEINSIGHT_PUBLIC_TASK_ROUTING_MATRIX_SCRIPT=scripts/public-task-routing-matrix.sh
+  CODEINSIGHT_UPDATE_PUBLIC_TASK_ROUTING_MATRIX_MIN_ROUTE_QUALITY_SCORE
 EOF
 }
 
@@ -127,6 +131,11 @@ main() {
         SUMMARY_OUTPUT_FILE="$2"
         shift 2
         ;;
+      --min-route-quality-score)
+        [ "$#" -ge 2 ] || fail "--min-route-quality-score requires a number"
+        MIN_ROUTE_QUALITY_SCORE="$2"
+        shift 2
+        ;;
       -h|--help)
         usage
         exit 0
@@ -148,12 +157,23 @@ main() {
   normalized="$TEMP_DIR/normalized-public-task-routing-matrix.md"
   normalized_summary="$TEMP_DIR/normalized-public-task-routing-matrix-summary.json"
 
+  if [ -n "$MIN_ROUTE_QUALITY_SCORE" ]; then
+    case "$MIN_ROUTE_QUALITY_SCORE" in
+      ''|*[!0-9]*)
+        fail "--min-route-quality-score must be a non-negative integer"
+        ;;
+    esac
+  fi
+
   local public_command=(
     "$PUBLIC_TASK_ROUTING_MATRIX_SCRIPT"
     --output-dir "$output_dir"
     --output "$generated"
     --summary-json "$summary"
   )
+  if [ -n "$MIN_ROUTE_QUALITY_SCORE" ]; then
+    public_command+=(--min-route-quality-score "$MIN_ROUTE_QUALITY_SCORE")
+  fi
   if [ "${#PUBLIC_ARGS[@]}" -gt 0 ]; then
     public_command+=("${PUBLIC_ARGS[@]}")
   fi

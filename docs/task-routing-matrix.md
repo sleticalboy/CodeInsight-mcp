@@ -270,6 +270,9 @@ Before a PR, check whether the snapshot is current:
 scripts/update-public-task-routing-matrix.sh --check
 ```
 
+When publishing a gated public route-quality snapshot, add
+`--min-route-quality-score 70` to either command.
+
 ## Output Contract
 
 Each task row reports:

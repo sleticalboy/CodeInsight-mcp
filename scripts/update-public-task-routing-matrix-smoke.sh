@@ -138,10 +138,12 @@ main() {
   TEMP_DIR="$(mktemp -d)"
   trap cleanup EXIT INT TERM
 
-  local repo snapshot summary_snapshot
+  local repo snapshot summary_snapshot gate_snapshot gate_summary_snapshot
   repo="$TEMP_DIR/repo"
   snapshot="$TEMP_DIR/public-task-routing-matrix.md"
   summary_snapshot="$TEMP_DIR/public-task-routing-matrix-summary.json"
+  gate_snapshot="$TEMP_DIR/gated-public-task-routing-matrix.md"
+  gate_summary_snapshot="$TEMP_DIR/gated-public-task-routing-matrix-summary.json"
   create_express_like_fixture "$repo"
 
   CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/update-public-task-routing-matrix.sh" \
@@ -200,11 +202,41 @@ main() {
     --root "express=$repo" \
     --token-budget 1600 >/dev/null
 
-  local stub_script no_args_snapshot no_args_summary no_args_log
+  CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/update-public-task-routing-matrix.sh" \
+    --output "$gate_snapshot" \
+    --summary-output "$gate_summary_snapshot" \
+    --min-route-quality-score 70 \
+    --case express \
+    --root "express=$repo" \
+    --token-budget 1600 >/dev/null
+
+  grep -Fq -- "- Minimum route quality score: \`70\`" "$gate_snapshot" ||
+    fail "gated snapshot should include minimum route quality score"
+  jq -e \
+    '.quality_gate.status == "pass"
+      and .quality_gate.min_route_quality_score == 70
+      and .quality_gate.failure_count == 0
+      and (.quality_gate.cases[] | select(.case == "express" and .status == "pass"))' \
+    "$gate_summary_snapshot" >/dev/null ||
+    fail "gated summary snapshot should include aggregate quality gate"
+
+  CODEINSIGHT_BIN="$CODEINSIGHT_BIN" "$ROOT_DIR/scripts/update-public-task-routing-matrix.sh" \
+    --check \
+    --output "$gate_snapshot" \
+    --summary-output "$gate_summary_snapshot" \
+    --min-route-quality-score 70 \
+    --case express \
+    --root "express=$repo" \
+    --token-budget 1600 >/dev/null
+
+  local stub_script no_args_snapshot no_args_summary no_args_log env_gate_snapshot env_gate_summary env_gate_log
   stub_script="$TEMP_DIR/public-task-routing-matrix-stub.sh"
   no_args_snapshot="$TEMP_DIR/no-args-public-task-routing-matrix.md"
   no_args_summary="$TEMP_DIR/no-args-public-task-routing-matrix-summary.json"
   no_args_log="$TEMP_DIR/no-args-public-task-routing-matrix.log"
+  env_gate_snapshot="$TEMP_DIR/env-gate-public-task-routing-matrix.md"
+  env_gate_summary="$TEMP_DIR/env-gate-public-task-routing-matrix-summary.json"
+  env_gate_log="$TEMP_DIR/env-gate-public-task-routing-matrix.log"
   cat >"$stub_script" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -212,6 +244,7 @@ set -euo pipefail
 output_dir=""
 output=""
 summary_json=""
+min_route_quality_score=""
 log="${CODEINSIGHT_PUBLIC_TASK_ROUTING_MATRIX_STUB_LOG:?}"
 printf '%s\n' "$*" >>"$log"
 
@@ -227,6 +260,10 @@ while [ "$#" -gt 0 ]; do
       ;;
     --summary-json)
       summary_json="$2"
+      shift 2
+      ;;
+    --min-route-quality-score)
+      min_route_quality_score="$2"
       shift 2
       ;;
     *)
@@ -248,6 +285,19 @@ cat >"$output" <<MARKDOWN
 - tasks: 0
 - expectations: 0/0
 MARKDOWN
+if [ -n "$min_route_quality_score" ]; then
+  printf '%s\n' "- Minimum route quality score: \`$min_route_quality_score\`" >>"$output"
+fi
+quality_gate_json=""
+if [ -n "$min_route_quality_score" ]; then
+  quality_gate_json=',
+  "quality_gate": {
+    "min_route_quality_score": '"$min_route_quality_score"',
+    "status": "pass",
+    "failure_count": 0,
+    "cases": []
+  }'
+fi
 cat >"$summary_json" <<JSON
 {
   "status": "pass",
@@ -262,6 +312,7 @@ cat >"$summary_json" <<JSON
     "total_selected_lines": 0,
     "line_reduction": 0
   }
+  $quality_gate_json
 }
 JSON
 EOF
@@ -283,6 +334,24 @@ EOF
   if grep -Fq -- '--case' "$no_args_log"; then
     fail "no-argument check should not pass public matrix case arguments"
   fi
+
+  CODEINSIGHT_UPDATE_PUBLIC_TASK_ROUTING_MATRIX_MIN_ROUTE_QUALITY_SCORE=70 \
+    CODEINSIGHT_PUBLIC_TASK_ROUTING_MATRIX_STUB_LOG="$env_gate_log" \
+    CODEINSIGHT_PUBLIC_TASK_ROUTING_MATRIX_SCRIPT="$stub_script" \
+    "$ROOT_DIR/scripts/update-public-task-routing-matrix.sh" \
+      --output "$env_gate_snapshot" \
+      --summary-output "$env_gate_summary" >/dev/null
+
+  grep -Fq -- '--min-route-quality-score 70' "$env_gate_log" ||
+    fail "environment quality gate should be passed to public matrix script"
+  grep -Fq -- "- Minimum route quality score: \`70\`" "$env_gate_snapshot" ||
+    fail "environment quality gate snapshot should include minimum route quality score"
+  jq -e \
+    '.quality_gate.status == "pass"
+      and .quality_gate.min_route_quality_score == 70
+      and .quality_gate.failure_count == 0' \
+    "$env_gate_summary" >/dev/null ||
+    fail "environment quality gate summary should remain normalized"
 
   echo "update public task routing matrix smoke passed"
 }

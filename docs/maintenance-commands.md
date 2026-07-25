@@ -97,7 +97,7 @@ Choose the narrowest check for the change:
 | Framework entrypoint routing changed | `scripts/framework-entrypoint-demo.sh` | Temporary multi-framework fixture covering Next.js, Rails, Django, and C# web first-context selection. |
 | Task alias or seed ordering changed | `scripts/task-routing-matrix-smoke.sh` | Temporary fixture proving routing, authentication, authorization, access-control, settings, feature flag, network, TLS, validation, startup, persistence, debug, coverage, API handler, cache, observability, security, billing, frontend, background job, documentation, request lifecycle, middleware, and AI-agent first-read prompts choose the matching first file and that `--expect-file` failures are reported. It also verifies `--min-route-quality-score` can gate low-confidence routes. |
 | Public route expectations changed | `scripts/public-task-routing-matrix.sh --case express --root express=/path/to/express --min-route-quality-score 70` | Checked-in public repository expectation files aggregated into one route-quality summary, with optional route-quality score gates. Defaults include pinned Express, FastAPI, Flask, Gin, Requests, Streamlit, and Wouter cases. Use `scripts/public-task-routing-matrix-smoke.sh` for a deterministic no-network contract check. |
-| Public route snapshot changed | `scripts/update-public-task-routing-matrix.sh --check` | Checked-in public route-quality snapshot freshness. Use `scripts/update-public-task-routing-matrix-smoke.sh` for a deterministic no-network contract check. |
+| Public route snapshot changed | `scripts/update-public-task-routing-matrix.sh --check` | Checked-in public route-quality snapshot freshness. Add `--min-route-quality-score 70` when intentionally refreshing a gated public evidence snapshot. Use `scripts/update-public-task-routing-matrix-smoke.sh` for a deterministic no-network contract check. |
 | Competitive positioning changed | `scripts/competitive-routing-smoke.sh` | Deterministic no-network scaffold for comparing CodeInsight's agent first-read route quality against generic code-memory tools, including first-file match, read-less metrics, route-quality score, decision summary, and verification steps without requiring the competitor to be installed. |
 | codebase-memory bridge changed | `scripts/codebase-memory-backend-evidence-smoke.sh` | Converts exported `search_graph`, `search_code`, and `get_architecture` JSON into `agent_route --backend-evidence`, then verifies backend agreement appears in `route_quality`. |
 | codebase-memory bridge report changed | `scripts/codebase-memory-bridge-report-smoke.sh` | Consumes `backend_evidence` plus raw `agent-route` JSON and emits agreement/conflict summary artifacts. |
@@ -119,8 +119,10 @@ repository multi-prompt route-quality gates, including optional
 `public-task-routing-matrix.sh --min-route-quality-score 70` when refreshing
 all checked-in public route expectation cases, and
 `update-public-task-routing-matrix.sh` when refreshing the checked-in public
-snapshot. Use `task-routing-matrix-smoke.sh` for deterministic alias/seed-order
-regressions. Use `codebase-memory-backend-evidence-smoke.sh` when changing the
+snapshot. Add `--min-route-quality-score 70` to the update command when
+publishing a gated snapshot. Use `task-routing-matrix-smoke.sh` for
+deterministic alias/seed-order regressions. Use
+`codebase-memory-backend-evidence-smoke.sh` when changing the
 script-level bridge from exported codebase-memory JSON to CodeInsight
 `backend_evidence`. Use `codebase-memory-bridge-report-smoke.sh` when changing
 the backend/local agreement report generated from `backend_evidence` plus

@@ -35,6 +35,10 @@ require_summary_contract() {
       and (.aggregate.total_estimated_tokens | type == "number")
       and (.aggregate.max_impacted_files | type == "number")
       and (.aggregate.line_reduction | type == "number")
+      and ((.quality_gate? == null) or (
+        (.quality_gate.min_route_quality_score | type == "number")
+        and (.quality_gate.status | type == "string")
+        and (.quality_gate.failure_count | type == "number")))
       and (.cases | type == "array")
       and (.cases | length > 0)
       and all(.cases[];
@@ -114,6 +118,12 @@ main() {
     printf '| First-read line reduction | `%s%%` |\n' "$(metric '.aggregate.line_reduction')"
     printf '| Estimated tokens | `%s` |\n' "$(metric '.aggregate.total_estimated_tokens')"
     printf '| Max impacted files | `%s` |\n\n' "$(metric '.aggregate.max_impacted_files')"
+    if jq -e '.quality_gate? | type == "object"' "$SUMMARY_JSON" >/dev/null; then
+      printf '| Route quality gate | `%s >= %s` |\n' \
+        "$(metric '.quality_gate.status')" \
+        "$(metric '.quality_gate.min_route_quality_score')"
+      printf '| Route quality failures | `%s` |\n\n' "$(metric '.quality_gate.failure_count')"
+    fi
 
     printf "| Case | Ref | Tasks | Expectations | Lines | Reduction | First Files |\n"
     printf "| --- | --- | ---: | ---: | ---: | ---: | --- |\n"

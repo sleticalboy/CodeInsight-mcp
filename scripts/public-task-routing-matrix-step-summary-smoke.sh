@@ -48,6 +48,18 @@ main() {
     "max_impacted_files": 9,
     "line_reduction": 87.5
   },
+  "quality_gate": {
+    "min_route_quality_score": 70,
+    "status": "pass",
+    "failure_count": 0,
+    "cases": [
+      {
+        "case": "express",
+        "status": "pass",
+        "failure_count": 0
+      }
+    ]
+  },
   "cases": [
     {
       "case": "express",
@@ -136,6 +148,8 @@ EOF
   require_literal "$step_summary" '| First-read line reduction | `87.5%` |' "line reduction metric"
   require_literal "$step_summary" '| Estimated tokens | `2400` |' "estimated tokens metric"
   require_literal "$step_summary" '| Max impacted files | `9` |' "max impacted files metric"
+  require_literal "$step_summary" '| Route quality gate | `pass >= 70` |' "route quality gate metric"
+  require_literal "$step_summary" '| Route quality failures | `0` |' "route quality failure metric"
   require_literal "$step_summary" '| Case | Ref | Tasks | Expectations | Lines | Reduction | First Files |' "case table heading"
   require_literal "$step_summary" '| `express` | `ae6dd37680e3` | `4` | `4` | `100/800` | `87.5%` | lib/application.js, lib/express.js |' "express row"
   require_literal "$step_summary" '| `gin` | `1d2ce092565e` | `2` | `2` | `25/200` | `87.5%` | gin.go |' "gin row"
