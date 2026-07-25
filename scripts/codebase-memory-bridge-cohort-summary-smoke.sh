@@ -30,6 +30,8 @@ write_summary() {
   local top_match="$6"
   local candidate_match="$7"
   local next_action="$8"
+  local route_action="${9:-read_selected_context}"
+  local warning_count="${10:-0}"
 
   mkdir -p "$(dirname "$path")"
   cat >"$path" <<JSON
@@ -44,7 +46,9 @@ write_summary() {
   "route": {
     "first_file": "$first_file",
     "route_quality_level": "high",
-    "route_quality_score": 100
+    "route_quality_score": 100,
+    "route_quality_recommended_action": "$route_action",
+    "route_quality_warnings": $(if [ "$warning_count" -gt 0 ]; then printf '["backend/local first-file conflict"]'; else printf '[]'; fi)
   },
   "agreement": {
     "first_file_matches_backend_top": $top_match,
@@ -79,7 +83,7 @@ main() {
   write_summary "$TEMP_DIR/pass-2/summary.json" \
     "understand mcp dispatch" pass src/mcp.rs src/mcp.rs true true use_agent_route_selected_context
   write_summary "$TEMP_DIR/conflict/summary.json" \
-    "understand embedding provider" warn src/embedding.rs src/tools.rs false false investigate_backend_local_conflict
+    "understand embedding provider" warn src/embedding.rs src/tools.rs false false investigate_backend_local_conflict compare_backend_route_before_edits 1
 
   "$ROOT_DIR/scripts/codebase-memory-bridge-cohort-summary.sh" \
     "$TEMP_DIR/pass-1" \
@@ -93,8 +97,11 @@ main() {
   require_jq "$TEMP_DIR/pass.json" '.report_count == 2 and .pass_count == 2 and .warn_count == 0' "pass cohort counts should match"
   require_jq "$TEMP_DIR/pass.json" '.first_file_top_match_rate == 100' "top match rate should be 100"
   require_jq "$TEMP_DIR/pass.json" '.selected_backend_candidate_rate == 50' "candidate coverage should aggregate"
+  require_jq "$TEMP_DIR/pass.json" 'all(.reports[]; .route_quality_recommended_action == "read_selected_context")' "pass cohort should preserve route actions"
   grep -Fq 'First-file top match rate: `100%`' "$TEMP_DIR/pass.md" ||
     fail "pass markdown should include top match rate"
+  grep -Fq 'Agent route action' "$TEMP_DIR/pass.md" ||
+    fail "pass markdown should include agent route action column"
 
   if "$ROOT_DIR/scripts/codebase-memory-bridge-cohort-summary.sh" \
     "$TEMP_DIR/pass-1" \
@@ -108,8 +115,12 @@ main() {
 
   require_jq "$TEMP_DIR/conflict.json" '.status == "needs_review"' "conflict cohort should need review"
   require_jq "$TEMP_DIR/conflict.json" '.conflicts | length == 1' "conflict cohort should list one conflict"
+  require_jq "$TEMP_DIR/conflict.json" '.conflicts[0].route_quality_recommended_action == "compare_backend_route_before_edits"' "conflict cohort should preserve route action"
+  require_jq "$TEMP_DIR/conflict.json" '.conflicts[0].route_warning_count == 1' "conflict cohort should preserve warning count"
   grep -Fq 'cohort is not clean: status=needs_review, reports=2/2, conflicts=1' "$TEMP_DIR/conflict.err" ||
     fail "conflict error should explain check failure"
+  grep -Fq 'compare_backend_route_before_edits' "$TEMP_DIR/conflict.md" ||
+    fail "conflict markdown should include route action"
 
   echo "codebase-memory bridge cohort summary smoke passed"
 }

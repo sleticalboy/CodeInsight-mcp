@@ -120,9 +120,12 @@ main() {
   require_jq "$TEMP_DIR/output/cohort.json" '.status == "pass"' "cohort should pass"
   require_jq "$TEMP_DIR/output/cohort.json" '.report_count == 2 and .pass_count == 2' "cohort counts should match"
   require_jq "$TEMP_DIR/output/cohort.json" '.first_file_top_match_rate == 100' "top match rate should be 100"
+  require_jq "$TEMP_DIR/output/cohort.json" 'all(.reports[]; .route_quality_recommended_action == "read_selected_context")' "cohort should preserve route actions"
 
   grep -Fq 'understand MCP tool dispatch' "$TEMP_DIR/output/cohort.md" ||
     fail "cohort markdown should include task label"
+  grep -Fq 'Agent route action' "$TEMP_DIR/output/cohort.md" ||
+    fail "cohort markdown should include route action column"
 
   echo "codebase-memory bridge cohort report smoke passed"
 }

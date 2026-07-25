@@ -167,7 +167,8 @@ to make the route evidence format backend-ready:
 - `scripts/codebase-memory-bridge-report.sh` summarizes real backend/local
   agreement artifacts after `agent-route`
 - `scripts/codebase-memory-bridge-cohort-summary.sh` aggregates multiple
-  agreement reports into first-file match rates and conflict counts
+  agreement reports into first-file match rates, route actions, warning counts,
+  and conflict counts
 - `scripts/codebase-memory-bridge-cohort-report.sh` batch-generates per-task
   agreement reports and the aggregate cohort from a TSV manifest
 - comparison docs describe codebase-memory as a possible provider, not just a

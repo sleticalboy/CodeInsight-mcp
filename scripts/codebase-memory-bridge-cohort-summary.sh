@@ -123,6 +123,8 @@ write_json_summary() {
           route_first_file: ($summary.route.first_file // ""),
           route_quality_level: ($summary.route.route_quality_level // ""),
           route_quality_score: ($summary.route.route_quality_score // 0),
+          route_quality_recommended_action: ($summary.route.route_quality_recommended_action // ""),
+          route_warning_count: (($summary.route.route_quality_warnings // []) | length),
           first_file_matches_backend_top: ($summary.agreement.first_file_matches_backend_top // false),
           first_file_in_backend_candidates: ($summary.agreement.first_file_in_backend_candidates // false),
           selected_backend_candidate_count: ($summary.agreement.selected_backend_candidate_count // 0),
@@ -178,8 +180,8 @@ write_markdown() {
     "- Selected backend candidate rate: " + tick((.selected_backend_candidate_rate | tostring) + "%"),
     "- Next action: " + tick(.next_action),
     "",
-    "| Task | Status | Backend top | Route first | Top match | Candidate match | Route quality | Next action |",
-    "| --- | --- | --- | --- | --- | --- | --- | --- |",
+    "| Task | Status | Backend top | Route first | Top match | Candidate match | Route quality | Agent route action | Warnings | Next action |",
+    "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     (.reports[] |
       "| " + (if .task == "" then "-" else .task end) +
       " | " + tick(.status) +
@@ -188,6 +190,8 @@ write_markdown() {
       " | " + tick(.first_file_matches_backend_top) +
       " | " + tick(.first_file_in_backend_candidates) +
       " | " + tick(.route_quality_level + " " + (.route_quality_score | tostring) + "/100") +
+      " | " + tick(if .route_quality_recommended_action == "" then "n/a" else .route_quality_recommended_action end) +
+      " | " + tick(.route_warning_count) +
       " | " + tick(.next_action) + " |"
     )
   ' "$JSON_OUTPUT" >"$OUTPUT"
