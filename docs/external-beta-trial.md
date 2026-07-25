@@ -148,7 +148,9 @@ scripts/external-beta-cohort-report.sh \
 
 The handoff folder contains `external-beta-cohort.md`,
 `external-beta-cohort-summary.json`, `external-beta-fix-queue.md`,
-`external-beta-fix-queue.json`, and a short `README.md` with the cohort status,
-route-quality gate, next action, and fix queue size. See the
+`external-beta-fix-queue.json`, `manifest.json`, and a short `README.md` with
+the cohort status, route-quality gate, next action, and fix queue size. The
+manifest records the handoff stage, inputs, options, output files, cohort
+status, and fix queue status for automation. See the
 [External Beta handoff example](external-beta-handoff-example.md) for the
 expected artifact shape.

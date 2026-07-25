@@ -90,6 +90,7 @@ main() {
   [ -f "$TEMP_DIR/handoff/external-beta-fix-queue.md" ] || fail "fix queue markdown missing"
   [ -f "$TEMP_DIR/handoff/external-beta-fix-queue.json" ] || fail "fix queue JSON missing"
   [ -f "$TEMP_DIR/handoff/README.md" ] || fail "handoff README missing"
+  [ -f "$TEMP_DIR/handoff/manifest.json" ] || fail "handoff manifest missing"
 
   grep -Fq '# External Beta Cohort Handoff' "$TEMP_DIR/handoff/README.md" ||
     fail "handoff README title missing"
@@ -99,6 +100,8 @@ main() {
     fail "handoff README next action missing"
   grep -Fq -- '- Fix queue items: `2`' "$TEMP_DIR/handoff/README.md" ||
     fail "handoff README max-items count missing"
+  grep -Fq '`manifest.json`: machine-readable handoff package manifest.' "$TEMP_DIR/handoff/README.md" ||
+    fail "handoff README manifest entry missing"
 
   jq -e \
     '.status == "complete"
@@ -115,6 +118,26 @@ main() {
       and .items[1].priority == "route_miss"' \
     "$TEMP_DIR/handoff/external-beta-fix-queue.json" >/dev/null ||
     fail "fix queue JSON contract mismatch"
+
+  jq -e \
+    '.status == "pass"
+      and .stage == "external_beta_cohort_handoff"
+      and .output_dir == "'"$TEMP_DIR"'/handoff"
+      and (.inputs | length) == 3
+      and .options.min_reports == 3
+      and .options.min_route_quality_score == 70
+      and .options.max_items == 2
+      and .options.check == true
+      and .cohort.status == "complete"
+      and .cohort.report_count == 3
+      and .cohort.next_action == "fix_workflow_friction"
+      and .cohort.quality_gate == "pass"
+      and .fix_queue.status == "actionable"
+      and .fix_queue.item_count == 2
+      and (.files | index("manifest.json") != null)
+      and .artifacts.manifest == "'"$TEMP_DIR"'/handoff/manifest.json"' \
+    "$TEMP_DIR/handoff/manifest.json" >/dev/null ||
+    fail "handoff manifest JSON contract mismatch"
 
   echo "external beta cohort report smoke passed"
 }

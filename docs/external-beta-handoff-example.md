@@ -39,7 +39,8 @@ scripts/external-beta-cohort-report.sh \
 ├── external-beta-cohort.md
 ├── external-beta-cohort-summary.json
 ├── external-beta-fix-queue.md
-└── external-beta-fix-queue.json
+├── external-beta-fix-queue.json
+└── manifest.json
 ```
 
 ## Handoff README Snapshot
@@ -53,6 +54,42 @@ scripts/external-beta-cohort-report.sh \
 - Next action: `fix_workflow_friction`
 - Fix queue status: `actionable`
 - Fix queue items: `2`
+```
+
+## Manifest Snapshot
+
+The manifest is the automation entrypoint for CI artifacts, issue attachments,
+or downstream dashboards:
+
+```json
+{
+  "status": "pass",
+  "stage": "external_beta_cohort_handoff",
+  "options": {
+    "min_reports": 3,
+    "min_route_quality_score": 70,
+    "max_items": null,
+    "check": true
+  },
+  "cohort": {
+    "status": "complete",
+    "report_count": 3,
+    "next_action": "fix_workflow_friction",
+    "quality_gate": "pass"
+  },
+  "fix_queue": {
+    "status": "actionable",
+    "item_count": 2
+  },
+  "files": [
+    "README.md",
+    "external-beta-cohort.md",
+    "external-beta-cohort-summary.json",
+    "external-beta-fix-queue.md",
+    "external-beta-fix-queue.json",
+    "manifest.json"
+  ]
+}
 ```
 
 ## Cohort Summary Snapshot

@@ -41,6 +41,7 @@ Output:
   <output-dir>/external-beta-fix-queue.md
   <output-dir>/external-beta-fix-queue.json
   <output-dir>/README.md
+  <output-dir>/manifest.json
 EOF
 }
 
@@ -142,6 +143,7 @@ routing workflow.
 - \`external-beta-cohort-summary.json\`: machine-readable cohort summary.
 - \`external-beta-fix-queue.md\`: maintainer fix queue.
 - \`external-beta-fix-queue.json\`: machine-readable fix queue.
+- \`manifest.json\`: machine-readable handoff package manifest.
 
 ## Reproduce
 
@@ -155,6 +157,60 @@ scripts/external-beta-cohort-report.sh \\
 EOF
 }
 
+write_manifest() {
+  local cohort_json="$1"
+  local queue_json="$2"
+  local manifest_json="$3"
+
+  jq -n \
+    --slurpfile cohort "$cohort_json" \
+    --slurpfile queue "$queue_json" \
+    --arg output_dir "$OUTPUT_DIR" \
+    --arg max_items "$MAX_ITEMS" \
+    --argjson min_reports "$MIN_REPORTS" \
+    --argjson min_route_quality_score "$MIN_ROUTE_QUALITY_SCORE" \
+    --argjson check "$([ "$CHECK" = true ] && printf 'true' || printf 'false')" \
+    --argjson inputs "$(printf '%s\n' "${INPUTS[@]}" | jq -R . | jq -s .)" \
+    '{
+      status: (if $cohort[0].status == "complete" then "pass" else "needs_action" end),
+      stage: "external_beta_cohort_handoff",
+      output_dir: $output_dir,
+      inputs: $inputs,
+      options: {
+        min_reports: $min_reports,
+        min_route_quality_score: $min_route_quality_score,
+        max_items: (if $max_items == "" then null else ($max_items | tonumber) end),
+        check: $check
+      },
+      cohort: {
+        status: $cohort[0].status,
+        report_count: $cohort[0].report_count,
+        next_action: $cohort[0].next_action,
+        quality_gate: $cohort[0].quality_gate.status
+      },
+      fix_queue: {
+        status: $queue[0].status,
+        item_count: $queue[0].item_count
+      },
+      files: [
+        "README.md",
+        "external-beta-cohort.md",
+        "external-beta-cohort-summary.json",
+        "external-beta-fix-queue.md",
+        "external-beta-fix-queue.json",
+        "manifest.json"
+      ],
+      artifacts: {
+        readme: ($output_dir + "/README.md"),
+        cohort_markdown: ($output_dir + "/external-beta-cohort.md"),
+        cohort_json: ($output_dir + "/external-beta-cohort-summary.json"),
+        fix_queue_markdown: ($output_dir + "/external-beta-fix-queue.md"),
+        fix_queue_json: ($output_dir + "/external-beta-fix-queue.json"),
+        manifest: ($output_dir + "/manifest.json")
+      }
+    }' >"$manifest_json"
+}
+
 main() {
   local -a INPUTS=()
   parse_args "$@"
@@ -166,6 +222,7 @@ main() {
   local cohort_json="$OUTPUT_DIR/external-beta-cohort-summary.json"
   local queue_md="$OUTPUT_DIR/external-beta-fix-queue.md"
   local queue_json="$OUTPUT_DIR/external-beta-fix-queue.json"
+  local manifest_json="$OUTPUT_DIR/manifest.json"
   local -a check_args=()
   local -a queue_args=()
 
@@ -191,12 +248,14 @@ main() {
     "${queue_args[@]}"
 
   write_readme "$cohort_json" "$queue_json"
+  write_manifest "$cohort_json" "$queue_json" "$manifest_json"
 
   echo "external beta cohort report written to $OUTPUT_DIR/README.md"
   echo "cohort: $cohort_md"
   echo "cohort_json: $cohort_json"
   echo "fix_queue: $queue_md"
   echo "fix_queue_json: $queue_json"
+  echo "manifest: $manifest_json"
 }
 
 main "$@"
