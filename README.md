@@ -336,7 +336,7 @@ accuracy, or proof that unselected code is irrelevant.
 
 Current benchmark snapshot:
 
-- The two-minute demo for this repository shows the agent route selecting 533 of 81,424 source lines, avoiding 80,891 source lines before broad reading for a 99.3% reduction and 152.8x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
+- The two-minute demo for this repository shows the agent route selecting 533 of 81,442 source lines, avoiding 80,909 source lines before broad reading for a 99.3% reduction and 152.8x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
 - Smoke repositories route `context_pack` first for 4/4 repositories and
   select 709 of 75,753 source lines, a 99.1% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and
@@ -543,6 +543,7 @@ Key docs:
 - [MVP public readiness](docs/mvp-public-readiness.md)
 - [Public Adoption Alpha](docs/public-adoption-alpha.md)
 - [External Beta trial](docs/external-beta-trial.md)
+- [External Beta handoff example](docs/external-beta-handoff-example.md)
 - [Alpha feedback triage](docs/alpha-feedback-triage.md)
 - [Alpha trial log](docs/alpha-trial-log.md)
 - [Public adoption feedback template](docs/public-adoption-feedback-template.md)
