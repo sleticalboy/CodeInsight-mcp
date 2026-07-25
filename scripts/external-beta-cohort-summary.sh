@@ -15,8 +15,13 @@ Options:
   --output PATH       Markdown output path. Default: /tmp/codeinsight-external-beta-cohort.md.
   --json PATH         JSON summary output path. Default: <output-dir>/external-beta-cohort-summary.json.
   --min-reports N     Minimum complete cohort size. Default: 3.
+  --min-route-quality-score N
+                      Fail check mode when any report route quality is below N.
   --check             Fail unless at least N reports are present and none are needs_triage.
   -h, --help          Show this help text.
+
+Environment:
+  CODEINSIGHT_EXTERNAL_BETA_COHORT_MIN_ROUTE_QUALITY_SCORE
 EOF
 }
 
@@ -35,6 +40,7 @@ main() {
   local output="/tmp/codeinsight-external-beta-cohort.md"
   local json_output=""
   local min_reports="3"
+  local min_route_quality_score="${CODEINSIGHT_EXTERNAL_BETA_COHORT_MIN_ROUTE_QUALITY_SCORE:-}"
   local check="false"
   local -a inputs=()
 
@@ -53,6 +59,11 @@ main() {
       --min-reports)
         [ "$#" -ge 2 ] || fail "--min-reports requires a number"
         min_reports="$2"
+        shift 2
+        ;;
+      --min-route-quality-score)
+        [ "$#" -ge 2 ] || fail "--min-route-quality-score requires a number"
+        min_route_quality_score="$2"
         shift 2
         ;;
       --check)
@@ -81,6 +92,13 @@ main() {
   if [ "$min_reports" -le 0 ]; then
     fail "--min-reports must be greater than zero"
   fi
+  if [ -n "$min_route_quality_score" ]; then
+    case "$min_route_quality_score" in
+      ''|*[!0-9]*)
+        fail "--min-route-quality-score must be a non-negative integer"
+        ;;
+    esac
+  fi
   if [ "${#inputs[@]}" -eq 0 ]; then
     fail "at least one beta-summary.json file or directory is required"
   fi
@@ -92,12 +110,14 @@ main() {
   fi
   mkdir -p "$(dirname "$json_output")"
 
-  ruby -rjson -rtime - "$output" "$json_output" "$min_reports" "$check" "${inputs[@]}" <<'RUBY'
+  ruby -rjson -rtime - "$output" "$json_output" "$min_reports" "$check" "$min_route_quality_score" "${inputs[@]}" <<'RUBY'
 output = ARGV.fetch(0)
 json_output = ARGV.fetch(1)
 min_reports = Integer(ARGV.fetch(2))
 check = ARGV.fetch(3) == "true"
-inputs = ARGV.drop(4)
+min_route_quality_score_arg = ARGV.fetch(4)
+min_route_quality_score = min_route_quality_score_arg.empty? ? nil : Integer(min_route_quality_score_arg)
+inputs = ARGV.drop(5)
 
 allowed_outcomes = %w[
   needs_triage
@@ -122,6 +142,14 @@ def metric(summary, key, default = "")
   summary.dig("adoption_summary", "local_evidence", "metrics", key) || default
 end
 
+def route_quality_score(summary)
+  score = summary.dig("adoption_summary", "mcp_first_call", "route_quality", "score")
+  return nil if score.nil? || score.to_s.empty?
+  Integer(score)
+rescue ArgumentError, TypeError
+  nil
+end
+
 reports = inputs.map do |input|
   path = beta_summary_path(input)
   fail_with("missing beta summary: #{path}") unless File.file?(path)
@@ -141,6 +169,8 @@ reports = inputs.map do |input|
     fail_with("#{path} has unknown outcome: #{outcome}")
   end
 
+  score = route_quality_score(summary)
+
   {
     "path" => path,
     "repository" => summary["repository"].to_s,
@@ -159,6 +189,9 @@ reports = inputs.map do |input|
     "risk_level" => metric(summary, "risk_level"),
     "first_suggested_tool" => metric(summary, "first_suggested_tool"),
     "mcp_first_call_status" => summary.dig("adoption_summary", "mcp_first_call", "status").to_s,
+    "route_quality_level" => summary.dig("adoption_summary", "mcp_first_call", "route_quality", "level").to_s,
+    "route_quality_score" => score,
+    "route_quality_recommended_action" => summary.dig("adoption_summary", "mcp_first_call", "route_quality", "recommended_action").to_s,
     "issue_body" => summary.dig("artifacts", "issue_body").to_s,
     "maintainer_triage" => summary.dig("artifacts", "maintainer_triage").to_s
   }
@@ -166,6 +199,12 @@ end
 
 counts = allowed_outcomes.to_h { |outcome| [outcome, 0] }
 reports.each { |report| counts[report["outcome"]] += 1 }
+quality_failures =
+  if min_route_quality_score
+    reports.select { |report| report["route_quality_score"].nil? || report["route_quality_score"] < min_route_quality_score }
+  else
+    []
+  end
 
 total = reports.length
 needs_triage = counts.fetch("needs_triage")
@@ -174,6 +213,8 @@ status =
     "insufficient_reports"
   elsif needs_triage.positive?
     "needs_triage"
+  elsif quality_failures.any?
+    "quality_gate_failed"
   else
     "complete"
   end
@@ -183,6 +224,8 @@ next_action =
     "collect_more_external_beta_reports"
   elsif needs_triage.positive?
     "triage_needs_triage_reports"
+  elsif quality_failures.any?
+    "fix_low_quality_routes"
   elsif counts.fetch("workflow_friction").positive?
     "fix_workflow_friction"
   elsif counts.fetch("route_miss").positive?
@@ -198,6 +241,7 @@ next_action =
 priority_outcome =
   case next_action
   when "triage_needs_triage_reports" then "needs_triage"
+  when "fix_low_quality_routes" then "route_quality_below_threshold"
   when "fix_workflow_friction" then "workflow_friction"
   when "fix_route_miss" then "route_miss"
   when "fix_overtrust_risk" then "overtrust_risk"
@@ -205,7 +249,14 @@ priority_outcome =
   else ""
   end
 
-priority_reports = priority_outcome.empty? ? [] : reports.select { |report| report["outcome"] == priority_outcome }
+priority_reports =
+  if priority_outcome == "route_quality_below_threshold"
+    quality_failures
+  elsif priority_outcome.empty?
+    []
+  else
+    reports.select { |report| report["outcome"] == priority_outcome }
+  end
 
 summary = {
   "status" => status,
@@ -215,6 +266,24 @@ summary = {
   "complete_cohort" => status == "complete",
   "needs_triage_count" => needs_triage,
   "classification_counts" => counts,
+  "quality_gate" => (
+    if min_route_quality_score
+      {
+        "min_route_quality_score" => min_route_quality_score,
+        "status" => quality_failures.empty? ? "pass" : "fail",
+        "failure_count" => quality_failures.length,
+        "failures" => quality_failures.map do |report|
+          {
+            "path" => report["path"],
+            "repository" => report["repository"],
+            "task" => report["task"],
+            "first_file" => report["first_file"],
+            "route_quality_score" => report["route_quality_score"]
+          }
+        end
+      }
+    end
+  ),
   "next_action" => next_action,
   "priority_outcome" => priority_outcome,
   "priority_reports" => priority_reports,
@@ -238,7 +307,8 @@ rows = reports.map do |report|
     report["repository"]
   end
 
-  "| `#{cell(report["outcome"])}` | #{cell(repo)} | #{cell(report["task"])} | `#{cell(report["first_file"])}` | `#{cell(report["read_less_ratio"])}` | `#{cell(report["mcp_first_call_status"])}` | `#{cell(report["path"])}` |"
+  quality = report["route_quality_score"].nil? ? "n/a" : "#{report["route_quality_level"]} / #{report["route_quality_score"]}"
+  "| `#{cell(report["outcome"])}` | #{cell(repo)} | #{cell(report["task"])} | `#{cell(report["first_file"])}` | `#{cell(report["read_less_ratio"])}` | `#{cell(report["mcp_first_call_status"])}` | `#{cell(quality)}` | `#{cell(report["path"])}` |"
 end
 
 priority_lines =
@@ -264,6 +334,8 @@ File.write(output, <<~MARKDOWN)
   - Reports: `#{total}/#{min_reports}`
   - Complete cohort: `#{status == "complete"}`
   - Needs triage: `#{needs_triage}`
+  - Route quality gate: `#{min_route_quality_score ? "#{quality_failures.empty? ? "pass" : "fail"} >= #{min_route_quality_score}" : "not_configured"}`
+  - Route quality failures: `#{quality_failures.length}`
   - Next action: `#{next_action}`
   - Priority outcome: `#{priority_outcome.empty? ? "-" : priority_outcome}`
 
@@ -278,8 +350,8 @@ File.write(output, <<~MARKDOWN)
 
   ## Reports
 
-  | Outcome | Repository | Task | First file | Read less | MCP first call | Summary |
-  | --- | --- | --- | --- | ---: | --- | --- |
+  | Outcome | Repository | Task | First file | Read less | MCP first call | Route quality | Summary |
+  | --- | --- | --- | --- | ---: | --- | --- | --- |
   #{rows.join("\n")}
 
   ## Priority Queue
@@ -289,18 +361,22 @@ File.write(output, <<~MARKDOWN)
   ## Check Mode
 
   Run with `--check` before public handoff. The check passes only when at least
-  `#{min_reports}` reports are present and none are still `needs_triage`.
+  `#{min_reports}` reports are present, none are still `needs_triage`, and any
+  configured route-quality gate passes.
 MARKDOWN
 
 File.write(json_output, JSON.pretty_generate(summary) + "\n")
 
 if check && status != "complete"
-  fail_with("cohort is not complete: status=#{status}, reports=#{total}/#{min_reports}, needs_triage=#{needs_triage}")
+  message = "cohort is not complete: status=#{status}, reports=#{total}/#{min_reports}, needs_triage=#{needs_triage}"
+  message += ", route_quality_failures=#{quality_failures.length}" if min_route_quality_score
+  fail_with(message)
 end
 
 puts "external beta cohort summary written to #{output}"
 puts "summary_json: #{json_output}"
 puts "status: #{status}"
+puts "quality_gate: #{quality_failures.empty? ? "pass" : "fail"} >= #{min_route_quality_score}" if min_route_quality_score
 puts "next_action: #{next_action}"
 RUBY
 }

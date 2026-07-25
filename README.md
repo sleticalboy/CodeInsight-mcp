@@ -129,7 +129,7 @@ hands the agent to precise local tools when the selected context is not enough.
    | Installed adoption | `CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/installed-quickstart-smoke.sh` | You want the installed binary to pass CLI `agent-route`, MCP stdio, and MCP `agent_route` against a temporary project with read-less, selection-rank, and continuation evidence. |
    | Local evidence | `scripts/adoption-evidence.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-evidence --print-snippet --issue-template` | You want one folder with local first-read evidence, raw route JSON, MCP first-call JSON, aggregate Markdown/JSON summaries, a copyable terminal snippet, and a ready-to-file issue template. |
    | External Beta trial | `scripts/external-beta-trial.sh /path/to/repo --output-dir /tmp/codeinsight-external-beta-trial` | You want a non-maintainer trial pack with an issue body, redaction checklist, maintainer triage note, and the underlying adoption evidence artifacts. |
-   | External Beta cohort | `scripts/external-beta-cohort-summary.sh /tmp/beta-1 /tmp/beta-2 /tmp/beta-3 --check` | You want to aggregate at least three External Beta reports, count outcomes, and pick the next fix priority. |
+   | External Beta cohort | `scripts/external-beta-cohort-summary.sh /tmp/beta-1 /tmp/beta-2 /tmp/beta-3 --min-route-quality-score 70 --check` | You want to aggregate at least three External Beta reports, gate low-confidence routes, count outcomes, and pick the next fix priority. |
    | Adoption comparison | `scripts/adoption-comparison.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-comparison` | You want a shareable blind-read vs routed-first-read comparison showing source lines avoided, read-less ratio, seed strategy, optional explicit `--file` / `--symbol` seeds, first reading focus/question, selection rank, and continuation next action. |
    | Backend evidence bridge | `scripts/codebase-memory-backend-evidence-smoke.sh` | You want proof that exported codebase-memory `search_graph`, `search_code`, and `get_architecture` JSON can become `agent_route --backend-evidence` and appear in route quality. |
    | Backend agreement report | `scripts/codebase-memory-bridge-report.sh --backend-evidence /tmp/codeinsight-backend-evidence.json --agent-route-json /tmp/codeinsight-agent-route.json --output-dir /tmp/codeinsight-codebase-memory-bridge` | You want a shareable backend/local agreement summary after running `agent_route` with advisory codebase-memory evidence. |
@@ -334,7 +334,7 @@ accuracy, or proof that unselected code is irrelevant.
 
 Current benchmark snapshot:
 
-- The two-minute demo for this repository shows the agent route selecting 533 of 80,541 source lines, avoiding 80,008 source lines before broad reading for a 99.3% reduction and 151.1x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
+- The two-minute demo for this repository shows the agent route selecting 533 of 80,654 source lines, avoiding 80,121 source lines before broad reading for a 99.3% reduction and 151.3x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
 - Smoke repositories route `context_pack` first for 4/4 repositories and
   select 709 of 75,753 source lines, a 99.1% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and
@@ -443,12 +443,14 @@ scripts/external-beta-cohort-summary.sh \
   /tmp/codeinsight-external-beta-trial-3 \
   --output /tmp/codeinsight-external-beta-cohort.md \
   --json /tmp/codeinsight-external-beta-cohort.json \
+  --min-route-quality-score 70 \
   --check
 ```
 
 The cohort summary reports `status`, outcome counts, `needs_triage` count, and
 the next action priority: triage unresolved reports, fix workflow friction, fix
-route misses, address over-trust wording, or publish the Beta summary.
+low route quality, fix route misses, address over-trust wording, or publish the
+Beta summary.
 
 Use `scripts/adoption-report.sh` when you need one uploadable archive. It writes
 `codeinsight-adoption-report.tar.gz` with `adoption-evidence.md`,

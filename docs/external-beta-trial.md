@@ -103,16 +103,20 @@ scripts/external-beta-cohort-summary.sh \
   /tmp/codeinsight-external-beta-trial-3 \
   --output /tmp/codeinsight-external-beta-cohort.md \
   --json /tmp/codeinsight-external-beta-cohort.json \
+  --min-route-quality-score 70 \
   --check
 ```
 
 Each argument can be a trial output directory or a `beta-summary.json` file. In
 `--check` mode the command fails until at least three reports are present and
-none are still `needs_triage`.
+none are still `needs_triage`. When `--min-route-quality-score` is set, check
+mode also fails if any report route quality score falls below that threshold,
+so low-confidence routes remain feedback instead of public success evidence.
 
 Prioritize the first fix in this order:
 
 1. `workflow_friction` that blocks the trial command or issue filing.
-2. `route_miss` where the first selected file is wrong for a common task.
-3. `overtrust_risk` in user-facing wording.
-4. `route_near_miss` with a small, testable routing improvement.
+2. Low route quality that makes the first-read evidence too weak to publish.
+3. `route_miss` where the first selected file is wrong for a common task.
+4. `overtrust_risk` in user-facing wording.
+5. `route_near_miss` with a small, testable routing improvement.
