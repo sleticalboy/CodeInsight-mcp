@@ -6418,6 +6418,20 @@ export function routerRegressionSpec() {
             .any(|keyword| keyword == "auth")
     );
     assert_eq!(auth_context["files"][0]["file"], "src/auth.ts");
+    let chinese_auth_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "理解认证和登录流程",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(chinese_auth_context["seed_strategy"], "auto_task_match");
+    assert_eq!(
+        chinese_auth_context["selected_seeds"][0]["value"],
+        "src/auth.ts"
+    );
+    assert_eq!(chinese_auth_context["files"][0]["file"], "src/auth.ts");
     let auth_question = auth_context["reading_plan"][0]["question"]
         .as_str()
         .unwrap();

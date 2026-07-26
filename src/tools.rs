@@ -2049,7 +2049,7 @@ fn backend_seed_context_pack(
         })
         .collect::<Vec<_>>();
     let backend_task_keywords = task_keywords(task);
-    if !backend_task_prefers_support_files(task, &backend_task_keywords) {
+    if !backend_task_prefers_support_files(&backend_task_keywords) {
         candidates.sort_by_key(|candidate| backend_candidate_is_support_file(&candidate.file));
     }
 
@@ -2285,7 +2285,7 @@ fn backend_candidate_is_support_file(file: &str) -> bool {
         || normalized.contains("_smoke.")
 }
 
-fn backend_task_prefers_support_files(task: &str, task_keywords: &[String]) -> bool {
+fn backend_task_prefers_support_files(task_keywords: &[String]) -> bool {
     task_keywords.iter().any(|keyword| {
         matches!(
             keyword.as_str(),
@@ -2315,21 +2315,7 @@ fn backend_task_prefers_support_files(task: &str, task_keywords: &[String]) -> b
                 | "tests"
                 | "workflow"
         )
-    }) || [
-        "测试",
-        "冒烟",
-        "脚本",
-        "文档",
-        "示例",
-        "演示",
-        "基准",
-        "发布",
-        "工作流",
-        "打包",
-        "配方",
-    ]
-    .iter()
-    .any(|intent| task.contains(intent))
+    })
 }
 
 fn annotate_backend_seed_context(
@@ -14075,8 +14061,57 @@ fn task_keywords(task: &str) -> Vec<String> {
             push_task_keyword(&mut keywords, alias);
         }
     }
+    for (phrase, aliases) in chinese_task_keyword_aliases() {
+        if task.contains(phrase) {
+            for alias in *aliases {
+                push_task_keyword(&mut keywords, alias);
+            }
+        }
+    }
     keywords.truncate(32);
     keywords
+}
+
+fn chinese_task_keyword_aliases() -> &'static [(&'static str, &'static [&'static str])] {
+    &[
+        ("路由", &["route", "router", "routing"]),
+        ("认证", &["auth", "authentication"]),
+        ("登录", &["login", "auth", "authentication"]),
+        ("权限", &["permission", "permissions", "authorization"]),
+        ("授权", &["authorization", "permission"]),
+        ("配置", &["config", "configuration", "settings"]),
+        ("设置", &["settings", "config"]),
+        ("启动", &["startup", "entrypoint", "bootstrap"]),
+        ("入口", &["entrypoint", "startup"]),
+        ("中间件", &["middleware"]),
+        ("持久化", &["persistence", "storage"]),
+        ("存储", &["storage", "persistence"]),
+        ("数据库", &["database", "storage"]),
+        ("测试", &["test", "tests", "testing"]),
+        ("冒烟", &["smoke", "test"]),
+        ("脚本", &["script", "scripts"]),
+        ("文档", &["docs", "documentation"]),
+        ("示例", &["example", "examples"]),
+        ("演示", &["demo"]),
+        ("基准", &["benchmark"]),
+        ("发布", &["release"]),
+        ("工作流", &["workflow"]),
+        ("打包", &["packaging", "package"]),
+        ("缓存", &["cache"]),
+        ("性能", &["performance"]),
+        ("日志", &["logs", "observability"]),
+        ("监控", &["monitoring", "observability"]),
+        ("安全", &["security"]),
+        ("漏洞", &["vulnerability", "security"]),
+        ("支付", &["payment", "billing"]),
+        ("订阅", &["subscription", "billing"]),
+        ("渲染", &["render", "rendering"]),
+        ("组件", &["component", "frontend"]),
+        ("队列", &["queue", "job"]),
+        ("后台任务", &["background", "job", "worker"]),
+        ("上下文", &["context"]),
+        ("智能体", &["agent"]),
+    ]
 }
 
 fn push_task_keyword(keywords: &mut Vec<String>, keyword: &str) {
@@ -14641,6 +14676,25 @@ mod tests {
 
         assert_eq!(breakdown.seed_files, 1);
         assert_eq!(breakdown.call_related_files, 1);
+    }
+
+    #[test]
+    fn task_keywords_map_common_chinese_routing_intents() {
+        for (task, expected) in [
+            ("理解路由和权限", "routing"),
+            ("检查数据库持久化", "persistence"),
+            ("排查日志和监控", "observability"),
+            ("修复安全漏洞", "security"),
+            ("调整支付订阅", "billing"),
+            ("检查后台任务队列", "worker"),
+            ("更新前端组件渲染", "component"),
+            ("优化智能体上下文", "agent"),
+        ] {
+            assert!(
+                task_keywords(task).contains(&expected.to_string()),
+                "expected {expected} for {task}"
+            );
+        }
     }
 
     #[test]
