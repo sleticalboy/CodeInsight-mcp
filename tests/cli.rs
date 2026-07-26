@@ -3124,13 +3124,16 @@ fn cli_agent_route_routes_ranked_backend_candidates_within_budget() {
     assert_eq!(dispositions.len(), 16);
     assert_eq!(dispositions[0]["file"], "src/ui.ts");
     assert_eq!(dispositions[0]["context_status"], "selected");
+    assert_eq!(dispositions[0]["next_action"], "read_selected_context");
     assert_eq!(dispositions[0]["symbol_status"], "valid");
     assert_eq!(dispositions[1]["file"], "src/main.ts");
     assert_eq!(dispositions[1]["context_status"], "selected");
+    assert_eq!(dispositions[1]["next_action"], "read_selected_context");
     assert_eq!(dispositions[1]["symbol_status"], "valid");
     assert!(dispositions.iter().any(|disposition| {
         disposition["context_status"] == "omitted"
             && disposition["context_reason"] == "token_budget_exhausted"
+            && disposition["next_action"] == "run_backend_candidate_context_pack"
             && disposition["symbol_status"] == "valid"
     }));
     let impact_seed_files = route["impact_seed_files"].as_array().unwrap();
@@ -3190,6 +3193,7 @@ fn cli_agent_route_preserves_backend_rank_after_skipping_missing_candidate() {
                 "symbol": "removed",
                 "context_status": "omitted",
                 "context_reason": "missing_file",
+                "next_action": "refresh_backend_evidence",
                 "symbol_status": "not_checked"
             },
             {
@@ -3198,6 +3202,7 @@ fn cli_agent_route_preserves_backend_rank_after_skipping_missing_candidate() {
                 "symbol": "render",
                 "context_status": "selected",
                 "context_reason": "selected_within_token_budget",
+                "next_action": "read_selected_context",
                 "symbol_status": "valid"
             }
         ])
@@ -3363,6 +3368,7 @@ fn cli_agent_route_falls_back_to_file_when_backend_symbol_is_stale() {
             "symbol": "removedGraphSymbol",
             "context_status": "selected",
             "context_reason": "selected_within_token_budget",
+            "next_action": "read_selected_context",
             "symbol_status": "stale"
         }])
     );
@@ -10654,6 +10660,7 @@ fn cli_agent_route_explains_when_all_backend_candidates_are_missing() {
                 "symbol": "AuthService",
                 "context_status": "omitted",
                 "context_reason": "missing_file",
+                "next_action": "refresh_backend_evidence",
                 "symbol_status": "not_checked"
             },
             {
@@ -10662,6 +10669,7 @@ fn cli_agent_route_explains_when_all_backend_candidates_are_missing() {
                 "symbol": "main",
                 "context_status": "omitted",
                 "context_reason": "missing_file",
+                "next_action": "refresh_backend_evidence",
                 "symbol_status": "not_checked"
             }
         ])

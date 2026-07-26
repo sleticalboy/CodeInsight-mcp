@@ -1705,6 +1705,13 @@ fn backend_candidate_dispositions(
                     BackendContextMode::Fallback => ("omitted", "fallback_not_selected"),
                 }
             };
+            let next_action = match context_reason {
+                "selected_within_token_budget" => "read_selected_context",
+                "token_budget_exhausted" => "run_backend_candidate_context_pack",
+                "fallback_not_selected" => "use_if_fallback_context_insufficient",
+                "missing_file" => "refresh_backend_evidence",
+                _ => unreachable!("backend candidate context reason is exhaustive"),
+            };
 
             AgentRouteBackendCandidateDisposition {
                 file: file.clone(),
@@ -1712,6 +1719,7 @@ fn backend_candidate_dispositions(
                 symbol,
                 context_status: context_status.to_string(),
                 context_reason: context_reason.to_string(),
+                next_action: next_action.to_string(),
                 symbol_status: symbol_status.map(str::to_string),
             }
         })

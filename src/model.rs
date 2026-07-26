@@ -377,6 +377,7 @@ pub struct AgentRouteBackendCandidateDisposition {
     pub symbol: Option<String>,
     pub context_status: String,
     pub context_reason: String,
+    pub next_action: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub symbol_status: Option<String>,
 }
