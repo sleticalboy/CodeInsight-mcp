@@ -149,10 +149,12 @@ main() {
   TEMP_DIR="$(mktemp -d)"
   trap cleanup EXIT INT TERM
 
-  local repo evidence route_json preferred_route_json fallback_route_json conflict_evidence conflict_route_json
+  local repo evidence route_json inline_evidence inline_route_json preferred_route_json fallback_route_json conflict_evidence conflict_route_json
   repo="$TEMP_DIR/repo"
   evidence="$TEMP_DIR/backend-evidence.json"
   route_json="$TEMP_DIR/agent-route.json"
+  inline_evidence="$TEMP_DIR/backend-inline-evidence.json"
+  inline_route_json="$TEMP_DIR/agent-route-inline.json"
   preferred_route_json="$TEMP_DIR/agent-route-preferred.json"
   fallback_route_json="$TEMP_DIR/agent-route-fallback.json"
   conflict_evidence="$TEMP_DIR/backend-conflict-evidence.json"
@@ -189,6 +191,32 @@ main() {
   require_jq "$evidence" '.evidence_count == 5' "evidence count should include duplicate backend signals"
   require_jq "$evidence" '.latency_ms == 33' "latency should aggregate exported backend timings"
   require_jq "$evidence" '.confidence == 0.86' "confidence should be preserved"
+
+  jq -n \
+    --slurpfile search_graph "$TEMP_DIR/search-graph.json" \
+    --slurpfile search_code "$TEMP_DIR/search-code.json" \
+    --slurpfile architecture "$TEMP_DIR/architecture.json" \
+    '{
+      provider: "codebase-memory-mcp",
+      confidence: 0.86,
+      tool_results: {
+        search_graph: $search_graph[0],
+        search_code: $search_code[0],
+        get_architecture: $architecture[0]
+      }
+    }' >"$inline_evidence"
+
+  "$CODEINSIGHT_BIN" agent-route "$repo" \
+    --task "inspect src/auth.ts before editing login behavior" \
+    --token-budget 1600 \
+    --force-index \
+    --backend-evidence "$inline_evidence" >"$inline_route_json"
+
+  require_jq "$inline_route_json" '.routing_decision.backend_evidence.candidate_files == ["src/auth.ts", "src/audit.ts", "src/main.ts"]' "inline tool results should preserve normalized candidate ranking"
+  require_jq "$inline_route_json" '.routing_decision.backend_evidence.candidates | map(.file) == ["src/auth.ts", "src/audit.ts", "src/main.ts"]' "inline tool results should produce structured candidates"
+  require_jq "$inline_route_json" '.routing_decision.backend_evidence.evidence_count == 5 and .routing_decision.backend_evidence.latency_ms == 33' "inline tool results should aggregate evidence count and latency"
+  require_jq "$inline_route_json" '.routing_decision.backend_evidence.tool_results == null' "inline tool results should be omitted from the compact route response"
+  require_jq "$inline_route_json" 'any(.routing_decision.backend_evidence.notes[]; contains("normalized from inline backend tool_results"))' "inline tool result normalization should remain observable"
 
   "$CODEINSIGHT_BIN" agent-route "$repo" \
     --task "inspect src/auth.ts before editing login behavior" \

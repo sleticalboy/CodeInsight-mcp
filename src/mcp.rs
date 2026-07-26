@@ -271,6 +271,16 @@ fn tool_definitions() -> Value {
                 "type": "array",
                 "maxItems": 6,
                 "items": {"type": "string", "maxLength": 320}
+            },
+            "tool_results": {
+                "type": "object",
+                "description": "Raw code graph tool results. CodeInsight extracts bounded candidates and omits the raw payload from its response.",
+                "properties": {
+                    "search_graph": {"type": "object"},
+                    "search_code": {"type": "object"},
+                    "get_architecture": {"type": "object"}
+                },
+                "minProperties": 1
             }
         },
         "required": ["provider"]
@@ -1276,6 +1286,11 @@ int login(void) {
                 ["maxItems"],
             12
         );
+        let tool_results = &agent_route["inputSchema"]["properties"]["backend_evidence"]["properties"]
+            ["tool_results"];
+        assert_eq!(tool_results["type"], "object");
+        assert_eq!(tool_results["minProperties"], 1);
+        assert_eq!(tool_results["properties"]["search_graph"]["type"], "object");
     }
 
     #[test]

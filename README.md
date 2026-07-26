@@ -207,6 +207,25 @@ codeinsight agent-route /path/to/repo \
   --backend-evidence /tmp/codeinsight-backend-evidence.json
 ```
 
+MCP callers can skip the file conversion step and pass raw tool response
+objects directly. `agent_route` extracts bounded evidence and omits the raw
+payloads from its response:
+
+```json
+{
+  "backend_evidence": {
+    "provider": "codebase-memory-mcp",
+    "tool_results": {
+      "search_graph": {
+        "results": [
+          { "file_path": "src/auth.ts", "name": "AuthService" }
+        ]
+      }
+    }
+  }
+}
+```
+
 To use backend-ranked candidates as bounded-context seeds, opt in explicitly:
 
 ```bash
@@ -383,7 +402,7 @@ accuracy, or proof that unselected code is irrelevant.
 
 Current benchmark snapshot:
 
-- The two-minute demo for this repository shows the agent route selecting 524 of 85,297 source lines, avoiding 84,773 source lines before broad reading for a 99.4% reduction and 162.8x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
+- The two-minute demo for this repository shows the agent route selecting 528 of 85,681 source lines, avoiding 85,153 source lines before broad reading for a 99.4% reduction and 162.3x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 23 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
 - Smoke repositories route `context_pack` first for 4/4 repositories and
   select 709 of 75,753 source lines, a 99.1% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and

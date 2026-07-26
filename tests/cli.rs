@@ -2357,6 +2357,102 @@ fn cli_agent_route_accepts_inline_backend_evidence_json() {
 }
 
 #[test]
+fn cli_agent_route_normalizes_inline_backend_tool_results() {
+    let fixture = fixture_project();
+    let backend_evidence = serde_json::json!({
+        "provider": "codebase-memory-mcp",
+        "tool_results": {
+            "search_graph": {
+                "elapsed_ms": 7,
+                "results": [
+                    {
+                        "name": "main",
+                        "label": "Function",
+                        "file_path": fixture.path().join("src/main.ts"),
+                        "score": 0.97
+                    },
+                    {
+                        "name": "startServer",
+                        "label": "Function",
+                        "file_path": "src/server.ts"
+                    }
+                ]
+            },
+            "search_code": {
+                "structuredContent": {
+                    "duration_ms": 23,
+                    "results": [
+                        {
+                            "node": "main",
+                            "label": "Function",
+                            "file": "src/main.ts"
+                        },
+                        {
+                            "node": "startServer",
+                            "label": "Function",
+                            "file": "src/server.ts"
+                        }
+                    ]
+                }
+            },
+            "get_architecture": {
+                "content": [{
+                    "type": "text",
+                    "text": serde_json::json!({
+                        "elapsed_ms": 3,
+                        "entry_points": [{
+                            "name": "render",
+                            "file": "src/ui.ts",
+                            "confidence": 0.88
+                        }]
+                    }).to_string()
+                }]
+            }
+        }
+    })
+    .to_string();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand app entrypoint flow",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence-json",
+        &backend_evidence,
+    ]);
+
+    let evidence = &route["routing_decision"]["backend_evidence"];
+    assert_eq!(
+        evidence["candidate_files"],
+        serde_json::json!(["src/main.ts", "src/server.ts", "src/ui.ts"])
+    );
+    assert_eq!(evidence["candidates"][0]["symbol"], "main");
+    assert_eq!(evidence["candidates"][0]["source"], "search_graph");
+    assert_eq!(evidence["candidates"][0]["reason"], "search_graph Function");
+    assert_eq!(evidence["evidence_count"], 5);
+    assert_eq!(evidence["latency_ms"], 33);
+    assert_eq!(
+        evidence["evidence_sources"],
+        serde_json::json!([
+            "search_graph",
+            "search_code",
+            "get_architecture:entry_points"
+        ])
+    );
+    assert!(evidence.get("tool_results").is_none());
+    assert!(
+        evidence["notes"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|note| note == "normalized from inline backend tool_results")
+    );
+}
+
+#[test]
 fn cli_agent_route_preserves_structured_backend_candidates() {
     let fixture = fixture_project();
     let absolute_main = fixture.path().join("src/main.ts");
@@ -2835,6 +2931,23 @@ fn cli_agent_route_rejects_invalid_backend_evidence_values() {
         .failure()
         .stderr(contains(
             "backend evidence candidate file must not exceed 512 characters",
+        ));
+
+    Command::cargo_bin("codeinsight")
+        .unwrap()
+        .env_remove("CODEINSIGHT_EMBEDDING_PROVIDER")
+        .args([
+            "agent-route",
+            fixture.path().to_str().unwrap(),
+            "--task",
+            "understand app entrypoint flow",
+            "--backend-evidence-json",
+            r#"{"provider":"graph","tool_results":{"search_graph":{"total":1}}}"#,
+        ])
+        .assert()
+        .failure()
+        .stderr(contains(
+            "backend evidence search_graph tool result must contain an array field named results",
         ));
 }
 
@@ -13458,11 +13571,18 @@ fn mcp_stdio_agent_route_prefers_backend_context() {
                 "backend_evidence": {
                     "provider": "codebase-memory-mcp",
                     "prefer_for_context": true,
-                    "candidates": [{
-                        "file": "src/ui.ts",
-                        "symbol": "render",
-                        "source": "search_graph"
-                    }]
+                    "tool_results": {
+                        "search_graph": {
+                            "structuredContent": {
+                                "elapsed_ms": 4,
+                                "results": [{
+                                    "file_path": "src/ui.ts",
+                                    "name": "render",
+                                    "label": "Function"
+                                }]
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -13481,6 +13601,19 @@ fn mcp_stdio_agent_route_prefers_backend_context() {
     assert_eq!(
         route["routing_decision"]["backend_route_agreement"]["status"],
         "backend_preferred"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_evidence"]["candidate_files"],
+        serde_json::json!(["src/ui.ts"])
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_evidence"]["candidates"][0]["symbol"],
+        "render"
+    );
+    assert!(
+        route["routing_decision"]["backend_evidence"]
+            .get("tool_results")
+            .is_none()
     );
     assert_eq!(route["impact_seed_files"], serde_json::json!(["src/ui.ts"]));
     assert_eq!(route["impact_seed_symbols"], serde_json::json!(["render"]));

@@ -411,6 +411,16 @@ pub struct AgentRouteBackendCandidate {
     pub evidence: Vec<String>,
 }
 
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct AgentRouteBackendToolResults {
+    #[serde(default)]
+    pub search_graph: Option<Value>,
+    #[serde(default)]
+    pub search_code: Option<Value>,
+    #[serde(default)]
+    pub get_architecture: Option<Value>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentRouteBackendEvidence {
     pub provider: String,
@@ -432,6 +442,8 @@ pub struct AgentRouteBackendEvidence {
     pub confidence: Option<f64>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub notes: Vec<String>,
+    #[serde(default, skip_serializing)]
+    pub tool_results: Option<AgentRouteBackendToolResults>,
     #[serde(default, skip_deserializing, skip_serializing_if = "Option::is_none")]
     pub normalization: Option<AgentRouteBackendNormalization>,
 }

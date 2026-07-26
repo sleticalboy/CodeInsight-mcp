@@ -6,7 +6,7 @@ use std::{
 };
 
 use anyhow::{Context, Result, bail};
-use serde_json::json;
+use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
 use crate::{
@@ -71,6 +71,20 @@ struct BackendContextSelection {
 struct BackendContextAttempt {
     context_pack: Option<ContextPack>,
     selection: BackendContextSelection,
+}
+
+struct BackendToolResultSpec<'a> {
+    source: &'a str,
+    items_key: &'a str,
+    file_keys: &'a [&'a str],
+    symbol_keys: &'a [&'a str],
+}
+
+struct BackendToolCandidateBatch {
+    candidates: Vec<AgentRouteBackendCandidate>,
+    source: Option<String>,
+    evidence_count: usize,
+    latency_ms: u64,
 }
 
 impl BackendContextSelection {
@@ -1483,6 +1497,7 @@ fn normalize_agent_route_backend_evidence(
     root: &Path,
     mut evidence: AgentRouteBackendEvidence,
 ) -> Result<AgentRouteBackendEvidence> {
+    merge_backend_tool_results(&mut evidence)?;
     evidence.provider = evidence.provider.trim().to_string();
     if evidence.provider.is_empty() {
         bail!("backend evidence provider must not be empty");
@@ -1607,6 +1622,187 @@ fn normalize_agent_route_backend_evidence(
     evidence.notes = notes;
     evidence.normalization = backend_normalization_changed(&normalization).then_some(normalization);
     Ok(evidence)
+}
+
+fn merge_backend_tool_results(evidence: &mut AgentRouteBackendEvidence) -> Result<()> {
+    let Some(tool_results) = evidence.tool_results.take() else {
+        return Ok(());
+    };
+
+    let tool_inputs = [
+        (
+            tool_results.search_graph,
+            BackendToolResultSpec {
+                source: "search_graph",
+                items_key: "results",
+                file_keys: &["file_path", "file"],
+                symbol_keys: &["name", "node", "qualified_name"],
+            },
+        ),
+        (
+            tool_results.search_code,
+            BackendToolResultSpec {
+                source: "search_code",
+                items_key: "results",
+                file_keys: &["file", "file_path"],
+                symbol_keys: &["node", "name", "qualified_name"],
+            },
+        ),
+        (
+            tool_results.get_architecture,
+            BackendToolResultSpec {
+                source: "get_architecture:entry_points",
+                items_key: "entry_points",
+                file_keys: &["file", "file_path"],
+                symbol_keys: &["name", "qualified_name"],
+            },
+        ),
+    ];
+    let mut candidates = Vec::new();
+    let mut evidence_sources = Vec::new();
+    let mut evidence_count = 0usize;
+    let mut latency_ms = 0u64;
+    for (raw, spec) in tool_inputs {
+        let Some(raw) = raw else {
+            continue;
+        };
+        let batch = collect_backend_tool_candidates(raw, spec)?;
+        candidates.extend(batch.candidates);
+        if let Some(source) = batch.source {
+            evidence_sources.push(source);
+        }
+        evidence_count = evidence_count.saturating_add(batch.evidence_count);
+        latency_ms = latency_ms.saturating_add(batch.latency_ms);
+    }
+
+    if candidates.is_empty()
+        && evidence.candidates.is_empty()
+        && evidence.candidate_files.is_empty()
+    {
+        bail!("backend evidence tool_results contained no candidate files");
+    }
+    evidence.candidates.extend(candidates);
+    evidence.evidence_sources.extend(evidence_sources);
+    evidence.evidence_count = evidence.evidence_count.saturating_add(evidence_count);
+    if latency_ms > 0 {
+        evidence.latency_ms = Some(
+            evidence
+                .latency_ms
+                .unwrap_or_default()
+                .saturating_add(latency_ms),
+        );
+    }
+    evidence
+        .notes
+        .push("normalized from inline backend tool_results".to_string());
+    Ok(())
+}
+
+fn collect_backend_tool_candidates(
+    raw: Value,
+    spec: BackendToolResultSpec<'_>,
+) -> Result<BackendToolCandidateBatch> {
+    let payload = backend_tool_result_payload(raw, spec.source)?;
+    let items = payload
+        .get(spec.items_key)
+        .and_then(Value::as_array)
+        .ok_or_else(|| {
+            anyhow::anyhow!(
+                "backend evidence {} tool result must contain an array field named {}",
+                spec.source,
+                spec.items_key
+            )
+        })?;
+    let mut candidates = Vec::new();
+    for item in items {
+        let Some(file) = first_backend_tool_string(item, spec.file_keys) else {
+            continue;
+        };
+        let symbol = first_backend_tool_string(item, spec.symbol_keys);
+        let label = item
+            .get("label")
+            .and_then(Value::as_str)
+            .unwrap_or("result");
+        let reason = if spec.source == "get_architecture:entry_points" {
+            "get_architecture entry point".to_string()
+        } else {
+            format!("{} {label}", spec.source)
+        };
+        let score = item
+            .get("score")
+            .or_else(|| item.get("similarity"))
+            .or_else(|| item.get("confidence"))
+            .and_then(Value::as_f64);
+        candidates.push(AgentRouteBackendCandidate {
+            file,
+            symbol,
+            source: Some(spec.source.to_string()),
+            score,
+            reason: Some(reason),
+            evidence: vec![spec.source.to_string()],
+        });
+    }
+    let latency_ms = payload
+        .get("elapsed_ms")
+        .or_else(|| payload.get("duration_ms"))
+        .and_then(Value::as_u64)
+        .unwrap_or_default();
+    let evidence_count = candidates.len();
+    Ok(BackendToolCandidateBatch {
+        candidates,
+        source: (evidence_count > 0).then(|| spec.source.to_string()),
+        evidence_count,
+        latency_ms,
+    })
+}
+
+fn backend_tool_result_payload(raw: Value, source: &str) -> Result<Value> {
+    if let Some(payload) = raw
+        .get("structuredContent")
+        .filter(|value| value.is_object())
+    {
+        return Ok(payload.clone());
+    }
+    if let Some(result) = raw.get("result") {
+        if let Some(payload) = result
+            .get("structuredContent")
+            .filter(|value| value.is_object())
+        {
+            return Ok(payload.clone());
+        }
+        if result.is_object() {
+            return Ok(result.clone());
+        }
+    }
+    if let Some(text) = raw
+        .get("content")
+        .and_then(Value::as_array)
+        .and_then(|content| {
+            content.iter().find_map(|item| {
+                (item.get("type").and_then(Value::as_str) == Some("text"))
+                    .then(|| item.get("text").and_then(Value::as_str))
+                    .flatten()
+            })
+        })
+    {
+        return serde_json::from_str(text)
+            .with_context(|| format!("backend evidence {source} text content is not valid JSON"));
+    }
+    if raw.is_object() {
+        return Ok(raw);
+    }
+    bail!("backend evidence {source} tool result must be a JSON object")
+}
+
+fn first_backend_tool_string(value: &Value, keys: &[&str]) -> Option<String> {
+    keys.iter().find_map(|key| {
+        value
+            .get(*key)
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(str::to_string)
+    })
 }
 
 fn backend_seed_context_pack(
