@@ -1500,7 +1500,6 @@ fn normalize_agent_route_backend_evidence(
     root: &Path,
     mut evidence: AgentRouteBackendEvidence,
 ) -> Result<AgentRouteBackendEvidence> {
-    let omitted_tool_result_items = merge_backend_tool_results(&mut evidence)?;
     evidence.provider = evidence.provider.trim().to_string();
     if evidence.provider.is_empty() {
         bail!("backend evidence provider must not be empty");
@@ -1516,6 +1515,7 @@ fn normalize_agent_route_backend_evidence(
     {
         bail!("backend evidence confidence must be between 0.0 and 1.0");
     }
+    let omitted_tool_result_items = merge_backend_tool_results(&mut evidence)?;
 
     let legacy_files = evidence
         .candidate_files

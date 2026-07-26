@@ -2916,6 +2916,21 @@ fn cli_agent_route_rejects_invalid_backend_evidence_values() {
             "--task",
             "understand app entrypoint flow",
             "--backend-evidence-json",
+            r#"{"provider":" ","tool_results":{"search_graph":{"total":1}}}"#,
+        ])
+        .assert()
+        .failure()
+        .stderr(contains("backend evidence provider must not be empty"));
+
+    Command::cargo_bin("codeinsight")
+        .unwrap()
+        .env_remove("CODEINSIGHT_EMBEDDING_PROVIDER")
+        .args([
+            "agent-route",
+            fixture.path().to_str().unwrap(),
+            "--task",
+            "understand app entrypoint flow",
+            "--backend-evidence-json",
             r#"{"provider":"graph","candidate_files":["src/main.ts"],"confidence":1.5}"#,
         ])
         .assert()
