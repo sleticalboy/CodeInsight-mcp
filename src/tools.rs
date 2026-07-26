@@ -78,6 +78,7 @@ struct BackendContextAttempt {
 struct BackendToolResultSpec<'a> {
     source: &'a str,
     items_keys: &'a [&'a str],
+    total_keys: &'a [&'a str],
     file_keys: &'a [&'a str],
     symbol_keys: &'a [&'a str],
 }
@@ -86,6 +87,7 @@ struct BackendToolCandidateBatch {
     candidates: Vec<AgentRouteBackendCandidate>,
     source: Option<String>,
     evidence_count: usize,
+    unfetched_items: usize,
     omitted_items: usize,
     latency_ms: u64,
 }
@@ -1310,7 +1312,8 @@ fn backend_evidence_sources(backend: &AgentRouteBackendEvidence) -> Vec<String> 
 fn backend_normalization_warning(backend: &AgentRouteBackendEvidence) -> Option<String> {
     let normalization = backend.normalization.as_ref()?;
     Some(format!(
-        "Backend evidence was bounded for token safety: omitted {} raw tool result item(s), {} candidate(s), {} candidate evidence item(s), {} source(s), and {} note(s); truncated {} text field(s).",
+        "Backend evidence was bounded for token safety or reported incomplete: backend reported {} unfetched tool result item(s); CodeInsight omitted {} raw tool result item(s), {} candidate(s), {} candidate evidence item(s), {} source(s), and {} note(s); truncated {} text field(s).",
+        normalization.unfetched_tool_result_items,
         normalization.omitted_tool_result_items,
         normalization.omitted_candidates,
         normalization.omitted_candidate_evidence_items,
@@ -1521,7 +1524,8 @@ fn normalize_agent_route_backend_evidence(
     {
         bail!("backend evidence confidence must be between 0.0 and 1.0");
     }
-    let omitted_tool_result_items = merge_backend_tool_results(&mut evidence)?;
+    let (omitted_tool_result_items, unfetched_tool_result_items) =
+        merge_backend_tool_results(&mut evidence)?;
 
     let legacy_files = evidence
         .candidate_files
@@ -1538,6 +1542,7 @@ fn normalize_agent_route_backend_evidence(
 
     let mut normalization = AgentRouteBackendNormalization {
         candidate_limit: BACKEND_EVIDENCE_CANDIDATE_LIMIT,
+        unfetched_tool_result_items,
         omitted_tool_result_items,
         ..AgentRouteBackendNormalization::default()
     };
@@ -1634,9 +1639,9 @@ fn normalize_agent_route_backend_evidence(
     Ok(evidence)
 }
 
-fn merge_backend_tool_results(evidence: &mut AgentRouteBackendEvidence) -> Result<usize> {
+fn merge_backend_tool_results(evidence: &mut AgentRouteBackendEvidence) -> Result<(usize, usize)> {
     let Some(tool_results) = evidence.tool_results.take() else {
-        return Ok(0);
+        return Ok((0, 0));
     };
 
     let tool_inputs = [
@@ -1645,6 +1650,7 @@ fn merge_backend_tool_results(evidence: &mut AgentRouteBackendEvidence) -> Resul
             BackendToolResultSpec {
                 source: "search_graph",
                 items_keys: &["results", "semantic_results"],
+                total_keys: &["total"],
                 file_keys: &["file_path", "file"],
                 symbol_keys: &["name", "node", "qualified_name"],
             },
@@ -1654,6 +1660,7 @@ fn merge_backend_tool_results(evidence: &mut AgentRouteBackendEvidence) -> Resul
             BackendToolResultSpec {
                 source: "search_code",
                 items_keys: &["results"],
+                total_keys: &["total_results"],
                 file_keys: &["file", "file_path"],
                 symbol_keys: &["node", "name", "qualified_name"],
             },
@@ -1663,6 +1670,7 @@ fn merge_backend_tool_results(evidence: &mut AgentRouteBackendEvidence) -> Resul
             BackendToolResultSpec {
                 source: "get_architecture:entry_points",
                 items_keys: &["entry_points"],
+                total_keys: &[],
                 file_keys: &["file", "file_path"],
                 symbol_keys: &["name", "qualified_name"],
             },
@@ -1671,6 +1679,7 @@ fn merge_backend_tool_results(evidence: &mut AgentRouteBackendEvidence) -> Resul
     let mut candidates = Vec::new();
     let mut evidence_sources = Vec::new();
     let mut evidence_count = 0usize;
+    let mut unfetched_items = 0usize;
     let mut omitted_items = 0usize;
     let mut latency_ms = 0u64;
     for (raw, spec) in tool_inputs {
@@ -1683,6 +1692,7 @@ fn merge_backend_tool_results(evidence: &mut AgentRouteBackendEvidence) -> Resul
             evidence_sources.push(source);
         }
         evidence_count = evidence_count.saturating_add(batch.evidence_count);
+        unfetched_items = unfetched_items.saturating_add(batch.unfetched_items);
         omitted_items = omitted_items.saturating_add(batch.omitted_items);
         latency_ms = latency_ms.saturating_add(batch.latency_ms);
     }
@@ -1707,7 +1717,7 @@ fn merge_backend_tool_results(evidence: &mut AgentRouteBackendEvidence) -> Resul
     evidence
         .notes
         .push("normalized from inline backend tool_results".to_string());
-    Ok(omitted_items)
+    Ok((omitted_items, unfetched_items))
 }
 
 fn collect_backend_tool_candidates(
@@ -1734,6 +1744,7 @@ fn collect_backend_tool_candidates(
     let mut candidates = Vec::new();
     let mut item_count = 0usize;
     let mut processed_item_count = 0usize;
+    let mut reported_total_items = 0usize;
     let mut latency_ms = 0u64;
     let page_count = pages.len();
     for (page_index, raw_page) in pages.into_iter().enumerate() {
@@ -1793,6 +1804,15 @@ fn collect_backend_tool_candidates(
                 spec.items_keys.join(" or ")
             );
         }
+        for total_key in spec.total_keys {
+            reported_total_items = reported_total_items.max(
+                payload
+                    .get(total_key)
+                    .and_then(Value::as_u64)
+                    .and_then(|total| usize::try_from(total).ok())
+                    .unwrap_or_default(),
+            );
+        }
         latency_ms = latency_ms.saturating_add(
             payload
                 .get("elapsed_ms")
@@ -1806,6 +1826,7 @@ fn collect_backend_tool_candidates(
         candidates,
         source: (evidence_count > 0).then(|| spec.source.to_string()),
         evidence_count,
+        unfetched_items: reported_total_items.saturating_sub(item_count),
         omitted_items: item_count.saturating_sub(BACKEND_EVIDENCE_TOOL_RESULT_ITEMS_LIMIT),
         latency_ms,
     })
@@ -2183,7 +2204,8 @@ fn bounded_trimmed_string(
 }
 
 fn backend_normalization_changed(normalization: &AgentRouteBackendNormalization) -> bool {
-    normalization.omitted_tool_result_items > 0
+    normalization.unfetched_tool_result_items > 0
+        || normalization.omitted_tool_result_items > 0
         || normalization.omitted_candidates > 0
         || normalization.omitted_candidate_evidence_items > 0
         || normalization.omitted_evidence_sources > 0

@@ -2373,6 +2373,8 @@ fn cli_agent_route_normalizes_inline_backend_tool_results() {
         "tool_results": {
             "search_graph": {
                 "elapsed_ms": 7,
+                "total": 4,
+                "has_more": true,
                 "semantic_results": [
                     {
                         "name": "main",
@@ -2442,6 +2444,17 @@ fn cli_agent_route_normalizes_inline_backend_tool_results() {
     assert_eq!(evidence["candidates"][0]["source"], "search_graph");
     assert_eq!(evidence["candidates"][0]["reason"], "search_graph Function");
     assert_eq!(evidence["evidence_count"], 5);
+    assert_eq!(evidence["normalization"]["unfetched_tool_result_items"], 2);
+    assert!(
+        route["routing_decision"]["route_quality"]["warnings"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|warning| warning
+                .as_str()
+                .unwrap()
+                .contains("backend reported 2 unfetched tool result item(s)"))
+    );
     assert_eq!(
         route["routing_decision"]["route_quality"]["evidence_count"]
             .as_u64()
@@ -2490,10 +2503,14 @@ fn cli_agent_route_bounds_inline_backend_tool_results() {
             "search_graph": [
                 {
                     "elapsed_ms": 7,
+                    "total": 70,
+                    "has_more": true,
                     "results": results
                 },
                 {
                     "elapsed_ms": 11,
+                    "total": 70,
+                    "has_more": false,
                     "results": second_page,
                     "semantic_results": semantic_results
                 }
@@ -2519,6 +2536,7 @@ fn cli_agent_route_bounds_inline_backend_tool_results() {
     assert_eq!(evidence["candidates"].as_array().unwrap().len(), 16);
     assert_eq!(evidence["evidence_count"], 64);
     assert_eq!(evidence["latency_ms"], 18);
+    assert_eq!(evidence["normalization"]["unfetched_tool_result_items"], 0);
     assert_eq!(evidence["normalization"]["omitted_tool_result_items"], 6);
     assert_eq!(evidence["normalization"]["omitted_candidates"], 48);
     assert!(
