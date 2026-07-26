@@ -56,24 +56,24 @@ Expected output shape:
    routing_decision_first_file: src/tools.rs
    routing_decision_first_selection_rank: 1
    routing_decision_suggested_tool: file_outline
-   routing_decision_read_less: 99.4%, 155.4x
+   routing_decision_read_less: 99.4%, 154.6x
    routing_decision_continuation: omitted_candidates_available
    routing_decision_impact_status: complete
-   routing_decision_quality: high (100/100, 21 evidence signals)
+   routing_decision_quality: high (100/100, 22 evidence signals)
    routing_decision_recommended_action: read_selected_context_then_use_continuation_if_needed
    first_reading_focus: Start with seed file context routing, first-read handoff, and read-less evidence.
    first_reading_question: Which seed selection, reading-plan handoff, or read-less evidence controls the agent first-read workflow here?
 
 4. impact_analysis
    risk_level: high
-   impacted_files: 15
+   impacted_files: 16
    suggested_checks: 4
 
 [Evidence summary]
 Routing decision: seed=task_match:src/tools.rs, first_file=src/tools.rs, rank=1, tool=file_outline, continuation=omitted_candidates_available, impact=complete.
-Route quality: high (100/100) from 21 evidence signals; next=read_selected_context_then_use_continuation_if_needed.
+Route quality: high (100/100) from 22 evidence signals; next=read_selected_context_then_use_continuation_if_needed.
 Read src/tools.rs before offering file_outline.
-Before edits, impact_analysis reports high risk across 15 impacted files.
+Before edits, impact_analysis reports high risk across 16 impacted files.
 ```
 
 Exact numbers vary by repository and current source state. The stable signal is
