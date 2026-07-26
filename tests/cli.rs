@@ -3167,6 +3167,30 @@ fn cli_agent_route_routes_ranked_backend_candidates_within_budget() {
         continuation["suggested_tool"]["suggested_arguments"]["token_budget"],
         4000
     );
+    let continuation_step = route["execution_plan"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|step| step["action"] == "run_backend_candidate_context_pack")
+        .unwrap();
+    assert_eq!(
+        continuation_step["status"],
+        "available_after_selected_context"
+    );
+    assert_eq!(
+        continuation_step["files"],
+        continuation["suggested_tool"]["suggested_arguments"]["files"]
+    );
+    assert_eq!(
+        continuation_step["suggested_tool"],
+        continuation["suggested_tool"]
+    );
+    assert!(
+        continuation_step["instruction"]
+            .as_str()
+            .unwrap()
+            .contains("without broad repository reading")
+    );
     let impact_seed_files = route["impact_seed_files"].as_array().unwrap();
     assert!(impact_seed_files.iter().any(|file| file == "src/ui.ts"));
     assert!(impact_seed_files.iter().any(|file| file == "src/main.ts"));
@@ -3434,6 +3458,17 @@ fn cli_agent_route_falls_back_to_file_when_backend_symbol_is_stale() {
         continuation["suggested_tool"]["suggested_arguments"]
             .get("symbols")
             .is_none()
+    );
+    let continuation_step = route["execution_plan"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|step| step["action"] == "use_if_fallback_context_insufficient")
+        .unwrap();
+    assert_eq!(continuation_step["files"], serde_json::json!(["src/ui.ts"]));
+    assert_eq!(
+        continuation_step["suggested_tool"],
+        continuation["suggested_tool"]
     );
 }
 

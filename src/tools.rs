@@ -1402,21 +1402,33 @@ fn agent_route_execution_plan(
     }
 
     let continuation = &context_pack.continuation_summary;
+    let backend_continuation = backend_route_agreement.next_candidate_continuation.as_ref();
+    let continuation_suggested_tool = backend_continuation
+        .map(|candidate| candidate.suggested_tool.clone())
+        .or_else(|| continuation.suggested_tool.clone());
     plan.push(AgentRouteExecutionStep {
         order: plan.len() + 1,
-        action: "use_continuation_if_needed".to_string(),
-        status: match continuation.suggested_tool {
+        action: backend_continuation
+            .map(|candidate| candidate.next_action.clone())
+            .unwrap_or_else(|| "use_continuation_if_needed".to_string()),
+        status: match continuation_suggested_tool.as_ref() {
             Some(_) => "available_after_selected_context".to_string(),
             None if continuation.status == "complete" => "complete".to_string(),
             None => "manual_after_selected_context".to_string(),
         },
-        instruction: agent_route_continuation_instruction(context_pack),
-        files: continuation
-            .first_omitted_file
-            .iter()
-            .cloned()
-            .collect::<Vec<_>>(),
-        suggested_tool: continuation.suggested_tool.clone(),
+        instruction: backend_continuation
+            .map(agent_route_backend_continuation_instruction)
+            .unwrap_or_else(|| agent_route_continuation_instruction(context_pack)),
+        files: backend_continuation
+            .map(|candidate| vec![candidate.file.clone()])
+            .unwrap_or_else(|| {
+                continuation
+                    .first_omitted_file
+                    .iter()
+                    .cloned()
+                    .collect::<Vec<_>>()
+            }),
+        suggested_tool: continuation_suggested_tool,
         suggested_checks: Vec::new(),
     });
 
@@ -1438,6 +1450,19 @@ fn agent_route_execution_plan(
     });
 
     plan
+}
+
+fn agent_route_backend_continuation_instruction(
+    continuation: &AgentRouteBackendCandidateContinuation,
+) -> String {
+    format!(
+        "After reading the selected context, if it is insufficient, call {} with suggested_arguments to inspect backend candidate {} (rank {}, reason {}). Follow {} without broad repository reading.",
+        continuation.suggested_tool.tool,
+        continuation.file,
+        continuation.rank,
+        continuation.context_reason,
+        continuation.next_action
+    )
 }
 
 fn normalize_agent_route_backend_evidence(
