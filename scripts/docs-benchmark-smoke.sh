@@ -1933,13 +1933,13 @@ main() {
     'source_lines_avoided: 82123' \
     "demo script source lines avoided metric"
   require_pattern docs/demo-script.md \
-    'read_less_ratio: 155\.2x' \
+    'read_less_ratio: 155\.4x' \
     "demo script read-less metric"
   require_pattern docs/demo-script.md \
     'routing_decision_quality: high \(100/100, 21 evidence signals\)' \
     "demo script route quality metric"
   require_pattern docs/demo-script.md \
-    'Read less: avoided 82123 source lines, 155\.2x less text before follow-up tools\.' \
+    'Read less: avoided 82123 source lines, 155\.4x less text before follow-up tools\.' \
     "demo script evidence summary read-less line"
   require_pattern docs/demo-script.md \
     'impact_analysis' \
