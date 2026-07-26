@@ -2049,7 +2049,7 @@ fn backend_seed_context_pack(
         })
         .collect::<Vec<_>>();
     let backend_task_keywords = task_keywords(task);
-    if !backend_task_prefers_support_files(&backend_task_keywords) {
+    if !backend_task_prefers_support_files(task, &backend_task_keywords) {
         candidates.sort_by_key(|candidate| backend_candidate_is_support_file(&candidate.file));
     }
 
@@ -2285,7 +2285,7 @@ fn backend_candidate_is_support_file(file: &str) -> bool {
         || normalized.contains("_smoke.")
 }
 
-fn backend_task_prefers_support_files(task_keywords: &[String]) -> bool {
+fn backend_task_prefers_support_files(task: &str, task_keywords: &[String]) -> bool {
     task_keywords.iter().any(|keyword| {
         matches!(
             keyword.as_str(),
@@ -2315,7 +2315,21 @@ fn backend_task_prefers_support_files(task_keywords: &[String]) -> bool {
                 | "tests"
                 | "workflow"
         )
-    })
+    }) || [
+        "测试",
+        "冒烟",
+        "脚本",
+        "文档",
+        "示例",
+        "演示",
+        "基准",
+        "发布",
+        "工作流",
+        "打包",
+        "配方",
+    ]
+    .iter()
+    .any(|intent| task.contains(intent))
 }
 
 fn annotate_backend_seed_context(

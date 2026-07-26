@@ -3943,7 +3943,7 @@ fn cli_agent_route_preserves_backend_smoke_rank_for_smoke_task() {
         "agent-route",
         fixture.path().to_str().unwrap(),
         "--task",
-        "run the server startup smoke test",
+        "运行服务器启动冒烟测试",
         "--token-budget",
         "1600",
         "--force-index",
