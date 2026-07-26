@@ -288,6 +288,7 @@ fn tool_definitions() -> Value {
                 "properties": {
                     "search_graph": backend_tool_result_schema.clone(),
                     "search_code": backend_tool_result_schema.clone(),
+                    "query_graph": backend_tool_result_schema.clone(),
                     "get_architecture": backend_tool_result_schema
                 },
                 "minProperties": 1
@@ -1311,6 +1312,10 @@ int login(void) {
         assert_eq!(search_graph["oneOf"][1]["type"], "array");
         assert_eq!(search_graph["oneOf"][1]["maxItems"], 16);
         assert_eq!(search_graph["oneOf"][1]["items"]["type"], "object");
+        assert_eq!(
+            tool_results["properties"]["query_graph"]["oneOf"][0]["type"],
+            "object"
+        );
     }
 
     #[test]

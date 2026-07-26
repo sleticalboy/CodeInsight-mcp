@@ -1662,6 +1662,10 @@ fn merge_backend_tool_results(evidence: &mut AgentRouteBackendEvidence) -> Resul
     let Some(tool_results) = evidence.tool_results.take() else {
         return Ok((0, 0));
     };
+    let query_graph = tool_results
+        .query_graph
+        .map(normalize_backend_query_graph_result)
+        .transpose()?;
 
     let tool_inputs = [
         (
@@ -1686,6 +1690,18 @@ fn merge_backend_tool_results(evidence: &mut AgentRouteBackendEvidence) -> Resul
                 total_items_keys: &["results"],
                 file_keys: &["file", "file_path"],
                 symbol_keys: &["node", "name", "qualified_name"],
+            },
+        ),
+        (
+            query_graph,
+            BackendToolResultSpec {
+                source: "query_graph",
+                items_keys: &["results"],
+                preferred_items_key: None,
+                total_keys: &["total"],
+                total_items_keys: &["results"],
+                file_keys: &["file_path", "file"],
+                symbol_keys: &["name", "qualified_name"],
             },
         ),
         (
@@ -1743,6 +1759,114 @@ fn merge_backend_tool_results(evidence: &mut AgentRouteBackendEvidence) -> Resul
         .notes
         .push("normalized from inline backend tool_results".to_string());
     Ok((omitted_items, unfetched_items))
+}
+
+fn normalize_backend_query_graph_result(raw: Value) -> Result<Value> {
+    let pages = match raw {
+        Value::Array(pages) if pages.is_empty() => {
+            bail!("backend evidence query_graph tool result page array must not be empty")
+        }
+        Value::Array(pages) => pages,
+        raw => vec![raw],
+    };
+    if pages.len() > BACKEND_EVIDENCE_TOOL_RESULT_PAGES_LIMIT {
+        bail!(
+            "backend evidence query_graph tool result must not exceed {} pages",
+            BACKEND_EVIDENCE_TOOL_RESULT_PAGES_LIMIT
+        );
+    }
+
+    let page_count = pages.len();
+    let mut normalized_pages = Vec::with_capacity(page_count);
+    for (page_index, raw_page) in pages.into_iter().enumerate() {
+        let page_source = if page_count == 1 {
+            "query_graph".to_string()
+        } else {
+            format!("query_graph page {}", page_index + 1)
+        };
+        let payload = backend_tool_result_payload(raw_page, &page_source)?;
+        let columns = payload
+            .get("columns")
+            .and_then(Value::as_array)
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "backend evidence {page_source} tool result field columns must be an array"
+                )
+            })?;
+        let rows = payload
+            .get("rows")
+            .and_then(Value::as_array)
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "backend evidence {page_source} tool result field rows must be an array"
+                )
+            })?;
+        let file_index = backend_query_graph_column_index(columns, &["file_path", "file"])
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "backend evidence {page_source} tool result columns must include file_path or file"
+                )
+            })?;
+        let symbol_index = backend_query_graph_column_index(columns, &["name"])
+            .or_else(|| backend_query_graph_column_index(columns, &["qualified_name"]));
+        let mut results = Vec::new();
+        for row in rows.iter().take(BACKEND_EVIDENCE_TOOL_RESULT_ITEMS_LIMIT) {
+            let row = row.as_array().ok_or_else(|| {
+                anyhow::anyhow!(
+                    "backend evidence {page_source} tool result rows must contain arrays"
+                )
+            })?;
+            let Some(file) = row.get(file_index).and_then(Value::as_str) else {
+                continue;
+            };
+            let file = file.trim();
+            if file.is_empty() {
+                continue;
+            }
+            let symbol = symbol_index
+                .and_then(|index| row.get(index))
+                .and_then(Value::as_str)
+                .map(str::trim)
+                .filter(|symbol| !symbol.is_empty());
+            results.push(json!({
+                "file_path": file,
+                "name": symbol,
+                "label": "row"
+            }));
+        }
+        normalized_pages.push(json!({
+            "results": results,
+            "total": payload
+                .get("total")
+                .and_then(Value::as_u64)
+                .unwrap_or(rows.len() as u64),
+            "elapsed_ms": payload
+                .get("elapsed_ms")
+                .or_else(|| payload.get("duration_ms"))
+                .and_then(Value::as_u64)
+                .unwrap_or_default()
+        }));
+    }
+
+    Ok(if page_count == 1 {
+        normalized_pages.pop().unwrap_or_default()
+    } else {
+        Value::Array(normalized_pages)
+    })
+}
+
+fn backend_query_graph_column_index(columns: &[Value], names: &[&str]) -> Option<usize> {
+    columns.iter().position(|column| {
+        column.as_str().is_some_and(|column| {
+            let normalized = column
+                .rsplit('.')
+                .next()
+                .unwrap_or(column)
+                .trim_matches(['`', '"'])
+                .to_ascii_lowercase();
+            names.contains(&normalized.as_str())
+        })
+    })
 }
 
 fn collect_backend_tool_candidates(
@@ -14703,6 +14827,34 @@ mod tests {
         );
         assert!(mixed_language_keywords.contains(&"observability".to_string()));
         assert!(mixed_language_keywords.contains(&"monitoring".to_string()));
+    }
+
+    #[test]
+    fn query_graph_backend_results_normalize_tabular_rows() {
+        let normalized = normalize_backend_query_graph_result(json!({
+            "columns": ["f.name", "f.file_path", "f.qualified_name"],
+            "rows": [["authenticate", "src/auth.ts", "app.auth.authenticate"]],
+            "total": 1,
+            "elapsed_ms": 9
+        }))
+        .unwrap();
+
+        assert_eq!(normalized["results"][0]["file_path"], "src/auth.ts");
+        assert_eq!(normalized["results"][0]["name"], "authenticate");
+        assert_eq!(normalized["total"], 1);
+        assert_eq!(normalized["elapsed_ms"], 9);
+    }
+
+    #[test]
+    fn query_graph_backend_results_require_a_file_column() {
+        let error = normalize_backend_query_graph_result(json!({
+            "columns": ["f.name", "f.qualified_name"],
+            "rows": [["authenticate", "app.auth.authenticate"]],
+            "total": 1
+        }))
+        .unwrap_err();
+
+        assert!(error.to_string().contains("file_path or file"));
     }
 
     #[test]

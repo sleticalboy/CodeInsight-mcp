@@ -422,6 +422,8 @@ pub struct AgentRouteBackendToolResults {
     #[serde(default)]
     pub search_code: Option<Value>,
     #[serde(default)]
+    pub query_graph: Option<Value>,
+    #[serde(default)]
     pub get_architecture: Option<Value>,
 }
 
