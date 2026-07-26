@@ -18,18 +18,18 @@ use crate::{
     language::detect_language,
     model::{
         AgentRouteBackendAgreement, AgentRouteBackendCandidate,
-        AgentRouteBackendCandidateDisposition, AgentRouteBackendEvidence,
-        AgentRouteBackendNormalization, AgentRouteExecutionStep, AgentRouteQuality,
-        AgentRouteReport, AgentRouteRoutingDecision, AgentRouteStep, CallEdge, ConfigInitReport,
-        ConfigStatusReport, ContextBudget, ContextContinuationSummary, ContextFile,
-        ContextOmittedCandidate, ContextPack, ContextRange, ContextReadLess, ContextReadingRange,
-        ContextReadingStep, ContextSeed, ContextSemanticStatus, ContextSourceCount,
-        ContextSuggestedTool, Dependency, DependencyGraph, EmbeddingProviderStatus,
-        ImpactAnalysisReport, ImpactBreakdown, ImpactCounts, ImpactFile, ImpactPath, IndexError,
-        IndexScopeReport, Language, OllamaEmbeddingStatus, OpenAiEmbeddingStatus,
-        ProjectIndexReport, ProjectOverview, ReferenceMatch, SemanticChunk, SemanticChunkInput,
-        SemanticEmbeddingInput, SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus,
-        SemanticSearchResult, SuggestedCheck, Symbol, SymbolKind, VersionInfo,
+        AgentRouteBackendCandidateContinuation, AgentRouteBackendCandidateDisposition,
+        AgentRouteBackendEvidence, AgentRouteBackendNormalization, AgentRouteExecutionStep,
+        AgentRouteQuality, AgentRouteReport, AgentRouteRoutingDecision, AgentRouteStep, CallEdge,
+        ConfigInitReport, ConfigStatusReport, ContextBudget, ContextContinuationSummary,
+        ContextFile, ContextOmittedCandidate, ContextPack, ContextRange, ContextReadLess,
+        ContextReadingRange, ContextReadingStep, ContextSeed, ContextSemanticStatus,
+        ContextSourceCount, ContextSuggestedTool, Dependency, DependencyGraph,
+        EmbeddingProviderStatus, ImpactAnalysisReport, ImpactBreakdown, ImpactCounts, ImpactFile,
+        ImpactPath, IndexError, IndexScopeReport, Language, OllamaEmbeddingStatus,
+        OpenAiEmbeddingStatus, ProjectIndexReport, ProjectOverview, ReferenceMatch, SemanticChunk,
+        SemanticChunkInput, SemanticEmbeddingInput, SemanticEmbeddingMatch, SemanticIndexReport,
+        SemanticIndexStatus, SemanticSearchResult, SuggestedCheck, Symbol, SymbolKind, VersionInfo,
     },
     storage::Store,
 };
@@ -480,6 +480,7 @@ pub fn agent_route_value(
     ];
     let current_reading_step = context_pack.reading_plan.first().cloned();
     let routing_decision = agent_route_routing_decision(
+        &root,
         &context_pack,
         &impact_status,
         backend_evidence,
@@ -514,6 +515,7 @@ pub fn agent_route_value(
 }
 
 fn agent_route_routing_decision(
+    root: &Path,
     context_pack: &ContextPack,
     impact_status: &str,
     backend_evidence: Option<AgentRouteBackendEvidence>,
@@ -523,6 +525,15 @@ fn agent_route_routing_decision(
 ) -> AgentRouteRoutingDecision {
     let first_seed = context_pack.selected_seeds.first();
     let first_step = context_pack.reading_plan.first();
+    let candidate_dispositions = backend_context_selection
+        .map(BackendContextSelection::dispositions)
+        .unwrap_or_default();
+    let next_candidate_continuation = backend_candidate_continuation(
+        root,
+        &context_pack.task,
+        context_pack.budget.applied_token_budget,
+        &candidate_dispositions,
+    );
     let backend_route_agreement = agent_route_backend_agreement(
         local_first_file,
         backend_evidence.as_ref(),
@@ -530,9 +541,8 @@ fn agent_route_routing_decision(
         backend_context_selection
             .map(BackendContextSelection::files)
             .unwrap_or_default(),
-        backend_context_selection
-            .map(BackendContextSelection::dispositions)
-            .unwrap_or_default(),
+        candidate_dispositions,
+        next_candidate_continuation,
     );
     let route_quality = agent_route_quality(
         context_pack,
@@ -593,6 +603,7 @@ fn agent_route_backend_agreement(
     backend_context_mode: Option<BackendContextMode>,
     selected_context_files: Vec<String>,
     candidate_dispositions: Vec<AgentRouteBackendCandidateDisposition>,
+    next_candidate_continuation: Option<AgentRouteBackendCandidateContinuation>,
 ) -> AgentRouteBackendAgreement {
     let Some(backend) = backend_evidence else {
         return AgentRouteBackendAgreement {
@@ -606,6 +617,7 @@ fn agent_route_backend_agreement(
             selected_context_files: Vec::new(),
             candidate_file_count: 0,
             candidate_dispositions: Vec::new(),
+            next_candidate_continuation: None,
             common_files: Vec::new(),
         };
     };
@@ -649,6 +661,7 @@ fn agent_route_backend_agreement(
             selected_context_files: Vec::new(),
             candidate_file_count: backend.candidate_files.len(),
             candidate_dispositions,
+            next_candidate_continuation,
             common_files,
         };
     }
@@ -699,6 +712,7 @@ fn agent_route_backend_agreement(
             selected_context_files,
             candidate_file_count: backend.candidate_files.len(),
             candidate_dispositions,
+            next_candidate_continuation,
             common_files,
         };
     }
@@ -769,8 +783,53 @@ fn agent_route_backend_agreement(
         selected_context_files: Vec::new(),
         candidate_file_count: backend.candidate_files.len(),
         candidate_dispositions,
+        next_candidate_continuation,
         common_files,
     }
+}
+
+fn backend_candidate_continuation(
+    root: &Path,
+    task: &str,
+    token_budget: usize,
+    candidate_dispositions: &[AgentRouteBackendCandidateDisposition],
+) -> Option<AgentRouteBackendCandidateContinuation> {
+    let candidate = candidate_dispositions.iter().find(|candidate| {
+        matches!(
+            candidate.context_reason.as_str(),
+            "token_budget_exhausted" | "fallback_not_selected"
+        )
+    })?;
+    let mut suggested_arguments = json!({
+        "root": root.display().to_string(),
+        "task": task,
+        "files": [candidate.file.clone()],
+        "token_budget": token_budget.max(4000)
+    });
+    if candidate.symbol_status.as_deref() == Some("valid")
+        && let Some(symbol) = candidate.symbol.as_ref()
+    {
+        suggested_arguments["symbols"] = json!([symbol]);
+    }
+
+    Some(AgentRouteBackendCandidateContinuation {
+        file: candidate.file.clone(),
+        rank: candidate.rank,
+        symbol: candidate
+            .symbol_status
+            .as_deref()
+            .filter(|status| *status == "valid")
+            .and(candidate.symbol.clone()),
+        context_reason: candidate.context_reason.clone(),
+        next_action: candidate.next_action.clone(),
+        suggested_tool: ContextSuggestedTool {
+            tool: "context_pack".to_string(),
+            priority: 70,
+            reason: "Build focused context around the highest-ranked valid backend candidate not yet selected."
+                .to_string(),
+            suggested_arguments,
+        },
+    })
 }
 
 fn agent_route_quality(

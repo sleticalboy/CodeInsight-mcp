@@ -3136,6 +3136,37 @@ fn cli_agent_route_routes_ranked_backend_candidates_within_budget() {
             && disposition["next_action"] == "run_backend_candidate_context_pack"
             && disposition["symbol_status"] == "valid"
     }));
+    let first_omitted = dispositions
+        .iter()
+        .find(|disposition| disposition["context_reason"] == "token_budget_exhausted")
+        .unwrap();
+    let continuation =
+        &route["routing_decision"]["backend_route_agreement"]["next_candidate_continuation"];
+    assert_eq!(continuation["file"], first_omitted["file"]);
+    assert_eq!(continuation["rank"], first_omitted["rank"]);
+    assert_eq!(continuation["symbol"], first_omitted["symbol"]);
+    assert_eq!(continuation["context_reason"], "token_budget_exhausted");
+    assert_eq!(
+        continuation["next_action"],
+        "run_backend_candidate_context_pack"
+    );
+    assert_eq!(continuation["suggested_tool"]["tool"], "context_pack");
+    assert_eq!(
+        continuation["suggested_tool"]["suggested_arguments"]["root"],
+        route["root"]
+    );
+    assert_eq!(
+        continuation["suggested_tool"]["suggested_arguments"]["files"],
+        serde_json::json!([first_omitted["file"].as_str().unwrap()])
+    );
+    assert_eq!(
+        continuation["suggested_tool"]["suggested_arguments"]["symbols"],
+        serde_json::json!([first_omitted["symbol"].as_str().unwrap()])
+    );
+    assert_eq!(
+        continuation["suggested_tool"]["suggested_arguments"]["token_budget"],
+        4000
+    );
     let impact_seed_files = route["impact_seed_files"].as_array().unwrap();
     assert!(impact_seed_files.iter().any(|file| file == "src/ui.ts"));
     assert!(impact_seed_files.iter().any(|file| file == "src/main.ts"));
@@ -3330,12 +3361,20 @@ fn cli_agent_route_falls_back_to_file_when_backend_symbol_is_stale() {
     let backend_evidence = serde_json::json!({
         "provider": "codebase-memory-mcp",
         "use_as_fallback": true,
-        "candidates": [{
-            "file": "src/main.ts",
-            "symbol": "removedGraphSymbol",
-            "source": "search_graph",
-            "reason": "graph snapshot may be stale"
-        }]
+        "candidates": [
+            {
+                "file": "src/main.ts",
+                "symbol": "removedGraphSymbol",
+                "source": "search_graph",
+                "reason": "graph snapshot may be stale"
+            },
+            {
+                "file": "src/ui.ts",
+                "symbol": "removedUiSymbol",
+                "source": "search_graph",
+                "reason": "graph snapshot may be stale"
+            }
+        ]
     })
     .to_string();
 
@@ -3362,15 +3401,39 @@ fn cli_agent_route_falls_back_to_file_when_backend_symbol_is_stale() {
     );
     assert_eq!(
         route["routing_decision"]["backend_route_agreement"]["candidate_dispositions"],
-        serde_json::json!([{
-            "file": "src/main.ts",
-            "rank": 1,
-            "symbol": "removedGraphSymbol",
-            "context_status": "selected",
-            "context_reason": "selected_within_token_budget",
-            "next_action": "read_selected_context",
-            "symbol_status": "stale"
-        }])
+        serde_json::json!([
+            {
+                "file": "src/main.ts",
+                "rank": 1,
+                "symbol": "removedGraphSymbol",
+                "context_status": "selected",
+                "context_reason": "selected_within_token_budget",
+                "next_action": "read_selected_context",
+                "symbol_status": "stale"
+            },
+            {
+                "file": "src/ui.ts",
+                "rank": 2,
+                "symbol": "removedUiSymbol",
+                "context_status": "omitted",
+                "context_reason": "fallback_not_selected",
+                "next_action": "use_if_fallback_context_insufficient",
+                "symbol_status": "stale"
+            }
+        ])
+    );
+    let continuation =
+        &route["routing_decision"]["backend_route_agreement"]["next_candidate_continuation"];
+    assert_eq!(continuation["file"], "src/ui.ts");
+    assert!(continuation.get("symbol").is_none());
+    assert_eq!(
+        continuation["suggested_tool"]["suggested_arguments"]["files"],
+        serde_json::json!(["src/ui.ts"])
+    );
+    assert!(
+        continuation["suggested_tool"]["suggested_arguments"]
+            .get("symbols")
+            .is_none()
     );
 }
 
@@ -10675,6 +10738,7 @@ fn cli_agent_route_explains_when_all_backend_candidates_are_missing() {
         ])
     );
     assert_eq!(route["context_pack"]["files"], serde_json::json!([]));
+    assert!(agreement.get("next_candidate_continuation").is_none());
     assert_eq!(route["impact_status"], "skipped_invalid_seed");
 
     let local_route = run_json([
