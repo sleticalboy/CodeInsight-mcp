@@ -36,6 +36,7 @@ use crate::{
 
 const CONTEXT_SCORE_SEED_FILE: i32 = 130;
 const BACKEND_EVIDENCE_CANDIDATE_LIMIT: usize = 16;
+const BACKEND_EVIDENCE_TOOL_ERROR_CHARS_LIMIT: usize = 256;
 const BACKEND_EVIDENCE_TOOL_RESULT_WRAPPER_LIMIT: usize = 4;
 const BACKEND_EVIDENCE_TOOL_RESULT_PAGES_LIMIT: usize = 16;
 const BACKEND_EVIDENCE_TOOL_RESULT_ITEMS_LIMIT: usize = 64;
@@ -1836,6 +1837,25 @@ fn collect_backend_tool_candidates(
 fn backend_tool_result_payload(raw: Value, source: &str) -> Result<Value> {
     let mut current = raw;
     for wrapper_depth in 0..=BACKEND_EVIDENCE_TOOL_RESULT_WRAPPER_LIMIT {
+        if let Some(error) = current.get("error") {
+            let message = error
+                .get("message")
+                .and_then(Value::as_str)
+                .or_else(|| error.as_str())
+                .unwrap_or("unspecified JSON-RPC error");
+            bail!(
+                "backend evidence {source} tool result returned JSON-RPC error: {}",
+                bounded_backend_tool_error(message)
+            );
+        }
+        if current.get("isError").and_then(Value::as_bool) == Some(true) {
+            let message =
+                backend_tool_result_text(&current).unwrap_or("unspecified MCP tool error");
+            bail!(
+                "backend evidence {source} tool result returned MCP error: {}",
+                bounded_backend_tool_error(message)
+            );
+        }
         if let Some(payload) = current
             .get("structuredContent")
             .filter(|value| value.is_object())
@@ -1852,17 +1872,7 @@ fn backend_tool_result_payload(raw: Value, source: &str) -> Result<Value> {
             current = result;
             continue;
         }
-        if let Some(text) = current
-            .get("content")
-            .and_then(Value::as_array)
-            .and_then(|content| {
-                content.iter().find_map(|item| {
-                    (item.get("type").and_then(Value::as_str) == Some("text"))
-                        .then(|| item.get("text").and_then(Value::as_str))
-                        .flatten()
-                })
-            })
-        {
+        if let Some(text) = backend_tool_result_text(&current) {
             return serde_json::from_str(text).with_context(|| {
                 format!("backend evidence {source} text content is not valid JSON")
             });
@@ -1873,6 +1883,27 @@ fn backend_tool_result_payload(raw: Value, source: &str) -> Result<Value> {
         bail!("backend evidence {source} tool result must be a JSON object");
     }
     unreachable!()
+}
+
+fn backend_tool_result_text(value: &Value) -> Option<&str> {
+    value.get("content")?.as_array()?.iter().find_map(|item| {
+        (item.get("type").and_then(Value::as_str) == Some("text"))
+            .then(|| item.get("text").and_then(Value::as_str))
+            .flatten()
+    })
+}
+
+fn bounded_backend_tool_error(message: &str) -> String {
+    let normalized = message.split_whitespace().collect::<Vec<_>>().join(" ");
+    let normalized = if normalized.is_empty() {
+        "unspecified backend error"
+    } else {
+        normalized.as_str()
+    };
+    normalized
+        .chars()
+        .take(BACKEND_EVIDENCE_TOOL_ERROR_CHARS_LIMIT)
+        .collect()
 }
 
 fn first_backend_tool_string(value: &Value, keys: &[&str]) -> Option<String> {

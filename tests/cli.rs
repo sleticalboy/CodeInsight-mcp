@@ -3089,6 +3089,58 @@ fn cli_agent_route_rejects_invalid_backend_evidence_values() {
             "--task",
             "understand app entrypoint flow",
             "--backend-evidence-json",
+            r#"{"provider":"graph","tool_results":{"search_graph":{"jsonrpc":"2.0","id":1,"error":{"code":-32000,"message":"backend index unavailable"}}}}"#,
+        ])
+        .assert()
+        .failure()
+        .stderr(contains(
+            "backend evidence search_graph tool result returned JSON-RPC error: backend index unavailable",
+        ));
+
+    let long_mcp_error = format!("backend unavailable\n{}tail-marker", "x".repeat(300));
+    let mcp_error_evidence = serde_json::json!({
+        "provider": "graph",
+        "tool_results": {
+            "search_code": {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "result": {
+                    "isError": true,
+                    "content": [{"type": "text", "text": long_mcp_error}]
+                }
+            }
+        }
+    })
+    .to_string();
+    let output = Command::cargo_bin("codeinsight")
+        .unwrap()
+        .env_remove("CODEINSIGHT_EMBEDDING_PROVIDER")
+        .args([
+            "agent-route",
+            fixture.path().to_str().unwrap(),
+            "--task",
+            "understand app entrypoint flow",
+            "--backend-evidence-json",
+            &mcp_error_evidence,
+        ])
+        .output()
+        .unwrap();
+    assert!(!output.status.success());
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains(
+        "backend evidence search_code tool result returned MCP error: backend unavailable"
+    ));
+    assert!(!stderr.contains("tail-marker"));
+
+    Command::cargo_bin("codeinsight")
+        .unwrap()
+        .env_remove("CODEINSIGHT_EMBEDDING_PROVIDER")
+        .args([
+            "agent-route",
+            fixture.path().to_str().unwrap(),
+            "--task",
+            "understand app entrypoint flow",
+            "--backend-evidence-json",
             r#"{"provider":" ","tool_results":{"search_graph":{"total":1}}}"#,
         ])
         .assert()
