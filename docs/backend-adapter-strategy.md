@@ -89,11 +89,14 @@ codeinsight agent-route /path/to/repo \
 ```
 
 For MCP, set `backend_evidence.prefer_for_context` to `true`. CodeInsight then
-uses the first valid backend candidate to build the context pack and impact
-seed, while retaining the original local candidate in
-`backend_route_agreement.local_first_file`. The actual selected backend file is
-reported as `selected_context_file`. Explicit file or symbol seeds always take
-priority over this policy.
+passes valid backend candidates to the context pack in graph-ranked order and
+uses the token budget to bound the resulting reading plan and impact seeds. It
+retains the original local candidate in
+`backend_route_agreement.local_first_file`; `selected_context_file` reports the
+first selected backend file and `selected_context_files` reports every backend
+candidate retained in context. Explicit file or symbol seeds always take
+priority over this policy. The older fallback mode remains single-candidate so
+its recovery behavior stays stable.
 
 The first bridge prototype is script-level and runtime-agnostic:
 

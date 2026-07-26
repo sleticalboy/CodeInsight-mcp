@@ -199,7 +199,7 @@ pub struct AgentRouteArgs {
     pub backend_fallback: bool,
     #[arg(
         long,
-        help = "Prefer the first available backend candidate for context when no explicit file or symbol seed is provided"
+        help = "Prefer backend-ranked candidates for bounded context when no explicit file or symbol seed is provided"
     )]
     pub prefer_backend_context: bool,
 }

@@ -62,6 +62,26 @@ impl BackendContextMode {
     }
 }
 
+struct BackendContextSelection {
+    candidates: Vec<AgentRouteBackendCandidate>,
+}
+
+impl BackendContextSelection {
+    fn files(&self) -> Vec<String> {
+        self.candidates
+            .iter()
+            .map(|candidate| candidate.file.clone())
+            .collect()
+    }
+
+    fn symbols(&self) -> Vec<String> {
+        self.candidates
+            .iter()
+            .filter_map(|candidate| candidate.symbol.clone())
+            .collect()
+    }
+}
+
 const CONTEXT_SCORE_SEED_HEADER: i32 = 140;
 const CONTEXT_SCORE_SYMBOL_DEFINITION: i32 = 90;
 const CONTEXT_SCORE_TYPE_RELATION: i32 = 82;
@@ -306,12 +326,12 @@ pub fn agent_route_value(
         .map(|step| step.file.clone());
     let has_explicit_seed = !files.is_empty() || !symbols.is_empty();
     let mut backend_context_mode = None;
-    let mut backend_context_candidate = None;
+    let mut backend_context_selection = None;
     if !has_explicit_seed
         && let Some(evidence) = backend_evidence
             .as_ref()
             .filter(|evidence| evidence.prefer_for_context)
-        && let Some((preferred_context, preferred_candidate)) = backend_seed_context_pack(
+        && let Some((preferred_context, preferred_selection)) = backend_seed_context_pack(
             &root,
             &task,
             token_budget,
@@ -320,13 +340,13 @@ pub fn agent_route_value(
         )?
     {
         context_pack = preferred_context;
-        backend_context_candidate = Some(preferred_candidate);
+        backend_context_selection = Some(preferred_selection);
         backend_context_mode = Some(BackendContextMode::Preferred);
     } else if context_pack.reading_plan.is_empty()
         && let Some(evidence) = backend_evidence
             .as_ref()
             .filter(|evidence| evidence.use_as_fallback)
-        && let Some((fallback_context, fallback_candidate)) = backend_seed_context_pack(
+        && let Some((fallback_context, fallback_selection)) = backend_seed_context_pack(
             &root,
             &task,
             token_budget,
@@ -335,7 +355,7 @@ pub fn agent_route_value(
         )?
     {
         context_pack = fallback_context;
-        backend_context_candidate = Some(fallback_candidate);
+        backend_context_selection = Some(fallback_selection);
         backend_context_mode = Some(BackendContextMode::Fallback);
     }
     add_index_scope_hint_to_blocked_context(&mut context_pack, &index_report.index_scope);
@@ -347,10 +367,9 @@ pub fn agent_route_value(
     let mut impact_seed_files = if blocked_context_status.is_some() {
         Vec::new()
     } else if backend_context_mode.is_some() {
-        context_pack
-            .files
-            .first()
-            .map(|file| vec![file.file.clone()])
+        backend_context_selection
+            .as_ref()
+            .map(BackendContextSelection::files)
             .unwrap_or_default()
     } else {
         files
@@ -369,11 +388,10 @@ pub fn agent_route_value(
     let mut impact_seed_symbols = if blocked_context_status.is_some() {
         Vec::new()
     } else if backend_context_mode.is_some() {
-        backend_context_candidate
+        backend_context_selection
             .as_ref()
-            .and_then(|candidate| candidate.symbol.clone())
-            .into_iter()
-            .collect()
+            .map(BackendContextSelection::symbols)
+            .unwrap_or_default()
     } else {
         symbols
     };
@@ -452,6 +470,10 @@ pub fn agent_route_value(
         backend_evidence,
         local_first_file.as_deref(),
         backend_context_mode,
+        backend_context_selection
+            .as_ref()
+            .map(BackendContextSelection::files)
+            .unwrap_or_default(),
     );
     let execution_plan = agent_route_execution_plan(
         &context_pack,
@@ -485,6 +507,7 @@ fn agent_route_routing_decision(
     backend_evidence: Option<AgentRouteBackendEvidence>,
     local_first_file: Option<&str>,
     backend_context_mode: Option<BackendContextMode>,
+    selected_backend_context_files: Vec<String>,
 ) -> AgentRouteRoutingDecision {
     let first_seed = context_pack.selected_seeds.first();
     let first_step = context_pack.reading_plan.first();
@@ -492,7 +515,7 @@ fn agent_route_routing_decision(
         local_first_file,
         backend_evidence.as_ref(),
         backend_context_mode,
-        first_step.map(|step| step.file.as_str()),
+        selected_backend_context_files,
     );
     let route_quality = agent_route_quality(
         context_pack,
@@ -551,7 +574,7 @@ fn agent_route_backend_agreement(
     local_first_file: Option<&str>,
     backend_evidence: Option<&AgentRouteBackendEvidence>,
     backend_context_mode: Option<BackendContextMode>,
-    selected_context_file: Option<&str>,
+    selected_context_files: Vec<String>,
 ) -> AgentRouteBackendAgreement {
     let Some(backend) = backend_evidence else {
         return AgentRouteBackendAgreement {
@@ -562,6 +585,7 @@ fn agent_route_backend_agreement(
             local_first_file: local_first_file.map(str::to_string),
             backend_first_file: None,
             selected_context_file: None,
+            selected_context_files: Vec::new(),
             candidate_file_count: 0,
             common_files: Vec::new(),
         };
@@ -582,13 +606,15 @@ fn agent_route_backend_agreement(
         .unwrap_or_default();
 
     if let Some(mode) = backend_context_mode {
-        let selected_context_file = selected_context_file.map(str::to_string);
+        let selected_context_file = selected_context_files.first().cloned();
+        let selected_context_count = selected_context_files.len();
         let (status, message) = match mode {
             BackendContextMode::Fallback => (
                 "backend_fallback",
                 format!(
-                    "Local routing was blocked, so backend {} fallback evidence seeded bounded context with first-read file {}.",
+                    "Local routing was blocked, so backend {} fallback evidence seeded bounded context with {} ranked file(s), starting with {}.",
                     backend.provider,
+                    selected_context_count,
                     selected_context_file.as_deref().unwrap_or("unknown")
                 ),
             ),
@@ -622,6 +648,7 @@ fn agent_route_backend_agreement(
             local_first_file,
             backend_first_file,
             selected_context_file,
+            selected_context_files,
             candidate_file_count: backend.candidate_files.len(),
             common_files,
         };
@@ -690,6 +717,7 @@ fn agent_route_backend_agreement(
         local_first_file,
         backend_first_file,
         selected_context_file: None,
+        selected_context_files: Vec::new(),
         candidate_file_count: backend.candidate_files.len(),
         common_files,
     }
@@ -988,7 +1016,7 @@ fn agent_route_quality(
                 backend_route_recommended_action =
                     Some(backend_route_agreement.recommended_action.clone());
                 confidence_factors.push(format!(
-                    "explicit policy selected backend {} as the bounded context seed",
+                    "explicit policy selected backend {} ranked candidates as bounded context seeds",
                     backend.provider
                 ));
                 if backend_route_agreement.local_first_file.as_deref()
@@ -1429,36 +1457,66 @@ fn backend_seed_context_pack(
     token_budget: usize,
     backend_evidence: &AgentRouteBackendEvidence,
     mode: BackendContextMode,
-) -> Result<Option<(ContextPack, AgentRouteBackendCandidate)>> {
-    for candidate_file in &backend_evidence.candidate_files {
-        if !root.join(candidate_file).is_file() {
-            continue;
-        }
-        let candidate = backend_evidence
-            .candidates
-            .iter()
-            .find(|candidate| candidate.file == *candidate_file)
-            .cloned()
-            .unwrap_or_else(|| AgentRouteBackendCandidate {
-                file: candidate_file.clone(),
-                symbol: None,
-                source: None,
-                score: None,
-                reason: None,
-                evidence: Vec::new(),
-            });
+) -> Result<Option<(ContextPack, BackendContextSelection)>> {
+    let candidates = backend_evidence
+        .candidate_files
+        .iter()
+        .filter(|candidate_file| root.join(candidate_file).is_file())
+        .map(|candidate_file| {
+            backend_evidence
+                .candidates
+                .iter()
+                .find(|candidate| candidate.file == *candidate_file)
+                .cloned()
+                .unwrap_or_else(|| AgentRouteBackendCandidate {
+                    file: candidate_file.clone(),
+                    symbol: None,
+                    source: None,
+                    score: None,
+                    reason: None,
+                    evidence: Vec::new(),
+                })
+        })
+        .collect::<Vec<_>>();
+
+    for primary_index in 0..candidates.len() {
+        let candidate_end = match mode {
+            BackendContextMode::Fallback => primary_index + 1,
+            BackendContextMode::Preferred => candidates.len(),
+        };
+        let ranked_candidates = &candidates[primary_index..candidate_end];
+        let primary_candidate = &ranked_candidates[0];
         match context_pack_value(
             root.to_path_buf(),
             task.to_string(),
-            candidate.symbol.clone().into_iter().collect(),
-            vec![candidate_file.clone()],
+            primary_candidate.symbol.clone().into_iter().collect(),
+            ranked_candidates
+                .iter()
+                .map(|candidate| candidate.file.clone())
+                .collect(),
             token_budget,
         ) {
             Ok(mut context_pack) if !context_pack.reading_plan.is_empty() => {
                 context_pack.seed_strategy = mode.seed_source().to_string();
-                if let Some(seed) = context_pack.selected_seeds.first_mut() {
+                for seed in &mut context_pack.selected_seeds {
                     seed.source = mode.seed_source().to_string();
+                }
+                let selected_files = context_pack
+                    .files
+                    .iter()
+                    .map(|file| file.file.as_str())
+                    .collect::<BTreeSet<_>>();
+                let selected_candidates = ranked_candidates
+                    .iter()
+                    .filter(|candidate| selected_files.contains(candidate.file.as_str()))
+                    .cloned()
+                    .collect::<Vec<_>>();
+                for candidate in &selected_candidates {
                     if let Some(symbol) = candidate.symbol.as_ref()
+                        && let Some(seed) = context_pack
+                            .selected_seeds
+                            .iter_mut()
+                            .find(|seed| seed.value == candidate.file)
                         && !seed.matched_symbols.contains(symbol)
                     {
                         seed.matched_symbols.push(symbol.clone());
@@ -1466,10 +1524,15 @@ fn backend_seed_context_pack(
                 }
                 annotate_backend_seed_context(
                     &mut context_pack,
-                    &backend_evidence.provider,
-                    &candidate,
+                    backend_evidence,
+                    &selected_candidates,
                 );
-                return Ok(Some((context_pack, candidate)));
+                return Ok(Some((
+                    context_pack,
+                    BackendContextSelection {
+                        candidates: selected_candidates,
+                    },
+                )));
             }
             Ok(_) => {}
             Err(error) if is_context_pack_invalid_seed_error(&error) => {}
@@ -1481,22 +1544,39 @@ fn backend_seed_context_pack(
 
 fn annotate_backend_seed_context(
     context_pack: &mut ContextPack,
-    provider: &str,
-    candidate: &AgentRouteBackendCandidate,
+    backend_evidence: &AgentRouteBackendEvidence,
+    candidates: &[AgentRouteBackendCandidate],
 ) {
-    let summary = format!(
-        "Selected from backend {provider}: {}.",
-        backend_candidate_summary(candidate)
-    );
-    if let Some(file) = context_pack.files.first_mut() {
-        file.reason.push(' ');
-        file.reason.push_str(&summary);
-    }
-    if let Some(step) = context_pack.reading_plan.first_mut() {
-        step.reason.push(' ');
-        step.reason.push_str(&summary);
-        step.selection_reason.push(' ');
-        step.selection_reason.push_str(&summary);
+    for candidate in candidates {
+        let rank = backend_evidence
+            .candidate_files
+            .iter()
+            .position(|file| file == &candidate.file)
+            .map(|index| index + 1)
+            .unwrap_or(0);
+        let summary = format!(
+            "Selected from backend {} candidate rank {rank}: {}.",
+            backend_evidence.provider,
+            backend_candidate_summary(candidate)
+        );
+        if let Some(file) = context_pack
+            .files
+            .iter_mut()
+            .find(|file| file.file == candidate.file)
+        {
+            file.reason.push(' ');
+            file.reason.push_str(&summary);
+        }
+        if let Some(step) = context_pack
+            .reading_plan
+            .iter_mut()
+            .find(|step| step.file == candidate.file)
+        {
+            step.reason.push(' ');
+            step.reason.push_str(&summary);
+            step.selection_reason.push(' ');
+            step.selection_reason.push_str(&summary);
+        }
     }
 }
 

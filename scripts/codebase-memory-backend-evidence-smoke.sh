@@ -204,7 +204,7 @@ main() {
 
   "$CODEINSIGHT_BIN" agent-route "$repo" \
     --task "understand app entrypoint flow" \
-    --token-budget 1600 \
+    --token-budget 6000 \
     --force-index \
     --backend-evidence "$evidence" \
     --prefer-backend-context >"$preferred_route_json"
@@ -214,6 +214,10 @@ main() {
   require_jq "$preferred_route_json" '.routing_decision.backend_route_agreement.status == "backend_preferred"' "preferred backend evidence should be explicit in route agreement"
   require_jq "$preferred_route_json" '.routing_decision.backend_route_agreement.local_first_file == "src/main.ts"' "preferred routing should preserve the original local first candidate"
   require_jq "$preferred_route_json" '.routing_decision.backend_route_agreement.selected_context_file == "src/auth.ts"' "preferred routing should expose the selected backend context file"
+  require_jq "$preferred_route_json" '.routing_decision.backend_route_agreement.selected_context_files == ["src/auth.ts", "src/audit.ts", "src/main.ts"]' "preferred routing should preserve graph-ranked candidates that fit the context budget"
+  require_jq "$preferred_route_json" '([.context_pack.reading_plan[].file] | index("src/auth.ts")) < ([.context_pack.reading_plan[].file] | index("src/audit.ts")) and ([.context_pack.reading_plan[].file] | index("src/audit.ts")) < ([.context_pack.reading_plan[].file] | index("src/main.ts"))' "preferred reading plan should retain graph candidate order"
+  require_jq "$preferred_route_json" '.impact_seed_files == ["src/audit.ts", "src/auth.ts", "src/main.ts"]' "preferred impact analysis should follow all selected backend files"
+  require_jq "$preferred_route_json" '.impact_seed_symbols == ["AuthService", "auditLogin", "main"]' "preferred impact analysis should follow selected backend symbols"
   require_jq "$preferred_route_json" '.routing_decision.route_quality.recommended_action == "read_backend_seeded_context"' "preferred routing should direct the agent to backend-seeded context"
 
   "$CODEINSIGHT_BIN" agent-route "$repo" \

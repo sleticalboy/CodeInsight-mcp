@@ -360,6 +360,8 @@ pub struct AgentRouteBackendAgreement {
     pub backend_first_file: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub selected_context_file: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub selected_context_files: Vec<String>,
     pub candidate_file_count: usize,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub common_files: Vec<String>,

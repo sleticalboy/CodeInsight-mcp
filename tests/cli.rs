@@ -3021,6 +3021,10 @@ fn cli_agent_route_prefers_backend_candidate_for_bounded_context() {
         "src/ui.ts"
     );
     assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["selected_context_files"],
+        serde_json::json!(["src/ui.ts"])
+    );
+    assert_eq!(
         route["routing_decision"]["route_quality"]["recommended_action"],
         "read_backend_seeded_context"
     );
@@ -3039,6 +3043,120 @@ fn cli_agent_route_prefers_backend_candidate_for_bounded_context() {
                 .as_str()
                 .unwrap()
                 .contains("Backend preference replaced the local first-read candidate"))
+    );
+}
+
+#[test]
+fn cli_agent_route_routes_ranked_backend_candidates_within_budget() {
+    let fixture = fixture_project();
+    let backend_evidence = serde_json::json!({
+        "provider": "codebase-memory-mcp",
+        "candidates": [
+            {
+                "file": "src/ui.ts",
+                "symbol": "render",
+                "source": "search_graph",
+                "score": 0.97
+            },
+            {
+                "file": "src/main.ts",
+                "symbol": "main",
+                "source": "trace_path",
+                "score": 0.91
+            }
+        ]
+    })
+    .to_string();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand app entrypoint flow",
+        "--token-budget",
+        "6000",
+        "--force-index",
+        "--backend-evidence-json",
+        &backend_evidence,
+        "--prefer-backend-context",
+    ]);
+
+    let reading_files = route["context_pack"]["reading_plan"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|step| step["file"].as_str().unwrap())
+        .collect::<Vec<_>>();
+    let ui_position = reading_files
+        .iter()
+        .position(|file| *file == "src/ui.ts")
+        .unwrap();
+    let main_position = reading_files
+        .iter()
+        .position(|file| *file == "src/main.ts")
+        .unwrap();
+
+    assert!(ui_position < main_position);
+    assert_eq!(route["routing_decision"]["first_file"], "src/ui.ts");
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["selected_context_files"],
+        serde_json::json!(["src/ui.ts", "src/main.ts"])
+    );
+    assert_eq!(
+        route["impact_seed_files"],
+        serde_json::json!(["src/main.ts", "src/ui.ts"])
+    );
+    assert_eq!(
+        route["impact_seed_symbols"],
+        serde_json::json!(["main", "render"])
+    );
+    assert!(
+        route["context_pack"]["reading_plan"][0]["selection_reason"]
+            .as_str()
+            .unwrap()
+            .contains("candidate rank 1")
+    );
+}
+
+#[test]
+fn cli_agent_route_preserves_backend_rank_after_skipping_missing_candidate() {
+    let fixture = fixture_project();
+    let backend_evidence = serde_json::json!({
+        "provider": "codebase-memory-mcp",
+        "prefer_for_context": true,
+        "candidates": [
+            { "file": "src/removed.ts", "symbol": "removed" },
+            { "file": "src/ui.ts", "symbol": "render" }
+        ]
+    })
+    .to_string();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand app entrypoint flow",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence-json",
+        &backend_evidence,
+    ]);
+
+    assert_eq!(route["routing_decision"]["first_file"], "src/ui.ts");
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["backend_first_file"],
+        "src/removed.ts"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["selected_context_files"],
+        serde_json::json!(["src/ui.ts"])
+    );
+    assert!(
+        route["context_pack"]["reading_plan"][0]["selection_reason"]
+            .as_str()
+            .unwrap()
+            .contains("candidate rank 2")
     );
 }
 

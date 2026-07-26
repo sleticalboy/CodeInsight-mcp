@@ -231,7 +231,7 @@ fn tool_definitions() -> Value {
             "prefer_for_context": {
                 "type": "boolean",
                 "default": false,
-                "description": "Prefer the first available backend candidate for bounded context when the caller did not provide explicit file or symbol seeds."
+                "description": "Prefer backend-ranked candidates for bounded context when the caller did not provide explicit file or symbol seeds."
             },
             "candidate_files": {
                 "type": "array",
