@@ -2746,6 +2746,13 @@ fn cli_agent_route_uses_structured_backend_candidate_metadata_in_fallback() {
     );
     assert_eq!(route["impact_seed_symbols"], serde_json::json!(["main"]));
     assert!(
+        route["context_pack"]["symbols"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|symbol| symbol["name"] == "main")
+    );
+    assert!(
         route["context_pack"]["reading_plan"][0]["selection_reason"]
             .as_str()
             .unwrap()
@@ -2756,6 +2763,43 @@ fn cli_agent_route_uses_structured_backend_candidate_metadata_in_fallback() {
             .as_str()
             .unwrap()
             .contains("evidence definition, outbound_calls")
+    );
+}
+
+#[test]
+fn cli_agent_route_falls_back_to_file_when_backend_symbol_is_stale() {
+    let fixture = fixture_project();
+    let backend_evidence = serde_json::json!({
+        "provider": "codebase-memory-mcp",
+        "use_as_fallback": true,
+        "candidates": [{
+            "file": "src/main.ts",
+            "symbol": "removedGraphSymbol",
+            "source": "search_graph",
+            "reason": "graph snapshot may be stale"
+        }]
+    })
+    .to_string();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand invalid explicit seed",
+        "--file",
+        "does/not/exist.ts",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence-json",
+        &backend_evidence,
+    ]);
+
+    assert_eq!(route["routing_decision"]["first_file"], "src/main.ts");
+    assert_eq!(route["impact_status"], "complete");
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["status"],
+        "backend_fallback"
     );
 }
 

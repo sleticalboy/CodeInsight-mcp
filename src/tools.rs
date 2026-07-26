@@ -1236,7 +1236,7 @@ fn backend_fallback_context_pack(
         match context_pack_value(
             root.to_path_buf(),
             task.to_string(),
-            Vec::new(),
+            candidate.symbol.clone().into_iter().collect(),
             vec![candidate_file.clone()],
             token_budget,
         ) {
