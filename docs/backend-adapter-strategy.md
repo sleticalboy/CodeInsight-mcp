@@ -120,6 +120,7 @@ scripts/codebase-memory-bridge-cohort-summary.sh \
   /tmp/codeinsight-codebase-memory-bridge/task-1 \
   /tmp/codeinsight-codebase-memory-bridge/task-2 \
   --min-reports 2 \
+  --min-backend-agreement-rate 100 \
   --check
 ```
 
@@ -131,6 +132,7 @@ scripts/codebase-memory-bridge-cohort-report.sh \
   --manifest /tmp/codeinsight-codebase-memory-bridge.tsv \
   --output-dir /tmp/codeinsight-codebase-memory-bridge-cohort \
   --min-reports 3 \
+  --min-backend-agreement-rate 100 \
   --check
 ```
 
@@ -141,6 +143,14 @@ The native backend can keep using CodeInsight's current index. A future
 codebase-memory adapter can call `search_graph`, `search_code`, `trace_path`,
 or `get_architecture`, then hand candidates to CodeInsight's existing
 `context_pack` and `agent_route` quality logic.
+
+The cohort output uses the machine-readable
+`routing_decision.backend_route_agreement` contract rather than warning text.
+It reports `backend_route_agreement_rate`, per-status counts for `agree`,
+`overlap`, `conflict`, `backend_only`, `no_local_route`, and
+`backend_without_candidates`, plus the next triage action. This makes the bridge
+usable as a quality gate for backend/local agreement across multiple real
+agent tasks.
 
 A maintainer-run 3-task bridge example is checked in at
 [codebase-memory bridge cohort example](codebase-memory-bridge-cohort-example.md).
@@ -167,8 +177,8 @@ to make the route evidence format backend-ready:
 - `scripts/codebase-memory-bridge-report.sh` summarizes real backend/local
   agreement artifacts after `agent-route`
 - `scripts/codebase-memory-bridge-cohort-summary.sh` aggregates multiple
-  agreement reports into first-file match rates, route actions, warning counts,
-  and conflict counts
+  agreement reports into backend-route agreement rates, first-file match rates,
+  route actions, warning counts, and conflict counts
 - `scripts/codebase-memory-bridge-cohort-report.sh` batch-generates per-task
   agreement reports and the aggregate cohort from a TSV manifest
 - comparison docs describe codebase-memory as a possible provider, not just a

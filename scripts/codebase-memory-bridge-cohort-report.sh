@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MANIFEST=""
 OUTPUT_DIR="/tmp/codeinsight-codebase-memory-bridge-cohort"
 MIN_REPORTS=1
+MIN_BACKEND_AGREEMENT_RATE=100
 CHECK=false
 
 fail() {
@@ -35,6 +36,9 @@ Options:
   --manifest PATH    TSV manifest with one row per bridge task.
   --output-dir DIR   Output directory. Default: /tmp/codeinsight-codebase-memory-bridge-cohort.
   --min-reports N    Minimum report count for --check. Default: 1.
+  --min-backend-agreement-rate N
+                    Minimum percent of reports whose backend_route_agreement.status is agree.
+                    Default: 100.
   --check            Fail unless the aggregated cohort is clean.
   -h, --help         Show this help text.
 
@@ -64,6 +68,11 @@ parse_args() {
         MIN_REPORTS="$2"
         shift 2
         ;;
+      --min-backend-agreement-rate)
+        [ "$#" -ge 2 ] || fail "--min-backend-agreement-rate requires a number"
+        MIN_BACKEND_AGREEMENT_RATE="$2"
+        shift 2
+        ;;
       --check)
         CHECK=true
         shift
@@ -89,6 +98,11 @@ validate_args() {
     ''|*[!0-9]*) fail "--min-reports must be a positive integer" ;;
   esac
   [ "$MIN_REPORTS" -gt 0 ] || fail "--min-reports must be > 0"
+  case "$MIN_BACKEND_AGREEMENT_RATE" in
+    ''|*[!0-9]*) fail "--min-backend-agreement-rate must be an integer from 0 to 100" ;;
+  esac
+  [ "$MIN_BACKEND_AGREEMENT_RATE" -le 100 ] ||
+    fail "--min-backend-agreement-rate must be <= 100"
 }
 
 is_ignored_manifest_line() {
@@ -155,6 +169,7 @@ run_reports() {
   "$ROOT_DIR/scripts/codebase-memory-bridge-cohort-summary.sh" \
     "${reports[@]}" \
     --min-reports "$MIN_REPORTS" \
+    --min-backend-agreement-rate "$MIN_BACKEND_AGREEMENT_RATE" \
     --output "$OUTPUT_DIR/cohort.md" \
     --json "$OUTPUT_DIR/cohort.json" \
     "${check_args[@]}"

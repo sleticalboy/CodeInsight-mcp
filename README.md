@@ -231,6 +231,7 @@ scripts/codebase-memory-bridge-cohort-summary.sh \
   /tmp/codeinsight-codebase-memory-bridge/task-1 \
   /tmp/codeinsight-codebase-memory-bridge/task-2 \
   --min-reports 2 \
+  --min-backend-agreement-rate 100 \
   --check
 ```
 
@@ -241,6 +242,7 @@ scripts/codebase-memory-bridge-cohort-report.sh \
   --manifest /tmp/codeinsight-codebase-memory-bridge.tsv \
   --output-dir /tmp/codeinsight-codebase-memory-bridge-cohort \
   --min-reports 3 \
+  --min-backend-agreement-rate 100 \
   --check
 ```
 
@@ -255,6 +257,12 @@ See the checked-in
 for a 3-task maintainer run where codebase-memory supplied candidate files and
 CodeInsight matched the backend top file in all reports while preserving
 advisory route-quality checks.
+
+The cohort JSON also reports `backend_route_agreement_rate` and
+`backend_route_agreement_counts` for `agree`, `overlap`, `conflict`,
+`backend_only`, `no_local_route`, and `backend_without_candidates`. With
+`--check`, `--min-backend-agreement-rate` gates whether enough reports have
+machine-readable `backend_route_agreement.status == "agree"`.
 
 The same object can be passed as MCP `backend_evidence`. See
 [Backend adapter strategy](docs/backend-adapter-strategy.md) for the evidence
@@ -347,7 +355,7 @@ accuracy, or proof that unselected code is irrelevant.
 
 Current benchmark snapshot:
 
-- The two-minute demo for this repository shows the agent route selecting 531 of 82,312 source lines, avoiding 81,781 source lines before broad reading for a 99.4% reduction and 155.0x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 21 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
+- The two-minute demo for this repository shows the agent route selecting 531 of 82,443 source lines, avoiding 81,912 source lines before broad reading for a 99.4% reduction and 155.3x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 21 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
 - Smoke repositories route `context_pack` first for 4/4 repositories and
   select 709 of 75,753 source lines, a 99.1% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and

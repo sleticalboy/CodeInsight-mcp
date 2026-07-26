@@ -120,7 +120,7 @@ Promise: route the agent through agent_route before edits.
    routing_decision_first_file: src/tools.rs
    routing_decision_first_selection_rank: 1
    routing_decision_suggested_tool: file_outline
-   routing_decision_read_less: 99.4%, 155.0x
+   routing_decision_read_less: 99.4%, 155.3x
    routing_decision_continuation: omitted_candidates_available
    routing_decision_impact_status: complete
    routing_decision_quality: high (100/100, 21 evidence signals)
@@ -136,11 +136,11 @@ Promise: route the agent through agent_route before edits.
    current_reading_step_contract: true
    suggested_tool_handoff_contract: true
    continuation_timing_contract: true
-   total_lines: 82312
+   total_lines: 82443
    selected_lines: 531
-   source_lines_avoided: 81781
+   source_lines_avoided: 81912
    line_reduction: 99.4%
-   read_less_ratio: 155.0x
+   read_less_ratio: 155.3x
    continuation: omitted_candidates_available
    continuation_next_action: run_omitted_candidate_context_pack
    first_omitted_candidate: src/mcp.rs (candidate rank 3)
@@ -155,12 +155,12 @@ Promise: route the agent through agent_route before edits.
    route_reason: after selected context is read, pre-edit impact check estimated 15 impacted files at high risk, including 14 call-related files, 3 dependency-related files, 50 call paths, and 0 dependency paths
 
 [Evidence summary]
-Blind first-read baseline: 82312 source lines.
+Blind first-read baseline: 82443 source lines.
 Routed first-read: 531 source lines across 2 files.
-Read less: avoided 81781 source lines, 155.0x less text before follow-up tools.
+Read less: avoided 81912 source lines, 155.3x less text before follow-up tools.
 Routing decision: seed=task_match:src/tools.rs, first_file=src/tools.rs, rank=1, tool=file_outline, continuation=omitted_candidates_available, impact=complete.
 Route quality: high (100/100) from 21 evidence signals; next=read_selected_context_then_use_continuation_if_needed.
-agent_route selected 531/82312 source lines (99.4% reduction) across 2 files.
+agent_route selected 531/82443 source lines (99.4% reduction) across 2 files.
 First reading focus: Start with seed file context routing, first-read handoff, and read-less evidence.
 First reading question: Which seed selection, reading-plan handoff, or read-less evidence controls the agent first-read workflow here?
 The first selected file is src/tools.rs; reading_plan starts at src/tools.rs as candidate rank 1.
