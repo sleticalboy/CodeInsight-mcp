@@ -2373,7 +2373,7 @@ fn cli_agent_route_normalizes_inline_backend_tool_results() {
         "tool_results": {
             "search_graph": {
                 "elapsed_ms": 7,
-                "results": [
+                "semantic_results": [
                     {
                         "name": "main",
                         "label": "Function",
@@ -2482,7 +2482,8 @@ fn cli_agent_route_bounds_inline_backend_tool_results() {
             })
         })
         .collect::<Vec<_>>();
-    let second_page = results.split_off(35);
+    let mut second_page = results.split_off(35);
+    let semantic_results = second_page.split_off(29);
     let backend_evidence = serde_json::json!({
         "provider": "codebase-memory-mcp",
         "tool_results": {
@@ -2493,7 +2494,8 @@ fn cli_agent_route_bounds_inline_backend_tool_results() {
                 },
                 {
                     "elapsed_ms": 11,
-                    "results": second_page
+                    "results": second_page,
+                    "semantic_results": semantic_results
                 }
             ]
         }
@@ -3084,7 +3086,24 @@ fn cli_agent_route_rejects_invalid_backend_evidence_values() {
         .assert()
         .failure()
         .stderr(contains(
-            "backend evidence search_graph tool result must contain an array field named results",
+            "backend evidence search_graph tool result must contain an array field named results or semantic_results",
+        ));
+
+    Command::cargo_bin("codeinsight")
+        .unwrap()
+        .env_remove("CODEINSIGHT_EMBEDDING_PROVIDER")
+        .args([
+            "agent-route",
+            fixture.path().to_str().unwrap(),
+            "--task",
+            "understand app entrypoint flow",
+            "--backend-evidence-json",
+            r#"{"provider":"graph","tool_results":{"search_graph":{"results":{},"semantic_results":[]}}}"#,
+        ])
+        .assert()
+        .failure()
+        .stderr(contains(
+            "backend evidence search_graph tool result field results must be an array",
         ));
 }
 

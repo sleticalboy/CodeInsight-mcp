@@ -77,7 +77,7 @@ struct BackendContextAttempt {
 
 struct BackendToolResultSpec<'a> {
     source: &'a str,
-    items_key: &'a str,
+    items_keys: &'a [&'a str],
     file_keys: &'a [&'a str],
     symbol_keys: &'a [&'a str],
 }
@@ -1644,7 +1644,7 @@ fn merge_backend_tool_results(evidence: &mut AgentRouteBackendEvidence) -> Resul
             tool_results.search_graph,
             BackendToolResultSpec {
                 source: "search_graph",
-                items_key: "results",
+                items_keys: &["results", "semantic_results"],
                 file_keys: &["file_path", "file"],
                 symbol_keys: &["name", "node", "qualified_name"],
             },
@@ -1653,7 +1653,7 @@ fn merge_backend_tool_results(evidence: &mut AgentRouteBackendEvidence) -> Resul
             tool_results.search_code,
             BackendToolResultSpec {
                 source: "search_code",
-                items_key: "results",
+                items_keys: &["results"],
                 file_keys: &["file", "file_path"],
                 symbol_keys: &["node", "name", "qualified_name"],
             },
@@ -1662,7 +1662,7 @@ fn merge_backend_tool_results(evidence: &mut AgentRouteBackendEvidence) -> Resul
             tool_results.get_architecture,
             BackendToolResultSpec {
                 source: "get_architecture:entry_points",
-                items_key: "entry_points",
+                items_keys: &["entry_points"],
                 file_keys: &["file", "file_path"],
                 symbol_keys: &["name", "qualified_name"],
             },
@@ -1743,46 +1743,55 @@ fn collect_backend_tool_candidates(
             format!("{} page {}", spec.source, page_index + 1)
         };
         let payload = backend_tool_result_payload(raw_page, &page_source)?;
-        let items = payload
-            .get(spec.items_key)
-            .and_then(Value::as_array)
-            .ok_or_else(|| {
-                anyhow::anyhow!(
-                    "backend evidence {page_source} tool result must contain an array field named {}",
-                    spec.items_key
-                )
-            })?;
-        item_count = item_count.saturating_add(items.len());
-        let remaining =
-            BACKEND_EVIDENCE_TOOL_RESULT_ITEMS_LIMIT.saturating_sub(processed_item_count);
-        for item in items.iter().take(remaining) {
-            processed_item_count = processed_item_count.saturating_add(1);
-            let Some(file) = first_backend_tool_string(item, spec.file_keys) else {
+        let mut found_items = false;
+        for items_key in spec.items_keys {
+            let Some(value) = payload.get(items_key) else {
                 continue;
             };
-            let symbol = first_backend_tool_string(item, spec.symbol_keys);
-            let label = item
-                .get("label")
-                .and_then(Value::as_str)
-                .unwrap_or("result");
-            let reason = if spec.source == "get_architecture:entry_points" {
-                "get_architecture entry point".to_string()
-            } else {
-                format!("{} {label}", spec.source)
-            };
-            let score = item
-                .get("score")
-                .or_else(|| item.get("similarity"))
-                .or_else(|| item.get("confidence"))
-                .and_then(Value::as_f64);
-            candidates.push(AgentRouteBackendCandidate {
-                file,
-                symbol,
-                source: Some(spec.source.to_string()),
-                score,
-                reason: Some(reason),
-                evidence: vec![spec.source.to_string()],
-            });
+            let items = value.as_array().ok_or_else(|| {
+                anyhow::anyhow!(
+                    "backend evidence {page_source} tool result field {items_key} must be an array"
+                )
+            })?;
+            found_items = true;
+            item_count = item_count.saturating_add(items.len());
+            let remaining =
+                BACKEND_EVIDENCE_TOOL_RESULT_ITEMS_LIMIT.saturating_sub(processed_item_count);
+            for item in items.iter().take(remaining) {
+                processed_item_count = processed_item_count.saturating_add(1);
+                let Some(file) = first_backend_tool_string(item, spec.file_keys) else {
+                    continue;
+                };
+                let symbol = first_backend_tool_string(item, spec.symbol_keys);
+                let label = item
+                    .get("label")
+                    .and_then(Value::as_str)
+                    .unwrap_or("result");
+                let reason = if spec.source == "get_architecture:entry_points" {
+                    "get_architecture entry point".to_string()
+                } else {
+                    format!("{} {label}", spec.source)
+                };
+                let score = item
+                    .get("score")
+                    .or_else(|| item.get("similarity"))
+                    .or_else(|| item.get("confidence"))
+                    .and_then(Value::as_f64);
+                candidates.push(AgentRouteBackendCandidate {
+                    file,
+                    symbol,
+                    source: Some(spec.source.to_string()),
+                    score,
+                    reason: Some(reason),
+                    evidence: vec![spec.source.to_string()],
+                });
+            }
+        }
+        if !found_items {
+            bail!(
+                "backend evidence {page_source} tool result must contain an array field named {}",
+                spec.items_keys.join(" or ")
+            );
         }
         latency_ms = latency_ms.saturating_add(
             payload
