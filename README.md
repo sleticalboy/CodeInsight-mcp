@@ -219,8 +219,10 @@ codeinsight agent-route /path/to/repo \
 The MCP equivalent is `backend_evidence.prefer_for_context: true`. Candidates
 retain backend order, while the token budget decides how many enter the reading
 plan. `backend_route_agreement.selected_context_files` reports the candidates
-actually retained. Candidate symbols are checked against the local index;
-stale symbols are dropped while their valid file candidates remain available.
+actually retained. `backend_route_agreement.candidate_dispositions` explains
+each candidate with its original rank, context status/reason, and symbol status.
+Candidate symbols are checked against the local index; stale symbols are dropped
+while their valid file candidates remain available.
 Explicit `--file` or `--symbol` seeds still take priority, so a caller-selected
 target is never replaced by backend ranking.
 
@@ -372,7 +374,7 @@ accuracy, or proof that unselected code is irrelevant.
 
 Current benchmark snapshot:
 
-- The two-minute demo for this repository shows the agent route selecting 515 of 84,715 source lines, avoiding 84,200 source lines before broad reading for a 99.4% reduction and 164.5x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
+- The two-minute demo for this repository shows the agent route selecting 520 of 85,003 source lines, avoiding 84,483 source lines before broad reading for a 99.4% reduction and 163.5x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
 - Smoke repositories route `context_pack` first for 4/4 repositories and
   select 709 of 75,753 source lines, a 99.1% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and
