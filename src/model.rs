@@ -329,6 +329,7 @@ pub struct AgentRouteRoutingDecision {
     pub source_lines_avoided: usize,
     pub line_reduction: String,
     pub read_less_ratio: String,
+    pub continuation_source: String,
     pub continuation_status: String,
     pub continuation_next_action: String,
     pub impact_status: String,

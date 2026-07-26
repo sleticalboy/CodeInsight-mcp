@@ -3152,6 +3152,18 @@ fn cli_agent_route_routes_ranked_backend_candidates_within_budget() {
     );
     assert_eq!(continuation["suggested_tool"]["tool"], "context_pack");
     assert_eq!(
+        route["routing_decision"]["continuation_source"],
+        "backend_route_agreement"
+    );
+    assert_eq!(
+        route["routing_decision"]["continuation_status"],
+        "backend_candidate_available"
+    );
+    assert_eq!(
+        route["routing_decision"]["continuation_next_action"],
+        continuation["next_action"]
+    );
+    assert_eq!(
         continuation["suggested_tool"]["suggested_arguments"]["root"],
         route["root"]
     );
@@ -3469,6 +3481,18 @@ fn cli_agent_route_falls_back_to_file_when_backend_symbol_is_stale() {
     assert_eq!(
         continuation_step["suggested_tool"],
         continuation["suggested_tool"]
+    );
+    assert_eq!(
+        route["routing_decision"]["continuation_source"],
+        "backend_route_agreement"
+    );
+    assert_eq!(
+        route["routing_decision"]["continuation_status"],
+        "backend_candidate_available"
+    );
+    assert_eq!(
+        route["routing_decision"]["continuation_next_action"],
+        continuation_step["action"]
     );
 }
 
@@ -10774,6 +10798,18 @@ fn cli_agent_route_explains_when_all_backend_candidates_are_missing() {
     );
     assert_eq!(route["context_pack"]["files"], serde_json::json!([]));
     assert!(agreement.get("next_candidate_continuation").is_none());
+    assert_eq!(
+        route["routing_decision"]["continuation_source"],
+        "context_pack"
+    );
+    assert_eq!(
+        route["routing_decision"]["continuation_status"],
+        route["context_pack"]["continuation_summary"]["status"]
+    );
+    assert_eq!(
+        route["routing_decision"]["continuation_next_action"],
+        route["context_pack"]["continuation_summary"]["next_action"]
+    );
     assert_eq!(route["impact_status"], "skipped_invalid_seed");
 
     let local_route = run_json([
@@ -13347,7 +13383,7 @@ fn mcp_stdio_agent_route_uses_backend_fallback() {
                 "backend_evidence": {
                     "provider": "codebase-memory-mcp",
                     "use_as_fallback": true,
-                    "candidate_files": ["missing.ts", "src/main.ts"],
+                    "candidate_files": ["missing.ts", "src/main.ts", "src/ui.ts"],
                     "evidence_sources": ["search_graph"],
                     "evidence_count": 4
                 }
@@ -13377,6 +13413,30 @@ fn mcp_stdio_agent_route_uses_backend_fallback() {
     assert_eq!(
         route["routing_decision"]["route_quality"]["recommended_action"],
         "read_backend_seeded_context"
+    );
+    assert_eq!(
+        route["routing_decision"]["continuation_source"],
+        "backend_route_agreement"
+    );
+    assert_eq!(
+        route["routing_decision"]["continuation_status"],
+        "backend_candidate_available"
+    );
+    assert_eq!(
+        route["routing_decision"]["continuation_next_action"],
+        "use_if_fallback_context_insufficient"
+    );
+    assert_eq!(
+        route["execution_plan"][2]["action"],
+        route["routing_decision"]["continuation_next_action"]
+    );
+    assert_eq!(
+        route["execution_plan"][2]["suggested_tool"]["tool"],
+        "context_pack"
+    );
+    assert_eq!(
+        route["execution_plan"][2]["suggested_tool"]["suggested_arguments"]["files"],
+        serde_json::json!(["src/ui.ts"])
     );
     assert_eq!(route["execution_plan"][0]["status"], "ready");
 }

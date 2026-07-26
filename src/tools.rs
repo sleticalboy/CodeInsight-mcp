@@ -550,6 +550,19 @@ fn agent_route_routing_decision(
         backend_evidence.as_ref(),
         &backend_route_agreement,
     );
+    let (continuation_source, continuation_status, continuation_next_action) =
+        match backend_route_agreement.next_candidate_continuation.as_ref() {
+            Some(continuation) => (
+                "backend_route_agreement".to_string(),
+                "backend_candidate_available".to_string(),
+                continuation.next_action.clone(),
+            ),
+            None => (
+                "context_pack".to_string(),
+                context_pack.continuation_summary.status.clone(),
+                context_pack.continuation_summary.next_action.clone(),
+            ),
+        };
     let backend_selected_candidate = first_step.and_then(|step| {
         backend_evidence.as_ref().and_then(|backend| {
             backend
@@ -591,8 +604,9 @@ fn agent_route_routing_decision(
         source_lines_avoided: context_pack.read_less.source_lines_avoided,
         line_reduction: context_pack.read_less.line_reduction.clone(),
         read_less_ratio: context_pack.read_less.read_less_ratio.clone(),
-        continuation_status: context_pack.continuation_summary.status.clone(),
-        continuation_next_action: context_pack.continuation_summary.next_action.clone(),
+        continuation_source,
+        continuation_status,
+        continuation_next_action,
         impact_status: impact_status.to_string(),
     }
 }
