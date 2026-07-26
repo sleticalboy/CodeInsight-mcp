@@ -128,6 +128,17 @@ EOF
 }
 EOF
 
+  cat >"$output_dir/query-graph.json" <<'EOF'
+{
+  "columns": ["f.name", "f.file_path", "f.qualified_name"],
+  "rows": [
+    ["AuthService", "src/auth.ts", "fixture.src.auth.AuthService"]
+  ],
+  "total": 1,
+  "elapsed_ms": 13
+}
+EOF
+
   cat >"$output_dir/architecture.json" <<'EOF'
 {
   "elapsed_ms": 3,
@@ -176,6 +187,7 @@ main() {
     --root "$repo" \
     --search-graph-json "$TEMP_DIR/search-graph.json" \
     --search-code-json "$TEMP_DIR/search-code.json" \
+    --query-graph-json "$TEMP_DIR/query-graph.json" \
     --architecture-json "$TEMP_DIR/architecture.json" \
     --candidate-limit 3 \
     --confidence 0.86 \
@@ -187,14 +199,15 @@ main() {
   require_jq "$evidence" '.candidates | map(.file) == ["src/auth.ts", "src/audit.ts", "src/main.ts"]' "structured candidates should preserve stable file ranking"
   require_jq "$evidence" '.candidates[0].symbol == "AuthService" and .candidates[0].source == "search_graph"' "structured candidates should preserve symbol and source"
   require_jq "$evidence" '.candidates[0].reason == "search_graph Class" and .candidates[0].evidence == ["search_graph"]' "structured candidates should explain backend evidence"
-  require_jq "$evidence" '.evidence_sources | index("search_graph") and index("search_code") and index("get_architecture:entry_points")' "evidence sources should include all bridge inputs"
-  require_jq "$evidence" '.evidence_count == 5' "evidence count should include duplicate backend signals"
-  require_jq "$evidence" '.latency_ms == 33' "latency should aggregate exported backend timings"
+  require_jq "$evidence" '.evidence_sources | index("search_graph") and index("search_code") and index("query_graph") and index("get_architecture:entry_points")' "evidence sources should include all bridge inputs"
+  require_jq "$evidence" '.evidence_count == 6' "evidence count should include duplicate backend signals"
+  require_jq "$evidence" '.latency_ms == 46' "latency should aggregate exported backend timings"
   require_jq "$evidence" '.confidence == 0.86' "confidence should be preserved"
 
   jq -n \
     --slurpfile search_graph "$TEMP_DIR/search-graph.json" \
     --slurpfile search_code "$TEMP_DIR/search-code.json" \
+    --slurpfile query_graph "$TEMP_DIR/query-graph.json" \
     --slurpfile architecture "$TEMP_DIR/architecture.json" \
     '{
       provider: "codebase-memory-mcp",
@@ -202,6 +215,7 @@ main() {
       tool_results: {
         search_graph: $search_graph[0],
         search_code: $search_code[0],
+        query_graph: $query_graph[0],
         get_architecture: $architecture[0]
       }
     }' >"$inline_evidence"
@@ -214,7 +228,7 @@ main() {
 
   require_jq "$inline_route_json" '.routing_decision.backend_evidence.candidate_files == ["src/auth.ts", "src/audit.ts", "src/main.ts"]' "inline tool results should preserve normalized candidate ranking"
   require_jq "$inline_route_json" '.routing_decision.backend_evidence.candidates | map(.file) == ["src/auth.ts", "src/audit.ts", "src/main.ts"]' "inline tool results should produce structured candidates"
-  require_jq "$inline_route_json" '.routing_decision.backend_evidence.evidence_count == 5 and .routing_decision.backend_evidence.latency_ms == 33' "inline tool results should aggregate evidence count and latency"
+  require_jq "$inline_route_json" '.routing_decision.backend_evidence.evidence_count == 6 and .routing_decision.backend_evidence.latency_ms == 46' "inline tool results should aggregate evidence count and latency"
   require_jq "$inline_route_json" '.routing_decision.backend_evidence.tool_results == null' "inline tool results should be omitted from the compact route response"
   require_jq "$inline_route_json" 'any(.routing_decision.backend_evidence.notes[]; contains("normalized from inline backend tool_results"))' "inline tool result normalization should remain observable"
 

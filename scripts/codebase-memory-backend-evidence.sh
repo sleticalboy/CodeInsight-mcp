@@ -10,6 +10,7 @@ TEMP_DIR=""
 
 SEARCH_GRAPH_JSONS=()
 SEARCH_CODE_JSONS=()
+QUERY_GRAPH_JSONS=()
 ARCHITECTURE_JSONS=()
 NOTES=()
 
@@ -40,6 +41,7 @@ codebase-memory-mcp tool responses.
 Options:
   --search-graph-json PATH   JSON response from codebase-memory search_graph.
   --search-code-json PATH    JSON response from codebase-memory search_code.
+  --query-graph-json PATH    JSON response from codebase-memory query_graph.
   --architecture-json PATH   JSON response from codebase-memory get_architecture.
   --root PATH                Repository root; absolute paths under it become relative.
   --provider NAME            Evidence provider name. Default: codebase-memory-mcp.
@@ -69,6 +71,11 @@ parse_args() {
       --search-code-json)
         [ "$#" -ge 2 ] || fail "--search-code-json requires a path"
         SEARCH_CODE_JSONS+=("$2")
+        shift 2
+        ;;
+      --query-graph-json)
+        [ "$#" -ge 2 ] || fail "--query-graph-json requires a path"
+        QUERY_GRAPH_JSONS+=("$2")
         shift 2
         ;;
       --architecture-json)
@@ -138,6 +145,7 @@ validate_args() {
   local input_count=0
   input_count=$((input_count + ${#SEARCH_GRAPH_JSONS[@]}))
   input_count=$((input_count + ${#SEARCH_CODE_JSONS[@]}))
+  input_count=$((input_count + ${#QUERY_GRAPH_JSONS[@]}))
   input_count=$((input_count + ${#ARCHITECTURE_JSONS[@]}))
   [ "$input_count" -gt 0 ] || fail "provide at least one exported codebase-memory JSON file"
 }
@@ -225,6 +233,27 @@ collect_candidates() {
           symbol: (.node // .name // .qualified_name // null),
           score: (.score // .similarity // null),
           reason: ("search_code " + (.label // "result" | tostring))
+        }
+      | select(.file != "")
+    '
+    append_latency "$file"
+  done
+
+  for file in "${QUERY_GRAPH_JSONS[@]}"; do
+    append_candidates_from_query "query_graph" "$file" '
+      .columns as $columns
+      | ($columns | map(split(".") | last) | index("file_path")) as $file_path_index
+      | ($columns | map(split(".") | last) | index("file")) as $file_index
+      | ($columns | map(split(".") | last) | index("name")) as $name_index
+      | ($columns | map(split(".") | last) | index("qualified_name")) as $qualified_name_index
+      | (($file_path_index // $file_index)) as $candidate_file_index
+      | select($candidate_file_index != null)
+      | .rows[]?
+      | {
+          file: (.[ $candidate_file_index ] // empty),
+          symbol: (if $name_index != null then .[$name_index] elif $qualified_name_index != null then .[$qualified_name_index] else null end),
+          score: null,
+          reason: "query_graph row"
         }
       | select(.file != "")
     '
