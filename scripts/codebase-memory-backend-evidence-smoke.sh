@@ -257,7 +257,7 @@ main() {
     --backend-evidence "$evidence" >"$route_json"
 
   require_jq "$route_json" '.routing_decision.backend_evidence.provider == "codebase-memory-mcp"' "agent_route should preserve backend evidence"
-  require_jq "$route_json" '.routing_decision.backend_evidence.evidence_count == 8 and .routing_decision.backend_evidence.latency_ms == 51' "agent_route should resolve trace_path symbols and aggregate their evidence"
+  require_jq "$route_json" '.routing_decision.backend_evidence.evidence_count == 9 and .routing_decision.backend_evidence.latency_ms == 51' "agent_route should resolve the trace_path subject and related symbols, then aggregate their evidence"
   require_jq "$route_json" '.routing_decision.backend_evidence.evidence_sources | index("trace_path")' "agent_route should expose trace_path as a backend evidence source"
   require_jq "$route_json" '.routing_decision.backend_evidence.tool_results == null' "agent_route should consume raw trace_path evidence"
   require_jq "$route_json" '.routing_decision.first_file == "src/auth.ts"' "local route should select auth seed file"
@@ -279,9 +279,9 @@ main() {
     --backend-evidence "$trace_only_evidence" \
     --prefer-backend-context >"$trace_only_route_json"
 
-  require_jq "$trace_only_route_json" '.routing_decision.seed_strategy == "backend_preferred" and .routing_decision.first_file == "src/main.ts"' "trace-only evidence should seed preferred context from the first resolved caller"
-  require_jq "$trace_only_route_json" '.routing_decision.backend_evidence.candidate_files == ["src/main.ts", "src/audit.ts"]' "trace-only evidence should resolve callers and callees to indexed files"
-  require_jq "$trace_only_route_json" '.routing_decision.backend_evidence.evidence_count == 2 and .routing_decision.backend_evidence.latency_ms == 5' "trace-only evidence should preserve resolved count and latency"
+  require_jq "$trace_only_route_json" '.routing_decision.seed_strategy == "backend_preferred" and .routing_decision.first_file == "src/auth.ts"' "trace-only evidence should seed preferred context from the traced subject"
+  require_jq "$trace_only_route_json" '.routing_decision.backend_evidence.candidate_files == ["src/auth.ts", "src/main.ts", "src/audit.ts"]' "trace-only evidence should resolve the subject, callers, and callees to indexed files"
+  require_jq "$trace_only_route_json" '.routing_decision.backend_evidence.evidence_count == 3 and .routing_decision.backend_evidence.latency_ms == 5' "trace-only evidence should preserve resolved count and latency"
 
   "$CODEINSIGHT_BIN" agent-route "$repo" \
     --task "understand app entrypoint flow" \
@@ -322,7 +322,7 @@ main() {
   require_jq "$fallback_route_json" '.routing_decision.backend_route_agreement.next_candidate_continuation.suggested_tool as $tool | any(.execution_plan[]; .action == "use_if_fallback_context_insufficient" and .status == "available_after_selected_context" and .files == ["src/audit.ts"] and .suggested_tool == $tool)' "fallback execution plan should surface the backend continuation"
   require_jq "$fallback_route_json" '.routing_decision.continuation_source == "backend_route_agreement" and .routing_decision.continuation_status == "backend_candidate_available" and .routing_decision.continuation_next_action == .routing_decision.backend_route_agreement.next_candidate_continuation.next_action and .routing_decision.continuation_next_action == .execution_plan[2].action' "fallback routing decision should mirror the effective backend continuation"
 
-  jq '.candidate_files = ["src/main.ts"] | .candidates = [.candidates[] | select(.file == "src/main.ts")] | .notes += ["conflict fixture: backend preferred app entrypoint"]' \
+  jq 'del(.tool_results) | .candidate_files = ["src/main.ts"] | .candidates = [.candidates[] | select(.file == "src/main.ts")] | .notes += ["conflict fixture: backend preferred app entrypoint"]' \
     "$evidence" >"$conflict_evidence"
 
   "$CODEINSIGHT_BIN" agent-route "$repo" \

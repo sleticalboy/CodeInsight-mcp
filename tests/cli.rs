@@ -2494,7 +2494,7 @@ fn cli_agent_route_normalizes_inline_backend_tool_results() {
     assert_eq!(evidence["candidates"][0]["symbol"], "main");
     assert_eq!(evidence["candidates"][0]["source"], "search_graph");
     assert_eq!(evidence["candidates"][0]["reason"], "search_graph Function");
-    assert_eq!(evidence["evidence_count"], 8);
+    assert_eq!(evidence["evidence_count"], 9);
     assert_eq!(evidence["normalization"]["unfetched_tool_result_items"], 0);
     assert_eq!(evidence["normalization"]["omitted_tool_result_items"], 0);
     assert!(
@@ -2511,7 +2511,7 @@ fn cli_agent_route_normalizes_inline_backend_tool_results() {
         local_route["routing_decision"]["route_quality"]["evidence_count"]
             .as_u64()
             .unwrap()
-            + 8
+            + 9
     );
     assert_eq!(evidence["latency_ms"], 62);
     assert_eq!(
@@ -2550,7 +2550,7 @@ export function helper() {
         "provider": "codebase-memory-mcp",
         "tool_results": {
             "trace_path": {
-                "function": "AuthService.login",
+                "function": "fixture.src.main.main",
                 "direction": "outbound",
                 "callees": [{
                     "name": "helper",
@@ -2579,10 +2579,13 @@ export function helper() {
     let evidence = &route["routing_decision"]["backend_evidence"];
     assert_eq!(
         evidence["candidate_files"],
-        serde_json::json!(["src/auth.py"])
+        serde_json::json!(["src/main.ts", "src/auth.py"])
     );
-    assert_eq!(evidence["candidates"][0]["symbol"], "helper");
-    assert_eq!(route["routing_decision"]["first_file"], "src/auth.py");
+    assert_eq!(evidence["candidates"][0]["symbol"], "main");
+    assert_eq!(evidence["candidates"][0]["reason"], "trace_path subject");
+    assert_eq!(evidence["candidates"][1]["symbol"], "helper");
+    assert_eq!(evidence["candidates"][1]["file"], "src/auth.py");
+    assert_eq!(route["routing_decision"]["first_file"], "src/main.ts");
     assert_eq!(
         route["routing_decision"]["seed_strategy"],
         "backend_preferred"

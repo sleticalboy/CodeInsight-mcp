@@ -1916,6 +1916,18 @@ fn normalize_backend_trace_path_result(root: &Path, raw: Value) -> Result<Value>
         let mut results = Vec::new();
         let mut total = 0usize;
         let mut found_items = false;
+        if let Some(backend_symbol) = first_backend_tool_string(&payload, &["function"]) {
+            found_items = true;
+            total = total.saturating_add(1);
+            if let Some(local_symbol) = resolve_backend_trace_symbol(&store, &backend_symbol, None)?
+            {
+                results.push(json!({
+                    "file_path": local_symbol.file,
+                    "name": local_symbol.qualified_name,
+                    "label": "subject"
+                }));
+            }
+        }
         for (items_key, label) in [("callers", "caller"), ("callees", "callee")] {
             let Some(items) = payload.get(items_key) else {
                 continue;
@@ -1940,32 +1952,9 @@ fn normalize_backend_trace_path_result(root: &Path, raw: Value) -> Result<Value>
                     .get("name")
                     .and_then(Value::as_str)
                     .map(str::trim)
-                    .filter(|name| !name.is_empty())
-                    .unwrap_or_else(|| {
-                        backend_symbol
-                            .rsplit(['.', ':'])
-                            .find(|part| !part.is_empty())
-                            .unwrap_or(backend_symbol.as_str())
-                    });
-                let local_symbols =
-                    store.search_symbols(lookup_name, BACKEND_EVIDENCE_TOOL_RESULT_ITEMS_LIMIT)?;
-                let Some(local_symbol) = local_symbols
-                    .iter()
-                    .enumerate()
-                    .filter(|symbol| {
-                        backend_symbol_name_matches(
-                            &backend_symbol,
-                            &symbol.1.name,
-                            &symbol.1.qualified_name,
-                        )
-                    })
-                    .max_by_key(|(index, symbol)| {
-                        (
-                            backend_trace_symbol_match_score(&backend_symbol, symbol),
-                            Reverse(*index),
-                        )
-                    })
-                    .map(|(_, symbol)| symbol)
+                    .filter(|name| !name.is_empty());
+                let Some(local_symbol) =
+                    resolve_backend_trace_symbol(&store, &backend_symbol, lookup_name)?
                 else {
                     continue;
                 };
@@ -1978,7 +1967,7 @@ fn normalize_backend_trace_path_result(root: &Path, raw: Value) -> Result<Value>
         }
         if !found_items {
             bail!(
-                "backend evidence {page_source} tool result must contain an array field named callers or callees"
+                "backend evidence {page_source} tool result must contain function, callers, or callees"
             );
         }
         normalized_pages.push(json!({
@@ -2533,6 +2522,34 @@ fn backend_trace_symbol_match_score(backend_symbol: &str, local_symbol: &Symbol)
         .count();
 
     suffix_parts.max(1)
+}
+
+fn resolve_backend_trace_symbol(
+    store: &Store,
+    backend_symbol: &str,
+    lookup_name: Option<&str>,
+) -> Result<Option<Symbol>> {
+    let lookup_name = lookup_name.unwrap_or_else(|| {
+        backend_symbol
+            .rsplit(['.', ':'])
+            .find(|part| !part.is_empty())
+            .unwrap_or(backend_symbol)
+    });
+    let local_symbols =
+        store.search_symbols(lookup_name, BACKEND_EVIDENCE_TOOL_RESULT_ITEMS_LIMIT)?;
+    Ok(local_symbols
+        .into_iter()
+        .enumerate()
+        .filter(|(_, symbol)| {
+            backend_symbol_name_matches(backend_symbol, &symbol.name, &symbol.qualified_name)
+        })
+        .max_by_key(|(index, symbol)| {
+            (
+                backend_trace_symbol_match_score(backend_symbol, symbol),
+                Reverse(*index),
+            )
+        })
+        .map(|(_, symbol)| symbol))
 }
 
 fn backend_symbol_identity_parts(value: &str) -> Vec<String> {
