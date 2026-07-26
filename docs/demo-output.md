@@ -38,14 +38,14 @@ token_budget: 6000
    errors: 0
 
 2. project_overview
-   total_lines: 85750
+   total_lines: 85765
    entrypoints: 12
    first_entrypoint: src/main.rs
    recommended_next_tools: 5
 
 3. context_pack
    selected_files: 2
-   selected_ranges: 12
+   selected_ranges: 11
    reading_plan_steps: 2
    execution_plan_steps: 4
    first_execution_action: read_selected_context
@@ -65,10 +65,10 @@ token_budget: 6000
    first_reading_focus: Start with seed file context routing, first-read handoff, and read-less evidence.
    first_reading_question: Which seed selection, reading-plan handoff, or read-less evidence controls the agent first-read workflow here?
    first_selection_rank: 1
-   blind_first_read_lines: 85750
+   blind_first_read_lines: 85765
    routed_first_read_lines: 527
    selected_lines: 527
-   source_lines_avoided: 85223
+   source_lines_avoided: 85238
    line_reduction: 99.4%
    read_less_ratio: 162.7x
    estimated_tokens: 6000
@@ -86,7 +86,7 @@ token_budget: 6000
    continuation_timing_contract: true
    reading_plan_reason: Read this step to answer: Which seed selection, reading-plan handoff, or read-less evidence controls the agent first-read workflow here? If deeper evidence is needed, call file_outline. Selection reason: Selected for high relevance via seed_file: Seed file defines symbol agent_route; matched task keywords: agent, route; Seed file defines symbol read_agent_route_backend_evidence; matched task keywords: agent, route; evidence mix: seed file x9, call graph x1
    selection_reason: Selected for high relevance via seed_file: Seed file defines symbol agent_route; matched task keywords: agent, route; Seed file defines symbol read_agent_route_backend_evidence; matched task keywords: agent, route; evidence mix: seed file x9, call graph x1
-   route_reason: selected 2 files, 12 ranges, and 2 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; first omitted candidate src/mcp.rs (candidate rank 3, reason token_budget_exhausted) can be revisited via run_omitted_candidate_context_pack using context_pack after selected context; continuation run_omitted_candidate_context_pack
+   route_reason: selected 2 files, 11 ranges, and 2 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; first omitted candidate src/mcp.rs (candidate rank 3, reason token_budget_exhausted) can be revisited via run_omitted_candidate_context_pack using context_pack after selected context; continuation run_omitted_candidate_context_pack
 
 4. impact_analysis
    seed_file: src/tools.rs
@@ -102,12 +102,12 @@ Save the raw agent_route JSON:
   CODEINSIGHT_DEMO_SAVE_JSON=/tmp/codeinsight-agent-route.json scripts/two-minute-demo.sh
 
 [Evidence summary]
-Blind first-read baseline: 85750 source lines.
+Blind first-read baseline: 85765 source lines.
 Routed first-read: 527 source lines across 2 files.
-Read less: avoided 85223 source lines, 162.7x less text before follow-up tools.
+Read less: avoided 85238 source lines, 162.7x less text before follow-up tools.
 Routing decision: seed=task_match:src/tools.rs, first_file=src/tools.rs, rank=1, tool=file_outline, continuation=omitted_candidates_available, impact=complete.
 Route quality: high (100/100) from 23 evidence signals; next=read_selected_context_then_use_continuation_if_needed.
-agent_route selected 527/85750 source lines (99.4% reduction) across 2 files.
+agent_route selected 527/85765 source lines (99.4% reduction) across 2 files.
 First reading focus: Start with seed file context routing, first-read handoff, and read-less evidence.
 First reading question: Which seed selection, reading-plan handoff, or read-less evidence controls the agent first-read workflow here?
 The first selected file is src/tools.rs; reading_plan starts at src/tools.rs as candidate rank 1.
@@ -134,7 +134,7 @@ Before edits, impact_analysis reports high risk across 8 impacted files.
 13. Current reading step contract is true; agent_route.current_reading_step mirrors reading_plan[0].
 14. Suggested-tool handoff contract is true; execution_plan[1] points to the current reading step.
 15. Continuation timing contract is true; continuation is only considered after selected context is read.
-16. The selected context avoided 85223 source lines (99.4%, 162.7x less text); selected 2 files, 12 ranges, and 2 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; first omitted candidate src/mcp.rs (candidate rank 3, reason token_budget_exhausted) can be revisited via run_omitted_candidate_context_pack using context_pack after selected context; continuation run_omitted_candidate_context_pack
+16. The selected context avoided 85238 source lines (99.4%, 162.7x less text); selected 2 files, 11 ranges, and 2 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; first omitted candidate src/mcp.rs (candidate rank 3, reason token_budget_exhausted) can be revisited via run_omitted_candidate_context_pack using context_pack after selected context; continuation run_omitted_candidate_context_pack
 17. Selection evidence: candidate rank 1; Selected for high relevance via seed_file: Seed file defines symbol agent_route; matched task keywords: agent, route; Seed file defines symbol read_agent_route_backend_evidence; matched task keywords: agent, route; evidence mix: seed file x9, call graph x1
 18. Continuation status is omitted_candidates_available; next follow-up is src/mcp.rs at candidate rank 3 because token_budget_exhausted; next_action=run_omitted_candidate_context_pack.
 19. impact_analysis reports high risk across 8 impacted files with 4 suggested checks; after selected context is read, pre-edit impact check estimated 8 impacted files at high risk, including 7 call-related files, 3 dependency-related files, 50 call paths, and 0 dependency paths
