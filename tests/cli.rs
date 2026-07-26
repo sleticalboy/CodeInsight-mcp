@@ -2473,7 +2473,7 @@ fn cli_agent_route_normalizes_inline_backend_tool_results() {
 #[test]
 fn cli_agent_route_bounds_inline_backend_tool_results() {
     let fixture = fixture_project();
-    let results = (1..=70)
+    let mut results = (1..=70)
         .map(|rank| {
             serde_json::json!({
                 "name": format!("candidate{rank}"),
@@ -2482,12 +2482,20 @@ fn cli_agent_route_bounds_inline_backend_tool_results() {
             })
         })
         .collect::<Vec<_>>();
+    let second_page = results.split_off(35);
     let backend_evidence = serde_json::json!({
         "provider": "codebase-memory-mcp",
         "tool_results": {
-            "search_graph": {
-                "results": results
-            }
+            "search_graph": [
+                {
+                    "elapsed_ms": 7,
+                    "results": results
+                },
+                {
+                    "elapsed_ms": 11,
+                    "results": second_page
+                }
+            ]
         }
     })
     .to_string();
@@ -2508,6 +2516,7 @@ fn cli_agent_route_bounds_inline_backend_tool_results() {
     assert_eq!(evidence["candidate_files"].as_array().unwrap().len(), 16);
     assert_eq!(evidence["candidates"].as_array().unwrap().len(), 16);
     assert_eq!(evidence["evidence_count"], 64);
+    assert_eq!(evidence["latency_ms"], 18);
     assert_eq!(evidence["normalization"]["omitted_tool_result_items"], 6);
     assert_eq!(evidence["normalization"]["omitted_candidates"], 48);
     assert!(
@@ -2924,6 +2933,49 @@ fn cli_agent_route_rejects_invalid_backend_evidence_values() {
         .assert()
         .failure()
         .stderr(contains("backend evidence provider must not be empty"));
+
+    Command::cargo_bin("codeinsight")
+        .unwrap()
+        .env_remove("CODEINSIGHT_EMBEDDING_PROVIDER")
+        .args([
+            "agent-route",
+            fixture.path().to_str().unwrap(),
+            "--task",
+            "understand app entrypoint flow",
+            "--backend-evidence-json",
+            r#"{"provider":"graph","tool_results":{"search_graph":[]}}"#,
+        ])
+        .assert()
+        .failure()
+        .stderr(contains(
+            "backend evidence search_graph tool result page array must not be empty",
+        ));
+
+    let too_many_pages = serde_json::json!({
+        "provider": "graph",
+        "tool_results": {
+            "search_graph": (0..17)
+                .map(|_| serde_json::json!({"results": []}))
+                .collect::<Vec<_>>()
+        }
+    })
+    .to_string();
+    Command::cargo_bin("codeinsight")
+        .unwrap()
+        .env_remove("CODEINSIGHT_EMBEDDING_PROVIDER")
+        .args([
+            "agent-route",
+            fixture.path().to_str().unwrap(),
+            "--task",
+            "understand app entrypoint flow",
+            "--backend-evidence-json",
+            &too_many_pages,
+        ])
+        .assert()
+        .failure()
+        .stderr(contains(
+            "backend evidence search_graph tool result must not exceed 16 pages",
+        ));
 
     Command::cargo_bin("codeinsight")
         .unwrap()
@@ -13661,16 +13713,28 @@ fn mcp_stdio_agent_route_prefers_backend_context() {
                     "provider": "codebase-memory-mcp",
                     "prefer_for_context": true,
                     "tool_results": {
-                        "search_graph": {
-                            "structuredContent": {
-                                "elapsed_ms": 4,
-                                "results": [{
-                                    "file_path": "src/ui.ts",
-                                    "name": "render",
-                                    "label": "Function"
-                                }]
+                        "search_graph": [
+                            {
+                                "structuredContent": {
+                                    "elapsed_ms": 4,
+                                    "results": [{
+                                        "file_path": "src/ui.ts",
+                                        "name": "render",
+                                        "label": "Function"
+                                    }]
+                                }
+                            },
+                            {
+                                "structuredContent": {
+                                    "elapsed_ms": 6,
+                                    "results": [{
+                                        "file_path": "src/server.ts",
+                                        "name": "startServer",
+                                        "label": "Function"
+                                    }]
+                                }
                             }
-                        }
+                        ]
                     }
                 }
             }
@@ -13693,7 +13757,11 @@ fn mcp_stdio_agent_route_prefers_backend_context() {
     );
     assert_eq!(
         route["routing_decision"]["backend_evidence"]["candidate_files"],
-        serde_json::json!(["src/ui.ts"])
+        serde_json::json!(["src/ui.ts", "src/server.ts"])
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_evidence"]["latency_ms"],
+        10
     );
     assert_eq!(
         route["routing_decision"]["backend_evidence"]["candidates"][0]["symbol"],

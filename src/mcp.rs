@@ -222,6 +222,16 @@ fn handle_tool_call(params: Value) -> Result<Value> {
 }
 
 fn tool_definitions() -> Value {
+    let backend_tool_result_schema = json!({
+        "oneOf": [
+            {"type": "object"},
+            {
+                "type": "array",
+                "maxItems": 16,
+                "items": {"type": "object"}
+            }
+        ]
+    });
     let backend_evidence_schema = json!({
         "type": "object",
         "description": "Optional advisory evidence from an external code graph backend. CodeInsight uses it to explain route confidence; set use_as_fallback to seed bounded context only when local routing is blocked.",
@@ -274,11 +284,11 @@ fn tool_definitions() -> Value {
             },
             "tool_results": {
                 "type": "object",
-                "description": "Raw code graph tool results. CodeInsight reads at most 64 items per tool, extracts bounded candidates, and omits the raw payload from its response.",
+                "description": "Raw code graph tool results. Each tool accepts one response object or an ordered array of paginated responses. CodeInsight reads at most 64 items across all pages per tool, extracts bounded candidates, and omits the raw payload from its response.",
                 "properties": {
-                    "search_graph": {"type": "object"},
-                    "search_code": {"type": "object"},
-                    "get_architecture": {"type": "object"}
+                    "search_graph": backend_tool_result_schema.clone(),
+                    "search_code": backend_tool_result_schema.clone(),
+                    "get_architecture": backend_tool_result_schema
                 },
                 "minProperties": 1
             }
@@ -1294,9 +1304,13 @@ int login(void) {
             tool_results["description"]
                 .as_str()
                 .unwrap()
-                .contains("at most 64 items per tool")
+                .contains("at most 64 items across all pages per tool")
         );
-        assert_eq!(tool_results["properties"]["search_graph"]["type"], "object");
+        let search_graph = &tool_results["properties"]["search_graph"];
+        assert_eq!(search_graph["oneOf"][0]["type"], "object");
+        assert_eq!(search_graph["oneOf"][1]["type"], "array");
+        assert_eq!(search_graph["oneOf"][1]["maxItems"], 16);
+        assert_eq!(search_graph["oneOf"][1]["items"]["type"], "object");
     }
 
     #[test]

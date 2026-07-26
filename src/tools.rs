@@ -36,6 +36,7 @@ use crate::{
 
 const CONTEXT_SCORE_SEED_FILE: i32 = 130;
 const BACKEND_EVIDENCE_CANDIDATE_LIMIT: usize = 16;
+const BACKEND_EVIDENCE_TOOL_RESULT_PAGES_LIMIT: usize = 16;
 const BACKEND_EVIDENCE_TOOL_RESULT_ITEMS_LIMIT: usize = 64;
 const BACKEND_EVIDENCE_PER_CANDIDATE_LIMIT: usize = 6;
 const BACKEND_EVIDENCE_TOTAL_CANDIDATE_ITEMS_LIMIT: usize = 24;
@@ -1713,59 +1714,90 @@ fn collect_backend_tool_candidates(
     raw: Value,
     spec: BackendToolResultSpec<'_>,
 ) -> Result<BackendToolCandidateBatch> {
-    let payload = backend_tool_result_payload(raw, spec.source)?;
-    let items = payload
-        .get(spec.items_key)
-        .and_then(Value::as_array)
-        .ok_or_else(|| {
-            anyhow::anyhow!(
-                "backend evidence {} tool result must contain an array field named {}",
-                spec.source,
-                spec.items_key
+    let pages = match raw {
+        Value::Array(pages) if pages.is_empty() => {
+            bail!(
+                "backend evidence {} tool result page array must not be empty",
+                spec.source
             )
-        })?;
-    let mut candidates = Vec::new();
-    for item in items.iter().take(BACKEND_EVIDENCE_TOOL_RESULT_ITEMS_LIMIT) {
-        let Some(file) = first_backend_tool_string(item, spec.file_keys) else {
-            continue;
-        };
-        let symbol = first_backend_tool_string(item, spec.symbol_keys);
-        let label = item
-            .get("label")
-            .and_then(Value::as_str)
-            .unwrap_or("result");
-        let reason = if spec.source == "get_architecture:entry_points" {
-            "get_architecture entry point".to_string()
-        } else {
-            format!("{} {label}", spec.source)
-        };
-        let score = item
-            .get("score")
-            .or_else(|| item.get("similarity"))
-            .or_else(|| item.get("confidence"))
-            .and_then(Value::as_f64);
-        candidates.push(AgentRouteBackendCandidate {
-            file,
-            symbol,
-            source: Some(spec.source.to_string()),
-            score,
-            reason: Some(reason),
-            evidence: vec![spec.source.to_string()],
-        });
+        }
+        Value::Array(pages) => pages,
+        raw => vec![raw],
+    };
+    if pages.len() > BACKEND_EVIDENCE_TOOL_RESULT_PAGES_LIMIT {
+        bail!(
+            "backend evidence {} tool result must not exceed {} pages",
+            spec.source,
+            BACKEND_EVIDENCE_TOOL_RESULT_PAGES_LIMIT
+        );
     }
-    let latency_ms = payload
-        .get("elapsed_ms")
-        .or_else(|| payload.get("duration_ms"))
-        .and_then(Value::as_u64)
-        .unwrap_or_default();
+    let mut candidates = Vec::new();
+    let mut item_count = 0usize;
+    let mut processed_item_count = 0usize;
+    let mut latency_ms = 0u64;
+    let page_count = pages.len();
+    for (page_index, raw_page) in pages.into_iter().enumerate() {
+        let page_source = if page_count == 1 {
+            spec.source.to_string()
+        } else {
+            format!("{} page {}", spec.source, page_index + 1)
+        };
+        let payload = backend_tool_result_payload(raw_page, &page_source)?;
+        let items = payload
+            .get(spec.items_key)
+            .and_then(Value::as_array)
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "backend evidence {page_source} tool result must contain an array field named {}",
+                    spec.items_key
+                )
+            })?;
+        item_count = item_count.saturating_add(items.len());
+        let remaining =
+            BACKEND_EVIDENCE_TOOL_RESULT_ITEMS_LIMIT.saturating_sub(processed_item_count);
+        for item in items.iter().take(remaining) {
+            processed_item_count = processed_item_count.saturating_add(1);
+            let Some(file) = first_backend_tool_string(item, spec.file_keys) else {
+                continue;
+            };
+            let symbol = first_backend_tool_string(item, spec.symbol_keys);
+            let label = item
+                .get("label")
+                .and_then(Value::as_str)
+                .unwrap_or("result");
+            let reason = if spec.source == "get_architecture:entry_points" {
+                "get_architecture entry point".to_string()
+            } else {
+                format!("{} {label}", spec.source)
+            };
+            let score = item
+                .get("score")
+                .or_else(|| item.get("similarity"))
+                .or_else(|| item.get("confidence"))
+                .and_then(Value::as_f64);
+            candidates.push(AgentRouteBackendCandidate {
+                file,
+                symbol,
+                source: Some(spec.source.to_string()),
+                score,
+                reason: Some(reason),
+                evidence: vec![spec.source.to_string()],
+            });
+        }
+        latency_ms = latency_ms.saturating_add(
+            payload
+                .get("elapsed_ms")
+                .or_else(|| payload.get("duration_ms"))
+                .and_then(Value::as_u64)
+                .unwrap_or_default(),
+        );
+    }
     let evidence_count = candidates.len();
     Ok(BackendToolCandidateBatch {
         candidates,
         source: (evidence_count > 0).then(|| spec.source.to_string()),
         evidence_count,
-        omitted_items: items
-            .len()
-            .saturating_sub(BACKEND_EVIDENCE_TOOL_RESULT_ITEMS_LIMIT),
+        omitted_items: item_count.saturating_sub(BACKEND_EVIDENCE_TOOL_RESULT_ITEMS_LIMIT),
         latency_ms,
     })
 }
