@@ -2665,10 +2665,16 @@ fn cli_agent_route_normalizes_json_rpc_text_backend_tool_result() {
                 "jsonrpc": "2.0",
                 "id": 1,
                 "result": {
-                    "content": [{
-                        "type": "text",
-                        "text": search_code_payload.to_string()
-                    }]
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "search_code completed; structured payload follows"
+                        },
+                        {
+                            "type": "text",
+                            "text": search_code_payload.to_string()
+                        }
+                    ]
                 }
             }
         }

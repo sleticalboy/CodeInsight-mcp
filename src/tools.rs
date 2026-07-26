@@ -2276,10 +2276,11 @@ fn backend_tool_result_payload(raw: Value, source: &str) -> Result<Value> {
             current = result;
             continue;
         }
-        if let Some(text) = backend_tool_result_text(&current) {
-            return serde_json::from_str(text).with_context(|| {
-                format!("backend evidence {source} text content is not valid JSON")
-            });
+        if let Some(payload) = backend_tool_result_json(&current) {
+            return Ok(payload);
+        }
+        if backend_tool_result_text(&current).is_some() {
+            bail!("backend evidence {source} text content contains no valid JSON");
         }
         if current.is_object() {
             return Ok(current);
@@ -2295,6 +2296,16 @@ fn backend_tool_result_text(value: &Value) -> Option<&str> {
             .then(|| item.get("text").and_then(Value::as_str))
             .flatten()
     })
+}
+
+fn backend_tool_result_json(value: &Value) -> Option<Value> {
+    value
+        .get("content")?
+        .as_array()?
+        .iter()
+        .filter(|item| item.get("type").and_then(Value::as_str) == Some("text"))
+        .filter_map(|item| item.get("text").and_then(Value::as_str))
+        .find_map(|text| serde_json::from_str(text).ok())
 }
 
 fn bounded_backend_tool_error(message: &str) -> String {

@@ -215,6 +215,8 @@ normalized_tool_payload() {
   if ! jq '
     def tool_text:
       [.content[]? | select(.type == "text") | .text] | first;
+    def tool_json:
+      [.content[]? | select(.type == "text") | .text | fromjson?] | first;
     def unwrap:
       if type != "object" then
         error("tool response must be a JSON object")
@@ -227,7 +229,7 @@ normalized_tool_payload() {
       elif has("result") then
         .result | unwrap
       elif (.content | type) == "array" then
-        (tool_text // error("MCP response has no text content")) | fromjson
+        tool_json // error("MCP response has no JSON text content")
       else
         .
       end;

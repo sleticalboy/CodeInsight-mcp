@@ -124,9 +124,10 @@ scripts/codebase-memory-backend-evidence.sh \
 This script expects exported JSON responses from `get_code_snippet`,
 `search_graph`, `search_code`, `query_graph`, `trace_path`, and
 `get_architecture`. It accepts raw payloads, MCP `structuredContent`, and
-JSON-RPC `result.content[].text` wrappers, normalizes candidate file paths
-relative to `--root`, and emits the `backend_evidence` object consumed by CLI
-`agent-route` and MCP `agent_route`. It deliberately does not call
+JSON-RPC `result.content[].text` wrappers. For multi-block content it skips
+plain-text notes and uses the first valid JSON block, normalizes candidate file
+paths relative to `--root`, and emits the `backend_evidence` object consumed by
+CLI `agent-route` and MCP `agent_route`. It deliberately does not call
 codebase-memory-mcp itself; Codex, Claude Code, Cursor, CI jobs, or manual
 benchmark runs can supply those exported tool responses.
 

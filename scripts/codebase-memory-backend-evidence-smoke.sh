@@ -135,10 +135,16 @@ EOF
   "jsonrpc": "2.0",
   "id": 1,
   "result": {
-    "content": [{
-      "type": "text",
-      "text": "{\"name\":\"login\",\"qualified_name\":\"AuthService.login\",\"label\":\"Method\",\"file_path\":\"src/auth.ts\",\"start_line\":4,\"end_line\":7,\"source\":\"source body must not be copied into bridge evidence\",\"elapsed_ms\":2}"
-    }]
+    "content": [
+      {
+        "type": "text",
+        "text": "get_code_snippet completed; structured payload follows"
+      },
+      {
+        "type": "text",
+        "text": "{\"name\":\"login\",\"qualified_name\":\"AuthService.login\",\"label\":\"Method\",\"file_path\":\"src/auth.ts\",\"start_line\":4,\"end_line\":7,\"source\":\"source body must not be copied into bridge evidence\",\"elapsed_ms\":2}"
+      }
+    ]
   }
 }
 EOF
