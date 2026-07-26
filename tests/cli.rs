@@ -2365,7 +2365,8 @@ fn cli_agent_route_help_documents_backend_evidence_stdin() {
         .success()
         .stdout(contains("--backend-evidence <PATH>"))
         .stdout(contains("--backend-evidence-json <JSON_OR_DASH>"))
-        .stdout(contains("use '-' to read stdin"));
+        .stdout(contains("use '-' to read stdin"))
+        .stdout(contains("--backend-fallback"));
 }
 
 #[test]
@@ -2562,6 +2563,80 @@ fn cli_agent_route_rejects_backend_evidence_file_and_inline_json_together() {
         .assert()
         .failure()
         .stderr(contains("cannot be used with"));
+}
+
+#[test]
+fn cli_agent_route_requires_evidence_for_backend_fallback() {
+    let fixture = fixture_project();
+
+    Command::cargo_bin("codeinsight")
+        .unwrap()
+        .env_remove("CODEINSIGHT_EMBEDDING_PROVIDER")
+        .args([
+            "agent-route",
+            fixture.path().to_str().unwrap(),
+            "--task",
+            "understand app entrypoint flow",
+            "--backend-fallback",
+        ])
+        .assert()
+        .failure()
+        .stderr(contains("--backend-fallback requires backend evidence"));
+}
+
+#[test]
+fn cli_agent_route_uses_backend_candidate_as_explicit_fallback() {
+    let fixture = fixture_project();
+    let backend_evidence = serde_json::json!({
+        "provider": "codebase-memory-mcp",
+        "candidate_files": ["missing.ts", "src/main.ts"],
+        "evidence_sources": ["search_graph"],
+        "evidence_count": 4
+    })
+    .to_string();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand invalid explicit seed",
+        "--file",
+        "does/not/exist.ts",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence-json",
+        &backend_evidence,
+        "--backend-fallback",
+    ]);
+
+    assert_eq!(route["impact_status"], "complete");
+    assert_eq!(
+        route["routing_decision"]["seed_strategy"],
+        "backend_fallback"
+    );
+    assert_eq!(
+        route["routing_decision"]["first_seed_source"],
+        "backend_fallback"
+    );
+    assert_eq!(route["routing_decision"]["first_file"], "src/main.ts");
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["status"],
+        "backend_fallback"
+    );
+    assert_eq!(
+        route["routing_decision"]["route_quality"]["recommended_action"],
+        "read_backend_seeded_context"
+    );
+    assert_eq!(route["execution_plan"][0]["status"], "ready");
+    assert_eq!(
+        route["impact_seed_files"],
+        serde_json::json!(["src/main.ts"])
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_evidence"]["use_as_fallback"],
+        true
+    );
 }
 
 #[test]
@@ -12325,6 +12400,58 @@ fn mcp_stdio_agent_route_returns_blocked_plan_for_invalid_seed_file() {
         "blocked_no_reading_plan"
     );
     assert_eq!(route["execution_plan"][3]["status"], "skipped_invalid_seed");
+}
+
+#[test]
+fn mcp_stdio_agent_route_uses_backend_fallback() {
+    let fixture = fixture_project();
+    let request = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 35,
+        "method": "tools/call",
+        "params": {
+            "name": "agent_route",
+            "arguments": {
+                "root": fixture.path(),
+                "task": "understand invalid explicit seed",
+                "files": ["does/not/exist.ts"],
+                "token_budget": 1600,
+                "force_index": true,
+                "backend_evidence": {
+                    "provider": "codebase-memory-mcp",
+                    "use_as_fallback": true,
+                    "candidate_files": ["missing.ts", "src/main.ts"],
+                    "evidence_sources": ["search_graph"],
+                    "evidence_count": 4
+                }
+            }
+        }
+    });
+
+    let mut command = Command::cargo_bin("codeinsight").unwrap();
+    command.args(["serve", "--transport", "stdio"]);
+    command.write_stdin(format!("{request}\n"));
+    let output = command.assert().success().get_output().stdout.clone();
+    let response: Value = serde_json::from_slice(&output).unwrap();
+    let route = &response["result"]["structuredContent"];
+
+    assert_eq!(response["id"], 35);
+    assert!(response["error"].is_null());
+    assert_eq!(route["impact_status"], "complete");
+    assert_eq!(route["routing_decision"]["first_file"], "src/main.ts");
+    assert_eq!(
+        route["routing_decision"]["first_seed_source"],
+        "backend_fallback"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["status"],
+        "backend_fallback"
+    );
+    assert_eq!(
+        route["routing_decision"]["route_quality"]["recommended_action"],
+        "read_backend_seeded_context"
+    );
+    assert_eq!(route["execution_plan"][0]["status"], "ready");
 }
 
 #[test]

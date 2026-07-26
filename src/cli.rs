@@ -192,6 +192,11 @@ pub struct AgentRouteArgs {
         help = "Read backend route evidence from inline JSON, or use '-' to read stdin"
     )]
     pub backend_evidence_json: Option<String>,
+    #[arg(
+        long,
+        help = "Use the first available backend candidate when local routing is blocked"
+    )]
+    pub backend_fallback: bool,
 }
 
 #[derive(Debug, Args)]

@@ -61,7 +61,7 @@ async fn main() -> Result<()> {
             args.token_budget,
         )?,
         Command::AgentRoute(args) => {
-            let backend_evidence = if let Some(path) = args.backend_evidence.as_deref() {
+            let mut backend_evidence = if let Some(path) = args.backend_evidence.as_deref() {
                 Some(tools::read_agent_route_backend_evidence(path)?)
             } else if let Some(json) = args.backend_evidence_json.as_deref() {
                 let mut stdin_json = String::new();
@@ -80,6 +80,12 @@ async fn main() -> Result<()> {
             } else {
                 None
             };
+            if args.backend_fallback {
+                backend_evidence
+                    .as_mut()
+                    .context("--backend-fallback requires backend evidence")?
+                    .use_as_fallback = true;
+            }
             tools::agent_route(
                 args.root,
                 args.task,

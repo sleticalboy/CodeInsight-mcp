@@ -271,6 +271,17 @@ pub fn agent_route_value(
         }
         Err(error) => return Err(error),
     };
+    let mut used_backend_fallback = false;
+    if context_pack.reading_plan.is_empty()
+        && let Some(evidence) = backend_evidence
+            .as_ref()
+            .filter(|evidence| evidence.use_as_fallback)
+        && let Some(fallback_context) =
+            backend_fallback_context_pack(&root, &task, token_budget, evidence)?
+    {
+        context_pack = fallback_context;
+        used_backend_fallback = true;
+    }
     add_index_scope_hint_to_blocked_context(&mut context_pack, &index_report.index_scope);
 
     let blocked_context_status = context_pack
@@ -279,6 +290,12 @@ pub fn agent_route_value(
         .then(|| context_pack.continuation_summary.status.clone());
     let mut impact_seed_files = if blocked_context_status.is_some() {
         Vec::new()
+    } else if used_backend_fallback {
+        context_pack
+            .files
+            .first()
+            .map(|file| vec![file.file.clone()])
+            .unwrap_or_default()
     } else {
         files
             .iter()
@@ -293,7 +310,7 @@ pub fn agent_route_value(
     impact_seed_files.sort();
     impact_seed_files.dedup();
 
-    let mut impact_seed_symbols = if blocked_context_status.is_some() {
+    let mut impact_seed_symbols = if blocked_context_status.is_some() || used_backend_fallback {
         Vec::new()
     } else {
         symbols
@@ -404,6 +421,7 @@ fn agent_route_routing_decision(
     let backend_route_agreement = agent_route_backend_agreement(
         first_step.map(|step| step.file.as_str()),
         backend_evidence.as_ref(),
+        first_seed.is_some_and(|seed| seed.source == "backend_fallback"),
     );
     let route_quality = agent_route_quality(
         context_pack,
@@ -451,6 +469,7 @@ fn agent_route_routing_decision(
 fn agent_route_backend_agreement(
     local_first_file: Option<&str>,
     backend_evidence: Option<&AgentRouteBackendEvidence>,
+    used_backend_fallback: bool,
 ) -> AgentRouteBackendAgreement {
     let Some(backend) = backend_evidence else {
         return AgentRouteBackendAgreement {
@@ -484,6 +503,14 @@ fn agent_route_backend_agreement(
         backend_first_file.as_deref(),
         common_files.is_empty(),
     ) {
+        (Some(local), Some(_), _) if used_backend_fallback => (
+            "backend_fallback",
+            "read_backend_seeded_context",
+            format!(
+                "Local routing was blocked, so backend {} fallback evidence seeded bounded context with first-read file {}.",
+                backend.provider, local
+            ),
+        ),
         (None, Some(backend_first), _) => (
             "backend_only",
             "provide_seed_or_use_backend_candidate",
@@ -816,6 +843,19 @@ fn agent_route_quality(
                     backend.provider
                 ));
             }
+            "backend_fallback" => {
+                score += 3;
+                backend_route_recommended_action =
+                    Some(backend_route_agreement.recommended_action.clone());
+                confidence_factors.push(format!(
+                    "backend {} supplied the fallback seed for bounded local context",
+                    backend.provider
+                ));
+                warnings.push(
+                    "Local routing required a backend fallback seed; verify the selected context before editing."
+                        .to_string(),
+                );
+            }
             "backend_only" | "no_local_route" => {
                 backend_route_recommended_action =
                     Some(backend_route_agreement.recommended_action.clone());
@@ -1096,6 +1136,38 @@ fn normalize_agent_route_backend_evidence(
     evidence.evidence_sources = trimmed_unique_strings(evidence.evidence_sources);
     evidence.notes = trimmed_unique_strings(evidence.notes);
     Ok(evidence)
+}
+
+fn backend_fallback_context_pack(
+    root: &Path,
+    task: &str,
+    token_budget: usize,
+    backend_evidence: &AgentRouteBackendEvidence,
+) -> Result<Option<ContextPack>> {
+    for candidate in &backend_evidence.candidate_files {
+        if !root.join(candidate).is_file() {
+            continue;
+        }
+        match context_pack_value(
+            root.to_path_buf(),
+            task.to_string(),
+            Vec::new(),
+            vec![candidate.clone()],
+            token_budget,
+        ) {
+            Ok(mut context_pack) if !context_pack.reading_plan.is_empty() => {
+                context_pack.seed_strategy = "backend_fallback".to_string();
+                if let Some(seed) = context_pack.selected_seeds.first_mut() {
+                    seed.source = "backend_fallback".to_string();
+                }
+                return Ok(Some(context_pack));
+            }
+            Ok(_) => {}
+            Err(error) if is_context_pack_invalid_seed_error(&error) => {}
+            Err(error) => return Err(error),
+        }
+    }
+    Ok(None)
 }
 
 fn normalize_backend_candidate_file(root: &Path, file: &str) -> Result<String> {

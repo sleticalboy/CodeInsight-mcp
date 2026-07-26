@@ -364,6 +364,8 @@ pub struct AgentRouteBackendAgreement {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentRouteBackendEvidence {
     pub provider: String,
+    #[serde(default)]
+    pub use_as_fallback: bool,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub candidate_files: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]

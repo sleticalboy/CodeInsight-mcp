@@ -222,6 +222,30 @@ fn handle_tool_call(params: Value) -> Result<Value> {
 }
 
 fn tool_definitions() -> Value {
+    let backend_evidence_schema = json!({
+        "type": "object",
+        "description": "Optional advisory evidence from an external code graph backend. CodeInsight uses it to explain route confidence; set use_as_fallback to seed bounded context only when local routing is blocked.",
+        "properties": {
+            "provider": {"type": "string"},
+            "use_as_fallback": {"type": "boolean", "default": false},
+            "candidate_files": {
+                "type": "array",
+                "items": {"type": "string"}
+            },
+            "evidence_sources": {
+                "type": "array",
+                "items": {"type": "string"}
+            },
+            "evidence_count": {"type": "integer", "minimum": 0},
+            "latency_ms": {"type": "integer", "minimum": 0},
+            "confidence": {"type": "number"},
+            "notes": {
+                "type": "array",
+                "items": {"type": "string"}
+            }
+        },
+        "required": ["provider"]
+    });
     json!([
         {
             "name": "index_project",
@@ -429,29 +453,7 @@ fn tool_definitions() -> Value {
                     "impact_limit": {"type": "integer", "minimum": 1},
                     "impact_depth": {"type": "integer", "minimum": 1},
                     "impact_evidence_limit": {"type": "integer", "minimum": 1},
-                    "backend_evidence": {
-                        "type": "object",
-                        "description": "Optional advisory evidence from an external code graph backend. CodeInsight uses it to explain route confidence; it does not blindly override the local route.",
-                        "properties": {
-                            "provider": {"type": "string"},
-                            "candidate_files": {
-                                "type": "array",
-                                "items": {"type": "string"}
-                            },
-                            "evidence_sources": {
-                                "type": "array",
-                                "items": {"type": "string"}
-                            },
-                            "evidence_count": {"type": "integer", "minimum": 0},
-                            "latency_ms": {"type": "integer", "minimum": 0},
-                            "confidence": {"type": "number"},
-                            "notes": {
-                                "type": "array",
-                                "items": {"type": "string"}
-                            }
-                        },
-                        "required": ["provider"]
-                    }
+                    "backend_evidence": backend_evidence_schema
                 },
                 "required": ["root", "task"]
             }
@@ -1202,6 +1204,22 @@ int login(void) {
                 .as_str()
                 .is_some_and(|error| error.contains(".codeinsight/config.toml"))
         );
+    }
+
+    #[test]
+    fn agent_route_schema_exposes_backend_fallback() {
+        let tools = tool_definitions();
+        let agent_route = tools
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|tool| tool["name"] == "agent_route")
+            .unwrap();
+        let fallback = &agent_route["inputSchema"]["properties"]["backend_evidence"]["properties"]
+            ["use_as_fallback"];
+
+        assert_eq!(fallback["type"], "boolean");
+        assert_eq!(fallback["default"], false);
     }
 
     #[test]
