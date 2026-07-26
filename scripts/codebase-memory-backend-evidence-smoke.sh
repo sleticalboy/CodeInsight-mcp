@@ -80,6 +80,12 @@ export class AuthService {
   return { user, status: "accepted" };
 }
 '
+  write_file "$repo/src/server.ts" 'import { main } from "./main";
+
+export function startServer() {
+  return main();
+}
+'
 }
 
 write_codebase_memory_exports() {
@@ -151,6 +157,34 @@ EOF
   ],
   "semantic_results": [],
   "elapsed_ms": 1
+}
+EOF
+
+  cat >"$output_dir/search-code-alternates.json" <<'EOF'
+{
+  "results": [
+    {
+      "node": "AuthService.login",
+      "label": "Method",
+      "file": "src/auth.ts",
+      "score": 0.94
+    }
+  ],
+  "files": [
+    "src/audit.ts",
+    {
+      "file_path": "src/main.ts",
+      "name": "main"
+    }
+  ],
+  "raw_matches": [
+    {
+      "file": "src/server.ts",
+      "line": 1,
+      "content": "startServer();"
+    }
+  ],
+  "elapsed_ms": 4
 }
 EOF
 
@@ -252,6 +286,19 @@ main() {
     "$TEMP_DIR/empty-semantic-evidence.json" \
     '.candidate_files == ["src/main.ts"] and .candidates[0].symbol == "main"' \
     "empty semantic search results should fall back to keyword candidates"
+
+  "$ROOT_DIR/scripts/codebase-memory-backend-evidence.sh" \
+    --root "$repo" \
+    --search-code-json "$TEMP_DIR/search-code-alternates.json" \
+    --output "$TEMP_DIR/search-code-alternates-evidence.json"
+  require_jq \
+    "$TEMP_DIR/search-code-alternates-evidence.json" \
+    '.candidate_files == ["src/auth.ts", "src/audit.ts", "src/main.ts", "src/server.ts"]' \
+    "search_code results, files, and raw matches should all become candidates"
+  require_jq \
+    "$TEMP_DIR/search-code-alternates-evidence.json" \
+    '.candidates[0].symbol == "AuthService.login" and .candidates[1].reason == "search_code File" and .candidates[2].symbol == "main" and .candidates[3].reason == "search_code raw match"' \
+    "search_code alternate result shapes should preserve available metadata"
 
   "$ROOT_DIR/scripts/codebase-memory-backend-evidence.sh" \
     --root "$repo" \

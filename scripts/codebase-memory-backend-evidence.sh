@@ -309,13 +309,39 @@ collect_candidates() {
     local payload
     payload="$(normalized_tool_payload "search-code" "$file")"
     append_candidates_from_query "search_code" "$payload" '
-      .results[]?
-      | {
-          file: (.file // .file_path // empty),
-          symbol: (.node // .name // .qualified_name // null),
-          score: (.score // .similarity // null),
-          reason: ("search_code " + (.label // "result" | tostring))
-        }
+      (
+        .results[]?
+        | if type == "string"
+          then { file: ., symbol: null, score: null, reason: "search_code File" }
+          else {
+            file: (.file // .file_path // empty),
+            symbol: (.node // .name // .qualified_name // null),
+            score: (.score // .similarity // null),
+            reason: ("search_code " + (.label // "result" | tostring))
+          }
+          end
+      ),
+      (
+        .files[]?
+        | if type == "string"
+          then { file: ., symbol: null, score: null, reason: "search_code File" }
+          else {
+            file: (.file // .file_path // empty),
+            symbol: (.node // .name // .qualified_name // null),
+            score: (.score // .similarity // null),
+            reason: "search_code File"
+          }
+          end
+      ),
+      (
+        .raw_matches[]?
+        | {
+            file: (.file // .file_path // empty),
+            symbol: null,
+            score: (.score // .similarity // null),
+            reason: "search_code raw match"
+          }
+      )
       | select(.file != "")
     '
     append_latency "$payload"

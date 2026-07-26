@@ -56,7 +56,7 @@ Expected output shape:
    routing_decision_first_file: src/tools.rs
    routing_decision_first_selection_rank: 1
    routing_decision_suggested_tool: file_outline
-   routing_decision_read_less: 99.4%, 165.2x
+   routing_decision_read_less: 99.4%, 165.4x
    routing_decision_continuation: omitted_candidates_available
    routing_decision_impact_status: complete
    routing_decision_quality: high (100/100, 23 evidence signals)
