@@ -2128,11 +2128,8 @@ fn collect_backend_tool_candidates(
                 )
             })?;
             found_items = true;
-            if preferred_items_key.is_none() {
-                item_count = item_count.saturating_add(items.len());
-                if spec.total_items_keys.contains(&items_key) {
-                    fetched_total_items = fetched_total_items.saturating_add(items.len());
-                }
+            if preferred_items_key.is_none() && spec.total_items_keys.contains(&items_key) {
+                fetched_total_items = fetched_total_items.saturating_add(items.len());
             }
             for item in items {
                 let (file, symbol, label) = match item {
@@ -2165,9 +2162,7 @@ fn collect_backend_tool_candidates(
                 if seen_candidate_keys.len() < candidate_dedupe_limit {
                     seen_candidate_keys.insert(candidate_key);
                 }
-                if preferred_items_key.is_some() {
-                    item_count = item_count.saturating_add(1);
-                }
+                item_count = item_count.saturating_add(1);
                 if processed_item_count >= BACKEND_EVIDENCE_TOOL_RESULT_ITEMS_LIMIT {
                     continue;
                 }
