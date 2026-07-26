@@ -2398,7 +2398,7 @@ fn cli_agent_route_normalizes_inline_backend_tool_results() {
                 {
                     "elapsed_ms": 11,
                     "total": 4,
-                    "has_more": true,
+                    "has_more": false,
                     "results": [{
                         "name": "anotherDefaultGraphNode",
                         "label": "Module",
@@ -2744,6 +2744,57 @@ fn cli_agent_route_falls_back_to_keyword_results_when_semantic_results_are_empty
     assert_eq!(evidence["candidates"][0]["source"], "search_graph");
     assert_eq!(evidence["evidence_count"], 1);
     assert_eq!(evidence["latency_ms"], 8);
+}
+
+#[test]
+fn cli_agent_route_reports_has_more_without_backend_total() {
+    let fixture = fixture_project();
+    let backend_evidence = serde_json::json!({
+        "provider": "codebase-memory-mcp",
+        "tool_results": {
+            "search_graph": {
+                "semantic_results": [{
+                    "name": "startServer",
+                    "label": "Function",
+                    "file_path": "src/server.ts",
+                    "score": 0.93
+                }],
+                "has_more": true,
+                "elapsed_ms": 9
+            }
+        }
+    })
+    .to_string();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand server startup",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence-json",
+        &backend_evidence,
+    ]);
+
+    let evidence = &route["routing_decision"]["backend_evidence"];
+    assert_eq!(
+        evidence["candidate_files"],
+        serde_json::json!(["src/server.ts"])
+    );
+    assert_eq!(evidence["evidence_count"], 1);
+    assert_eq!(evidence["normalization"]["unfetched_tool_result_items"], 1);
+    assert!(
+        route["routing_decision"]["route_quality"]["warnings"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|warning| warning
+                .as_str()
+                .unwrap()
+                .contains("reported 1 unfetched tool result item"))
+    );
 }
 
 #[test]

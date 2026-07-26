@@ -2085,6 +2085,7 @@ fn collect_backend_tool_candidates(
     let mut fetched_total_items = 0usize;
     let mut processed_item_count = 0usize;
     let mut reported_total_items = 0usize;
+    let mut last_page_has_more = false;
     let mut latency_ms = 0u64;
     let mut seen_candidate_files = BTreeSet::new();
     let candidate_dedupe_limit = BACKEND_EVIDENCE_TOOL_RESULT_ITEMS_LIMIT
@@ -2097,6 +2098,10 @@ fn collect_backend_tool_candidates(
             format!("{} page {}", spec.source, page_index + 1)
         };
         let payload = backend_tool_result_payload(raw_page, &page_source)?;
+        last_page_has_more = payload
+            .get("has_more")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
         let preferred_items_key = match spec.preferred_items_key {
             Some(items_key) => match payload.get(items_key) {
                 Some(Value::Array(items)) if items.is_empty() => None,
@@ -2220,11 +2225,14 @@ fn collect_backend_tool_candidates(
         );
     }
     let evidence_count = candidates.len();
+    let unfetched_items = reported_total_items
+        .saturating_sub(fetched_total_items)
+        .max(usize::from(last_page_has_more));
     Ok(BackendToolCandidateBatch {
         candidates,
         source: (evidence_count > 0).then(|| spec.source.to_string()),
         evidence_count,
-        unfetched_items: reported_total_items.saturating_sub(fetched_total_items),
+        unfetched_items,
         omitted_items: item_count.saturating_sub(BACKEND_EVIDENCE_TOOL_RESULT_ITEMS_LIMIT),
         latency_ms,
     })

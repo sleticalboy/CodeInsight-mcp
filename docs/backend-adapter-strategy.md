@@ -105,6 +105,8 @@ a combined backend query does not discard usable evidence.
 Paginated raw tool results share one 64-item budget per tool after file-level
 deduplication, so repeated symbols from a hotspot file neither create false
 truncation signals nor crowd out later files.
+When the final supplied page reports `has_more: true`, CodeInsight preserves an
+incomplete-evidence warning even if the backend did not provide a numeric total.
 
 The first bridge prototype is script-level and runtime-agnostic:
 

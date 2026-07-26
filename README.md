@@ -213,7 +213,8 @@ object or an ordered array of paginated response objects directly. The 64-item
 budget applies across all pages for each tool after file-level candidate
 deduplication; repeated symbols from the same file do not consume extra slots.
 `agent_route` extracts bounded evidence and omits the raw payloads from its
-response:
+response. A final page with `has_more: true` is reported as incomplete even
+when the backend omits `total`:
 
 ```json
 {
@@ -417,7 +418,7 @@ accuracy, or proof that unselected code is irrelevant.
 
 Current benchmark snapshot:
 
-- The two-minute demo for this repository shows the agent route selecting 531 of 87,620 source lines, avoiding 87,089 source lines before broad reading for a 99.4% reduction and 165.0x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 23 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
+- The two-minute demo for this repository shows the agent route selecting 531 of 87,679 source lines, avoiding 87,148 source lines before broad reading for a 99.4% reduction and 165.1x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 23 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
 - Smoke repositories route `context_pack` first for 4/4 repositories and
   select 709 of 75,753 source lines, a 99.1% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and
