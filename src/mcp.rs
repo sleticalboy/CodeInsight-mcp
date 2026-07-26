@@ -228,6 +228,11 @@ fn tool_definitions() -> Value {
         "properties": {
             "provider": {"type": "string", "maxLength": 128},
             "use_as_fallback": {"type": "boolean", "default": false},
+            "prefer_for_context": {
+                "type": "boolean",
+                "default": false,
+                "description": "Prefer the first available backend candidate for bounded context when the caller did not provide explicit file or symbol seeds."
+            },
             "candidate_files": {
                 "type": "array",
                 "maxItems": 16,
@@ -1244,6 +1249,10 @@ int login(void) {
 
         assert_eq!(fallback["type"], "boolean");
         assert_eq!(fallback["default"], false);
+        let preferred = &agent_route["inputSchema"]["properties"]["backend_evidence"]["properties"]
+            ["prefer_for_context"];
+        assert_eq!(preferred["type"], "boolean");
+        assert_eq!(preferred["default"], false);
 
         let candidates = &agent_route["inputSchema"]["properties"]["backend_evidence"]["properties"]
             ["candidates"];

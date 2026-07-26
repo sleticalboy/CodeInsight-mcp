@@ -2423,7 +2423,8 @@ fn cli_agent_route_help_documents_backend_evidence_stdin() {
         .stdout(contains("--backend-evidence <PATH>"))
         .stdout(contains("--backend-evidence-json <JSON_OR_DASH>"))
         .stdout(contains("use '-' to read stdin"))
-        .stdout(contains("--backend-fallback"));
+        .stdout(contains("--backend-fallback"))
+        .stdout(contains("--prefer-backend-context"));
 }
 
 #[test]
@@ -2886,6 +2887,22 @@ fn cli_agent_route_requires_evidence_for_backend_fallback() {
         .assert()
         .failure()
         .stderr(contains("--backend-fallback requires backend evidence"));
+
+    Command::cargo_bin("codeinsight")
+        .unwrap()
+        .env_remove("CODEINSIGHT_EMBEDDING_PROVIDER")
+        .args([
+            "agent-route",
+            fixture.path().to_str().unwrap(),
+            "--task",
+            "understand app entrypoint flow",
+            "--prefer-backend-context",
+        ])
+        .assert()
+        .failure()
+        .stderr(contains(
+            "--prefer-backend-context requires backend evidence",
+        ));
 }
 
 #[test]
@@ -2929,6 +2946,10 @@ fn cli_agent_route_uses_backend_candidate_as_explicit_fallback() {
         "backend_fallback"
     );
     assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["selected_context_file"],
+        "src/main.ts"
+    );
+    assert_eq!(
         route["routing_decision"]["route_quality"]["recommended_action"],
         "read_backend_seeded_context"
     );
@@ -2940,6 +2961,124 @@ fn cli_agent_route_uses_backend_candidate_as_explicit_fallback() {
     assert_eq!(
         route["routing_decision"]["backend_evidence"]["use_as_fallback"],
         true
+    );
+}
+
+#[test]
+fn cli_agent_route_prefers_backend_candidate_for_bounded_context() {
+    let fixture = fixture_project();
+    let backend_evidence = serde_json::json!({
+        "provider": "codebase-memory-mcp",
+        "candidates": [{
+            "file": "src/ui.ts",
+            "symbol": "render",
+            "source": "search_graph",
+            "score": 0.97,
+            "reason": "graph-ranked implementation",
+            "evidence": ["definition", "callers"]
+        }],
+        "evidence_sources": ["search_graph"],
+        "evidence_count": 5
+    })
+    .to_string();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand app entrypoint flow",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence-json",
+        &backend_evidence,
+        "--prefer-backend-context",
+    ]);
+
+    assert_eq!(
+        route["routing_decision"]["seed_strategy"],
+        "backend_preferred"
+    );
+    assert_eq!(
+        route["routing_decision"]["first_seed_source"],
+        "backend_preferred"
+    );
+    assert_eq!(route["routing_decision"]["first_file"], "src/ui.ts");
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["status"],
+        "backend_preferred"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["local_first_file"],
+        "src/main.ts"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["backend_first_file"],
+        "src/ui.ts"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["selected_context_file"],
+        "src/ui.ts"
+    );
+    assert_eq!(
+        route["routing_decision"]["route_quality"]["recommended_action"],
+        "read_backend_seeded_context"
+    );
+    assert_eq!(route["impact_seed_files"], serde_json::json!(["src/ui.ts"]));
+    assert_eq!(route["impact_seed_symbols"], serde_json::json!(["render"]));
+    assert_eq!(
+        route["routing_decision"]["backend_evidence"]["prefer_for_context"],
+        true
+    );
+    assert!(
+        route["routing_decision"]["route_quality"]["warnings"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|warning| warning
+                .as_str()
+                .unwrap()
+                .contains("Backend preference replaced the local first-read candidate"))
+    );
+}
+
+#[test]
+fn cli_agent_route_keeps_explicit_seed_ahead_of_backend_preference() {
+    let fixture = fixture_project();
+    let backend_evidence = serde_json::json!({
+        "provider": "codebase-memory-mcp",
+        "prefer_for_context": true,
+        "candidate_files": ["src/ui.ts"]
+    })
+    .to_string();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand app entrypoint flow",
+        "--file",
+        "src/main.ts",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence-json",
+        &backend_evidence,
+    ]);
+
+    assert_eq!(route["routing_decision"]["first_file"], "src/main.ts");
+    assert_ne!(
+        route["routing_decision"]["seed_strategy"],
+        "backend_preferred"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["status"],
+        "conflict"
+    );
+    assert!(
+        route["routing_decision"]["backend_route_agreement"]
+            .get("selected_context_file")
+            .is_none()
     );
 }
 
@@ -12862,6 +13001,51 @@ fn mcp_stdio_agent_route_uses_backend_fallback() {
         "read_backend_seeded_context"
     );
     assert_eq!(route["execution_plan"][0]["status"], "ready");
+}
+
+#[test]
+fn mcp_stdio_agent_route_prefers_backend_context() {
+    let fixture = fixture_project();
+    let request = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 36,
+        "method": "tools/call",
+        "params": {
+            "name": "agent_route",
+            "arguments": {
+                "root": fixture.path(),
+                "task": "understand app entrypoint flow",
+                "token_budget": 1600,
+                "force_index": true,
+                "backend_evidence": {
+                    "provider": "codebase-memory-mcp",
+                    "prefer_for_context": true,
+                    "candidates": [{
+                        "file": "src/ui.ts",
+                        "symbol": "render",
+                        "source": "search_graph"
+                    }]
+                }
+            }
+        }
+    });
+
+    let mut command = Command::cargo_bin("codeinsight").unwrap();
+    command.args(["serve", "--transport", "stdio"]);
+    command.write_stdin(format!("{request}\n"));
+    let output = command.assert().success().get_output().stdout.clone();
+    let response: Value = serde_json::from_slice(&output).unwrap();
+    let route = &response["result"]["structuredContent"];
+
+    assert_eq!(response["id"], 36);
+    assert!(response["error"].is_null());
+    assert_eq!(route["routing_decision"]["first_file"], "src/ui.ts");
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["status"],
+        "backend_preferred"
+    );
+    assert_eq!(route["impact_seed_files"], serde_json::json!(["src/ui.ts"]));
+    assert_eq!(route["impact_seed_symbols"], serde_json::json!(["render"]));
 }
 
 #[test]

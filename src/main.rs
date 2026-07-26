@@ -86,6 +86,12 @@ async fn main() -> Result<()> {
                     .context("--backend-fallback requires backend evidence")?
                     .use_as_fallback = true;
             }
+            if args.prefer_backend_context {
+                backend_evidence
+                    .as_mut()
+                    .context("--prefer-backend-context requires backend evidence")?
+                    .prefer_for_context = true;
+            }
             tools::agent_route(
                 args.root,
                 args.task,

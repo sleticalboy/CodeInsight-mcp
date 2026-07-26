@@ -78,6 +78,23 @@ that as confidence evidence. When the backend prefers a different first file,
 `route_quality.warnings` names the mismatch and `recommended_action` changes to
 `compare_backend_route_before_edits` before the agent edits code.
 
+When the graph backend is intentionally responsible for choosing the starting
+file, enable the bounded-context handoff explicitly:
+
+```bash
+codeinsight agent-route /path/to/repo \
+  --task "understand app entrypoint flow" \
+  --backend-evidence /tmp/codeinsight-backend-evidence.json \
+  --prefer-backend-context
+```
+
+For MCP, set `backend_evidence.prefer_for_context` to `true`. CodeInsight then
+uses the first valid backend candidate to build the context pack and impact
+seed, while retaining the original local candidate in
+`backend_route_agreement.local_first_file`. The actual selected backend file is
+reported as `selected_context_file`. Explicit file or symbol seeds always take
+priority over this policy.
+
 The first bridge prototype is script-level and runtime-agnostic:
 
 ```bash

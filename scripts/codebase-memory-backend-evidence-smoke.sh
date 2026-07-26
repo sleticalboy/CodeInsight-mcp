@@ -149,10 +149,11 @@ main() {
   TEMP_DIR="$(mktemp -d)"
   trap cleanup EXIT INT TERM
 
-  local repo evidence route_json fallback_route_json conflict_evidence conflict_route_json
+  local repo evidence route_json preferred_route_json fallback_route_json conflict_evidence conflict_route_json
   repo="$TEMP_DIR/repo"
   evidence="$TEMP_DIR/backend-evidence.json"
   route_json="$TEMP_DIR/agent-route.json"
+  preferred_route_json="$TEMP_DIR/agent-route-preferred.json"
   fallback_route_json="$TEMP_DIR/agent-route-fallback.json"
   conflict_evidence="$TEMP_DIR/backend-conflict-evidence.json"
   conflict_route_json="$TEMP_DIR/agent-route-conflict.json"
@@ -202,6 +203,20 @@ main() {
   require_jq "$route_json" 'any(.routing_decision.route_quality.verification_steps[]; contains("Treat backend codebase-memory-mcp evidence as advisory"))' "route quality should keep backend evidence advisory"
 
   "$CODEINSIGHT_BIN" agent-route "$repo" \
+    --task "understand app entrypoint flow" \
+    --token-budget 1600 \
+    --force-index \
+    --backend-evidence "$evidence" \
+    --prefer-backend-context >"$preferred_route_json"
+
+  require_jq "$preferred_route_json" '.routing_decision.seed_strategy == "backend_preferred"' "preferred backend evidence should seed bounded context"
+  require_jq "$preferred_route_json" '.routing_decision.first_file == "src/auth.ts"' "preferred backend evidence should select the graph-ranked first candidate"
+  require_jq "$preferred_route_json" '.routing_decision.backend_route_agreement.status == "backend_preferred"' "preferred backend evidence should be explicit in route agreement"
+  require_jq "$preferred_route_json" '.routing_decision.backend_route_agreement.local_first_file == "src/main.ts"' "preferred routing should preserve the original local first candidate"
+  require_jq "$preferred_route_json" '.routing_decision.backend_route_agreement.selected_context_file == "src/auth.ts"' "preferred routing should expose the selected backend context file"
+  require_jq "$preferred_route_json" '.routing_decision.route_quality.recommended_action == "read_backend_seeded_context"' "preferred routing should direct the agent to backend-seeded context"
+
+  "$CODEINSIGHT_BIN" agent-route "$repo" \
     --task "understand invalid local seed" \
     --file "does/not/exist.ts" \
     --token-budget 1600 \
@@ -231,6 +246,7 @@ main() {
   echo "codebase-memory backend evidence smoke passed"
   echo "evidence: $evidence"
   echo "route: $route_json"
+  echo "preferred_route: $preferred_route_json"
   echo "fallback_route: $fallback_route_json"
   echo "conflict_route: $conflict_route_json"
 }

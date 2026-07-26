@@ -46,6 +46,22 @@ const BACKEND_EVIDENCE_SOURCE_CHARS_LIMIT: usize = 160;
 const BACKEND_EVIDENCE_REASON_CHARS_LIMIT: usize = 320;
 const BACKEND_EVIDENCE_ITEM_CHARS_LIMIT: usize = 160;
 const BACKEND_EVIDENCE_NOTE_CHARS_LIMIT: usize = 320;
+
+#[derive(Clone, Copy)]
+enum BackendContextMode {
+    Fallback,
+    Preferred,
+}
+
+impl BackendContextMode {
+    fn seed_source(self) -> &'static str {
+        match self {
+            Self::Fallback => "backend_fallback",
+            Self::Preferred => "backend_preferred",
+        }
+    }
+}
+
 const CONTEXT_SCORE_SEED_HEADER: i32 = 140;
 const CONTEXT_SCORE_SYMBOL_DEFINITION: i32 = 90;
 const CONTEXT_SCORE_TYPE_RELATION: i32 = 82;
@@ -284,18 +300,43 @@ pub fn agent_route_value(
         }
         Err(error) => return Err(error),
     };
-    let mut used_backend_fallback = false;
-    let mut backend_fallback_candidate = None;
-    if context_pack.reading_plan.is_empty()
+    let local_first_file = context_pack
+        .reading_plan
+        .first()
+        .map(|step| step.file.clone());
+    let has_explicit_seed = !files.is_empty() || !symbols.is_empty();
+    let mut backend_context_mode = None;
+    let mut backend_context_candidate = None;
+    if !has_explicit_seed
+        && let Some(evidence) = backend_evidence
+            .as_ref()
+            .filter(|evidence| evidence.prefer_for_context)
+        && let Some((preferred_context, preferred_candidate)) = backend_seed_context_pack(
+            &root,
+            &task,
+            token_budget,
+            evidence,
+            BackendContextMode::Preferred,
+        )?
+    {
+        context_pack = preferred_context;
+        backend_context_candidate = Some(preferred_candidate);
+        backend_context_mode = Some(BackendContextMode::Preferred);
+    } else if context_pack.reading_plan.is_empty()
         && let Some(evidence) = backend_evidence
             .as_ref()
             .filter(|evidence| evidence.use_as_fallback)
-        && let Some((fallback_context, fallback_candidate)) =
-            backend_fallback_context_pack(&root, &task, token_budget, evidence)?
+        && let Some((fallback_context, fallback_candidate)) = backend_seed_context_pack(
+            &root,
+            &task,
+            token_budget,
+            evidence,
+            BackendContextMode::Fallback,
+        )?
     {
         context_pack = fallback_context;
-        backend_fallback_candidate = Some(fallback_candidate);
-        used_backend_fallback = true;
+        backend_context_candidate = Some(fallback_candidate);
+        backend_context_mode = Some(BackendContextMode::Fallback);
     }
     add_index_scope_hint_to_blocked_context(&mut context_pack, &index_report.index_scope);
 
@@ -305,7 +346,7 @@ pub fn agent_route_value(
         .then(|| context_pack.continuation_summary.status.clone());
     let mut impact_seed_files = if blocked_context_status.is_some() {
         Vec::new()
-    } else if used_backend_fallback {
+    } else if backend_context_mode.is_some() {
         context_pack
             .files
             .first()
@@ -327,8 +368,8 @@ pub fn agent_route_value(
 
     let mut impact_seed_symbols = if blocked_context_status.is_some() {
         Vec::new()
-    } else if used_backend_fallback {
-        backend_fallback_candidate
+    } else if backend_context_mode.is_some() {
+        backend_context_candidate
             .as_ref()
             .and_then(|candidate| candidate.symbol.clone())
             .into_iter()
@@ -405,8 +446,13 @@ pub fn agent_route_value(
         },
     ];
     let current_reading_step = context_pack.reading_plan.first().cloned();
-    let routing_decision =
-        agent_route_routing_decision(&context_pack, &impact_status, backend_evidence);
+    let routing_decision = agent_route_routing_decision(
+        &context_pack,
+        &impact_status,
+        backend_evidence,
+        local_first_file.as_deref(),
+        backend_context_mode,
+    );
     let execution_plan = agent_route_execution_plan(
         &context_pack,
         &impact_status,
@@ -437,13 +483,16 @@ fn agent_route_routing_decision(
     context_pack: &ContextPack,
     impact_status: &str,
     backend_evidence: Option<AgentRouteBackendEvidence>,
+    local_first_file: Option<&str>,
+    backend_context_mode: Option<BackendContextMode>,
 ) -> AgentRouteRoutingDecision {
     let first_seed = context_pack.selected_seeds.first();
     let first_step = context_pack.reading_plan.first();
     let backend_route_agreement = agent_route_backend_agreement(
-        first_step.map(|step| step.file.as_str()),
+        local_first_file,
         backend_evidence.as_ref(),
-        first_seed.is_some_and(|seed| seed.source == "backend_fallback"),
+        backend_context_mode,
+        first_step.map(|step| step.file.as_str()),
     );
     let route_quality = agent_route_quality(
         context_pack,
@@ -501,7 +550,8 @@ fn agent_route_routing_decision(
 fn agent_route_backend_agreement(
     local_first_file: Option<&str>,
     backend_evidence: Option<&AgentRouteBackendEvidence>,
-    used_backend_fallback: bool,
+    backend_context_mode: Option<BackendContextMode>,
+    selected_context_file: Option<&str>,
 ) -> AgentRouteBackendAgreement {
     let Some(backend) = backend_evidence else {
         return AgentRouteBackendAgreement {
@@ -511,6 +561,7 @@ fn agent_route_backend_agreement(
             provider: None,
             local_first_file: local_first_file.map(str::to_string),
             backend_first_file: None,
+            selected_context_file: None,
             candidate_file_count: 0,
             common_files: Vec::new(),
         };
@@ -530,19 +581,57 @@ fn agent_route_backend_agreement(
         })
         .unwrap_or_default();
 
+    if let Some(mode) = backend_context_mode {
+        let selected_context_file = selected_context_file.map(str::to_string);
+        let (status, message) = match mode {
+            BackendContextMode::Fallback => (
+                "backend_fallback",
+                format!(
+                    "Local routing was blocked, so backend {} fallback evidence seeded bounded context with first-read file {}.",
+                    backend.provider,
+                    selected_context_file.as_deref().unwrap_or("unknown")
+                ),
+            ),
+            BackendContextMode::Preferred => {
+                let message = match (local_first_file_ref, selected_context_file.as_deref()) {
+                    (Some(local), Some(selected)) if local == selected => format!(
+                        "Explicit backend preference confirmed local route {} and seeded bounded context from backend {}.",
+                        selected, backend.provider
+                    ),
+                    (Some(local), Some(selected)) => format!(
+                        "Explicit backend preference selected {} from backend {} instead of local route {}.",
+                        selected, backend.provider, local
+                    ),
+                    (None, Some(selected)) => format!(
+                        "Explicit backend preference seeded bounded context with {} from backend {} because local routing produced no first-read file.",
+                        selected, backend.provider
+                    ),
+                    (_, None) => format!(
+                        "Explicit backend preference was requested from backend {}, but no bounded context file was selected.",
+                        backend.provider
+                    ),
+                };
+                ("backend_preferred", message)
+            }
+        };
+        return AgentRouteBackendAgreement {
+            status: status.to_string(),
+            message,
+            recommended_action: "read_backend_seeded_context".to_string(),
+            provider: Some(backend.provider.clone()),
+            local_first_file,
+            backend_first_file,
+            selected_context_file,
+            candidate_file_count: backend.candidate_files.len(),
+            common_files,
+        };
+    }
+
     let (status, recommended_action, message) = match (
         local_first_file_ref,
         backend_first_file.as_deref(),
         common_files.is_empty(),
     ) {
-        (Some(local), Some(_), _) if used_backend_fallback => (
-            "backend_fallback",
-            "read_backend_seeded_context",
-            format!(
-                "Local routing was blocked, so backend {} fallback evidence seeded bounded context with first-read file {}.",
-                backend.provider, local
-            ),
-        ),
         (None, Some(backend_first), _) => (
             "backend_only",
             "provide_seed_or_use_backend_candidate",
@@ -600,6 +689,7 @@ fn agent_route_backend_agreement(
         provider: Some(backend.provider.clone()),
         local_first_file,
         backend_first_file,
+        selected_context_file: None,
         candidate_file_count: backend.candidate_files.len(),
         common_files,
     }
@@ -892,6 +982,29 @@ fn agent_route_quality(
                     "Local routing required a backend fallback seed; verify the selected context before editing."
                         .to_string(),
                 );
+            }
+            "backend_preferred" => {
+                score += 3;
+                backend_route_recommended_action =
+                    Some(backend_route_agreement.recommended_action.clone());
+                confidence_factors.push(format!(
+                    "explicit policy selected backend {} as the bounded context seed",
+                    backend.provider
+                ));
+                if backend_route_agreement.local_first_file.as_deref()
+                    != backend_route_agreement.selected_context_file.as_deref()
+                {
+                    warnings.push(
+                        "Backend preference replaced the local first-read candidate; verify the selected backend context before editing."
+                            .to_string(),
+                    );
+                    if let Some(local_file) = backend_route_agreement.local_first_file.as_ref() {
+                        verification_steps.push(format!(
+                            "After reading backend-seeded context, compare local candidate {} if the task remains unresolved.",
+                            local_file
+                        ));
+                    }
+                }
             }
             "backend_only" | "no_local_route" => {
                 backend_route_recommended_action =
@@ -1310,11 +1423,12 @@ fn normalize_agent_route_backend_evidence(
     Ok(evidence)
 }
 
-fn backend_fallback_context_pack(
+fn backend_seed_context_pack(
     root: &Path,
     task: &str,
     token_budget: usize,
     backend_evidence: &AgentRouteBackendEvidence,
+    mode: BackendContextMode,
 ) -> Result<Option<(ContextPack, AgentRouteBackendCandidate)>> {
     for candidate_file in &backend_evidence.candidate_files {
         if !root.join(candidate_file).is_file() {
@@ -1341,16 +1455,16 @@ fn backend_fallback_context_pack(
             token_budget,
         ) {
             Ok(mut context_pack) if !context_pack.reading_plan.is_empty() => {
-                context_pack.seed_strategy = "backend_fallback".to_string();
+                context_pack.seed_strategy = mode.seed_source().to_string();
                 if let Some(seed) = context_pack.selected_seeds.first_mut() {
-                    seed.source = "backend_fallback".to_string();
+                    seed.source = mode.seed_source().to_string();
                     if let Some(symbol) = candidate.symbol.as_ref()
                         && !seed.matched_symbols.contains(symbol)
                     {
                         seed.matched_symbols.push(symbol.clone());
                     }
                 }
-                annotate_backend_fallback_context(
+                annotate_backend_seed_context(
                     &mut context_pack,
                     &backend_evidence.provider,
                     &candidate,
@@ -1365,7 +1479,7 @@ fn backend_fallback_context_pack(
     Ok(None)
 }
 
-fn annotate_backend_fallback_context(
+fn annotate_backend_seed_context(
     context_pack: &mut ContextPack,
     provider: &str,
     candidate: &AgentRouteBackendCandidate,

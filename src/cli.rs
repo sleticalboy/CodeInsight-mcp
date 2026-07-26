@@ -197,6 +197,11 @@ pub struct AgentRouteArgs {
         help = "Use the first available backend candidate when local routing is blocked"
     )]
     pub backend_fallback: bool,
+    #[arg(
+        long,
+        help = "Prefer the first available backend candidate for context when no explicit file or symbol seed is provided"
+    )]
+    pub prefer_backend_context: bool,
 }
 
 #[derive(Debug, Args)]
