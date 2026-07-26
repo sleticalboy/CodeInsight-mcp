@@ -3768,6 +3768,130 @@ fn cli_agent_route_routes_ranked_backend_candidates_within_budget() {
 }
 
 #[test]
+fn cli_agent_route_prefers_task_source_over_backend_documentation_noise() {
+    let fixture = fixture_project();
+    write_file(
+        &fixture,
+        "src/server.ts",
+        "export function startServer() { return 'started'; }\n",
+    );
+    write_file(
+        &fixture,
+        "docs/server-startup.md",
+        "# Server startup\n\nChange server startup behavior and startServer configuration.\n",
+    );
+    let backend_evidence = serde_json::json!({
+        "provider": "codebase-memory-mcp",
+        "candidates": [
+            {
+                "file": "docs/server-startup.md",
+                "source": "search_code",
+                "score": 0.99
+            },
+            {
+                "file": "src/server.ts",
+                "symbol": "startServer",
+                "source": "search_graph",
+                "score": 0.95
+            }
+        ]
+    })
+    .to_string();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "change server startup behavior",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence-json",
+        &backend_evidence,
+        "--prefer-backend-context",
+    ]);
+
+    assert_eq!(
+        route["routing_decision"]["first_file"], "src/server.ts",
+        "route: {route:#}"
+    );
+    assert_eq!(
+        route["context_pack"]["reading_plan"][0]["file"],
+        "src/server.ts"
+    );
+    let dispositions =
+        route["routing_decision"]["backend_route_agreement"]["candidate_dispositions"]
+            .as_array()
+            .unwrap();
+    assert_eq!(dispositions[0]["file"], "docs/server-startup.md");
+    assert_eq!(dispositions[0]["context_reason"], "unindexed_file");
+    assert_eq!(
+        dispositions[0]["next_action"],
+        "use_indexed_source_candidate"
+    );
+    assert_eq!(dispositions[1]["file"], "src/server.ts");
+    assert_eq!(dispositions[1]["context_status"], "selected");
+}
+
+#[test]
+fn cli_agent_route_demotes_backend_smoke_source_for_product_task() {
+    let fixture = fixture_project();
+    write_file(
+        &fixture,
+        "scripts/server-startup-smoke.ts",
+        "export function smokeServerStartup() { return 'ok'; }\n",
+    );
+    write_file(
+        &fixture,
+        "src/server.ts",
+        "export function startServer() { return 'started'; }\n",
+    );
+    let backend_evidence = serde_json::json!({
+        "provider": "codebase-memory-mcp",
+        "candidates": [
+            {
+                "file": "scripts/server-startup-smoke.ts",
+                "symbol": "smokeServerStartup",
+                "source": "search_graph",
+                "score": 0.99
+            },
+            {
+                "file": "src/server.ts",
+                "symbol": "startServer",
+                "source": "search_graph",
+                "score": 0.95
+            }
+        ]
+    })
+    .to_string();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "change server startup behavior",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence-json",
+        &backend_evidence,
+        "--prefer-backend-context",
+    ]);
+
+    assert_eq!(route["routing_decision"]["first_file"], "src/server.ts");
+    assert_eq!(
+        route["context_pack"]["reading_plan"][0]["file"],
+        "src/server.ts"
+    );
+    assert!(
+        route["context_pack"]["reading_plan"][0]["selection_reason"]
+            .as_str()
+            .unwrap()
+            .contains("candidate rank 2")
+    );
+}
+
+#[test]
 fn cli_agent_route_preserves_backend_rank_after_skipping_missing_candidate() {
     let fixture = fixture_project();
     let backend_evidence = serde_json::json!({

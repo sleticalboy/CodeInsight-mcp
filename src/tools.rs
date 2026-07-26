@@ -674,22 +674,37 @@ fn agent_route_backend_agreement(
         .unwrap_or_default();
 
     if !candidate_dispositions.is_empty()
-        && candidate_dispositions
-            .iter()
-            .all(|candidate| candidate.context_reason == "missing_file")
+        && candidate_dispositions.iter().all(|candidate| {
+            matches!(
+                candidate.context_reason.as_str(),
+                "missing_file" | "unindexed_file"
+            )
+        })
     {
         let recommended_action = if local_first_file.is_some() {
             "read_selected_context"
         } else {
             "provide_valid_backend_candidate"
         };
-        return AgentRouteBackendAgreement {
-            status: "backend_unavailable".to_string(),
-            message: format!(
+        let message = if candidate_dispositions
+            .iter()
+            .all(|candidate| candidate.context_reason == "missing_file")
+        {
+            format!(
                 "Backend {} supplied {} candidate file(s), but none exist in the current local checkout.",
                 backend.provider,
                 candidate_dispositions.len()
-            ),
+            )
+        } else {
+            format!(
+                "Backend {} supplied {} candidate file(s), but none are usable from the current local source index.",
+                backend.provider,
+                candidate_dispositions.len()
+            )
+        };
+        return AgentRouteBackendAgreement {
+            status: "backend_unavailable".to_string(),
+            message,
             recommended_action: recommended_action.to_string(),
             provider: Some(backend.provider.clone()),
             local_first_file,
@@ -1987,19 +2002,23 @@ fn backend_seed_context_pack(
     backend_evidence: &AgentRouteBackendEvidence,
     mode: BackendContextMode,
 ) -> Result<BackendContextAttempt> {
+    let store = Store::open(root)?;
+    let indexed_files = store.indexed_files()?.into_iter().collect::<BTreeSet<_>>();
     let valid_candidate_files = backend_evidence
         .candidate_files
         .iter()
-        .filter(|candidate_file| root.join(candidate_file).is_file())
+        .filter(|candidate_file| {
+            root.join(candidate_file).is_file() && indexed_files.contains(*candidate_file)
+        })
         .cloned()
         .collect::<Vec<_>>();
-    let store = Store::open(root)?;
+    let valid_candidate_file_set = valid_candidate_files.iter().collect::<BTreeSet<_>>();
     let indexed_symbols =
         store.symbols_for_files(&valid_candidate_files, store.count_symbols()?)?;
-    let candidates = backend_evidence
+    let mut candidates = backend_evidence
         .candidate_files
         .iter()
-        .filter(|candidate_file| root.join(candidate_file).is_file())
+        .filter(|candidate_file| valid_candidate_file_set.contains(candidate_file))
         .map(|candidate_file| {
             let mut candidate = backend_evidence
                 .candidates
@@ -2029,6 +2048,10 @@ fn backend_seed_context_pack(
             candidate
         })
         .collect::<Vec<_>>();
+    let backend_task_keywords = task_keywords(task);
+    if !backend_task_prefers_support_files(&backend_task_keywords) {
+        candidates.sort_by_key(|candidate| backend_candidate_is_support_file(&candidate.file));
+    }
 
     for primary_index in 0..candidates.len() {
         let candidate_end = match mode {
@@ -2103,6 +2126,8 @@ fn backend_seed_context_pack(
                     &selected_candidates,
                 );
                 let candidate_dispositions = backend_candidate_dispositions(
+                    root,
+                    &indexed_files,
                     backend_evidence,
                     &candidates,
                     &selected_candidates,
@@ -2126,6 +2151,8 @@ fn backend_seed_context_pack(
         selection: BackendContextSelection {
             candidates: Vec::new(),
             candidate_dispositions: backend_candidate_dispositions(
+                root,
+                &indexed_files,
                 backend_evidence,
                 &candidates,
                 &[],
@@ -2136,6 +2163,8 @@ fn backend_seed_context_pack(
 }
 
 fn backend_candidate_dispositions(
+    root: &Path,
+    indexed_files: &BTreeSet<String>,
     backend_evidence: &AgentRouteBackendEvidence,
     valid_candidates: &[AgentRouteBackendCandidate],
     selected_candidates: &[AgentRouteBackendCandidate],
@@ -2164,8 +2193,10 @@ fn backend_candidate_dispositions(
                 Some(_) => "stale",
                 None => "not_checked",
             });
-            let (context_status, context_reason) = if valid_candidate.is_none() {
+            let (context_status, context_reason) = if !root.join(file).is_file() {
                 ("omitted", "missing_file")
+            } else if !indexed_files.contains(file) {
+                ("omitted", "unindexed_file")
             } else if selected_files.contains(file.as_str()) {
                 ("selected", "selected_within_token_budget")
             } else {
@@ -2179,6 +2210,7 @@ fn backend_candidate_dispositions(
                 "token_budget_exhausted" => "run_backend_candidate_context_pack",
                 "fallback_not_selected" => "use_if_fallback_context_insufficient",
                 "missing_file" => "refresh_backend_evidence",
+                "unindexed_file" => "use_indexed_source_candidate",
                 _ => unreachable!("backend candidate context reason is exhaustive"),
             };
 
@@ -2200,6 +2232,62 @@ fn backend_symbol_name_matches(candidate: &str, name: &str, qualified_name: &str
         || candidate == qualified_name
         || candidate.ends_with(&format!(".{qualified_name}"))
         || qualified_name.ends_with(&format!(".{candidate}"))
+}
+
+fn backend_candidate_is_support_file(file: &str) -> bool {
+    let normalized = file.replace('\\', "/").to_ascii_lowercase();
+    let path = format!("/{normalized}");
+    is_low_value_reference_file(&normalized)
+        || [
+            "/.github/",
+            "/benches/",
+            "/demo/",
+            "/demos/",
+            "/docs/",
+            "/example/",
+            "/examples/",
+            "/formula/",
+            "/scripts/",
+        ]
+        .iter()
+        .any(|segment| path.contains(segment))
+        || normalized.starts_with("formula/")
+        || normalized.contains("-smoke.")
+        || normalized.contains(".smoke.")
+        || normalized.contains("_smoke.")
+}
+
+fn backend_task_prefers_support_files(task_keywords: &[String]) -> bool {
+    task_keywords.iter().any(|keyword| {
+        matches!(
+            keyword.as_str(),
+            "benchmark"
+                | "benchmarks"
+                | "ci"
+                | "demo"
+                | "docs"
+                | "documentation"
+                | "example"
+                | "examples"
+                | "fixture"
+                | "fixtures"
+                | "formula"
+                | "homebrew"
+                | "integration"
+                | "package"
+                | "packaging"
+                | "release"
+                | "script"
+                | "scripts"
+                | "smoke"
+                | "spec"
+                | "specs"
+                | "test"
+                | "testing"
+                | "tests"
+                | "workflow"
+        )
+    })
 }
 
 fn annotate_backend_seed_context(
