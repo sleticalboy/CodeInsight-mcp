@@ -130,6 +130,8 @@ paths relative to `--root`, and emits the `backend_evidence` object consumed by
 CLI `agent-route` and MCP `agent_route`. It deliberately does not call
 codebase-memory-mcp itself; Codex, Claude Code, Cursor, CI jobs, or manual
 benchmark runs can supply those exported tool responses.
+The script follows the runtime `search_graph` policy: non-empty semantic results
+win over keyword results, while an empty semantic array falls back to keywords.
 
 After running `agent-route`, summarize backend/local agreement:
 

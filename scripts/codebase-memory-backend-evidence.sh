@@ -288,7 +288,12 @@ collect_candidates() {
     local payload
     payload="$(normalized_tool_payload "search-graph" "$file")"
     append_candidates_from_query "search_graph" "$payload" '
-      .results[]?
+      (
+        if ((.semantic_results? | type) == "array" and (.semantic_results | length) > 0)
+        then .semantic_results
+        else .results
+        end
+      )[]?
       | {
           file: (.file_path // .file // empty),
           symbol: (.name // .node // .qualified_name // null),

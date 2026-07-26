@@ -94,16 +94,26 @@ write_codebase_memory_exports() {
     "elapsed_ms": 7,
     "results": [
       {
+        "name": "workflowNoise",
+        "qualified_name": "fixture.workflowNoise",
+        "label": "Module",
+        "file_path": ".github/workflows/ci.yml"
+      }
+    ],
+    "semantic_results": [
+      {
         "name": "AuthService",
         "qualified_name": "fixture.src.auth.AuthService",
         "label": "Class",
-        "file_path": "$repo/src/auth.ts"
+        "file_path": "$repo/src/auth.ts",
+        "score": 0.97
       },
       {
         "name": "auditLogin",
         "qualified_name": "fixture.src.audit.auditLogin",
         "label": "Function",
-        "file_path": "src/audit.ts"
+        "file_path": "src/audit.ts",
+        "score": 0.91
       }
     ]
   }
@@ -127,6 +137,20 @@ EOF
       "file": "src/audit.ts"
     }
   ]
+}
+EOF
+
+  cat >"$output_dir/search-graph-empty-semantic.json" <<'EOF'
+{
+  "results": [
+    {
+      "name": "main",
+      "label": "Function",
+      "file_path": "src/main.ts"
+    }
+  ],
+  "semantic_results": [],
+  "elapsed_ms": 1
 }
 EOF
 
@@ -222,6 +246,15 @@ main() {
 
   "$ROOT_DIR/scripts/codebase-memory-backend-evidence.sh" \
     --root "$repo" \
+    --search-graph-json "$TEMP_DIR/search-graph-empty-semantic.json" \
+    --output "$TEMP_DIR/empty-semantic-evidence.json"
+  require_jq \
+    "$TEMP_DIR/empty-semantic-evidence.json" \
+    '.candidate_files == ["src/main.ts"] and .candidates[0].symbol == "main"' \
+    "empty semantic search results should fall back to keyword candidates"
+
+  "$ROOT_DIR/scripts/codebase-memory-backend-evidence.sh" \
+    --root "$repo" \
     --code-snippet-json "$TEMP_DIR/code-snippet.json" \
     --search-graph-json "$TEMP_DIR/search-graph.json" \
     --search-code-json "$TEMP_DIR/search-code.json" \
@@ -238,6 +271,7 @@ main() {
   require_jq "$evidence" '.candidates | map(.file) == ["src/auth.ts", "src/audit.ts", "src/main.ts"]' "structured candidates should preserve stable file ranking"
   require_jq "$evidence" '.candidates[0].symbol == "AuthService.login" and .candidates[0].source == "get_code_snippet"' "structured candidates should prioritize the exact snippet symbol"
   require_jq "$evidence" '.candidates[0].reason == "get_code_snippet Method" and .candidates[0].evidence == ["get_code_snippet"]' "structured candidates should explain exact snippet evidence"
+  require_jq "$evidence" '.candidates[1].file == "src/audit.ts" and .candidates[1].score == 0.91' "search_graph should prefer semantic candidates over keyword noise"
   require_jq "$evidence" '.evidence_sources | index("get_code_snippet") and index("search_graph") and index("search_code") and index("query_graph") and index("get_architecture:entry_points")' "evidence sources should include all bridge inputs"
   require_jq "$evidence" '.evidence_count == 7' "evidence count should include duplicate backend signals"
   require_jq "$evidence" '.latency_ms == 48' "latency should aggregate exported backend timings"
