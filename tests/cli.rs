@@ -2312,6 +2312,77 @@ fn cli_agent_route_accepts_backend_evidence_file() {
 }
 
 #[test]
+fn cli_agent_route_marks_backend_overlap_as_rank_review() {
+    let fixture = fixture_project();
+    let evidence_path = fixture.path().join("backend-overlap-evidence.json");
+    std::fs::write(
+        &evidence_path,
+        serde_json::json!({
+            "provider": "codebase-memory-mcp",
+            "candidate_files": ["src/server.ts", "src/main.ts"],
+            "evidence_sources": ["search_graph", "trace_path"],
+            "evidence_count": 6,
+            "confidence": 0.82,
+            "notes": ["external graph backend included local route after a different rank-1 file"]
+        })
+        .to_string(),
+    )
+    .unwrap();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand app entrypoint flow",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence",
+        evidence_path.to_str().unwrap(),
+    ]);
+
+    assert_eq!(
+        route["routing_decision"]["first_file"], "src/main.ts",
+        "fixture should keep the local first-read route stable"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["status"],
+        "overlap"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["backend_first_file"],
+        "src/server.ts"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["common_files"][0],
+        "src/main.ts"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["recommended_action"],
+        "read_selected_context_then_compare_backend_rank"
+    );
+    assert_eq!(
+        route["routing_decision"]["route_quality"]["recommended_action"],
+        "read_selected_context_then_compare_backend_rank"
+    );
+    assert!(
+        route["routing_decision"]["route_quality"]["warnings"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|warning| warning.as_str().unwrap().contains(
+                "Backend codebase-memory-mcp ranked src/server.ts before local route src/main.ts"
+            ))
+    );
+    assert!(
+        route["routing_decision"]["route_quality"]["decision_summary"]
+            .as_str()
+            .unwrap()
+            .contains("Then read_selected_context_then_compare_backend_rank.")
+    );
+}
+
+#[test]
 fn cli_agent_route_flags_backend_evidence_conflict_before_edits() {
     let fixture = fixture_project();
     let evidence_path = fixture.path().join("backend-conflict-evidence.json");
@@ -2442,6 +2513,10 @@ fn cli_agent_route_reports_backend_only_when_local_route_is_blocked() {
     );
     assert_eq!(
         route["routing_decision"]["backend_route_agreement"]["recommended_action"],
+        "provide_seed_or_use_backend_candidate"
+    );
+    assert_eq!(
+        route["routing_decision"]["route_quality"]["recommended_action"],
         "provide_seed_or_use_backend_candidate"
     );
     assert!(

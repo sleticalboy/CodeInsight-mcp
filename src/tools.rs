@@ -398,10 +398,16 @@ fn agent_route_routing_decision(
         first_step.map(|step| step.file.as_str()),
         backend_evidence.as_ref(),
     );
+    let route_quality = agent_route_quality(
+        context_pack,
+        impact_status,
+        backend_evidence.as_ref(),
+        &backend_route_agreement,
+    );
 
     AgentRouteRoutingDecision {
         seed_strategy: context_pack.seed_strategy.clone(),
-        route_quality: agent_route_quality(context_pack, impact_status, backend_evidence.as_ref()),
+        route_quality,
         backend_route_agreement,
         backend_evidence,
         first_seed_kind: first_seed.map(|seed| seed.kind.clone()),
@@ -537,8 +543,23 @@ fn agent_route_quality(
     context_pack: &ContextPack,
     impact_status: &str,
     backend_evidence: Option<&AgentRouteBackendEvidence>,
+    backend_route_agreement: &AgentRouteBackendAgreement,
 ) -> AgentRouteQuality {
     let Some(first_step) = context_pack.reading_plan.first() else {
+        let recommended_action =
+            if backend_evidence.is_some() && backend_route_agreement.status != "no_backend" {
+                backend_route_agreement.recommended_action.clone()
+            } else {
+                context_pack.continuation_summary.next_action.clone()
+            };
+        let mut verification_steps = vec![format!(
+            "Follow {} and provide a concrete seed before editing.",
+            context_pack.continuation_summary.next_action
+        )];
+        if backend_evidence.is_some() && backend_route_agreement.status != "no_backend" {
+            verification_steps.push(backend_route_agreement.message.clone());
+        }
+
         return AgentRouteQuality {
             level: "blocked".to_string(),
             score: 0,
@@ -565,11 +586,8 @@ fn agent_route_quality(
                 "No reading plan was produced; context status is {}.",
                 context_pack.continuation_summary.status
             )],
-            verification_steps: vec![format!(
-                "Follow {} and provide a concrete seed before editing.",
-                context_pack.continuation_summary.next_action
-            )],
-            recommended_action: context_pack.continuation_summary.next_action.clone(),
+            verification_steps,
+            recommended_action,
         };
     };
 
@@ -601,7 +619,7 @@ fn agent_route_quality(
         "Read {} first and answer: {}",
         first_step.file, first_step.question
     )];
-    let mut backend_route_conflict = false;
+    let mut backend_route_recommended_action = None;
 
     if first_step.selection_rank == 1 {
         score += 15;
@@ -743,27 +761,60 @@ fn agent_route_quality(
                 backend.provider, backend.evidence_count
             ));
         }
-        if backend
-            .candidate_files
-            .iter()
-            .any(|file| file == &first_step.file)
-        {
-            score += 10;
-            confidence_factors.push(format!(
-                "backend {} independently selected the same first file",
-                backend.provider
-            ));
-        } else if let Some(first_backend_file) = backend.candidate_files.first() {
-            backend_route_conflict = true;
-            score -= 5;
-            warnings.push(format!(
-                "Backend {} preferred {}; verify before editing because local routing selected {}.",
-                backend.provider, first_backend_file, first_step.file
-            ));
-            verification_steps.push(format!(
-                "Compare local route with backend {} candidate {} before editing.",
-                backend.provider, first_backend_file
-            ));
+        match backend_route_agreement.status.as_str() {
+            "agree" => {
+                score += 10;
+                confidence_factors.push(format!(
+                    "backend {} independently selected the same first file",
+                    backend.provider
+                ));
+            }
+            "overlap" => {
+                score += 4;
+                backend_route_recommended_action =
+                    Some(backend_route_agreement.recommended_action.clone());
+                if let Some(first_backend_file) =
+                    backend_route_agreement.backend_first_file.as_ref()
+                {
+                    warnings.push(format!(
+                        "Backend {} ranked {} before local route {}; compare backend rank after reading selected context.",
+                        backend.provider, first_backend_file, first_step.file
+                    ));
+                    verification_steps.push(format!(
+                        "Read selected context, then compare backend {} rank-1 candidate {} with local route {}.",
+                        backend.provider, first_backend_file, first_step.file
+                    ));
+                }
+            }
+            "conflict" => {
+                backend_route_recommended_action =
+                    Some(backend_route_agreement.recommended_action.clone());
+                score -= 5;
+                if let Some(first_backend_file) =
+                    backend_route_agreement.backend_first_file.as_ref()
+                {
+                    warnings.push(format!(
+                        "Backend {} preferred {}; verify before editing because local routing selected {}.",
+                        backend.provider, first_backend_file, first_step.file
+                    ));
+                    verification_steps.push(format!(
+                        "Compare local route with backend {} candidate {} before editing.",
+                        backend.provider, first_backend_file
+                    ));
+                }
+            }
+            "backend_without_candidates" => {
+                warnings.push(format!(
+                    "Backend {} supplied no candidate files; treat local routing as uncorroborated.",
+                    backend.provider
+                ));
+            }
+            "backend_only" | "no_local_route" => {
+                backend_route_recommended_action =
+                    Some(backend_route_agreement.recommended_action.clone());
+                warnings.push(backend_route_agreement.message.clone());
+            }
+            _ => {}
         }
         if let Some(confidence) = backend.confidence {
             confidence_factors.push(format!(
@@ -796,14 +847,16 @@ fn agent_route_quality(
     } else {
         "low"
     };
-    let recommended_action = if context_pack.continuation_summary.status == "complete" {
-        if backend_route_conflict {
-            "compare_backend_route_before_edits".to_string()
+    let recommended_action = if let Some(action) = backend_route_recommended_action {
+        if context_pack.continuation_summary.status != "complete"
+            && action == "compare_backend_route_before_edits"
+        {
+            "compare_backend_route_then_read_selected_context".to_string()
         } else {
-            "read_selected_context".to_string()
+            action
         }
-    } else if backend_route_conflict {
-        "compare_backend_route_then_read_selected_context".to_string()
+    } else if context_pack.continuation_summary.status == "complete" {
+        "read_selected_context".to_string()
     } else {
         "read_selected_context_then_use_continuation_if_needed".to_string()
     };
