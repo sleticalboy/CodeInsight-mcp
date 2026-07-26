@@ -2494,7 +2494,7 @@ fn cli_agent_route_normalizes_inline_backend_tool_results() {
     assert_eq!(evidence["candidates"][0]["symbol"], "main");
     assert_eq!(evidence["candidates"][0]["source"], "search_graph");
     assert_eq!(evidence["candidates"][0]["reason"], "search_graph Function");
-    assert_eq!(evidence["evidence_count"], 9);
+    assert_eq!(evidence["evidence_count"], 8);
     assert_eq!(evidence["normalization"]["unfetched_tool_result_items"], 0);
     assert_eq!(evidence["normalization"]["omitted_tool_result_items"], 0);
     assert!(
@@ -2511,7 +2511,7 @@ fn cli_agent_route_normalizes_inline_backend_tool_results() {
         local_route["routing_decision"]["route_quality"]["evidence_count"]
             .as_u64()
             .unwrap()
-            + 9
+            + 8
     );
     assert_eq!(evidence["latency_ms"], 62);
     assert_eq!(
@@ -2900,20 +2900,25 @@ fn cli_agent_route_bounds_inline_backend_tool_results() {
 #[test]
 fn cli_agent_route_deduplicates_tool_results_before_budget_accounting() {
     let fixture = fixture_project();
-    let results = (0..70)
-        .map(|_| {
+    let mut results = (0..64)
+        .map(|index| {
             serde_json::json!({
-                "name": "startServer",
+                "name": format!("serverSymbol{index}"),
                 "label": "Function",
                 "file_path": "src/server.ts"
             })
         })
         .collect::<Vec<_>>();
+    results.push(serde_json::json!({
+        "name": "main",
+        "label": "Function",
+        "file_path": "src/main.ts"
+    }));
     let backend_evidence = serde_json::json!({
         "provider": "codebase-memory-mcp",
         "tool_results": {
             "search_graph": {
-                "total": 70,
+                "total": 65,
                 "results": results,
                 "elapsed_ms": 6
             }
@@ -2936,9 +2941,11 @@ fn cli_agent_route_deduplicates_tool_results_before_budget_accounting() {
     let evidence = &route["routing_decision"]["backend_evidence"];
     assert_eq!(
         evidence["candidate_files"],
-        serde_json::json!(["src/server.ts"])
+        serde_json::json!(["src/server.ts", "src/main.ts"])
     );
-    assert_eq!(evidence["evidence_count"], 1);
+    assert_eq!(evidence["candidates"][0]["symbol"], "serverSymbol0");
+    assert_eq!(evidence["candidates"][1]["symbol"], "main");
+    assert_eq!(evidence["evidence_count"], 2);
     assert!(evidence.get("normalization").is_none());
     assert_eq!(evidence["latency_ms"], 6);
     assert!(

@@ -102,8 +102,9 @@ valid file candidate.
 For `search_graph`, non-empty semantic results take priority over keyword
 results, while an empty semantic result set falls back to keyword candidates so
 a combined backend query does not discard usable evidence.
-Paginated raw tool results share one 64-item budget per tool after file/symbol
-deduplication, so repeated graph hits do not create false truncation signals.
+Paginated raw tool results share one 64-item budget per tool after file-level
+deduplication, so repeated symbols from a hotspot file neither create false
+truncation signals nor crowd out later files.
 
 The first bridge prototype is script-level and runtime-agnostic:
 

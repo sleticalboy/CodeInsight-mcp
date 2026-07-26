@@ -2086,7 +2086,7 @@ fn collect_backend_tool_candidates(
     let mut processed_item_count = 0usize;
     let mut reported_total_items = 0usize;
     let mut latency_ms = 0u64;
-    let mut seen_candidate_keys = BTreeSet::new();
+    let mut seen_candidate_files = BTreeSet::new();
     let candidate_dedupe_limit = BACKEND_EVIDENCE_TOOL_RESULT_ITEMS_LIMIT
         .saturating_mul(BACKEND_EVIDENCE_TOOL_RESULT_PAGES_LIMIT);
     let page_count = pages.len();
@@ -2155,12 +2155,11 @@ fn collect_backend_tool_candidates(
                         (file, symbol, label)
                     }
                 };
-                let candidate_key = (file.clone(), symbol.clone());
-                if seen_candidate_keys.contains(&candidate_key) {
+                if seen_candidate_files.contains(&file) {
                     continue;
                 }
-                if seen_candidate_keys.len() < candidate_dedupe_limit {
-                    seen_candidate_keys.insert(candidate_key);
+                if seen_candidate_files.len() < candidate_dedupe_limit {
+                    seen_candidate_files.insert(file.clone());
                 }
                 item_count = item_count.saturating_add(1);
                 if processed_item_count >= BACKEND_EVIDENCE_TOOL_RESULT_ITEMS_LIMIT {
