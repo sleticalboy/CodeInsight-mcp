@@ -43,7 +43,7 @@ Options:
   --architecture-json PATH   JSON response from codebase-memory get_architecture.
   --root PATH                Repository root; absolute paths under it become relative.
   --provider NAME            Evidence provider name. Default: codebase-memory-mcp.
-  --candidate-limit N        Maximum unique candidate files. Default: 10.
+  --candidate-limit N        Maximum unique candidate files (1-16). Default: 10.
   --confidence NUMBER        Optional backend confidence value.
   --note TEXT                Add an advisory note. Can be repeated.
   --output PATH              Write JSON to PATH instead of stdout.
@@ -124,6 +124,7 @@ validate_args() {
     ''|*[!0-9]*) fail "--candidate-limit must be a positive integer" ;;
   esac
   [ "$CANDIDATE_LIMIT" -gt 0 ] || fail "--candidate-limit must be > 0"
+  [ "$CANDIDATE_LIMIT" -le 16 ] || fail "--candidate-limit must be <= 16"
 
   if [ -n "$CONFIDENCE" ]; then
     jq -n --arg value "$CONFIDENCE" '$value | tonumber' >/dev/null 2>&1 ||

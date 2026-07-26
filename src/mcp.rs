@@ -226,26 +226,29 @@ fn tool_definitions() -> Value {
         "type": "object",
         "description": "Optional advisory evidence from an external code graph backend. CodeInsight uses it to explain route confidence; set use_as_fallback to seed bounded context only when local routing is blocked.",
         "properties": {
-            "provider": {"type": "string"},
+            "provider": {"type": "string", "maxLength": 128},
             "use_as_fallback": {"type": "boolean", "default": false},
             "candidate_files": {
                 "type": "array",
-                "items": {"type": "string"}
+                "maxItems": 16,
+                "items": {"type": "string", "maxLength": 512}
             },
             "candidates": {
                 "type": "array",
+                "maxItems": 16,
                 "description": "Ranked structured candidates. When present, these lead candidate_files and preserve symbol, score, and routing evidence.",
                 "items": {
                     "type": "object",
                     "properties": {
-                        "file": {"type": "string"},
-                        "symbol": {"type": "string"},
-                        "source": {"type": "string"},
+                        "file": {"type": "string", "maxLength": 512},
+                        "symbol": {"type": "string", "maxLength": 160},
+                        "source": {"type": "string", "maxLength": 160},
                         "score": {"type": "number"},
-                        "reason": {"type": "string"},
+                        "reason": {"type": "string", "maxLength": 320},
                         "evidence": {
                             "type": "array",
-                            "items": {"type": "string"}
+                            "maxItems": 6,
+                            "items": {"type": "string", "maxLength": 160}
                         }
                     },
                     "required": ["file"]
@@ -253,14 +256,16 @@ fn tool_definitions() -> Value {
             },
             "evidence_sources": {
                 "type": "array",
-                "items": {"type": "string"}
+                "maxItems": 12,
+                "items": {"type": "string", "maxLength": 160}
             },
             "evidence_count": {"type": "integer", "minimum": 0},
             "latency_ms": {"type": "integer", "minimum": 0},
             "confidence": {"type": "number"},
             "notes": {
                 "type": "array",
-                "items": {"type": "string"}
+                "maxItems": 6,
+                "items": {"type": "string", "maxLength": 320}
             }
         },
         "required": ["provider"]
@@ -1243,12 +1248,25 @@ int login(void) {
         let candidates = &agent_route["inputSchema"]["properties"]["backend_evidence"]["properties"]
             ["candidates"];
         assert_eq!(candidates["type"], "array");
+        assert_eq!(candidates["maxItems"], 16);
         assert_eq!(candidates["items"]["required"][0], "file");
+        assert_eq!(candidates["items"]["properties"]["file"]["maxLength"], 512);
         assert_eq!(
             candidates["items"]["properties"]["symbol"]["type"],
             "string"
         );
+        assert_eq!(
+            agent_route["inputSchema"]["properties"]["backend_evidence"]["properties"]["candidate_files"]
+                ["items"]["maxLength"],
+            512
+        );
         assert_eq!(candidates["items"]["properties"]["score"]["type"], "number");
+        assert_eq!(candidates["items"]["properties"]["evidence"]["maxItems"], 6);
+        assert_eq!(
+            agent_route["inputSchema"]["properties"]["backend_evidence"]["properties"]["evidence_sources"]
+                ["maxItems"],
+            12
+        );
     }
 
     #[test]

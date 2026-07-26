@@ -2540,6 +2540,206 @@ fn cli_agent_route_normalizes_backend_evidence_before_routing() {
 }
 
 #[test]
+fn cli_agent_route_bounds_backend_evidence_for_token_safety() {
+    let fixture = fixture_project();
+    let candidates = (0..20)
+        .map(|index| {
+            serde_json::json!({
+                "file": if index == 0 {
+                    "src/main.ts".to_string()
+                } else {
+                    format!("graph/candidate-{index}.ts")
+                },
+                "symbol": (index == 0).then(|| "s".repeat(200)),
+                "source": (index == 0).then(|| "q".repeat(200)),
+                "reason": (index == 0).then(|| "r".repeat(400)),
+                "evidence": if index < 5 {
+                    (0..if index == 0 { 10 } else { 6 })
+                        .map(|item| {
+                            if index == 0 && item == 0 {
+                                "e".repeat(200)
+                            } else {
+                                format!("evidence-{index}-{item}")
+                            }
+                        })
+                        .collect::<Vec<_>>()
+                } else {
+                    Vec::new()
+                }
+            })
+        })
+        .collect::<Vec<_>>();
+    let evidence_sources = (0..16)
+        .map(|index| {
+            if index == 0 {
+                "source".repeat(40)
+            } else {
+                format!("source-{index}")
+            }
+        })
+        .collect::<Vec<_>>();
+    let notes = (0..10)
+        .map(|index| {
+            if index == 0 {
+                "note".repeat(100)
+            } else {
+                format!("note-{index}")
+            }
+        })
+        .collect::<Vec<_>>();
+    let backend_evidence = serde_json::json!({
+        "provider": "codebase-memory-mcp",
+        "candidates": candidates,
+        "evidence_sources": evidence_sources,
+        "notes": notes
+    })
+    .to_string();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand app entrypoint flow",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence-json",
+        &backend_evidence,
+    ]);
+
+    let evidence = &route["routing_decision"]["backend_evidence"];
+    assert_eq!(evidence["candidate_files"].as_array().unwrap().len(), 16);
+    assert_eq!(evidence["candidates"].as_array().unwrap().len(), 16);
+    assert_eq!(
+        evidence["candidates"][0]["symbol"]
+            .as_str()
+            .unwrap()
+            .chars()
+            .count(),
+        160
+    );
+    assert_eq!(
+        evidence["candidates"][0]["source"]
+            .as_str()
+            .unwrap()
+            .chars()
+            .count(),
+        160
+    );
+    assert_eq!(
+        evidence["candidates"][0]["reason"]
+            .as_str()
+            .unwrap()
+            .chars()
+            .count(),
+        320
+    );
+    assert_eq!(
+        evidence["candidates"][0]["evidence"]
+            .as_array()
+            .unwrap()
+            .len(),
+        6
+    );
+    assert_eq!(
+        evidence["candidates"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|candidate| {
+                candidate["evidence"]
+                    .as_array()
+                    .map_or(0, |evidence| evidence.len())
+            })
+            .sum::<usize>(),
+        24
+    );
+    assert_eq!(evidence["evidence_sources"].as_array().unwrap().len(), 12);
+    assert_eq!(evidence["notes"].as_array().unwrap().len(), 6);
+    assert_eq!(evidence["normalization"]["candidate_limit"], 16);
+    assert_eq!(evidence["normalization"]["omitted_candidates"], 4);
+    assert_eq!(
+        evidence["normalization"]["omitted_candidate_evidence_items"],
+        10
+    );
+    assert_eq!(evidence["normalization"]["omitted_evidence_sources"], 4);
+    assert_eq!(evidence["normalization"]["omitted_notes"], 4);
+    assert!(
+        evidence["normalization"]["truncated_text_fields"]
+            .as_u64()
+            .unwrap()
+            >= 6
+    );
+    assert!(
+        route["routing_decision"]["route_quality"]["warnings"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|warning| warning
+                .as_str()
+                .unwrap()
+                .contains("Backend evidence was bounded for token safety"))
+    );
+}
+
+#[test]
+fn cli_agent_route_does_not_spend_backend_evidence_budget_on_duplicate_candidates() {
+    let fixture = fixture_project();
+    let candidates = (0..6)
+        .map(|index| {
+            serde_json::json!({
+                "file": if index < 2 {
+                    "src/main.ts".to_string()
+                } else {
+                    format!("graph/candidate-{index}.ts")
+                },
+                "evidence": (0..6)
+                    .map(|item| format!("evidence-{index}-{item}"))
+                    .collect::<Vec<_>>()
+            })
+        })
+        .collect::<Vec<_>>();
+    let backend_evidence = serde_json::json!({
+        "provider": "codebase-memory-mcp",
+        "candidates": candidates
+    })
+    .to_string();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand app entrypoint flow",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence-json",
+        &backend_evidence,
+    ]);
+
+    let evidence = &route["routing_decision"]["backend_evidence"];
+    assert_eq!(evidence["candidates"].as_array().unwrap().len(), 5);
+    assert_eq!(
+        evidence["candidates"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|candidate| {
+                candidate["evidence"]
+                    .as_array()
+                    .map_or(0, |evidence| evidence.len())
+            })
+            .sum::<usize>(),
+        24
+    );
+    assert_eq!(
+        evidence["normalization"]["omitted_candidate_evidence_items"],
+        12
+    );
+    assert_eq!(evidence["normalization"]["omitted_candidates"], 0);
+}
+
+#[test]
 fn cli_agent_route_rejects_invalid_backend_evidence_values() {
     let fixture = fixture_project();
 
@@ -2589,6 +2789,52 @@ fn cli_agent_route_rejects_invalid_backend_evidence_values() {
         .assert()
         .failure()
         .stderr(contains("invalid backend evidence candidate file"));
+
+    let long_provider = "p".repeat(129);
+    let long_provider_evidence = serde_json::json!({
+        "provider": long_provider,
+        "candidate_files": ["src/main.ts"]
+    })
+    .to_string();
+    Command::cargo_bin("codeinsight")
+        .unwrap()
+        .env_remove("CODEINSIGHT_EMBEDDING_PROVIDER")
+        .args([
+            "agent-route",
+            fixture.path().to_str().unwrap(),
+            "--task",
+            "understand app entrypoint flow",
+            "--backend-evidence-json",
+            &long_provider_evidence,
+        ])
+        .assert()
+        .failure()
+        .stderr(contains(
+            "backend evidence provider must not exceed 128 characters",
+        ));
+
+    let long_file = format!("graph/{}.ts", "f".repeat(512));
+    let long_file_evidence = serde_json::json!({
+        "provider": "codebase-memory-mcp",
+        "candidate_files": [long_file]
+    })
+    .to_string();
+    Command::cargo_bin("codeinsight")
+        .unwrap()
+        .env_remove("CODEINSIGHT_EMBEDDING_PROVIDER")
+        .args([
+            "agent-route",
+            fixture.path().to_str().unwrap(),
+            "--task",
+            "understand app entrypoint flow",
+            "--backend-evidence-json",
+            &long_file_evidence,
+        ])
+        .assert()
+        .failure()
+        .stderr(contains(
+            "backend evidence candidate file must not exceed 512 characters",
+        ));
 }
 
 #[test]

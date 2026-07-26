@@ -18,22 +18,34 @@ use crate::{
     language::detect_language,
     model::{
         AgentRouteBackendAgreement, AgentRouteBackendCandidate, AgentRouteBackendEvidence,
-        AgentRouteExecutionStep, AgentRouteQuality, AgentRouteReport, AgentRouteRoutingDecision,
-        AgentRouteStep, CallEdge, ConfigInitReport, ConfigStatusReport, ContextBudget,
-        ContextContinuationSummary, ContextFile, ContextOmittedCandidate, ContextPack,
-        ContextRange, ContextReadLess, ContextReadingRange, ContextReadingStep, ContextSeed,
-        ContextSemanticStatus, ContextSourceCount, ContextSuggestedTool, Dependency,
-        DependencyGraph, EmbeddingProviderStatus, ImpactAnalysisReport, ImpactBreakdown,
-        ImpactCounts, ImpactFile, ImpactPath, IndexError, IndexScopeReport, Language,
-        OllamaEmbeddingStatus, OpenAiEmbeddingStatus, ProjectIndexReport, ProjectOverview,
-        ReferenceMatch, SemanticChunk, SemanticChunkInput, SemanticEmbeddingInput,
-        SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus, SemanticSearchResult,
-        SuggestedCheck, Symbol, SymbolKind, VersionInfo,
+        AgentRouteBackendNormalization, AgentRouteExecutionStep, AgentRouteQuality,
+        AgentRouteReport, AgentRouteRoutingDecision, AgentRouteStep, CallEdge, ConfigInitReport,
+        ConfigStatusReport, ContextBudget, ContextContinuationSummary, ContextFile,
+        ContextOmittedCandidate, ContextPack, ContextRange, ContextReadLess, ContextReadingRange,
+        ContextReadingStep, ContextSeed, ContextSemanticStatus, ContextSourceCount,
+        ContextSuggestedTool, Dependency, DependencyGraph, EmbeddingProviderStatus,
+        ImpactAnalysisReport, ImpactBreakdown, ImpactCounts, ImpactFile, ImpactPath, IndexError,
+        IndexScopeReport, Language, OllamaEmbeddingStatus, OpenAiEmbeddingStatus,
+        ProjectIndexReport, ProjectOverview, ReferenceMatch, SemanticChunk, SemanticChunkInput,
+        SemanticEmbeddingInput, SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus,
+        SemanticSearchResult, SuggestedCheck, Symbol, SymbolKind, VersionInfo,
     },
     storage::Store,
 };
 
 const CONTEXT_SCORE_SEED_FILE: i32 = 130;
+const BACKEND_EVIDENCE_CANDIDATE_LIMIT: usize = 16;
+const BACKEND_EVIDENCE_PER_CANDIDATE_LIMIT: usize = 6;
+const BACKEND_EVIDENCE_TOTAL_CANDIDATE_ITEMS_LIMIT: usize = 24;
+const BACKEND_EVIDENCE_SOURCES_LIMIT: usize = 12;
+const BACKEND_EVIDENCE_NOTES_LIMIT: usize = 6;
+const BACKEND_EVIDENCE_PROVIDER_CHARS_LIMIT: usize = 128;
+const BACKEND_EVIDENCE_FILE_CHARS_LIMIT: usize = 512;
+const BACKEND_EVIDENCE_SYMBOL_CHARS_LIMIT: usize = 160;
+const BACKEND_EVIDENCE_SOURCE_CHARS_LIMIT: usize = 160;
+const BACKEND_EVIDENCE_REASON_CHARS_LIMIT: usize = 320;
+const BACKEND_EVIDENCE_ITEM_CHARS_LIMIT: usize = 160;
+const BACKEND_EVIDENCE_NOTE_CHARS_LIMIT: usize = 320;
 const CONTEXT_SCORE_SEED_HEADER: i32 = 140;
 const CONTEXT_SCORE_SYMBOL_DEFINITION: i32 = 90;
 const CONTEXT_SCORE_TYPE_RELATION: i32 = 82;
@@ -614,6 +626,14 @@ fn agent_route_quality(
             verification_steps.push(backend_route_agreement.message.clone());
         }
 
+        let mut warnings = vec![format!(
+            "No reading plan was produced; context status is {}.",
+            context_pack.continuation_summary.status
+        )];
+        if let Some(warning) = backend_evidence.and_then(backend_normalization_warning) {
+            warnings.push(warning);
+        }
+
         return AgentRouteQuality {
             level: "blocked".to_string(),
             score: 0,
@@ -636,10 +656,7 @@ fn agent_route_quality(
                     )]
                 })
                 .unwrap_or_default(),
-            warnings: vec![format!(
-                "No reading plan was produced; context status is {}.",
-                context_pack.continuation_summary.status
-            )],
+            warnings,
             verification_steps,
             recommended_action,
         };
@@ -895,6 +912,13 @@ fn agent_route_quality(
                 backend.provider, latency_ms
             ));
         }
+        if let Some(warning) = backend_normalization_warning(backend) {
+            warnings.push(warning);
+            verification_steps.push(
+                "If retained backend candidates are insufficient, rerun the backend with a narrower task instead of increasing the evidence payload."
+                    .to_string(),
+            );
+        }
         verification_steps.push(format!(
             "Treat backend {} evidence as advisory unless the selected file and verification checks agree.",
             backend.provider
@@ -985,6 +1009,18 @@ fn backend_evidence_sources(backend: &AgentRouteBackendEvidence) -> Vec<String> 
     sources.sort();
     sources.dedup();
     sources
+}
+
+fn backend_normalization_warning(backend: &AgentRouteBackendEvidence) -> Option<String> {
+    let normalization = backend.normalization.as_ref()?;
+    Some(format!(
+        "Backend evidence was bounded for token safety: omitted {} candidate(s), {} candidate evidence item(s), {} source(s), and {} note(s); truncated {} text field(s).",
+        normalization.omitted_candidates,
+        normalization.omitted_candidate_evidence_items,
+        normalization.omitted_evidence_sources,
+        normalization.omitted_notes,
+        normalization.truncated_text_fields,
+    ))
 }
 
 fn agent_route_execution_plan(
@@ -1152,6 +1188,12 @@ fn normalize_agent_route_backend_evidence(
     if evidence.provider.is_empty() {
         bail!("backend evidence provider must not be empty");
     }
+    if evidence.provider.chars().count() > BACKEND_EVIDENCE_PROVIDER_CHARS_LIMIT {
+        bail!(
+            "backend evidence provider must not exceed {} characters",
+            BACKEND_EVIDENCE_PROVIDER_CHARS_LIMIT
+        );
+    }
     if let Some(confidence) = evidence.confidence
         && (!confidence.is_finite() || !(0.0..=1.0).contains(&confidence))
     {
@@ -1171,6 +1213,11 @@ fn normalize_agent_route_backend_evidence(
         })
         .collect::<Result<Vec<_>>>()?;
 
+    let mut normalization = AgentRouteBackendNormalization {
+        candidate_limit: BACKEND_EVIDENCE_CANDIDATE_LIMIT,
+        ..AgentRouteBackendNormalization::default()
+    };
+    let mut remaining_candidate_evidence = BACKEND_EVIDENCE_TOTAL_CANDIDATE_ITEMS_LIMIT;
     let mut seen_files = BTreeSet::new();
     let mut candidates = Vec::new();
     for mut candidate in evidence.candidates {
@@ -1180,33 +1227,86 @@ fn normalize_agent_route_backend_evidence(
         }
         candidate.file = normalize_backend_candidate_file(root, raw_file)
             .with_context(|| format!("invalid backend evidence candidate file: {raw_file}"))?;
-        candidate.symbol = trimmed_optional_string(candidate.symbol);
-        candidate.source = trimmed_optional_string(candidate.source);
-        candidate.reason = trimmed_optional_string(candidate.reason);
-        candidate.evidence = trimmed_unique_strings(candidate.evidence);
+        candidate.symbol = bounded_optional_string(
+            candidate.symbol,
+            BACKEND_EVIDENCE_SYMBOL_CHARS_LIMIT,
+            &mut normalization.truncated_text_fields,
+        );
+        candidate.source = bounded_optional_string(
+            candidate.source,
+            BACKEND_EVIDENCE_SOURCE_CHARS_LIMIT,
+            &mut normalization.truncated_text_fields,
+        );
+        candidate.reason = bounded_optional_string(
+            candidate.reason,
+            BACKEND_EVIDENCE_REASON_CHARS_LIMIT,
+            &mut normalization.truncated_text_fields,
+        );
+        let (mut candidate_evidence, omitted_evidence) = normalized_bounded_strings(
+            candidate.evidence,
+            BACKEND_EVIDENCE_PER_CANDIDATE_LIMIT,
+            BACKEND_EVIDENCE_ITEM_CHARS_LIMIT,
+            &mut normalization.truncated_text_fields,
+        );
+        normalization.omitted_candidate_evidence_items += omitted_evidence;
         if let Some(score) = candidate.score
             && !score.is_finite()
         {
             bail!("backend evidence candidate score must be finite");
         }
-        if seen_files.insert(candidate.file.clone()) {
-            candidates.push(candidate);
+        if !seen_files.insert(candidate.file.clone()) {
+            normalization.omitted_candidate_evidence_items += candidate_evidence.len();
+            continue;
         }
+        if candidates.len() >= BACKEND_EVIDENCE_CANDIDATE_LIMIT {
+            normalization.omitted_candidates += 1;
+            normalization.omitted_candidate_evidence_items += candidate_evidence.len();
+            continue;
+        }
+        if candidate_evidence.len() > remaining_candidate_evidence {
+            normalization.omitted_candidate_evidence_items +=
+                candidate_evidence.len() - remaining_candidate_evidence;
+            candidate_evidence.truncate(remaining_candidate_evidence);
+        }
+        remaining_candidate_evidence =
+            remaining_candidate_evidence.saturating_sub(candidate_evidence.len());
+        candidate.evidence = candidate_evidence;
+        candidates.push(candidate);
     }
     let mut candidate_files = candidates
         .iter()
         .map(|candidate| candidate.file.clone())
         .collect::<Vec<_>>();
-    candidate_files.extend(
-        legacy_files
-            .into_iter()
-            .filter(|file| seen_files.insert(file.clone())),
-    );
+    for file in legacy_files {
+        if !seen_files.insert(file.clone()) {
+            continue;
+        }
+        if candidate_files.len() >= BACKEND_EVIDENCE_CANDIDATE_LIMIT {
+            normalization.omitted_candidates += 1;
+            continue;
+        }
+        candidate_files.push(file);
+    }
     evidence.candidate_files = candidate_files;
     evidence.candidates = candidates;
 
-    evidence.evidence_sources = trimmed_unique_strings(evidence.evidence_sources);
-    evidence.notes = trimmed_unique_strings(evidence.notes);
+    let (evidence_sources, omitted_evidence_sources) = normalized_bounded_strings(
+        evidence.evidence_sources,
+        BACKEND_EVIDENCE_SOURCES_LIMIT,
+        BACKEND_EVIDENCE_SOURCE_CHARS_LIMIT,
+        &mut normalization.truncated_text_fields,
+    );
+    normalization.omitted_evidence_sources = omitted_evidence_sources;
+    evidence.evidence_sources = evidence_sources;
+    let (notes, omitted_notes) = normalized_bounded_strings(
+        evidence.notes,
+        BACKEND_EVIDENCE_NOTES_LIMIT,
+        BACKEND_EVIDENCE_NOTE_CHARS_LIMIT,
+        &mut normalization.truncated_text_fields,
+    );
+    normalization.omitted_notes = omitted_notes;
+    evidence.notes = notes;
+    evidence.normalization = backend_normalization_changed(&normalization).then_some(normalization);
     Ok(evidence)
 }
 
@@ -1306,11 +1406,54 @@ fn backend_candidate_summary(candidate: &AgentRouteBackendCandidate) -> String {
     details.join("; ")
 }
 
-fn trimmed_optional_string(value: Option<String>) -> Option<String> {
+fn bounded_optional_string(
+    value: Option<String>,
+    char_limit: usize,
+    truncated_text_fields: &mut usize,
+) -> Option<String> {
     value.and_then(|value| {
-        let value = value.trim().to_string();
+        let value = bounded_trimmed_string(&value, char_limit, truncated_text_fields);
         (!value.is_empty()).then_some(value)
     })
+}
+
+fn normalized_bounded_strings(
+    values: Vec<String>,
+    item_limit: usize,
+    char_limit: usize,
+    truncated_text_fields: &mut usize,
+) -> (Vec<String>, usize) {
+    let mut seen = BTreeSet::new();
+    let mut normalized = values
+        .into_iter()
+        .map(|value| bounded_trimmed_string(&value, char_limit, truncated_text_fields))
+        .filter(|value| !value.is_empty())
+        .filter(|value| seen.insert(value.clone()))
+        .collect::<Vec<_>>();
+    let omitted = normalized.len().saturating_sub(item_limit);
+    normalized.truncate(item_limit);
+    (normalized, omitted)
+}
+
+fn bounded_trimmed_string(
+    value: &str,
+    char_limit: usize,
+    truncated_text_fields: &mut usize,
+) -> String {
+    let value = value.trim();
+    if value.chars().count() <= char_limit {
+        return value.to_string();
+    }
+    *truncated_text_fields += 1;
+    value.chars().take(char_limit).collect()
+}
+
+fn backend_normalization_changed(normalization: &AgentRouteBackendNormalization) -> bool {
+    normalization.omitted_candidates > 0
+        || normalization.omitted_candidate_evidence_items > 0
+        || normalization.omitted_evidence_sources > 0
+        || normalization.omitted_notes > 0
+        || normalization.truncated_text_fields > 0
 }
 
 fn normalize_backend_candidate_file(root: &Path, file: &str) -> Result<String> {
@@ -1342,16 +1485,14 @@ fn normalize_backend_candidate_file(root: &Path, file: &str) -> Result<String> {
     if normalized.as_os_str().is_empty() {
         bail!("backend evidence candidate file must not be empty");
     }
-    Ok(normalized.to_string_lossy().replace('\\', "/"))
-}
-
-fn trimmed_unique_strings(values: Vec<String>) -> Vec<String> {
-    let mut seen = BTreeSet::new();
-    values
-        .into_iter()
-        .map(|value| value.trim().to_string())
-        .filter(|value| !value.is_empty() && seen.insert(value.clone()))
-        .collect()
+    let normalized = normalized.to_string_lossy().replace('\\', "/");
+    if normalized.chars().count() > BACKEND_EVIDENCE_FILE_CHARS_LIMIT {
+        bail!(
+            "backend evidence candidate file must not exceed {} characters",
+            BACKEND_EVIDENCE_FILE_CHARS_LIMIT
+        );
+    }
+    Ok(normalized)
 }
 
 fn agent_route_context_reason(context_pack: &ContextPack) -> String {

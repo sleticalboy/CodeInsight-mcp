@@ -160,6 +160,15 @@ main() {
   create_fixture "$repo"
   write_codebase_memory_exports "$repo" "$TEMP_DIR"
 
+  if "$ROOT_DIR/scripts/codebase-memory-backend-evidence.sh" \
+    --search-graph-json "$TEMP_DIR/search-graph.json" \
+    --candidate-limit 17 >"$TEMP_DIR/invalid-limit.json" 2>"$TEMP_DIR/invalid-limit.err"; then
+    fail "candidate limit above the runtime contract should be rejected"
+  fi
+  if ! grep -q -- "--candidate-limit must be <= 16" "$TEMP_DIR/invalid-limit.err"; then
+    fail "candidate limit rejection should explain the maximum"
+  fi
+
   "$ROOT_DIR/scripts/codebase-memory-backend-evidence.sh" \
     --root "$repo" \
     --search-graph-json "$TEMP_DIR/search-graph.json" \

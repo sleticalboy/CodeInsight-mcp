@@ -397,6 +397,18 @@ pub struct AgentRouteBackendEvidence {
     pub confidence: Option<f64>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub notes: Vec<String>,
+    #[serde(default, skip_deserializing, skip_serializing_if = "Option::is_none")]
+    pub normalization: Option<AgentRouteBackendNormalization>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct AgentRouteBackendNormalization {
+    pub candidate_limit: usize,
+    pub omitted_candidates: usize,
+    pub omitted_candidate_evidence_items: usize,
+    pub omitted_evidence_sources: usize,
+    pub omitted_notes: usize,
+    pub truncated_text_fields: usize,
 }
 
 #[derive(Debug, Clone)]
