@@ -1665,6 +1665,10 @@ fn merge_backend_tool_results(
     let Some(tool_results) = evidence.tool_results.take() else {
         return Ok((0, 0));
     };
+    let get_code_snippet = tool_results
+        .get_code_snippet
+        .map(normalize_backend_code_snippet_result)
+        .transpose()?;
     let query_graph = tool_results
         .query_graph
         .map(normalize_backend_query_graph_result)
@@ -1675,6 +1679,18 @@ fn merge_backend_tool_results(
         .transpose()?;
 
     let tool_inputs = [
+        (
+            get_code_snippet,
+            BackendToolResultSpec {
+                source: "get_code_snippet",
+                items_keys: &["results"],
+                preferred_items_key: None,
+                total_keys: &["total"],
+                total_items_keys: &["results"],
+                file_keys: &["file_path", "file"],
+                symbol_keys: &["qualified_name", "name"],
+            },
+        ),
         (
             tool_results.search_graph,
             BackendToolResultSpec {
@@ -1885,6 +1901,61 @@ fn backend_query_graph_column_index(columns: &[Value], names: &[&str]) -> Option
                 .to_ascii_lowercase();
             names.contains(&normalized.as_str())
         })
+    })
+}
+
+fn normalize_backend_code_snippet_result(raw: Value) -> Result<Value> {
+    let pages = match raw {
+        Value::Array(pages) if pages.is_empty() => {
+            bail!("backend evidence get_code_snippet tool result page array must not be empty")
+        }
+        Value::Array(pages) => pages,
+        raw => vec![raw],
+    };
+    if pages.len() > BACKEND_EVIDENCE_TOOL_RESULT_PAGES_LIMIT {
+        bail!(
+            "backend evidence get_code_snippet tool result must not exceed {} pages",
+            BACKEND_EVIDENCE_TOOL_RESULT_PAGES_LIMIT
+        );
+    }
+
+    let page_count = pages.len();
+    let mut normalized_pages = Vec::with_capacity(page_count);
+    for (page_index, raw_page) in pages.into_iter().enumerate() {
+        let page_source = if page_count == 1 {
+            "get_code_snippet".to_string()
+        } else {
+            format!("get_code_snippet page {}", page_index + 1)
+        };
+        let payload = backend_tool_result_payload(raw_page, &page_source)?;
+        let file =
+            first_backend_tool_string(&payload, &["file_path", "file"]).ok_or_else(|| {
+                anyhow::anyhow!(
+                    "backend evidence {page_source} tool result must contain file_path or file"
+                )
+            })?;
+        let symbol = first_backend_tool_string(&payload, &["qualified_name", "name"]);
+        let label = first_backend_tool_string(&payload, &["label"])
+            .unwrap_or_else(|| "snippet".to_string());
+        normalized_pages.push(json!({
+            "results": [{
+                "file_path": file,
+                "qualified_name": symbol,
+                "label": label
+            }],
+            "total": 1,
+            "elapsed_ms": payload
+                .get("elapsed_ms")
+                .or_else(|| payload.get("duration_ms"))
+                .and_then(Value::as_u64)
+                .unwrap_or_default()
+        }));
+    }
+
+    Ok(if page_count == 1 {
+        normalized_pages.pop().unwrap_or_default()
+    } else {
+        Value::Array(normalized_pages)
     })
 }
 

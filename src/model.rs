@@ -418,6 +418,8 @@ pub struct AgentRouteBackendCandidate {
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct AgentRouteBackendToolResults {
     #[serde(default)]
+    pub get_code_snippet: Option<Value>,
+    #[serde(default)]
     pub search_graph: Option<Value>,
     #[serde(default)]
     pub search_code: Option<Value>,

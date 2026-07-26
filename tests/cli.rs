@@ -2593,6 +2593,60 @@ export function helper() {
 }
 
 #[test]
+fn cli_agent_route_normalizes_get_code_snippet_without_source_body() {
+    let fixture = fixture_project();
+    let backend_evidence = serde_json::json!({
+        "provider": "codebase-memory-mcp",
+        "tool_results": {
+            "get_code_snippet": {
+                "name": "login",
+                "qualified_name": "AuthService.login",
+                "label": "Method",
+                "file_path": fixture.path().join("src/auth.py"),
+                "start_line": 4,
+                "end_line": 5,
+                "source": "SENSITIVE_SNIPPET_BODY_SHOULD_NOT_SURVIVE",
+                "elapsed_ms": 4
+            }
+        }
+    })
+    .to_string();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand selected authentication implementation",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence-json",
+        &backend_evidence,
+        "--prefer-backend-context",
+    ]);
+
+    let evidence = &route["routing_decision"]["backend_evidence"];
+    assert_eq!(
+        evidence["candidate_files"],
+        serde_json::json!(["src/auth.py"])
+    );
+    assert_eq!(evidence["candidates"][0]["symbol"], "AuthService.login");
+    assert_eq!(evidence["candidates"][0]["source"], "get_code_snippet");
+    assert_eq!(
+        evidence["candidates"][0]["reason"],
+        "get_code_snippet Method"
+    );
+    assert_eq!(evidence["evidence_count"], 1);
+    assert_eq!(evidence["latency_ms"], 4);
+    assert_eq!(route["routing_decision"]["first_file"], "src/auth.py");
+    assert!(
+        !route
+            .to_string()
+            .contains("SENSITIVE_SNIPPET_BODY_SHOULD_NOT_SURVIVE")
+    );
+}
+
+#[test]
 fn cli_agent_route_normalizes_json_rpc_text_backend_tool_result() {
     let fixture = fixture_project();
     let search_code_payload = serde_json::json!({

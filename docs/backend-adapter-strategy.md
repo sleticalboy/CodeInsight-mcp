@@ -163,10 +163,11 @@ scripts/codebase-memory-bridge-cohort-report.sh \
 Manifest rows use
 `slug<TAB>task<TAB>backend_evidence_json<TAB>agent_route_json`.
 
-The native backend can keep using CodeInsight's current index. A future
-codebase-memory adapter can call `search_graph`, `search_code`, `trace_path`,
-or `get_architecture`, then hand candidates to CodeInsight's existing
-`context_pack` and `agent_route` quality logic.
+The native backend keeps using CodeInsight's current index. The codebase-memory
+adapter accepts `get_code_snippet`, `search_graph`, `search_code`,
+`query_graph`, `trace_path`, and `get_architecture` results, then hands bounded
+candidates to CodeInsight's existing `context_pack` and `agent_route` quality
+logic. Exact snippet metadata is prioritized without retaining its source body.
 
 The cohort output uses the machine-readable
 `routing_decision.backend_route_agreement` contract rather than warning text.

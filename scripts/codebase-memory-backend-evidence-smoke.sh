@@ -128,6 +128,19 @@ EOF
 }
 EOF
 
+  cat >"$output_dir/code-snippet.json" <<'EOF'
+{
+  "name": "login",
+  "qualified_name": "AuthService.login",
+  "label": "Method",
+  "file_path": "src/auth.ts",
+  "start_line": 4,
+  "end_line": 7,
+  "source": "source body must not be copied into bridge evidence",
+  "elapsed_ms": 2
+}
+EOF
+
   cat >"$output_dir/query-graph.json" <<'EOF'
 {
   "columns": ["f.name", "f.file_path", "f.qualified_name"],
@@ -201,6 +214,7 @@ main() {
 
   "$ROOT_DIR/scripts/codebase-memory-backend-evidence.sh" \
     --root "$repo" \
+    --code-snippet-json "$TEMP_DIR/code-snippet.json" \
     --search-graph-json "$TEMP_DIR/search-graph.json" \
     --search-code-json "$TEMP_DIR/search-code.json" \
     --query-graph-json "$TEMP_DIR/query-graph.json" \
@@ -214,11 +228,12 @@ main() {
   require_jq "$evidence" '.provider == "codebase-memory-mcp"' "provider should be codebase-memory-mcp"
   require_jq "$evidence" '.candidate_files == ["src/auth.ts", "src/audit.ts", "src/main.ts"]' "candidate files should be normalized and stable"
   require_jq "$evidence" '.candidates | map(.file) == ["src/auth.ts", "src/audit.ts", "src/main.ts"]' "structured candidates should preserve stable file ranking"
-  require_jq "$evidence" '.candidates[0].symbol == "AuthService" and .candidates[0].source == "search_graph"' "structured candidates should preserve symbol and source"
-  require_jq "$evidence" '.candidates[0].reason == "search_graph Class" and .candidates[0].evidence == ["search_graph"]' "structured candidates should explain backend evidence"
-  require_jq "$evidence" '.evidence_sources | index("search_graph") and index("search_code") and index("query_graph") and index("get_architecture:entry_points")' "evidence sources should include all bridge inputs"
-  require_jq "$evidence" '.evidence_count == 6' "evidence count should include duplicate backend signals"
-  require_jq "$evidence" '.latency_ms == 46' "latency should aggregate exported backend timings"
+  require_jq "$evidence" '.candidates[0].symbol == "AuthService.login" and .candidates[0].source == "get_code_snippet"' "structured candidates should prioritize the exact snippet symbol"
+  require_jq "$evidence" '.candidates[0].reason == "get_code_snippet Method" and .candidates[0].evidence == ["get_code_snippet"]' "structured candidates should explain exact snippet evidence"
+  require_jq "$evidence" '.evidence_sources | index("get_code_snippet") and index("search_graph") and index("search_code") and index("query_graph") and index("get_architecture:entry_points")' "evidence sources should include all bridge inputs"
+  require_jq "$evidence" '.evidence_count == 7' "evidence count should include duplicate backend signals"
+  require_jq "$evidence" '.latency_ms == 48' "latency should aggregate exported backend timings"
+  require_jq "$evidence" 'tostring | contains("source body must not be copied") | not' "bridge evidence should omit snippet source bodies"
   require_jq "$evidence" '.tool_results.trace_path.callers[0].name == "main" and .tool_results.trace_path.callees[0].name == "auditLogin"' "trace_path should remain raw for runtime symbol resolution"
   require_jq "$evidence" '.confidence == 0.86' "confidence should be preserved"
 
@@ -257,7 +272,7 @@ main() {
     --backend-evidence "$evidence" >"$route_json"
 
   require_jq "$route_json" '.routing_decision.backend_evidence.provider == "codebase-memory-mcp"' "agent_route should preserve backend evidence"
-  require_jq "$route_json" '.routing_decision.backend_evidence.evidence_count == 9 and .routing_decision.backend_evidence.latency_ms == 51' "agent_route should resolve the trace_path subject and related symbols, then aggregate their evidence"
+  require_jq "$route_json" '.routing_decision.backend_evidence.evidence_count == 10 and .routing_decision.backend_evidence.latency_ms == 53' "agent_route should combine exact snippet and resolved trace_path evidence"
   require_jq "$route_json" '.routing_decision.backend_evidence.evidence_sources | index("trace_path")' "agent_route should expose trace_path as a backend evidence source"
   require_jq "$route_json" '.routing_decision.backend_evidence.tool_results == null' "agent_route should consume raw trace_path evidence"
   require_jq "$route_json" '.routing_decision.first_file == "src/auth.ts"' "local route should select auth seed file"
@@ -301,7 +316,7 @@ main() {
   require_jq "$preferred_route_json" '.routing_decision.continuation_source == "context_pack" and .routing_decision.continuation_status == .context_pack.continuation_summary.status and .routing_decision.continuation_next_action == .context_pack.continuation_summary.next_action' "preferred routing should preserve the local continuation when no backend candidate remains"
   require_jq "$preferred_route_json" '([.context_pack.reading_plan[].file] | index("src/auth.ts")) < ([.context_pack.reading_plan[].file] | index("src/audit.ts")) and ([.context_pack.reading_plan[].file] | index("src/audit.ts")) < ([.context_pack.reading_plan[].file] | index("src/main.ts"))' "preferred reading plan should retain graph candidate order"
   require_jq "$preferred_route_json" '.impact_seed_files == ["src/audit.ts", "src/auth.ts", "src/main.ts"]' "preferred impact analysis should follow all selected backend files"
-  require_jq "$preferred_route_json" '.impact_seed_symbols == ["AuthService", "auditLogin", "main"]' "preferred impact analysis should follow selected backend symbols"
+  require_jq "$preferred_route_json" '.impact_seed_symbols == ["AuthService.login", "auditLogin", "main"]' "preferred impact analysis should follow selected backend symbols"
   require_jq "$preferred_route_json" '.routing_decision.route_quality.recommended_action == "read_backend_seeded_context"' "preferred routing should direct the agent to backend-seeded context"
 
   "$CODEINSIGHT_BIN" agent-route "$repo" \
@@ -314,8 +329,8 @@ main() {
 
   require_jq "$fallback_route_json" '.routing_decision.backend_route_agreement.status == "backend_fallback"' "generated structured evidence should seed fallback routing"
   require_jq "$fallback_route_json" '.routing_decision.first_file == "src/auth.ts"' "fallback should use the first generated backend candidate"
-  require_jq "$fallback_route_json" '.routing_decision.backend_selected_candidate.symbol == "AuthService"' "fallback should preserve the generated backend symbol"
-  require_jq "$fallback_route_json" '.impact_seed_symbols == ["AuthService"]' "fallback should reuse the generated backend symbol for impact analysis"
+  require_jq "$fallback_route_json" '.routing_decision.backend_selected_candidate.symbol == "AuthService.login"' "fallback should preserve the exact snippet symbol"
+  require_jq "$fallback_route_json" '.impact_seed_symbols == ["AuthService.login"]' "fallback should reuse the exact snippet symbol for impact analysis"
   require_jq "$fallback_route_json" '.routing_decision.backend_route_agreement.candidate_dispositions[0].context_status == "selected" and .routing_decision.backend_route_agreement.candidate_dispositions[0].next_action == "read_selected_context" and ([.routing_decision.backend_route_agreement.candidate_dispositions[1:][]] | all(.[]; .context_status == "omitted" and .context_reason == "fallback_not_selected" and .next_action == "use_if_fallback_context_insufficient"))' "fallback routing should make selected and lower-ranked candidates actionable"
   require_jq "$fallback_route_json" '.routing_decision.backend_route_agreement.next_candidate_continuation.file == "src/audit.ts" and .routing_decision.backend_route_agreement.next_candidate_continuation.rank == 2 and .routing_decision.backend_route_agreement.next_candidate_continuation.symbol == "auditLogin" and .routing_decision.backend_route_agreement.next_candidate_continuation.context_reason == "fallback_not_selected" and .routing_decision.backend_route_agreement.next_candidate_continuation.next_action == "use_if_fallback_context_insufficient"' "fallback routing should expose the highest-ranked unselected backend candidate"
   require_jq "$fallback_route_json" '.routing_decision.backend_route_agreement.next_candidate_continuation.suggested_tool.tool == "context_pack" and .routing_decision.backend_route_agreement.next_candidate_continuation.suggested_tool.suggested_arguments.files == ["src/audit.ts"] and .routing_decision.backend_route_agreement.next_candidate_continuation.suggested_tool.suggested_arguments.symbols == ["auditLogin"] and .routing_decision.backend_route_agreement.next_candidate_continuation.suggested_tool.suggested_arguments.token_budget == 4000' "fallback continuation should be directly callable"

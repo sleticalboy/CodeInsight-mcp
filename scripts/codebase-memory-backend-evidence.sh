@@ -10,6 +10,7 @@ TEMP_DIR=""
 
 SEARCH_GRAPH_JSONS=()
 SEARCH_CODE_JSONS=()
+CODE_SNIPPET_JSONS=()
 QUERY_GRAPH_JSONS=()
 TRACE_PATH_JSONS=()
 ARCHITECTURE_JSONS=()
@@ -42,6 +43,7 @@ codebase-memory-mcp tool responses.
 Options:
   --search-graph-json PATH   JSON response from codebase-memory search_graph.
   --search-code-json PATH    JSON response from codebase-memory search_code.
+  --code-snippet-json PATH   JSON response from codebase-memory get_code_snippet.
   --query-graph-json PATH    JSON response from codebase-memory query_graph.
   --trace-path-json PATH     JSON response from codebase-memory trace_path.
   --architecture-json PATH   JSON response from codebase-memory get_architecture.
@@ -73,6 +75,11 @@ parse_args() {
       --search-code-json)
         [ "$#" -ge 2 ] || fail "--search-code-json requires a path"
         SEARCH_CODE_JSONS+=("$2")
+        shift 2
+        ;;
+      --code-snippet-json)
+        [ "$#" -ge 2 ] || fail "--code-snippet-json requires a path"
+        CODE_SNIPPET_JSONS+=("$2")
         shift 2
         ;;
       --query-graph-json)
@@ -152,6 +159,7 @@ validate_args() {
   local input_count=0
   input_count=$((input_count + ${#SEARCH_GRAPH_JSONS[@]}))
   input_count=$((input_count + ${#SEARCH_CODE_JSONS[@]}))
+  input_count=$((input_count + ${#CODE_SNIPPET_JSONS[@]}))
   input_count=$((input_count + ${#QUERY_GRAPH_JSONS[@]}))
   input_count=$((input_count + ${#TRACE_PATH_JSONS[@]}))
   input_count=$((input_count + ${#ARCHITECTURE_JSONS[@]}))
@@ -224,6 +232,19 @@ collect_candidates() {
   : >"$TEMP_DIR/latency.txt"
 
   local file
+  for file in ${CODE_SNIPPET_JSONS[@]+"${CODE_SNIPPET_JSONS[@]}"}; do
+    append_candidates_from_query "get_code_snippet" "$file" '
+      {
+        file: (.file_path // .file // empty),
+        symbol: (.qualified_name // .name // null),
+        score: null,
+        reason: ("get_code_snippet " + (.label // "snippet" | tostring))
+      }
+      | select(.file != "")
+    '
+    append_latency "$file"
+  done
+
   for file in ${SEARCH_GRAPH_JSONS[@]+"${SEARCH_GRAPH_JSONS[@]}"}; do
     append_candidates_from_query "search_graph" "$file" '
       .results[]?

@@ -133,7 +133,7 @@ hands the agent to precise local tools when the selected context is not enough.
    | External Beta fix queue | `scripts/external-beta-fix-queue.sh /tmp/codeinsight-external-beta-cohort.json --check` | You want to turn cohort outcomes into maintainer work items ordered by feedback priority. |
    | External Beta handoff | `scripts/external-beta-cohort-report.sh /tmp/beta-1 /tmp/beta-2 /tmp/beta-3 --output-dir /tmp/codeinsight-external-beta-handoff --check --print-snippet` | You want one folder with the cohort summary, route-quality gate, fix queue, README, machine-readable manifest, a ready-to-file issue body, and copyable public Beta handoff snippet. |
    | Adoption comparison | `scripts/adoption-comparison.sh /path/to/repo --output-dir /tmp/codeinsight-adoption-comparison` | You want a shareable blind-read vs routed-first-read comparison showing source lines avoided, read-less ratio, seed strategy, optional explicit `--file` / `--symbol` seeds, optional task-critical `--expected-file` coverage, first reading focus/question, selection rank, and continuation next action. |
-   | Backend evidence bridge | `scripts/codebase-memory-backend-evidence-smoke.sh` | You want proof that exported codebase-memory `search_graph`, `search_code`, `query_graph`, `trace_path`, and `get_architecture` JSON can become `agent_route --backend-evidence` and appear in route quality. |
+   | Backend evidence bridge | `scripts/codebase-memory-backend-evidence-smoke.sh` | You want proof that exported codebase-memory `get_code_snippet`, `search_graph`, `search_code`, `query_graph`, `trace_path`, and `get_architecture` JSON can become `agent_route --backend-evidence` and appear in route quality. |
    | Backend agreement report | `scripts/codebase-memory-bridge-report.sh --backend-evidence /tmp/codeinsight-backend-evidence.json --agent-route-json /tmp/codeinsight-agent-route.json --output-dir /tmp/codeinsight-codebase-memory-bridge` | You want a shareable backend/local agreement summary, including the agent-facing route action, after running `agent_route` with advisory codebase-memory evidence. |
    | Backend cohort summary | `scripts/codebase-memory-bridge-cohort-summary.sh /tmp/bridge-task-1 /tmp/bridge-task-2 --check` | You want aggregate first-file agreement and conflict evidence across multiple backend/local bridge reports. |
    | Backend cohort report | `scripts/codebase-memory-bridge-cohort-report.sh --manifest /tmp/bridge.tsv --output-dir /tmp/bridge-cohort --min-reports 3 --check` | You have multiple `backend_evidence` and raw `agent-route` JSON pairs and want reports plus the cohort summary in one command. |
@@ -227,13 +227,15 @@ evidence and omits the raw payloads from its response:
 }
 ```
 
-Raw `search_graph`, `search_code`, `query_graph`, `trace_path`, and
-`get_architecture` responses are accepted. For `search_graph`, keyword `results` and semantic
+Raw `get_code_snippet`, `search_graph`, `search_code`, `query_graph`,
+`trace_path`, and `get_architecture` responses are accepted. Exact snippet
+metadata is ranked before broader search results, while its `source` body is
+discarded. For `search_graph`, keyword `results` and semantic
 `semantic_results` share the same per-tool budget. For `query_graph`, return a
 `file_path` or `file` column plus an optional `name` or `qualified_name` column;
 CodeInsight converts the tabular `columns` and `rows` response into candidates.
-For `trace_path`, CodeInsight resolves `callers` and `callees` back to files in
-its refreshed local index before routing.
+For `trace_path`, CodeInsight resolves the traced subject, `callers`, and
+`callees` back to files in its refreshed local index before routing.
 
 To use backend-ranked candidates as bounded-context seeds, opt in explicitly:
 
@@ -411,7 +413,7 @@ accuracy, or proof that unselected code is irrelevant.
 
 Current benchmark snapshot:
 
-- The two-minute demo for this repository shows the agent route selecting 531 of 87,298 source lines, avoiding 86,767 source lines before broad reading for a 99.4% reduction and 164.4x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 23 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
+- The two-minute demo for this repository shows the agent route selecting 531 of 87,466 source lines, avoiding 86,935 source lines before broad reading for a 99.4% reduction and 164.7x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 23 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
 - Smoke repositories route `context_pack` first for 4/4 repositories and
   select 709 of 75,753 source lines, a 99.1% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and

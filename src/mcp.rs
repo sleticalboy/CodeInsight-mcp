@@ -286,6 +286,7 @@ fn tool_definitions() -> Value {
                 "type": "object",
                 "description": "Raw code graph tool results. Each tool accepts one response object or an ordered array of paginated responses. CodeInsight reads at most 64 items across all pages per tool, extracts bounded candidates, and omits the raw payload from its response.",
                 "properties": {
+                    "get_code_snippet": backend_tool_result_schema.clone(),
                     "search_graph": backend_tool_result_schema.clone(),
                     "search_code": backend_tool_result_schema.clone(),
                     "query_graph": backend_tool_result_schema.clone(),
@@ -1313,6 +1314,10 @@ int login(void) {
         assert_eq!(search_graph["oneOf"][1]["type"], "array");
         assert_eq!(search_graph["oneOf"][1]["maxItems"], 16);
         assert_eq!(search_graph["oneOf"][1]["items"]["type"], "object");
+        assert_eq!(
+            tool_results["properties"]["get_code_snippet"]["oneOf"][0]["type"],
+            "object"
+        );
         assert_eq!(
             tool_results["properties"]["query_graph"]["oneOf"][0]["type"],
             "object"
