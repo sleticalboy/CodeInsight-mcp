@@ -17,17 +17,18 @@ use crate::{
     embedding, index,
     language::detect_language,
     model::{
-        AgentRouteBackendAgreement, AgentRouteBackendEvidence, AgentRouteExecutionStep,
-        AgentRouteQuality, AgentRouteReport, AgentRouteRoutingDecision, AgentRouteStep, CallEdge,
-        ConfigInitReport, ConfigStatusReport, ContextBudget, ContextContinuationSummary,
-        ContextFile, ContextOmittedCandidate, ContextPack, ContextRange, ContextReadLess,
-        ContextReadingRange, ContextReadingStep, ContextSeed, ContextSemanticStatus,
-        ContextSourceCount, ContextSuggestedTool, Dependency, DependencyGraph,
-        EmbeddingProviderStatus, ImpactAnalysisReport, ImpactBreakdown, ImpactCounts, ImpactFile,
-        ImpactPath, IndexError, IndexScopeReport, Language, OllamaEmbeddingStatus,
-        OpenAiEmbeddingStatus, ProjectIndexReport, ProjectOverview, ReferenceMatch, SemanticChunk,
-        SemanticChunkInput, SemanticEmbeddingInput, SemanticEmbeddingMatch, SemanticIndexReport,
-        SemanticIndexStatus, SemanticSearchResult, SuggestedCheck, Symbol, SymbolKind, VersionInfo,
+        AgentRouteBackendAgreement, AgentRouteBackendCandidate, AgentRouteBackendEvidence,
+        AgentRouteExecutionStep, AgentRouteQuality, AgentRouteReport, AgentRouteRoutingDecision,
+        AgentRouteStep, CallEdge, ConfigInitReport, ConfigStatusReport, ContextBudget,
+        ContextContinuationSummary, ContextFile, ContextOmittedCandidate, ContextPack,
+        ContextRange, ContextReadLess, ContextReadingRange, ContextReadingStep, ContextSeed,
+        ContextSemanticStatus, ContextSourceCount, ContextSuggestedTool, Dependency,
+        DependencyGraph, EmbeddingProviderStatus, ImpactAnalysisReport, ImpactBreakdown,
+        ImpactCounts, ImpactFile, ImpactPath, IndexError, IndexScopeReport, Language,
+        OllamaEmbeddingStatus, OpenAiEmbeddingStatus, ProjectIndexReport, ProjectOverview,
+        ReferenceMatch, SemanticChunk, SemanticChunkInput, SemanticEmbeddingInput,
+        SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus, SemanticSearchResult,
+        SuggestedCheck, Symbol, SymbolKind, VersionInfo,
     },
     storage::Store,
 };
@@ -272,14 +273,16 @@ pub fn agent_route_value(
         Err(error) => return Err(error),
     };
     let mut used_backend_fallback = false;
+    let mut backend_fallback_candidate = None;
     if context_pack.reading_plan.is_empty()
         && let Some(evidence) = backend_evidence
             .as_ref()
             .filter(|evidence| evidence.use_as_fallback)
-        && let Some(fallback_context) =
+        && let Some((fallback_context, fallback_candidate)) =
             backend_fallback_context_pack(&root, &task, token_budget, evidence)?
     {
         context_pack = fallback_context;
+        backend_fallback_candidate = Some(fallback_candidate);
         used_backend_fallback = true;
     }
     add_index_scope_hint_to_blocked_context(&mut context_pack, &index_report.index_scope);
@@ -310,8 +313,14 @@ pub fn agent_route_value(
     impact_seed_files.sort();
     impact_seed_files.dedup();
 
-    let mut impact_seed_symbols = if blocked_context_status.is_some() || used_backend_fallback {
+    let mut impact_seed_symbols = if blocked_context_status.is_some() {
         Vec::new()
+    } else if used_backend_fallback {
+        backend_fallback_candidate
+            .as_ref()
+            .and_then(|candidate| candidate.symbol.clone())
+            .into_iter()
+            .collect()
     } else {
         symbols
     };
@@ -391,6 +400,7 @@ pub fn agent_route_value(
         &impact_status,
         impact_analysis.as_ref(),
         &routing_decision.backend_route_agreement,
+        routing_decision.backend_selected_candidate.as_ref(),
     );
 
     Ok(AgentRouteReport {
@@ -429,12 +439,22 @@ fn agent_route_routing_decision(
         backend_evidence.as_ref(),
         &backend_route_agreement,
     );
+    let backend_selected_candidate = first_step.and_then(|step| {
+        backend_evidence.as_ref().and_then(|backend| {
+            backend
+                .candidates
+                .iter()
+                .find(|candidate| candidate.file == step.file)
+                .cloned()
+        })
+    });
 
     AgentRouteRoutingDecision {
         seed_strategy: context_pack.seed_strategy.clone(),
         route_quality,
         backend_route_agreement,
         backend_evidence,
+        backend_selected_candidate,
         first_seed_kind: first_seed.map(|seed| seed.kind.clone()),
         first_seed_source: first_seed.map(|seed| seed.source.clone()),
         first_seed_value: first_seed.map(|seed| seed.value.clone()),
@@ -945,6 +965,20 @@ fn backend_evidence_sources(backend: &AgentRouteBackendEvidence) -> Vec<String> 
         .iter()
         .map(|source| format!("backend:{}:{source}", backend.provider))
         .collect::<Vec<_>>();
+    for candidate in &backend.candidates {
+        if let Some(source) = candidate.source.as_ref() {
+            sources.push(format!(
+                "backend:{}:candidate_source:{source}",
+                backend.provider
+            ));
+        }
+        sources.extend(
+            candidate
+                .evidence
+                .iter()
+                .map(|item| format!("backend:{}:candidate_evidence:{item}", backend.provider)),
+        );
+    }
     if backend.evidence_count > 0 || !backend.candidate_files.is_empty() {
         sources.push(format!("backend:{}", backend.provider));
     }
@@ -958,6 +992,7 @@ fn agent_route_execution_plan(
     impact_status: &str,
     impact_analysis: Option<&ImpactAnalysisReport>,
     backend_route_agreement: &AgentRouteBackendAgreement,
+    backend_selected_candidate: Option<&AgentRouteBackendCandidate>,
 ) -> Vec<AgentRouteExecutionStep> {
     let reading_files = context_pack
         .reading_plan
@@ -975,18 +1010,25 @@ fn agent_route_execution_plan(
             "ready".to_string()
         },
         instruction: match first_step {
-            Some(step) => format!(
-                "Read context_pack.files[] in reading_plan[] order, starting with {} (candidate rank {}) with focus: {} Answer: {} Read-less evidence: selected {} of {} source lines, avoided {} ({} reduction, {} read-less ratio). Treat reading_plan[].reason as the current-step instruction and selection_reason as evidence for why each file was selected.",
-                step.file,
-                step.selection_rank,
-                step.focus,
-                step.question,
-                context_pack.read_less.selected_source_lines,
-                context_pack.read_less.baseline_source_lines,
-                context_pack.read_less.source_lines_avoided,
-                context_pack.read_less.line_reduction,
-                context_pack.read_less.read_less_ratio,
-            ),
+            Some(step) => {
+                let backend_context = backend_selected_candidate
+                    .map(backend_candidate_summary)
+                    .map(|summary| format!(" Backend evidence: {summary}."))
+                    .unwrap_or_default();
+                format!(
+                    "Read context_pack.files[] in reading_plan[] order, starting with {} (candidate rank {}) with focus: {} Answer: {} Read-less evidence: selected {} of {} source lines, avoided {} ({} reduction, {} read-less ratio). Treat reading_plan[].reason as the current-step instruction and selection_reason as evidence for why each file was selected.{}",
+                    step.file,
+                    step.selection_rank,
+                    step.focus,
+                    step.question,
+                    context_pack.read_less.selected_source_lines,
+                    context_pack.read_less.baseline_source_lines,
+                    context_pack.read_less.source_lines_avoided,
+                    context_pack.read_less.line_reduction,
+                    context_pack.read_less.read_less_ratio,
+                    backend_context,
+                )
+            }
             None => {
                 "No reading_plan was produced; narrow the task or provide seed files before broad reading."
                     .to_string()
@@ -1116,8 +1158,7 @@ fn normalize_agent_route_backend_evidence(
         bail!("backend evidence confidence must be between 0.0 and 1.0");
     }
 
-    let mut seen_files = BTreeSet::new();
-    evidence.candidate_files = evidence
+    let legacy_files = evidence
         .candidate_files
         .into_iter()
         .map(|file| {
@@ -1128,10 +1169,41 @@ fn normalize_agent_route_backend_evidence(
             normalize_backend_candidate_file(root, file)
                 .with_context(|| format!("invalid backend evidence candidate file: {file}"))
         })
-        .collect::<Result<Vec<_>>>()?
-        .into_iter()
-        .filter(|file| seen_files.insert(file.clone()))
-        .collect();
+        .collect::<Result<Vec<_>>>()?;
+
+    let mut seen_files = BTreeSet::new();
+    let mut candidates = Vec::new();
+    for mut candidate in evidence.candidates {
+        let raw_file = candidate.file.trim();
+        if raw_file.is_empty() {
+            bail!("backend evidence candidate file must not be empty");
+        }
+        candidate.file = normalize_backend_candidate_file(root, raw_file)
+            .with_context(|| format!("invalid backend evidence candidate file: {raw_file}"))?;
+        candidate.symbol = trimmed_optional_string(candidate.symbol);
+        candidate.source = trimmed_optional_string(candidate.source);
+        candidate.reason = trimmed_optional_string(candidate.reason);
+        candidate.evidence = trimmed_unique_strings(candidate.evidence);
+        if let Some(score) = candidate.score
+            && !score.is_finite()
+        {
+            bail!("backend evidence candidate score must be finite");
+        }
+        if seen_files.insert(candidate.file.clone()) {
+            candidates.push(candidate);
+        }
+    }
+    let mut candidate_files = candidates
+        .iter()
+        .map(|candidate| candidate.file.clone())
+        .collect::<Vec<_>>();
+    candidate_files.extend(
+        legacy_files
+            .into_iter()
+            .filter(|file| seen_files.insert(file.clone())),
+    );
+    evidence.candidate_files = candidate_files;
+    evidence.candidates = candidates;
 
     evidence.evidence_sources = trimmed_unique_strings(evidence.evidence_sources);
     evidence.notes = trimmed_unique_strings(evidence.notes);
@@ -1143,24 +1215,47 @@ fn backend_fallback_context_pack(
     task: &str,
     token_budget: usize,
     backend_evidence: &AgentRouteBackendEvidence,
-) -> Result<Option<ContextPack>> {
-    for candidate in &backend_evidence.candidate_files {
-        if !root.join(candidate).is_file() {
+) -> Result<Option<(ContextPack, AgentRouteBackendCandidate)>> {
+    for candidate_file in &backend_evidence.candidate_files {
+        if !root.join(candidate_file).is_file() {
             continue;
         }
+        let candidate = backend_evidence
+            .candidates
+            .iter()
+            .find(|candidate| candidate.file == *candidate_file)
+            .cloned()
+            .unwrap_or_else(|| AgentRouteBackendCandidate {
+                file: candidate_file.clone(),
+                symbol: None,
+                source: None,
+                score: None,
+                reason: None,
+                evidence: Vec::new(),
+            });
         match context_pack_value(
             root.to_path_buf(),
             task.to_string(),
             Vec::new(),
-            vec![candidate.clone()],
+            vec![candidate_file.clone()],
             token_budget,
         ) {
             Ok(mut context_pack) if !context_pack.reading_plan.is_empty() => {
                 context_pack.seed_strategy = "backend_fallback".to_string();
                 if let Some(seed) = context_pack.selected_seeds.first_mut() {
                     seed.source = "backend_fallback".to_string();
+                    if let Some(symbol) = candidate.symbol.as_ref()
+                        && !seed.matched_symbols.contains(symbol)
+                    {
+                        seed.matched_symbols.push(symbol.clone());
+                    }
                 }
-                return Ok(Some(context_pack));
+                annotate_backend_fallback_context(
+                    &mut context_pack,
+                    &backend_evidence.provider,
+                    &candidate,
+                );
+                return Ok(Some((context_pack, candidate)));
             }
             Ok(_) => {}
             Err(error) if is_context_pack_invalid_seed_error(&error) => {}
@@ -1168,6 +1263,54 @@ fn backend_fallback_context_pack(
         }
     }
     Ok(None)
+}
+
+fn annotate_backend_fallback_context(
+    context_pack: &mut ContextPack,
+    provider: &str,
+    candidate: &AgentRouteBackendCandidate,
+) {
+    let summary = format!(
+        "Selected from backend {provider}: {}.",
+        backend_candidate_summary(candidate)
+    );
+    if let Some(file) = context_pack.files.first_mut() {
+        file.reason.push(' ');
+        file.reason.push_str(&summary);
+    }
+    if let Some(step) = context_pack.reading_plan.first_mut() {
+        step.reason.push(' ');
+        step.reason.push_str(&summary);
+        step.selection_reason.push(' ');
+        step.selection_reason.push_str(&summary);
+    }
+}
+
+fn backend_candidate_summary(candidate: &AgentRouteBackendCandidate) -> String {
+    let mut details = vec![format!("file {}", candidate.file)];
+    if let Some(symbol) = candidate.symbol.as_ref() {
+        details.push(format!("symbol {symbol}"));
+    }
+    if let Some(source) = candidate.source.as_ref() {
+        details.push(format!("source {source}"));
+    }
+    if let Some(score) = candidate.score {
+        details.push(format!("score {score:.3}"));
+    }
+    if let Some(reason) = candidate.reason.as_ref() {
+        details.push(format!("reason {reason}"));
+    }
+    if !candidate.evidence.is_empty() {
+        details.push(format!("evidence {}", candidate.evidence.join(", ")));
+    }
+    details.join("; ")
+}
+
+fn trimmed_optional_string(value: Option<String>) -> Option<String> {
+    value.and_then(|value| {
+        let value = value.trim().to_string();
+        (!value.is_empty()).then_some(value)
+    })
 }
 
 fn normalize_backend_candidate_file(root: &Path, file: &str) -> Result<String> {

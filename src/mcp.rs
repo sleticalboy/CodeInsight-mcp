@@ -232,6 +232,25 @@ fn tool_definitions() -> Value {
                 "type": "array",
                 "items": {"type": "string"}
             },
+            "candidates": {
+                "type": "array",
+                "description": "Ranked structured candidates. When present, these lead candidate_files and preserve symbol, score, and routing evidence.",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "file": {"type": "string"},
+                        "symbol": {"type": "string"},
+                        "source": {"type": "string"},
+                        "score": {"type": "number"},
+                        "reason": {"type": "string"},
+                        "evidence": {
+                            "type": "array",
+                            "items": {"type": "string"}
+                        }
+                    },
+                    "required": ["file"]
+                }
+            },
             "evidence_sources": {
                 "type": "array",
                 "items": {"type": "string"}
@@ -1220,6 +1239,16 @@ int login(void) {
 
         assert_eq!(fallback["type"], "boolean");
         assert_eq!(fallback["default"], false);
+
+        let candidates = &agent_route["inputSchema"]["properties"]["backend_evidence"]["properties"]
+            ["candidates"];
+        assert_eq!(candidates["type"], "array");
+        assert_eq!(candidates["items"]["required"][0], "file");
+        assert_eq!(
+            candidates["items"]["properties"]["symbol"]["type"],
+            "string"
+        );
+        assert_eq!(candidates["items"]["properties"]["score"]["type"], "number");
     }
 
     #[test]

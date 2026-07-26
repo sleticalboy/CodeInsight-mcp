@@ -2357,6 +2357,63 @@ fn cli_agent_route_accepts_inline_backend_evidence_json() {
 }
 
 #[test]
+fn cli_agent_route_preserves_structured_backend_candidates() {
+    let fixture = fixture_project();
+    let absolute_main = fixture.path().join("src/main.ts");
+    let backend_evidence = serde_json::json!({
+        "provider": "codebase-memory-mcp",
+        "candidate_files": ["src/server.ts", "src/main.ts"],
+        "candidates": [
+            {
+                "file": absolute_main,
+                "symbol": " main ",
+                "source": " search_graph ",
+                "score": 0.97,
+                "reason": " entrypoint owns startup ",
+                "evidence": [" definition ", "definition", " inbound_calls "]
+            }
+        ]
+    })
+    .to_string();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand app entrypoint flow",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence-json",
+        &backend_evidence,
+    ]);
+
+    let evidence = &route["routing_decision"]["backend_evidence"];
+    assert_eq!(
+        evidence["candidate_files"],
+        serde_json::json!(["src/main.ts", "src/server.ts"])
+    );
+    assert_eq!(evidence["candidates"][0]["file"], "src/main.ts");
+    assert_eq!(evidence["candidates"][0]["symbol"], "main");
+    assert_eq!(evidence["candidates"][0]["source"], "search_graph");
+    assert_eq!(
+        evidence["candidates"][0]["evidence"],
+        serde_json::json!(["definition", "inbound_calls"])
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_selected_candidate"]["reason"],
+        "entrypoint owns startup"
+    );
+    assert!(
+        route["routing_decision"]["route_quality"]["evidence_sources"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|source| source == "backend:codebase-memory-mcp:candidate_evidence:inbound_calls")
+    );
+}
+
+#[test]
 fn cli_agent_route_help_documents_backend_evidence_stdin() {
     Command::cargo_bin("codeinsight")
         .unwrap()
@@ -2475,6 +2532,7 @@ fn cli_agent_route_normalizes_backend_evidence_before_routing() {
         serde_json::json!(["search_graph"])
     );
     assert_eq!(evidence["notes"], serde_json::json!(["verified route"]));
+    assert!(evidence.get("candidates").is_none());
     assert_eq!(
         route["routing_decision"]["backend_route_agreement"]["status"],
         "agree"
@@ -2636,6 +2694,68 @@ fn cli_agent_route_uses_backend_candidate_as_explicit_fallback() {
     assert_eq!(
         route["routing_decision"]["backend_evidence"]["use_as_fallback"],
         true
+    );
+}
+
+#[test]
+fn cli_agent_route_uses_structured_backend_candidate_metadata_in_fallback() {
+    let fixture = fixture_project();
+    let backend_evidence = serde_json::json!({
+        "provider": "codebase-memory-mcp",
+        "use_as_fallback": true,
+        "candidates": [
+            {
+                "file": "missing.ts",
+                "source": "search_graph",
+                "score": 1.0
+            },
+            {
+                "file": "src/main.ts",
+                "symbol": "main",
+                "source": "trace_path",
+                "score": 0.94,
+                "reason": "connects startup to server construction",
+                "evidence": ["definition", "outbound_calls"]
+            }
+        ]
+    })
+    .to_string();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand invalid explicit seed",
+        "--file",
+        "does/not/exist.ts",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence-json",
+        &backend_evidence,
+    ]);
+
+    assert_eq!(route["routing_decision"]["first_file"], "src/main.ts");
+    assert_eq!(
+        route["routing_decision"]["backend_selected_candidate"]["symbol"],
+        "main"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_selected_candidate"]["source"],
+        "trace_path"
+    );
+    assert_eq!(route["impact_seed_symbols"], serde_json::json!(["main"]));
+    assert!(
+        route["context_pack"]["reading_plan"][0]["selection_reason"]
+            .as_str()
+            .unwrap()
+            .contains("connects startup to server construction")
+    );
+    assert!(
+        route["execution_plan"][0]["instruction"]
+            .as_str()
+            .unwrap()
+            .contains("evidence definition, outbound_calls")
     );
 }
 

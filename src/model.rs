@@ -294,6 +294,8 @@ pub struct AgentRouteRoutingDecision {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub backend_evidence: Option<AgentRouteBackendEvidence>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub backend_selected_candidate: Option<AgentRouteBackendCandidate>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub first_seed_kind: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub first_seed_source: Option<String>,
@@ -362,12 +364,29 @@ pub struct AgentRouteBackendAgreement {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AgentRouteBackendCandidate {
+    pub file: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub symbol: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub score: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub evidence: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentRouteBackendEvidence {
     pub provider: String,
     #[serde(default)]
     pub use_as_fallback: bool,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub candidate_files: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub candidates: Vec<AgentRouteBackendCandidate>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub evidence_sources: Vec<String>,
     #[serde(default)]
