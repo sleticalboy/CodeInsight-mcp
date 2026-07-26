@@ -36,6 +36,7 @@ use crate::{
 
 const CONTEXT_SCORE_SEED_FILE: i32 = 130;
 const BACKEND_EVIDENCE_CANDIDATE_LIMIT: usize = 16;
+const BACKEND_EVIDENCE_TOOL_RESULT_WRAPPER_LIMIT: usize = 4;
 const BACKEND_EVIDENCE_TOOL_RESULT_PAGES_LIMIT: usize = 16;
 const BACKEND_EVIDENCE_TOOL_RESULT_ITEMS_LIMIT: usize = 64;
 const BACKEND_EVIDENCE_PER_CANDIDATE_LIMIT: usize = 6;
@@ -1833,41 +1834,45 @@ fn collect_backend_tool_candidates(
 }
 
 fn backend_tool_result_payload(raw: Value, source: &str) -> Result<Value> {
-    if let Some(payload) = raw
-        .get("structuredContent")
-        .filter(|value| value.is_object())
-    {
-        return Ok(payload.clone());
-    }
-    if let Some(result) = raw.get("result") {
-        if let Some(payload) = result
+    let mut current = raw;
+    for wrapper_depth in 0..=BACKEND_EVIDENCE_TOOL_RESULT_WRAPPER_LIMIT {
+        if let Some(payload) = current
             .get("structuredContent")
             .filter(|value| value.is_object())
         {
             return Ok(payload.clone());
         }
-        if result.is_object() {
-            return Ok(result.clone());
+        if let Some(result) = current.get("result").cloned() {
+            if wrapper_depth == BACKEND_EVIDENCE_TOOL_RESULT_WRAPPER_LIMIT {
+                bail!(
+                    "backend evidence {source} tool result must not exceed {} nested result wrappers",
+                    BACKEND_EVIDENCE_TOOL_RESULT_WRAPPER_LIMIT
+                );
+            }
+            current = result;
+            continue;
         }
-    }
-    if let Some(text) = raw
-        .get("content")
-        .and_then(Value::as_array)
-        .and_then(|content| {
-            content.iter().find_map(|item| {
-                (item.get("type").and_then(Value::as_str) == Some("text"))
-                    .then(|| item.get("text").and_then(Value::as_str))
-                    .flatten()
+        if let Some(text) = current
+            .get("content")
+            .and_then(Value::as_array)
+            .and_then(|content| {
+                content.iter().find_map(|item| {
+                    (item.get("type").and_then(Value::as_str) == Some("text"))
+                        .then(|| item.get("text").and_then(Value::as_str))
+                        .flatten()
+                })
             })
-        })
-    {
-        return serde_json::from_str(text)
-            .with_context(|| format!("backend evidence {source} text content is not valid JSON"));
+        {
+            return serde_json::from_str(text).with_context(|| {
+                format!("backend evidence {source} text content is not valid JSON")
+            });
+        }
+        if current.is_object() {
+            return Ok(current);
+        }
+        bail!("backend evidence {source} tool result must be a JSON object");
     }
-    if raw.is_object() {
-        return Ok(raw);
-    }
-    bail!("backend evidence {source} tool result must be a JSON object")
+    unreachable!()
 }
 
 fn first_backend_tool_string(value: &Value, keys: &[&str]) -> Option<String> {

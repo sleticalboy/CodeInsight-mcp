@@ -2484,6 +2484,63 @@ fn cli_agent_route_normalizes_inline_backend_tool_results() {
 }
 
 #[test]
+fn cli_agent_route_normalizes_json_rpc_text_backend_tool_result() {
+    let fixture = fixture_project();
+    let search_code_payload = serde_json::json!({
+        "results": [{
+            "node": "startServer",
+            "label": "Function",
+            "file": "src/server.ts"
+        }],
+        "total_results": 1,
+        "elapsed_ms": 19
+    });
+    let backend_evidence = serde_json::json!({
+        "provider": "codebase-memory-mcp",
+        "tool_results": {
+            "search_code": {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "result": {
+                    "content": [{
+                        "type": "text",
+                        "text": search_code_payload.to_string()
+                    }]
+                }
+            }
+        }
+    })
+    .to_string();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand server startup",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence-json",
+        &backend_evidence,
+    ]);
+
+    let evidence = &route["routing_decision"]["backend_evidence"];
+    assert_eq!(
+        evidence["candidate_files"],
+        serde_json::json!(["src/server.ts"])
+    );
+    assert_eq!(evidence["candidates"][0]["symbol"], "startServer");
+    assert_eq!(evidence["candidates"][0]["source"], "search_code");
+    assert_eq!(evidence["evidence_count"], 1);
+    assert_eq!(evidence["latency_ms"], 19);
+    assert!(
+        evidence["normalization"]
+            .get("unfetched_tool_result_items")
+            .is_none()
+    );
+}
+
+#[test]
 fn cli_agent_route_bounds_inline_backend_tool_results() {
     let fixture = fixture_project();
     let mut results = (1..=70)
@@ -2995,6 +3052,32 @@ fn cli_agent_route_rejects_invalid_backend_evidence_values() {
         .failure()
         .stderr(contains(
             "backend evidence search_graph tool result must not exceed 16 pages",
+        ));
+
+    let mut deeply_wrapped = serde_json::json!({"results": []});
+    for _ in 0..=4 {
+        deeply_wrapped = serde_json::json!({"result": deeply_wrapped});
+    }
+    let deeply_wrapped_evidence = serde_json::json!({
+        "provider": "graph",
+        "tool_results": {"search_graph": deeply_wrapped}
+    })
+    .to_string();
+    Command::cargo_bin("codeinsight")
+        .unwrap()
+        .env_remove("CODEINSIGHT_EMBEDDING_PROVIDER")
+        .args([
+            "agent-route",
+            fixture.path().to_str().unwrap(),
+            "--task",
+            "understand app entrypoint flow",
+            "--backend-evidence-json",
+            &deeply_wrapped_evidence,
+        ])
+        .assert()
+        .failure()
+        .stderr(contains(
+            "backend evidence search_graph tool result must not exceed 4 nested result wrappers",
         ));
 
     Command::cargo_bin("codeinsight")
