@@ -1,5 +1,5 @@
 use std::{
-    cmp::Ordering,
+    cmp::{Ordering, Reverse},
     collections::{BTreeMap, BTreeSet, VecDeque},
     fs,
     path::{Component, Path, PathBuf},
@@ -1947,14 +1947,26 @@ fn normalize_backend_trace_path_result(root: &Path, raw: Value) -> Result<Value>
                             .find(|part| !part.is_empty())
                             .unwrap_or(backend_symbol.as_str())
                     });
-                let local_symbols = store.search_symbols(lookup_name, 16)?;
-                let Some(local_symbol) = local_symbols.iter().find(|symbol| {
-                    backend_symbol_name_matches(
-                        &backend_symbol,
-                        &symbol.name,
-                        &symbol.qualified_name,
-                    )
-                }) else {
+                let local_symbols =
+                    store.search_symbols(lookup_name, BACKEND_EVIDENCE_TOOL_RESULT_ITEMS_LIMIT)?;
+                let Some(local_symbol) = local_symbols
+                    .iter()
+                    .enumerate()
+                    .filter(|symbol| {
+                        backend_symbol_name_matches(
+                            &backend_symbol,
+                            &symbol.1.name,
+                            &symbol.1.qualified_name,
+                        )
+                    })
+                    .max_by_key(|(index, symbol)| {
+                        (
+                            backend_trace_symbol_match_score(&backend_symbol, symbol),
+                            Reverse(*index),
+                        )
+                    })
+                    .map(|(_, symbol)| symbol)
+                else {
                     continue;
                 };
                 results.push(json!({
@@ -2502,6 +2514,33 @@ fn backend_symbol_name_matches(candidate: &str, name: &str, qualified_name: &str
         || candidate == qualified_name
         || candidate.ends_with(&format!(".{qualified_name}"))
         || qualified_name.ends_with(&format!(".{candidate}"))
+}
+
+fn backend_trace_symbol_match_score(backend_symbol: &str, local_symbol: &Symbol) -> usize {
+    if backend_symbol == local_symbol.qualified_name {
+        return usize::MAX;
+    }
+
+    let backend_parts = backend_symbol_identity_parts(backend_symbol);
+    let local_file = Path::new(&local_symbol.file).with_extension("");
+    let mut local_parts = backend_symbol_identity_parts(&local_file.to_string_lossy());
+    local_parts.extend(backend_symbol_identity_parts(&local_symbol.qualified_name));
+    let suffix_parts = backend_parts
+        .iter()
+        .rev()
+        .zip(local_parts.iter().rev())
+        .take_while(|(backend, local)| backend == local)
+        .count();
+
+    suffix_parts.max(1)
+}
+
+fn backend_symbol_identity_parts(value: &str) -> Vec<String> {
+    value
+        .split(|character: char| !character.is_ascii_alphanumeric())
+        .filter(|part| !part.is_empty())
+        .map(str::to_ascii_lowercase)
+        .collect()
 }
 
 fn backend_candidate_is_support_file(file: &str) -> bool {

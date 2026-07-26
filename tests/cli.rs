@@ -2535,6 +2535,61 @@ fn cli_agent_route_normalizes_inline_backend_tool_results() {
 }
 
 #[test]
+fn cli_agent_route_disambiguates_trace_path_symbols_by_qualified_name() {
+    let fixture = fixture_project();
+    write_file(
+        &fixture,
+        "src/aaa.ts",
+        r#"
+export function helper() {
+  return "wrong helper";
+}
+"#,
+    );
+    let backend_evidence = serde_json::json!({
+        "provider": "codebase-memory-mcp",
+        "tool_results": {
+            "trace_path": {
+                "function": "AuthService.login",
+                "direction": "outbound",
+                "callees": [{
+                    "name": "helper",
+                    "qualified_name": "fixture.src.auth.helper",
+                    "hop": 1
+                }],
+                "elapsed_ms": 5
+            }
+        }
+    })
+    .to_string();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand login helper call chain",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence-json",
+        &backend_evidence,
+        "--prefer-backend-context",
+    ]);
+
+    let evidence = &route["routing_decision"]["backend_evidence"];
+    assert_eq!(
+        evidence["candidate_files"],
+        serde_json::json!(["src/auth.py"])
+    );
+    assert_eq!(evidence["candidates"][0]["symbol"], "helper");
+    assert_eq!(route["routing_decision"]["first_file"], "src/auth.py");
+    assert_eq!(
+        route["routing_decision"]["seed_strategy"],
+        "backend_preferred"
+    );
+}
+
+#[test]
 fn cli_agent_route_normalizes_json_rpc_text_backend_tool_result() {
     let fixture = fixture_project();
     let search_code_payload = serde_json::json!({
