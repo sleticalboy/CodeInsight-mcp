@@ -17,7 +17,8 @@ use crate::{
     embedding, index,
     language::detect_language,
     model::{
-        AgentRouteBackendAgreement, AgentRouteBackendCandidate, AgentRouteBackendEvidence,
+        AgentRouteBackendAgreement, AgentRouteBackendCandidate,
+        AgentRouteBackendCandidateDisposition, AgentRouteBackendEvidence,
         AgentRouteBackendNormalization, AgentRouteExecutionStep, AgentRouteQuality,
         AgentRouteReport, AgentRouteRoutingDecision, AgentRouteStep, CallEdge, ConfigInitReport,
         ConfigStatusReport, ContextBudget, ContextContinuationSummary, ContextFile,
@@ -64,6 +65,12 @@ impl BackendContextMode {
 
 struct BackendContextSelection {
     candidates: Vec<AgentRouteBackendCandidate>,
+    candidate_dispositions: Vec<AgentRouteBackendCandidateDisposition>,
+}
+
+struct BackendContextAttempt {
+    context_pack: Option<ContextPack>,
+    selection: BackendContextSelection,
 }
 
 impl BackendContextSelection {
@@ -79,6 +86,10 @@ impl BackendContextSelection {
             .iter()
             .filter_map(|candidate| candidate.symbol.clone())
             .collect()
+    }
+
+    fn dispositions(&self) -> Vec<AgentRouteBackendCandidateDisposition> {
+        self.candidate_dispositions.clone()
     }
 }
 
@@ -331,32 +342,36 @@ pub fn agent_route_value(
         && let Some(evidence) = backend_evidence
             .as_ref()
             .filter(|evidence| evidence.prefer_for_context)
-        && let Some((preferred_context, preferred_selection)) = backend_seed_context_pack(
+    {
+        let attempt = backend_seed_context_pack(
             &root,
             &task,
             token_budget,
             evidence,
             BackendContextMode::Preferred,
-        )?
-    {
-        context_pack = preferred_context;
-        backend_context_selection = Some(preferred_selection);
-        backend_context_mode = Some(BackendContextMode::Preferred);
+        )?;
+        if let Some(preferred_context) = attempt.context_pack {
+            context_pack = preferred_context;
+            backend_context_mode = Some(BackendContextMode::Preferred);
+        }
+        backend_context_selection = Some(attempt.selection);
     } else if context_pack.reading_plan.is_empty()
         && let Some(evidence) = backend_evidence
             .as_ref()
             .filter(|evidence| evidence.use_as_fallback)
-        && let Some((fallback_context, fallback_selection)) = backend_seed_context_pack(
+    {
+        let attempt = backend_seed_context_pack(
             &root,
             &task,
             token_budget,
             evidence,
             BackendContextMode::Fallback,
-        )?
-    {
-        context_pack = fallback_context;
-        backend_context_selection = Some(fallback_selection);
-        backend_context_mode = Some(BackendContextMode::Fallback);
+        )?;
+        if let Some(fallback_context) = attempt.context_pack {
+            context_pack = fallback_context;
+            backend_context_mode = Some(BackendContextMode::Fallback);
+        }
+        backend_context_selection = Some(attempt.selection);
     }
     add_index_scope_hint_to_blocked_context(&mut context_pack, &index_report.index_scope);
 
@@ -470,10 +485,7 @@ pub fn agent_route_value(
         backend_evidence,
         local_first_file.as_deref(),
         backend_context_mode,
-        backend_context_selection
-            .as_ref()
-            .map(BackendContextSelection::files)
-            .unwrap_or_default(),
+        backend_context_selection.as_ref(),
     );
     let execution_plan = agent_route_execution_plan(
         &context_pack,
@@ -507,7 +519,7 @@ fn agent_route_routing_decision(
     backend_evidence: Option<AgentRouteBackendEvidence>,
     local_first_file: Option<&str>,
     backend_context_mode: Option<BackendContextMode>,
-    selected_backend_context_files: Vec<String>,
+    backend_context_selection: Option<&BackendContextSelection>,
 ) -> AgentRouteRoutingDecision {
     let first_seed = context_pack.selected_seeds.first();
     let first_step = context_pack.reading_plan.first();
@@ -515,7 +527,12 @@ fn agent_route_routing_decision(
         local_first_file,
         backend_evidence.as_ref(),
         backend_context_mode,
-        selected_backend_context_files,
+        backend_context_selection
+            .map(BackendContextSelection::files)
+            .unwrap_or_default(),
+        backend_context_selection
+            .map(BackendContextSelection::dispositions)
+            .unwrap_or_default(),
     );
     let route_quality = agent_route_quality(
         context_pack,
@@ -575,6 +592,7 @@ fn agent_route_backend_agreement(
     backend_evidence: Option<&AgentRouteBackendEvidence>,
     backend_context_mode: Option<BackendContextMode>,
     selected_context_files: Vec<String>,
+    candidate_dispositions: Vec<AgentRouteBackendCandidateDisposition>,
 ) -> AgentRouteBackendAgreement {
     let Some(backend) = backend_evidence else {
         return AgentRouteBackendAgreement {
@@ -587,6 +605,7 @@ fn agent_route_backend_agreement(
             selected_context_file: None,
             selected_context_files: Vec::new(),
             candidate_file_count: 0,
+            candidate_dispositions: Vec::new(),
             common_files: Vec::new(),
         };
     };
@@ -604,6 +623,35 @@ fn agent_route_backend_agreement(
                 .collect::<Vec<_>>()
         })
         .unwrap_or_default();
+
+    if !candidate_dispositions.is_empty()
+        && candidate_dispositions
+            .iter()
+            .all(|candidate| candidate.context_reason == "missing_file")
+    {
+        let recommended_action = if local_first_file.is_some() {
+            "read_selected_context"
+        } else {
+            "provide_valid_backend_candidate"
+        };
+        return AgentRouteBackendAgreement {
+            status: "backend_unavailable".to_string(),
+            message: format!(
+                "Backend {} supplied {} candidate file(s), but none exist in the current local checkout.",
+                backend.provider,
+                candidate_dispositions.len()
+            ),
+            recommended_action: recommended_action.to_string(),
+            provider: Some(backend.provider.clone()),
+            local_first_file,
+            backend_first_file,
+            selected_context_file: None,
+            selected_context_files: Vec::new(),
+            candidate_file_count: backend.candidate_files.len(),
+            candidate_dispositions,
+            common_files,
+        };
+    }
 
     if let Some(mode) = backend_context_mode {
         let selected_context_file = selected_context_files.first().cloned();
@@ -650,6 +698,7 @@ fn agent_route_backend_agreement(
             selected_context_file,
             selected_context_files,
             candidate_file_count: backend.candidate_files.len(),
+            candidate_dispositions,
             common_files,
         };
     }
@@ -719,6 +768,7 @@ fn agent_route_backend_agreement(
         selected_context_file: None,
         selected_context_files: Vec::new(),
         candidate_file_count: backend.candidate_files.len(),
+        candidate_dispositions,
         common_files,
     }
 }
@@ -995,6 +1045,16 @@ fn agent_route_quality(
             "backend_without_candidates" => {
                 warnings.push(format!(
                     "Backend {} supplied no candidate files; treat local routing as uncorroborated.",
+                    backend.provider
+                ));
+            }
+            "backend_unavailable" => {
+                score -= 3;
+                backend_route_recommended_action =
+                    Some(backend_route_agreement.recommended_action.clone());
+                warnings.push(backend_route_agreement.message.clone());
+                verification_steps.push(format!(
+                    "Refresh backend {} evidence against the current checkout before relying on its candidate ranking.",
                     backend.provider
                 ));
             }
@@ -1457,7 +1517,7 @@ fn backend_seed_context_pack(
     token_budget: usize,
     backend_evidence: &AgentRouteBackendEvidence,
     mode: BackendContextMode,
-) -> Result<Option<(ContextPack, BackendContextSelection)>> {
+) -> Result<BackendContextAttempt> {
     let valid_candidate_files = backend_evidence
         .candidate_files
         .iter()
@@ -1573,19 +1633,89 @@ fn backend_seed_context_pack(
                     backend_evidence,
                     &selected_candidates,
                 );
-                return Ok(Some((
-                    context_pack,
-                    BackendContextSelection {
+                let candidate_dispositions = backend_candidate_dispositions(
+                    backend_evidence,
+                    &candidates,
+                    &selected_candidates,
+                    mode,
+                );
+                return Ok(BackendContextAttempt {
+                    context_pack: Some(context_pack),
+                    selection: BackendContextSelection {
                         candidates: selected_candidates,
+                        candidate_dispositions,
                     },
-                )));
+                });
             }
             Ok(_) => {}
             Err(error) if is_context_pack_invalid_seed_error(&error) => {}
             Err(error) => return Err(error),
         }
     }
-    Ok(None)
+    Ok(BackendContextAttempt {
+        context_pack: None,
+        selection: BackendContextSelection {
+            candidates: Vec::new(),
+            candidate_dispositions: backend_candidate_dispositions(
+                backend_evidence,
+                &candidates,
+                &[],
+                mode,
+            ),
+        },
+    })
+}
+
+fn backend_candidate_dispositions(
+    backend_evidence: &AgentRouteBackendEvidence,
+    valid_candidates: &[AgentRouteBackendCandidate],
+    selected_candidates: &[AgentRouteBackendCandidate],
+    mode: BackendContextMode,
+) -> Vec<AgentRouteBackendCandidateDisposition> {
+    let selected_files = selected_candidates
+        .iter()
+        .map(|candidate| candidate.file.as_str())
+        .collect::<BTreeSet<_>>();
+
+    backend_evidence
+        .candidate_files
+        .iter()
+        .enumerate()
+        .map(|(index, file)| {
+            let original_candidate = backend_evidence
+                .candidates
+                .iter()
+                .find(|candidate| candidate.file == *file);
+            let valid_candidate = valid_candidates
+                .iter()
+                .find(|candidate| candidate.file == *file);
+            let symbol = original_candidate.and_then(|candidate| candidate.symbol.clone());
+            let symbol_status = symbol.as_ref().map(|_| match valid_candidate {
+                Some(candidate) if candidate.symbol.is_some() => "valid",
+                Some(_) => "stale",
+                None => "not_checked",
+            });
+            let (context_status, context_reason) = if valid_candidate.is_none() {
+                ("omitted", "missing_file")
+            } else if selected_files.contains(file.as_str()) {
+                ("selected", "selected_within_token_budget")
+            } else {
+                match mode {
+                    BackendContextMode::Preferred => ("omitted", "token_budget_exhausted"),
+                    BackendContextMode::Fallback => ("omitted", "fallback_not_selected"),
+                }
+            };
+
+            AgentRouteBackendCandidateDisposition {
+                file: file.clone(),
+                rank: index + 1,
+                symbol,
+                context_status: context_status.to_string(),
+                context_reason: context_reason.to_string(),
+                symbol_status: symbol_status.map(str::to_string),
+            }
+        })
+        .collect()
 }
 
 fn backend_symbol_name_matches(candidate: &str, name: &str, qualified_name: &str) -> bool {

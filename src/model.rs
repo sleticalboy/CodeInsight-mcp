@@ -363,8 +363,22 @@ pub struct AgentRouteBackendAgreement {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub selected_context_files: Vec<String>,
     pub candidate_file_count: usize,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub candidate_dispositions: Vec<AgentRouteBackendCandidateDisposition>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub common_files: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct AgentRouteBackendCandidateDisposition {
+    pub file: String,
+    pub rank: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub symbol: Option<String>,
+    pub context_status: String,
+    pub context_reason: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub symbol_status: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

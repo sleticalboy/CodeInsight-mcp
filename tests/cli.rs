@@ -3049,22 +3049,41 @@ fn cli_agent_route_prefers_backend_candidate_for_bounded_context() {
 #[test]
 fn cli_agent_route_routes_ranked_backend_candidates_within_budget() {
     let fixture = fixture_project();
+    let mut candidates = vec![
+        serde_json::json!({
+            "file": "src/ui.ts",
+            "symbol": "render",
+            "source": "search_graph",
+            "score": 0.97
+        }),
+        serde_json::json!({
+            "file": "src/main.ts",
+            "symbol": "main",
+            "source": "trace_path",
+            "score": 0.91
+        }),
+    ];
+    for rank in 3..=16 {
+        let file = format!("src/backend-candidate-{rank}.ts");
+        let symbol = format!("backendCandidate{rank}");
+        let mut source = format!("export function {symbol}() {{\n");
+        for line in 1..=80 {
+            source.push_str(&format!(
+                "  const value_{line} = \"backend candidate {rank} context line {line}\";\n"
+            ));
+        }
+        source.push_str("  return value_1;\n}\n");
+        write_file(&fixture, &file, &source);
+        candidates.push(serde_json::json!({
+            "file": file,
+            "symbol": symbol,
+            "source": "search_graph",
+            "score": 0.90 - (rank as f64 / 100.0)
+        }));
+    }
     let backend_evidence = serde_json::json!({
         "provider": "codebase-memory-mcp",
-        "candidates": [
-            {
-                "file": "src/ui.ts",
-                "symbol": "render",
-                "source": "search_graph",
-                "score": 0.97
-            },
-            {
-                "file": "src/main.ts",
-                "symbol": "main",
-                "source": "trace_path",
-                "score": 0.91
-            }
-        ]
+        "candidates": candidates
     })
     .to_string();
 
@@ -3074,7 +3093,7 @@ fn cli_agent_route_routes_ranked_backend_candidates_within_budget() {
         "--task",
         "understand app entrypoint flow",
         "--token-budget",
-        "6000",
+        "500",
         "--force-index",
         "--backend-evidence-json",
         &backend_evidence,
@@ -3098,28 +3117,28 @@ fn cli_agent_route_routes_ranked_backend_candidates_within_budget() {
 
     assert!(ui_position < main_position);
     assert_eq!(route["routing_decision"]["first_file"], "src/ui.ts");
-    assert_eq!(
-        route["routing_decision"]["backend_route_agreement"]["selected_context_files"],
-        serde_json::json!(["src/ui.ts", "src/main.ts"])
-    );
-    assert_eq!(
-        route["impact_seed_files"],
-        serde_json::json!(["src/main.ts", "src/ui.ts"])
-    );
-    assert_eq!(
-        route["impact_seed_symbols"],
-        serde_json::json!(["main", "render"])
-    );
-    assert_eq!(
-        route["context_pack"]["selected_seeds"]
+    let dispositions =
+        route["routing_decision"]["backend_route_agreement"]["candidate_dispositions"]
             .as_array()
-            .unwrap()
-            .iter()
-            .filter(|seed| seed["kind"] == "symbol")
-            .map(|seed| seed["value"].as_str().unwrap())
-            .collect::<Vec<_>>(),
-        vec!["render", "main"]
-    );
+            .unwrap();
+    assert_eq!(dispositions.len(), 16);
+    assert_eq!(dispositions[0]["file"], "src/ui.ts");
+    assert_eq!(dispositions[0]["context_status"], "selected");
+    assert_eq!(dispositions[0]["symbol_status"], "valid");
+    assert_eq!(dispositions[1]["file"], "src/main.ts");
+    assert_eq!(dispositions[1]["context_status"], "selected");
+    assert_eq!(dispositions[1]["symbol_status"], "valid");
+    assert!(dispositions.iter().any(|disposition| {
+        disposition["context_status"] == "omitted"
+            && disposition["context_reason"] == "token_budget_exhausted"
+            && disposition["symbol_status"] == "valid"
+    }));
+    let impact_seed_files = route["impact_seed_files"].as_array().unwrap();
+    assert!(impact_seed_files.iter().any(|file| file == "src/ui.ts"));
+    assert!(impact_seed_files.iter().any(|file| file == "src/main.ts"));
+    let impact_seed_symbols = route["impact_seed_symbols"].as_array().unwrap();
+    assert!(impact_seed_symbols.iter().any(|symbol| symbol == "render"));
+    assert!(impact_seed_symbols.iter().any(|symbol| symbol == "main"));
     assert!(
         route["context_pack"]["reading_plan"][0]["selection_reason"]
             .as_str()
@@ -3161,6 +3180,27 @@ fn cli_agent_route_preserves_backend_rank_after_skipping_missing_candidate() {
     assert_eq!(
         route["routing_decision"]["backend_route_agreement"]["selected_context_files"],
         serde_json::json!(["src/ui.ts"])
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["candidate_dispositions"],
+        serde_json::json!([
+            {
+                "file": "src/removed.ts",
+                "rank": 1,
+                "symbol": "removed",
+                "context_status": "omitted",
+                "context_reason": "missing_file",
+                "symbol_status": "not_checked"
+            },
+            {
+                "file": "src/ui.ts",
+                "rank": 2,
+                "symbol": "render",
+                "context_status": "selected",
+                "context_reason": "selected_within_token_budget",
+                "symbol_status": "valid"
+            }
+        ])
     );
     assert!(
         route["context_pack"]["reading_plan"][0]["selection_reason"]
@@ -3314,6 +3354,17 @@ fn cli_agent_route_falls_back_to_file_when_backend_symbol_is_stale() {
     assert_eq!(
         route["routing_decision"]["backend_route_agreement"]["status"],
         "backend_fallback"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["candidate_dispositions"],
+        serde_json::json!([{
+            "file": "src/main.ts",
+            "rank": 1,
+            "symbol": "removedGraphSymbol",
+            "context_status": "selected",
+            "context_reason": "selected_within_token_budget",
+            "symbol_status": "stale"
+        }])
     );
 }
 
@@ -10558,6 +10609,97 @@ fn cli_init_config_prefills_detected_test_commands() {
         std::fs::read_to_string(fixture.path().join(".codeinsight/config.toml")).unwrap();
 
     assert!(contents.contains("test_commands = [\"cargo test --locked\", \"pnpm test\"]"));
+}
+
+#[test]
+fn cli_agent_route_explains_when_all_backend_candidates_are_missing() {
+    let fixture = fixture_project();
+    let backend_evidence = serde_json::json!({
+        "provider": "codebase-memory-mcp",
+        "use_as_fallback": true,
+        "prefer_for_context": true,
+        "candidates": [
+            { "file": "src/removed-auth.ts", "symbol": "AuthService" },
+            { "file": "src/removed-main.ts", "symbol": "main" }
+        ]
+    })
+    .to_string();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand invalid explicit seed",
+        "--file",
+        "does/not/exist.ts",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence-json",
+        &backend_evidence,
+    ]);
+
+    let agreement = &route["routing_decision"]["backend_route_agreement"];
+    assert_eq!(agreement["status"], "backend_unavailable");
+    assert_eq!(
+        agreement["recommended_action"],
+        "provide_valid_backend_candidate"
+    );
+    assert_eq!(
+        agreement["candidate_dispositions"],
+        serde_json::json!([
+            {
+                "file": "src/removed-auth.ts",
+                "rank": 1,
+                "symbol": "AuthService",
+                "context_status": "omitted",
+                "context_reason": "missing_file",
+                "symbol_status": "not_checked"
+            },
+            {
+                "file": "src/removed-main.ts",
+                "rank": 2,
+                "symbol": "main",
+                "context_status": "omitted",
+                "context_reason": "missing_file",
+                "symbol_status": "not_checked"
+            }
+        ])
+    );
+    assert_eq!(route["context_pack"]["files"], serde_json::json!([]));
+    assert_eq!(route["impact_status"], "skipped_invalid_seed");
+
+    let local_route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand app entrypoint flow",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence-json",
+        &backend_evidence,
+    ]);
+    let local_agreement = &local_route["routing_decision"]["backend_route_agreement"];
+    assert_eq!(local_agreement["status"], "backend_unavailable");
+    assert_eq!(
+        local_agreement["recommended_action"],
+        "read_selected_context"
+    );
+    assert_eq!(
+        local_route["routing_decision"]["route_quality"]["recommended_action"],
+        "read_selected_context"
+    );
+    assert!(
+        local_route["routing_decision"]["route_quality"]["warnings"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|warning| warning
+                .as_str()
+                .unwrap()
+                .contains("none exist in the current local checkout"))
+    );
 }
 
 #[test]

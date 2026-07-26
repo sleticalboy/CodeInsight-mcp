@@ -215,6 +215,7 @@ main() {
   require_jq "$preferred_route_json" '.routing_decision.backend_route_agreement.local_first_file == "src/main.ts"' "preferred routing should preserve the original local first candidate"
   require_jq "$preferred_route_json" '.routing_decision.backend_route_agreement.selected_context_file == "src/auth.ts"' "preferred routing should expose the selected backend context file"
   require_jq "$preferred_route_json" '.routing_decision.backend_route_agreement.selected_context_files == ["src/auth.ts", "src/audit.ts", "src/main.ts"]' "preferred routing should preserve graph-ranked candidates that fit the context budget"
+  require_jq "$preferred_route_json" '.routing_decision.backend_route_agreement.candidate_dispositions | length == 3 and all(.[]; .context_status == "selected" and .context_reason == "selected_within_token_budget" and .symbol_status == "valid")' "preferred routing should explain every selected backend candidate"
   require_jq "$preferred_route_json" '([.context_pack.reading_plan[].file] | index("src/auth.ts")) < ([.context_pack.reading_plan[].file] | index("src/audit.ts")) and ([.context_pack.reading_plan[].file] | index("src/audit.ts")) < ([.context_pack.reading_plan[].file] | index("src/main.ts"))' "preferred reading plan should retain graph candidate order"
   require_jq "$preferred_route_json" '.impact_seed_files == ["src/audit.ts", "src/auth.ts", "src/main.ts"]' "preferred impact analysis should follow all selected backend files"
   require_jq "$preferred_route_json" '.impact_seed_symbols == ["AuthService", "auditLogin", "main"]' "preferred impact analysis should follow selected backend symbols"
@@ -232,6 +233,7 @@ main() {
   require_jq "$fallback_route_json" '.routing_decision.first_file == "src/auth.ts"' "fallback should use the first generated backend candidate"
   require_jq "$fallback_route_json" '.routing_decision.backend_selected_candidate.symbol == "AuthService"' "fallback should preserve the generated backend symbol"
   require_jq "$fallback_route_json" '.impact_seed_symbols == ["AuthService"]' "fallback should reuse the generated backend symbol for impact analysis"
+  require_jq "$fallback_route_json" '.routing_decision.backend_route_agreement.candidate_dispositions[0].context_status == "selected" and ([.routing_decision.backend_route_agreement.candidate_dispositions[1:][]] | all(.[]; .context_status == "omitted" and .context_reason == "fallback_not_selected"))' "fallback routing should explain why lower-ranked backend candidates were not selected"
 
   jq '.candidate_files = ["src/main.ts"] | .candidates = [.candidates[] | select(.file == "src/main.ts")] | .notes += ["conflict fixture: backend preferred app entrypoint"]' \
     "$evidence" >"$conflict_evidence"
