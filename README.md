@@ -222,6 +222,9 @@ plan. `backend_route_agreement.selected_context_files` reports the candidates
 actually retained. `backend_route_agreement.candidate_dispositions` explains
 each candidate with its original rank, context status/reason, symbol status, and
 an executable next action for reading, continuation, fallback, or evidence refresh.
+When a valid backend candidate remains unselected,
+`backend_route_agreement.next_candidate_continuation` exposes the highest-ranked
+candidate plus a directly callable `context_pack` request.
 Candidate symbols are checked against the local index; stale symbols are dropped
 while their valid file candidates remain available.
 Explicit `--file` or `--symbol` seeds still take priority, so a caller-selected
@@ -375,7 +378,7 @@ accuracy, or proof that unselected code is irrelevant.
 
 Current benchmark snapshot:
 
-- The two-minute demo for this repository shows the agent route selecting 520 of 85,020 source lines, avoiding 84,500 source lines before broad reading for a 99.4% reduction and 163.5x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
+- The two-minute demo for this repository shows the agent route selecting 523 of 85,159 source lines, avoiding 84,636 source lines before broad reading for a 99.4% reduction and 162.8x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
 - Smoke repositories route `context_pack` first for 4/4 repositories and
   select 709 of 75,753 source lines, a 99.1% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and
