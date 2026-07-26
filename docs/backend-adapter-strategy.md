@@ -99,6 +99,9 @@ priority over this policy. The older fallback mode remains single-candidate so
 its recovery behavior stays stable. Candidate symbols are validated against the
 local index before routing; a stale symbol is ignored without discarding its
 valid file candidate.
+For `search_graph`, non-empty semantic results take priority over keyword
+results, while an empty semantic result set falls back to keyword candidates so
+a combined backend query does not discard usable evidence.
 
 The first bridge prototype is script-level and runtime-agnostic:
 

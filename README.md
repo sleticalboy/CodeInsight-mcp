@@ -231,8 +231,9 @@ evidence and omits the raw payloads from its response:
 Raw `get_code_snippet`, `search_graph`, `search_code`, `query_graph`,
 `trace_path`, and `get_architecture` responses are accepted. Exact snippet
 metadata is ranked before broader search results, while its `source` body is
-discarded. For `search_graph`, keyword `results` and semantic
-`semantic_results` share the same per-tool budget. For `query_graph`, return a
+discarded. For `search_graph`, non-empty semantic `semantic_results` take
+priority; an empty semantic array falls back to keyword `results`, and both use
+the same per-tool budget. For `query_graph`, return a
 `file_path` or `file` column plus an optional `name` or `qualified_name` column;
 CodeInsight converts the tabular `columns` and `rows` response into candidates.
 For `trace_path`, CodeInsight resolves the traced subject, `callers`, and
@@ -414,7 +415,7 @@ accuracy, or proof that unselected code is irrelevant.
 
 Current benchmark snapshot:
 
-- The two-minute demo for this repository shows the agent route selecting 531 of 87,513 source lines, avoiding 86,982 source lines before broad reading for a 99.4% reduction and 164.8x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 23 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
+- The two-minute demo for this repository shows the agent route selecting 531 of 87,566 source lines, avoiding 87,035 source lines before broad reading for a 99.4% reduction and 164.9x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 23 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
 - Smoke repositories route `context_pack` first for 4/4 repositories and
   select 709 of 75,753 source lines, a 99.1% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and

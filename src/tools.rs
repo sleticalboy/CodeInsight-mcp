@@ -2097,9 +2097,19 @@ fn collect_backend_tool_candidates(
             format!("{} page {}", spec.source, page_index + 1)
         };
         let payload = backend_tool_result_payload(raw_page, &page_source)?;
-        let preferred_items_key = spec
-            .preferred_items_key
-            .filter(|items_key| payload.get(*items_key).is_some());
+        let preferred_items_key = match spec.preferred_items_key {
+            Some(items_key) => match payload.get(items_key) {
+                Some(Value::Array(items)) if items.is_empty() => None,
+                Some(Value::Array(_)) => Some(items_key),
+                Some(_) => {
+                    bail!(
+                        "backend evidence {page_source} tool result field {items_key} must be an array"
+                    )
+                }
+                None => None,
+            },
+            None => None,
+        };
         let selected_items_keys = preferred_items_key
             .map(|items_key| vec![items_key])
             .unwrap_or_else(|| spec.items_keys.to_vec());

@@ -2704,6 +2704,49 @@ fn cli_agent_route_normalizes_json_rpc_text_backend_tool_result() {
 }
 
 #[test]
+fn cli_agent_route_falls_back_to_keyword_results_when_semantic_results_are_empty() {
+    let fixture = fixture_project();
+    let backend_evidence = serde_json::json!({
+        "provider": "codebase-memory-mcp",
+        "tool_results": {
+            "search_graph": {
+                "total": 1,
+                "results": [{
+                    "name": "startServer",
+                    "label": "Function",
+                    "file_path": "src/server.ts"
+                }],
+                "semantic_results": [],
+                "elapsed_ms": 8
+            }
+        }
+    })
+    .to_string();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand server startup",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence-json",
+        &backend_evidence,
+    ]);
+
+    let evidence = &route["routing_decision"]["backend_evidence"];
+    assert_eq!(
+        evidence["candidate_files"],
+        serde_json::json!(["src/server.ts"])
+    );
+    assert_eq!(evidence["candidates"][0]["symbol"], "startServer");
+    assert_eq!(evidence["candidates"][0]["source"], "search_graph");
+    assert_eq!(evidence["evidence_count"], 1);
+    assert_eq!(evidence["latency_ms"], 8);
+}
+
+#[test]
 fn cli_agent_route_normalizes_search_code_file_results() {
     let fixture = fixture_project();
     let backend_evidence = serde_json::json!({
