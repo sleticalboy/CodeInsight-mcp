@@ -223,6 +223,21 @@ EOF
 ]
 EOF
 
+  jq -n '{
+    results: (
+      [range(0; 64) | {
+        name: ("AuthService.symbol" + tostring),
+        label: "Method",
+        file_path: "src/auth.ts"
+      }]
+      + [{name: "main", label: "Function", file_path: "src/main.ts"}]
+    ),
+    elapsed_ms: 6
+  }' >"$output_dir/search-graph-hotspot.json"
+
+  jq -n '[range(0; 9) | {results: [], elapsed_ms: 1}]' \
+    >"$output_dir/search-graph-too-many-pages.json"
+
   cat >"$output_dir/code-snippet.json" <<'EOF'
 {
   "jsonrpc": "2.0",
@@ -313,6 +328,15 @@ main() {
     fail "candidate limit rejection should explain the maximum"
   fi
 
+  if "$ROOT_DIR/scripts/codebase-memory-backend-evidence.sh" \
+    --search-graph-json "$TEMP_DIR/search-graph-too-many-pages.json" \
+    >"$TEMP_DIR/too-many-pages.json" 2>"$TEMP_DIR/too-many-pages.err"; then
+    fail "more than eight exported response pages should be rejected"
+  fi
+  if ! grep -q -- "must not exceed 8 pages" "$TEMP_DIR/too-many-pages.err"; then
+    fail "page limit rejection should explain the maximum"
+  fi
+
   "$ROOT_DIR/scripts/codebase-memory-backend-evidence.sh" \
     --root "$repo" \
     --search-graph-json "$TEMP_DIR/search-graph-empty-semantic.json" \
@@ -343,6 +367,15 @@ main() {
     "$TEMP_DIR/search-graph-pages-evidence.json" \
     '.candidate_files == ["src/auth.ts", "src/server.ts"] and .evidence_count == 2 and .latency_ms == 5' \
     "ordered response pages should unwrap, route, and aggregate latency"
+
+  "$ROOT_DIR/scripts/codebase-memory-backend-evidence.sh" \
+    --root "$repo" \
+    --search-graph-json "$TEMP_DIR/search-graph-hotspot.json" \
+    --output "$TEMP_DIR/search-graph-hotspot-evidence.json"
+  require_jq \
+    "$TEMP_DIR/search-graph-hotspot-evidence.json" \
+    '.candidate_files == ["src/auth.ts", "src/main.ts"] and .evidence_count == 2 and .candidates[0].symbol == "AuthService.symbol0" and .candidates[1].symbol == "main"' \
+    "duplicate hotspot symbols should not spend the per-tool candidate budget"
 
   "$ROOT_DIR/scripts/codebase-memory-backend-evidence.sh" \
     --root "$repo" \

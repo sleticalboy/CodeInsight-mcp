@@ -131,7 +131,8 @@ CLI `agent-route` and MCP `agent_route`. It deliberately does not call
 codebase-memory-mcp itself; Codex, Claude Code, Cursor, CI jobs, or manual
 benchmark runs can supply those exported tool responses.
 Candidate-producing exports can be ordered page arrays; the bridge unwraps each
-page independently and aggregates page latency.
+page independently and aggregates page latency. It accepts at most eight pages
+per tool and deduplicates files before spending the 64-item per-tool budget.
 The script follows the runtime `search_graph` policy: non-empty semantic results
 win over keyword results, while an empty semantic array falls back to keywords.
 It also consumes every supported `search_code` result shape: enriched `results`,

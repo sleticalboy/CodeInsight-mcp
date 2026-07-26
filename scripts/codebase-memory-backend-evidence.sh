@@ -5,6 +5,8 @@ PROVIDER="codebase-memory-mcp"
 ROOT_PATH=""
 OUTPUT=""
 CANDIDATE_LIMIT=10
+TOOL_RESULT_ITEMS_LIMIT=64
+TOOL_RESULT_PAGES_LIMIT=8
 CONFIDENCE=""
 TEMP_DIR=""
 
@@ -191,11 +193,25 @@ append_candidate() {
   local symbol="${3:-}"
   local score="${4:-}"
   local reason="${5:-}"
-  local normalized
+  local normalized source_count
 
   [ -n "$file" ] || return
   normalized="$(normalize_file "$file")"
   [ -n "$normalized" ] || return
+  if awk -F $'\t' -v source="$source" -v file="$normalized" '
+    $1 == source && $2 == file { found = 1; exit }
+    END { exit !found }
+  ' "$TEMP_DIR/candidates.tsv"; then
+    return
+  fi
+  source_count="$(awk -F $'\t' -v source="$source" '
+    $1 == source { count++ }
+    END { print count + 0 }
+  ' "$TEMP_DIR/candidates.tsv")"
+  if [ "$source_count" -ge "$TOOL_RESULT_ITEMS_LIMIT" ]; then
+    printf '%s\n' "$source" >>"$TEMP_DIR/omitted-candidate-sources.txt"
+    return
+  fi
   symbol="${symbol//$'\t'/ }"
   symbol="${symbol//$'\n'/ }"
   reason="${reason//$'\t'/ }"
@@ -207,7 +223,7 @@ append_candidate() {
 normalized_tool_payload() {
   local source="$1"
   local file="$2"
-  local normalized
+  local normalized page_count accumulated_page_count page_count_file
 
   [ -f "$file" ] || fail "input JSON does not exist: $file"
   jq empty "$file" >/dev/null || fail "invalid JSON: $file"
@@ -239,6 +255,18 @@ normalized_tool_payload() {
   ' "$file" >"$normalized"; then
     fail "could not unwrap $source response: $file"
   fi
+  page_count="$(jq 'if type == "array" then length else 1 end' "$normalized")"
+  [ "$page_count" -gt 0 ] || fail "$source response page array must not be empty"
+  page_count_file="$TEMP_DIR/${source}.page-count"
+  accumulated_page_count=0
+  if [ -f "$page_count_file" ]; then
+    accumulated_page_count="$(<"$page_count_file")"
+  fi
+  accumulated_page_count=$((accumulated_page_count + page_count))
+  if [ "$accumulated_page_count" -gt "$TOOL_RESULT_PAGES_LIMIT" ]; then
+    fail "$source response must not exceed $TOOL_RESULT_PAGES_LIMIT pages"
+  fi
+  printf '%s\n' "$accumulated_page_count" >"$page_count_file"
   printf '%s\n' "$normalized"
 }
 
@@ -273,6 +301,7 @@ append_latency() {
 collect_candidates() {
   : >"$TEMP_DIR/candidates.tsv"
   : >"$TEMP_DIR/latency.txt"
+  : >"$TEMP_DIR/omitted-candidate-sources.txt"
 
   local file
   for file in ${CODE_SNIPPET_JSONS[@]+"${CODE_SNIPPET_JSONS[@]}"}; do
@@ -449,6 +478,13 @@ write_output() {
       "$TEMP_DIR/candidates.tsv" | sort
     if [ "${#NOTES[@]}" -gt 0 ]; then
       printf '%s\n' "${NOTES[@]}"
+    fi
+    if [ -s "$TEMP_DIR/omitted-candidate-sources.txt" ]; then
+      sort "$TEMP_DIR/omitted-candidate-sources.txt" |
+        uniq -c |
+        awk -v limit="$TOOL_RESULT_ITEMS_LIMIT" '{
+          printf "%s omitted %d unique candidate(s) beyond the %d-item budget\n", $2, $1, limit
+        }'
     fi
   } >"$TEMP_DIR/notes.txt"
   notes_json="$(json_string_array_from_lines <"$TEMP_DIR/notes.txt")"
