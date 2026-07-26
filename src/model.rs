@@ -451,6 +451,7 @@ pub struct AgentRouteBackendEvidence {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct AgentRouteBackendNormalization {
     pub candidate_limit: usize,
+    pub omitted_tool_result_items: usize,
     pub omitted_candidates: usize,
     pub omitted_candidate_evidence_items: usize,
     pub omitted_evidence_sources: usize,

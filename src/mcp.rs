@@ -274,7 +274,7 @@ fn tool_definitions() -> Value {
             },
             "tool_results": {
                 "type": "object",
-                "description": "Raw code graph tool results. CodeInsight extracts bounded candidates and omits the raw payload from its response.",
+                "description": "Raw code graph tool results. CodeInsight reads at most 64 items per tool, extracts bounded candidates, and omits the raw payload from its response.",
                 "properties": {
                     "search_graph": {"type": "object"},
                     "search_code": {"type": "object"},
@@ -1290,6 +1290,12 @@ int login(void) {
             ["tool_results"];
         assert_eq!(tool_results["type"], "object");
         assert_eq!(tool_results["minProperties"], 1);
+        assert!(
+            tool_results["description"]
+                .as_str()
+                .unwrap()
+                .contains("at most 64 items per tool")
+        );
         assert_eq!(tool_results["properties"]["search_graph"]["type"], "object");
     }
 

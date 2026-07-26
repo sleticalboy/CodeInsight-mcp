@@ -2453,6 +2453,58 @@ fn cli_agent_route_normalizes_inline_backend_tool_results() {
 }
 
 #[test]
+fn cli_agent_route_bounds_inline_backend_tool_results() {
+    let fixture = fixture_project();
+    let results = (1..=70)
+        .map(|rank| {
+            serde_json::json!({
+                "name": format!("candidate{rank}"),
+                "label": "Function",
+                "file_path": format!("src/raw-candidate-{rank}.ts")
+            })
+        })
+        .collect::<Vec<_>>();
+    let backend_evidence = serde_json::json!({
+        "provider": "codebase-memory-mcp",
+        "tool_results": {
+            "search_graph": {
+                "results": results
+            }
+        }
+    })
+    .to_string();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand app entrypoint flow",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence-json",
+        &backend_evidence,
+    ]);
+
+    let evidence = &route["routing_decision"]["backend_evidence"];
+    assert_eq!(evidence["candidate_files"].as_array().unwrap().len(), 16);
+    assert_eq!(evidence["candidates"].as_array().unwrap().len(), 16);
+    assert_eq!(evidence["evidence_count"], 64);
+    assert_eq!(evidence["normalization"]["omitted_tool_result_items"], 6);
+    assert_eq!(evidence["normalization"]["omitted_candidates"], 48);
+    assert!(
+        route["routing_decision"]["route_quality"]["warnings"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|warning| warning
+                .as_str()
+                .unwrap()
+                .contains("omitted 6 raw tool result item(s), 48 candidate(s)"))
+    );
+}
+
+#[test]
 fn cli_agent_route_preserves_structured_backend_candidates() {
     let fixture = fixture_project();
     let absolute_main = fixture.path().join("src/main.ts");
