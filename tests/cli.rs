@@ -2607,6 +2607,53 @@ fn cli_agent_route_normalizes_search_code_file_results() {
 }
 
 #[test]
+fn cli_agent_route_normalizes_search_code_raw_matches() {
+    let fixture = fixture_project();
+    let backend_evidence = serde_json::json!({
+        "provider": "codebase-memory-mcp",
+        "tool_results": {
+            "search_code": {
+                "results": [{
+                    "node": "startServer",
+                    "label": "Function",
+                    "file": "src/server.ts"
+                }],
+                "raw_matches": [{
+                    "file": "src/main.ts",
+                    "line": 1,
+                    "content": "startServer();"
+                }],
+                "total_results": 3,
+                "elapsed_ms": 13
+            }
+        }
+    })
+    .to_string();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand server startup",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence-json",
+        &backend_evidence,
+    ]);
+
+    let evidence = &route["routing_decision"]["backend_evidence"];
+    assert_eq!(
+        evidence["candidate_files"],
+        serde_json::json!(["src/server.ts", "src/main.ts"])
+    );
+    assert_eq!(evidence["candidates"][1]["reason"], "search_code raw match");
+    assert_eq!(evidence["evidence_count"], 2);
+    assert_eq!(evidence["normalization"]["unfetched_tool_result_items"], 2);
+    assert_eq!(evidence["latency_ms"], 13);
+}
+
+#[test]
 fn cli_agent_route_bounds_inline_backend_tool_results() {
     let fixture = fixture_project();
     let mut results = (1..=70)

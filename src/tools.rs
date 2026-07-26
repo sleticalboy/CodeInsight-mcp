@@ -1665,7 +1665,7 @@ fn merge_backend_tool_results(evidence: &mut AgentRouteBackendEvidence) -> Resul
             tool_results.search_code,
             BackendToolResultSpec {
                 source: "search_code",
-                items_keys: &["results", "files"],
+                items_keys: &["results", "files", "raw_matches"],
                 preferred_items_key: None,
                 total_keys: &["total_results"],
                 total_items_keys: &["results"],
@@ -1753,6 +1753,7 @@ fn collect_backend_tool_candidates(
     }
     let mut candidates = Vec::new();
     let mut item_count = 0usize;
+    let mut fetched_total_items = 0usize;
     let mut processed_item_count = 0usize;
     let mut reported_total_items = 0usize;
     let mut latency_ms = 0u64;
@@ -1790,6 +1791,9 @@ fn collect_backend_tool_candidates(
             found_items = true;
             if preferred_items_key.is_none() {
                 item_count = item_count.saturating_add(items.len());
+                if spec.total_items_keys.contains(&items_key) {
+                    fetched_total_items = fetched_total_items.saturating_add(items.len());
+                }
             }
             for item in items {
                 let (file, symbol, label) = match item {
@@ -1805,10 +1809,13 @@ fn collect_backend_tool_candidates(
                             continue;
                         };
                         let symbol = first_backend_tool_string(item, spec.symbol_keys);
-                        let label = item
-                            .get("label")
-                            .and_then(Value::as_str)
-                            .unwrap_or("result");
+                        let label = item.get("label").and_then(Value::as_str).unwrap_or(
+                            if items_key == "raw_matches" {
+                                "raw match"
+                            } else {
+                                "result"
+                            },
+                        );
                         (file, symbol, label)
                     }
                 };
@@ -1884,7 +1891,7 @@ fn collect_backend_tool_candidates(
         candidates,
         source: (evidence_count > 0).then(|| spec.source.to_string()),
         evidence_count,
-        unfetched_items: reported_total_items.saturating_sub(item_count),
+        unfetched_items: reported_total_items.saturating_sub(fetched_total_items),
         omitted_items: item_count.saturating_sub(BACKEND_EVIDENCE_TOOL_RESULT_ITEMS_LIMIT),
         latency_ms,
     })
