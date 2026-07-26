@@ -151,8 +151,11 @@ validate_args() {
   [ "$CANDIDATE_LIMIT" -le 16 ] || fail "--candidate-limit must be <= 16"
 
   if [ -n "$CONFIDENCE" ]; then
-    jq -n --arg value "$CONFIDENCE" '$value | tonumber' >/dev/null 2>&1 ||
-      fail "--confidence must be numeric"
+    jq -en --arg value "$CONFIDENCE" '
+      ($value | tonumber) as $confidence
+      | $confidence >= 0 and $confidence <= 1
+    ' >/dev/null 2>&1 ||
+      fail "--confidence must be numeric and between 0.0 and 1.0"
   fi
 
   if [ -n "$ROOT_PATH" ]; then

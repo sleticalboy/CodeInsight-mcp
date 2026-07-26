@@ -329,6 +329,15 @@ main() {
   fi
 
   if "$ROOT_DIR/scripts/codebase-memory-backend-evidence.sh" \
+    --search-graph-json "$TEMP_DIR/search-graph.json" \
+    --confidence 1.1 >"$TEMP_DIR/invalid-confidence.json" 2>"$TEMP_DIR/invalid-confidence.err"; then
+    fail "confidence above one should be rejected"
+  fi
+  if ! grep -q -- "between 0.0 and 1.0" "$TEMP_DIR/invalid-confidence.err"; then
+    fail "confidence rejection should explain the accepted range"
+  fi
+
+  if "$ROOT_DIR/scripts/codebase-memory-backend-evidence.sh" \
     --search-graph-json "$TEMP_DIR/search-graph-too-many-pages.json" \
     >"$TEMP_DIR/too-many-pages.json" 2>"$TEMP_DIR/too-many-pages.err"; then
     fail "more than eight exported response pages should be rejected"
