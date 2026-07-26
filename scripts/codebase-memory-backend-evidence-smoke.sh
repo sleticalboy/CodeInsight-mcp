@@ -139,6 +139,20 @@ EOF
 }
 EOF
 
+  cat >"$output_dir/trace-path.json" <<'EOF'
+{
+  "function": "AuthService.login",
+  "direction": "both",
+  "callers": [
+    {"name": "main", "qualified_name": "fixture.src.main.main", "hop": 1}
+  ],
+  "callees": [
+    {"name": "auditLogin", "qualified_name": "fixture.src.audit.auditLogin", "hop": 1}
+  ],
+  "elapsed_ms": 5
+}
+EOF
+
   cat >"$output_dir/architecture.json" <<'EOF'
 {
   "elapsed_ms": 3,
@@ -160,7 +174,7 @@ main() {
   TEMP_DIR="$(mktemp -d)"
   trap cleanup EXIT INT TERM
 
-  local repo evidence route_json inline_evidence inline_route_json preferred_route_json fallback_route_json conflict_evidence conflict_route_json
+  local repo evidence route_json inline_evidence inline_route_json preferred_route_json fallback_route_json conflict_evidence conflict_route_json trace_only_evidence trace_only_route_json
   repo="$TEMP_DIR/repo"
   evidence="$TEMP_DIR/backend-evidence.json"
   route_json="$TEMP_DIR/agent-route.json"
@@ -170,6 +184,8 @@ main() {
   fallback_route_json="$TEMP_DIR/agent-route-fallback.json"
   conflict_evidence="$TEMP_DIR/backend-conflict-evidence.json"
   conflict_route_json="$TEMP_DIR/agent-route-conflict.json"
+  trace_only_evidence="$TEMP_DIR/backend-trace-only-evidence.json"
+  trace_only_route_json="$TEMP_DIR/agent-route-trace-only.json"
 
   create_fixture "$repo"
   write_codebase_memory_exports "$repo" "$TEMP_DIR"
@@ -188,6 +204,7 @@ main() {
     --search-graph-json "$TEMP_DIR/search-graph.json" \
     --search-code-json "$TEMP_DIR/search-code.json" \
     --query-graph-json "$TEMP_DIR/query-graph.json" \
+    --trace-path-json "$TEMP_DIR/trace-path.json" \
     --architecture-json "$TEMP_DIR/architecture.json" \
     --candidate-limit 3 \
     --confidence 0.86 \
@@ -202,6 +219,7 @@ main() {
   require_jq "$evidence" '.evidence_sources | index("search_graph") and index("search_code") and index("query_graph") and index("get_architecture:entry_points")' "evidence sources should include all bridge inputs"
   require_jq "$evidence" '.evidence_count == 6' "evidence count should include duplicate backend signals"
   require_jq "$evidence" '.latency_ms == 46' "latency should aggregate exported backend timings"
+  require_jq "$evidence" '.tool_results.trace_path.callers[0].name == "main" and .tool_results.trace_path.callees[0].name == "auditLogin"' "trace_path should remain raw for runtime symbol resolution"
   require_jq "$evidence" '.confidence == 0.86' "confidence should be preserved"
 
   jq -n \
@@ -239,10 +257,31 @@ main() {
     --backend-evidence "$evidence" >"$route_json"
 
   require_jq "$route_json" '.routing_decision.backend_evidence.provider == "codebase-memory-mcp"' "agent_route should preserve backend evidence"
+  require_jq "$route_json" '.routing_decision.backend_evidence.evidence_count == 8 and .routing_decision.backend_evidence.latency_ms == 51' "agent_route should resolve trace_path symbols and aggregate their evidence"
+  require_jq "$route_json" '.routing_decision.backend_evidence.evidence_sources | index("trace_path")' "agent_route should expose trace_path as a backend evidence source"
+  require_jq "$route_json" '.routing_decision.backend_evidence.tool_results == null' "agent_route should consume raw trace_path evidence"
   require_jq "$route_json" '.routing_decision.first_file == "src/auth.ts"' "local route should select auth seed file"
   require_jq "$route_json" '.routing_decision.route_quality.evidence_sources | index("backend:codebase-memory-mcp:search_graph")' "route quality should expose backend search_graph evidence"
   require_jq "$route_json" 'any(.routing_decision.route_quality.confidence_factors[]; contains("backend codebase-memory-mcp independently selected the same first file"))' "route quality should record backend agreement"
   require_jq "$route_json" 'any(.routing_decision.route_quality.verification_steps[]; contains("Treat backend codebase-memory-mcp evidence as advisory"))' "route quality should keep backend evidence advisory"
+
+  "$ROOT_DIR/scripts/codebase-memory-backend-evidence.sh" \
+    --root "$repo" \
+    --trace-path-json "$TEMP_DIR/trace-path.json" \
+    --output "$trace_only_evidence"
+
+  require_jq "$trace_only_evidence" '.candidate_files == [] and .candidates == [] and .tool_results.trace_path.function == "AuthService.login"' "trace-only bridge evidence should defer symbol resolution to agent_route"
+
+  "$CODEINSIGHT_BIN" agent-route "$repo" \
+    --task "understand login call chain" \
+    --token-budget 1600 \
+    --force-index \
+    --backend-evidence "$trace_only_evidence" \
+    --prefer-backend-context >"$trace_only_route_json"
+
+  require_jq "$trace_only_route_json" '.routing_decision.seed_strategy == "backend_preferred" and .routing_decision.first_file == "src/main.ts"' "trace-only evidence should seed preferred context from the first resolved caller"
+  require_jq "$trace_only_route_json" '.routing_decision.backend_evidence.candidate_files == ["src/main.ts", "src/audit.ts"]' "trace-only evidence should resolve callers and callees to indexed files"
+  require_jq "$trace_only_route_json" '.routing_decision.backend_evidence.evidence_count == 2 and .routing_decision.backend_evidence.latency_ms == 5' "trace-only evidence should preserve resolved count and latency"
 
   "$CODEINSIGHT_BIN" agent-route "$repo" \
     --task "understand app entrypoint flow" \
@@ -303,6 +342,7 @@ main() {
   echo "preferred_route: $preferred_route_json"
   echo "fallback_route: $fallback_route_json"
   echo "conflict_route: $conflict_route_json"
+  echo "trace_only_route: $trace_only_route_json"
 }
 
 main "$@"

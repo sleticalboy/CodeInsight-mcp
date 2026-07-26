@@ -11,6 +11,7 @@ TEMP_DIR=""
 SEARCH_GRAPH_JSONS=()
 SEARCH_CODE_JSONS=()
 QUERY_GRAPH_JSONS=()
+TRACE_PATH_JSONS=()
 ARCHITECTURE_JSONS=()
 NOTES=()
 
@@ -42,6 +43,7 @@ Options:
   --search-graph-json PATH   JSON response from codebase-memory search_graph.
   --search-code-json PATH    JSON response from codebase-memory search_code.
   --query-graph-json PATH    JSON response from codebase-memory query_graph.
+  --trace-path-json PATH     JSON response from codebase-memory trace_path.
   --architecture-json PATH   JSON response from codebase-memory get_architecture.
   --root PATH                Repository root; absolute paths under it become relative.
   --provider NAME            Evidence provider name. Default: codebase-memory-mcp.
@@ -76,6 +78,11 @@ parse_args() {
       --query-graph-json)
         [ "$#" -ge 2 ] || fail "--query-graph-json requires a path"
         QUERY_GRAPH_JSONS+=("$2")
+        shift 2
+        ;;
+      --trace-path-json)
+        [ "$#" -ge 2 ] || fail "--trace-path-json requires a path"
+        TRACE_PATH_JSONS+=("$2")
         shift 2
         ;;
       --architecture-json)
@@ -146,7 +153,13 @@ validate_args() {
   input_count=$((input_count + ${#SEARCH_GRAPH_JSONS[@]}))
   input_count=$((input_count + ${#SEARCH_CODE_JSONS[@]}))
   input_count=$((input_count + ${#QUERY_GRAPH_JSONS[@]}))
+  input_count=$((input_count + ${#TRACE_PATH_JSONS[@]}))
   input_count=$((input_count + ${#ARCHITECTURE_JSONS[@]}))
+  local file
+  for file in ${TRACE_PATH_JSONS[@]+"${TRACE_PATH_JSONS[@]}"}; do
+    [ -f "$file" ] || fail "input JSON does not exist: $file"
+    jq empty "$file" >/dev/null || fail "invalid JSON: $file"
+  done
   [ "$input_count" -gt 0 ] || fail "provide at least one exported codebase-memory JSON file"
 }
 
@@ -211,7 +224,7 @@ collect_candidates() {
   : >"$TEMP_DIR/latency.txt"
 
   local file
-  for file in "${SEARCH_GRAPH_JSONS[@]}"; do
+  for file in ${SEARCH_GRAPH_JSONS[@]+"${SEARCH_GRAPH_JSONS[@]}"}; do
     append_candidates_from_query "search_graph" "$file" '
       .results[]?
       | {
@@ -225,7 +238,7 @@ collect_candidates() {
     append_latency "$file"
   done
 
-  for file in "${SEARCH_CODE_JSONS[@]}"; do
+  for file in ${SEARCH_CODE_JSONS[@]+"${SEARCH_CODE_JSONS[@]}"}; do
     append_candidates_from_query "search_code" "$file" '
       .results[]?
       | {
@@ -239,7 +252,7 @@ collect_candidates() {
     append_latency "$file"
   done
 
-  for file in "${QUERY_GRAPH_JSONS[@]}"; do
+  for file in ${QUERY_GRAPH_JSONS[@]+"${QUERY_GRAPH_JSONS[@]}"}; do
     append_candidates_from_query "query_graph" "$file" '
       .columns as $columns
       | ($columns | map(split(".") | last) | index("file_path")) as $file_path_index
@@ -260,7 +273,7 @@ collect_candidates() {
     append_latency "$file"
   done
 
-  for file in "${ARCHITECTURE_JSONS[@]}"; do
+  for file in ${ARCHITECTURE_JSONS[@]+"${ARCHITECTURE_JSONS[@]}"}; do
     append_candidates_from_query "get_architecture:entry_points" "$file" '
       .entry_points[]?
       | {
@@ -274,7 +287,9 @@ collect_candidates() {
     append_latency "$file"
   done
 
-  [ -s "$TEMP_DIR/candidates.tsv" ] || fail "no candidate files found in exported JSON"
+  if [ ! -s "$TEMP_DIR/candidates.tsv" ] && [ "${#TRACE_PATH_JSONS[@]}" -eq 0 ]; then
+    fail "no candidate files found in exported JSON"
+  fi
 }
 
 json_string_array_from_lines() {
@@ -282,7 +297,7 @@ json_string_array_from_lines() {
 }
 
 write_output() {
-  local candidate_files_json candidates_json evidence_sources_json notes_json latency_ms evidence_count
+  local candidate_files_json candidates_json evidence_sources_json notes_json latency_ms evidence_count trace_path_json
 
   candidate_files_json="$(
     awk -F $'\t' '!seen[$2]++ { print $2 }' "$TEMP_DIR/candidates.tsv" |
@@ -322,6 +337,10 @@ write_output() {
     fi
   } >"$TEMP_DIR/notes.txt"
   notes_json="$(json_string_array_from_lines <"$TEMP_DIR/notes.txt")"
+  trace_path_json="null"
+  if [ "${#TRACE_PATH_JSONS[@]}" -gt 0 ]; then
+    trace_path_json="$(jq -s 'if length == 1 then .[0] else . end' "${TRACE_PATH_JSONS[@]}")"
+  fi
 
   local jq_args=(
     -n
@@ -332,6 +351,7 @@ write_output() {
     --argjson evidence_count "$evidence_count"
     --argjson latency_ms "$latency_ms"
     --argjson notes "$notes_json"
+    --argjson trace_path "$trace_path_json"
   )
   local jq_program='
     {
@@ -343,6 +363,7 @@ write_output() {
       notes: $notes
     }
     + (if $latency_ms > 0 then {latency_ms: $latency_ms} else {} end)
+    + (if $trace_path != null then {tool_results: {trace_path: $trace_path}} else {} end)
   '
 
   if [ -n "$CONFIDENCE" ]; then
