@@ -1752,6 +1752,7 @@ fn collect_backend_tool_candidates(
     let mut processed_item_count = 0usize;
     let mut reported_total_items = 0usize;
     let mut latency_ms = 0u64;
+    let mut seen_candidate_keys = BTreeSet::new();
     let page_count = pages.len();
     for (page_index, raw_page) in pages.into_iter().enumerate() {
         let page_source = if page_count == 1 {
@@ -1777,15 +1778,24 @@ fn collect_backend_tool_candidates(
                 )
             })?;
             found_items = true;
-            item_count = item_count.saturating_add(items.len());
-            let remaining =
-                BACKEND_EVIDENCE_TOOL_RESULT_ITEMS_LIMIT.saturating_sub(processed_item_count);
-            for item in items.iter().take(remaining) {
-                processed_item_count = processed_item_count.saturating_add(1);
+            if preferred_items_key.is_none() {
+                item_count = item_count.saturating_add(items.len());
+            }
+            for item in items {
                 let Some(file) = first_backend_tool_string(item, spec.file_keys) else {
                     continue;
                 };
                 let symbol = first_backend_tool_string(item, spec.symbol_keys);
+                if !seen_candidate_keys.insert((file.clone(), symbol.clone())) {
+                    continue;
+                }
+                if preferred_items_key.is_some() {
+                    item_count = item_count.saturating_add(1);
+                }
+                if processed_item_count >= BACKEND_EVIDENCE_TOOL_RESULT_ITEMS_LIMIT {
+                    continue;
+                }
+                processed_item_count = processed_item_count.saturating_add(1);
                 let label = item
                     .get("label")
                     .and_then(Value::as_str)

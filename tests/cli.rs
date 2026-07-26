@@ -2371,29 +2371,54 @@ fn cli_agent_route_normalizes_inline_backend_tool_results() {
     let backend_evidence = serde_json::json!({
         "provider": "codebase-memory-mcp",
         "tool_results": {
-            "search_graph": {
-                "elapsed_ms": 7,
-                "total": 4,
-                "has_more": true,
-                "results": [{
-                    "name": "defaultGraphNode",
-                    "label": "Module",
-                    "file_path": ".github/workflows/ci.yml"
-                }],
-                "semantic_results": [
-                    {
-                        "name": "main",
-                        "label": "Function",
-                        "file_path": fixture.path().join("src/main.ts"),
-                        "score": 0.97
-                    },
-                    {
-                        "name": "startServer",
-                        "label": "Function",
-                        "file_path": "src/server.ts"
-                    }
-                ]
-            },
+            "search_graph": [
+                {
+                    "elapsed_ms": 7,
+                    "total": 4,
+                    "has_more": true,
+                    "results": [{
+                        "name": "defaultGraphNode",
+                        "label": "Module",
+                        "file_path": ".github/workflows/ci.yml"
+                    }],
+                    "semantic_results": [
+                        {
+                            "name": "main",
+                            "label": "Function",
+                            "file_path": fixture.path().join("src/main.ts"),
+                            "score": 0.97
+                        },
+                        {
+                            "name": "startServer",
+                            "label": "Function",
+                            "file_path": "src/server.ts"
+                        }
+                    ]
+                },
+                {
+                    "elapsed_ms": 11,
+                    "total": 4,
+                    "has_more": true,
+                    "results": [{
+                        "name": "anotherDefaultGraphNode",
+                        "label": "Module",
+                        "file_path": ".github/workflows/release.yml"
+                    }],
+                    "semantic_results": [
+                        {
+                            "name": "main",
+                            "label": "Function",
+                            "file_path": fixture.path().join("src/main.ts"),
+                            "score": 0.97
+                        },
+                        {
+                            "name": "startServer",
+                            "label": "Function",
+                            "file_path": "src/server.ts"
+                        }
+                    ]
+                }
+            ],
             "search_code": {
                 "structuredContent": {
                     "duration_ms": 23,
@@ -2450,6 +2475,7 @@ fn cli_agent_route_normalizes_inline_backend_tool_results() {
     assert_eq!(evidence["candidates"][0]["reason"], "search_graph Function");
     assert_eq!(evidence["evidence_count"], 5);
     assert_eq!(evidence["normalization"]["unfetched_tool_result_items"], 0);
+    assert_eq!(evidence["normalization"]["omitted_tool_result_items"], 0);
     assert!(
         !evidence["candidate_files"]
             .as_array()
@@ -2466,7 +2492,7 @@ fn cli_agent_route_normalizes_inline_backend_tool_results() {
             .unwrap()
             + 5
     );
-    assert_eq!(evidence["latency_ms"], 33);
+    assert_eq!(evidence["latency_ms"], 44);
     assert_eq!(
         evidence["evidence_sources"],
         serde_json::json!([
