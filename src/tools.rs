@@ -1458,12 +1458,21 @@ fn backend_seed_context_pack(
     backend_evidence: &AgentRouteBackendEvidence,
     mode: BackendContextMode,
 ) -> Result<Option<(ContextPack, BackendContextSelection)>> {
+    let valid_candidate_files = backend_evidence
+        .candidate_files
+        .iter()
+        .filter(|candidate_file| root.join(candidate_file).is_file())
+        .cloned()
+        .collect::<Vec<_>>();
+    let store = Store::open(root)?;
+    let indexed_symbols =
+        store.symbols_for_files(&valid_candidate_files, store.count_symbols()?)?;
     let candidates = backend_evidence
         .candidate_files
         .iter()
         .filter(|candidate_file| root.join(candidate_file).is_file())
         .map(|candidate_file| {
-            backend_evidence
+            let mut candidate = backend_evidence
                 .candidates
                 .iter()
                 .find(|candidate| candidate.file == *candidate_file)
@@ -1475,7 +1484,20 @@ fn backend_seed_context_pack(
                     score: None,
                     reason: None,
                     evidence: Vec::new(),
+                });
+            if candidate.symbol.as_ref().is_some_and(|candidate_symbol| {
+                !indexed_symbols.iter().any(|symbol| {
+                    symbol.file == *candidate_file
+                        && backend_symbol_name_matches(
+                            candidate_symbol,
+                            &symbol.name,
+                            &symbol.qualified_name,
+                        )
                 })
+            }) {
+                candidate.symbol = None;
+            }
+            candidate
         })
         .collect::<Vec<_>>();
 
@@ -1486,16 +1508,40 @@ fn backend_seed_context_pack(
         };
         let ranked_candidates = &candidates[primary_index..candidate_end];
         let primary_candidate = &ranked_candidates[0];
-        match context_pack_value(
+        let ranked_symbols = match mode {
+            BackendContextMode::Fallback => primary_candidate.symbol.clone().into_iter().collect(),
+            BackendContextMode::Preferred => ranked_candidates
+                .iter()
+                .filter_map(|candidate| candidate.symbol.clone())
+                .collect(),
+        };
+        let ranked_files = ranked_candidates
+            .iter()
+            .map(|candidate| candidate.file.clone())
+            .collect::<Vec<_>>();
+        let context_result = context_pack_value(
             root.to_path_buf(),
             task.to_string(),
-            primary_candidate.symbol.clone().into_iter().collect(),
-            ranked_candidates
-                .iter()
-                .map(|candidate| candidate.file.clone())
-                .collect(),
+            ranked_symbols,
+            ranked_files.clone(),
             token_budget,
-        ) {
+        );
+        let context_result = match context_result {
+            Err(error)
+                if matches!(mode, BackendContextMode::Preferred)
+                    && is_context_pack_invalid_seed_error(&error) =>
+            {
+                context_pack_value(
+                    root.to_path_buf(),
+                    task.to_string(),
+                    Vec::new(),
+                    ranked_files,
+                    token_budget,
+                )
+            }
+            result => result,
+        };
+        match context_result {
             Ok(mut context_pack) if !context_pack.reading_plan.is_empty() => {
                 context_pack.seed_strategy = mode.seed_source().to_string();
                 for seed in &mut context_pack.selected_seeds {
@@ -1540,6 +1586,13 @@ fn backend_seed_context_pack(
         }
     }
     Ok(None)
+}
+
+fn backend_symbol_name_matches(candidate: &str, name: &str, qualified_name: &str) -> bool {
+    candidate == name
+        || candidate == qualified_name
+        || candidate.ends_with(&format!(".{qualified_name}"))
+        || qualified_name.ends_with(&format!(".{candidate}"))
 }
 
 fn annotate_backend_seed_context(

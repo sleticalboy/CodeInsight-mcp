@@ -3110,6 +3110,16 @@ fn cli_agent_route_routes_ranked_backend_candidates_within_budget() {
         route["impact_seed_symbols"],
         serde_json::json!(["main", "render"])
     );
+    assert_eq!(
+        route["context_pack"]["selected_seeds"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|seed| seed["kind"] == "symbol")
+            .map(|seed| seed["value"].as_str().unwrap())
+            .collect::<Vec<_>>(),
+        vec!["render", "main"]
+    );
     assert!(
         route["context_pack"]["reading_plan"][0]["selection_reason"]
             .as_str()
@@ -3300,6 +3310,7 @@ fn cli_agent_route_falls_back_to_file_when_backend_symbol_is_stale() {
 
     assert_eq!(route["routing_decision"]["first_file"], "src/main.ts");
     assert_eq!(route["impact_status"], "complete");
+    assert_eq!(route["impact_seed_symbols"], serde_json::json!([]));
     assert_eq!(
         route["routing_decision"]["backend_route_agreement"]["status"],
         "backend_fallback"

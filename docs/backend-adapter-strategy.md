@@ -96,7 +96,9 @@ retains the original local candidate in
 first selected backend file and `selected_context_files` reports every backend
 candidate retained in context. Explicit file or symbol seeds always take
 priority over this policy. The older fallback mode remains single-candidate so
-its recovery behavior stays stable.
+its recovery behavior stays stable. Candidate symbols are validated against the
+local index before routing; a stale symbol is ignored without discarding its
+valid file candidate.
 
 The first bridge prototype is script-level and runtime-agnostic:
 
