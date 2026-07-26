@@ -8,7 +8,7 @@ mod model;
 mod storage;
 mod tools;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::Parser;
 use cli::{Cli, Command};
 
@@ -60,11 +60,16 @@ async fn main() -> Result<()> {
             args.token_budget,
         )?,
         Command::AgentRoute(args) => {
-            let backend_evidence = args
-                .backend_evidence
-                .as_deref()
-                .map(tools::read_agent_route_backend_evidence)
-                .transpose()?;
+            let backend_evidence = if let Some(path) = args.backend_evidence.as_deref() {
+                Some(tools::read_agent_route_backend_evidence(path)?)
+            } else if let Some(json) = args.backend_evidence_json.as_deref() {
+                Some(
+                    serde_json::from_str(json)
+                        .context("failed to parse inline backend evidence JSON")?,
+                )
+            } else {
+                None
+            };
             tools::agent_route(
                 args.root,
                 args.task,

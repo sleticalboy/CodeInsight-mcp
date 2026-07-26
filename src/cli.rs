@@ -181,6 +181,8 @@ pub struct AgentRouteArgs {
     pub impact_evidence_limit: usize,
     #[arg(long)]
     pub backend_evidence: Option<PathBuf>,
+    #[arg(long, conflicts_with = "backend_evidence")]
+    pub backend_evidence_json: Option<String>,
 }
 
 #[derive(Debug, Args)]

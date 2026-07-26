@@ -2312,6 +2312,83 @@ fn cli_agent_route_accepts_backend_evidence_file() {
 }
 
 #[test]
+fn cli_agent_route_accepts_inline_backend_evidence_json() {
+    let fixture = fixture_project();
+    let backend_evidence = serde_json::json!({
+        "provider": "codebase-memory-mcp",
+        "candidate_files": ["src/main.ts", "src/server.ts"],
+        "evidence_sources": ["search_graph"],
+        "evidence_count": 5,
+        "confidence": 0.9
+    })
+    .to_string();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand app entrypoint flow",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence-json",
+        &backend_evidence,
+    ]);
+
+    assert_eq!(
+        route["routing_decision"]["backend_evidence"]["provider"],
+        "codebase-memory-mcp"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["status"],
+        "agree"
+    );
+    assert_eq!(
+        route["routing_decision"]["route_quality"]["recommended_action"],
+        "read_selected_context"
+    );
+    assert!(
+        route["routing_decision"]["route_quality"]["evidence_sources"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|source| source == "backend:codebase-memory-mcp:search_graph")
+    );
+}
+
+#[test]
+fn cli_agent_route_rejects_backend_evidence_file_and_inline_json_together() {
+    let fixture = fixture_project();
+    let evidence_path = fixture.path().join("backend-evidence.json");
+    std::fs::write(
+        &evidence_path,
+        serde_json::json!({
+            "provider": "codebase-memory-mcp",
+            "candidate_files": ["src/main.ts"]
+        })
+        .to_string(),
+    )
+    .unwrap();
+
+    Command::cargo_bin("codeinsight")
+        .unwrap()
+        .env_remove("CODEINSIGHT_EMBEDDING_PROVIDER")
+        .args([
+            "agent-route",
+            fixture.path().to_str().unwrap(),
+            "--task",
+            "understand app entrypoint flow",
+            "--backend-evidence",
+            evidence_path.to_str().unwrap(),
+            "--backend-evidence-json",
+            r#"{"provider":"codebase-memory-mcp","candidate_files":["src/main.ts"]}"#,
+        ])
+        .assert()
+        .failure()
+        .stderr(contains("cannot be used with"));
+}
+
+#[test]
 fn cli_agent_route_marks_backend_overlap_as_rank_review() {
     let fixture = fixture_project();
     let evidence_path = fixture.path().join("backend-overlap-evidence.json");
