@@ -188,7 +188,8 @@ scripts/local-repo-evidence.sh /path/to/repo \
 
 When comparing CodeInsight with a stronger local code graph, keep CodeInsight in
 the agent workflow layer. Convert exported codebase-memory responses into
-CodeInsight evidence:
+CodeInsight evidence. The bridge accepts raw payloads as well as exported MCP
+`structuredContent` and JSON-RPC `result.content[].text` wrappers:
 
 ```bash
 scripts/codebase-memory-backend-evidence.sh \
@@ -413,7 +414,7 @@ accuracy, or proof that unselected code is irrelevant.
 
 Current benchmark snapshot:
 
-- The two-minute demo for this repository shows the agent route selecting 531 of 87,466 source lines, avoiding 86,935 source lines before broad reading for a 99.4% reduction and 164.7x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 23 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
+- The two-minute demo for this repository shows the agent route selecting 531 of 87,513 source lines, avoiding 86,982 source lines before broad reading for a 99.4% reduction and 164.8x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 23 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
 - Smoke repositories route `context_pack` first for 4/4 repositories and
   select 709 of 75,753 source lines, a 99.1% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and

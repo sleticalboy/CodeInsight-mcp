@@ -88,23 +88,25 @@ write_codebase_memory_exports() {
 
   cat >"$output_dir/search-graph.json" <<EOF
 {
-  "total": 2,
-  "search_mode": "bm25",
-  "elapsed_ms": 7,
-  "results": [
-    {
-      "name": "AuthService",
-      "qualified_name": "fixture.src.auth.AuthService",
-      "label": "Class",
-      "file_path": "$repo/src/auth.ts"
-    },
-    {
-      "name": "auditLogin",
-      "qualified_name": "fixture.src.audit.auditLogin",
-      "label": "Function",
-      "file_path": "src/audit.ts"
-    }
-  ]
+  "structuredContent": {
+    "total": 2,
+    "search_mode": "bm25",
+    "elapsed_ms": 7,
+    "results": [
+      {
+        "name": "AuthService",
+        "qualified_name": "fixture.src.auth.AuthService",
+        "label": "Class",
+        "file_path": "$repo/src/auth.ts"
+      },
+      {
+        "name": "auditLogin",
+        "qualified_name": "fixture.src.audit.auditLogin",
+        "label": "Function",
+        "file_path": "src/audit.ts"
+      }
+    ]
+  }
 }
 EOF
 
@@ -130,14 +132,14 @@ EOF
 
   cat >"$output_dir/code-snippet.json" <<'EOF'
 {
-  "name": "login",
-  "qualified_name": "AuthService.login",
-  "label": "Method",
-  "file_path": "src/auth.ts",
-  "start_line": 4,
-  "end_line": 7,
-  "source": "source body must not be copied into bridge evidence",
-  "elapsed_ms": 2
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "content": [{
+      "type": "text",
+      "text": "{\"name\":\"login\",\"qualified_name\":\"AuthService.login\",\"label\":\"Method\",\"file_path\":\"src/auth.ts\",\"start_line\":4,\"end_line\":7,\"source\":\"source body must not be copied into bridge evidence\",\"elapsed_ms\":2}"
+    }]
+  }
 }
 EOF
 

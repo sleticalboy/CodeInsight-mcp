@@ -38,7 +38,8 @@ usage() {
 usage: scripts/codebase-memory-backend-evidence.sh [options]
 
 Build CodeInsight agent_route backend_evidence JSON from exported
-codebase-memory-mcp tool responses.
+codebase-memory-mcp tool responses. Raw payloads, structuredContent responses,
+and JSON-RPC result/content wrappers are accepted.
 
 Options:
   --search-graph-json PATH   JSON response from codebase-memory search_graph.
@@ -203,6 +204,40 @@ append_candidate() {
     "$source" "$normalized" "$symbol" "$score" "$reason" >>"$TEMP_DIR/candidates.tsv"
 }
 
+normalized_tool_payload() {
+  local source="$1"
+  local file="$2"
+  local normalized
+
+  [ -f "$file" ] || fail "input JSON does not exist: $file"
+  jq empty "$file" >/dev/null || fail "invalid JSON: $file"
+  normalized="$(mktemp "$TEMP_DIR/${source}.XXXXXX.json")"
+  if ! jq '
+    def tool_text:
+      [.content[]? | select(.type == "text") | .text] | first;
+    def unwrap:
+      if type != "object" then
+        error("tool response must be a JSON object")
+      elif .error != null then
+        error(.error.message // .error // "JSON-RPC error")
+      elif .isError == true then
+        error(tool_text // "MCP tool error")
+      elif (.structuredContent | type) == "object" then
+        .structuredContent
+      elif has("result") then
+        .result | unwrap
+      elif (.content | type) == "array" then
+        (tool_text // error("MCP response has no text content")) | fromjson
+      else
+        .
+      end;
+    unwrap
+  ' "$file" >"$normalized"; then
+    fail "could not unwrap $source response: $file"
+  fi
+  printf '%s\n' "$normalized"
+}
+
 append_candidates_from_query() {
   local source="$1"
   local file="$2"
@@ -233,7 +268,9 @@ collect_candidates() {
 
   local file
   for file in ${CODE_SNIPPET_JSONS[@]+"${CODE_SNIPPET_JSONS[@]}"}; do
-    append_candidates_from_query "get_code_snippet" "$file" '
+    local payload
+    payload="$(normalized_tool_payload "get-code-snippet" "$file")"
+    append_candidates_from_query "get_code_snippet" "$payload" '
       {
         file: (.file_path // .file // empty),
         symbol: (.qualified_name // .name // null),
@@ -242,11 +279,13 @@ collect_candidates() {
       }
       | select(.file != "")
     '
-    append_latency "$file"
+    append_latency "$payload"
   done
 
   for file in ${SEARCH_GRAPH_JSONS[@]+"${SEARCH_GRAPH_JSONS[@]}"}; do
-    append_candidates_from_query "search_graph" "$file" '
+    local payload
+    payload="$(normalized_tool_payload "search-graph" "$file")"
+    append_candidates_from_query "search_graph" "$payload" '
       .results[]?
       | {
           file: (.file_path // .file // empty),
@@ -256,11 +295,13 @@ collect_candidates() {
         }
       | select(.file != "")
     '
-    append_latency "$file"
+    append_latency "$payload"
   done
 
   for file in ${SEARCH_CODE_JSONS[@]+"${SEARCH_CODE_JSONS[@]}"}; do
-    append_candidates_from_query "search_code" "$file" '
+    local payload
+    payload="$(normalized_tool_payload "search-code" "$file")"
+    append_candidates_from_query "search_code" "$payload" '
       .results[]?
       | {
           file: (.file // .file_path // empty),
@@ -270,11 +311,13 @@ collect_candidates() {
         }
       | select(.file != "")
     '
-    append_latency "$file"
+    append_latency "$payload"
   done
 
   for file in ${QUERY_GRAPH_JSONS[@]+"${QUERY_GRAPH_JSONS[@]}"}; do
-    append_candidates_from_query "query_graph" "$file" '
+    local payload
+    payload="$(normalized_tool_payload "query-graph" "$file")"
+    append_candidates_from_query "query_graph" "$payload" '
       .columns as $columns
       | ($columns | map(split(".") | last) | index("file_path")) as $file_path_index
       | ($columns | map(split(".") | last) | index("file")) as $file_index
@@ -291,11 +334,13 @@ collect_candidates() {
         }
       | select(.file != "")
     '
-    append_latency "$file"
+    append_latency "$payload"
   done
 
   for file in ${ARCHITECTURE_JSONS[@]+"${ARCHITECTURE_JSONS[@]}"}; do
-    append_candidates_from_query "get_architecture:entry_points" "$file" '
+    local payload
+    payload="$(normalized_tool_payload "get-architecture" "$file")"
+    append_candidates_from_query "get_architecture:entry_points" "$payload" '
       .entry_points[]?
       | {
           file: (.file // .file_path // empty),
@@ -305,7 +350,7 @@ collect_candidates() {
         }
       | select(.file != "")
     '
-    append_latency "$file"
+    append_latency "$payload"
   done
 
   if [ ! -s "$TEMP_DIR/candidates.tsv" ] && [ "${#TRACE_PATH_JSONS[@]}" -eq 0 ]; then

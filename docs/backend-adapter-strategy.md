@@ -113,12 +113,14 @@ scripts/codebase-memory-backend-evidence.sh \
   --output /tmp/codeinsight-backend-evidence.json
 ```
 
-This script expects exported JSON responses from `search_graph`, `search_code`,
-`query_graph`, `trace_path`, and `get_architecture`, normalizes candidate file paths relative to `--root`,
-and emits the `backend_evidence` object consumed by CLI `agent-route` and MCP
-`agent_route`. It deliberately does not call codebase-memory-mcp itself; Codex,
-Claude Code, Cursor, CI jobs, or manual benchmark runs can supply those exported
-tool responses.
+This script expects exported JSON responses from `get_code_snippet`,
+`search_graph`, `search_code`, `query_graph`, `trace_path`, and
+`get_architecture`. It accepts raw payloads, MCP `structuredContent`, and
+JSON-RPC `result.content[].text` wrappers, normalizes candidate file paths
+relative to `--root`, and emits the `backend_evidence` object consumed by CLI
+`agent-route` and MCP `agent_route`. It deliberately does not call
+codebase-memory-mcp itself; Codex, Claude Code, Cursor, CI jobs, or manual
+benchmark runs can supply those exported tool responses.
 
 After running `agent-route`, summarize backend/local agreement:
 
