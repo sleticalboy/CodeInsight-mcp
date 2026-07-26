@@ -388,6 +388,10 @@ pub struct AgentRouteBackendCandidateDisposition {
     pub file: String,
     pub rank: usize,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub context_rank: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub routing_reason: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub symbol: Option<String>,
     pub context_status: String,
     pub context_reason: String,

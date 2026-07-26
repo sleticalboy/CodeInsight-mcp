@@ -2187,6 +2187,32 @@ fn backend_candidate_dispositions(
             let valid_candidate = valid_candidates
                 .iter()
                 .find(|candidate| candidate.file == *file);
+            let context_rank = valid_candidates
+                .iter()
+                .position(|candidate| candidate.file == *file)
+                .map(|position| position + 1);
+            let original_context_rank = backend_evidence
+                .candidate_files
+                .iter()
+                .filter(|candidate_file| {
+                    root.join(candidate_file).is_file() && indexed_files.contains(*candidate_file)
+                })
+                .position(|candidate_file| candidate_file == file)
+                .map(|position| position + 1);
+            let routing_reason = context_rank
+                .zip(original_context_rank)
+                .filter(|(context_rank, original_context_rank)| {
+                    context_rank != original_context_rank
+                })
+                .map(|(context_rank, original_context_rank)| {
+                    if context_rank < original_context_rank {
+                        "promoted_over_support_candidate_for_task"
+                    } else {
+                        "deprioritized_support_candidate_for_task"
+                    }
+                    .to_string()
+                });
+            let context_rank = routing_reason.as_ref().map(|_| context_rank.unwrap());
             let symbol = original_candidate.and_then(|candidate| candidate.symbol.clone());
             let symbol_status = symbol.as_ref().map(|_| match valid_candidate {
                 Some(candidate) if candidate.symbol.is_some() => "valid",
@@ -2217,6 +2243,8 @@ fn backend_candidate_dispositions(
             AgentRouteBackendCandidateDisposition {
                 file: file.clone(),
                 rank: index + 1,
+                context_rank,
+                routing_reason,
                 symbol,
                 context_status: context_status.to_string(),
                 context_reason: context_reason.to_string(),

@@ -3889,6 +3889,78 @@ fn cli_agent_route_demotes_backend_smoke_source_for_product_task() {
             .unwrap()
             .contains("candidate rank 2")
     );
+    let dispositions =
+        route["routing_decision"]["backend_route_agreement"]["candidate_dispositions"]
+            .as_array()
+            .unwrap();
+    assert_eq!(dispositions[0]["rank"], 1);
+    assert_eq!(dispositions[0]["context_rank"], 2);
+    assert_eq!(
+        dispositions[0]["routing_reason"],
+        "deprioritized_support_candidate_for_task"
+    );
+    assert_eq!(dispositions[1]["rank"], 2);
+    assert_eq!(dispositions[1]["context_rank"], 1);
+    assert_eq!(
+        dispositions[1]["routing_reason"],
+        "promoted_over_support_candidate_for_task"
+    );
+}
+
+#[test]
+fn cli_agent_route_preserves_backend_smoke_rank_for_smoke_task() {
+    let fixture = fixture_project();
+    write_file(
+        &fixture,
+        "scripts/server-startup-smoke.ts",
+        "export function smokeServerStartup() { return 'ok'; }\n",
+    );
+    write_file(
+        &fixture,
+        "src/server.ts",
+        "export function startServer() { return 'started'; }\n",
+    );
+    let backend_evidence = serde_json::json!({
+        "provider": "codebase-memory-mcp",
+        "candidates": [
+            {
+                "file": "scripts/server-startup-smoke.ts",
+                "symbol": "smokeServerStartup",
+                "source": "search_graph",
+                "score": 0.99
+            },
+            {
+                "file": "src/server.ts",
+                "symbol": "startServer",
+                "source": "search_graph",
+                "score": 0.95
+            }
+        ]
+    })
+    .to_string();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "run the server startup smoke test",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence-json",
+        &backend_evidence,
+        "--prefer-backend-context",
+    ]);
+
+    assert_eq!(
+        route["routing_decision"]["first_file"],
+        "scripts/server-startup-smoke.ts"
+    );
+    let first_disposition =
+        &route["routing_decision"]["backend_route_agreement"]["candidate_dispositions"][0];
+    assert_eq!(first_disposition["rank"], 1);
+    assert!(first_disposition.get("context_rank").is_none());
+    assert!(first_disposition.get("routing_reason").is_none());
 }
 
 #[test]
