@@ -1753,6 +1753,8 @@ fn collect_backend_tool_candidates(
     let mut reported_total_items = 0usize;
     let mut latency_ms = 0u64;
     let mut seen_candidate_keys = BTreeSet::new();
+    let candidate_dedupe_limit = BACKEND_EVIDENCE_TOOL_RESULT_ITEMS_LIMIT
+        .saturating_mul(BACKEND_EVIDENCE_TOOL_RESULT_PAGES_LIMIT);
     let page_count = pages.len();
     for (page_index, raw_page) in pages.into_iter().enumerate() {
         let page_source = if page_count == 1 {
@@ -1786,8 +1788,12 @@ fn collect_backend_tool_candidates(
                     continue;
                 };
                 let symbol = first_backend_tool_string(item, spec.symbol_keys);
-                if !seen_candidate_keys.insert((file.clone(), symbol.clone())) {
+                let candidate_key = (file.clone(), symbol.clone());
+                if seen_candidate_keys.contains(&candidate_key) {
                     continue;
+                }
+                if seen_candidate_keys.len() < candidate_dedupe_limit {
+                    seen_candidate_keys.insert(candidate_key);
                 }
                 if preferred_items_key.is_some() {
                     item_count = item_count.saturating_add(1);
