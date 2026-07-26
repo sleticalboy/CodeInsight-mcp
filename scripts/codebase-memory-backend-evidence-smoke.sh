@@ -188,6 +188,41 @@ EOF
 }
 EOF
 
+  cat >"$output_dir/search-graph-pages.json" <<'EOF'
+[
+  {
+    "structuredContent": {
+      "semantic_results": [
+        {
+          "name": "AuthService",
+          "label": "Class",
+          "file_path": "src/auth.ts",
+          "score": 0.96
+        }
+      ],
+      "elapsed_ms": 2,
+      "has_more": true
+    }
+  },
+  {
+    "result": {
+      "structuredContent": {
+        "results": [
+          {
+            "name": "startServer",
+            "label": "Function",
+            "file_path": "src/server.ts"
+          }
+        ],
+        "semantic_results": [],
+        "elapsed_ms": 3,
+        "has_more": false
+      }
+    }
+  }
+]
+EOF
+
   cat >"$output_dir/code-snippet.json" <<'EOF'
 {
   "jsonrpc": "2.0",
@@ -299,6 +334,15 @@ main() {
     "$TEMP_DIR/search-code-alternates-evidence.json" \
     '.candidates[0].symbol == "AuthService.login" and .candidates[1].reason == "search_code File" and .candidates[2].symbol == "main" and .candidates[3].reason == "search_code raw match"' \
     "search_code alternate result shapes should preserve available metadata"
+
+  "$ROOT_DIR/scripts/codebase-memory-backend-evidence.sh" \
+    --root "$repo" \
+    --search-graph-json "$TEMP_DIR/search-graph-pages.json" \
+    --output "$TEMP_DIR/search-graph-pages-evidence.json"
+  require_jq \
+    "$TEMP_DIR/search-graph-pages-evidence.json" \
+    '.candidate_files == ["src/auth.ts", "src/server.ts"] and .evidence_count == 2 and .latency_ms == 5' \
+    "ordered response pages should unwrap, route, and aggregate latency"
 
   "$ROOT_DIR/scripts/codebase-memory-backend-evidence.sh" \
     --root "$repo" \

@@ -218,7 +218,9 @@ normalized_tool_payload() {
     def tool_json:
       [.content[]? | select(.type == "text") | .text | fromjson?] | first;
     def unwrap:
-      if type != "object" then
+      if type == "array" then
+        map(unwrap)
+      elif type != "object" then
         error("tool response must be a JSON object")
       elif .error != null then
         error(.error.message // .error // "JSON-RPC error")
@@ -261,7 +263,11 @@ append_candidates_from_query() {
 append_latency() {
   local file="$1"
 
-  jq -r '(.elapsed_ms // .duration_ms // 0) | numbers' "$file" >>"$TEMP_DIR/latency.txt"
+  jq -r '
+    (if type == "array" then .[] else . end)
+    | (.elapsed_ms // .duration_ms // 0)
+    | numbers
+  ' "$file" >>"$TEMP_DIR/latency.txt"
 }
 
 collect_candidates() {
@@ -273,6 +279,8 @@ collect_candidates() {
     local payload
     payload="$(normalized_tool_payload "get-code-snippet" "$file")"
     append_candidates_from_query "get_code_snippet" "$payload" '
+      (if type == "array" then .[] else . end)
+      |
       {
         file: (.file_path // .file // empty),
         symbol: (.qualified_name // .name // null),
@@ -288,6 +296,8 @@ collect_candidates() {
     local payload
     payload="$(normalized_tool_payload "search-graph" "$file")"
     append_candidates_from_query "search_graph" "$payload" '
+      (if type == "array" then .[] else . end)
+      |
       (
         if ((.semantic_results? | type) == "array" and (.semantic_results | length) > 0)
         then .semantic_results
@@ -309,6 +319,8 @@ collect_candidates() {
     local payload
     payload="$(normalized_tool_payload "search-code" "$file")"
     append_candidates_from_query "search_code" "$payload" '
+      (if type == "array" then .[] else . end)
+      |
       (
         .results[]?
         | if type == "string"
@@ -351,6 +363,8 @@ collect_candidates() {
     local payload
     payload="$(normalized_tool_payload "query-graph" "$file")"
     append_candidates_from_query "query_graph" "$payload" '
+      (if type == "array" then .[] else . end)
+      |
       .columns as $columns
       | ($columns | map(split(".") | last) | index("file_path")) as $file_path_index
       | ($columns | map(split(".") | last) | index("file")) as $file_index
@@ -374,6 +388,8 @@ collect_candidates() {
     local payload
     payload="$(normalized_tool_payload "get-architecture" "$file")"
     append_candidates_from_query "get_architecture:entry_points" "$payload" '
+      (if type == "array" then .[] else . end)
+      |
       .entry_points[]?
       | {
           file: (.file // .file_path // empty),
