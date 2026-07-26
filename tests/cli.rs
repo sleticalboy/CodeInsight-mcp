@@ -2359,6 +2359,15 @@ fn cli_agent_route_accepts_inline_backend_evidence_json() {
 #[test]
 fn cli_agent_route_normalizes_inline_backend_tool_results() {
     let fixture = fixture_project();
+    let local_route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand app entrypoint flow",
+        "--token-budget",
+        "1600",
+        "--force-index",
+    ]);
     let backend_evidence = serde_json::json!({
         "provider": "codebase-memory-mcp",
         "tool_results": {
@@ -2433,6 +2442,15 @@ fn cli_agent_route_normalizes_inline_backend_tool_results() {
     assert_eq!(evidence["candidates"][0]["source"], "search_graph");
     assert_eq!(evidence["candidates"][0]["reason"], "search_graph Function");
     assert_eq!(evidence["evidence_count"], 5);
+    assert_eq!(
+        route["routing_decision"]["route_quality"]["evidence_count"]
+            .as_u64()
+            .unwrap(),
+        local_route["routing_decision"]["route_quality"]["evidence_count"]
+            .as_u64()
+            .unwrap()
+            + 5
+    );
     assert_eq!(evidence["latency_ms"], 33);
     assert_eq!(
         evidence["evidence_sources"],
@@ -3914,6 +3932,10 @@ fn cli_agent_route_reports_backend_only_when_local_route_is_blocked() {
     assert_eq!(
         route["routing_decision"]["route_quality"]["recommended_action"],
         "provide_seed_or_use_backend_candidate"
+    );
+    assert_eq!(
+        route["routing_decision"]["route_quality"]["evidence_count"],
+        3
     );
     assert!(
         route["routing_decision"]["backend_route_agreement"]["message"]

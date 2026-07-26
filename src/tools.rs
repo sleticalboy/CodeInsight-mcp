@@ -899,7 +899,7 @@ fn agent_route_quality(
                 context_pack.continuation_summary.status
             ),
             evidence_count: backend_evidence
-                .map(|backend| backend.evidence_count + backend.candidate_files.len())
+                .map(backend_evidence_signal_count)
                 .unwrap_or_default(),
             evidence_sources: backend_evidence
                 .map(backend_evidence_sources)
@@ -1078,15 +1078,16 @@ fn agent_route_quality(
     }
     if let Some(backend) = backend_evidence {
         let backend_sources = backend_evidence_sources(backend);
-        evidence_count += backend.evidence_count + backend.candidate_files.len();
+        let backend_signal_count = backend_evidence_signal_count(backend);
+        evidence_count += backend_signal_count;
         evidence_sources.extend(backend_sources.clone());
         evidence_sources.sort();
         evidence_sources.dedup();
-        if backend.evidence_count > 0 || !backend_sources.is_empty() {
+        if backend_signal_count > 0 {
             score += 5;
             confidence_factors.push(format!(
                 "backend {} supplied {} evidence signal(s)",
-                backend.provider, backend.evidence_count
+                backend.provider, backend_signal_count
             ));
         }
         match backend_route_agreement.status.as_str() {
@@ -1271,6 +1272,10 @@ fn agent_route_quality(
         verification_steps,
         recommended_action,
     }
+}
+
+fn backend_evidence_signal_count(backend: &AgentRouteBackendEvidence) -> usize {
+    backend.evidence_count.max(backend.candidate_files.len())
 }
 
 fn backend_evidence_sources(backend: &AgentRouteBackendEvidence) -> Vec<String> {
