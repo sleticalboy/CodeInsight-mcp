@@ -14050,6 +14050,15 @@ fn auto_seed_file_role(file: &str) -> &'static str {
 
 fn task_keywords(task: &str) -> Vec<String> {
     let mut keywords = Vec::new();
+    // Preserve localized intent when a long mixed-language prompt also expands
+    // many English aliases and reaches the keyword budget.
+    for (phrase, aliases) in chinese_task_keyword_aliases() {
+        if task.contains(phrase) {
+            for alias in *aliases {
+                push_task_keyword(&mut keywords, alias);
+            }
+        }
+    }
     for word in task
         .split(|ch: char| !ch.is_ascii_alphanumeric())
         .map(str::to_ascii_lowercase)
@@ -14059,13 +14068,6 @@ fn task_keywords(task: &str) -> Vec<String> {
         push_task_keyword(&mut keywords, word.as_str());
         for alias in task_keyword_aliases(&word) {
             push_task_keyword(&mut keywords, alias);
-        }
-    }
-    for (phrase, aliases) in chinese_task_keyword_aliases() {
-        if task.contains(phrase) {
-            for alias in *aliases {
-                push_task_keyword(&mut keywords, alias);
-            }
         }
     }
     keywords.truncate(32);
@@ -14695,6 +14697,12 @@ mod tests {
                 "expected {expected} for {task}"
             );
         }
+
+        let mixed_language_keywords = task_keywords(
+            "route routes router routing authentication login authorization permissions configuration settings startup entrypoint middleware persistence storage database 排查日志监控",
+        );
+        assert!(mixed_language_keywords.contains(&"observability".to_string()));
+        assert!(mixed_language_keywords.contains(&"monitoring".to_string()));
     }
 
     #[test]

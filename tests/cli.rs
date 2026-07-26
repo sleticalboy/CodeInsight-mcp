@@ -6432,6 +6432,36 @@ export function routerRegressionSpec() {
         "src/auth.ts"
     );
     assert_eq!(chinese_auth_context["files"][0]["file"], "src/auth.ts");
+    for (task, expected_file, expected_keyword) in [
+        ("理解权限授权规则", "src/permissions.ts", "permission"),
+        ("排查数据库存储行为", "src/database.ts", "database"),
+        ("分析后台任务队列", "src/worker.ts", "queue"),
+        ("检查日志和监控链路", "src/telemetry.ts", "observability"),
+    ] {
+        let context = run_json([
+            "context-pack",
+            fixture.path().to_str().unwrap(),
+            "--task",
+            task,
+            "--token-budget",
+            "1600",
+        ]);
+
+        assert_eq!(context["seed_strategy"], "auto_task_match", "{task}");
+        assert_eq!(
+            context["selected_seeds"][0]["value"], expected_file,
+            "{task}"
+        );
+        assert!(
+            context["selected_seeds"][0]["matched_keywords"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|keyword| keyword == expected_keyword),
+            "{task} should expose its translated routing signal"
+        );
+        assert_eq!(context["files"][0]["file"], expected_file, "{task}");
+    }
     let auth_question = auth_context["reading_plan"][0]["question"]
         .as_str()
         .unwrap();
