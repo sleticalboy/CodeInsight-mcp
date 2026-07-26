@@ -157,25 +157,38 @@ normalize_file() {
 append_candidate() {
   local source="$1"
   local file="$2"
+  local symbol="${3:-}"
+  local score="${4:-}"
+  local reason="${5:-}"
   local normalized
 
   [ -n "$file" ] || return
   normalized="$(normalize_file "$file")"
   [ -n "$normalized" ] || return
-  printf '%s\t%s\n' "$source" "$normalized" >>"$TEMP_DIR/candidates.tsv"
+  symbol="${symbol//$'\t'/ }"
+  symbol="${symbol//$'\n'/ }"
+  reason="${reason//$'\t'/ }"
+  reason="${reason//$'\n'/ }"
+  printf '%s\t%s\t%s\t%s\t%s\n' \
+    "$source" "$normalized" "$symbol" "$score" "$reason" >>"$TEMP_DIR/candidates.tsv"
 }
 
-append_files_from_query() {
+append_candidates_from_query() {
   local source="$1"
   local file="$2"
   local query="$3"
+  local record candidate symbol score reason
 
   [ -f "$file" ] || fail "input JSON does not exist: $file"
   jq empty "$file" >/dev/null || fail "invalid JSON: $file"
 
-  while IFS= read -r candidate; do
-    append_candidate "$source" "$candidate"
-  done < <(jq -r "$query" "$file")
+  while IFS= read -r record; do
+    candidate="$(jq -r '.file // empty' <<<"$record")"
+    symbol="$(jq -r '.symbol // empty' <<<"$record")"
+    score="$(jq -r '(.score // empty) | tostring' <<<"$record")"
+    reason="$(jq -r '.reason // empty' <<<"$record")"
+    append_candidate "$source" "$candidate" "$symbol" "$score" "$reason"
+  done < <(jq -c "$query" "$file")
 }
 
 append_latency() {
@@ -190,20 +203,44 @@ collect_candidates() {
 
   local file
   for file in "${SEARCH_GRAPH_JSONS[@]}"; do
-    append_files_from_query "search_graph" "$file" \
-      '.results[]? | (.file_path // .file // empty) | select(. != "")'
+    append_candidates_from_query "search_graph" "$file" '
+      .results[]?
+      | {
+          file: (.file_path // .file // empty),
+          symbol: (.name // .node // .qualified_name // null),
+          score: (.score // .similarity // null),
+          reason: ("search_graph " + (.label // "result" | tostring))
+        }
+      | select(.file != "")
+    '
     append_latency "$file"
   done
 
   for file in "${SEARCH_CODE_JSONS[@]}"; do
-    append_files_from_query "search_code" "$file" \
-      '.results[]? | (.file // .file_path // empty) | select(. != "")'
+    append_candidates_from_query "search_code" "$file" '
+      .results[]?
+      | {
+          file: (.file // .file_path // empty),
+          symbol: (.node // .name // .qualified_name // null),
+          score: (.score // .similarity // null),
+          reason: ("search_code " + (.label // "result" | tostring))
+        }
+      | select(.file != "")
+    '
     append_latency "$file"
   done
 
   for file in "${ARCHITECTURE_JSONS[@]}"; do
-    append_files_from_query "get_architecture:entry_points" "$file" \
-      '.entry_points[]? | (.file // .file_path // empty) | select(. != "")'
+    append_candidates_from_query "get_architecture:entry_points" "$file" '
+      .entry_points[]?
+      | {
+          file: (.file // .file_path // empty),
+          symbol: (.name // .qualified_name // null),
+          score: (.confidence // .score // null),
+          reason: "get_architecture entry point"
+        }
+      | select(.file != "")
+    '
     append_latency "$file"
   done
 
@@ -215,12 +252,28 @@ json_string_array_from_lines() {
 }
 
 write_output() {
-  local candidate_files_json evidence_sources_json notes_json latency_ms evidence_count
+  local candidate_files_json candidates_json evidence_sources_json notes_json latency_ms evidence_count
 
   candidate_files_json="$(
     awk -F $'\t' '!seen[$2]++ { print $2 }' "$TEMP_DIR/candidates.tsv" |
       head -n "$CANDIDATE_LIMIT" |
       json_string_array_from_lines
+  )"
+  candidates_json="$(
+    awk -F $'\t' '!seen[$2]++ { print }' "$TEMP_DIR/candidates.tsv" |
+      head -n "$CANDIDATE_LIMIT" |
+      jq -R '
+        split("\t")
+        | {
+            source: .[0],
+            file: .[1],
+            evidence: [.[0]]
+          }
+          + (if (.[2] // "") != "" then {symbol: .[2]} else {} end)
+          + (if (.[3] // "") != "" then {score: (.[3] | tonumber)} else {} end)
+          + (if (.[4] // "") != "" then {reason: .[4]} else {} end)
+      ' |
+      jq -s .
   )"
   evidence_sources_json="$(
     awk -F $'\t' '{ print $1 }' "$TEMP_DIR/candidates.tsv" |
@@ -244,6 +297,7 @@ write_output() {
     -n
     --arg provider "$PROVIDER"
     --argjson candidate_files "$candidate_files_json"
+    --argjson candidates "$candidates_json"
     --argjson evidence_sources "$evidence_sources_json"
     --argjson evidence_count "$evidence_count"
     --argjson latency_ms "$latency_ms"
@@ -253,6 +307,7 @@ write_output() {
     {
       provider: $provider,
       candidate_files: $candidate_files,
+      candidates: $candidates,
       evidence_sources: $evidence_sources,
       evidence_count: $evidence_count,
       notes: $notes

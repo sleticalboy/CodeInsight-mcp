@@ -149,10 +149,11 @@ main() {
   TEMP_DIR="$(mktemp -d)"
   trap cleanup EXIT INT TERM
 
-  local repo evidence route_json conflict_evidence conflict_route_json
+  local repo evidence route_json fallback_route_json conflict_evidence conflict_route_json
   repo="$TEMP_DIR/repo"
   evidence="$TEMP_DIR/backend-evidence.json"
   route_json="$TEMP_DIR/agent-route.json"
+  fallback_route_json="$TEMP_DIR/agent-route-fallback.json"
   conflict_evidence="$TEMP_DIR/backend-conflict-evidence.json"
   conflict_route_json="$TEMP_DIR/agent-route-conflict.json"
 
@@ -171,6 +172,9 @@ main() {
 
   require_jq "$evidence" '.provider == "codebase-memory-mcp"' "provider should be codebase-memory-mcp"
   require_jq "$evidence" '.candidate_files == ["src/auth.ts", "src/audit.ts", "src/main.ts"]' "candidate files should be normalized and stable"
+  require_jq "$evidence" '.candidates | map(.file) == ["src/auth.ts", "src/audit.ts", "src/main.ts"]' "structured candidates should preserve stable file ranking"
+  require_jq "$evidence" '.candidates[0].symbol == "AuthService" and .candidates[0].source == "search_graph"' "structured candidates should preserve symbol and source"
+  require_jq "$evidence" '.candidates[0].reason == "search_graph Class" and .candidates[0].evidence == ["search_graph"]' "structured candidates should explain backend evidence"
   require_jq "$evidence" '.evidence_sources | index("search_graph") and index("search_code") and index("get_architecture:entry_points")' "evidence sources should include all bridge inputs"
   require_jq "$evidence" '.evidence_count == 5' "evidence count should include duplicate backend signals"
   require_jq "$evidence" '.latency_ms == 33' "latency should aggregate exported backend timings"
@@ -188,7 +192,20 @@ main() {
   require_jq "$route_json" 'any(.routing_decision.route_quality.confidence_factors[]; contains("backend codebase-memory-mcp independently selected the same first file"))' "route quality should record backend agreement"
   require_jq "$route_json" 'any(.routing_decision.route_quality.verification_steps[]; contains("Treat backend codebase-memory-mcp evidence as advisory"))' "route quality should keep backend evidence advisory"
 
-  jq '.candidate_files = ["src/main.ts"] | .notes += ["conflict fixture: backend preferred app entrypoint"]' \
+  "$CODEINSIGHT_BIN" agent-route "$repo" \
+    --task "understand invalid local seed" \
+    --file "does/not/exist.ts" \
+    --token-budget 1600 \
+    --force-index \
+    --backend-evidence "$evidence" \
+    --backend-fallback >"$fallback_route_json"
+
+  require_jq "$fallback_route_json" '.routing_decision.backend_route_agreement.status == "backend_fallback"' "generated structured evidence should seed fallback routing"
+  require_jq "$fallback_route_json" '.routing_decision.first_file == "src/auth.ts"' "fallback should use the first generated backend candidate"
+  require_jq "$fallback_route_json" '.routing_decision.backend_selected_candidate.symbol == "AuthService"' "fallback should preserve the generated backend symbol"
+  require_jq "$fallback_route_json" '.impact_seed_symbols == ["AuthService"]' "fallback should reuse the generated backend symbol for impact analysis"
+
+  jq '.candidate_files = ["src/main.ts"] | .candidates = [.candidates[] | select(.file == "src/main.ts")] | .notes += ["conflict fixture: backend preferred app entrypoint"]' \
     "$evidence" >"$conflict_evidence"
 
   "$CODEINSIGHT_BIN" agent-route "$repo" \
@@ -205,6 +222,7 @@ main() {
   echo "codebase-memory backend evidence smoke passed"
   echo "evidence: $evidence"
   echo "route: $route_json"
+  echo "fallback_route: $fallback_route_json"
   echo "conflict_route: $conflict_route_json"
 }
 
