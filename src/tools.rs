@@ -80,6 +80,7 @@ struct BackendContextAttempt {
 struct BackendToolResultSpec<'a> {
     source: &'a str,
     items_keys: &'a [&'a str],
+    preferred_items_key: Option<&'a str>,
     total_keys: &'a [&'a str],
     file_keys: &'a [&'a str],
     symbol_keys: &'a [&'a str],
@@ -1651,7 +1652,8 @@ fn merge_backend_tool_results(evidence: &mut AgentRouteBackendEvidence) -> Resul
             tool_results.search_graph,
             BackendToolResultSpec {
                 source: "search_graph",
-                items_keys: &["results", "semantic_results"],
+                items_keys: &["results"],
+                preferred_items_key: Some("semantic_results"),
                 total_keys: &["total"],
                 file_keys: &["file_path", "file"],
                 symbol_keys: &["name", "node", "qualified_name"],
@@ -1662,6 +1664,7 @@ fn merge_backend_tool_results(evidence: &mut AgentRouteBackendEvidence) -> Resul
             BackendToolResultSpec {
                 source: "search_code",
                 items_keys: &["results"],
+                preferred_items_key: None,
                 total_keys: &["total_results"],
                 file_keys: &["file", "file_path"],
                 symbol_keys: &["node", "name", "qualified_name"],
@@ -1672,6 +1675,7 @@ fn merge_backend_tool_results(evidence: &mut AgentRouteBackendEvidence) -> Resul
             BackendToolResultSpec {
                 source: "get_architecture:entry_points",
                 items_keys: &["entry_points"],
+                preferred_items_key: None,
                 total_keys: &[],
                 file_keys: &["file", "file_path"],
                 symbol_keys: &["name", "qualified_name"],
@@ -1756,8 +1760,14 @@ fn collect_backend_tool_candidates(
             format!("{} page {}", spec.source, page_index + 1)
         };
         let payload = backend_tool_result_payload(raw_page, &page_source)?;
+        let preferred_items_key = spec
+            .preferred_items_key
+            .filter(|items_key| payload.get(*items_key).is_some());
+        let selected_items_keys = preferred_items_key
+            .map(|items_key| vec![items_key])
+            .unwrap_or_else(|| spec.items_keys.to_vec());
         let mut found_items = false;
-        for items_key in spec.items_keys {
+        for items_key in selected_items_keys {
             let Some(value) = payload.get(items_key) else {
                 continue;
             };
@@ -1801,19 +1811,29 @@ fn collect_backend_tool_candidates(
             }
         }
         if !found_items {
+            let expected_items_keys =
+                preferred_items_key.map(str::to_string).unwrap_or_else(|| {
+                    let mut items_keys = spec.items_keys.to_vec();
+                    if let Some(items_key) = spec.preferred_items_key {
+                        items_keys.push(items_key);
+                    }
+                    items_keys.join(" or ")
+                });
             bail!(
                 "backend evidence {page_source} tool result must contain an array field named {}",
-                spec.items_keys.join(" or ")
+                expected_items_keys
             );
         }
-        for total_key in spec.total_keys {
-            reported_total_items = reported_total_items.max(
-                payload
-                    .get(total_key)
-                    .and_then(Value::as_u64)
-                    .and_then(|total| usize::try_from(total).ok())
-                    .unwrap_or_default(),
-            );
+        if preferred_items_key.is_none() {
+            for total_key in spec.total_keys {
+                reported_total_items = reported_total_items.max(
+                    payload
+                        .get(total_key)
+                        .and_then(Value::as_u64)
+                        .and_then(|total| usize::try_from(total).ok())
+                        .unwrap_or_default(),
+                );
+            }
         }
         latency_ms = latency_ms.saturating_add(
             payload

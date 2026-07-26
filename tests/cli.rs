@@ -2375,6 +2375,11 @@ fn cli_agent_route_normalizes_inline_backend_tool_results() {
                 "elapsed_ms": 7,
                 "total": 4,
                 "has_more": true,
+                "results": [{
+                    "name": "defaultGraphNode",
+                    "label": "Module",
+                    "file_path": ".github/workflows/ci.yml"
+                }],
                 "semantic_results": [
                     {
                         "name": "main",
@@ -2444,16 +2449,13 @@ fn cli_agent_route_normalizes_inline_backend_tool_results() {
     assert_eq!(evidence["candidates"][0]["source"], "search_graph");
     assert_eq!(evidence["candidates"][0]["reason"], "search_graph Function");
     assert_eq!(evidence["evidence_count"], 5);
-    assert_eq!(evidence["normalization"]["unfetched_tool_result_items"], 2);
+    assert_eq!(evidence["normalization"]["unfetched_tool_result_items"], 0);
     assert!(
-        route["routing_decision"]["route_quality"]["warnings"]
+        !evidence["candidate_files"]
             .as_array()
             .unwrap()
             .iter()
-            .any(|warning| warning
-                .as_str()
-                .unwrap()
-                .contains("backend reported 2 unfetched tool result item(s)"))
+            .any(|file| file == ".github/workflows/ci.yml")
     );
     assert_eq!(
         route["routing_decision"]["route_quality"]["evidence_count"]
@@ -2552,8 +2554,7 @@ fn cli_agent_route_bounds_inline_backend_tool_results() {
             })
         })
         .collect::<Vec<_>>();
-    let mut second_page = results.split_off(35);
-    let semantic_results = second_page.split_off(29);
+    let second_page = results.split_off(35);
     let backend_evidence = serde_json::json!({
         "provider": "codebase-memory-mcp",
         "tool_results": {
@@ -2568,8 +2569,7 @@ fn cli_agent_route_bounds_inline_backend_tool_results() {
                     "elapsed_ms": 11,
                     "total": 70,
                     "has_more": false,
-                    "results": second_page,
-                    "semantic_results": semantic_results
+                    "results": second_page
                 }
             ]
         }
@@ -3251,12 +3251,29 @@ fn cli_agent_route_rejects_invalid_backend_evidence_values() {
             "--task",
             "understand app entrypoint flow",
             "--backend-evidence-json",
-            r#"{"provider":"graph","tool_results":{"search_graph":{"results":{},"semantic_results":[]}}}"#,
+            r#"{"provider":"graph","tool_results":{"search_graph":{"results":{}}}}"#,
         ])
         .assert()
         .failure()
         .stderr(contains(
             "backend evidence search_graph tool result field results must be an array",
+        ));
+
+    Command::cargo_bin("codeinsight")
+        .unwrap()
+        .env_remove("CODEINSIGHT_EMBEDDING_PROVIDER")
+        .args([
+            "agent-route",
+            fixture.path().to_str().unwrap(),
+            "--task",
+            "understand app entrypoint flow",
+            "--backend-evidence-json",
+            r#"{"provider":"graph","tool_results":{"search_graph":{"results":[],"semantic_results":{}}}}"#,
+        ])
+        .assert()
+        .failure()
+        .stderr(contains(
+            "backend evidence search_graph tool result field semantic_results must be an array",
         ));
 }
 
