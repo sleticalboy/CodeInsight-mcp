@@ -11,6 +11,7 @@ mod tools;
 use anyhow::{Context, Result};
 use clap::Parser;
 use cli::{Cli, Command};
+use std::io::Read;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -63,6 +64,15 @@ async fn main() -> Result<()> {
             let backend_evidence = if let Some(path) = args.backend_evidence.as_deref() {
                 Some(tools::read_agent_route_backend_evidence(path)?)
             } else if let Some(json) = args.backend_evidence_json.as_deref() {
+                let mut stdin_json = String::new();
+                let json = if json == "-" {
+                    std::io::stdin()
+                        .read_to_string(&mut stdin_json)
+                        .context("failed to read backend evidence JSON from stdin")?;
+                    stdin_json.as_str()
+                } else {
+                    json
+                };
                 Some(
                     serde_json::from_str(json)
                         .context("failed to parse inline backend evidence JSON")?,

@@ -2357,6 +2357,182 @@ fn cli_agent_route_accepts_inline_backend_evidence_json() {
 }
 
 #[test]
+fn cli_agent_route_help_documents_backend_evidence_stdin() {
+    Command::cargo_bin("codeinsight")
+        .unwrap()
+        .args(["agent-route", "--help"])
+        .assert()
+        .success()
+        .stdout(contains("--backend-evidence <PATH>"))
+        .stdout(contains("--backend-evidence-json <JSON_OR_DASH>"))
+        .stdout(contains("use '-' to read stdin"));
+}
+
+#[test]
+fn cli_agent_route_accepts_backend_evidence_json_from_stdin() {
+    let fixture = fixture_project();
+    let backend_evidence = serde_json::json!({
+        "provider": "codebase-memory-mcp",
+        "candidate_files": ["src/main.ts", "src/server.ts"],
+        "evidence_sources": ["search_graph"],
+        "evidence_count": 5,
+        "confidence": 0.9
+    })
+    .to_string();
+
+    let output = Command::cargo_bin("codeinsight")
+        .unwrap()
+        .env_remove("CODEINSIGHT_EMBEDDING_PROVIDER")
+        .args([
+            "agent-route",
+            fixture.path().to_str().unwrap(),
+            "--task",
+            "understand app entrypoint flow",
+            "--token-budget",
+            "1600",
+            "--force-index",
+            "--backend-evidence-json",
+            "-",
+        ])
+        .write_stdin(backend_evidence)
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let route: Value = serde_json::from_slice(&output).unwrap();
+
+    assert_eq!(
+        route["routing_decision"]["backend_evidence"]["provider"],
+        "codebase-memory-mcp"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["status"],
+        "agree"
+    );
+    assert_eq!(
+        route["routing_decision"]["route_quality"]["recommended_action"],
+        "read_selected_context"
+    );
+}
+
+#[test]
+fn cli_agent_route_rejects_invalid_backend_evidence_json_from_stdin() {
+    let fixture = fixture_project();
+
+    Command::cargo_bin("codeinsight")
+        .unwrap()
+        .env_remove("CODEINSIGHT_EMBEDDING_PROVIDER")
+        .args([
+            "agent-route",
+            fixture.path().to_str().unwrap(),
+            "--task",
+            "understand app entrypoint flow",
+            "--backend-evidence-json",
+            "-",
+        ])
+        .write_stdin("not-json")
+        .assert()
+        .failure()
+        .stderr(contains("failed to parse inline backend evidence JSON"));
+}
+
+#[test]
+fn cli_agent_route_normalizes_backend_evidence_before_routing() {
+    let fixture = fixture_project();
+    let absolute_main = fixture.path().join("src/main.ts");
+    let backend_evidence = serde_json::json!({
+        "provider": "  codebase-memory-mcp  ",
+        "candidate_files": [absolute_main, "src/main.ts", "src/server.ts"],
+        "evidence_sources": [" search_graph ", "search_graph", ""],
+        "evidence_count": 5,
+        "confidence": 0.9,
+        "notes": [" verified route ", "verified route"]
+    })
+    .to_string();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand app entrypoint flow",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence-json",
+        &backend_evidence,
+    ]);
+
+    let evidence = &route["routing_decision"]["backend_evidence"];
+    assert_eq!(evidence["provider"], "codebase-memory-mcp");
+    assert_eq!(
+        evidence["candidate_files"],
+        serde_json::json!(["src/main.ts", "src/server.ts"])
+    );
+    assert_eq!(
+        evidence["evidence_sources"],
+        serde_json::json!(["search_graph"])
+    );
+    assert_eq!(evidence["notes"], serde_json::json!(["verified route"]));
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["status"],
+        "agree"
+    );
+}
+
+#[test]
+fn cli_agent_route_rejects_invalid_backend_evidence_values() {
+    let fixture = fixture_project();
+
+    Command::cargo_bin("codeinsight")
+        .unwrap()
+        .env_remove("CODEINSIGHT_EMBEDDING_PROVIDER")
+        .args([
+            "agent-route",
+            fixture.path().to_str().unwrap(),
+            "--task",
+            "understand app entrypoint flow",
+            "--backend-evidence-json",
+            r#"{"provider":"   ","candidate_files":["src/main.ts"]}"#,
+        ])
+        .assert()
+        .failure()
+        .stderr(contains("backend evidence provider must not be empty"));
+
+    Command::cargo_bin("codeinsight")
+        .unwrap()
+        .env_remove("CODEINSIGHT_EMBEDDING_PROVIDER")
+        .args([
+            "agent-route",
+            fixture.path().to_str().unwrap(),
+            "--task",
+            "understand app entrypoint flow",
+            "--backend-evidence-json",
+            r#"{"provider":"graph","candidate_files":["src/main.ts"],"confidence":1.5}"#,
+        ])
+        .assert()
+        .failure()
+        .stderr(contains(
+            "backend evidence confidence must be between 0.0 and 1.0",
+        ));
+
+    Command::cargo_bin("codeinsight")
+        .unwrap()
+        .env_remove("CODEINSIGHT_EMBEDDING_PROVIDER")
+        .args([
+            "agent-route",
+            fixture.path().to_str().unwrap(),
+            "--task",
+            "understand app entrypoint flow",
+            "--backend-evidence-json",
+            r#"{"provider":"graph","candidate_files":["../outside.ts"]}"#,
+        ])
+        .assert()
+        .failure()
+        .stderr(contains("invalid backend evidence candidate file"));
+}
+
+#[test]
 fn cli_agent_route_rejects_backend_evidence_file_and_inline_json_together() {
     let fixture = fixture_project();
     let evidence_path = fixture.path().join("backend-evidence.json");
@@ -2457,6 +2633,20 @@ fn cli_agent_route_marks_backend_overlap_as_rank_review() {
             .unwrap()
             .contains("Then read_selected_context_then_compare_backend_rank.")
     );
+    let comparison_step = route["execution_plan"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|step| step["action"] == "read_selected_context_then_compare_backend_rank")
+        .unwrap();
+    assert_eq!(
+        comparison_step["status"],
+        "available_after_selected_context"
+    );
+    assert_eq!(
+        comparison_step["files"],
+        serde_json::json!(["src/main.ts", "src/server.ts"])
+    );
 }
 
 #[test]
@@ -2542,6 +2732,23 @@ fn cli_agent_route_flags_backend_evidence_conflict_before_edits() {
             .unwrap()
             .contains("Then compare_backend_route_before_edits.")
     );
+    let comparison_step = route["execution_plan"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|step| step["action"] == "compare_backend_route_before_edits")
+        .unwrap();
+    assert_eq!(comparison_step["status"], "required_before_edits");
+    assert_eq!(
+        comparison_step["files"],
+        serde_json::json!(["src/main.ts", "src/server.ts"])
+    );
+    assert!(
+        comparison_step["instruction"]
+            .as_str()
+            .unwrap()
+            .contains("resolve the conflict before editing")
+    );
 }
 
 #[test]
@@ -2601,6 +2808,23 @@ fn cli_agent_route_reports_backend_only_when_local_route_is_blocked() {
             .as_str()
             .unwrap()
             .contains("Local routing produced no first-read file")
+    );
+    let backend_seed_step = route["execution_plan"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|step| step["action"] == "provide_seed_or_use_backend_candidate")
+        .unwrap();
+    assert_eq!(backend_seed_step["status"], "required_before_edits");
+    assert_eq!(
+        backend_seed_step["files"],
+        serde_json::json!(["src/main.ts"])
+    );
+    assert!(
+        backend_seed_step["instruction"]
+            .as_str()
+            .unwrap()
+            .contains("rerun agent_route before editing")
     );
 }
 

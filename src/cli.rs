@@ -179,9 +179,18 @@ pub struct AgentRouteArgs {
     pub impact_depth: usize,
     #[arg(long, default_value_t = 20)]
     pub impact_evidence_limit: usize,
-    #[arg(long)]
+    #[arg(
+        long,
+        value_name = "PATH",
+        help = "Read backend route evidence from a JSON file"
+    )]
     pub backend_evidence: Option<PathBuf>,
-    #[arg(long, conflicts_with = "backend_evidence")]
+    #[arg(
+        long,
+        value_name = "JSON_OR_DASH",
+        conflicts_with = "backend_evidence",
+        help = "Read backend route evidence from inline JSON, or use '-' to read stdin"
+    )]
     pub backend_evidence_json: Option<String>,
 }
 

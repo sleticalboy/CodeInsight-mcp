@@ -2,7 +2,7 @@ use std::{
     cmp::Ordering,
     collections::{BTreeMap, BTreeSet, VecDeque},
     fs,
-    path::{Path, PathBuf},
+    path::{Component, Path, PathBuf},
 };
 
 use anyhow::{Context, Result, bail};
@@ -244,6 +244,9 @@ pub fn agent_route_value(
     backend_evidence: Option<AgentRouteBackendEvidence>,
 ) -> Result<AgentRouteReport> {
     let root = root.canonicalize()?;
+    let backend_evidence = backend_evidence
+        .map(|evidence| normalize_agent_route_backend_evidence(&root, evidence))
+        .transpose()?;
     let index_report = index_project_value(root.clone(), force_index)?;
     let overview = project_overview_value(root.clone())?;
     let mut context_pack = match context_pack_value(
@@ -363,11 +366,15 @@ pub fn agent_route_value(
             },
         },
     ];
-    let execution_plan =
-        agent_route_execution_plan(&context_pack, &impact_status, impact_analysis.as_ref());
     let current_reading_step = context_pack.reading_plan.first().cloned();
     let routing_decision =
         agent_route_routing_decision(&context_pack, &impact_status, backend_evidence);
+    let execution_plan = agent_route_execution_plan(
+        &context_pack,
+        &impact_status,
+        impact_analysis.as_ref(),
+        &routing_decision.backend_route_agreement,
+    );
 
     Ok(AgentRouteReport {
         root: root.display().to_string(),
@@ -910,6 +917,7 @@ fn agent_route_execution_plan(
     context_pack: &ContextPack,
     impact_status: &str,
     impact_analysis: Option<&ImpactAnalysisReport>,
+    backend_route_agreement: &AgentRouteBackendAgreement,
 ) -> Vec<AgentRouteExecutionStep> {
     let reading_files = context_pack
         .reading_plan
@@ -949,9 +957,50 @@ fn agent_route_execution_plan(
         suggested_checks: Vec::new(),
     }];
 
+    if matches!(
+        backend_route_agreement.status.as_str(),
+        "overlap" | "conflict" | "backend_only" | "no_local_route"
+    ) {
+        let mut files = backend_route_agreement
+            .local_first_file
+            .iter()
+            .chain(backend_route_agreement.backend_first_file.iter())
+            .cloned()
+            .collect::<Vec<_>>();
+        files.sort();
+        files.dedup();
+        let instruction = match backend_route_agreement.status.as_str() {
+            "overlap" => format!(
+                "{} Read the selected local context first, then compare the backend rank-1 candidate before choosing an edit target.",
+                backend_route_agreement.message
+            ),
+            "backend_only" | "no_local_route" => format!(
+                "{} Use the backend candidate as an explicit seed or provide a verified local seed, then rerun agent_route before editing.",
+                backend_route_agreement.message
+            ),
+            _ => format!(
+                "{} Compare the local and backend first-read candidates and resolve the conflict before editing.",
+                backend_route_agreement.message
+            ),
+        };
+        plan.push(AgentRouteExecutionStep {
+            order: plan.len() + 1,
+            action: backend_route_agreement.recommended_action.clone(),
+            status: if backend_route_agreement.status == "overlap" {
+                "available_after_selected_context".to_string()
+            } else {
+                "required_before_edits".to_string()
+            },
+            instruction,
+            files,
+            suggested_tool: None,
+            suggested_checks: Vec::new(),
+        });
+    }
+
     if let Some(step) = first_step {
         plan.push(AgentRouteExecutionStep {
-            order: 2,
+            order: plan.len() + 1,
             action: "use_current_reading_step_suggested_tool".to_string(),
             status: "available_after_current_file".to_string(),
             instruction: format!(
@@ -964,7 +1013,7 @@ fn agent_route_execution_plan(
         });
     } else {
         plan.push(AgentRouteExecutionStep {
-            order: 2,
+            order: plan.len() + 1,
             action: "use_current_reading_step_suggested_tool".to_string(),
             status: "blocked_no_current_reading_step".to_string(),
             instruction: "No current_reading_step is available; provide a seed file or symbol, or add source files before requesting a suggested follow-up tool.".to_string(),
@@ -1011,6 +1060,83 @@ fn agent_route_execution_plan(
     });
 
     plan
+}
+
+fn normalize_agent_route_backend_evidence(
+    root: &Path,
+    mut evidence: AgentRouteBackendEvidence,
+) -> Result<AgentRouteBackendEvidence> {
+    evidence.provider = evidence.provider.trim().to_string();
+    if evidence.provider.is_empty() {
+        bail!("backend evidence provider must not be empty");
+    }
+    if let Some(confidence) = evidence.confidence
+        && (!confidence.is_finite() || !(0.0..=1.0).contains(&confidence))
+    {
+        bail!("backend evidence confidence must be between 0.0 and 1.0");
+    }
+
+    let mut seen_files = BTreeSet::new();
+    evidence.candidate_files = evidence
+        .candidate_files
+        .into_iter()
+        .map(|file| {
+            let file = file.trim();
+            if file.is_empty() {
+                bail!("backend evidence candidate file must not be empty");
+            }
+            normalize_backend_candidate_file(root, file)
+                .with_context(|| format!("invalid backend evidence candidate file: {file}"))
+        })
+        .collect::<Result<Vec<_>>>()?
+        .into_iter()
+        .filter(|file| seen_files.insert(file.clone()))
+        .collect();
+
+    evidence.evidence_sources = trimmed_unique_strings(evidence.evidence_sources);
+    evidence.notes = trimmed_unique_strings(evidence.notes);
+    Ok(evidence)
+}
+
+fn normalize_backend_candidate_file(root: &Path, file: &str) -> Result<String> {
+    let path = Path::new(file);
+    let canonical_path;
+    let relative = if path.is_absolute() {
+        canonical_path = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
+        canonical_path
+            .strip_prefix(root)
+            .with_context(|| format!("candidate file is outside project root: {file}"))?
+    } else {
+        path
+    };
+    let mut normalized = PathBuf::new();
+    for component in relative.components() {
+        match component {
+            Component::CurDir => {}
+            Component::Normal(segment) => normalized.push(segment),
+            Component::ParentDir => {
+                if !normalized.pop() {
+                    bail!("candidate file is outside project root: {file}");
+                }
+            }
+            Component::RootDir | Component::Prefix(_) => {
+                bail!("candidate file is outside project root: {file}");
+            }
+        }
+    }
+    if normalized.as_os_str().is_empty() {
+        bail!("backend evidence candidate file must not be empty");
+    }
+    Ok(normalized.to_string_lossy().replace('\\', "/"))
+}
+
+fn trimmed_unique_strings(values: Vec<String>) -> Vec<String> {
+    let mut seen = BTreeSet::new();
+    values
+        .into_iter()
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty() && seen.insert(value.clone()))
+        .collect()
 }
 
 fn agent_route_context_reason(context_pack: &ContextPack) -> String {
