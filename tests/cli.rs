@@ -2569,6 +2569,44 @@ fn cli_agent_route_normalizes_json_rpc_text_backend_tool_result() {
 }
 
 #[test]
+fn cli_agent_route_normalizes_search_code_file_results() {
+    let fixture = fixture_project();
+    let backend_evidence = serde_json::json!({
+        "provider": "codebase-memory-mcp",
+        "tool_results": {
+            "search_code": {
+                "files": ["src/server.ts", "src/main.ts"],
+                "total_results": 68,
+                "elapsed_ms": 17
+            }
+        }
+    })
+    .to_string();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand server startup",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence-json",
+        &backend_evidence,
+    ]);
+
+    let evidence = &route["routing_decision"]["backend_evidence"];
+    assert_eq!(
+        evidence["candidate_files"],
+        serde_json::json!(["src/server.ts", "src/main.ts"])
+    );
+    assert_eq!(evidence["candidates"][0]["reason"], "search_code File");
+    assert_eq!(evidence["evidence_count"], 2);
+    assert_eq!(evidence["latency_ms"], 17);
+    assert!(evidence.get("normalization").is_none());
+}
+
+#[test]
 fn cli_agent_route_bounds_inline_backend_tool_results() {
     let fixture = fixture_project();
     let mut results = (1..=70)

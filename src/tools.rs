@@ -82,6 +82,7 @@ struct BackendToolResultSpec<'a> {
     items_keys: &'a [&'a str],
     preferred_items_key: Option<&'a str>,
     total_keys: &'a [&'a str],
+    total_items_keys: &'a [&'a str],
     file_keys: &'a [&'a str],
     symbol_keys: &'a [&'a str],
 }
@@ -1655,6 +1656,7 @@ fn merge_backend_tool_results(evidence: &mut AgentRouteBackendEvidence) -> Resul
                 items_keys: &["results"],
                 preferred_items_key: Some("semantic_results"),
                 total_keys: &["total"],
+                total_items_keys: &["results"],
                 file_keys: &["file_path", "file"],
                 symbol_keys: &["name", "node", "qualified_name"],
             },
@@ -1663,9 +1665,10 @@ fn merge_backend_tool_results(evidence: &mut AgentRouteBackendEvidence) -> Resul
             tool_results.search_code,
             BackendToolResultSpec {
                 source: "search_code",
-                items_keys: &["results"],
+                items_keys: &["results", "files"],
                 preferred_items_key: None,
                 total_keys: &["total_results"],
+                total_items_keys: &["results"],
                 file_keys: &["file", "file_path"],
                 symbol_keys: &["node", "name", "qualified_name"],
             },
@@ -1677,6 +1680,7 @@ fn merge_backend_tool_results(evidence: &mut AgentRouteBackendEvidence) -> Resul
                 items_keys: &["entry_points"],
                 preferred_items_key: None,
                 total_keys: &[],
+                total_items_keys: &[],
                 file_keys: &["file", "file_path"],
                 symbol_keys: &["name", "qualified_name"],
             },
@@ -1769,6 +1773,10 @@ fn collect_backend_tool_candidates(
         let selected_items_keys = preferred_items_key
             .map(|items_key| vec![items_key])
             .unwrap_or_else(|| spec.items_keys.to_vec());
+        let should_read_totals = preferred_items_key.is_none()
+            && selected_items_keys.iter().any(|items_key| {
+                payload.get(*items_key).is_some() && spec.total_items_keys.contains(items_key)
+            });
         let mut found_items = false;
         for items_key in selected_items_keys {
             let Some(value) = payload.get(items_key) else {
@@ -1784,10 +1792,26 @@ fn collect_backend_tool_candidates(
                 item_count = item_count.saturating_add(items.len());
             }
             for item in items {
-                let Some(file) = first_backend_tool_string(item, spec.file_keys) else {
-                    continue;
+                let (file, symbol, label) = match item {
+                    Value::String(file) => {
+                        let file = file.trim();
+                        if file.is_empty() {
+                            continue;
+                        }
+                        (file.to_string(), None, "File")
+                    }
+                    _ => {
+                        let Some(file) = first_backend_tool_string(item, spec.file_keys) else {
+                            continue;
+                        };
+                        let symbol = first_backend_tool_string(item, spec.symbol_keys);
+                        let label = item
+                            .get("label")
+                            .and_then(Value::as_str)
+                            .unwrap_or("result");
+                        (file, symbol, label)
+                    }
                 };
-                let symbol = first_backend_tool_string(item, spec.symbol_keys);
                 let candidate_key = (file.clone(), symbol.clone());
                 if seen_candidate_keys.contains(&candidate_key) {
                     continue;
@@ -1802,10 +1826,6 @@ fn collect_backend_tool_candidates(
                     continue;
                 }
                 processed_item_count = processed_item_count.saturating_add(1);
-                let label = item
-                    .get("label")
-                    .and_then(Value::as_str)
-                    .unwrap_or("result");
                 let reason = if spec.source == "get_architecture:entry_points" {
                     "get_architecture entry point".to_string()
                 } else {
@@ -1840,7 +1860,7 @@ fn collect_backend_tool_candidates(
                 expected_items_keys
             );
         }
-        if preferred_items_key.is_none() {
+        if should_read_totals {
             for total_key in spec.total_keys {
                 reported_total_items = reported_total_items.max(
                     payload
