@@ -289,6 +289,7 @@ fn tool_definitions() -> Value {
                     "search_graph": backend_tool_result_schema.clone(),
                     "search_code": backend_tool_result_schema.clone(),
                     "query_graph": backend_tool_result_schema.clone(),
+                    "trace_path": backend_tool_result_schema.clone(),
                     "get_architecture": backend_tool_result_schema
                 },
                 "minProperties": 1
@@ -1314,6 +1315,10 @@ int login(void) {
         assert_eq!(search_graph["oneOf"][1]["items"]["type"], "object");
         assert_eq!(
             tool_results["properties"]["query_graph"]["oneOf"][0]["type"],
+            "object"
+        );
+        assert_eq!(
+            tool_results["properties"]["trace_path"]["oneOf"][0]["type"],
             "object"
         );
     }

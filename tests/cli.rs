@@ -2442,6 +2442,21 @@ fn cli_agent_route_normalizes_inline_backend_tool_results() {
                 "total": 1,
                 "elapsed_ms": 13
             },
+            "trace_path": {
+                "function": "AuthService.login",
+                "direction": "both",
+                "callers": [{
+                    "name": "main",
+                    "qualified_name": "fixture.src.main.main",
+                    "hop": 1
+                }],
+                "callees": [{
+                    "name": "helper",
+                    "qualified_name": "fixture.src.auth.helper",
+                    "hop": 1
+                }],
+                "elapsed_ms": 5
+            },
             "get_architecture": {
                 "content": [{
                     "type": "text",
@@ -2479,7 +2494,7 @@ fn cli_agent_route_normalizes_inline_backend_tool_results() {
     assert_eq!(evidence["candidates"][0]["symbol"], "main");
     assert_eq!(evidence["candidates"][0]["source"], "search_graph");
     assert_eq!(evidence["candidates"][0]["reason"], "search_graph Function");
-    assert_eq!(evidence["evidence_count"], 6);
+    assert_eq!(evidence["evidence_count"], 8);
     assert_eq!(evidence["normalization"]["unfetched_tool_result_items"], 0);
     assert_eq!(evidence["normalization"]["omitted_tool_result_items"], 0);
     assert!(
@@ -2496,15 +2511,16 @@ fn cli_agent_route_normalizes_inline_backend_tool_results() {
         local_route["routing_decision"]["route_quality"]["evidence_count"]
             .as_u64()
             .unwrap()
-            + 6
+            + 8
     );
-    assert_eq!(evidence["latency_ms"], 57);
+    assert_eq!(evidence["latency_ms"], 62);
     assert_eq!(
         evidence["evidence_sources"],
         serde_json::json!([
             "search_graph",
             "search_code",
             "query_graph",
+            "trace_path",
             "get_architecture:entry_points"
         ])
     );

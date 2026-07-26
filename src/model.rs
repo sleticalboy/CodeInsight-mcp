@@ -424,6 +424,8 @@ pub struct AgentRouteBackendToolResults {
     #[serde(default)]
     pub query_graph: Option<Value>,
     #[serde(default)]
+    pub trace_path: Option<Value>,
+    #[serde(default)]
     pub get_architecture: Option<Value>,
 }
 

@@ -327,10 +327,10 @@ pub fn agent_route_value(
     backend_evidence: Option<AgentRouteBackendEvidence>,
 ) -> Result<AgentRouteReport> {
     let root = root.canonicalize()?;
+    let index_report = index_project_value(root.clone(), force_index)?;
     let backend_evidence = backend_evidence
         .map(|evidence| normalize_agent_route_backend_evidence(&root, evidence))
         .transpose()?;
-    let index_report = index_project_value(root.clone(), force_index)?;
     let overview = project_overview_value(root.clone())?;
     let mut context_pack = match context_pack_value(
         root.clone(),
@@ -1544,7 +1544,7 @@ fn normalize_agent_route_backend_evidence(
         bail!("backend evidence confidence must be between 0.0 and 1.0");
     }
     let (omitted_tool_result_items, unfetched_tool_result_items) =
-        merge_backend_tool_results(&mut evidence)?;
+        merge_backend_tool_results(root, &mut evidence)?;
 
     let legacy_files = evidence
         .candidate_files
@@ -1658,13 +1658,20 @@ fn normalize_agent_route_backend_evidence(
     Ok(evidence)
 }
 
-fn merge_backend_tool_results(evidence: &mut AgentRouteBackendEvidence) -> Result<(usize, usize)> {
+fn merge_backend_tool_results(
+    root: &Path,
+    evidence: &mut AgentRouteBackendEvidence,
+) -> Result<(usize, usize)> {
     let Some(tool_results) = evidence.tool_results.take() else {
         return Ok((0, 0));
     };
     let query_graph = tool_results
         .query_graph
         .map(normalize_backend_query_graph_result)
+        .transpose()?;
+    let trace_path = tool_results
+        .trace_path
+        .map(|raw| normalize_backend_trace_path_result(root, raw))
         .transpose()?;
 
     let tool_inputs = [
@@ -1696,6 +1703,18 @@ fn merge_backend_tool_results(evidence: &mut AgentRouteBackendEvidence) -> Resul
             query_graph,
             BackendToolResultSpec {
                 source: "query_graph",
+                items_keys: &["results"],
+                preferred_items_key: None,
+                total_keys: &["total"],
+                total_items_keys: &["results"],
+                file_keys: &["file_path", "file"],
+                symbol_keys: &["name", "qualified_name"],
+            },
+        ),
+        (
+            trace_path,
+            BackendToolResultSpec {
+                source: "trace_path",
                 items_keys: &["results"],
                 preferred_items_key: None,
                 total_keys: &["total"],
@@ -1866,6 +1885,105 @@ fn backend_query_graph_column_index(columns: &[Value], names: &[&str]) -> Option
                 .to_ascii_lowercase();
             names.contains(&normalized.as_str())
         })
+    })
+}
+
+fn normalize_backend_trace_path_result(root: &Path, raw: Value) -> Result<Value> {
+    let pages = match raw {
+        Value::Array(pages) if pages.is_empty() => {
+            bail!("backend evidence trace_path tool result page array must not be empty")
+        }
+        Value::Array(pages) => pages,
+        raw => vec![raw],
+    };
+    if pages.len() > BACKEND_EVIDENCE_TOOL_RESULT_PAGES_LIMIT {
+        bail!(
+            "backend evidence trace_path tool result must not exceed {} pages",
+            BACKEND_EVIDENCE_TOOL_RESULT_PAGES_LIMIT
+        );
+    }
+
+    let store = Store::open(root)?;
+    let page_count = pages.len();
+    let mut normalized_pages = Vec::with_capacity(page_count);
+    for (page_index, raw_page) in pages.into_iter().enumerate() {
+        let page_source = if page_count == 1 {
+            "trace_path".to_string()
+        } else {
+            format!("trace_path page {}", page_index + 1)
+        };
+        let payload = backend_tool_result_payload(raw_page, &page_source)?;
+        let mut results = Vec::new();
+        let mut total = 0usize;
+        let mut found_items = false;
+        for (items_key, label) in [("callers", "caller"), ("callees", "callee")] {
+            let Some(items) = payload.get(items_key) else {
+                continue;
+            };
+            let items = items.as_array().ok_or_else(|| {
+                anyhow::anyhow!(
+                    "backend evidence {page_source} tool result field {items_key} must be an array"
+                )
+            })?;
+            found_items = true;
+            total = total.saturating_add(items.len());
+            for item in items {
+                if results.len() >= BACKEND_EVIDENCE_TOOL_RESULT_ITEMS_LIMIT {
+                    break;
+                }
+                let Some(backend_symbol) =
+                    first_backend_tool_string(item, &["qualified_name", "name", "node"])
+                else {
+                    continue;
+                };
+                let lookup_name = item
+                    .get("name")
+                    .and_then(Value::as_str)
+                    .map(str::trim)
+                    .filter(|name| !name.is_empty())
+                    .unwrap_or_else(|| {
+                        backend_symbol
+                            .rsplit(['.', ':'])
+                            .find(|part| !part.is_empty())
+                            .unwrap_or(backend_symbol.as_str())
+                    });
+                let local_symbols = store.search_symbols(lookup_name, 16)?;
+                let Some(local_symbol) = local_symbols.iter().find(|symbol| {
+                    backend_symbol_name_matches(
+                        &backend_symbol,
+                        &symbol.name,
+                        &symbol.qualified_name,
+                    )
+                }) else {
+                    continue;
+                };
+                results.push(json!({
+                    "file_path": local_symbol.file,
+                    "name": local_symbol.qualified_name,
+                    "label": label
+                }));
+            }
+        }
+        if !found_items {
+            bail!(
+                "backend evidence {page_source} tool result must contain an array field named callers or callees"
+            );
+        }
+        normalized_pages.push(json!({
+            "results": results,
+            "total": total,
+            "elapsed_ms": payload
+                .get("elapsed_ms")
+                .or_else(|| payload.get("duration_ms"))
+                .and_then(Value::as_u64)
+                .unwrap_or_default()
+        }));
+    }
+
+    Ok(if page_count == 1 {
+        normalized_pages.pop().unwrap_or_default()
+    } else {
+        Value::Array(normalized_pages)
     })
 }
 
