@@ -1,10 +1,13 @@
 use std::{
     ffi::{OsStr, OsString},
+    io::Read,
     path::{Path, PathBuf},
-    process::Command,
+    process::{Command, Stdio},
+    thread,
+    time::{Duration, Instant},
 };
 
-use anyhow::{Context, Result, bail};
+use anyhow::{Context, Result, anyhow, bail};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
@@ -20,6 +23,9 @@ const AGENT_FIRST_READ_BACKEND_CANDIDATE_LIMIT: usize = 8;
 const AGENT_FIRST_READ_BACKEND_EVIDENCE_SOURCE_LIMIT: usize = 6;
 const AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER: &str = "codebase-memory-mcp";
 const CODEBASE_MEMORY_BINARY_ENV: &str = "CODEINSIGHT_CODEBASE_MEMORY_BIN";
+const CODEBASE_MEMORY_TIMEOUT_MS: u64 = 60_000;
+const CODEBASE_MEMORY_MIN_TIMEOUT_MS: u64 = 1_000;
+const CODEBASE_MEMORY_MAX_TIMEOUT_MS: u64 = 300_000;
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -43,10 +49,16 @@ struct AgentFirstReadBackendConfig {
     project: Option<String>,
     #[serde(default = "default_true")]
     refresh_index: bool,
+    #[serde(default = "default_codebase_memory_timeout_ms")]
+    timeout_ms: u64,
 }
 
 fn default_true() -> bool {
     true
+}
+
+fn default_codebase_memory_timeout_ms() -> u64 {
+    CODEBASE_MEMORY_TIMEOUT_MS
 }
 
 #[derive(Debug, Deserialize)]
@@ -238,23 +250,77 @@ fn optional_agent_first_read_backend_evidence(
     }
 }
 
-fn codebase_memory_cli_value(binary: &OsStr, tool: &str, args: &[OsString]) -> Result<Value> {
-    let output = Command::new(binary)
+fn codebase_memory_cli_value(
+    binary: &OsStr,
+    tool: &str,
+    args: &[OsString],
+    timeout: Duration,
+) -> Result<Value> {
+    let mut child = Command::new(binary)
         .arg("cli")
         .arg(tool)
         .args(args)
-        .output()
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
         .with_context(|| {
             format!(
                 "failed to run codebase-memory-mcp; install it or set {CODEBASE_MEMORY_BINARY_ENV}"
             )
         })?;
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
+    let stdout = child
+        .stdout
+        .take()
+        .context("failed to capture codebase-memory-mcp stdout")?;
+    let stderr = child
+        .stderr
+        .take()
+        .context("failed to capture codebase-memory-mcp stderr")?;
+    let stdout_reader = thread::spawn(move || {
+        let mut bytes = Vec::new();
+        let mut stdout = stdout;
+        stdout.read_to_end(&mut bytes).map(|_| bytes)
+    });
+    let stderr_reader = thread::spawn(move || {
+        let mut bytes = Vec::new();
+        let mut stderr = stderr;
+        stderr.read_to_end(&mut bytes).map(|_| bytes)
+    });
+
+    let deadline = Instant::now() + timeout;
+    let status = loop {
+        if let Some(status) = child
+            .try_wait()
+            .with_context(|| format!("failed to wait for codebase-memory-mcp {tool}"))?
+        {
+            break status;
+        }
+        let now = Instant::now();
+        if now >= deadline {
+            let _ = child.kill();
+            let _ = child.wait();
+            let _ = stdout_reader.join();
+            let _ = stderr_reader.join();
+            bail!(
+                "codebase-memory-mcp {tool} timed out after {} ms",
+                timeout.as_millis()
+            );
+        }
+        thread::sleep((deadline - now).min(Duration::from_millis(10)));
+    };
+    let stdout = stdout_reader
+        .join()
+        .map_err(|_| anyhow!("codebase-memory-mcp {tool} stdout reader panicked"))??;
+    let stderr = stderr_reader
+        .join()
+        .map_err(|_| anyhow!("codebase-memory-mcp {tool} stderr reader panicked"))??;
+
+    if !status.success() {
+        let stderr = String::from_utf8_lossy(&stderr);
         let stderr = stderr.trim().chars().take(800).collect::<String>();
         bail!(
             "codebase-memory-mcp {tool} failed with status {}{}",
-            output.status,
+            status,
             if stderr.is_empty() {
                 String::new()
             } else {
@@ -262,7 +328,7 @@ fn codebase_memory_cli_value(binary: &OsStr, tool: &str, args: &[OsString]) -> R
             }
         );
     }
-    serde_json::from_slice(&output.stdout)
+    serde_json::from_slice(&stdout)
         .with_context(|| format!("codebase-memory-mcp {tool} returned invalid JSON"))
 }
 
@@ -304,7 +370,15 @@ fn codebase_memory_agent_first_read_evidence_with_binary(
             AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER
         );
     }
+    if !(CODEBASE_MEMORY_MIN_TIMEOUT_MS..=CODEBASE_MEMORY_MAX_TIMEOUT_MS)
+        .contains(&config.timeout_ms)
+    {
+        bail!(
+            "agent_first_read backend.timeout_ms must be between {CODEBASE_MEMORY_MIN_TIMEOUT_MS} and {CODEBASE_MEMORY_MAX_TIMEOUT_MS}"
+        );
+    }
     let project = codebase_memory_project(root, config.project)?;
+    let timeout = Duration::from_millis(config.timeout_ms);
 
     if config.refresh_index {
         codebase_memory_cli_value(
@@ -318,6 +392,7 @@ fn codebase_memory_agent_first_read_evidence_with_binary(
                 OsString::from("--mode"),
                 OsString::from("fast"),
             ],
+            timeout,
         )?;
     }
     let search_graph = codebase_memory_cli_value(
@@ -331,6 +406,7 @@ fn codebase_memory_agent_first_read_evidence_with_binary(
             OsString::from("--limit"),
             OsString::from(AGENT_FIRST_READ_BACKEND_CANDIDATE_LIMIT.to_string()),
         ],
+        timeout,
     )?;
     agent_first_read_backend_evidence(&search_graph)
 }
@@ -1008,6 +1084,13 @@ fn tool_definitions() -> Value {
                                 "type": "boolean",
                                 "default": true,
                                 "description": "Refresh the backend fast index before searching."
+                            },
+                            "timeout_ms": {
+                                "type": "integer",
+                                "minimum": 1000,
+                                "maximum": 300000,
+                                "default": 60000,
+                                "description": "Maximum time allowed for each backend index or search command."
                             }
                         },
                         "required": ["provider"],
@@ -1931,6 +2014,18 @@ int login(void) {
             properties["backend"]["properties"]["refresh_index"]["default"],
             true
         );
+        assert_eq!(
+            properties["backend"]["properties"]["timeout_ms"]["minimum"],
+            1000
+        );
+        assert_eq!(
+            properties["backend"]["properties"]["timeout_ms"]["maximum"],
+            300000
+        );
+        assert_eq!(
+            properties["backend"]["properties"]["timeout_ms"]["default"],
+            60000
+        );
         let backend_candidates = &properties["backend_candidates"];
         assert_eq!(backend_candidates["type"], "object");
         assert_eq!(
@@ -2102,10 +2197,24 @@ int login(void) {
                 provider: "unknown".to_string(),
                 project: None,
                 refresh_index: false,
+                timeout_ms: CODEBASE_MEMORY_TIMEOUT_MS,
             },
         )
         .unwrap_err();
         assert!(unsupported_backend.to_string().contains("unsupported"));
+
+        let invalid_timeout = codebase_memory_agent_first_read_evidence(
+            Path::new("/tmp/repo"),
+            "find target",
+            AgentFirstReadBackendConfig {
+                provider: AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER.to_string(),
+                project: None,
+                refresh_index: false,
+                timeout_ms: CODEBASE_MEMORY_MIN_TIMEOUT_MS - 1,
+            },
+        )
+        .unwrap_err();
+        assert!(invalid_timeout.to_string().contains("backend.timeout_ms"));
 
         #[cfg(unix)]
         {
@@ -2143,6 +2252,7 @@ esac
                     provider: AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER.to_string(),
                     project: Some("fixture".to_string()),
                     refresh_index: true,
+                    timeout_ms: CODEBASE_MEMORY_TIMEOUT_MS,
                 },
                 backend.as_os_str(),
             )
@@ -2151,6 +2261,23 @@ esac
             assert_eq!(evidence.candidate_files, vec!["src/target.rs"]);
             assert_eq!(evidence.candidates[0].symbol.as_deref(), Some("target"));
             assert_eq!(evidence.latency_ms, Some(5));
+
+            let slow_backend = backend_dir.path().join("slow-codebase-memory-mcp");
+            std::fs::write(&slow_backend, "#!/bin/sh\nexec sleep 1\n").unwrap();
+            let mut permissions = std::fs::metadata(&slow_backend).unwrap().permissions();
+            permissions.set_mode(0o755);
+            std::fs::set_permissions(&slow_backend, permissions).unwrap();
+            let timeout_error = codebase_memory_cli_value(
+                slow_backend.as_os_str(),
+                "search_graph",
+                &[],
+                Duration::from_millis(20),
+            )
+            .unwrap_err();
+            assert_eq!(
+                timeout_error.to_string(),
+                "codebase-memory-mcp search_graph timed out after 20 ms"
+            );
         }
 
         let mixed = serde_json::from_value::<AgentFirstReadBackendCandidates>(json!({

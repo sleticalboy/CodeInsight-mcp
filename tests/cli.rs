@@ -14558,7 +14558,8 @@ esac
                 "token_budget": 500,
                 "backend": {
                     "provider": "codebase-memory-mcp",
-                    "project": "fixture"
+                    "project": "fixture",
+                    "timeout_ms": 1000
                 },
                 "force_index": true
             }
