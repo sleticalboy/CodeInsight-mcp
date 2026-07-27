@@ -26,6 +26,7 @@ const CODEBASE_MEMORY_BINARY_ENV: &str = "CODEINSIGHT_CODEBASE_MEMORY_BIN";
 const CODEBASE_MEMORY_TIMEOUT_MS: u64 = 60_000;
 const CODEBASE_MEMORY_MIN_TIMEOUT_MS: u64 = 1_000;
 const CODEBASE_MEMORY_MAX_TIMEOUT_MS: u64 = 300_000;
+const CODEBASE_MEMORY_MISSING_PROJECT_ERROR: &str = "project not found or not indexed";
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -47,14 +48,10 @@ struct AgentFirstReadBackendCandidates {
 struct AgentFirstReadBackendConfig {
     provider: String,
     project: Option<String>,
-    #[serde(default = "default_true")]
+    #[serde(default)]
     refresh_index: bool,
     #[serde(default = "default_codebase_memory_timeout_ms")]
     timeout_ms: u64,
-}
-
-fn default_true() -> bool {
-    true
 }
 
 fn default_codebase_memory_timeout_ms() -> u64 {
@@ -316,20 +313,36 @@ fn codebase_memory_cli_value(
         .map_err(|_| anyhow!("codebase-memory-mcp {tool} stderr reader panicked"))??;
 
     if !status.success() {
+        let stdout = String::from_utf8_lossy(&stdout);
         let stderr = String::from_utf8_lossy(&stderr);
-        let stderr = stderr.trim().chars().take(800).collect::<String>();
+        let details = if stdout.trim().is_empty() {
+            stderr.trim()
+        } else {
+            stdout.trim()
+        }
+        .chars()
+        .take(800)
+        .collect::<String>();
         bail!(
             "codebase-memory-mcp {tool} failed with status {}{}",
             status,
-            if stderr.is_empty() {
+            if details.is_empty() {
                 String::new()
             } else {
-                format!(": {stderr}")
+                format!(": {details}")
             }
         );
     }
     serde_json::from_slice(&stdout)
         .with_context(|| format!("codebase-memory-mcp {tool} returned invalid JSON"))
+}
+
+fn codebase_memory_project_missing(error: &anyhow::Error) -> bool {
+    error.chain().any(|cause| {
+        cause
+            .to_string()
+            .contains(CODEBASE_MEMORY_MISSING_PROJECT_ERROR)
+    })
 }
 
 fn codebase_memory_project(root: &Path, configured: Option<String>) -> Result<String> {
@@ -380,7 +393,7 @@ fn codebase_memory_agent_first_read_evidence_with_binary(
     let project = codebase_memory_project(root, config.project)?;
     let timeout = Duration::from_millis(config.timeout_ms);
 
-    if config.refresh_index {
+    let index_project = || {
         codebase_memory_cli_value(
             binary,
             "index_repository",
@@ -393,21 +406,36 @@ fn codebase_memory_agent_first_read_evidence_with_binary(
                 OsString::from("fast"),
             ],
             timeout,
-        )?;
-    }
-    let search_graph = codebase_memory_cli_value(
-        binary,
-        "search_graph",
-        &[
-            OsString::from("--project"),
-            OsString::from(project),
-            OsString::from("--query"),
-            OsString::from(task),
-            OsString::from("--limit"),
-            OsString::from(AGENT_FIRST_READ_BACKEND_CANDIDATE_LIMIT.to_string()),
-        ],
-        timeout,
-    )?;
+        )
+    };
+    let search_graph = || {
+        codebase_memory_cli_value(
+            binary,
+            "search_graph",
+            &[
+                OsString::from("--project"),
+                OsString::from(&project),
+                OsString::from("--query"),
+                OsString::from(task),
+                OsString::from("--limit"),
+                OsString::from(AGENT_FIRST_READ_BACKEND_CANDIDATE_LIMIT.to_string()),
+            ],
+            timeout,
+        )
+    };
+    let search_graph = if config.refresh_index {
+        index_project()?;
+        search_graph()?
+    } else {
+        match search_graph() {
+            Ok(value) => value,
+            Err(error) if codebase_memory_project_missing(&error) => {
+                index_project()?;
+                search_graph()?
+            }
+            Err(error) => return Err(error),
+        }
+    };
     agent_first_read_backend_evidence(&search_graph)
 }
 
@@ -1082,8 +1110,8 @@ fn tool_definitions() -> Value {
                             },
                             "refresh_index": {
                                 "type": "boolean",
-                                "default": true,
-                                "description": "Refresh the backend fast index before searching."
+                                "default": false,
+                                "description": "Force a backend fast-index refresh before searching. When false, an existing graph is reused and a missing project is indexed automatically."
                             },
                             "timeout_ms": {
                                 "type": "integer",
@@ -2012,7 +2040,7 @@ int login(void) {
         );
         assert_eq!(
             properties["backend"]["properties"]["refresh_index"]["default"],
-            true
+            false
         );
         assert_eq!(
             properties["backend"]["properties"]["timeout_ms"]["minimum"],
@@ -2261,6 +2289,38 @@ esac
             assert_eq!(evidence.candidate_files, vec!["src/target.rs"]);
             assert_eq!(evidence.candidates[0].symbol.as_deref(), Some("target"));
             assert_eq!(evidence.latency_ms, Some(5));
+
+            let reuse_backend = backend_dir.path().join("reuse-codebase-memory-mcp");
+            std::fs::write(
+                &reuse_backend,
+                r#"#!/bin/sh
+case "$2" in
+  index_repository)
+    exit 9
+    ;;
+  search_graph)
+    printf '%s\n' '{"results":[{"file_path":"src/reused.rs","name":"reused"}]}'
+    ;;
+esac
+"#,
+            )
+            .unwrap();
+            let mut permissions = std::fs::metadata(&reuse_backend).unwrap().permissions();
+            permissions.set_mode(0o755);
+            std::fs::set_permissions(&reuse_backend, permissions).unwrap();
+            let reused = codebase_memory_agent_first_read_evidence_with_binary(
+                &root,
+                "find reused",
+                AgentFirstReadBackendConfig {
+                    provider: AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER.to_string(),
+                    project: Some("fixture".to_string()),
+                    refresh_index: false,
+                    timeout_ms: CODEBASE_MEMORY_TIMEOUT_MS,
+                },
+                reuse_backend.as_os_str(),
+            )
+            .unwrap();
+            assert_eq!(reused.candidate_files, vec!["src/reused.rs"]);
 
             let slow_backend = backend_dir.path().join("slow-codebase-memory-mcp");
             std::fs::write(&slow_backend, "#!/bin/sh\nexec sleep 1\n").unwrap();

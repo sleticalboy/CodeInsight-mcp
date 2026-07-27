@@ -14532,7 +14532,10 @@ case "$2" in
     printf '%s\n' '{"project":"fixture","status":"indexed"}'
     ;;
   search_graph)
-    test -f "$CODEINSIGHT_FAKE_INDEX_MARKER" || exit 3
+    if ! test -f "$CODEINSIGHT_FAKE_INDEX_MARKER"; then
+      printf '%s\n' '{"error":"project not found or not indexed"}'
+      exit 1
+    fi
     printf '%s\n' '{"result":{"structuredContent":{"results":[{"name":"targetLater","qualified_name":"fixture.src.multi_long.targetLater","file_path":"src/multi-long.ts"}],"elapsed_ms":4}}}'
     ;;
   *)
