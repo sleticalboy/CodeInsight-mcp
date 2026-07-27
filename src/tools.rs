@@ -2821,7 +2821,8 @@ fn backend_normalization_changed(normalization: &AgentRouteBackendNormalization)
 }
 
 fn normalize_backend_candidate_file(root: &Path, file: &str) -> Result<String> {
-    let path = Path::new(file);
+    let normalized_separators = file.replace('\\', "/");
+    let path = Path::new(&normalized_separators);
     let canonical_path;
     let relative = if path.is_absolute() {
         canonical_path = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());

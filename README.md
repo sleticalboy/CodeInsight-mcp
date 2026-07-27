@@ -239,8 +239,9 @@ Raw `get_code_snippet`, `search_graph`, `search_code`, `query_graph`,
 metadata is ranked before broader search results, while its `source` body is
 discarded. Exported candidate-producing responses may also be ordered page
 arrays; wrappers are unwrapped per page and latency is aggregated. The bridge
-accepts at most 8 pages and spends each tool's 64-item budget only on unique
-candidate files. For
+accepts at most 16 pages and 4 nested `result` wrappers, rejects paths outside
+the project root, and spends each tool's 64-item budget only on unique candidate
+files. For
 `search_graph`, non-empty semantic `semantic_results` take
 priority; an empty semantic array falls back to keyword `results`, and both use
 the same per-tool budget. For `search_code`, structured `results`, file-only
@@ -427,7 +428,7 @@ accuracy, or proof that unselected code is irrelevant.
 
 Current benchmark snapshot:
 
-- The two-minute demo for this repository shows the agent route selecting 531 of 87,957 source lines, avoiding 87,426 source lines before broad reading for a 99.4% reduction and 165.6x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 23 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
+- The two-minute demo for this repository shows the agent route selecting 531 of 88,023 source lines, avoiding 87,492 source lines before broad reading for a 99.4% reduction and 165.8x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 23 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
 - Smoke repositories route `context_pack` first for 4/4 repositories and
   select 709 of 75,753 source lines, a 99.1% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and

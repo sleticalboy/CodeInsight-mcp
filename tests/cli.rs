@@ -3585,6 +3585,21 @@ fn cli_agent_route_rejects_invalid_backend_evidence_values() {
         .failure()
         .stderr(contains("invalid backend evidence candidate file"));
 
+    Command::cargo_bin("codeinsight")
+        .unwrap()
+        .env_remove("CODEINSIGHT_EMBEDDING_PROVIDER")
+        .args([
+            "agent-route",
+            fixture.path().to_str().unwrap(),
+            "--task",
+            "understand app entrypoint flow",
+            "--backend-evidence-json",
+            r#"{"provider":"graph","candidate_files":["..\\outside.ts"]}"#,
+        ])
+        .assert()
+        .failure()
+        .stderr(contains("invalid backend evidence candidate file"));
+
     let long_provider = "p".repeat(129);
     let long_provider_evidence = serde_json::json!({
         "provider": long_provider,

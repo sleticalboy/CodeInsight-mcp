@@ -235,8 +235,14 @@ EOF
     elapsed_ms: 6
   }' >"$output_dir/search-graph-hotspot.json"
 
-  jq -n '[range(0; 9) | {results: [], elapsed_ms: 1}]' \
+  jq -n '[range(0; 17) | {results: [], elapsed_ms: 1}]' \
     >"$output_dir/search-graph-too-many-pages.json"
+
+  jq -n 'reduce range(0; 5) as $index ({results: []}; {result: .})' \
+    >"$output_dir/search-graph-too-many-wrappers.json"
+
+  jq -n '{results: [{name: "outside", label: "Function", file_path: "..\\outside.ts"}]}' \
+    >"$output_dir/search-graph-parent-path.json"
 
   cat >"$output_dir/code-snippet.json" <<'EOF'
 {
@@ -340,10 +346,29 @@ main() {
   if "$ROOT_DIR/scripts/codebase-memory-backend-evidence.sh" \
     --search-graph-json "$TEMP_DIR/search-graph-too-many-pages.json" \
     >"$TEMP_DIR/too-many-pages.json" 2>"$TEMP_DIR/too-many-pages.err"; then
-    fail "more than eight exported response pages should be rejected"
+    fail "more than sixteen exported response pages should be rejected"
   fi
-  if ! grep -q -- "must not exceed 8 pages" "$TEMP_DIR/too-many-pages.err"; then
+  if ! grep -q -- "must not exceed 16 pages" "$TEMP_DIR/too-many-pages.err"; then
     fail "page limit rejection should explain the maximum"
+  fi
+
+  if "$ROOT_DIR/scripts/codebase-memory-backend-evidence.sh" \
+    --search-graph-json "$TEMP_DIR/search-graph-too-many-wrappers.json" \
+    >"$TEMP_DIR/too-many-wrappers.json" 2>"$TEMP_DIR/too-many-wrappers.err"; then
+    fail "more than four nested result wrappers should be rejected"
+  fi
+  if ! grep -q -- "must not exceed 4 nested result wrappers" "$TEMP_DIR/too-many-wrappers.err"; then
+    fail "wrapper limit rejection should explain the maximum"
+  fi
+
+  if "$ROOT_DIR/scripts/codebase-memory-backend-evidence.sh" \
+    --root "$repo" \
+    --search-graph-json "$TEMP_DIR/search-graph-parent-path.json" \
+    >"$TEMP_DIR/parent-path.json" 2>"$TEMP_DIR/parent-path.err"; then
+    fail "parent-directory backend candidates should be rejected"
+  fi
+  if ! grep -q -- "outside project root" "$TEMP_DIR/parent-path.err"; then
+    fail "parent-directory rejection should explain the project-root boundary"
   fi
 
   "$ROOT_DIR/scripts/codebase-memory-backend-evidence.sh" \

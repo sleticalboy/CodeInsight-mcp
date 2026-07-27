@@ -6,7 +6,8 @@ ROOT_PATH=""
 OUTPUT=""
 CANDIDATE_LIMIT=10
 TOOL_RESULT_ITEMS_LIMIT=64
-TOOL_RESULT_PAGES_LIMIT=8
+TOOL_RESULT_PAGES_LIMIT=16
+TOOL_RESULT_WRAPPER_LIMIT=4
 CONFIDENCE=""
 TEMP_DIR=""
 
@@ -179,15 +180,35 @@ validate_args() {
 
 normalize_file() {
   local file="$1"
+  local segment count
+  local -a path_parts=()
+  local -a normalized_parts=()
 
   file="${file#file://}"
+  file="${file//\\//}"
   if [ -n "$ROOT_PATH" ]; then
     case "$file" in
       "$ROOT_PATH"/*) file="${file#"$ROOT_PATH"/}" ;;
+      /*) fail "candidate file is outside project root: $file" ;;
     esac
+  elif [[ "$file" == /* ]]; then
+    fail "absolute candidate file requires --root: $file"
   fi
-  file="${file#./}"
-  printf '%s\n' "$file"
+  IFS='/' read -r -a path_parts <<<"$file"
+  for segment in "${path_parts[@]}"; do
+    case "$segment" in
+      ''|.) ;;
+      ..)
+        count="${#normalized_parts[@]}"
+        [ "$count" -gt 0 ] || fail "candidate file is outside project root: $file"
+        unset 'normalized_parts[count-1]'
+        ;;
+      *) normalized_parts+=("$segment") ;;
+    esac
+  done
+  [ "${#normalized_parts[@]}" -gt 0 ] || fail "backend evidence candidate file must not be empty"
+  local IFS='/'
+  printf '%s\n' "${normalized_parts[*]}"
 }
 
 append_candidate() {
@@ -231,14 +252,14 @@ normalized_tool_payload() {
   [ -f "$file" ] || fail "input JSON does not exist: $file"
   jq empty "$file" >/dev/null || fail "invalid JSON: $file"
   normalized="$(mktemp "$TEMP_DIR/${source}.XXXXXX.json")"
-  if ! jq '
+  if ! jq --argjson wrapper_limit "$TOOL_RESULT_WRAPPER_LIMIT" '
     def tool_text:
       [.content[]? | select(.type == "text") | .text] | first;
     def tool_json:
       [.content[]? | select(.type == "text") | .text | fromjson?] | first;
-    def unwrap:
+    def unwrap($depth):
       if type == "array" then
-        map(unwrap)
+        map(unwrap($depth))
       elif type != "object" then
         error("tool response must be a JSON object")
       elif .error != null then
@@ -248,13 +269,17 @@ normalized_tool_payload() {
       elif (.structuredContent | type) == "object" then
         .structuredContent
       elif has("result") then
-        .result | unwrap
+        if $depth >= $wrapper_limit then
+          error("tool response must not exceed \($wrapper_limit) nested result wrappers")
+        else
+          .result | unwrap($depth + 1)
+        end
       elif (.content | type) == "array" then
         tool_json // error("MCP response has no JSON text content")
       else
         .
       end;
-    unwrap
+    unwrap(0)
   ' "$file" >"$normalized"; then
     fail "could not unwrap $source response: $file"
   fi
