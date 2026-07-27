@@ -14527,6 +14527,13 @@ fn mcp_stdio_executes_agent_first_read_with_bounded_compact_response() {
                 "root": fixture.path(),
                 "task": "understand app entrypoint flow",
                 "token_budget": 6000,
+                "backend_candidates": {
+                    "provider": "codebase-memory-mcp",
+                    "candidate_files": ["src/ui.ts", "src/main.ts"],
+                    "evidence_sources": ["search_graph"],
+                    "confidence": 0.92,
+                    "latency_ms": 7
+                },
                 "force_index": true
             }
         }
@@ -14549,6 +14556,16 @@ fn mcp_stdio_executes_agent_first_read_with_bounded_compact_response() {
             .is_some_and(|tokens| tokens <= 8000)
     );
     assert_eq!(route["impact_status"], "deferred_by_request");
+    assert_eq!(route["context_pack"]["files"][0]["file"], "src/ui.ts");
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["status"],
+        "backend_preferred"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["selected_context_file"],
+        "src/ui.ts"
+    );
+    assert!(route["routing_decision"].get("backend_evidence").is_none());
     assert!(route.get("impact_analysis").is_none());
     assert!(route.get("route").is_none());
     assert!(route.get("overview").is_none());

@@ -1,12 +1,58 @@
 use std::path::PathBuf;
 
 use anyhow::{Context, Result, bail};
+use serde::Deserialize;
 use serde_json::{Value, json};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
 use crate::{cli::Transport, model::AgentRouteBackendEvidence, tools};
 
 const AGENT_FIRST_READ_RESPONSE_TOKEN_BUDGET: usize = 8_000;
+const AGENT_FIRST_READ_BACKEND_CANDIDATE_LIMIT: usize = 8;
+const AGENT_FIRST_READ_BACKEND_EVIDENCE_SOURCE_LIMIT: usize = 6;
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct AgentFirstReadBackendCandidates {
+    provider: String,
+    candidate_files: Vec<String>,
+    #[serde(default)]
+    evidence_sources: Vec<String>,
+    confidence: Option<f64>,
+    latency_ms: Option<u64>,
+}
+
+impl AgentFirstReadBackendCandidates {
+    fn into_evidence(self) -> Result<AgentRouteBackendEvidence> {
+        if self.candidate_files.len() > AGENT_FIRST_READ_BACKEND_CANDIDATE_LIMIT {
+            bail!(
+                "agent_first_read backend_candidates must contain at most {} candidate files",
+                AGENT_FIRST_READ_BACKEND_CANDIDATE_LIMIT
+            );
+        }
+        if self.evidence_sources.len() > AGENT_FIRST_READ_BACKEND_EVIDENCE_SOURCE_LIMIT {
+            bail!(
+                "agent_first_read backend_candidates must contain at most {} evidence sources",
+                AGENT_FIRST_READ_BACKEND_EVIDENCE_SOURCE_LIMIT
+            );
+        }
+
+        Ok(AgentRouteBackendEvidence {
+            provider: self.provider,
+            use_as_fallback: false,
+            prefer_for_context: true,
+            candidate_files: self.candidate_files,
+            candidates: Vec::new(),
+            evidence_sources: self.evidence_sources,
+            evidence_count: 0,
+            latency_ms: self.latency_ms,
+            confidence: self.confidence,
+            notes: Vec::new(),
+            tool_results: None,
+            normalization: None,
+        })
+    }
+}
 
 pub async fn serve(transport: Transport) -> Result<()> {
     match transport {
@@ -184,6 +230,12 @@ fn handle_tool_call(params: Value) -> Result<Value> {
                 AGENT_FIRST_READ_RESPONSE_TOKEN_BUDGET,
                 500,
             )?;
+            let backend_evidence = optional_json_object::<AgentFirstReadBackendCandidates>(
+                &arguments,
+                "backend_candidates",
+            )?
+            .map(AgentFirstReadBackendCandidates::into_evidence)
+            .transpose()?;
             let report = tools::agent_route_value(
                 root,
                 task,
@@ -195,7 +247,7 @@ fn handle_tool_call(params: Value) -> Result<Value> {
                 1,
                 20,
                 false,
-                None,
+                backend_evidence,
             )?;
             tools::agent_route_response_value(&report, true, Some(response_token_budget))?
         }
@@ -565,7 +617,7 @@ fn tool_definitions() -> Value {
         },
         {
             "name": "agent_first_read",
-            "description": "Preferred first call for AI coding agents. Refresh the local index, select bounded code excerpts, return a compact reading/execution plan, and defer impact analysis until before edits.",
+            "description": "Preferred first call for AI coding agents. Refresh the local index, optionally route external backend candidates into bounded code excerpts, return a compact reading/execution plan, and defer impact analysis until before edits.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -585,6 +637,26 @@ fn tool_definitions() -> Value {
                         "minimum": 500,
                         "default": 8000,
                         "description": "Hard cap for the compact structured route payload. The MCP envelope and concise text summary are excluded."
+                    },
+                    "backend_candidates": {
+                        "type": "object",
+                        "description": "Optional compact candidate ranking from an external code graph. When no explicit file or symbol seed is provided, CodeInsight prefers these files as bounded context seeds.",
+                        "properties": {
+                            "provider": {"type": "string", "maxLength": 128},
+                            "candidate_files": {
+                                "type": "array",
+                                "maxItems": 8,
+                                "items": {"type": "string", "maxLength": 512}
+                            },
+                            "evidence_sources": {
+                                "type": "array",
+                                "maxItems": 6,
+                                "items": {"type": "string", "maxLength": 160}
+                            },
+                            "confidence": {"type": "number"},
+                            "latency_ms": {"type": "integer", "minimum": 0}
+                        },
+                        "required": ["provider", "candidate_files"]
                     },
                     "force_index": {"type": "boolean", "default": false}
                 },
@@ -1488,16 +1560,54 @@ int login(void) {
             .unwrap();
         let properties = first_read["inputSchema"]["properties"].as_object().unwrap();
 
-        assert_eq!(properties.len(), 7);
+        assert_eq!(properties.len(), 8);
         assert_eq!(properties["token_budget"]["default"], 6000);
         assert_eq!(properties["response_token_budget"]["default"], 8000);
         assert_eq!(properties["response_token_budget"]["minimum"], 500);
         assert!(!properties.contains_key("include_impact"));
         assert!(!properties.contains_key("response_mode"));
         assert!(!properties.contains_key("backend_evidence"));
+        let backend_candidates = &properties["backend_candidates"];
+        assert_eq!(backend_candidates["type"], "object");
+        assert_eq!(
+            backend_candidates["properties"]["candidate_files"]["maxItems"],
+            8
+        );
+        assert_eq!(
+            backend_candidates["required"],
+            serde_json::json!(["provider", "candidate_files"])
+        );
         assert_eq!(
             first_read["inputSchema"]["required"],
             serde_json::json!(["root", "task"])
+        );
+    }
+
+    #[test]
+    fn agent_first_read_backend_candidates_enforce_compact_contract() {
+        let unknown_field = serde_json::from_value::<AgentFirstReadBackendCandidates>(json!({
+            "provider": "codebase-memory-mcp",
+            "candidate_files": ["src/main.rs"],
+            "tool_results": {"search_graph": {"results": []}}
+        }))
+        .unwrap_err();
+        assert!(unknown_field.to_string().contains("unknown field"));
+
+        let too_many_files = AgentFirstReadBackendCandidates {
+            provider: "codebase-memory-mcp".to_string(),
+            candidate_files: (0..=AGENT_FIRST_READ_BACKEND_CANDIDATE_LIMIT)
+                .map(|index| format!("src/{index}.rs"))
+                .collect(),
+            evidence_sources: Vec::new(),
+            confidence: None,
+            latency_ms: None,
+        };
+        assert!(
+            too_many_files
+                .into_evidence()
+                .unwrap_err()
+                .to_string()
+                .contains("at most 8 candidate files")
         );
     }
 
