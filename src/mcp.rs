@@ -30,10 +30,50 @@ struct AgentFirstReadBackendCandidates {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
 struct AgentFirstReadBackendCandidate {
-    file: String,
+    #[serde(default)]
+    file: Option<String>,
+    #[serde(default)]
+    file_path: Option<String>,
+    #[serde(default)]
     symbol: Option<String>,
+    #[serde(default)]
+    qualified_name: Option<String>,
+    #[serde(default)]
+    name: Option<String>,
+}
+
+impl AgentFirstReadBackendCandidate {
+    fn into_route_candidate(self) -> Result<AgentRouteBackendCandidate> {
+        let normalize = |value: Option<String>| {
+            value
+                .map(|value| value.trim().to_string())
+                .filter(|value| !value.is_empty())
+        };
+        let file = normalize(self.file)
+            .or_else(|| normalize(self.file_path))
+            .context("agent_first_read backend candidate must contain file or file_path")?;
+        let qualified_name = normalize(self.qualified_name);
+        let symbol = normalize(self.symbol)
+            .or_else(|| normalize(self.name))
+            .or_else(|| {
+                qualified_name.as_deref().and_then(|qualified_name| {
+                    qualified_name
+                        .rsplit(|character: char| ['.', ':', '#'].contains(&character))
+                        .find(|part| !part.is_empty())
+                        .map(str::to_string)
+                })
+            });
+
+        Ok(AgentRouteBackendCandidate {
+            file,
+            symbol,
+            source: None,
+            score: None,
+            reason: None,
+            evidence: Vec::new(),
+        })
+    }
 }
 
 impl AgentFirstReadBackendCandidates {
@@ -55,24 +95,17 @@ impl AgentFirstReadBackendCandidates {
             );
         }
 
+        let candidates = self
+            .candidates
+            .into_iter()
+            .map(AgentFirstReadBackendCandidate::into_route_candidate)
+            .collect::<Result<Vec<_>>>()?;
         let mut candidate_files = self.candidate_files;
-        for candidate in &self.candidates {
+        for candidate in &candidates {
             if !candidate_files.contains(&candidate.file) {
                 candidate_files.push(candidate.file.clone());
             }
         }
-        let candidates = self
-            .candidates
-            .into_iter()
-            .map(|candidate| AgentRouteBackendCandidate {
-                file: candidate.file,
-                symbol: candidate.symbol,
-                source: None,
-                score: None,
-                reason: None,
-                evidence: Vec::new(),
-            })
-            .collect();
 
         Ok(AgentRouteBackendEvidence {
             provider: self.provider,
@@ -478,6 +511,49 @@ fn tool_definitions() -> Value {
         },
         "required": ["provider"]
     });
+    let agent_first_read_backend_candidates_schema = json!({
+        "type": "object",
+        "description": "Optional compact candidate ranking from an external code graph. Pass candidate_files for file-only routing or candidates to preserve exact symbols. When no explicit seed is provided, CodeInsight prefers this ranking as bounded context seeds.",
+        "properties": {
+            "provider": {"type": "string", "maxLength": 128},
+            "candidate_files": {
+                "type": "array",
+                "maxItems": 8,
+                "items": {"type": "string", "maxLength": 512}
+            },
+            "candidates": {
+                "type": "array",
+                "maxItems": 8,
+                "description": "Ranked compact candidates. Accepts CodeInsight file/symbol fields or codebase-memory search_graph file_path/name/qualified_name fields; other search_graph metadata is ignored.",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "file": {"type": "string", "maxLength": 512},
+                        "file_path": {"type": "string", "maxLength": 512},
+                        "symbol": {"type": "string", "maxLength": 512},
+                        "qualified_name": {"type": "string", "maxLength": 512},
+                        "name": {"type": "string", "maxLength": 512}
+                    },
+                    "anyOf": [
+                        {"required": ["file"]},
+                        {"required": ["file_path"]}
+                    ]
+                }
+            },
+            "evidence_sources": {
+                "type": "array",
+                "maxItems": 6,
+                "items": {"type": "string", "maxLength": 160}
+            },
+            "confidence": {"type": "number"},
+            "latency_ms": {"type": "integer", "minimum": 0}
+        },
+        "required": ["provider"],
+        "anyOf": [
+            {"required": ["candidate_files"]},
+            {"required": ["candidates"]}
+        ]
+    });
     json!([
         {
             "name": "index_project",
@@ -687,42 +763,7 @@ fn tool_definitions() -> Value {
                         "default": 8000,
                         "description": "Hard cap for the compact structured route payload. The MCP envelope and concise text summary are excluded."
                     },
-                    "backend_candidates": {
-                        "type": "object",
-                        "description": "Optional compact candidate ranking from an external code graph. Pass candidate_files for file-only routing or candidates to preserve exact symbols. When no explicit seed is provided, CodeInsight prefers this ranking as bounded context seeds.",
-                        "properties": {
-                            "provider": {"type": "string", "maxLength": 128},
-                            "candidate_files": {
-                                "type": "array",
-                                "maxItems": 8,
-                                "items": {"type": "string", "maxLength": 512}
-                            },
-                            "candidates": {
-                                "type": "array",
-                                "maxItems": 8,
-                                "items": {
-                                    "type": "object",
-                                    "properties": {
-                                        "file": {"type": "string", "maxLength": 512},
-                                        "symbol": {"type": "string", "maxLength": 512}
-                                    },
-                                    "required": ["file"]
-                                }
-                            },
-                            "evidence_sources": {
-                                "type": "array",
-                                "maxItems": 6,
-                                "items": {"type": "string", "maxLength": 160}
-                            },
-                            "confidence": {"type": "number"},
-                            "latency_ms": {"type": "integer", "minimum": 0}
-                        },
-                        "required": ["provider"],
-                        "anyOf": [
-                            {"required": ["candidate_files"]},
-                            {"required": ["candidates"]}
-                        ]
-                    },
+                    "backend_candidates": agent_first_read_backend_candidates_schema,
                     "force_index": {"type": "boolean", "default": false}
                 },
                 "required": ["root", "task"]
@@ -1643,8 +1684,11 @@ int login(void) {
             8
         );
         assert_eq!(
-            backend_candidates["properties"]["candidates"]["items"]["required"],
-            serde_json::json!(["file"])
+            backend_candidates["properties"]["candidates"]["items"]["anyOf"],
+            serde_json::json!([
+                {"required": ["file"]},
+                {"required": ["file_path"]}
+            ])
         );
         assert_eq!(
             backend_candidates["required"],
@@ -1703,6 +1747,25 @@ int login(void) {
         assert_eq!(structured.candidates.len(), 2);
         assert_eq!(structured.candidates[0].symbol.as_deref(), Some("main"));
 
+        let search_graph = serde_json::from_value::<AgentFirstReadBackendCandidates>(json!({
+            "provider": "codebase-memory-mcp",
+            "candidates": [{
+                "qualified_name": "fixture.src.auth.AuthService",
+                "label": "Class",
+                "file_path": "src/auth.py",
+                "in_degree": 4,
+                "out_degree": 2
+            }]
+        }))
+        .unwrap()
+        .into_evidence()
+        .unwrap();
+        assert_eq!(search_graph.candidate_files, vec!["src/auth.py"]);
+        assert_eq!(
+            search_graph.candidates[0].symbol.as_deref(),
+            Some("AuthService")
+        );
+
         let empty = serde_json::from_value::<AgentFirstReadBackendCandidates>(json!({
             "provider": "codebase-memory-mcp"
         }))
@@ -1710,6 +1773,15 @@ int login(void) {
         .into_evidence()
         .unwrap_err();
         assert!(empty.to_string().contains("candidate_files or candidates"));
+
+        let missing_path = serde_json::from_value::<AgentFirstReadBackendCandidates>(json!({
+            "provider": "codebase-memory-mcp",
+            "candidates": [{"name": "AuthService"}]
+        }))
+        .unwrap()
+        .into_evidence()
+        .unwrap_err();
+        assert!(missing_path.to_string().contains("file or file_path"));
     }
 
     #[test]

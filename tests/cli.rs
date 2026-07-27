@@ -14530,7 +14530,14 @@ fn mcp_stdio_executes_agent_first_read_with_bounded_compact_response() {
                 "backend_candidates": {
                     "provider": "codebase-memory-mcp",
                     "candidates": [
-                        {"file": "src/ui.ts", "symbol": "defaultRender"},
+                        {
+                            "name": "defaultRender",
+                            "qualified_name": "fixture.src.ui.defaultRender",
+                            "label": "Function",
+                            "file_path": "src/ui.ts",
+                            "in_degree": 2,
+                            "out_degree": 0
+                        },
                         {"file": "src/main.ts", "symbol": "main"}
                     ],
                     "evidence_sources": ["search_graph"],
