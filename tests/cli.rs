@@ -2363,6 +2363,96 @@ fn cli_agent_route_compact_keeps_the_execution_contract_and_selected_excerpts() 
 }
 
 #[test]
+fn cli_agent_route_compact_enforces_structured_response_token_budget() {
+    let fixture = fixture_project();
+    let large_source = (0..1200)
+        .map(|line| format!("export const routeValue{line} = routeHandler({line});"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    std::fs::write(fixture.path().join("src/large.ts"), large_source).unwrap();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "inspect the large route handler module",
+        "--file",
+        "src/large.ts",
+        "--token-budget",
+        "8000",
+        "--compact",
+        "--response-token-budget",
+        "2500",
+        "--skip-impact",
+        "--force-index",
+    ]);
+
+    let serialized = serde_json::to_string(&route).unwrap();
+    let actual_estimated_tokens = serialized.len().div_ceil(4);
+    assert!(actual_estimated_tokens <= 2500);
+    assert_eq!(route["response_budget"]["requested_tokens"], 2500);
+    assert_eq!(
+        route["response_budget"]["estimated_tokens"],
+        actual_estimated_tokens
+    );
+    assert_eq!(route["response_budget"]["truncated"], true);
+    assert!(
+        route["response_budget"]["omitted_excerpts"]
+            .as_u64()
+            .unwrap()
+            > 0
+    );
+    assert_eq!(route["response_budget"]["estimator"], "utf8_bytes_div_4");
+    assert!(!route["execution_plan"].as_array().unwrap().is_empty());
+    assert!(
+        !route["context_pack"]["reading_plan"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+}
+
+#[test]
+fn cli_agent_route_response_budget_requires_compact_mode() {
+    let fixture = fixture_project();
+    let mut command = Command::cargo_bin("codeinsight").unwrap();
+    command.args([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "inspect app entrypoint",
+        "--response-token-budget",
+        "2500",
+    ]);
+
+    command.assert().failure().stderr(contains("--compact"));
+}
+
+#[test]
+fn cli_agent_route_reports_minimum_compact_contract_budget() {
+    let fixture = fixture_project();
+    let mut command = Command::cargo_bin("codeinsight").unwrap();
+    command.args([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "inspect app entrypoint",
+        "--file",
+        "src/main.ts",
+        "--compact",
+        "--response-token-budget",
+        "500",
+        "--skip-impact",
+        "--force-index",
+    ]);
+
+    command
+        .assert()
+        .failure()
+        .stderr(contains("compact route contract requires at least"));
+}
+
+#[test]
 fn cli_agent_route_accepts_backend_evidence_file() {
     let fixture = fixture_project();
     let evidence_path = fixture.path().join("backend-evidence.json");
@@ -14519,6 +14609,7 @@ fn mcp_stdio_executes_agent_route() {
     fast_request["id"] = serde_json::json!(4);
     fast_request["params"]["arguments"]["include_impact"] = serde_json::json!(false);
     fast_request["params"]["arguments"]["response_mode"] = serde_json::json!("compact");
+    fast_request["params"]["arguments"]["response_token_budget"] = serde_json::json!(12000);
     let mut fast_command = Command::cargo_bin("codeinsight").unwrap();
     fast_command.args(["serve", "--transport", "stdio"]);
     fast_command.write_stdin(format!("{fast_request}\n"));
@@ -14536,6 +14627,12 @@ fn mcp_stdio_executes_agent_route() {
     assert!(fast_route.get("route").is_none());
     assert!(fast_route.get("index_report").is_none());
     assert!(fast_route.get("overview").is_none());
+    assert_eq!(fast_route["response_budget"]["requested_tokens"], 12000);
+    assert!(
+        fast_route["response_budget"]["estimated_tokens"]
+            .as_u64()
+            .is_some_and(|tokens| tokens <= 12000)
+    );
     assert!(fast_route["context_pack"].get("symbols").is_none());
     assert!(
         !fast_route["context_pack"]["files"][0]["ranges"][0]["excerpt"]

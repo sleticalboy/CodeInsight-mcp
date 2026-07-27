@@ -265,6 +265,7 @@ pub fn agent_route(
     impact_evidence_limit: usize,
     include_impact: bool,
     compact: bool,
+    response_token_budget: Option<usize>,
     backend_evidence: Option<AgentRouteBackendEvidence>,
 ) -> Result<()> {
     let report = agent_route_value(
@@ -280,10 +281,25 @@ pub fn agent_route(
         include_impact,
         backend_evidence,
     )?;
-    print_json(&agent_route_response_value(&report, compact)?)
+    print_json(&agent_route_response_value(
+        &report,
+        compact,
+        response_token_budget,
+    )?)
 }
 
-pub fn agent_route_response_value(report: &AgentRouteReport, compact: bool) -> Result<Value> {
+pub fn agent_route_response_value(
+    report: &AgentRouteReport,
+    compact: bool,
+    response_token_budget: Option<usize>,
+) -> Result<Value> {
+    if response_token_budget.is_some() && !compact {
+        bail!("response_token_budget requires compact response mode");
+    }
+    if response_token_budget.is_some_and(|budget| budget < 500) {
+        bail!("response_token_budget must be >= 500");
+    }
+
     let mut value = serde_json::to_value(report)?;
     if !compact {
         return Ok(value);
@@ -359,7 +375,92 @@ pub fn agent_route_response_value(report: &AgentRouteReport, compact: bool) -> R
         }
     }
 
+    if let Some(response_token_budget) = response_token_budget {
+        apply_compact_response_budget(&mut value, response_token_budget)?;
+    }
+
     Ok(value)
+}
+
+fn apply_compact_response_budget(value: &mut Value, requested_tokens: usize) -> Result<()> {
+    let Some(route) = value.as_object_mut() else {
+        return Ok(());
+    };
+    route.insert(
+        "response_budget".to_string(),
+        json!({
+            "requested_tokens": requested_tokens,
+            "estimated_tokens": 0,
+            "truncated": false,
+            "omitted_excerpts": 0,
+            "estimator": "utf8_bytes_div_4"
+        }),
+    );
+
+    let mut omitted_excerpts = 0;
+    loop {
+        let estimated_tokens = refresh_response_token_estimate(value)?;
+        if estimated_tokens <= requested_tokens {
+            return Ok(());
+        }
+
+        if !remove_last_compact_excerpt(value) {
+            bail!(
+                "response_token_budget {requested_tokens} is too small; compact route contract requires at least {estimated_tokens} estimated tokens"
+            );
+        }
+        omitted_excerpts += 1;
+        if let Some(response_budget) = value
+            .get_mut("response_budget")
+            .and_then(Value::as_object_mut)
+        {
+            response_budget.insert("truncated".to_string(), json!(true));
+            response_budget.insert("omitted_excerpts".to_string(), json!(omitted_excerpts));
+        }
+    }
+}
+
+fn refresh_response_token_estimate(value: &mut Value) -> Result<usize> {
+    let mut previous = usize::MAX;
+    for _ in 0..4 {
+        let estimated_tokens = estimate_tokens(&serde_json::to_string(value)?);
+        if let Some(response_budget) = value
+            .get_mut("response_budget")
+            .and_then(Value::as_object_mut)
+        {
+            response_budget.insert("estimated_tokens".to_string(), json!(estimated_tokens));
+        }
+        if estimated_tokens == previous {
+            return Ok(estimated_tokens);
+        }
+        previous = estimated_tokens;
+    }
+
+    Ok(estimate_tokens(&serde_json::to_string(value)?))
+}
+
+fn remove_last_compact_excerpt(value: &mut Value) -> bool {
+    let Some(files) = value
+        .pointer_mut("/context_pack/files")
+        .and_then(Value::as_array_mut)
+    else {
+        return false;
+    };
+
+    for file in files.iter_mut().rev() {
+        let Some(ranges) = file.get_mut("ranges").and_then(Value::as_array_mut) else {
+            continue;
+        };
+        for range in ranges.iter_mut().rev() {
+            if range
+                .as_object_mut()
+                .is_some_and(|range| range.remove("excerpt").is_some())
+            {
+                return true;
+            }
+        }
+    }
+    false
 }
 
 pub fn read_agent_route_backend_evidence(path: &Path) -> Result<AgentRouteBackendEvidence> {

@@ -186,6 +186,13 @@ fn handle_tool_call(params: Value) -> Result<Value> {
                 "compact" => true,
                 _ => bail!("invalid response_mode; expected full or compact"),
             };
+            let response_token_budget = arguments
+                .get("response_token_budget")
+                .map(|_| optional_min_usize(&arguments, "response_token_budget", 0, 500))
+                .transpose()?;
+            if response_token_budget.is_some() && !compact {
+                bail!("response_token_budget requires compact response_mode");
+            }
             let backend_evidence: Option<AgentRouteBackendEvidence> =
                 optional_json_object(&arguments, "backend_evidence")?;
             let report = tools::agent_route_value(
@@ -201,7 +208,7 @@ fn handle_tool_call(params: Value) -> Result<Value> {
                 include_impact,
                 backend_evidence,
             )?;
-            tools::agent_route_response_value(&report, compact)?
+            tools::agent_route_response_value(&report, compact, response_token_budget)?
         }
         "callers" => {
             let root = required_path(&arguments, "root")?;
@@ -557,6 +564,11 @@ fn tool_definitions() -> Value {
                         "enum": ["full", "compact"],
                         "default": "full",
                         "description": "Use compact to keep selected excerpts and the execution contract while omitting duplicate overview and raw evidence arrays."
+                    },
+                    "response_token_budget": {
+                        "type": "integer",
+                        "minimum": 500,
+                        "description": "Optional hard cap for the compact structured route payload. The MCP envelope and concise text summary are excluded. Requires response_mode=compact."
                     },
                     "backend_evidence": backend_evidence_schema
                 },
@@ -1345,6 +1357,16 @@ int login(void) {
             response_mode["enum"],
             serde_json::json!(["full", "compact"])
         );
+        let response_token_budget =
+            &agent_route["inputSchema"]["properties"]["response_token_budget"];
+        assert_eq!(response_token_budget["type"], "integer");
+        assert_eq!(response_token_budget["minimum"], 500);
+        assert!(
+            response_token_budget["description"]
+                .as_str()
+                .unwrap()
+                .contains("structured route payload")
+        );
 
         let candidates = &agent_route["inputSchema"]["properties"]["backend_evidence"]["properties"]
             ["candidates"];
@@ -1407,6 +1429,24 @@ int login(void) {
         }))
         .unwrap_err();
         assert!(error.to_string().contains("root"));
+    }
+
+    #[test]
+    fn agent_route_rejects_response_budget_in_full_mode() {
+        let error = handle_tool_call(json!({
+            "name": "agent_route",
+            "arguments": {
+                "root": ".",
+                "task": "inspect routing",
+                "response_token_budget": 2500
+            }
+        }))
+        .unwrap_err();
+
+        assert_eq!(
+            error.to_string(),
+            "response_token_budget requires compact response_mode"
+        );
     }
 
     #[test]

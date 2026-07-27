@@ -191,6 +191,13 @@ pub struct AgentRouteArgs {
     pub compact: bool,
     #[arg(
         long,
+        value_name = "TOKENS",
+        requires = "compact",
+        help = "Cap the compact structured route payload, including its execution contract and excerpts"
+    )]
+    pub response_token_budget: Option<usize>,
+    #[arg(
+        long,
         value_name = "PATH",
         help = "Read backend route evidence from a JSON file"
     )]

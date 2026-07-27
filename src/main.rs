@@ -104,6 +104,7 @@ async fn main() -> Result<()> {
                 args.impact_evidence_limit,
                 !args.skip_impact,
                 args.compact,
+                args.response_token_budget,
                 backend_evidence,
             )?
         }
