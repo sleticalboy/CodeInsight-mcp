@@ -5,7 +5,11 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
-use crate::{cli::Transport, model::AgentRouteBackendEvidence, tools};
+use crate::{
+    cli::Transport,
+    model::{AgentRouteBackendCandidate, AgentRouteBackendEvidence},
+    tools,
+};
 
 const AGENT_FIRST_READ_RESPONSE_TOKEN_BUDGET: usize = 8_000;
 const AGENT_FIRST_READ_BACKEND_CANDIDATE_LIMIT: usize = 8;
@@ -15,18 +19,32 @@ const AGENT_FIRST_READ_BACKEND_EVIDENCE_SOURCE_LIMIT: usize = 6;
 #[serde(deny_unknown_fields)]
 struct AgentFirstReadBackendCandidates {
     provider: String,
+    #[serde(default)]
     candidate_files: Vec<String>,
+    #[serde(default)]
+    candidates: Vec<AgentFirstReadBackendCandidate>,
     #[serde(default)]
     evidence_sources: Vec<String>,
     confidence: Option<f64>,
     latency_ms: Option<u64>,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct AgentFirstReadBackendCandidate {
+    file: String,
+    symbol: Option<String>,
+}
+
 impl AgentFirstReadBackendCandidates {
     fn into_evidence(self) -> Result<AgentRouteBackendEvidence> {
-        if self.candidate_files.len() > AGENT_FIRST_READ_BACKEND_CANDIDATE_LIMIT {
+        let candidate_count = self.candidate_files.len() + self.candidates.len();
+        if candidate_count == 0 {
+            bail!("agent_first_read backend_candidates must contain candidate_files or candidates");
+        }
+        if candidate_count > AGENT_FIRST_READ_BACKEND_CANDIDATE_LIMIT {
             bail!(
-                "agent_first_read backend_candidates must contain at most {} candidate files",
+                "agent_first_read backend_candidates must contain at most {} candidates",
                 AGENT_FIRST_READ_BACKEND_CANDIDATE_LIMIT
             );
         }
@@ -37,12 +55,31 @@ impl AgentFirstReadBackendCandidates {
             );
         }
 
+        let mut candidate_files = self.candidate_files;
+        for candidate in &self.candidates {
+            if !candidate_files.contains(&candidate.file) {
+                candidate_files.push(candidate.file.clone());
+            }
+        }
+        let candidates = self
+            .candidates
+            .into_iter()
+            .map(|candidate| AgentRouteBackendCandidate {
+                file: candidate.file,
+                symbol: candidate.symbol,
+                source: None,
+                score: None,
+                reason: None,
+                evidence: Vec::new(),
+            })
+            .collect();
+
         Ok(AgentRouteBackendEvidence {
             provider: self.provider,
             use_as_fallback: false,
             prefer_for_context: true,
-            candidate_files: self.candidate_files,
-            candidates: Vec::new(),
+            candidate_files,
+            candidates,
             evidence_sources: self.evidence_sources,
             evidence_count: 0,
             latency_ms: self.latency_ms,
@@ -648,13 +685,25 @@ fn tool_definitions() -> Value {
                     },
                     "backend_candidates": {
                         "type": "object",
-                        "description": "Optional compact candidate ranking from an external code graph. When no explicit file or symbol seed is provided, CodeInsight prefers these files as bounded context seeds.",
+                        "description": "Optional compact candidate ranking from an external code graph. Pass candidate_files for file-only routing or candidates to preserve exact symbols. When no explicit seed is provided, CodeInsight prefers this ranking as bounded context seeds.",
                         "properties": {
                             "provider": {"type": "string", "maxLength": 128},
                             "candidate_files": {
                                 "type": "array",
                                 "maxItems": 8,
                                 "items": {"type": "string", "maxLength": 512}
+                            },
+                            "candidates": {
+                                "type": "array",
+                                "maxItems": 8,
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "file": {"type": "string", "maxLength": 512},
+                                        "symbol": {"type": "string", "maxLength": 512}
+                                    },
+                                    "required": ["file"]
+                                }
                             },
                             "evidence_sources": {
                                 "type": "array",
@@ -664,7 +713,11 @@ fn tool_definitions() -> Value {
                             "confidence": {"type": "number"},
                             "latency_ms": {"type": "integer", "minimum": 0}
                         },
-                        "required": ["provider", "candidate_files"]
+                        "required": ["provider"],
+                        "anyOf": [
+                            {"required": ["candidate_files"]},
+                            {"required": ["candidates"]}
+                        ]
                     },
                     "force_index": {"type": "boolean", "default": false}
                 },
@@ -1582,9 +1635,18 @@ int login(void) {
             8
         );
         assert_eq!(
-            backend_candidates["required"],
-            serde_json::json!(["provider", "candidate_files"])
+            backend_candidates["properties"]["candidates"]["maxItems"],
+            8
         );
+        assert_eq!(
+            backend_candidates["properties"]["candidates"]["items"]["required"],
+            serde_json::json!(["file"])
+        );
+        assert_eq!(
+            backend_candidates["required"],
+            serde_json::json!(["provider"])
+        );
+        assert_eq!(backend_candidates["anyOf"].as_array().unwrap().len(), 2);
         assert_eq!(
             first_read["inputSchema"]["required"],
             serde_json::json!(["root", "task"])
@@ -1606,6 +1668,7 @@ int login(void) {
             candidate_files: (0..=AGENT_FIRST_READ_BACKEND_CANDIDATE_LIMIT)
                 .map(|index| format!("src/{index}.rs"))
                 .collect(),
+            candidates: Vec::new(),
             evidence_sources: Vec::new(),
             confidence: None,
             latency_ms: None,
@@ -1615,8 +1678,34 @@ int login(void) {
                 .into_evidence()
                 .unwrap_err()
                 .to_string()
-                .contains("at most 8 candidate files")
+                .contains("at most 8 candidates")
         );
+
+        let structured = serde_json::from_value::<AgentFirstReadBackendCandidates>(json!({
+            "provider": "codebase-memory-mcp",
+            "candidates": [
+                {"file": "src/main.rs", "symbol": "main"},
+                {"file": "src/lib.rs"}
+            ],
+            "evidence_sources": ["search_graph"]
+        }))
+        .unwrap()
+        .into_evidence()
+        .unwrap();
+        assert_eq!(
+            structured.candidate_files,
+            vec!["src/main.rs".to_string(), "src/lib.rs".to_string()]
+        );
+        assert_eq!(structured.candidates.len(), 2);
+        assert_eq!(structured.candidates[0].symbol.as_deref(), Some("main"));
+
+        let empty = serde_json::from_value::<AgentFirstReadBackendCandidates>(json!({
+            "provider": "codebase-memory-mcp"
+        }))
+        .unwrap()
+        .into_evidence()
+        .unwrap_err();
+        assert!(empty.to_string().contains("candidate_files or candidates"));
     }
 
     #[test]

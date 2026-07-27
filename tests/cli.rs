@@ -14529,7 +14529,10 @@ fn mcp_stdio_executes_agent_first_read_with_bounded_compact_response() {
                 "token_budget": 6000,
                 "backend_candidates": {
                     "provider": "codebase-memory-mcp",
-                    "candidate_files": ["src/ui.ts", "src/main.ts"],
+                    "candidates": [
+                        {"file": "src/ui.ts", "symbol": "defaultRender"},
+                        {"file": "src/main.ts", "symbol": "main"}
+                    ],
                     "evidence_sources": ["search_graph"],
                     "confidence": 0.92,
                     "latency_ms": 7
@@ -14564,6 +14567,17 @@ fn mcp_stdio_executes_agent_first_read_with_bounded_compact_response() {
     assert_eq!(
         route["routing_decision"]["backend_route_agreement"]["selected_context_file"],
         "src/ui.ts"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_selected_candidate"]["symbol"],
+        "defaultRender"
+    );
+    assert!(
+        route["impact_seed_symbols"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|symbol| symbol == "defaultRender")
     );
     assert!(route["routing_decision"].get("backend_evidence").is_none());
     assert!(route.get("impact_analysis").is_none());
