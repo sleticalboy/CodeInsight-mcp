@@ -181,6 +181,11 @@ pub struct AgentRouteArgs {
     pub impact_evidence_limit: usize,
     #[arg(
         long,
+        help = "Defer impact analysis until after the selected context is read"
+    )]
+    pub skip_impact: bool,
+    #[arg(
+        long,
         value_name = "PATH",
         help = "Read backend route evidence from a JSON file"
     )]

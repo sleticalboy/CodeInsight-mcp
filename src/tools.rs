@@ -263,6 +263,7 @@ pub fn agent_route(
     impact_limit: usize,
     impact_depth: usize,
     impact_evidence_limit: usize,
+    include_impact: bool,
     backend_evidence: Option<AgentRouteBackendEvidence>,
 ) -> Result<()> {
     let report = agent_route_value(
@@ -275,6 +276,7 @@ pub fn agent_route(
         impact_limit,
         impact_depth,
         impact_evidence_limit,
+        include_impact,
         backend_evidence,
     )?;
     print_json(&report)
@@ -324,6 +326,7 @@ pub fn agent_route_value(
     impact_limit: usize,
     impact_depth: usize,
     impact_evidence_limit: usize,
+    include_impact: bool,
     backend_evidence: Option<AgentRouteBackendEvidence>,
 ) -> Result<AgentRouteReport> {
     let root = root.canonicalize()?;
@@ -450,6 +453,8 @@ pub fn agent_route_value(
         (agent_route_skipped_impact_status(status).to_string(), None)
     } else if impact_seed_files.is_empty() && impact_seed_symbols.is_empty() {
         ("skipped_no_seed".to_string(), None)
+    } else if !include_impact {
+        ("deferred_by_request".to_string(), None)
     } else {
         let report = impact_analysis_value(
             root.clone(),
@@ -502,6 +507,16 @@ pub fn agent_route_value(
         },
     ];
     let current_reading_step = context_pack.reading_plan.first().cloned();
+    let deferred_impact_tool = (impact_status == "deferred_by_request").then(|| {
+        agent_route_deferred_impact_suggested_tool(
+            &root,
+            &impact_seed_symbols,
+            &impact_seed_files,
+            impact_limit,
+            impact_depth,
+            impact_evidence_limit,
+        )
+    });
     let routing_decision = agent_route_routing_decision(
         &root,
         &context_pack,
@@ -515,6 +530,8 @@ pub fn agent_route_value(
         &context_pack,
         &impact_status,
         impact_analysis.as_ref(),
+        deferred_impact_tool,
+        &impact_seed_files,
         &routing_decision.backend_route_agreement,
         routing_decision.backend_selected_candidate.as_ref(),
     );
@@ -1046,6 +1063,15 @@ fn agent_route_quality(
         score += 7;
         confidence_factors.push("pre-edit impact preview completed".to_string());
         verification_steps.push("Review impact_analysis before editing.".to_string());
+    } else if impact_status == "deferred_by_request" {
+        warnings.push(
+            "Impact preview was deferred for the fast first read; run impact_analysis before editing."
+                .to_string(),
+        );
+        verification_steps.push(
+            "Call the execution plan's impact_analysis suggestion after reading selected context and before editing."
+                .to_string(),
+        );
     } else if impact_status.starts_with("skipped_") {
         warnings.push(format!(
             "Impact preview is {}; review impact before editing when a seed is available.",
@@ -1346,6 +1372,8 @@ fn agent_route_execution_plan(
     context_pack: &ContextPack,
     impact_status: &str,
     impact_analysis: Option<&ImpactAnalysisReport>,
+    deferred_impact_tool: Option<ContextSuggestedTool>,
+    impact_seed_files: &[String],
     backend_route_agreement: &AgentRouteBackendAgreement,
     backend_selected_candidate: Option<&AgentRouteBackendCandidate>,
 ) -> Vec<AgentRouteExecutionStep> {
@@ -1494,15 +1522,27 @@ fn agent_route_execution_plan(
     plan.push(AgentRouteExecutionStep {
         order: plan.len() + 1,
         action: "review_impact_before_edits".to_string(),
-        status: impact_status.to_string(),
+        status: if impact_status == "deferred_by_request" {
+            "required_before_edits".to_string()
+        } else {
+            impact_status.to_string()
+        },
         instruction: match impact_analysis {
             Some(report) => agent_route_impact_instruction(report),
             None => agent_route_skipped_impact_instruction(impact_status),
         },
         files: impact_analysis
             .map(|report| report.seed_files.clone())
-            .unwrap_or_default(),
-        suggested_tool: impact_analysis.map(agent_route_impact_suggested_tool),
+            .unwrap_or_else(|| {
+                if impact_status == "deferred_by_request" {
+                    impact_seed_files.to_vec()
+                } else {
+                    Vec::new()
+                }
+            }),
+        suggested_tool: impact_analysis
+            .map(agent_route_impact_suggested_tool)
+            .or(deferred_impact_tool),
         suggested_checks: impact_analysis
             .map(|report| report.suggested_checks.clone())
             .unwrap_or_default(),
@@ -3018,6 +3058,9 @@ fn agent_route_skipped_impact_status(context_status: &str) -> &'static str {
 
 fn agent_route_skipped_impact_reason(impact_status: &str) -> String {
     match impact_status {
+        "deferred_by_request" => {
+            "deferred for the fast first read and required before edits".to_string()
+        }
         "skipped_invalid_seed" => {
             "skipped because the explicit seed file could not be resolved".to_string()
         }
@@ -3033,6 +3076,10 @@ fn agent_route_skipped_impact_reason(impact_status: &str) -> String {
 
 fn agent_route_skipped_impact_instruction(impact_status: &str) -> String {
     match impact_status {
+        "deferred_by_request" => {
+            "Impact analysis was deferred for the fast first read; call the suggested impact_analysis tool after reading selected context and before editing."
+                .to_string()
+        }
         "skipped_invalid_seed" => {
             "Impact analysis was skipped because the explicit seed file could not be resolved; provide an existing seed file or symbol before editing.".to_string()
         }
@@ -3084,6 +3131,31 @@ fn agent_route_impact_suggested_tool(report: &ImpactAnalysisReport) -> ContextSu
             "depth": report.depth,
             "format": "full",
             "evidence_limit": report.evidence_limit
+        }),
+    }
+}
+
+fn agent_route_deferred_impact_suggested_tool(
+    root: &Path,
+    symbols: &[String],
+    files: &[String],
+    limit: usize,
+    depth: usize,
+    evidence_limit: usize,
+) -> ContextSuggestedTool {
+    ContextSuggestedTool {
+        tool: "impact_analysis".to_string(),
+        priority: 90,
+        reason: "Run the deferred impact check after reading selected context and before editing."
+            .to_string(),
+        suggested_arguments: json!({
+            "root": root.display().to_string(),
+            "symbols": symbols,
+            "files": files,
+            "limit": limit,
+            "depth": depth,
+            "format": "summary",
+            "evidence_limit": evidence_limit
         }),
     }
 }

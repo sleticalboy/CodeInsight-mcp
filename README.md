@@ -428,7 +428,7 @@ accuracy, or proof that unselected code is irrelevant.
 
 Current benchmark snapshot:
 
-- The two-minute demo for this repository shows the agent route selecting 531 of 88,130 source lines, avoiding 87,599 source lines before broad reading for a 99.4% reduction and 166.0x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 23 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
+- The two-minute demo for this repository shows the agent route selecting 530 of 88,318 source lines, avoiding 87,788 source lines before broad reading for a 99.4% reduction and 166.6x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
 - Smoke repositories route `context_pack` first for 4/4 repositories and
   select 709 of 75,753 source lines, a 99.1% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and

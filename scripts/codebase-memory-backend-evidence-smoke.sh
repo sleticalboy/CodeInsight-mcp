@@ -471,12 +471,12 @@ main() {
 
   "$ROOT_DIR/scripts/codebase-memory-backend-evidence.sh" \
     --root "$repo" \
-    --search-graph-json "$TEMP_DIR/search-graph-pages.json" \
+    --search-graph-json "$TEMP_DIR/search-graph-pages.json" --search-graph-json "$TEMP_DIR/search-graph-empty-semantic.json" \
     --output "$TEMP_DIR/search-graph-pages-evidence.json"
   require_jq \
     "$TEMP_DIR/search-graph-pages-evidence.json" \
-    '.candidate_files == ["src/auth.ts", "src/server.ts"] and .evidence_count == 2 and .latency_ms == 5' \
-    "ordered response pages should unwrap, route, and aggregate latency"
+    '.candidate_files == ["src/auth.ts", "src/server.ts", "src/main.ts"] and .evidence_count == 3 and .latency_ms == 6' \
+    "ordered response pages across repeated inputs should unwrap, route, and aggregate latency"
 
   "$ROOT_DIR/scripts/codebase-memory-backend-evidence.sh" \
     --root "$repo" \

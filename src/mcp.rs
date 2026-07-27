@@ -180,6 +180,7 @@ fn handle_tool_call(params: Value) -> Result<Value> {
             let impact_depth = optional_positive_usize(&arguments, "impact_depth", 1)?;
             let impact_evidence_limit =
                 optional_positive_usize(&arguments, "impact_evidence_limit", 20)?;
+            let include_impact = optional_bool(&arguments, "include_impact", true)?;
             let backend_evidence: Option<AgentRouteBackendEvidence> =
                 optional_json_object(&arguments, "backend_evidence")?;
             serde_json::to_value(tools::agent_route_value(
@@ -192,6 +193,7 @@ fn handle_tool_call(params: Value) -> Result<Value> {
                 impact_limit,
                 impact_depth,
                 impact_evidence_limit,
+                include_impact,
                 backend_evidence,
             )?)?
         }
@@ -505,6 +507,11 @@ fn tool_definitions() -> Value {
                     "impact_limit": {"type": "integer", "minimum": 1},
                     "impact_depth": {"type": "integer", "minimum": 1},
                     "impact_evidence_limit": {"type": "integer", "minimum": 1},
+                    "include_impact": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Set false for a fast first read; agent_route returns a deferred impact_analysis suggestion that remains required before edits."
+                    },
                     "backend_evidence": backend_evidence_schema
                 },
                 "required": ["root", "task"]
@@ -1276,6 +1283,15 @@ int login(void) {
             ["prefer_for_context"];
         assert_eq!(preferred["type"], "boolean");
         assert_eq!(preferred["default"], false);
+        let include_impact = &agent_route["inputSchema"]["properties"]["include_impact"];
+        assert_eq!(include_impact["type"], "boolean");
+        assert_eq!(include_impact["default"], true);
+        assert!(
+            include_impact["description"]
+                .as_str()
+                .unwrap()
+                .contains("fast first read")
+        );
 
         let candidates = &agent_route["inputSchema"]["properties"]["backend_evidence"]["properties"]
             ["candidates"];

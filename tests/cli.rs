@@ -2221,6 +2221,78 @@ fn cli_agent_route_runs_first_read_pipeline() {
 }
 
 #[test]
+fn cli_agent_route_can_defer_impact_for_fast_first_read() {
+    let fixture = fixture_project();
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "inspect application entrypoint",
+        "--file",
+        "src/main.ts",
+        "--token-budget",
+        "1600",
+        "--impact-limit",
+        "17",
+        "--impact-depth",
+        "2",
+        "--impact-evidence-limit",
+        "9",
+        "--skip-impact",
+        "--force-index",
+    ]);
+
+    assert_eq!(route["impact_status"], "deferred_by_request");
+    assert!(route.get("impact_analysis").is_none());
+    assert_eq!(route["route"][3]["status"], "deferred_by_request");
+    assert_eq!(
+        route["routing_decision"]["impact_status"],
+        "deferred_by_request"
+    );
+    assert!(
+        route["routing_decision"]["route_quality"]["warnings"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|warning| warning
+                .as_str()
+                .unwrap()
+                .contains("deferred for the fast first read"))
+    );
+
+    let impact_step = route["execution_plan"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|step| step["action"] == "review_impact_before_edits")
+        .unwrap();
+    assert_eq!(impact_step["status"], "required_before_edits");
+    assert_eq!(impact_step["files"], serde_json::json!(["src/main.ts"]));
+    assert_eq!(impact_step["suggested_tool"]["tool"], "impact_analysis");
+    assert_eq!(impact_step["suggested_tool"]["priority"], 90);
+    assert_eq!(
+        impact_step["suggested_tool"]["suggested_arguments"]["root"],
+        route["root"]
+    );
+    assert_eq!(
+        impact_step["suggested_tool"]["suggested_arguments"]["files"],
+        serde_json::json!(["src/main.ts"])
+    );
+    assert_eq!(
+        impact_step["suggested_tool"]["suggested_arguments"]["limit"],
+        17
+    );
+    assert_eq!(
+        impact_step["suggested_tool"]["suggested_arguments"]["depth"],
+        2
+    );
+    assert_eq!(
+        impact_step["suggested_tool"]["suggested_arguments"]["evidence_limit"],
+        9
+    );
+}
+
+#[test]
 fn cli_agent_route_accepts_backend_evidence_file() {
     let fixture = fixture_project();
     let evidence_path = fixture.path().join("backend-evidence.json");
@@ -14372,6 +14444,28 @@ fn mcp_stdio_executes_agent_route() {
     assert!(impact_reason.contains("pre-edit impact check"));
     assert!(impact_reason.contains("call-related files"));
     assert!(impact_reason.contains("dependency-related files"));
+
+    let mut fast_request = request;
+    fast_request["id"] = serde_json::json!(4);
+    fast_request["params"]["arguments"]["include_impact"] = serde_json::json!(false);
+    let mut fast_command = Command::cargo_bin("codeinsight").unwrap();
+    fast_command.args(["serve", "--transport", "stdio"]);
+    fast_command.write_stdin(format!("{fast_request}\n"));
+    let fast_output = fast_command.assert().success().get_output().stdout.clone();
+    let fast_response: Value = serde_json::from_slice(&fast_output).unwrap();
+    let fast_route = &fast_response["result"]["structuredContent"];
+
+    assert_eq!(fast_response["id"], 4);
+    assert_eq!(fast_route["impact_status"], "deferred_by_request");
+    assert!(fast_route.get("impact_analysis").is_none());
+    assert_eq!(
+        fast_route["execution_plan"][3]["status"],
+        "required_before_edits"
+    );
+    assert_eq!(
+        fast_route["execution_plan"][3]["suggested_tool"]["tool"],
+        "impact_analysis"
+    );
 }
 
 #[test]
