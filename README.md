@@ -119,6 +119,11 @@ hands the agent to precise local tools when the selected context is not enough.
    The first MCP `tools/call` payload is shown in
    [First Agent Route Call](docs/mcp-client-config.md#first-agent-route-call).
 
+   `agent_first_read` can also invoke an installed `codebase-memory-mcp`
+   binary before local routing. Backend failures fall back to the standalone
+   local route by default and are reported in `backend_status`; set
+   `backend.on_failure` to `error` when strict backend availability is required.
+
 4. Pick the validation that matches your adoption stage:
 
    | Stage | Command | Use When |
@@ -430,7 +435,7 @@ accuracy, or proof that unselected code is irrelevant.
 
 Current benchmark snapshot:
 
-- The two-minute demo for this repository shows the agent route selecting 550 of 90,351 source lines, avoiding 89,801 source lines before broad reading for a 99.4% reduction and 164.3x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 24 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
+- The two-minute demo for this repository shows the agent route selecting 550 of 90,533 source lines, avoiding 89,983 source lines before broad reading for a 99.4% reduction and 164.6x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 24 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
 - Smoke repositories route `context_pack` first for 4/4 repositories and
   select 709 of 75,753 source lines, a 99.1% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and

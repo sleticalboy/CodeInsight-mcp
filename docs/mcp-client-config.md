@@ -199,6 +199,32 @@ advanced `agent_route` when another local graph backend has already produced
 advisory evidence, or when the client explicitly needs the full overview and a
 synchronous impact preview.
 
+To let `agent_first_read` invoke an installed `codebase-memory-mcp` binary
+directly, add the optional backend configuration:
+
+```json
+{
+  "name": "agent_first_read",
+  "arguments": {
+    "root": "/absolute/path/to/repo",
+    "task": "understand the main application entrypoint",
+    "token_budget": 6000,
+    "backend": {
+      "provider": "codebase-memory-mcp",
+      "on_failure": "fallback_local"
+    }
+  }
+}
+```
+
+The existing backend graph is reused. A missing project is indexed in fast
+mode automatically. `on_failure` defaults to `fallback_local`, so missing
+binaries, command failures, timeouts, and invalid backend responses do not
+block the standalone local route. Set it to `error` for strict behavior.
+Invalid backend configuration always returns an MCP error. The structured
+`backend_status.status` is `used`, `no_candidates`, or `fallback_local`; the
+latter includes a bounded `reason` for diagnostics.
+
 The response is the default first-read bundle. A minimal client should:
 
 1. If `context_pack.continuation_summary.status` is `blocked_no_seed`, ask the
@@ -230,6 +256,7 @@ Expected first-call signals:
 | --- | --- | --- |
 | `response_mode` | Is `compact`. | Consume `structuredContent` instead of parsing the concise text summary. |
 | `response_budget` | Reports the requested and estimated structured-response tokens. | Treat `omitted_excerpts` as a signal to use the returned range coordinates or focused follow-up tools. |
+| `backend_status` | Reports `used`, `no_candidates`, or `fallback_local` when automatic backend invocation was requested. | Continue with returned local context on fallback and surface `reason` only as a diagnostic. |
 | `context_pack.files[]` | Contains the bounded files or excerpts to read first. | Read these files before broad `rg` or full-file scans. |
 | `agent_first_read.current_reading_step` | Mirrors `context_pack.reading_plan[0]` when a reading plan exists. | Use it as the first checklist row without rebuilding it from nested fields. |
 | `context_pack.reading_plan[].focus` | Gives the compact scan label for the selected file. | Show it beside the file path or current step. |

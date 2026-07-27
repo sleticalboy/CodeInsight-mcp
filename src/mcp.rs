@@ -14,7 +14,7 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
 use crate::{
     cli::Transport,
-    model::{AgentRouteBackendCandidate, AgentRouteBackendEvidence},
+    model::{AgentRouteBackendCandidate, AgentRouteBackendEvidence, AgentRouteBackendStatus},
     tools,
 };
 
@@ -54,6 +54,52 @@ struct AgentFirstReadBackendConfig {
     refresh_index: bool,
     #[serde(default = "default_codebase_memory_timeout_ms")]
     timeout_ms: u64,
+    #[serde(default)]
+    on_failure: AgentFirstReadBackendFailurePolicy,
+}
+
+#[derive(Debug, Clone, Copy, Default, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+enum AgentFirstReadBackendFailurePolicy {
+    Error,
+    #[default]
+    FallbackLocal,
+}
+
+impl AgentFirstReadBackendFailurePolicy {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Error => "error",
+            Self::FallbackLocal => "fallback_local",
+        }
+    }
+}
+
+impl AgentFirstReadBackendConfig {
+    fn validate(&self) -> Result<()> {
+        if self.provider != AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER {
+            bail!(
+                "unsupported agent_first_read backend provider: {}; expected {}",
+                self.provider,
+                AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER
+            );
+        }
+        if !(CODEBASE_MEMORY_MIN_TIMEOUT_MS..=CODEBASE_MEMORY_MAX_TIMEOUT_MS)
+            .contains(&self.timeout_ms)
+        {
+            bail!(
+                "agent_first_read backend.timeout_ms must be between {CODEBASE_MEMORY_MIN_TIMEOUT_MS} and {CODEBASE_MEMORY_MAX_TIMEOUT_MS}"
+            );
+        }
+        if self
+            .project
+            .as_deref()
+            .is_some_and(|project| project.trim().is_empty())
+        {
+            bail!("agent_first_read backend.project must not be empty");
+        }
+        Ok(())
+    }
 }
 
 fn default_codebase_memory_timeout_ms() -> u64 {
@@ -378,20 +424,7 @@ fn codebase_memory_agent_first_read_evidence_with_binary(
     config: AgentFirstReadBackendConfig,
     binary: &OsStr,
 ) -> Result<Option<AgentRouteBackendEvidence>> {
-    if config.provider != AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER {
-        bail!(
-            "unsupported agent_first_read backend provider: {}; expected {}",
-            config.provider,
-            AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER
-        );
-    }
-    if !(CODEBASE_MEMORY_MIN_TIMEOUT_MS..=CODEBASE_MEMORY_MAX_TIMEOUT_MS)
-        .contains(&config.timeout_ms)
-    {
-        bail!(
-            "agent_first_read backend.timeout_ms must be between {CODEBASE_MEMORY_MIN_TIMEOUT_MS} and {CODEBASE_MEMORY_MAX_TIMEOUT_MS}"
-        );
-    }
+    config.validate()?;
     let project = codebase_memory_project(root, config.project)?;
     let timeout = Duration::from_millis(config.timeout_ms);
 
@@ -626,11 +659,54 @@ fn handle_tool_call(params: Value) -> Result<Value> {
             if backend_config.is_some() && arguments.get("backend_candidates").is_some() {
                 bail!("agent_first_read backend cannot be combined with backend_candidates");
             }
-            let backend_evidence = match backend_config {
-                Some(config) => codebase_memory_agent_first_read_evidence(&root, &task, config)?,
-                None => optional_agent_first_read_backend_evidence(&arguments)?,
+            let (backend_evidence, backend_status) = match backend_config {
+                Some(config) => {
+                    config.validate()?;
+                    let provider = config.provider.clone();
+                    let failure_policy = config.on_failure;
+                    match codebase_memory_agent_first_read_evidence(&root, &task, config) {
+                        Ok(Some(evidence)) => (
+                            Some(evidence),
+                            Some(AgentRouteBackendStatus {
+                                provider,
+                                status: "used".to_string(),
+                                failure_policy: failure_policy.as_str().to_string(),
+                                reason: None,
+                            }),
+                        ),
+                        Ok(None) => (
+                            None,
+                            Some(AgentRouteBackendStatus {
+                                provider,
+                                status: "no_candidates".to_string(),
+                                failure_policy: failure_policy.as_str().to_string(),
+                                reason: None,
+                            }),
+                        ),
+                        Err(error)
+                            if failure_policy
+                                == AgentFirstReadBackendFailurePolicy::FallbackLocal =>
+                        {
+                            let reason = error.to_string().chars().take(240).collect();
+                            (
+                                None,
+                                Some(AgentRouteBackendStatus {
+                                    provider,
+                                    status: "fallback_local".to_string(),
+                                    failure_policy: failure_policy.as_str().to_string(),
+                                    reason: Some(reason),
+                                }),
+                            )
+                        }
+                        Err(error) => return Err(error),
+                    }
+                }
+                None => (
+                    optional_agent_first_read_backend_evidence(&arguments)?,
+                    None,
+                ),
             };
-            let report = tools::agent_route_value(
+            let mut report = tools::agent_route_value(
                 root,
                 task,
                 symbols,
@@ -643,6 +719,7 @@ fn handle_tool_call(params: Value) -> Result<Value> {
                 false,
                 backend_evidence,
             )?;
+            report.backend_status = backend_status;
             tools::agent_route_response_value(&report, true, Some(response_token_budget))?
         }
         "agent_route" => {
@@ -1123,6 +1200,12 @@ fn tool_definitions() -> Value {
                                 "maximum": 300000,
                                 "default": 60000,
                                 "description": "Maximum time allowed for each backend index or search command."
+                            },
+                            "on_failure": {
+                                "type": "string",
+                                "enum": ["fallback_local", "error"],
+                                "default": "fallback_local",
+                                "description": "Continue with the standalone local route when the backend command fails, or return an MCP error. Invalid backend configuration always returns an error."
                             }
                         },
                         "required": ["provider"],
@@ -2058,6 +2141,14 @@ int login(void) {
             properties["backend"]["properties"]["timeout_ms"]["default"],
             60000
         );
+        assert_eq!(
+            properties["backend"]["properties"]["on_failure"]["enum"],
+            serde_json::json!(["fallback_local", "error"])
+        );
+        assert_eq!(
+            properties["backend"]["properties"]["on_failure"]["default"],
+            "fallback_local"
+        );
         let backend_candidates = &properties["backend_candidates"];
         assert_eq!(backend_candidates["type"], "object");
         assert_eq!(
@@ -2230,6 +2321,7 @@ int login(void) {
                 project: None,
                 refresh_index: false,
                 timeout_ms: CODEBASE_MEMORY_TIMEOUT_MS,
+                on_failure: AgentFirstReadBackendFailurePolicy::FallbackLocal,
             },
         )
         .unwrap_err();
@@ -2243,6 +2335,7 @@ int login(void) {
                 project: None,
                 refresh_index: false,
                 timeout_ms: CODEBASE_MEMORY_MIN_TIMEOUT_MS - 1,
+                on_failure: AgentFirstReadBackendFailurePolicy::FallbackLocal,
             },
         )
         .unwrap_err();
@@ -2285,6 +2378,7 @@ esac
                     project: Some("fixture".to_string()),
                     refresh_index: true,
                     timeout_ms: CODEBASE_MEMORY_TIMEOUT_MS,
+                    on_failure: AgentFirstReadBackendFailurePolicy::FallbackLocal,
                 },
                 backend.as_os_str(),
             )
@@ -2321,6 +2415,7 @@ esac
                     project: Some("fixture".to_string()),
                     refresh_index: false,
                     timeout_ms: CODEBASE_MEMORY_TIMEOUT_MS,
+                    on_failure: AgentFirstReadBackendFailurePolicy::FallbackLocal,
                 },
                 reuse_backend.as_os_str(),
             )
@@ -2345,6 +2440,7 @@ esac
                     project: Some("fixture".to_string()),
                     refresh_index: false,
                     timeout_ms: CODEBASE_MEMORY_TIMEOUT_MS,
+                    on_failure: AgentFirstReadBackendFailurePolicy::FallbackLocal,
                 },
                 empty_backend.as_os_str(),
             )

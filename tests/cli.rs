@@ -14540,6 +14540,10 @@ case "$2" in
       printf '%s\n' '{"results":[]}'
       exit 0
     fi
+    if test "$6" = "inspect src/main.ts when backend unavailable"; then
+      printf '%s\n' 'backend unavailable' >&2
+      exit 9
+    fi
     printf '%s\n' '{"result":{"structuredContent":{"results":[{"name":"targetLater","qualified_name":"fixture.src.multi_long.targetLater","file_path":"src/multi-long.ts"}],"elapsed_ms":4}}}'
     ;;
   *)
@@ -14590,13 +14594,52 @@ esac
             }
         }
     });
+    let fallback_request = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 8,
+        "method": "tools/call",
+        "params": {
+            "name": "agent_first_read",
+            "arguments": {
+                "root": fixture.path(),
+                "task": "inspect src/main.ts when backend unavailable",
+                "token_budget": 500,
+                "backend": {
+                    "provider": "codebase-memory-mcp",
+                    "project": "fixture",
+                    "timeout_ms": 1000
+                }
+            }
+        }
+    });
+    let strict_request = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 9,
+        "method": "tools/call",
+        "params": {
+            "name": "agent_first_read",
+            "arguments": {
+                "root": fixture.path(),
+                "task": "inspect src/main.ts when backend unavailable",
+                "token_budget": 500,
+                "backend": {
+                    "provider": "codebase-memory-mcp",
+                    "project": "fixture",
+                    "timeout_ms": 1000,
+                    "on_failure": "error"
+                }
+            }
+        }
+    });
 
     let mut command = Command::cargo_bin("codeinsight").unwrap();
     command
         .args(["serve", "--transport", "stdio"])
         .env("CODEINSIGHT_CODEBASE_MEMORY_BIN", &backend)
         .env("CODEINSIGHT_FAKE_INDEX_MARKER", &marker)
-        .write_stdin(format!("{request}\n{empty_request}\n"));
+        .write_stdin(format!(
+            "{request}\n{empty_request}\n{fallback_request}\n{strict_request}\n"
+        ));
     let output = command.assert().success().get_output().stdout.clone();
     let responses = String::from_utf8(output)
         .unwrap()
@@ -14605,6 +14648,8 @@ esac
         .collect::<Vec<_>>();
     let response = &responses[0];
     let empty_response = &responses[1];
+    let fallback_response = &responses[2];
+    let strict_response = &responses[3];
     let route = &response["result"]["structuredContent"];
     let selected_excerpt = route["context_pack"]["files"][0]["ranges"]
         .as_array()
@@ -14630,6 +14675,8 @@ esac
         route["routing_decision"]["backend_selected_candidate"]["symbol"],
         "targetLater"
     );
+    assert_eq!(route["backend_status"]["status"], "used");
+    assert_eq!(route["backend_status"]["failure_policy"], "fallback_local");
     assert_eq!(empty_response["id"], 7);
     assert!(empty_response.get("error").is_none());
     assert_eq!(
@@ -14640,6 +14687,33 @@ esac
         empty_response["result"]["structuredContent"]["routing_decision"]
             .get("backend_selected_candidate")
             .is_none()
+    );
+    assert_eq!(
+        empty_response["result"]["structuredContent"]["backend_status"]["status"],
+        "no_candidates"
+    );
+    assert_eq!(fallback_response["id"], 8);
+    assert!(fallback_response.get("error").is_none());
+    assert_eq!(
+        fallback_response["result"]["structuredContent"]["context_pack"]["files"][0]["file"],
+        "src/main.ts"
+    );
+    assert_eq!(
+        fallback_response["result"]["structuredContent"]["backend_status"]["status"],
+        "fallback_local"
+    );
+    assert!(
+        fallback_response["result"]["structuredContent"]["backend_status"]["reason"]
+            .as_str()
+            .unwrap()
+            .contains("backend unavailable")
+    );
+    assert_eq!(strict_response["id"], 9);
+    assert!(
+        strict_response["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("backend unavailable")
     );
 }
 

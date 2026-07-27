@@ -249,6 +249,8 @@ pub struct AgentRouteReport {
     pub root: String,
     pub task: String,
     pub token_budget: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub backend_status: Option<AgentRouteBackendStatus>,
     pub routing_decision: AgentRouteRoutingDecision,
     pub route: Vec<AgentRouteStep>,
     pub execution_plan: Vec<AgentRouteExecutionStep>,
@@ -262,6 +264,15 @@ pub struct AgentRouteReport {
     pub context_pack: ContextPack,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub impact_analysis: Option<ImpactAnalysisReport>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct AgentRouteBackendStatus {
+    pub provider: String,
+    pub status: String,
+    pub failure_policy: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
 }
 
 #[derive(Debug, Serialize)]

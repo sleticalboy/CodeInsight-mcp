@@ -721,6 +721,7 @@ pub fn agent_route_value(
         root: root.display().to_string(),
         task,
         token_budget,
+        backend_status: None,
         routing_decision,
         route,
         execution_plan,
