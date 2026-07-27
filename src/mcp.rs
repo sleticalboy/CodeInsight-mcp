@@ -14,6 +14,7 @@ use crate::{
 const AGENT_FIRST_READ_RESPONSE_TOKEN_BUDGET: usize = 8_000;
 const AGENT_FIRST_READ_BACKEND_CANDIDATE_LIMIT: usize = 8;
 const AGENT_FIRST_READ_BACKEND_EVIDENCE_SOURCE_LIMIT: usize = 6;
+const AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER: &str = "codebase-memory-mcp";
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -187,6 +188,35 @@ impl AgentFirstReadBackendCandidates {
             tool_results: None,
             normalization: None,
         })
+    }
+}
+
+fn agent_first_read_backend_evidence(value: &Value) -> Result<AgentRouteBackendEvidence> {
+    if value.get("provider").is_some() {
+        return serde_json::from_value::<AgentFirstReadBackendCandidates>(value.clone())
+            .context("invalid agent_first_read backend_candidates")?
+            .into_evidence();
+    }
+
+    AgentFirstReadBackendCandidates {
+        provider: AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER.to_string(),
+        candidate_files: Vec::new(),
+        candidates: Vec::new(),
+        search_graph: Some(value.clone()),
+        evidence_sources: Vec::new(),
+        confidence: None,
+        latency_ms: None,
+    }
+    .into_evidence()
+}
+
+fn optional_agent_first_read_backend_evidence(
+    arguments: &Value,
+) -> Result<Option<AgentRouteBackendEvidence>> {
+    match arguments.get("backend_candidates") {
+        Some(value) if value.is_object() => agent_first_read_backend_evidence(value).map(Some),
+        Some(_) => bail!("invalid object argument: backend_candidates"),
+        None => Ok(None),
     }
 }
 
@@ -366,12 +396,7 @@ fn handle_tool_call(params: Value) -> Result<Value> {
                 AGENT_FIRST_READ_RESPONSE_TOKEN_BUDGET,
                 500,
             )?;
-            let backend_evidence = optional_json_object::<AgentFirstReadBackendCandidates>(
-                &arguments,
-                "backend_candidates",
-            )?
-            .map(AgentFirstReadBackendCandidates::into_evidence)
-            .transpose()?;
+            let backend_evidence = optional_agent_first_read_backend_evidence(&arguments)?;
             let report = tools::agent_route_value(
                 root,
                 task,
@@ -579,7 +604,7 @@ fn tool_definitions() -> Value {
     });
     let agent_first_read_backend_candidates_schema = json!({
         "type": "object",
-        "description": "Optional compact candidate ranking from an external code graph. Pass candidate_files for file-only routing, candidates to preserve exact symbols, or a complete search_graph response. When no explicit seed is provided, CodeInsight prefers this ranking as bounded context seeds.",
+        "description": "Optional external code-graph ranking. Pass a complete search_graph response directly, or use provider with candidate_files, candidates, or search_graph. When no explicit seed is provided, CodeInsight prefers this ranking as bounded context seeds.",
         "properties": {
             "provider": {"type": "string", "maxLength": 128},
             "candidate_files": {
@@ -610,6 +635,10 @@ fn tool_definitions() -> Value {
                 "type": "object",
                 "description": "Complete structured search_graph response. Accepts a direct payload, an MCP structuredContent wrapper, or a JSON-RPC result wrapper. CodeInsight consumes at most 8 valid candidates; use a backend search limit of 8 when possible to keep input tokens bounded."
             },
+            "results": {"type": "array"},
+            "semantic_results": {"type": "array"},
+            "structuredContent": {"type": "object"},
+            "result": {"type": "object"},
             "evidence_sources": {
                 "type": "array",
                 "maxItems": 6,
@@ -618,11 +647,14 @@ fn tool_definitions() -> Value {
             "confidence": {"type": "number"},
             "latency_ms": {"type": "integer", "minimum": 0}
         },
-        "required": ["provider"],
         "anyOf": [
-            {"required": ["candidate_files"]},
-            {"required": ["candidates"]},
-            {"required": ["search_graph"]}
+            {"required": ["provider", "candidate_files"]},
+            {"required": ["provider", "candidates"]},
+            {"required": ["provider", "search_graph"]},
+            {"required": ["results"]},
+            {"required": ["semantic_results"]},
+            {"required": ["structuredContent"]},
+            {"required": ["result"]}
         ]
     });
     json!([
@@ -1765,11 +1797,8 @@ int login(void) {
             backend_candidates["properties"]["search_graph"]["type"],
             "object"
         );
-        assert_eq!(
-            backend_candidates["required"],
-            serde_json::json!(["provider"])
-        );
-        assert_eq!(backend_candidates["anyOf"].as_array().unwrap().len(), 3);
+        assert!(backend_candidates.get("required").is_none());
+        assert_eq!(backend_candidates["anyOf"].as_array().unwrap().len(), 7);
         assert_eq!(
             first_read["inputSchema"]["required"],
             serde_json::json!(["root", "task"])
@@ -1890,6 +1919,26 @@ int login(void) {
         .unwrap();
         assert_eq!(fallback_results.candidate_files, vec!["src/fallback.rs"]);
         assert_eq!(fallback_results.evidence_count, 1);
+
+        let raw_search_graph = agent_first_read_backend_evidence(&json!({
+            "result": {
+                "structuredContent": {
+                    "results": [{"file_path": "src/raw.rs", "name": "raw_target"}],
+                    "elapsed_ms": 9
+                }
+            }
+        }))
+        .unwrap();
+        assert_eq!(
+            raw_search_graph.provider,
+            AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER
+        );
+        assert_eq!(raw_search_graph.candidate_files, vec!["src/raw.rs"]);
+        assert_eq!(
+            raw_search_graph.candidates[0].symbol.as_deref(),
+            Some("raw_target")
+        );
+        assert_eq!(raw_search_graph.latency_ms, Some(9));
 
         let mixed = serde_json::from_value::<AgentFirstReadBackendCandidates>(json!({
             "provider": "codebase-memory-mcp",

@@ -14528,28 +14528,24 @@ fn mcp_stdio_executes_agent_first_read_with_bounded_compact_response() {
                 "task": "inspect the backend-selected implementation",
                 "token_budget": 500,
                 "backend_candidates": {
-                    "provider": "codebase-memory-mcp",
-                    "search_graph": {
-                        "result": {
-                            "structuredContent": {
-                                "total": 2,
-                                "results": [
-                                    {
-                                        "name": "targetLater",
-                                        "qualified_name": "fixture.src.multi_long.targetLater",
-                                        "label": "Function",
-                                        "file_path": "src/multi-long.ts",
-                                        "in_degree": 2,
-                                        "out_degree": 0
-                                    },
-                                    {"file": "src/main.ts", "symbol": "main"}
-                                ],
-                                "semantic_results": [],
-                                "elapsed_ms": 7
-                            }
+                    "result": {
+                        "structuredContent": {
+                            "total": 2,
+                            "results": [
+                                {
+                                    "name": "targetLater",
+                                    "qualified_name": "fixture.src.multi_long.targetLater",
+                                    "label": "Function",
+                                    "file_path": "src/multi-long.ts",
+                                    "in_degree": 2,
+                                    "out_degree": 0
+                                },
+                                {"file": "src/main.ts", "symbol": "main"}
+                            ],
+                            "semantic_results": [],
+                            "elapsed_ms": 7
                         }
-                    },
-                    "confidence": 0.92
+                    }
                 },
                 "force_index": true
             }
