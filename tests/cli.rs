@@ -14525,6 +14525,9 @@ fn mcp_stdio_executes_agent_route() {
     let fast_output = fast_command.assert().success().get_output().stdout.clone();
     let fast_response: Value = serde_json::from_slice(&fast_output).unwrap();
     let fast_route = &fast_response["result"]["structuredContent"];
+    let fast_text = fast_response["result"]["content"][0]["text"]
+        .as_str()
+        .unwrap();
 
     assert_eq!(fast_response["id"], 4);
     assert_eq!(fast_route["response_mode"], "compact");
@@ -14540,6 +14543,17 @@ fn mcp_stdio_executes_agent_route() {
             .unwrap()
             .is_empty()
     );
+    assert!(fast_text.contains("Compact agent route:"));
+    assert!(fast_text.contains(&format!(
+        "first_file={}",
+        fast_route["routing_decision"]["first_file"]
+            .as_str()
+            .unwrap()
+    )));
+    assert!(fast_text.contains("impact_status=deferred_by_request"));
+    assert!(fast_text.contains("Read structuredContent"));
+    assert!(!fast_text.contains("\"context_pack\""));
+    assert!(fast_text.len() < serde_json::to_string(fast_route).unwrap().len() / 10);
     assert_eq!(
         fast_route["execution_plan"][3]["status"],
         "required_before_edits"

@@ -218,15 +218,49 @@ fn handle_tool_call(params: Value) -> Result<Value> {
         _ => bail!("unknown tool: {name}"),
     };
 
+    let text_content = tool_text_content(name, &result)?;
     Ok(json!({
         "content": [
             {
                 "type": "text",
-                "text": serde_json::to_string_pretty(&result)?
+                "text": text_content
             }
         ],
         "structuredContent": result
     }))
+}
+
+fn tool_text_content(name: &str, result: &Value) -> Result<String> {
+    if name != "agent_route"
+        || result.get("response_mode").and_then(Value::as_str) != Some("compact")
+    {
+        return Ok(serde_json::to_string_pretty(result)?);
+    }
+
+    let first_file = result
+        .pointer("/routing_decision/first_file")
+        .and_then(Value::as_str)
+        .unwrap_or("-");
+    let selected_files = result
+        .pointer("/context_pack/budget/selected_files")
+        .and_then(Value::as_u64)
+        .unwrap_or(0);
+    let selected_ranges = result
+        .pointer("/context_pack/budget/selected_ranges")
+        .and_then(Value::as_u64)
+        .unwrap_or(0);
+    let next_action = result
+        .pointer("/routing_decision/route_quality/recommended_action")
+        .and_then(Value::as_str)
+        .unwrap_or("inspect_structured_content");
+    let impact_status = result
+        .get("impact_status")
+        .and_then(Value::as_str)
+        .unwrap_or("unknown");
+
+    Ok(format!(
+        "Compact agent route: first_file={first_file}; selected_files={selected_files}; selected_ranges={selected_ranges}; next_action={next_action}; impact_status={impact_status}. Read structuredContent for selected excerpts and execution_plan."
+    ))
 }
 
 fn tool_definitions() -> Value {
