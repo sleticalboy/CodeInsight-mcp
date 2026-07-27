@@ -103,6 +103,7 @@ async fn main() -> Result<()> {
                 args.impact_depth,
                 args.impact_evidence_limit,
                 !args.skip_impact,
+                args.compact,
                 backend_evidence,
             )?
         }

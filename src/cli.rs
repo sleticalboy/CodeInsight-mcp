@@ -186,6 +186,11 @@ pub struct AgentRouteArgs {
     pub skip_impact: bool,
     #[arg(
         long,
+        help = "Return a token-efficient route without duplicate overview and raw evidence arrays"
+    )]
+    pub compact: bool,
+    #[arg(
+        long,
         value_name = "PATH",
         help = "Read backend route evidence from a JSON file"
     )]

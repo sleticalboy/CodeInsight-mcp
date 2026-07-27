@@ -264,6 +264,7 @@ pub fn agent_route(
     impact_depth: usize,
     impact_evidence_limit: usize,
     include_impact: bool,
+    compact: bool,
     backend_evidence: Option<AgentRouteBackendEvidence>,
 ) -> Result<()> {
     let report = agent_route_value(
@@ -279,7 +280,86 @@ pub fn agent_route(
         include_impact,
         backend_evidence,
     )?;
-    print_json(&report)
+    print_json(&agent_route_response_value(&report, compact)?)
+}
+
+pub fn agent_route_response_value(report: &AgentRouteReport, compact: bool) -> Result<Value> {
+    let mut value = serde_json::to_value(report)?;
+    if !compact {
+        return Ok(value);
+    }
+
+    let Some(route) = value.as_object_mut() else {
+        return Ok(value);
+    };
+    route.insert("response_mode".to_string(), json!("compact"));
+    route.remove("route");
+    route.remove("index_report");
+    route.remove("overview");
+
+    if let Some(routing_decision) = route
+        .get_mut("routing_decision")
+        .and_then(Value::as_object_mut)
+    {
+        routing_decision.remove("backend_evidence");
+    }
+
+    if let Some(context_pack) = route.get_mut("context_pack").and_then(Value::as_object_mut) {
+        for key in [
+            "task",
+            "seed_strategy",
+            "semantic_status",
+            "omitted_candidates",
+            "symbols",
+            "references",
+            "estimated_tokens",
+            "truncated",
+        ] {
+            context_pack.remove(key);
+        }
+        if let Some(files) = context_pack.get_mut("files").and_then(Value::as_array_mut) {
+            for file in files {
+                let Some(file) = file.as_object_mut() else {
+                    continue;
+                };
+                file.retain(|key, _| matches!(key.as_str(), "file" | "selection_rank" | "ranges"));
+                if let Some(ranges) = file.get_mut("ranges").and_then(Value::as_array_mut) {
+                    for range in ranges {
+                        if let Some(range) = range.as_object_mut() {
+                            range.retain(|key, _| {
+                                matches!(key.as_str(), "start_line" | "end_line" | "excerpt")
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if let Some(impact_analysis) = route
+        .get_mut("impact_analysis")
+        .and_then(Value::as_object_mut)
+    {
+        for key in [
+            "root",
+            "depth",
+            "format",
+            "evidence_limit",
+            "seed_symbols",
+            "seed_files",
+            "paths",
+            "symbols",
+            "references",
+            "callers",
+            "callees",
+            "dependencies",
+            "errors",
+        ] {
+            impact_analysis.remove(key);
+        }
+    }
+
+    Ok(value)
 }
 
 pub fn read_agent_route_backend_evidence(path: &Path) -> Result<AgentRouteBackendEvidence> {
@@ -4644,6 +4724,7 @@ pub fn context_pack_value(
     } else {
         context_continuation_summary(&budget_summary, &omitted_candidates)
     };
+    retain_selected_context_metadata(&files, &mut symbols, &mut references);
 
     Ok(ContextPack {
         task,
@@ -4662,6 +4743,59 @@ pub fn context_pack_value(
         estimated_tokens,
         truncated,
     })
+}
+
+fn retain_selected_context_metadata(
+    files: &[ContextFile],
+    symbols: &mut Vec<Symbol>,
+    references: &mut Vec<ReferenceMatch>,
+) {
+    let selected_ranges = files
+        .iter()
+        .map(|file| {
+            (
+                file.file.as_str(),
+                file.ranges
+                    .iter()
+                    .map(|range| (range.start_line, range.end_line))
+                    .collect::<Vec<_>>(),
+            )
+        })
+        .collect::<BTreeMap<_, _>>();
+
+    let mut seen_symbols = BTreeSet::new();
+    symbols.retain(|symbol| {
+        selected_ranges
+            .get(symbol.file.as_str())
+            .is_some_and(|ranges| {
+                ranges.iter().any(|(start_line, end_line)| {
+                    symbol.start_line <= *end_line && symbol.end_line >= *start_line
+                })
+            })
+            && seen_symbols.insert((
+                symbol.file.clone(),
+                symbol.start_line,
+                symbol.end_line,
+                symbol.qualified_name.clone(),
+            ))
+    });
+
+    let mut seen_references = BTreeSet::new();
+    references.retain(|reference| {
+        selected_ranges
+            .get(reference.file.as_str())
+            .is_some_and(|ranges| {
+                ranges.iter().any(|(start_line, end_line)| {
+                    reference.line >= *start_line && reference.line <= *end_line
+                })
+            })
+            && seen_references.insert((
+                reference.file.clone(),
+                reference.line,
+                reference.column,
+                reference.reference_kind.clone(),
+            ))
+    });
 }
 
 fn context_selected_source_lines(files: &[ContextFile]) -> usize {
@@ -15033,6 +15167,76 @@ fn normalize_dependency_kind(kind: &str) -> Result<String> {
 mod tests {
     use super::*;
     use std::sync::Mutex;
+
+    #[test]
+    fn selected_context_metadata_is_bounded_to_returned_ranges() {
+        let files = vec![ContextFile {
+            file: "src/main.ts".to_string(),
+            source: "seed_file".to_string(),
+            score: 100,
+            selection_rank: 1,
+            reason: "selected test range".to_string(),
+            source_mix: Vec::new(),
+            ranges: vec![ContextRange {
+                start_line: 10,
+                end_line: 20,
+                source: "seed_file".to_string(),
+                score: 100,
+                importance: "high".to_string(),
+                reason: "selected test range".to_string(),
+                excerpt: "export function selected() {}".to_string(),
+            }],
+        }];
+        let selected_symbol = Symbol {
+            name: "selected".to_string(),
+            qualified_name: "selected".to_string(),
+            kind: SymbolKind::Function,
+            language: Language::TypeScript,
+            file: "src/main.ts".to_string(),
+            start_line: 12,
+            end_line: 18,
+        };
+        let mut symbols = vec![
+            selected_symbol.clone(),
+            selected_symbol,
+            Symbol {
+                name: "outside".to_string(),
+                qualified_name: "outside".to_string(),
+                kind: SymbolKind::Function,
+                language: Language::TypeScript,
+                file: "src/main.ts".to_string(),
+                start_line: 30,
+                end_line: 35,
+            },
+        ];
+        let selected_reference = ReferenceMatch {
+            file: "src/main.ts".to_string(),
+            line: 15,
+            column: 3,
+            context: "selected();".to_string(),
+            reference_kind: "call".to_string(),
+            confidence: 1.0,
+        };
+        let mut references = vec![
+            selected_reference.clone(),
+            selected_reference,
+            ReferenceMatch {
+                file: "src/other.ts".to_string(),
+                line: 15,
+                column: 3,
+                context: "selected();".to_string(),
+                reference_kind: "call".to_string(),
+                confidence: 1.0,
+            },
+        ];
+
+        retain_selected_context_metadata(&files, &mut symbols, &mut references);
+
+        assert_eq!(symbols.len(), 1);
+        assert_eq!(symbols[0].name, "selected");
+        assert_eq!(references.len(), 1);
+        assert_eq!(references[0].file, "src/main.ts");
+    }
 
     #[test]
     fn uncovered_segments_keeps_ranges_after_selected_overlap() {

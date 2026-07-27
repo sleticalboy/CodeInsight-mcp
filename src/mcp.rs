@@ -181,9 +181,14 @@ fn handle_tool_call(params: Value) -> Result<Value> {
             let impact_evidence_limit =
                 optional_positive_usize(&arguments, "impact_evidence_limit", 20)?;
             let include_impact = optional_bool(&arguments, "include_impact", true)?;
+            let compact = match optional_str(&arguments, "response_mode", "full")? {
+                "full" => false,
+                "compact" => true,
+                _ => bail!("invalid response_mode; expected full or compact"),
+            };
             let backend_evidence: Option<AgentRouteBackendEvidence> =
                 optional_json_object(&arguments, "backend_evidence")?;
-            serde_json::to_value(tools::agent_route_value(
+            let report = tools::agent_route_value(
                 root,
                 task,
                 symbols,
@@ -195,7 +200,8 @@ fn handle_tool_call(params: Value) -> Result<Value> {
                 impact_evidence_limit,
                 include_impact,
                 backend_evidence,
-            )?)?
+            )?;
+            tools::agent_route_response_value(&report, compact)?
         }
         "callers" => {
             let root = required_path(&arguments, "root")?;
@@ -511,6 +517,12 @@ fn tool_definitions() -> Value {
                         "type": "boolean",
                         "default": true,
                         "description": "Set false for a fast first read; agent_route returns a deferred impact_analysis suggestion that remains required before edits."
+                    },
+                    "response_mode": {
+                        "type": "string",
+                        "enum": ["full", "compact"],
+                        "default": "full",
+                        "description": "Use compact to keep selected excerpts and the execution contract while omitting duplicate overview and raw evidence arrays."
                     },
                     "backend_evidence": backend_evidence_schema
                 },
@@ -1291,6 +1303,13 @@ int login(void) {
                 .as_str()
                 .unwrap()
                 .contains("fast first read")
+        );
+        let response_mode = &agent_route["inputSchema"]["properties"]["response_mode"];
+        assert_eq!(response_mode["type"], "string");
+        assert_eq!(response_mode["default"], "full");
+        assert_eq!(
+            response_mode["enum"],
+            serde_json::json!(["full", "compact"])
         );
 
         let candidates = &agent_route["inputSchema"]["properties"]["backend_evidence"]["properties"]

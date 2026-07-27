@@ -2293,6 +2293,76 @@ fn cli_agent_route_can_defer_impact_for_fast_first_read() {
 }
 
 #[test]
+fn cli_agent_route_compact_keeps_the_execution_contract_and_selected_excerpts() {
+    let fixture = fixture_project();
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "inspect application entrypoint",
+        "--file",
+        "src/main.ts",
+        "--token-budget",
+        "1600",
+        "--compact",
+        "--force-index",
+    ]);
+
+    assert_eq!(route["response_mode"], "compact");
+    assert!(route.get("route").is_none());
+    assert!(route.get("index_report").is_none());
+    assert!(route.get("overview").is_none());
+    assert!(route["routing_decision"].get("backend_evidence").is_none());
+    assert!(!route["execution_plan"].as_array().unwrap().is_empty());
+    assert!(!route["current_reading_step"].is_null());
+
+    let context_pack = route["context_pack"].as_object().unwrap();
+    for omitted_key in [
+        "task",
+        "seed_strategy",
+        "semantic_status",
+        "omitted_candidates",
+        "symbols",
+        "references",
+        "estimated_tokens",
+        "truncated",
+    ] {
+        assert!(!context_pack.contains_key(omitted_key));
+    }
+    assert!(context_pack.contains_key("budget"));
+    assert!(context_pack.contains_key("read_less"));
+    assert!(context_pack.contains_key("continuation_summary"));
+    assert!(context_pack.contains_key("reading_plan"));
+
+    let first_file = context_pack["files"][0].as_object().unwrap();
+    assert_eq!(first_file.len(), 3);
+    assert_eq!(first_file["file"], "src/main.ts");
+    let first_range = first_file["ranges"][0].as_object().unwrap();
+    assert_eq!(first_range.len(), 3);
+    assert!(first_range["start_line"].as_u64().is_some());
+    assert!(first_range["end_line"].as_u64().is_some());
+    assert!(!first_range["excerpt"].as_str().unwrap().is_empty());
+
+    let impact = route["impact_analysis"].as_object().unwrap();
+    assert!(impact.contains_key("summary"));
+    assert!(impact.contains_key("risk_level"));
+    assert!(impact.contains_key("impact_counts"));
+    assert!(impact.contains_key("impacted_files"));
+    for omitted_key in [
+        "root",
+        "paths",
+        "symbols",
+        "references",
+        "callers",
+        "callees",
+        "dependencies",
+        "errors",
+    ] {
+        assert!(!impact.contains_key(omitted_key));
+    }
+}
+
+#[test]
 fn cli_agent_route_accepts_backend_evidence_file() {
     let fixture = fixture_project();
     let evidence_path = fixture.path().join("backend-evidence.json");
@@ -14448,6 +14518,7 @@ fn mcp_stdio_executes_agent_route() {
     let mut fast_request = request;
     fast_request["id"] = serde_json::json!(4);
     fast_request["params"]["arguments"]["include_impact"] = serde_json::json!(false);
+    fast_request["params"]["arguments"]["response_mode"] = serde_json::json!("compact");
     let mut fast_command = Command::cargo_bin("codeinsight").unwrap();
     fast_command.args(["serve", "--transport", "stdio"]);
     fast_command.write_stdin(format!("{fast_request}\n"));
@@ -14456,8 +14527,19 @@ fn mcp_stdio_executes_agent_route() {
     let fast_route = &fast_response["result"]["structuredContent"];
 
     assert_eq!(fast_response["id"], 4);
+    assert_eq!(fast_route["response_mode"], "compact");
     assert_eq!(fast_route["impact_status"], "deferred_by_request");
     assert!(fast_route.get("impact_analysis").is_none());
+    assert!(fast_route.get("route").is_none());
+    assert!(fast_route.get("index_report").is_none());
+    assert!(fast_route.get("overview").is_none());
+    assert!(fast_route["context_pack"].get("symbols").is_none());
+    assert!(
+        !fast_route["context_pack"]["files"][0]["ranges"][0]["excerpt"]
+            .as_str()
+            .unwrap()
+            .is_empty()
+    );
     assert_eq!(
         fast_route["execution_plan"][3]["status"],
         "required_before_edits"
@@ -14817,6 +14899,36 @@ fn mcp_stdio_rejects_invalid_tool_arguments() {
             .as_str()
             .unwrap()
             .contains("limit")
+    );
+}
+
+#[test]
+fn mcp_stdio_rejects_invalid_agent_route_response_mode() {
+    let request = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 33,
+        "method": "tools/call",
+        "params": {
+            "name": "agent_route",
+            "arguments": {
+                "root": ".",
+                "task": "understand routing",
+                "response_mode": "tiny"
+            }
+        }
+    });
+
+    let mut command = Command::cargo_bin("codeinsight").unwrap();
+    command.args(["serve", "--transport", "stdio"]);
+    command.write_stdin(format!("{request}\n"));
+    let output = command.assert().success().get_output().stdout.clone();
+    let response: Value = serde_json::from_slice(&output).unwrap();
+
+    assert_eq!(response["id"], 33);
+    assert_eq!(response["error"]["code"], -32602);
+    assert_eq!(
+        response["error"]["message"],
+        "invalid response_mode; expected full or compact"
     );
 }
 

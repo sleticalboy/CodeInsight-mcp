@@ -101,6 +101,7 @@ hands the agent to precise local tools when the selected context is not enough.
 
    ```text
    Call agent_route with root, task, and token_budget 6000 before reading files directly.
+   For the smallest first response, set response_mode to compact and include_impact to false; run the suggested impact_analysis before editing.
    If the task names an indexed file path such as src/auth.ts, pass it in task; CodeInsight can auto-seed that path without --file.
    If continuation_summary.status is blocked_no_seed, ask for a seed file or symbol instead of broad-reading.
    If it is blocked_invalid_seed or blocked_no_context, ask for an existing or matching seed and retry.
@@ -428,7 +429,7 @@ accuracy, or proof that unselected code is irrelevant.
 
 Current benchmark snapshot:
 
-- The two-minute demo for this repository shows the agent route selecting 530 of 88,318 source lines, avoiding 87,788 source lines before broad reading for a 99.4% reduction and 166.6x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
+- The two-minute demo for this repository shows the agent route selecting 547 of 88,659 source lines, avoiding 88,112 source lines before broad reading for a 99.4% reduction and 162.1x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 22 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
 - Smoke repositories route `context_pack` first for 4/4 repositories and
   select 709 of 75,753 source lines, a 99.1% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and
@@ -746,7 +747,10 @@ Recommended MCP first-read flow:
 
 1. Call `agent_route` with `root`, `task`, and `token_budget` for the default
    first-read path. If the task text names an indexed file path such as
-   `src/auth.ts`, CodeInsight treats it as an automatic file seed.
+   `src/auth.ts`, CodeInsight treats it as an automatic file seed. Set
+   `response_mode` to `compact` and `include_impact` to `false` for a smaller,
+   faster first response; the returned execution plan still requires
+   `impact_analysis` before edits.
 2. If `context_pack.continuation_summary.status` is `blocked_no_seed`, ask for
    a seed file or symbol and retry `agent_route` instead of broad-reading the
    repository. If it is `blocked_invalid_seed`, ask for an existing seed file
