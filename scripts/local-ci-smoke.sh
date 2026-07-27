@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SMOKE_TOTAL=26
+SMOKE_TOTAL=27
 TEMP_FILES=()
 
 source "$ROOT_DIR/scripts/smoke-lib.sh"
@@ -82,13 +82,14 @@ main() {
   smoke_run_step "$SMOKE_TOTAL" 17 "context pack quality smoke" context_pack_quality_smoke
   smoke_run_step "$SMOKE_TOTAL" 18 "agent route smoke" scripts/agent-route-smoke.sh
   smoke_run_step "$SMOKE_TOTAL" 19 "MCP first-call smoke" scripts/mcp-first-call-smoke.sh
-  smoke_run_step "$SMOKE_TOTAL" 20 "MCP first-call failure smoke" scripts/mcp-first-call-failure-smoke.sh
-  smoke_run_step "$SMOKE_TOTAL" 21 "agent router demo" scripts/agent-router-demo.sh
-  smoke_run_step "$SMOKE_TOTAL" 22 "framework entrypoint demo" scripts/framework-entrypoint-demo.sh
-  smoke_run_step "$SMOKE_TOTAL" 23 "task routing matrix smoke" scripts/task-routing-matrix-smoke.sh
-  smoke_run_step "$SMOKE_TOTAL" 24 "public task routing matrix smoke" scripts/public-task-routing-matrix-smoke.sh
-  smoke_run_step "$SMOKE_TOTAL" 25 "update public task routing matrix smoke" scripts/update-public-task-routing-matrix-smoke.sh
-  smoke_run_step "$SMOKE_TOTAL" 26 "git diff whitespace check" git diff --check
+  smoke_run_step "$SMOKE_TOTAL" 20 "installed agent first-read smoke" env -u CODEINSIGHT_BIN CODEINSIGHT_BUILD_FROM_SOURCE=1 scripts/installed-quickstart-smoke.sh
+  smoke_run_step "$SMOKE_TOTAL" 21 "MCP first-call failure smoke" scripts/mcp-first-call-failure-smoke.sh
+  smoke_run_step "$SMOKE_TOTAL" 22 "agent router demo" scripts/agent-router-demo.sh
+  smoke_run_step "$SMOKE_TOTAL" 23 "framework entrypoint demo" scripts/framework-entrypoint-demo.sh
+  smoke_run_step "$SMOKE_TOTAL" 24 "task routing matrix smoke" scripts/task-routing-matrix-smoke.sh
+  smoke_run_step "$SMOKE_TOTAL" 25 "public task routing matrix smoke" scripts/public-task-routing-matrix-smoke.sh
+  smoke_run_step "$SMOKE_TOTAL" 26 "update public task routing matrix smoke" scripts/update-public-task-routing-matrix-smoke.sh
+  smoke_run_step "$SMOKE_TOTAL" 27 "git diff whitespace check" git diff --check
 
   echo "local CI smoke passed"
 }

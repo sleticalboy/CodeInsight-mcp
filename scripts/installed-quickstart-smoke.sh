@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CODEINSIGHT_BIN="${CODEINSIGHT_BIN:-$(command -v codeinsight || true)}"
+CODEINSIGHT_BUILD_FROM_SOURCE="${CODEINSIGHT_BUILD_FROM_SOURCE:-0}"
+CODEINSIGHT_SMOKE_TARGET_DIR="${CODEINSIGHT_SMOKE_TARGET_DIR:-$ROOT_DIR/target/installed-quickstart-smoke}"
 TEMP_DIR=""
 
 cleanup() {
@@ -11,6 +14,15 @@ cleanup() {
 }
 
 main() {
+  if [ "$CODEINSIGHT_BUILD_FROM_SOURCE" = "1" ]; then
+    cargo build \
+      --release \
+      --locked \
+      --manifest-path "$ROOT_DIR/Cargo.toml" \
+      --target-dir "$CODEINSIGHT_SMOKE_TARGET_DIR" \
+      >/dev/null
+    CODEINSIGHT_BIN="$CODEINSIGHT_SMOKE_TARGET_DIR/release/codeinsight"
+  fi
   if [ -z "$CODEINSIGHT_BIN" ] || [ ! -x "$CODEINSIGHT_BIN" ]; then
     echo "CODEINSIGHT_BIN is not executable; install codeinsight or set CODEINSIGHT_BIN=/path/to/codeinsight" >&2
     exit 1
@@ -319,7 +331,15 @@ try:
 
     tools = request({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
     tool_names = {tool["name"] for tool in tools["result"]["tools"]}
-    for expected in ("index_project", "project_overview", "context_pack", "agent_route", "impact_analysis", "version"):
+    for expected in (
+        "index_project",
+        "project_overview",
+        "context_pack",
+        "agent_first_read",
+        "agent_route",
+        "impact_analysis",
+        "version",
+    ):
         if expected not in tool_names:
             raise AssertionError(expected)
 
@@ -437,6 +457,70 @@ try:
         raise AssertionError(mcp_agent_route)
     if mcp_agent_route["impact_analysis"]["depth"] != 2:
         raise AssertionError(mcp_agent_route["impact_analysis"])
+
+    mcp_agent_first_read = request(
+        {
+            "jsonrpc": "2.0",
+            "id": 7,
+            "method": "tools/call",
+            "params": {
+                "name": "agent_first_read",
+                "arguments": {
+                    "root": smoke_root,
+                    "task": "understand the main application entrypoint",
+                    "token_budget": 1200,
+                    "force_index": True,
+                },
+            },
+        }
+    )["result"]["structuredContent"]
+    if mcp_agent_first_read["response_mode"] != "compact":
+        raise AssertionError(mcp_agent_first_read)
+    if mcp_agent_first_read["response_budget"]["requested_tokens"] != 8000:
+        raise AssertionError(mcp_agent_first_read["response_budget"])
+    if mcp_agent_first_read["response_budget"]["estimated_tokens"] > 8000:
+        raise AssertionError(mcp_agent_first_read["response_budget"])
+    for omitted_key in ("route", "overview", "index_report", "impact_analysis"):
+        if omitted_key in mcp_agent_first_read:
+            raise AssertionError({omitted_key: mcp_agent_first_read[omitted_key]})
+    if [step["action"] for step in mcp_agent_first_read["execution_plan"]] != [
+        "read_selected_context",
+        "use_current_reading_step_suggested_tool",
+        "use_continuation_if_needed",
+        "review_impact_before_edits",
+    ]:
+        raise AssertionError(mcp_agent_first_read["execution_plan"])
+    mcp_agent_first_read_step = assert_actionable_reading_plan(
+        mcp_agent_first_read["context_pack"],
+        "mcp_agent_first_read_context_pack",
+    )
+    mcp_agent_first_read_continuation, mcp_agent_first_read_omitted = (
+        assert_agent_route_execution_evidence(
+            mcp_agent_first_read,
+            mcp_agent_first_read_step,
+            "mcp_agent_first_read_execution_plan",
+        )
+    )
+    if mcp_agent_first_read["impact_status"] != "deferred_by_request":
+        raise AssertionError(mcp_agent_first_read)
+    deferred_impact_step = mcp_agent_first_read["execution_plan"][3]
+    if deferred_impact_step["status"] != "required_before_edits":
+        raise AssertionError(deferred_impact_step)
+    if deferred_impact_step["suggested_tool"]["tool"] != "impact_analysis":
+        raise AssertionError(deferred_impact_step)
+    mcp_agent_first_read_impact = request(
+        {
+            "jsonrpc": "2.0",
+            "id": 8,
+            "method": "tools/call",
+            "params": {
+                "name": deferred_impact_step["suggested_tool"]["tool"],
+                "arguments": deferred_impact_step["suggested_tool"]["suggested_arguments"],
+            },
+        }
+    )["result"]["structuredContent"]
+    if not mcp_agent_first_read_impact["suggested_checks"]:
+        raise AssertionError(mcp_agent_first_read_impact)
 finally:
     proc.terminate()
     try:
@@ -510,6 +594,20 @@ print(json.dumps({
     "mcp_agent_route_first_omitted_file": mcp_agent_route_omitted.get("file", ""),
     "mcp_agent_route_first_omitted_selection_rank": mcp_agent_route_omitted.get("selection_rank"),
     "mcp_agent_route_first_omitted_omission_reason": mcp_agent_route_omitted.get("omission_reason", ""),
+    "mcp_agent_first_read_response_mode": mcp_agent_first_read["response_mode"],
+    "mcp_agent_first_read_response_tokens": mcp_agent_first_read["response_budget"]["estimated_tokens"],
+    "mcp_agent_first_read_impact_status": mcp_agent_first_read["impact_status"],
+    "mcp_agent_first_read_execution_plan": [
+        step["action"] for step in mcp_agent_first_read["execution_plan"]
+    ],
+    "mcp_agent_first_read_current_reading_step_matches_reading_plan": (
+        mcp_agent_first_read["current_reading_step"] == mcp_agent_first_read_step
+    ),
+    "mcp_agent_first_read_continuation_status": mcp_agent_first_read_continuation["status"],
+    "mcp_agent_first_read_first_omitted_file": mcp_agent_first_read_omitted.get("file", ""),
+    "mcp_agent_first_read_impact_suggested_checks": len(
+        mcp_agent_first_read_impact["suggested_checks"]
+    ),
     "mcp_tools": len(tool_names),
 }, indent=2))
 PY

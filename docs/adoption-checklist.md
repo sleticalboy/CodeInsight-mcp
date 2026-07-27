@@ -449,9 +449,10 @@ CodeInsight is successfully adopted when:
 
 - The binary works locally.
 - The MCP server starts in your client.
-- The installed quickstart smoke covers CLI `agent-route` and MCP
+- The installed quickstart smoke covers CLI `agent-route`, default MCP
+  `agent_first_read`, its deferred `impact_analysis`, and advanced
   `agent_route`.
-- The agent follows the `agent_route` first-read policy.
+- The agent follows the `agent_first_read` first-read policy.
 - `context_pack` returns a bounded reading plan.
 - The agent follows `reading_plan[].focus`, `reading_plan[].question`, and
   `reading_plan[].reason`, can surface `reading_plan[].selection_rank` and

@@ -80,6 +80,7 @@ jobs:
       - run: |
           scripts/mcp-first-call-smoke.sh --summary-json /tmp/codeinsight-mcp-first-call.json
           cat /tmp/codeinsight-mcp-first-call.json
+          env -u CODEINSIGHT_BIN CODEINSIGHT_BUILD_FROM_SOURCE=1 scripts/installed-quickstart-smoke.sh
       - id: mcp-first-call-artifact
         uses: actions/upload-artifact@v7
         with:

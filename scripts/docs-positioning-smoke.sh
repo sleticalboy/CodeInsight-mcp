@@ -131,8 +131,8 @@ main() {
     'scripts/installed-quickstart-smoke\.sh' \
     "README installed quickstart adoption gate"
   require_pattern README.md \
-    'CLI `agent-route`, MCP stdio, and MCP `agent_route`' \
-    "README CLI and MCP agent_route coverage"
+    'CLI `agent-route`, MCP `agent_first_read`, deferred `impact_analysis`, and advanced `agent_route`' \
+    "README default and advanced MCP route coverage"
   require_pattern README.md \
     '`agent_route`, which runs `index_project -> project_overview -> context_pack ->' \
     "README one-call agent_route demo path"
@@ -352,8 +352,8 @@ main() {
     'CODEINSIGHT_BIN="\$\(command -v codeinsight\)" scripts/installed-quickstart-smoke\.sh' \
     "quickstart installed quickstart binary command"
   require_pattern docs/quickstart.md \
-    'CLI `agent-route`, MCP stdio, and MCP `agent_route`' \
-    "quickstart installed agent_route coverage"
+    'CLI `agent-route`, MCP stdio, default `agent_first_read`, its deferred' \
+    "quickstart installed agent_first_read coverage"
   require_pattern docs/quickstart.md \
     '`reading_plan\.focus`, `reading_plan\.question`, `reading_plan\.reason`,' \
     "quickstart installed reading focus coverage"
@@ -651,8 +651,8 @@ main() {
     'scripts/installed-quickstart-smoke\.sh' \
     "adoption installed quickstart gate"
   require_pattern docs/adoption-checklist.md \
-    'CLI `agent-route`, MCP stdio, and MCP `agent_route`' \
-    "adoption CLI and MCP agent_route coverage"
+    'CLI `agent-route`, default MCP' \
+    "adoption CLI and default MCP route coverage"
   require_pattern docs/adoption-checklist.md \
     'first reading focus/question evidence' \
     "adoption installed quickstart reading focus output"
