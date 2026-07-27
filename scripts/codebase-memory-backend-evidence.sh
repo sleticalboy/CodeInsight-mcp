@@ -18,6 +18,7 @@ SEARCH_CODE_JSONS=()
 CODE_SNIPPET_JSONS=()
 QUERY_GRAPH_JSONS=()
 TRACE_PATH_JSONS=()
+NORMALIZED_TRACE_PATH_JSONS=()
 ARCHITECTURE_JSONS=()
 NOTES=()
 
@@ -262,7 +263,7 @@ normalized_tool_payload() {
 
   [ -f "$file" ] || fail "input JSON does not exist: $file"
   jq empty "$file" >/dev/null || fail "invalid JSON: $file"
-  normalized="$(mktemp "$TEMP_DIR/${source}.XXXXXX.json")"
+  normalized="$(mktemp "$TEMP_DIR/${source}.XXXXXX")"
   if ! jq --argjson wrapper_limit "$TOOL_RESULT_WRAPPER_LIMIT" '
     def tool_text:
       [.content[]? | select(.type == "text") | .text] | first;
@@ -471,6 +472,12 @@ collect_candidates() {
     append_latency "$payload"
   done
 
+  for file in ${TRACE_PATH_JSONS[@]+"${TRACE_PATH_JSONS[@]}"}; do
+    local payload
+    payload="$(normalized_tool_payload "trace-path" "$file")"
+    NORMALIZED_TRACE_PATH_JSONS+=("$payload")
+  done
+
   if [ ! -s "$TEMP_DIR/candidates.tsv" ] && [ "${#TRACE_PATH_JSONS[@]}" -eq 0 ]; then
     fail "no candidate files found in exported JSON"
   fi
@@ -529,8 +536,11 @@ write_output() {
   } >"$TEMP_DIR/notes.txt"
   notes_json="$(json_string_array_from_lines <"$TEMP_DIR/notes.txt")"
   trace_path_json="null"
-  if [ "${#TRACE_PATH_JSONS[@]}" -gt 0 ]; then
-    trace_path_json="$(jq -s 'if length == 1 then .[0] else . end' "${TRACE_PATH_JSONS[@]}")"
+  if [ "${#NORMALIZED_TRACE_PATH_JSONS[@]}" -gt 0 ]; then
+    trace_path_json="$(jq -s '
+      [.[] | if type == "array" then .[] else . end]
+      | if length == 1 then .[0] else . end
+    ' "${NORMALIZED_TRACE_PATH_JSONS[@]}")"
   fi
 
   local jq_args=(

@@ -305,6 +305,26 @@ EOF
 }
 EOF
 
+  jq '{
+    jsonrpc: "2.0",
+    id: 2,
+    result: {
+      structuredContent: .
+    }
+  }' "$output_dir/trace-path.json" >"$output_dir/trace-path-wrapped.json"
+
+  cat >"$output_dir/trace-path-second.json" <<'EOF'
+{
+  "function": "auditLogin",
+  "direction": "inbound",
+  "callers": [
+    {"name": "AuthService.login", "qualified_name": "fixture.src.auth.AuthService.login", "hop": 1}
+  ],
+  "callees": [],
+  "elapsed_ms": 2
+}
+EOF
+
   cat >"$output_dir/architecture.json" <<'EOF'
 {
   "elapsed_ms": 3,
@@ -546,10 +566,11 @@ main() {
 
   "$ROOT_DIR/scripts/codebase-memory-backend-evidence.sh" \
     --root "$repo" \
-    --trace-path-json "$TEMP_DIR/trace-path.json" \
+    --trace-path-json "$TEMP_DIR/trace-path-wrapped.json" \
+    --trace-path-json "$TEMP_DIR/trace-path-second.json" \
     --output "$trace_only_evidence"
 
-  require_jq "$trace_only_evidence" '.candidate_files == [] and .candidates == [] and .tool_results.trace_path.function == "AuthService.login"' "trace-only bridge evidence should defer symbol resolution to agent_route"
+  require_jq "$trace_only_evidence" '.candidate_files == [] and .candidates == [] and (.tool_results.trace_path | type) == "array" and (.tool_results.trace_path | length) == 2 and .tool_results.trace_path[0].function == "AuthService.login" and .tool_results.trace_path[1].function == "auditLogin"' "trace-only bridge evidence should flatten wrapped exports and defer symbol resolution to agent_route"
 
   "$CODEINSIGHT_BIN" agent-route "$repo" \
     --task "understand login call chain" \
@@ -560,7 +581,7 @@ main() {
 
   require_jq "$trace_only_route_json" '.routing_decision.seed_strategy == "backend_preferred" and .routing_decision.first_file == "src/auth.ts"' "trace-only evidence should seed preferred context from the traced subject"
   require_jq "$trace_only_route_json" '.routing_decision.backend_evidence.candidate_files == ["src/auth.ts", "src/main.ts", "src/audit.ts"]' "trace-only evidence should resolve the subject, callers, and callees to indexed files"
-  require_jq "$trace_only_route_json" '.routing_decision.backend_evidence.evidence_count == 3 and .routing_decision.backend_evidence.latency_ms == 5' "trace-only evidence should preserve resolved count and latency"
+  require_jq "$trace_only_route_json" '.routing_decision.backend_evidence.evidence_count == 3 and .routing_decision.backend_evidence.latency_ms == 7' "trace-only evidence should deduplicate resolved files and aggregate page latency"
 
   "$CODEINSIGHT_BIN" agent-route "$repo" \
     --task "understand app entrypoint flow" \
