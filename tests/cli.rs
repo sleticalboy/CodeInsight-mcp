@@ -14525,16 +14525,16 @@ fn mcp_stdio_executes_agent_first_read_with_bounded_compact_response() {
             "name": "agent_first_read",
             "arguments": {
                 "root": fixture.path(),
-                "task": "understand app entrypoint flow",
-                "token_budget": 6000,
+                "task": "inspect the backend-selected implementation",
+                "token_budget": 500,
                 "backend_candidates": {
                     "provider": "codebase-memory-mcp",
                     "candidates": [
                         {
-                            "name": "defaultRender",
-                            "qualified_name": "fixture.src.ui.defaultRender",
+                            "name": "targetLater",
+                            "qualified_name": "fixture.src.multi_long.targetLater",
                             "label": "Function",
-                            "file_path": "src/ui.ts",
+                            "file_path": "src/multi-long.ts",
                             "in_degree": 2,
                             "out_degree": 0
                         },
@@ -14566,25 +14566,40 @@ fn mcp_stdio_executes_agent_first_read_with_bounded_compact_response() {
             .is_some_and(|tokens| tokens <= 8000)
     );
     assert_eq!(route["impact_status"], "deferred_by_request");
-    assert_eq!(route["context_pack"]["files"][0]["file"], "src/ui.ts");
+    assert_eq!(
+        route["context_pack"]["files"][0]["file"],
+        "src/multi-long.ts"
+    );
+    let selected_excerpt = route["context_pack"]["files"][0]["ranges"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|range| range["excerpt"].as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert!(
+        selected_excerpt.contains("targetLater"),
+        "selected excerpt: {selected_excerpt}"
+    );
+    assert!(!selected_excerpt.contains("unrelated_filler_40"));
     assert_eq!(
         route["routing_decision"]["backend_route_agreement"]["status"],
         "backend_preferred"
     );
     assert_eq!(
         route["routing_decision"]["backend_route_agreement"]["selected_context_file"],
-        "src/ui.ts"
+        "src/multi-long.ts"
     );
     assert_eq!(
         route["routing_decision"]["backend_selected_candidate"]["symbol"],
-        "defaultRender"
+        "targetLater"
     );
     assert!(
         route["impact_seed_symbols"]
             .as_array()
             .unwrap()
             .iter()
-            .any(|symbol| symbol == "defaultRender")
+            .any(|symbol| symbol == "targetLater")
     );
     assert!(route["routing_decision"].get("backend_evidence").is_none());
     assert!(route.get("impact_analysis").is_none());
@@ -14603,7 +14618,7 @@ fn mcp_stdio_executes_agent_first_read_with_bounded_compact_response() {
     assert!(text.contains("Compact agent route:"));
     assert!(text.contains("backend_status=backend_preferred"));
     assert!(text.contains("backend_provider=codebase-memory-mcp"));
-    assert!(text.contains("backend_symbol=defaultRender"));
+    assert!(text.contains("backend_symbol=targetLater"));
     assert!(text.contains("impact_status=deferred_by_request"));
 }
 

@@ -4367,7 +4367,7 @@ pub fn context_pack_value(
 
     let mut ranges_by_file: BTreeMap<String, Vec<ContextCandidateRange>> = BTreeMap::new();
     for file in &seed_files {
-        for range in seed_file_ranges(&root, file, &symbols, &task_keywords) {
+        for range in seed_file_ranges(&root, file, &symbols, &task_keywords, &seed_symbols) {
             push_context_range(
                 &mut ranges_by_file,
                 file.clone(),
@@ -9560,6 +9560,7 @@ fn seed_file_ranges(
     file: &str,
     symbols: &[Symbol],
     task_keywords: &[String],
+    seed_symbols: &[String],
 ) -> Vec<ContextCandidateRange> {
     let path = root.join(file);
     let source = fs::read_to_string(path).unwrap_or_default();
@@ -9587,8 +9588,12 @@ fn seed_file_ranges(
         .filter(|symbol| symbol.file == file && is_primary_seed_symbol(symbol))
         .collect::<Vec<_>>();
     primary_symbols.sort_by(|left, right| {
-        seed_primary_symbol_score(right, file, task_keywords)
-            .cmp(&seed_primary_symbol_score(left, file, task_keywords))
+        context_symbol_matches_seed(right, seed_symbols)
+            .cmp(&context_symbol_matches_seed(left, seed_symbols))
+            .then_with(|| {
+                seed_primary_symbol_score(right, file, task_keywords)
+                    .cmp(&seed_primary_symbol_score(left, file, task_keywords))
+            })
             .then_with(|| left.start_line.cmp(&right.start_line))
             .then_with(|| left.end_line.cmp(&right.end_line))
     });
@@ -9607,7 +9612,13 @@ fn seed_file_ranges(
                 &seed_request_lifecycle_reasons(file, Some(&symbol.qualified_name), task_keywords),
             ),
             source: "seed_file".to_string(),
-            score: CONTEXT_SCORE_SEED_FILE + seed_symbol_task_boost(symbol, task_keywords),
+            score: CONTEXT_SCORE_SEED_FILE
+                + seed_symbol_task_boost(symbol, task_keywords)
+                + if context_symbol_matches_seed(symbol, seed_symbols) {
+                    CONTEXT_SCORE_TASK_MATCH_BOOST
+                } else {
+                    0
+                },
         });
     }
 
@@ -9627,6 +9638,12 @@ fn seed_file_ranges(
     }
 
     ranges
+}
+
+fn context_symbol_matches_seed(symbol: &Symbol, seed_symbols: &[String]) -> bool {
+    seed_symbols
+        .iter()
+        .any(|seed| backend_symbol_name_matches(seed, &symbol.name, &symbol.qualified_name))
 }
 
 fn seed_primary_symbol_score(symbol: &Symbol, file: &str, task_keywords: &[String]) -> i32 {
