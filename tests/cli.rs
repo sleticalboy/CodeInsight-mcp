@@ -14536,6 +14536,10 @@ case "$2" in
       printf '%s\n' '{"error":"project not found or not indexed"}'
       exit 1
     fi
+    if test "$6" = "inspect src/main.ts without backend match"; then
+      printf '%s\n' '{"results":[]}'
+      exit 0
+    fi
     printf '%s\n' '{"result":{"structuredContent":{"results":[{"name":"targetLater","qualified_name":"fixture.src.multi_long.targetLater","file_path":"src/multi-long.ts"}],"elapsed_ms":4}}}'
     ;;
   *)
@@ -14568,15 +14572,39 @@ esac
             }
         }
     });
+    let empty_request = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 7,
+        "method": "tools/call",
+        "params": {
+            "name": "agent_first_read",
+            "arguments": {
+                "root": fixture.path(),
+                "task": "inspect src/main.ts without backend match",
+                "token_budget": 500,
+                "backend": {
+                    "provider": "codebase-memory-mcp",
+                    "project": "fixture",
+                    "timeout_ms": 1000
+                }
+            }
+        }
+    });
 
     let mut command = Command::cargo_bin("codeinsight").unwrap();
     command
         .args(["serve", "--transport", "stdio"])
         .env("CODEINSIGHT_CODEBASE_MEMORY_BIN", &backend)
         .env("CODEINSIGHT_FAKE_INDEX_MARKER", &marker)
-        .write_stdin(format!("{request}\n"));
+        .write_stdin(format!("{request}\n{empty_request}\n"));
     let output = command.assert().success().get_output().stdout.clone();
-    let response: Value = serde_json::from_slice(&output).unwrap();
+    let responses = String::from_utf8(output)
+        .unwrap()
+        .lines()
+        .map(|line| serde_json::from_str::<Value>(line).unwrap())
+        .collect::<Vec<_>>();
+    let response = &responses[0];
+    let empty_response = &responses[1];
     let route = &response["result"]["structuredContent"];
     let selected_excerpt = route["context_pack"]["files"][0]["ranges"]
         .as_array()
@@ -14601,6 +14629,17 @@ esac
     assert_eq!(
         route["routing_decision"]["backend_selected_candidate"]["symbol"],
         "targetLater"
+    );
+    assert_eq!(empty_response["id"], 7);
+    assert!(empty_response.get("error").is_none());
+    assert_eq!(
+        empty_response["result"]["structuredContent"]["context_pack"]["files"][0]["file"],
+        "src/main.ts"
+    );
+    assert!(
+        empty_response["result"]["structuredContent"]["routing_decision"]
+            .get("backend_selected_candidate")
+            .is_none()
     );
 }
 

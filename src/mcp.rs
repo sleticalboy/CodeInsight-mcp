@@ -27,6 +27,8 @@ const CODEBASE_MEMORY_TIMEOUT_MS: u64 = 60_000;
 const CODEBASE_MEMORY_MIN_TIMEOUT_MS: u64 = 1_000;
 const CODEBASE_MEMORY_MAX_TIMEOUT_MS: u64 = 300_000;
 const CODEBASE_MEMORY_MISSING_PROJECT_ERROR: &str = "project not found or not indexed";
+const CODEBASE_MEMORY_EMPTY_SEARCH_ERROR: &str =
+    "agent_first_read backend_candidates.search_graph contained no candidate files";
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -364,7 +366,7 @@ fn codebase_memory_agent_first_read_evidence(
     root: &Path,
     task: &str,
     config: AgentFirstReadBackendConfig,
-) -> Result<AgentRouteBackendEvidence> {
+) -> Result<Option<AgentRouteBackendEvidence>> {
     let binary = std::env::var_os(CODEBASE_MEMORY_BINARY_ENV)
         .unwrap_or_else(|| OsString::from(AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER));
     codebase_memory_agent_first_read_evidence_with_binary(root, task, config, &binary)
@@ -375,7 +377,7 @@ fn codebase_memory_agent_first_read_evidence_with_binary(
     task: &str,
     config: AgentFirstReadBackendConfig,
     binary: &OsStr,
-) -> Result<AgentRouteBackendEvidence> {
+) -> Result<Option<AgentRouteBackendEvidence>> {
     if config.provider != AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER {
         bail!(
             "unsupported agent_first_read backend provider: {}; expected {}",
@@ -436,7 +438,11 @@ fn codebase_memory_agent_first_read_evidence_with_binary(
             Err(error) => return Err(error),
         }
     };
-    agent_first_read_backend_evidence(&search_graph)
+    match agent_first_read_backend_evidence(&search_graph) {
+        Ok(evidence) => Ok(Some(evidence)),
+        Err(error) if error.to_string() == CODEBASE_MEMORY_EMPTY_SEARCH_ERROR => Ok(None),
+        Err(error) => Err(error),
+    }
 }
 
 pub async fn serve(transport: Transport) -> Result<()> {
@@ -621,9 +627,7 @@ fn handle_tool_call(params: Value) -> Result<Value> {
                 bail!("agent_first_read backend cannot be combined with backend_candidates");
             }
             let backend_evidence = match backend_config {
-                Some(config) => Some(codebase_memory_agent_first_read_evidence(
-                    &root, &task, config,
-                )?),
+                Some(config) => codebase_memory_agent_first_read_evidence(&root, &task, config)?,
                 None => optional_agent_first_read_backend_evidence(&arguments)?,
             };
             let report = tools::agent_route_value(
@@ -2284,6 +2288,7 @@ esac
                 },
                 backend.as_os_str(),
             )
+            .unwrap()
             .unwrap();
             assert_eq!(evidence.provider, AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER);
             assert_eq!(evidence.candidate_files, vec!["src/target.rs"]);
@@ -2319,8 +2324,32 @@ esac
                 },
                 reuse_backend.as_os_str(),
             )
+            .unwrap()
             .unwrap();
             assert_eq!(reused.candidate_files, vec!["src/reused.rs"]);
+
+            let empty_backend = backend_dir.path().join("empty-codebase-memory-mcp");
+            std::fs::write(
+                &empty_backend,
+                "#!/bin/sh\nprintf '%s\\n' '{\"results\":[]}'\n",
+            )
+            .unwrap();
+            let mut permissions = std::fs::metadata(&empty_backend).unwrap().permissions();
+            permissions.set_mode(0o755);
+            std::fs::set_permissions(&empty_backend, permissions).unwrap();
+            let empty = codebase_memory_agent_first_read_evidence_with_binary(
+                &root,
+                "find missing",
+                AgentFirstReadBackendConfig {
+                    provider: AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER.to_string(),
+                    project: Some("fixture".to_string()),
+                    refresh_index: false,
+                    timeout_ms: CODEBASE_MEMORY_TIMEOUT_MS,
+                },
+                empty_backend.as_os_str(),
+            )
+            .unwrap();
+            assert!(empty.is_none());
 
             let slow_backend = backend_dir.path().join("slow-codebase-memory-mcp");
             std::fs::write(&slow_backend, "#!/bin/sh\nexec sleep 1\n").unwrap();
