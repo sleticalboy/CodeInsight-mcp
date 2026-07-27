@@ -1,4 +1,8 @@
-use std::path::PathBuf;
+use std::{
+    ffi::{OsStr, OsString},
+    path::{Path, PathBuf},
+    process::Command,
+};
 
 use anyhow::{Context, Result, bail};
 use serde::Deserialize;
@@ -15,6 +19,7 @@ const AGENT_FIRST_READ_RESPONSE_TOKEN_BUDGET: usize = 8_000;
 const AGENT_FIRST_READ_BACKEND_CANDIDATE_LIMIT: usize = 8;
 const AGENT_FIRST_READ_BACKEND_EVIDENCE_SOURCE_LIMIT: usize = 6;
 const AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER: &str = "codebase-memory-mcp";
+const CODEBASE_MEMORY_BINARY_ENV: &str = "CODEINSIGHT_CODEBASE_MEMORY_BIN";
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -29,6 +34,19 @@ struct AgentFirstReadBackendCandidates {
     evidence_sources: Vec<String>,
     confidence: Option<f64>,
     latency_ms: Option<u64>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct AgentFirstReadBackendConfig {
+    provider: String,
+    project: Option<String>,
+    #[serde(default = "default_true")]
+    refresh_index: bool,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 #[derive(Debug, Deserialize)]
@@ -220,6 +238,103 @@ fn optional_agent_first_read_backend_evidence(
     }
 }
 
+fn codebase_memory_cli_value(binary: &OsStr, tool: &str, args: &[OsString]) -> Result<Value> {
+    let output = Command::new(binary)
+        .arg("cli")
+        .arg(tool)
+        .args(args)
+        .output()
+        .with_context(|| {
+            format!(
+                "failed to run codebase-memory-mcp; install it or set {CODEBASE_MEMORY_BINARY_ENV}"
+            )
+        })?;
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let stderr = stderr.trim().chars().take(800).collect::<String>();
+        bail!(
+            "codebase-memory-mcp {tool} failed with status {}{}",
+            output.status,
+            if stderr.is_empty() {
+                String::new()
+            } else {
+                format!(": {stderr}")
+            }
+        );
+    }
+    serde_json::from_slice(&output.stdout)
+        .with_context(|| format!("codebase-memory-mcp {tool} returned invalid JSON"))
+}
+
+fn codebase_memory_project(root: &Path, configured: Option<String>) -> Result<String> {
+    if let Some(project) = configured {
+        let project = project.trim();
+        if project.is_empty() {
+            bail!("agent_first_read backend.project must not be empty");
+        }
+        return Ok(project.to_string());
+    }
+    root.file_name()
+        .and_then(OsStr::to_str)
+        .filter(|name| !name.trim().is_empty())
+        .map(str::to_string)
+        .context("agent_first_read backend.project is required when root has no file name")
+}
+
+fn codebase_memory_agent_first_read_evidence(
+    root: &Path,
+    task: &str,
+    config: AgentFirstReadBackendConfig,
+) -> Result<AgentRouteBackendEvidence> {
+    let binary = std::env::var_os(CODEBASE_MEMORY_BINARY_ENV)
+        .unwrap_or_else(|| OsString::from(AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER));
+    codebase_memory_agent_first_read_evidence_with_binary(root, task, config, &binary)
+}
+
+fn codebase_memory_agent_first_read_evidence_with_binary(
+    root: &Path,
+    task: &str,
+    config: AgentFirstReadBackendConfig,
+    binary: &OsStr,
+) -> Result<AgentRouteBackendEvidence> {
+    if config.provider != AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER {
+        bail!(
+            "unsupported agent_first_read backend provider: {}; expected {}",
+            config.provider,
+            AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER
+        );
+    }
+    let project = codebase_memory_project(root, config.project)?;
+
+    if config.refresh_index {
+        codebase_memory_cli_value(
+            binary,
+            "index_repository",
+            &[
+                OsString::from("--repo-path"),
+                root.as_os_str().to_os_string(),
+                OsString::from("--name"),
+                OsString::from(&project),
+                OsString::from("--mode"),
+                OsString::from("fast"),
+            ],
+        )?;
+    }
+    let search_graph = codebase_memory_cli_value(
+        binary,
+        "search_graph",
+        &[
+            OsString::from("--project"),
+            OsString::from(project),
+            OsString::from("--query"),
+            OsString::from(task),
+            OsString::from("--limit"),
+            OsString::from(AGENT_FIRST_READ_BACKEND_CANDIDATE_LIMIT.to_string()),
+        ],
+    )?;
+    agent_first_read_backend_evidence(&search_graph)
+}
+
 pub async fn serve(transport: Transport) -> Result<()> {
     match transport {
         Transport::Stdio => serve_stdio().await,
@@ -396,7 +511,17 @@ fn handle_tool_call(params: Value) -> Result<Value> {
                 AGENT_FIRST_READ_RESPONSE_TOKEN_BUDGET,
                 500,
             )?;
-            let backend_evidence = optional_agent_first_read_backend_evidence(&arguments)?;
+            let backend_config: Option<AgentFirstReadBackendConfig> =
+                optional_json_object(&arguments, "backend")?;
+            if backend_config.is_some() && arguments.get("backend_candidates").is_some() {
+                bail!("agent_first_read backend cannot be combined with backend_candidates");
+            }
+            let backend_evidence = match backend_config {
+                Some(config) => Some(codebase_memory_agent_first_read_evidence(
+                    &root, &task, config,
+                )?),
+                None => optional_agent_first_read_backend_evidence(&arguments)?,
+            };
             let report = tools::agent_route_value(
                 root,
                 task,
@@ -865,6 +990,28 @@ fn tool_definitions() -> Value {
                         "minimum": 500,
                         "default": 8000,
                         "description": "Hard cap for the compact structured route payload. The MCP envelope and concise text summary are excluded."
+                    },
+                    "backend": {
+                        "type": "object",
+                        "description": "Optionally invoke a local code graph backend before routing. This is opt-in; without it agent_first_read remains standalone.",
+                        "properties": {
+                            "provider": {
+                                "type": "string",
+                                "enum": ["codebase-memory-mcp"]
+                            },
+                            "project": {
+                                "type": "string",
+                                "maxLength": 256,
+                                "description": "Indexed backend project name. Defaults to the root directory name."
+                            },
+                            "refresh_index": {
+                                "type": "boolean",
+                                "default": true,
+                                "description": "Refresh the backend fast index before searching."
+                            }
+                        },
+                        "required": ["provider"],
+                        "additionalProperties": false
                     },
                     "backend_candidates": agent_first_read_backend_candidates_schema,
                     "force_index": {"type": "boolean", "default": false}
@@ -1769,13 +1916,21 @@ int login(void) {
             .unwrap();
         let properties = first_read["inputSchema"]["properties"].as_object().unwrap();
 
-        assert_eq!(properties.len(), 8);
+        assert_eq!(properties.len(), 9);
         assert_eq!(properties["token_budget"]["default"], 6000);
         assert_eq!(properties["response_token_budget"]["default"], 8000);
         assert_eq!(properties["response_token_budget"]["minimum"], 500);
         assert!(!properties.contains_key("include_impact"));
         assert!(!properties.contains_key("response_mode"));
         assert!(!properties.contains_key("backend_evidence"));
+        assert_eq!(
+            properties["backend"]["properties"]["provider"]["enum"],
+            serde_json::json!(["codebase-memory-mcp"])
+        );
+        assert_eq!(
+            properties["backend"]["properties"]["refresh_index"]["default"],
+            true
+        );
         let backend_candidates = &properties["backend_candidates"];
         assert_eq!(backend_candidates["type"], "object");
         assert_eq!(
@@ -1940,6 +2095,64 @@ int login(void) {
         );
         assert_eq!(raw_search_graph.latency_ms, Some(9));
 
+        let unsupported_backend = codebase_memory_agent_first_read_evidence(
+            Path::new("/tmp/repo"),
+            "find target",
+            AgentFirstReadBackendConfig {
+                provider: "unknown".to_string(),
+                project: None,
+                refresh_index: false,
+            },
+        )
+        .unwrap_err();
+        assert!(unsupported_backend.to_string().contains("unsupported"));
+
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+
+            let backend_dir = TempDir::new().unwrap();
+            let backend = backend_dir.path().join("fake-codebase-memory-mcp");
+            std::fs::write(
+                backend.as_os_str(),
+                r#"#!/bin/sh
+case "$2" in
+  index_repository)
+    printf '%s\n' '{"project":"fixture","status":"indexed"}'
+    ;;
+  search_graph)
+    printf '%s\n' '{"results":[{"file_path":"src/target.rs","name":"target"}],"elapsed_ms":5}'
+    ;;
+  *)
+    exit 2
+    ;;
+esac
+"#,
+            )
+            .unwrap();
+            let mut permissions = std::fs::metadata(&backend).unwrap().permissions();
+            permissions.set_mode(0o755);
+            std::fs::set_permissions(&backend, permissions).unwrap();
+
+            let root = backend_dir.path().join("fixture");
+            std::fs::create_dir_all(&root).unwrap();
+            let evidence = codebase_memory_agent_first_read_evidence_with_binary(
+                &root,
+                "find target",
+                AgentFirstReadBackendConfig {
+                    provider: AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER.to_string(),
+                    project: Some("fixture".to_string()),
+                    refresh_index: true,
+                },
+                backend.as_os_str(),
+            )
+            .unwrap();
+            assert_eq!(evidence.provider, AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER);
+            assert_eq!(evidence.candidate_files, vec!["src/target.rs"]);
+            assert_eq!(evidence.candidates[0].symbol.as_deref(), Some("target"));
+            assert_eq!(evidence.latency_ms, Some(5));
+        }
+
         let mixed = serde_json::from_value::<AgentFirstReadBackendCandidates>(json!({
             "provider": "codebase-memory-mcp",
             "candidate_files": ["src/main.rs"],
@@ -1999,6 +2212,29 @@ int login(void) {
         assert_eq!(
             error.to_string(),
             "response_token_budget requires compact response_mode"
+        );
+    }
+
+    #[test]
+    fn agent_first_read_rejects_automatic_and_manual_backend_evidence() {
+        let error = handle_tool_call(json!({
+            "name": "agent_first_read",
+            "arguments": {
+                "root": ".",
+                "task": "inspect routing",
+                "backend": {
+                    "provider": "codebase-memory-mcp"
+                },
+                "backend_candidates": {
+                    "results": [{"file_path": "src/lib.rs"}]
+                }
+            }
+        }))
+        .unwrap_err();
+
+        assert_eq!(
+            error.to_string(),
+            "agent_first_read backend cannot be combined with backend_candidates"
         );
     }
 

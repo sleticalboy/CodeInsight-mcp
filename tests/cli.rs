@@ -14514,6 +14514,92 @@ fn mcp_stdio_executes_symbol_search() {
     );
 }
 
+#[cfg(unix)]
+#[test]
+fn mcp_stdio_executes_agent_first_read_with_automatic_backend() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let fixture = fixture_project();
+    let backend_dir = TempDir::new().unwrap();
+    let backend = backend_dir.path().join("fake-codebase-memory-mcp");
+    let marker = backend_dir.path().join("indexed");
+    std::fs::write(
+        &backend,
+        r#"#!/bin/sh
+case "$2" in
+  index_repository)
+    touch "$CODEINSIGHT_FAKE_INDEX_MARKER"
+    printf '%s\n' '{"project":"fixture","status":"indexed"}'
+    ;;
+  search_graph)
+    test -f "$CODEINSIGHT_FAKE_INDEX_MARKER" || exit 3
+    printf '%s\n' '{"result":{"structuredContent":{"results":[{"name":"targetLater","qualified_name":"fixture.src.multi_long.targetLater","file_path":"src/multi-long.ts"}],"elapsed_ms":4}}}'
+    ;;
+  *)
+    exit 2
+    ;;
+esac
+"#,
+    )
+    .unwrap();
+    let mut permissions = std::fs::metadata(&backend).unwrap().permissions();
+    permissions.set_mode(0o755);
+    std::fs::set_permissions(&backend, permissions).unwrap();
+
+    let request = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 6,
+        "method": "tools/call",
+        "params": {
+            "name": "agent_first_read",
+            "arguments": {
+                "root": fixture.path(),
+                "task": "inspect the backend-selected implementation",
+                "token_budget": 500,
+                "backend": {
+                    "provider": "codebase-memory-mcp",
+                    "project": "fixture"
+                },
+                "force_index": true
+            }
+        }
+    });
+
+    let mut command = Command::cargo_bin("codeinsight").unwrap();
+    command
+        .args(["serve", "--transport", "stdio"])
+        .env("CODEINSIGHT_CODEBASE_MEMORY_BIN", &backend)
+        .env("CODEINSIGHT_FAKE_INDEX_MARKER", &marker)
+        .write_stdin(format!("{request}\n"));
+    let output = command.assert().success().get_output().stdout.clone();
+    let response: Value = serde_json::from_slice(&output).unwrap();
+    let route = &response["result"]["structuredContent"];
+    let selected_excerpt = route["context_pack"]["files"][0]["ranges"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|range| range["excerpt"].as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    assert_eq!(response["id"], 6);
+    assert!(marker.exists());
+    assert_eq!(
+        route["context_pack"]["files"][0]["file"],
+        "src/multi-long.ts"
+    );
+    assert!(selected_excerpt.contains("targetLater"));
+    assert!(!selected_excerpt.contains("unrelated_filler_40"));
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["status"],
+        "backend_preferred"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_selected_candidate"]["symbol"],
+        "targetLater"
+    );
+}
+
 #[test]
 fn mcp_stdio_executes_agent_first_read_with_bounded_compact_response() {
     let fixture = fixture_project();
