@@ -3160,7 +3160,7 @@ fn cli_agent_route_normalizes_backend_evidence_before_routing() {
     let absolute_main = fixture.path().join("src/main.ts");
     let backend_evidence = serde_json::json!({
         "provider": "  codebase-memory-mcp  ",
-        "candidate_files": [absolute_main, "src/main.ts", "src/server.ts"],
+        "candidate_files": [absolute_main, "src/main.ts", "src\\server.ts"],
         "evidence_sources": [" search_graph ", "search_graph", ""],
         "evidence_count": 5,
         "confidence": 0.9,
