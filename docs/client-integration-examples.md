@@ -2,7 +2,7 @@
 
 Use these examples when wiring CodeInsight into Codex, Claude Code, Cursor, or
 another MCP-capable coding agent. The configuration starts the server; the
-integration policy tells the agent how to consume `agent_route.execution_plan[]`
+integration policy tells the agent how to consume `agent_first_read.execution_plan[]`
 without falling back to broad file scans.
 
 For server setup snippets, see [MCP client configuration](mcp-client-config.md).
@@ -10,15 +10,15 @@ For the complete field contract, see [Client workflow](client-workflow.md).
 
 ## Core Consumption Loop
 
-Every client should treat `agent_route.execution_plan[]` as the ordered action
+Every client should treat `agent_first_read.execution_plan[]` as the ordered action
 plan after the server has completed the first-read route.
 
 ```text
-1. Call agent_route with root, task, and token_budget.
+1. Call agent_first_read with root, task, and token_budget.
 2. If continuation_summary.status is blocked_no_seed, ask for a seed file or
    symbol and do not broad-read the repository.
 3. Read context_pack.files[] in reading_plan[] order.
-4. Use agent_route.current_reading_step for the first checklist row.
+4. Use agent_first_read.current_reading_step for the first checklist row.
 5. Use reading_plan[].focus as the compact scan label.
 6. Use reading_plan[].question as the local checklist for the selected file.
 7. Use reading_plan[].reason as the current-step instruction.
@@ -30,7 +30,7 @@ plan after the server has completed the first-read route.
 12. Use continuation_summary only after selected context has been read.
 13. Use continuation_summary.next_action and omitted_candidates[] to explain any
    follow-up context request.
-14. Review impact_analysis before edits.
+14. Run the deferred impact_analysis before edits.
 ```
 
 Do not treat `route[]` and `execution_plan[]` as the same thing:
@@ -46,15 +46,15 @@ instruction files:
 ```text
 Use CodeInsight for repository first reads.
 
-When the task is broad, call agent_route with the repository root, the user's
-task, and token_budget 6000. Follow agent_route.execution_plan[] in order:
+When the task is broad, call agent_first_read with the repository root, the user's
+task, and token_budget 6000. Follow agent_first_read.execution_plan[] in order:
 read_selected_context first, use_current_reading_step_suggested_tool only when
 the current file needs deeper evidence, use_continuation_if_needed only after
 selected context is consumed, and review_impact_before_edits before changing
 code.
 
 Read context_pack.files[] in reading_plan[] order. Treat
-agent_route.current_reading_step as the first checklist row,
+agent_first_read.current_reading_step as the first checklist row,
 reading_plan[].focus as the compact scan label, reading_plan[].question as the
 local checklist for the selected file, reading_plan[].reason as the instruction
 for the current file, reading_plan[].selection_rank as the candidate rank audit
@@ -73,15 +73,15 @@ Add the MCP server in `~/.codex/config.toml` as shown in
 the repository `AGENTS.md`:
 
 ```text
-When CodeInsight MCP is available, call agent_route before broad repository
-reading. Follow agent_route.execution_plan[] exactly:
+When CodeInsight MCP is available, call agent_first_read before broad repository
+reading. Follow agent_first_read.execution_plan[] exactly:
 
 1. read_selected_context: read context_pack.files[] in reading_plan[] order.
 2. use_current_reading_step_suggested_tool: use the current step's
    suggested_tool only if the selected file needs deeper evidence.
 3. use_continuation_if_needed: inspect continuation_summary only after selected
    context has been read.
-4. review_impact_before_edits: review impact_analysis before editing.
+4. review_impact_before_edits: run the deferred impact_analysis before editing.
 
 If continuation_summary.status is blocked_no_seed, ask for a seed file or
 symbol and do not broad-read the repository.
@@ -101,7 +101,7 @@ instructions or paste it at the start of the session:
 
 ```text
 Use CodeInsight as the first-read router for this repository. Start broad
-questions with agent_route. Follow execution_plan[] before raw repository
+questions with agent_first_read. Follow execution_plan[] before raw repository
 search: read selected context first, use the current reading step's
 suggested_tool only when needed, use continuation only after selected context,
 and review impact before edits.
@@ -116,8 +116,8 @@ After adding `codeinsight` to Cursor MCP configuration, add this to Cursor rules
 or paste it into the agent prompt:
 
 ```text
-For repository-understanding tasks, prefer CodeInsight agent_route before broad
-file search. Use agent_route.execution_plan[] as the UI/agent checklist:
+For repository-understanding tasks, prefer CodeInsight agent_first_read before
+broad file search. Use agent_first_read.execution_plan[] as the UI/agent checklist:
 read_selected_context -> use_current_reading_step_suggested_tool ->
 use_continuation_if_needed -> review_impact_before_edits.
 
@@ -138,7 +138,7 @@ Clients with a visible tool panel should render:
 - `execution_plan[].instruction` as the agent-facing instruction.
 - `execution_plan[].suggested_tool` as an optional action button that becomes
   active only after the matching selected context file is read.
-- `agent_route.current_reading_step` as the first checklist row.
+- `agent_first_read.current_reading_step` as the first checklist row.
 - `reading_plan[].focus` beside each selected file as the compact scan label.
 - `reading_plan[].question` beside each selected file as the local checklist.
 - `reading_plan[].reason` beside each selected file.
@@ -163,11 +163,11 @@ they should not be labeled as a safety guarantee.
 
 A working integration should pass these checks:
 
-- The first broad task calls `agent_route`.
+- The first broad task calls `agent_first_read`.
 - A `blocked_no_seed` response asks for a seed file or symbol instead of broad
   repository reading.
 - The agent reads selected files in `reading_plan[]` order.
-- The agent can render `agent_route.current_reading_step` as the first
+- The agent can render `agent_first_read.current_reading_step` as the first
   checklist row.
 - The agent can show `reading_plan[].focus` for each selected file.
 - The agent can answer `reading_plan[].question` for each selected file.

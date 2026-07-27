@@ -6,6 +6,8 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
 use crate::{cli::Transport, model::AgentRouteBackendEvidence, tools};
 
+const AGENT_FIRST_READ_RESPONSE_TOKEN_BUDGET: usize = 8_000;
+
 pub async fn serve(transport: Transport) -> Result<()> {
     match transport {
         Transport::Stdio => serve_stdio().await,
@@ -169,6 +171,34 @@ fn handle_tool_call(params: Value) -> Result<Value> {
                 token_budget,
             )?)?
         }
+        "agent_first_read" => {
+            let root = required_path(&arguments, "root")?;
+            let task = required_str(&arguments, "task")?.to_string();
+            let symbols = optional_string_array(&arguments, "symbols")?;
+            let files = optional_string_array(&arguments, "files")?;
+            let token_budget = optional_min_usize(&arguments, "token_budget", 6000, 500)?;
+            let force_index = optional_bool(&arguments, "force_index", false)?;
+            let response_token_budget = optional_min_usize(
+                &arguments,
+                "response_token_budget",
+                AGENT_FIRST_READ_RESPONSE_TOKEN_BUDGET,
+                500,
+            )?;
+            let report = tools::agent_route_value(
+                root,
+                task,
+                symbols,
+                files,
+                token_budget,
+                force_index,
+                50,
+                1,
+                20,
+                false,
+                None,
+            )?;
+            tools::agent_route_response_value(&report, true, Some(response_token_budget))?
+        }
         "agent_route" => {
             let root = required_path(&arguments, "root")?;
             let task = required_str(&arguments, "task")?.to_string();
@@ -238,7 +268,7 @@ fn handle_tool_call(params: Value) -> Result<Value> {
 }
 
 fn tool_text_content(name: &str, result: &Value) -> Result<String> {
-    if name != "agent_route"
+    if !matches!(name, "agent_first_read" | "agent_route")
         || result.get("response_mode").and_then(Value::as_str) != Some("compact")
     {
         return Ok(serde_json::to_string_pretty(result)?);
@@ -534,8 +564,36 @@ fn tool_definitions() -> Value {
             }
         },
         {
+            "name": "agent_first_read",
+            "description": "Preferred first call for AI coding agents. Refresh the local index, select bounded code excerpts, return a compact reading/execution plan, and defer impact analysis until before edits.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "root": {"type": "string"},
+                    "task": {"type": "string"},
+                    "symbols": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    },
+                    "files": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    },
+                    "token_budget": {"type": "integer", "minimum": 500, "default": 6000},
+                    "response_token_budget": {
+                        "type": "integer",
+                        "minimum": 500,
+                        "default": 8000,
+                        "description": "Hard cap for the compact structured route payload. The MCP envelope and concise text summary are excluded."
+                    },
+                    "force_index": {"type": "boolean", "default": false}
+                },
+                "required": ["root", "task"]
+            }
+        },
+        {
             "name": "agent_route",
-            "description": "Run the first-read agent route in one call: refresh the local index, return project_overview, build context_pack, expose current_reading_step/execution_plan, and include an impact_analysis preview when a seed is available.",
+            "description": "Advanced configurable route analysis. Use agent_first_read for the default token-efficient first read; use this tool when full overview, backend evidence, or synchronous impact preview is required.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -1416,6 +1474,30 @@ int login(void) {
         assert_eq!(
             tool_results["properties"]["trace_path"]["oneOf"][0]["type"],
             "object"
+        );
+    }
+
+    #[test]
+    fn agent_first_read_schema_is_small_and_bounded() {
+        let tools = tool_definitions();
+        let first_read = tools
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|tool| tool["name"] == "agent_first_read")
+            .unwrap();
+        let properties = first_read["inputSchema"]["properties"].as_object().unwrap();
+
+        assert_eq!(properties.len(), 7);
+        assert_eq!(properties["token_budget"]["default"], 6000);
+        assert_eq!(properties["response_token_budget"]["default"], 8000);
+        assert_eq!(properties["response_token_budget"]["minimum"], 500);
+        assert!(!properties.contains_key("include_impact"));
+        assert!(!properties.contains_key("response_mode"));
+        assert!(!properties.contains_key("backend_evidence"));
+        assert_eq!(
+            first_read["inputSchema"]["required"],
+            serde_json::json!(["root", "task"])
         );
     }
 

@@ -14515,6 +14515,58 @@ fn mcp_stdio_executes_symbol_search() {
 }
 
 #[test]
+fn mcp_stdio_executes_agent_first_read_with_bounded_compact_response() {
+    let fixture = fixture_project();
+    let request = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 5,
+        "method": "tools/call",
+        "params": {
+            "name": "agent_first_read",
+            "arguments": {
+                "root": fixture.path(),
+                "task": "understand app entrypoint flow",
+                "token_budget": 6000,
+                "force_index": true
+            }
+        }
+    });
+
+    let mut command = Command::cargo_bin("codeinsight").unwrap();
+    command.args(["serve", "--transport", "stdio"]);
+    command.write_stdin(format!("{request}\n"));
+    let output = command.assert().success().get_output().stdout.clone();
+    let response: Value = serde_json::from_slice(&output).unwrap();
+    let route = &response["result"]["structuredContent"];
+    let text = response["result"]["content"][0]["text"].as_str().unwrap();
+
+    assert_eq!(response["id"], 5);
+    assert_eq!(route["response_mode"], "compact");
+    assert_eq!(route["response_budget"]["requested_tokens"], 8000);
+    assert!(
+        route["response_budget"]["estimated_tokens"]
+            .as_u64()
+            .is_some_and(|tokens| tokens <= 8000)
+    );
+    assert_eq!(route["impact_status"], "deferred_by_request");
+    assert!(route.get("impact_analysis").is_none());
+    assert!(route.get("route").is_none());
+    assert!(route.get("overview").is_none());
+    assert!(
+        !route["context_pack"]["files"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+    assert_eq!(
+        route["execution_plan"][3]["status"],
+        "required_before_edits"
+    );
+    assert!(text.contains("Compact agent route:"));
+    assert!(text.contains("impact_status=deferred_by_request"));
+}
+
+#[test]
 fn mcp_stdio_executes_agent_route() {
     let fixture = fixture_project();
     let request = serde_json::json!({

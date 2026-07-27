@@ -174,7 +174,7 @@ try:
 
     tools = request({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
     tool_names = {tool["name"] for tool in tools["result"]["tools"]}
-    for expected in ("index_project", "project_overview", "config_status", "symbol_search", "impact_analysis", "embedding_status", "context_pack", "agent_route", "version"):
+    for expected in ("index_project", "project_overview", "config_status", "symbol_search", "impact_analysis", "embedding_status", "context_pack", "agent_first_read", "agent_route", "version"):
         assert expected in tool_names, expected
 
     config_status = request(
@@ -431,6 +431,32 @@ try:
             symbol["name"] == "main"
             for symbol in agent_route_suggested_result
         ), "agent_route execution_plan suggested file_outline did not return entrypoint symbol"
+
+    agent_first_read = request(
+        {
+            "jsonrpc": "2.0",
+            "id": 25,
+            "method": "tools/call",
+            "params": {
+                "name": "agent_first_read",
+                "arguments": {
+                    "root": smoke_root,
+                    "task": "understand app entrypoint flow",
+                    "token_budget": 6000,
+                },
+            },
+        }
+    )
+    agent_first_read_result = agent_first_read["result"]["structuredContent"]
+    assert agent_first_read_result["response_mode"] == "compact"
+    assert agent_first_read_result["response_budget"]["requested_tokens"] == 8000
+    assert agent_first_read_result["response_budget"]["estimated_tokens"] <= 8000
+    assert agent_first_read_result["impact_status"] == "deferred_by_request"
+    assert "impact_analysis" not in agent_first_read_result
+    assert "route" not in agent_first_read_result
+    assert "overview" not in agent_first_read_result
+    assert agent_first_read_result["context_pack"]["reading_plan"]
+    assert agent_first_read_result["execution_plan"][3]["status"] == "required_before_edits"
 
     symbols = request(
         {

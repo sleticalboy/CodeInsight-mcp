@@ -180,47 +180,39 @@ official client docs when wiring a new environment:
 ## First Agent Route Call
 
 After the MCP server is configured, the first broad repository task should call
-`agent_route` through MCP `tools/call`:
+`agent_first_read` through MCP `tools/call`:
 
 ```json
 {
-  "name": "agent_route",
+  "name": "agent_first_read",
   "arguments": {
     "root": "/absolute/path/to/repo",
     "task": "understand the main application entrypoint",
-    "token_budget": 6000,
-    "backend_evidence": {
-      "provider": "codebase-memory-mcp",
-      "candidate_files": ["src/main.ts"],
-      "evidence_sources": ["entry_points", "call_graph"],
-      "evidence_count": 7,
-      "latency_ms": 42,
-      "confidence": 0.91
-    }
+    "token_budget": 6000
   }
 }
 ```
 
-`backend_evidence` is optional. Use it only when another local graph backend has
-already produced advisory candidate files or graph facts. CodeInsight uses it
-to explain route confidence and warnings; it does not blindly override the
-selected `context_pack` route.
+`agent_first_read` always returns compact structured content, defers impact
+analysis, and applies an 8000-token structured response budget by default. Use
+advanced `agent_route` when another local graph backend has already produced
+advisory evidence, or when the client explicitly needs the full overview and a
+synchronous impact preview.
 
 The response is the default first-read bundle. A minimal client should:
 
 1. If `context_pack.continuation_summary.status` is `blocked_no_seed`, ask the
-   user for a seed file or symbol and retry `agent_route`; do not fall back to
+   user for a seed file or symbol and retry `agent_first_read`; do not fall back to
    broad repository reads.
 2. Read `context_pack.files[]` in `context_pack.reading_plan[]` order.
 3. Treat `context_pack.reading_plan[].focus` as the compact scan label and
    `context_pack.reading_plan[].question` as the local checklist for the
    selected file.
-4. Follow `agent_route.execution_plan[]` as the UI or agent checklist.
+4. Follow `agent_first_read.execution_plan[]` as the UI or agent checklist.
 5. Offer `execution_plan[].suggested_tool` only after the selected file has
    been read.
-6. Review the included `impact_analysis` before edits.
-7. If `routing_decision.route_quality.warnings[]` says backend and local
-   candidates disagree, compare both files before editing.
+6. Run the deferred `impact_analysis` suggested by the final execution step
+   before edits.
 
 UI gating rules:
 
@@ -236,9 +228,10 @@ Expected first-call signals:
 
 | Field | Expected Signal | Client Action |
 | --- | --- | --- |
-| `route[]` | Includes `index_project`, `project_overview`, `context_pack`, and `impact_analysis`. | Treat the route as already executed; do not rerun those tools unless the repository changed. |
+| `response_mode` | Is `compact`. | Consume `structuredContent` instead of parsing the concise text summary. |
+| `response_budget` | Reports the requested and estimated structured-response tokens. | Treat `omitted_excerpts` as a signal to use the returned range coordinates or focused follow-up tools. |
 | `context_pack.files[]` | Contains the bounded files or excerpts to read first. | Read these files before broad `rg` or full-file scans. |
-| `agent_route.current_reading_step` | Mirrors `context_pack.reading_plan[0]` when a reading plan exists. | Use it as the first checklist row without rebuilding it from nested fields. |
+| `agent_first_read.current_reading_step` | Mirrors `context_pack.reading_plan[0]` when a reading plan exists. | Use it as the first checklist row without rebuilding it from nested fields. |
 | `context_pack.reading_plan[].focus` | Gives the compact scan label for the selected file. | Show it beside the file path or current step. |
 | `context_pack.reading_plan[].question` | States the concrete question the selected file should answer. | Show it as the local reading checklist. |
 | `context_pack.reading_plan[].reason` | Explains what the agent should learn from the selected file. | Show it as the current reading instruction. |
@@ -248,12 +241,12 @@ Expected first-call signals:
 | `context_pack.continuation_summary.next_action` | Gives the next post-read action after selected context is consumed. | Use it only after the selected context is read. |
 | `execution_plan[]` | Starts with `read_selected_context`, then gates deeper tools and continuation. | Render it as the ordered checklist for the agent. |
 | `execution_plan[].suggested_tool` | Contains a ready MCP tool call such as `file_outline` when deeper local structure is useful. | Run it only after the related selected context has been read. |
-| `impact_status` | Usually `complete` when a seed file or symbol was selected. | Review `impact_analysis` before editing. |
+| `impact_status` | Is `deferred_by_request` when context was selected. | Run the suggested `impact_analysis` before editing. |
 
 Use `scripts/mcp-stdio-smoke.sh` to verify this path end to end. The smoke
-checks that `agent_route.execution_plan[].suggested_tool` executes through MCP
-`tools/call` and prints first-reading `selection_rank` plus continuation and
-omitted-candidate evidence.
+checks the bounded `agent_first_read` response and also verifies that the
+advanced route's `execution_plan[].suggested_tool` executes through MCP
+`tools/call` with first-reading rank and continuation evidence.
 
 For a shorter copyable check, run `scripts/mcp-first-call-smoke.sh`. It prints
 a JSON summary with `route_tools`, `selected_files`, `execution_plan_actions`,
@@ -375,16 +368,16 @@ Example `context_pack` call arguments:
 
 Recommended first-read flow for agents:
 
-1. Call `agent_route` with `root`, `task`, and `token_budget`.
+1. Call `agent_first_read` with `root`, `task`, and `token_budget`.
 2. If `context_pack.continuation_summary.status` is `blocked_no_seed`, ask for
-   a seed file or symbol and retry `agent_route`; do not broad-read the
+   a seed file or symbol and retry `agent_first_read`; do not broad-read the
    repository.
-3. Follow `agent_route.execution_plan[]`: read selected context first, use the
+3. Follow `agent_first_read.execution_plan[]`: read selected context first, use the
    current reading step's `suggested_tool` only when needed, inspect
    `continuation_summary` after selected context, then review impact before
    edits.
 4. Read the returned `context_pack.files[]` in `reading_plan[]` order.
-5. Use `agent_route.current_reading_step` for the first checklist row. Treat
+5. Use `agent_first_read.current_reading_step` for the first checklist row. Treat
    `reading_plan[].focus` as the compact scan label,
    `reading_plan[].question` as the local checklist,
    `reading_plan[].reason` as the current-step instruction, and

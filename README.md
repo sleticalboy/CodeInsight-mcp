@@ -3,7 +3,7 @@
 CodeInsight MCP Server is a local-first first-read router for AI coding agents.
 It turns "scan the repository and guess what matters" into a bounded local route:
 index the project, choose the first context pack, offer the next focused tool,
-and preview impact before edits.
+and require a focused impact check before edits.
 
 The product is intentionally narrow. It is built for the first-read problem:
 before an agent edits a repository, it needs to know which files matter, what
@@ -11,10 +11,10 @@ entrypoints to inspect, what context fits the token budget, and what may be
 impacted by a change. CodeInsight keeps that loop local and exposes it through
 CLI and MCP tools.
 
-The primary agent loop is one call:
+The primary agent loop starts with one call:
 
 ```text
-agent_route -> selected context -> executable suggested_tool -> impact check
+agent_first_read -> selected context -> executable suggested_tool -> impact check
 ```
 
 That route gives the agent:
@@ -28,7 +28,7 @@ That route gives the agent:
   selected-context read
 - an executable `suggested_tool` such as `file_outline` for deeper local
   evidence when needed
-- an `impact_analysis` preview before edits
+- a deferred `impact_analysis` call that remains required before edits
 
 CodeInsight is not trying to replace an IDE, LSP, compiler, or Sourcegraph. Its
 job is to help AI agents read less code, pick better context, and stop guessing
@@ -100,8 +100,9 @@ hands the agent to precise local tools when the selected context is not enough.
 3. Tell the agent to start broad repository tasks with:
 
    ```text
-   Call agent_route with root, task, and token_budget 6000 before reading files directly.
-   For the smallest first response, set response_mode to compact and include_impact to false; run the suggested impact_analysis before editing.
+   Call agent_first_read with root, task, and token_budget 6000 before reading files directly.
+   It returns compact structuredContent, defers impact analysis, and caps the structured route at 8000 estimated tokens by default.
+   Run the suggested impact_analysis before editing.
    If the task names an indexed file path such as src/auth.ts, pass it in task; CodeInsight can auto-seed that path without --file.
    If continuation_summary.status is blocked_no_seed, ask for a seed file or symbol instead of broad-reading.
    If it is blocked_invalid_seed or blocked_no_context, ask for an existing or matching seed and retry.
@@ -110,9 +111,9 @@ hands the agent to precise local tools when the selected context is not enough.
    Treat reading_plan.question as the local checklist for the selected file.
    Use context_pack.read_less only as first-read reduction evidence.
    Use continuation_summary only after selected context is consumed.
-   Follow agent_route.execution_plan[] in order.
-   Use agent_route.routing_decision for a compact display of the first seed, first file, read-less metrics, continuation, and impact status.
-   If another local graph backend already produced candidate files, pass its advisory evidence as agent_route.backend_evidence; use route_quality warnings to compare backend and local routes before editing.
+   Follow agent_first_read.execution_plan[] in order.
+   Use agent_first_read.routing_decision for a compact display of the first seed, first file, read-less metrics, continuation, and impact status.
+   Use advanced agent_route only when another local graph backend produced advisory evidence or a synchronous impact preview is required.
    ```
 
    The first MCP `tools/call` payload is shown in
@@ -429,7 +430,7 @@ accuracy, or proof that unselected code is irrelevant.
 
 Current benchmark snapshot:
 
-- The two-minute demo for this repository shows the agent route selecting 550 of 88,953 source lines, avoiding 88,403 source lines before broad reading for a 99.4% reduction and 161.7x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 24 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
+- The two-minute demo for this repository shows the agent route selecting 550 of 89,113 source lines, avoiding 88,563 source lines before broad reading for a 99.4% reduction and 162.0x read-less ratio, then surfacing candidate rank 1, reporting high route quality from 24 evidence signals, mirroring `current_reading_step` to `reading_plan[0]`, carrying read-less instruction evidence in `execution_plan[0]`, gating `file_outline` behind the selected-context read, and reporting continuation status before the impact check.
 - Smoke repositories route `context_pack` first for 4/4 repositories and
   select 709 of 75,753 source lines, a 99.1% aggregate line reduction.
 - Large repositories route `context_pack` first for 4/4 repositories and
@@ -654,9 +655,9 @@ Key docs:
 ## Current Status
 
 CodeInsight is an early MVP for local-first AI-agent repository reading. It can
-route a broad task through `agent_route`, select bounded context, return a
-reading plan, hand off an executable suggested tool, and preview impact before
-edits.
+route a broad task through `agent_first_read`, select bounded context, return a
+reading plan, hand off an executable suggested tool, and require a focused
+impact check before edits.
 
 Latest verified release: `v0.1.12`.
 
@@ -745,22 +746,21 @@ For all commands and common workflows, see [CLI usage](docs/cli-usage.md).
 
 Recommended MCP first-read flow:
 
-1. Call `agent_route` with `root`, `task`, and `token_budget` for the default
-   first-read path. If the task text names an indexed file path such as
-   `src/auth.ts`, CodeInsight treats it as an automatic file seed. Set
-   `response_mode` to `compact` and `include_impact` to `false` for a smaller,
-   faster first response; the returned execution plan still requires
-   `impact_analysis` before edits.
+1. Call `agent_first_read` with `root`, `task`, and `token_budget` for the
+   default first-read path. If the task text names an indexed file path such as
+   `src/auth.ts`, CodeInsight treats it as an automatic file seed. The response
+   is compact, defers impact analysis, and uses an 8000-token structured
+   response budget by default.
 2. If `context_pack.continuation_summary.status` is `blocked_no_seed`, ask for
-   a seed file or symbol and retry `agent_route` instead of broad-reading the
+   a seed file or symbol and retry `agent_first_read` instead of broad-reading the
    repository. If it is `blocked_invalid_seed`, ask for an existing seed file
    under the project root or a symbol, then retry. If it is
    `blocked_no_context`, ask for a seed file or symbol that actually matches
    indexed source context. If it is `blocked_unindexed_task_path`, update the
    index scope or rerun indexing so the task path is indexed before retrying.
-3. Use `agent_route.current_reading_step` as the first checklist row, then read
+3. Use `agent_first_read.current_reading_step` as the first checklist row, then read
    `context_pack.files[]` in `reading_plan[]` order. Use
-   `agent_route.routing_decision` when the client needs one compact object for
+   `agent_first_read.routing_decision` when the client needs one compact object for
    the first seed, first file, read-less metrics, continuation state, and
    impact status.
 4. Use `reading_plan[].selection_rank` and `selection_reason` as the audit
@@ -769,9 +769,9 @@ Recommended MCP first-read flow:
 5. Show `context_pack.read_less` when the client needs a direct source-line
    baseline, selected-line count, avoided-line count, reduction percentage, and
    read-less ratio.
-6. Use `index_project`, `project_overview`, `context_pack`, and
-   `impact_analysis` directly when the client needs custom routing or partial
-   refresh control.
+6. Use advanced `agent_route`, or the lower-level `index_project`,
+   `project_overview`, `context_pack`, and `impact_analysis` tools, when the
+   client needs custom routing, backend evidence, or partial refresh control.
 
 For the full tool list, `tools/call` examples, topic contracts, and accuracy
 boundaries, see [MCP tools](docs/mcp-tools.md). For client setup snippets, see

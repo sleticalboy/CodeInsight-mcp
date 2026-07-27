@@ -135,12 +135,12 @@ Minimum policy:
 
 ```text
 Before broad repository reading, use CodeInsight:
-1. Call agent_route with root, task, and token_budget for the default first read.
+1. Call agent_first_read with root, task, and token_budget for the default first read.
 2. Read context_pack.files in reading_plan order.
 3. Use reading_plan.focus as the compact scan label, reading_plan.question as
    the local checklist, and reading_plan.reason as the current-step
    instruction.
-4. Use agent_route.routing_decision for compact UI or issue summaries.
+4. Use agent_first_read.routing_decision for compact UI or issue summaries.
 5. Use continuation_summary only after selected context is consumed.
 6. Use focused follow-up tools only when the selected context is insufficient.
 7. For custom routing, call index_project, project_overview, context_pack, and
@@ -306,7 +306,7 @@ The MCP stdio smoke output starts with:
 
 ```text
 MCP stdio smoke passed
-tools: 16
+tools: 17
 ```
 
 The installed quickstart smoke prints `installed quickstart smoke passed` after

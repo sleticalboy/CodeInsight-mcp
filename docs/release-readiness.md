@@ -119,7 +119,7 @@ git diff --check
 Expected result:
 
 - Rust unit and CLI integration tests pass.
-- MCP stdio smoke reports `tools: 16` or the expected current tool count.
+- MCP stdio smoke reports `tools: 17` or the expected current tool count.
 - Agent-route smoke proves the one-call first-read route returns index,
   overview, context-pack, and impact-analysis sections with stable JSON
   parameters. The CI job also uploads `codeinsight-agent-route-smoke` and

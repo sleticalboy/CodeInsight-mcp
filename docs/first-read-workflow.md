@@ -36,9 +36,9 @@ It reports:
 
 Recommended MCP first-read flow:
 
-1. Call `agent_route` with `root`, `task`, and `token_budget`.
+1. Call `agent_first_read` with `root`, `task`, and `token_budget`.
 2. Read `context_pack.files[]` in `reading_plan[]` order from the returned
-   route payload. Use `agent_route.current_reading_step` as the first checklist
+   route payload. Use `agent_first_read.current_reading_step` as the first checklist
    row. Treat `reading_plan[].focus` as the compact scan label,
    `reading_plan[].question` as the local checklist for the selected file,
    `reading_plan[].reason` as the executable instruction for the current step,
@@ -53,7 +53,7 @@ Recommended MCP first-read flow:
 The first-read ordering contract is strict:
 
 ```text
-agent_route -> read selected context -> current-step suggested_tool if needed -> continuation if needed -> impact check before edits
+agent_first_read -> read selected context -> current-step suggested_tool if needed -> continuation if needed -> impact check before edits
 ```
 
 `suggested_tool` and continuation are follow-up actions, not replacements for
@@ -65,25 +65,22 @@ When the client needs custom routing or partial refresh control, call the
 lower-level tools directly: `index_project`, `project_overview`,
 `context_pack`, then `impact_analysis`.
 
-## Agent Route
+## Agent First Read
 
-`agent_route` is the default first-read contract. It returns:
+`agent_first_read` is the default bounded first-read contract. It returns:
 
-- `index_report`
-- `overview`
 - `context_pack`
 - `current_reading_step` mirroring `context_pack.reading_plan[0]` when present
 - `routing_decision`, a compact projection of the first seed, first reading
   file, route focus, read-less metrics, continuation state, and impact status
-- `impact_analysis` when a file or symbol seed is available
-- `route[]` metadata describing the executed tool path and why each stage
-  matters for the first read
 - `execution_plan[]` with the next client actions: read selected context, use
   current-step `suggested_tool` only when needed, inspect continuation after
-  selected context, then review impact before edits
+  selected context, then run impact analysis before edits
 - `impact_seed_files` and `impact_seed_symbols`
+- `response_budget` proving the compact structured response stayed within the
+  requested budget
 
-If no source seed can be inferred, `agent_route` still returns a structured
+If no source seed can be inferred, `agent_first_read` still returns a structured
 blocked route instead of failing the MCP call. In that state,
 `context_pack.seed_strategy` is `auto_no_seed`,
 `context_pack.continuation_summary.status` is `blocked_no_seed`,
@@ -92,7 +89,9 @@ blocked route instead of failing the MCP call. In that state,
 `impact_status` is `skipped_no_seed`. Clients should surface the blocked
 execution-plan rows and ask for a seed file or symbol.
 
-Use `agent_route` for broad repository understanding and first-pass planning.
+Use `agent_first_read` for broad repository understanding and first-pass
+planning. Use advanced `agent_route` for backend evidence, a full overview,
+custom response modes, or a synchronous impact preview.
 Use the lower-level tools when the user named a specific file, symbol, module,
 or when the client needs to refresh only part of the route.
 Use `routing_decision` for compact UI rows, issue templates, and demo summaries;

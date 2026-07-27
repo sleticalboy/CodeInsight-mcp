@@ -371,7 +371,7 @@ main() {
     'clients can render a pre-edit' \
     "README MCP impact checklist evidence"
   require_pattern README.md \
-    'of 88,953 source lines, avoiding 88,403 source lines before broad reading' \
+    'of 89,113 source lines, avoiding 88,563 source lines before broad reading' \
     "README two-minute demo read-less metric"
   "$ROOT_DIR/scripts/readme-adoption-summary-smoke.sh" >/dev/null
   require_pattern README.md \
@@ -1930,16 +1930,16 @@ main() {
     'first_next_action' \
     "reading plan next action demo metric"
   require_pattern docs/demo-script.md \
-    'source_lines_avoided: 88403' \
+    'source_lines_avoided: 88563' \
     "demo script source lines avoided metric"
   require_pattern docs/demo-script.md \
-    'read_less_ratio: 161\.7x' \
+    'read_less_ratio: 162\.0x' \
     "demo script read-less metric"
   require_pattern docs/demo-script.md \
     'routing_decision_quality: high \(100/100, 24 evidence signals\)' \
     "demo script route quality metric"
   require_pattern docs/demo-script.md \
-    'Read less: avoided 88403 source lines, 161\.7x less text before follow-up tools\.' \
+    'Read less: avoided 88563 source lines, 162\.0x less text before follow-up tools\.' \
     "demo script evidence summary read-less line"
   require_pattern docs/demo-script.md \
     'impact_analysis' \
@@ -2992,8 +2992,8 @@ main() {
     '^## First Agent Route Call$' \
     "MCP client config first agent route section"
   require_pattern docs/mcp-client-config.md \
-    '"name": "agent_route"' \
-    "MCP client config first agent_route tools call"
+    '"name": "agent_first_read"' \
+    "MCP client config first agent_first_read tools call"
   require_pattern docs/mcp-client-config.md \
     '"token_budget": 6000' \
     "MCP client config first agent_route token budget"
@@ -3010,7 +3010,7 @@ main() {
     'broad repository reads' \
     "MCP client config blocked no-seed broad-read guard"
   require_pattern docs/mcp-client-config.md \
-    'checks that `agent_route\.execution_plan\[\]\.suggested_tool` executes through MCP' \
+    'checks the bounded `agent_first_read` response' \
     "MCP client config suggested tool execution smoke"
   require_pattern docs/mcp-client-config.md \
     'scripts/mcp-first-call-smoke\.sh' \
@@ -3058,10 +3058,10 @@ main() {
     'Expected first-call signals:' \
     "MCP client config first-call signals"
   require_pattern docs/mcp-client-config.md \
-    '\| `route\[\]` \| Includes `index_project`, `project_overview`, `context_pack`, and `impact_analysis`\.' \
-    "MCP client config route signal"
+    '\| `response_mode` \| Is `compact`\.' \
+    "MCP client config compact response signal"
   require_pattern docs/mcp-client-config.md \
-    '\| `agent_route\.current_reading_step` \| Mirrors `context_pack\.reading_plan\[0\]`' \
+    '\| `agent_first_read\.current_reading_step` \| Mirrors `context_pack\.reading_plan\[0\]`' \
     "MCP client config current reading step signal"
   require_pattern docs/mcp-client-config.md \
     '\| `context_pack\.reading_plan\[\]\.focus` \| Gives the compact scan label' \
@@ -3082,7 +3082,7 @@ main() {
     '`context_pack\.read_less` for first-read source-line reduction evidence' \
     "client workflow read-less health check"
   require_pattern docs/client-workflow.md \
-    'run or report the step'"'"'s `suggested_checks\[\]`' \
+    'run or report the returned `suggested_checks\[\]`' \
     "client workflow impact execution suggested checks"
   require_pattern docs/client-workflow.md \
     '`context_pack\.continuation_summary\.status` set to `blocked_no_seed`' \

@@ -123,7 +123,7 @@ CODEINSIGHT_BIN="$(command -v codeinsight)" scripts/mcp-stdio-smoke.sh
 MCP stdio smoke passed
 root: /path/to/repo
 symbol: AuthService
-tools: 16
+tools: 17
 indexed_files: 33
 overview_entrypoints: 1
 overview_recommendations: 4

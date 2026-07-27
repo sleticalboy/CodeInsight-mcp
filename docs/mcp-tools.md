@@ -29,7 +29,7 @@ results without parsing text.
 
 ## Tool List
 
-The stdio server currently exposes 16 tools:
+The stdio server currently exposes 17 tools:
 
 | Tool | Purpose |
 | --- | --- |
@@ -46,7 +46,8 @@ The stdio server currently exposes 16 tools:
 | `embedding_status` | Report provider, batch size, and optional local semantic-index state without network calls. |
 | `version` | Return package version and target platform information. |
 | `context_pack` | Build token-budgeted agent context from explicit seeds or inferred entrypoints, including selected files/ranges, source mix counts, seed strategy, selected seeds, read-less source-line metrics, budget metadata, continuation summary, omitted candidate follow-ups, reading plan, semantic status, and follow-up suggestions. |
-| `agent_route` | Run the default first-read path in one call: refresh the local index, return `project_overview`, build `context_pack`, expose `routing_decision`, `current_reading_step`, and `execution_plan[]`, include an `impact_analysis` preview when a seed is available, and return a structured blocked plan when no source seed can be inferred. |
+| `agent_first_read` | Run the default bounded first-read path in one call with compact structured content, deferred impact analysis, and an 8000-token structured-response budget; exposes `context_pack`, `routing_decision`, `current_reading_step`, and `execution_plan[]`. |
+| `agent_route` | Run the advanced configurable first-read path with optional backend evidence, full overview, response modes and budgets, and an optional synchronous `impact_analysis` preview. |
 | `callers` | Return static call sites that call a function or method, including imported target hints when available. |
 | `callees` | Return static callees for a function or method, including imported target hints when available. |
 
@@ -54,17 +55,17 @@ The stdio server currently exposes 16 tools:
 
 Recommended MCP first-read flow:
 
-1. Call `agent_route` with `root`, `task`, and `token_budget` for the default
+1. Call `agent_first_read` with `root`, `task`, and `token_budget` for the default
    first-read path.
-2. Follow `agent_route.execution_plan[]`: read selected context, use the
+2. Follow `agent_first_read.execution_plan[]`: read selected context, use the
    current-step `suggested_tool` only when needed, continue only after selected
    context, and review impact before edits.
-3. Use `agent_route.current_reading_step` to render the first checklist row
+3. Use `agent_first_read.current_reading_step` to render the first checklist row
    without rebuilding it from `context_pack.reading_plan[0]`.
    If it is omitted, inspect `execution_plan[]` statuses such as
    `blocked_no_reading_plan` or `blocked_no_current_reading_step` and ask for a
    seed file or symbol instead of broad-reading the repository.
-4. Use `agent_route.routing_decision` for compact route cards, issue summaries,
+4. Use `agent_first_read.routing_decision` for compact route cards, issue summaries,
    or audit tables that need the first seed, first file, read-less metrics,
    continuation state, and impact status in one object.
 5. Display `context_pack.read_less` when users need to see how much source

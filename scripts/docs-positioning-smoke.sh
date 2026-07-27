@@ -29,7 +29,7 @@ main() {
     'The product is intentionally narrow' \
     "README intentionally narrow scope"
   require_pattern README.md \
-    'agent_route -> selected context -> executable suggested_tool -> impact check' \
+    'agent_first_read -> selected context -> executable suggested_tool -> impact check' \
     "README first-read route loop"
   require_pattern README.md \
     '`execution_plan\[\]` actions that keep focused follow-up tools behind the' \
@@ -68,8 +68,8 @@ main() {
     '\[MCP client configuration\]\(docs/mcp-client-config\.md\)' \
     "README fast path MCP config link"
   require_pattern README.md \
-    'Call agent_route with root, task, and token_budget 6000 before reading files directly' \
-    "README fast path agent_route prompt"
+    'Call agent_first_read with root, task, and token_budget 6000 before reading files directly' \
+    "README fast path agent_first_read prompt"
   require_pattern README.md \
     'If continuation_summary.status is blocked_no_seed, ask for a seed file or symbol instead of broad-reading' \
     "README fast path blocked no-seed prompt"
@@ -86,10 +86,10 @@ main() {
     'Use continuation_summary only after selected context is consumed' \
     "README fast path continuation prompt"
   require_pattern README.md \
-    'Follow agent_route\.execution_plan\[\] in order' \
+    'Follow agent_first_read\.execution_plan\[\] in order' \
     "README fast path execution plan policy"
   require_pattern README.md \
-    'Use agent_route\.routing_decision for a compact display' \
+    'Use agent_first_read\.routing_decision for a compact display' \
     "README fast path routing decision policy"
   require_pattern README.md \
     'If `context_pack\.continuation_summary\.status` is `blocked_no_seed`, ask for' \
@@ -176,10 +176,10 @@ main() {
     'MCP first-call contract: reading_order=`true`, current_reading_step=`true`, suggested_tool_handoff=`true`, continuation_after_selected_context=`true`' \
     "README MCP first-call contract evidence"
   require_pattern README.md \
-    'Use `agent_route\.current_reading_step` as the first checklist row' \
+    'Use `agent_first_read\.current_reading_step` as the first checklist row' \
     "README MCP tools current reading step flow"
   require_pattern README.md \
-    '`agent_route\.routing_decision` when the client needs one compact object for' \
+    '`agent_first_read\.routing_decision` when the client needs one compact object for' \
     "README MCP tools routing decision flow"
   require_pattern README.md \
     '\[CodeInsight self adoption report\]\(docs/adoption-report-codeinsight\.md\)' \
@@ -340,8 +340,8 @@ main() {
     '\[Client workflow\]\(client-workflow\.md#agent-policy-prompt\)' \
     "agent policy prompt link"
   require_pattern docs/quickstart.md \
-    'Call agent_route with root, task, and token_budget' \
-    "quickstart agent_route policy"
+    'Call agent_first_read with root, task, and token_budget' \
+    "quickstart agent_first_read policy"
   require_pattern docs/quickstart.md \
     'Use reading_plan\.focus as the compact scan label' \
     "quickstart reading focus policy"
@@ -411,28 +411,28 @@ main() {
     '\[Known limitations\]\(known-limitations\.md\)' \
     "known limitations link"
   require_pattern docs/mcp-tools.md \
-    '`agent_route` \| Run the default first-read path.*expose `routing_decision`, `current_reading_step`, and `execution_plan\[\]`' \
-    "MCP tools agent_route execution plan"
+    '`agent_first_read` \| Run the default bounded first-read path.*`routing_decision`, `current_reading_step`, and `execution_plan\[\]`' \
+    "MCP tools agent_first_read execution plan"
   require_pattern docs/mcp-tools.md \
-    'Use `agent_route\.routing_decision` for compact route cards' \
+    'Use `agent_first_read\.routing_decision` for compact route cards' \
     "MCP tools routing decision guidance"
   require_pattern docs/mcp-tools.md \
     'read-less source-line metrics' \
     "MCP tools context_pack read-less metrics"
   require_pattern docs/mcp-tools.md \
-    'Follow `agent_route\.execution_plan\[\]`' \
+    'Follow `agent_first_read\.execution_plan\[\]`' \
     "MCP tools execution plan first-read guidance"
   require_pattern docs/client-workflow.md \
-    'Call `agent_route` with `root`, `task`, and `token_budget`' \
-    "client workflow agent_route path"
+    'call `agent_first_read` with the' \
+    "client workflow agent_first_read path"
   require_pattern docs/client-workflow.md \
     '^## First Agent Route Call$' \
     "client workflow first agent route call section"
   require_pattern docs/client-workflow.md \
-    '"name": "agent_route"' \
+    '"name": "agent_first_read"' \
     "client workflow first agent route JSON"
   require_pattern docs/client-workflow.md \
-    'Use `agent_route\.execution_plan\[\]` as the client checklist' \
+    'Use `agent_first_read\.execution_plan\[\]` as the client checklist' \
     "client workflow execution plan checklist"
   require_pattern docs/client-workflow.md \
     '`routing_decision` is the compact display/audit projection' \
@@ -441,7 +441,7 @@ main() {
     '\[Client integration examples\]\(client-integration-examples\.md\)' \
     "client workflow integration examples link"
   require_pattern docs/client-workflow.md \
-    'Use `agent_route\.current_reading_step` as the first' \
+    'Use `agent_first_read\.current_reading_step` as the first' \
     "client workflow current reading step policy"
   require_pattern docs/client-workflow.md \
     'Treat `reading_plan\[\]\.focus` as the compact scan label' \
@@ -507,10 +507,10 @@ main() {
     'If continuation_summary.status is blocked_no_seed, ask for a seed file' \
     "client integration blocked no-seed policy"
   require_pattern docs/first-read-workflow.md \
-    '`agent_route` is the default first-read contract' \
+    '`agent_first_read` is the default bounded first-read contract' \
     "first-read workflow agent_route contract"
   require_pattern docs/first-read-workflow.md \
-    'agent_route -> read selected context -> current-step suggested_tool if needed -> continuation if needed -> impact check before edits' \
+    'agent_first_read -> read selected context -> current-step suggested_tool if needed -> continuation if needed -> impact check before edits' \
     "first-read workflow ordering contract"
   require_pattern docs/first-read-workflow.md \
     '`suggested_tool` and continuation are follow-up actions, not replacements' \
@@ -519,7 +519,7 @@ main() {
     '`impact_analysis` is the pre-edit planning gate' \
     "first-read workflow impact gate"
   require_pattern docs/first-read-workflow.md \
-    'Use `agent_route\.current_reading_step` as the first checklist' \
+    'Use `agent_first_read\.current_reading_step` as the first checklist' \
     "first-read workflow current reading step"
   require_pattern docs/first-read-workflow.md \
     '`context_pack` returns a `read_less` object' \
@@ -555,13 +555,13 @@ main() {
     'Never use `context_pack\.read_less` as permission to skip selected files' \
     "client workflow read-less invariant"
   require_pattern docs/mcp-client-config.md \
-    'Call `agent_route` with `root`, `task`, and `token_budget`' \
-    "MCP client config agent_route flow"
+    'Call `agent_first_read` with `root`, `task`, and `token_budget`' \
+    "MCP client config agent_first_read flow"
   require_pattern docs/mcp-client-config.md \
     '^## First Agent Route Call$' \
     "MCP client config first agent route section"
   require_pattern docs/mcp-client-config.md \
-    '"name": "agent_route"' \
+    '"name": "agent_first_read"' \
     "MCP client config first agent route JSON"
   require_pattern docs/mcp-client-config.md \
     'Use `scripts/mcp-stdio-smoke\.sh` to verify this path end to end' \
@@ -624,7 +624,7 @@ main() {
     '\| `execution_plan\[\]` \| Starts with `read_selected_context`' \
     "MCP client config execution plan signal"
   require_pattern docs/mcp-client-config.md \
-    '\| `impact_status` \| Usually `complete` when a seed file or symbol was selected\.' \
+    '\| `impact_status` \| Is `deferred_by_request` when context was selected\.' \
     "MCP client config impact signal"
   require_pattern docs/recommendation-contract.md \
     '## Agent Route Execution Plan' \
@@ -718,10 +718,10 @@ main() {
     "adoption context-pack selection reason gate"
 
   require_pattern docs/client-integration-examples.md \
-    'Every client should treat `agent_route\.execution_plan\[\]` as the ordered action' \
+    'Every client should treat `agent_first_read\.execution_plan\[\]` as the ordered action' \
     "client examples execution plan contract"
   require_pattern docs/client-integration-examples.md \
-    'Use agent_route\.current_reading_step for the first checklist row' \
+    'Use agent_first_read\.current_reading_step for the first checklist row' \
     "client examples current reading step policy"
   require_pattern docs/client-integration-examples.md \
     'Use reading_plan\[\]\.focus as the compact scan label' \
@@ -757,7 +757,7 @@ main() {
     'Impact-review controls should be shown after the first read and before edits' \
     "client examples impact review state"
   require_pattern docs/client-integration-examples.md \
-    '`agent_route\.current_reading_step` as the first checklist row' \
+    '`agent_first_read\.current_reading_step` as the first checklist row' \
     "client examples UI current reading step"
   require_pattern docs/client-integration-examples.md \
     '`reading_plan\[\]\.focus` beside each selected file' \

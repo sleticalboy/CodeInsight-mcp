@@ -5,10 +5,10 @@ for a multi-step code-reading task.
 
 ## Standard Flow
 
-1. Call `agent_route` with `root`, `task`, and `token_budget` for the default
+1. Call `agent_first_read` with `root`, `task`, and `token_budget` for the default
    first read.
 2. Read `context_pack.files[]` by following `reading_plan[]` order in the
-   returned route payload. Use `agent_route.current_reading_step` as the first
+   returned route payload. Use `agent_first_read.current_reading_step` as the first
    checklist row. Treat `reading_plan[].focus` as the compact scan label,
    `reading_plan[].question` as the local checklist for the selected file,
    `reading_plan[].reason` as the instruction for the current step,
@@ -21,8 +21,8 @@ for a multi-step code-reading task.
    local navigation.
 5. Use `continuation_summary` and `omitted_candidates[]` when more context is
    needed after the first selected pack.
-6. Use the included `impact_analysis` preview before edits or refactors, then
-   run focused `impact_analysis` calls when the target changes.
+6. Run the deferred `impact_analysis` before edits or refactors, then rerun it
+   when the target changes.
 
 When a client needs custom routing or partial refresh control, it can call the
 lower-level tools directly: `index_project`, `project_overview`,
@@ -43,12 +43,12 @@ Client invariants:
 
 ## First Agent Route Call
 
-For the first broad task after MCP setup, call `agent_route` with the repository
-root, the user's task, and a bounded token budget:
+For the first broad task after MCP setup, call `agent_first_read` with the
+repository root, the user's task, and a bounded token budget:
 
 ```json
 {
-  "name": "agent_route",
+  "name": "agent_first_read",
   "arguments": {
     "root": "/absolute/path/to/repo",
     "task": "understand the main application entrypoint",
@@ -62,19 +62,20 @@ Then apply the returned payload in this order:
 1. Read `context_pack.files[]` using `context_pack.reading_plan[]`.
 2. Use `context_pack.reading_plan[].question` as the local checklist for the
    selected file.
-3. Use `agent_route.execution_plan[]` as the client checklist.
+3. Use `agent_first_read.execution_plan[]` as the client checklist.
 4. Run the current step's `suggested_tool` only after selected context is read.
 5. Display `context_pack.read_less` when users need first-read source-line
    reduction evidence.
-6. Use the included `impact_analysis` preview before edits.
+6. Run the deferred `impact_analysis` suggested by the final execution step
+   before edits.
 
 The first call is healthy when the response has either selected context or an
 explicit blocked state.
 
 For repositories where CodeInsight can infer a source seed, expect:
 
-- `route[]` with `index_project`, `project_overview`, `context_pack`, and
-  `impact_analysis`
+- `response_mode` set to `compact`
+- `response_budget.estimated_tokens` within the requested response budget
 - at least one `context_pack.files[]` entry
 - `context_pack.reading_plan[].focus` for the compact scan label
 - `context_pack.reading_plan[].question` for the local reading checklist
@@ -93,10 +94,10 @@ For repositories where CodeInsight can infer a source seed, expect:
 - `execution_plan[0].instruction` naming the first reading file, candidate
   rank, and first reading focus/question
 - a ready `execution_plan[].suggested_tool` for focused follow-up navigation
-- `impact_status` set to `complete` when an impact seed is available
+- `impact_status` set to `deferred_by_request` when an impact seed is available
 
 For empty repositories or repositories where no source seed can be inferred,
-`agent_route` should still return a structured response instead of a JSON-RPC
+`agent_first_read` should still return a structured response instead of a JSON-RPC
 tool failure. In that case, expect:
 
 - `route[]` with the `context_pack` step status set to `blocked_no_seed`
@@ -125,7 +126,7 @@ CodeInsight is available. For copy-paste task variants, see
 ```text
 When working in a repository with CodeInsight MCP available:
 
-1. Before broad code reading, call agent_route with root, task, and
+1. Before broad code reading, call agent_first_read with root, task, and
    token_budget for the default first read.
 2. Read context_pack.files in reading_plan order. Treat reading_plan.focus as
    the compact scan label, reading_plan.reason as the current-step instruction,
@@ -143,8 +144,8 @@ When working in a repository with CodeInsight MCP available:
 6. If continuation_summary.status is complete, do not fetch more context unless
    the user asks a narrower follow-up or the selected context does not answer
    the task.
-7. Before editing, review the included impact_analysis preview. If the edit
-   target differs from the first-read seed, call impact_analysis with the
+7. Before editing, run the deferred impact_analysis. If the edit target differs
+   from the first-read seed, call impact_analysis with the
    selected files or symbols and run or report the suggested_checks that apply.
 8. Use index_project, project_overview, context_pack, and impact_analysis
    directly only when custom routing or partial refresh control is needed.
@@ -160,7 +161,7 @@ specific source location.
 
 | User intent | First CodeInsight call after indexing | Follow-up rule |
 | --- | --- | --- |
-| "Understand this repo" | `agent_route` | Read `reading_plan[]`; continue only if `continuation_summary` suggests it. |
+| "Understand this repo" | `agent_first_read` | Read `reading_plan[]`; continue only if `continuation_summary` suggests it. |
 | "Where is the entrypoint?" | `project_overview` | Inspect `entrypoints[]`; call `context_pack` for the highest-confidence source entrypoint when needed. |
 | "Explain this module/file" | `context_pack` with `files[]` set to the named file | Use `file_outline` from `reading_plan[].suggested_tool` for local structure. |
 | "Explain this class/function" | `symbol_search`, then `context_pack` with the symbol | Use `callers` or `callees` only when the task asks about flow or dependencies. |
@@ -171,12 +172,13 @@ specific source location.
 
 ## Project Overview
 
-`agent_route` returns the default first-read bundle: `index_report`,
-`overview`, `context_pack`, `routing_decision`, route metadata, and an optional
-`impact_analysis` preview. Clients should use it when the user asks to
-understand a repository or begin a broad task.
+`agent_first_read` returns the default bounded first-read bundle:
+`context_pack`, `routing_decision`, `current_reading_step`, and the execution
+plan. It uses compact structured content and defers impact analysis until the
+agent is ready to edit. Use advanced `agent_route` when a client needs the full
+overview, backend evidence, or a synchronous impact preview.
 
-Use `agent_route.execution_plan[]` as the machine-readable client sequence:
+Use `agent_first_read.execution_plan[]` as the machine-readable client sequence:
 
 1. `read_selected_context`: read `context_pack.files[]` in `reading_plan[]`
    order.
@@ -184,8 +186,8 @@ Use `agent_route.execution_plan[]` as the machine-readable client sequence:
    `suggested_tool` only when deeper evidence is needed for that file.
 3. `use_continuation_if_needed`: inspect `continuation_summary` after selected
    context is consumed.
-4. `review_impact_before_edits`: review `impact_analysis` before editing, then
-   run or report the step's `suggested_checks[]`.
+4. `review_impact_before_edits`: run the suggested `impact_analysis` before
+   editing, then run or report the returned `suggested_checks[]`.
 
 `route[]` describes the tools CodeInsight already ran. `execution_plan[]`
 describes what the client or agent should do next.
@@ -282,7 +284,7 @@ Important statuses:
 
 - `complete`: read the selected context first; no continuation is required.
 - `blocked_no_seed`: provide a seed file or symbol, then retry `context_pack`
-  or `agent_route`.
+  or `agent_first_read`.
 - `blocked_invalid_seed`: provide an existing seed file or symbol, then retry.
 - `blocked_no_context`: provide a matching seed file or symbol, then retry.
 - `omitted_candidates_available`: offer the included `suggested_tool` as a
@@ -309,7 +311,7 @@ symbols. Render:
 - `suggested_checks`
 
 Use `suggested_checks[]` to decide which local commands or review steps to run.
-In `agent_route`, the `review_impact_before_edits` execution step mirrors these
+In `agent_first_read`, the `review_impact_before_edits` execution step mirrors these
 checks and includes an `impact_analysis` `suggested_tool` for reopening the
 full evidence payload.
 Recommendation priority does not imply safety. Risk comes from
@@ -319,11 +321,11 @@ Recommendation priority does not imply safety. Risk comes from
 
 A simple client can implement this policy:
 
-1. Run `agent_route`.
+1. Run `agent_first_read`.
 2. If `context_pack.continuation_summary.status` is `blocked_no_seed`, ask for
    a seed file or symbol and do not broad-read the repository.
 3. Present selected `files[]` in `reading_plan[]` order, using
-   `agent_route.current_reading_step` for the first checklist row,
+   `agent_first_read.current_reading_step` for the first checklist row,
    `reading_plan[].focus` as the compact scan label,
    `reading_plan[].question` as the local checklist, and
    `reading_plan[].reason` as the current-step instruction.
@@ -331,8 +333,8 @@ A simple client can implement this policy:
 5. Execute the current step's `suggested_tool` when the user asks for detail.
 6. If the selected context is insufficient, execute
    `continuation_summary.suggested_tool` when present.
-7. Use the included `impact_analysis` preview before edits, and rerun
-   `impact_analysis` for changed targets.
+7. Run the deferred `impact_analysis` before edits, and rerun it for changed
+   targets.
 
 For field-level contracts, see [First-read workflow](first-read-workflow.md)
 and [Recommendation contract](recommendation-contract.md). For copyable
