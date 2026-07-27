@@ -491,13 +491,15 @@ write_output() {
   local candidate_files_json candidates_json evidence_sources_json notes_json latency_ms evidence_count trace_path_json
 
   candidate_files_json="$(
-    awk -F $'\t' '!seen[$2]++ { print $2 }' "$TEMP_DIR/candidates.tsv" |
-      head -n "$CANDIDATE_LIMIT" |
+    awk -F $'\t' -v limit="$CANDIDATE_LIMIT" \
+      '!seen[$2]++ { print $2; count += 1; if (count >= limit) exit }' \
+      "$TEMP_DIR/candidates.tsv" |
       json_string_array_from_lines
   )"
   candidates_json="$(
-    awk -F $'\t' '!seen[$2]++ { print }' "$TEMP_DIR/candidates.tsv" |
-      head -n "$CANDIDATE_LIMIT" |
+    awk -F $'\t' -v limit="$CANDIDATE_LIMIT" \
+      '!seen[$2]++ { print; count += 1; if (count >= limit) exit }' \
+      "$TEMP_DIR/candidates.tsv" |
       jq -R '
         split("\t")
         | {
