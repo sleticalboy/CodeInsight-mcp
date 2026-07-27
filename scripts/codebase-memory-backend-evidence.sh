@@ -5,6 +5,8 @@ PROVIDER="codebase-memory-mcp"
 ROOT_PATH=""
 OUTPUT=""
 CANDIDATE_LIMIT=10
+PROVIDER_CHARS_LIMIT=128
+FILE_CHARS_LIMIT=512
 TOOL_RESULT_ITEMS_LIMIT=64
 TOOL_RESULT_PAGES_LIMIT=16
 TOOL_RESULT_WRAPPER_LIMIT=4
@@ -145,6 +147,11 @@ parse_args() {
 validate_args() {
   require_command jq
 
+  PROVIDER="$(jq -nr --arg value "$PROVIDER" '$value | gsub("^\\s+|\\s+$"; "")')"
+  [ -n "$PROVIDER" ] || fail "--provider must not be empty"
+  [ "$(jq -nr --arg value "$PROVIDER" '$value | length')" -le "$PROVIDER_CHARS_LIMIT" ] ||
+    fail "--provider must not exceed $PROVIDER_CHARS_LIMIT characters"
+
   case "$CANDIDATE_LIMIT" in
     ''|*[!0-9]*) fail "--candidate-limit must be a positive integer" ;;
   esac
@@ -208,7 +215,10 @@ normalize_file() {
   done
   [ "${#normalized_parts[@]}" -gt 0 ] || fail "backend evidence candidate file must not be empty"
   local IFS='/'
-  printf '%s\n' "${normalized_parts[*]}"
+  local normalized="${normalized_parts[*]}"
+  [ "$(jq -nr --arg value "$normalized" '$value | length')" -le "$FILE_CHARS_LIMIT" ] ||
+    fail "backend evidence candidate file must not exceed $FILE_CHARS_LIMIT characters"
+  printf '%s\n' "$normalized"
 }
 
 append_candidate() {
@@ -225,13 +235,14 @@ append_candidate() {
   if awk -F $'\t' -v source="$source" -v file="$normalized" '
     $1 == source && $2 == file { found = 1; exit }
     END { exit !found }
-  ' "$TEMP_DIR/candidates.tsv"; then
+  ' "$TEMP_DIR/seen-candidates.tsv"; then
     return
   fi
   source_count="$(awk -F $'\t' -v source="$source" '
     $1 == source { count++ }
     END { print count + 0 }
-  ' "$TEMP_DIR/candidates.tsv")"
+  ' "$TEMP_DIR/seen-candidates.tsv")"
+  printf '%s\t%s\n' "$source" "$normalized" >>"$TEMP_DIR/seen-candidates.tsv"
   if [ "$source_count" -ge "$TOOL_RESULT_ITEMS_LIMIT" ]; then
     printf '%s\n' "$source" >>"$TEMP_DIR/omitted-candidate-sources.txt"
     return
@@ -328,6 +339,7 @@ append_latency() {
 
 collect_candidates() {
   : >"$TEMP_DIR/candidates.tsv"
+  : >"$TEMP_DIR/seen-candidates.tsv"
   : >"$TEMP_DIR/latency.txt"
   : >"$TEMP_DIR/omitted-candidate-sources.txt"
 

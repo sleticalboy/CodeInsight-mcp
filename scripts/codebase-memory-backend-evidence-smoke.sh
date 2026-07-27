@@ -235,6 +235,20 @@ EOF
     elapsed_ms: 6
   }' >"$output_dir/search-graph-hotspot.json"
 
+  jq -n '{
+    results: (
+      [range(0; 65) | {
+        name: ("candidate" + tostring),
+        label: "Function",
+        file_path: ("graph/candidate-" + tostring + ".ts")
+      }]
+      + [
+        {name: "candidate64Again", label: "Function", file_path: "graph/candidate-64.ts"},
+        {name: "candidate64AgainAgain", label: "Function", file_path: "graph/candidate-64.ts"}
+      ]
+    )
+  }' >"$output_dir/search-graph-omitted-duplicates.json"
+
   jq -n '[range(0; 17) | {results: [], elapsed_ms: 1}]' \
     >"$output_dir/search-graph-too-many-pages.json"
 
@@ -243,6 +257,9 @@ EOF
 
   jq -n '{results: [{name: "outside", label: "Function", file_path: "..\\outside.ts"}]}' \
     >"$output_dir/search-graph-parent-path.json"
+
+  jq -n '{results: [{name: "long", label: "Function", file_path: ([range(0; 513) | "a"] | join(""))}]}' \
+    >"$output_dir/search-graph-long-path.json"
 
   cat >"$output_dir/code-snippet.json" <<'EOF'
 {
@@ -336,6 +353,25 @@ main() {
 
   if "$ROOT_DIR/scripts/codebase-memory-backend-evidence.sh" \
     --search-graph-json "$TEMP_DIR/search-graph.json" \
+    --provider "   " >"$TEMP_DIR/empty-provider.json" 2>"$TEMP_DIR/empty-provider.err"; then
+    fail "blank provider names should be rejected"
+  fi
+  if ! grep -q -- "--provider must not be empty" "$TEMP_DIR/empty-provider.err"; then
+    fail "blank provider rejection should explain the constraint"
+  fi
+
+  if "$ROOT_DIR/scripts/codebase-memory-backend-evidence.sh" \
+    --search-graph-json "$TEMP_DIR/search-graph.json" \
+    --provider "$(printf '%0129d' 0 | tr '0' 'p')" \
+    >"$TEMP_DIR/long-provider.json" 2>"$TEMP_DIR/long-provider.err"; then
+    fail "provider names above the runtime contract should be rejected"
+  fi
+  if ! grep -q -- "--provider must not exceed 128 characters" "$TEMP_DIR/long-provider.err"; then
+    fail "provider length rejection should explain the maximum"
+  fi
+
+  if "$ROOT_DIR/scripts/codebase-memory-backend-evidence.sh" \
+    --search-graph-json "$TEMP_DIR/search-graph.json" \
     --confidence 1.1 >"$TEMP_DIR/invalid-confidence.json" 2>"$TEMP_DIR/invalid-confidence.err"; then
     fail "confidence above one should be rejected"
   fi
@@ -370,6 +406,26 @@ main() {
   if ! grep -q -- "outside project root" "$TEMP_DIR/parent-path.err"; then
     fail "parent-directory rejection should explain the project-root boundary"
   fi
+
+  if "$ROOT_DIR/scripts/codebase-memory-backend-evidence.sh" \
+    --root "$repo" \
+    --search-graph-json "$TEMP_DIR/search-graph-long-path.json" \
+    >"$TEMP_DIR/long-path.json" 2>"$TEMP_DIR/long-path.err"; then
+    fail "candidate paths above the runtime contract should be rejected"
+  fi
+  if ! grep -q -- "candidate file must not exceed 512 characters" "$TEMP_DIR/long-path.err"; then
+    fail "candidate path length rejection should explain the maximum"
+  fi
+
+  "$ROOT_DIR/scripts/codebase-memory-backend-evidence.sh" \
+    --root "$repo" \
+    --provider "  graph-backend  " \
+    --search-graph-json "$TEMP_DIR/search-graph-empty-semantic.json" \
+    --output "$TEMP_DIR/trimmed-provider-evidence.json"
+  require_jq \
+    "$TEMP_DIR/trimmed-provider-evidence.json" \
+    '.provider == "graph-backend"' \
+    "provider names should be trimmed before bridge output"
 
   "$ROOT_DIR/scripts/codebase-memory-backend-evidence.sh" \
     --root "$repo" \
@@ -410,6 +466,14 @@ main() {
     "$TEMP_DIR/search-graph-hotspot-evidence.json" \
     '.candidate_files == ["src/auth.ts", "src/main.ts"] and .evidence_count == 2 and .candidates[0].symbol == "AuthService.symbol0" and .candidates[1].symbol == "main"' \
     "duplicate hotspot symbols should not spend the per-tool candidate budget"
+
+  "$ROOT_DIR/scripts/codebase-memory-backend-evidence.sh" \
+    --search-graph-json "$TEMP_DIR/search-graph-omitted-duplicates.json" \
+    --output "$TEMP_DIR/search-graph-omitted-duplicates-evidence.json"
+  require_jq \
+    "$TEMP_DIR/search-graph-omitted-duplicates-evidence.json" \
+    '.evidence_count == 64 and any(.notes[]; . == "search_graph omitted 1 unique candidate(s) beyond the 64-item budget")' \
+    "repeated over-budget candidates should be counted once"
 
   "$ROOT_DIR/scripts/codebase-memory-backend-evidence.sh" \
     --root "$repo" \
