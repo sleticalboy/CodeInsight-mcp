@@ -387,13 +387,17 @@ fn tool_text_content(name: &str, result: &Value) -> Result<String> {
         .pointer("/routing_decision/backend_route_agreement/provider")
         .and_then(Value::as_str)
         .unwrap_or("-");
+    let backend_symbol = result
+        .pointer("/routing_decision/backend_selected_candidate/symbol")
+        .and_then(Value::as_str)
+        .unwrap_or("-");
     let impact_status = result
         .get("impact_status")
         .and_then(Value::as_str)
         .unwrap_or("unknown");
 
     Ok(format!(
-        "Compact agent route: first_file={first_file}; selected_files={selected_files}; selected_ranges={selected_ranges}; backend_status={backend_status}; backend_provider={backend_provider}; next_action={next_action}; impact_status={impact_status}. Read structuredContent for selected excerpts and execution_plan."
+        "Compact agent route: first_file={first_file}; selected_files={selected_files}; selected_ranges={selected_ranges}; backend_status={backend_status}; backend_provider={backend_provider}; backend_symbol={backend_symbol}; next_action={next_action}; impact_status={impact_status}. Read structuredContent for selected excerpts and execution_plan."
     ))
 }
 

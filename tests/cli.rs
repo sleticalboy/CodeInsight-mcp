@@ -14596,6 +14596,7 @@ fn mcp_stdio_executes_agent_first_read_with_bounded_compact_response() {
     assert!(text.contains("Compact agent route:"));
     assert!(text.contains("backend_status=backend_preferred"));
     assert!(text.contains("backend_provider=codebase-memory-mcp"));
+    assert!(text.contains("backend_symbol=defaultRender"));
     assert!(text.contains("impact_status=deferred_by_request"));
 }
 
