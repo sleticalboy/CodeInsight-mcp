@@ -23,6 +23,7 @@ struct AgentFirstReadBackendCandidates {
     candidate_files: Vec<String>,
     #[serde(default)]
     candidates: Vec<AgentFirstReadBackendCandidate>,
+    search_graph: Option<Value>,
     #[serde(default)]
     evidence_sources: Vec<String>,
     confidence: Option<f64>,
@@ -76,11 +77,59 @@ impl AgentFirstReadBackendCandidate {
     }
 }
 
+fn agent_first_read_search_graph_candidates(
+    search_graph: &Value,
+) -> Result<(Vec<AgentRouteBackendCandidate>, usize, Option<u64>)> {
+    let mut payload = search_graph;
+    loop {
+        if let Some(result) = payload.get("result") {
+            payload = result;
+            continue;
+        }
+        if let Some(structured_content) = payload.get("structuredContent") {
+            payload = structured_content;
+            continue;
+        }
+        break;
+    }
+
+    let semantic_results = payload
+        .get("semantic_results")
+        .and_then(Value::as_array)
+        .filter(|results| !results.is_empty());
+    let results = semantic_results
+        .or_else(|| payload.get("results").and_then(Value::as_array))
+        .context(
+            "agent_first_read backend_candidates.search_graph must contain results or semantic_results",
+        )?;
+    let candidates = results
+        .iter()
+        .filter_map(|result| {
+            serde_json::from_value::<AgentFirstReadBackendCandidate>(result.clone()).ok()
+        })
+        .filter_map(|candidate| candidate.into_route_candidate().ok())
+        .take(AGENT_FIRST_READ_BACKEND_CANDIDATE_LIMIT)
+        .collect::<Vec<_>>();
+    if candidates.is_empty() {
+        bail!("agent_first_read backend_candidates.search_graph contained no candidate files");
+    }
+    let evidence_count = candidates.len();
+    let latency_ms = payload.get("elapsed_ms").and_then(Value::as_u64);
+    Ok((candidates, evidence_count, latency_ms))
+}
+
 impl AgentFirstReadBackendCandidates {
     fn into_evidence(self) -> Result<AgentRouteBackendEvidence> {
         let candidate_count = self.candidate_files.len() + self.candidates.len();
-        if candidate_count == 0 {
-            bail!("agent_first_read backend_candidates must contain candidate_files or candidates");
+        if candidate_count == 0 && self.search_graph.is_none() {
+            bail!(
+                "agent_first_read backend_candidates must contain candidate_files, candidates, or search_graph"
+            );
+        }
+        if candidate_count > 0 && self.search_graph.is_some() {
+            bail!(
+                "agent_first_read backend_candidates.search_graph cannot be combined with candidate_files or candidates"
+            );
         }
         if candidate_count > AGENT_FIRST_READ_BACKEND_CANDIDATE_LIMIT {
             bail!(
@@ -95,11 +144,28 @@ impl AgentFirstReadBackendCandidates {
             );
         }
 
-        let candidates = self
+        let mut candidates = self
             .candidates
             .into_iter()
             .map(AgentFirstReadBackendCandidate::into_route_candidate)
             .collect::<Result<Vec<_>>>()?;
+        let mut evidence_count = 0;
+        let mut latency_ms = self.latency_ms;
+        let mut evidence_sources = self.evidence_sources;
+        if let Some(search_graph) = self.search_graph {
+            let (search_candidates, search_evidence_count, search_latency_ms) =
+                agent_first_read_search_graph_candidates(&search_graph)?;
+            candidates = search_candidates;
+            evidence_count = search_evidence_count;
+            latency_ms = latency_ms.or(search_latency_ms);
+            if !evidence_sources
+                .iter()
+                .any(|source| source == "search_graph")
+                && evidence_sources.len() < AGENT_FIRST_READ_BACKEND_EVIDENCE_SOURCE_LIMIT
+            {
+                evidence_sources.push("search_graph".to_string());
+            }
+        }
         let mut candidate_files = self.candidate_files;
         for candidate in &candidates {
             if !candidate_files.contains(&candidate.file) {
@@ -113,9 +179,9 @@ impl AgentFirstReadBackendCandidates {
             prefer_for_context: true,
             candidate_files,
             candidates,
-            evidence_sources: self.evidence_sources,
-            evidence_count: 0,
-            latency_ms: self.latency_ms,
+            evidence_sources,
+            evidence_count,
+            latency_ms,
             confidence: self.confidence,
             notes: Vec::new(),
             tool_results: None,
@@ -513,7 +579,7 @@ fn tool_definitions() -> Value {
     });
     let agent_first_read_backend_candidates_schema = json!({
         "type": "object",
-        "description": "Optional compact candidate ranking from an external code graph. Pass candidate_files for file-only routing or candidates to preserve exact symbols. When no explicit seed is provided, CodeInsight prefers this ranking as bounded context seeds.",
+        "description": "Optional compact candidate ranking from an external code graph. Pass candidate_files for file-only routing, candidates to preserve exact symbols, or a complete search_graph response. When no explicit seed is provided, CodeInsight prefers this ranking as bounded context seeds.",
         "properties": {
             "provider": {"type": "string", "maxLength": 128},
             "candidate_files": {
@@ -540,6 +606,10 @@ fn tool_definitions() -> Value {
                     ]
                 }
             },
+            "search_graph": {
+                "type": "object",
+                "description": "Complete structured search_graph response. Accepts a direct payload, an MCP structuredContent wrapper, or a JSON-RPC result wrapper. CodeInsight consumes at most 8 valid candidates; use a backend search limit of 8 when possible to keep input tokens bounded."
+            },
             "evidence_sources": {
                 "type": "array",
                 "maxItems": 6,
@@ -551,7 +621,8 @@ fn tool_definitions() -> Value {
         "required": ["provider"],
         "anyOf": [
             {"required": ["candidate_files"]},
-            {"required": ["candidates"]}
+            {"required": ["candidates"]},
+            {"required": ["search_graph"]}
         ]
     });
     json!([
@@ -1691,10 +1762,14 @@ int login(void) {
             ])
         );
         assert_eq!(
+            backend_candidates["properties"]["search_graph"]["type"],
+            "object"
+        );
+        assert_eq!(
             backend_candidates["required"],
             serde_json::json!(["provider"])
         );
-        assert_eq!(backend_candidates["anyOf"].as_array().unwrap().len(), 2);
+        assert_eq!(backend_candidates["anyOf"].as_array().unwrap().len(), 3);
         assert_eq!(
             first_read["inputSchema"]["required"],
             serde_json::json!(["root", "task"])
@@ -1717,6 +1792,7 @@ int login(void) {
                 .map(|index| format!("src/{index}.rs"))
                 .collect(),
             candidates: Vec::new(),
+            search_graph: None,
             evidence_sources: Vec::new(),
             confidence: None,
             latency_ms: None,
@@ -1766,13 +1842,76 @@ int login(void) {
             Some("AuthService")
         );
 
+        let complete_search_graph =
+            serde_json::from_value::<AgentFirstReadBackendCandidates>(json!({
+                "provider": "codebase-memory-mcp",
+                "search_graph": {
+                    "structuredContent": {
+                        "total": 12,
+                        "results": [{"file_path": "src/fallback.rs", "name": "fallback"}],
+                        "semantic_results": (0..=AGENT_FIRST_READ_BACKEND_CANDIDATE_LIMIT)
+                            .map(|index| json!({
+                                "file_path": format!("src/semantic-{index}.rs"),
+                                "name": format!("semantic_{index}"),
+                                "label": "Function"
+                            }))
+                            .collect::<Vec<_>>(),
+                        "elapsed_ms": 17
+                    }
+                }
+            }))
+            .unwrap()
+            .into_evidence()
+            .unwrap();
+        assert_eq!(
+            complete_search_graph.candidates.len(),
+            AGENT_FIRST_READ_BACKEND_CANDIDATE_LIMIT
+        );
+        assert_eq!(
+            complete_search_graph.candidate_files[0],
+            "src/semantic-0.rs"
+        );
+        assert_eq!(
+            complete_search_graph.evidence_count,
+            AGENT_FIRST_READ_BACKEND_CANDIDATE_LIMIT
+        );
+        assert_eq!(complete_search_graph.latency_ms, Some(17));
+        assert_eq!(complete_search_graph.evidence_sources, vec!["search_graph"]);
+
+        let fallback_results = serde_json::from_value::<AgentFirstReadBackendCandidates>(json!({
+            "provider": "codebase-memory-mcp",
+            "search_graph": {
+                "results": [{"file_path": "src/fallback.rs", "name": "fallback"}],
+                "semantic_results": []
+            }
+        }))
+        .unwrap()
+        .into_evidence()
+        .unwrap();
+        assert_eq!(fallback_results.candidate_files, vec!["src/fallback.rs"]);
+        assert_eq!(fallback_results.evidence_count, 1);
+
+        let mixed = serde_json::from_value::<AgentFirstReadBackendCandidates>(json!({
+            "provider": "codebase-memory-mcp",
+            "candidate_files": ["src/main.rs"],
+            "search_graph": {"results": [{"file_path": "src/lib.rs"}]}
+        }))
+        .unwrap()
+        .into_evidence()
+        .unwrap_err();
+        assert!(mixed.to_string().contains("cannot be combined"));
+
         let empty = serde_json::from_value::<AgentFirstReadBackendCandidates>(json!({
             "provider": "codebase-memory-mcp"
         }))
         .unwrap()
         .into_evidence()
         .unwrap_err();
-        assert!(empty.to_string().contains("candidate_files or candidates"));
+        assert!(
+            empty
+                .to_string()
+                .contains("candidate_files, candidates, or search_graph")
+        );
 
         let missing_path = serde_json::from_value::<AgentFirstReadBackendCandidates>(json!({
             "provider": "codebase-memory-mcp",
