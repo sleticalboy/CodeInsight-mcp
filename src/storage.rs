@@ -118,6 +118,30 @@ impl Store {
         self.replace_dependencies(file_id, dependencies)
     }
 
+    pub fn indexed_dependencies(&self) -> Result<Vec<Dependency>> {
+        let mut stmt = self.conn.prepare(
+            "select f.path, d.target, d.resolved_file, d.local_alias, d.imported_symbol,
+                    d.kind, d.language, d.line
+             from dependencies d
+             join files f on f.id = d.source_file_id
+             order by f.path, d.line",
+        )?;
+        let rows = stmt.query_map([], |row| {
+            let language: String = row.get(6)?;
+            Ok(Dependency {
+                source_file: row.get(0)?,
+                target: row.get(1)?,
+                resolved_file: row.get(2)?,
+                local_alias: row.get(3)?,
+                imported_symbol: row.get(4)?,
+                kind: row.get(5)?,
+                language: parse_language(&language),
+                line: row.get::<_, i64>(7)? as usize,
+            })
+        })?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
     pub fn replace_calls(&mut self, file_id: i64, calls: &[CallEdge]) -> Result<()> {
         let tx = self.conn.transaction()?;
         tx.execute(

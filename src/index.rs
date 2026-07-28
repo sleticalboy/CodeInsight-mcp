@@ -75,6 +75,30 @@ fn is_resolution_input(path: &Path) -> bool {
     )
 }
 
+fn node_package_name(target: &str) -> Option<String> {
+    if target.starts_with('.') || target.starts_with('/') || target.starts_with('#') {
+        return None;
+    }
+    let mut segments = target.split('/');
+    let first = segments.next()?;
+    if first.starts_with('@') {
+        Some(format!("{first}/{}", segments.next()?))
+    } else {
+        Some(first.to_string())
+    }
+}
+
+fn package_json_from_resolved_file(path: &str) -> Option<String> {
+    let (prefix, remainder) = path.rsplit_once("node_modules/")?;
+    let mut segments = remainder.split('/');
+    let package_name = if remainder.starts_with('@') {
+        format!("{}/{}", segments.next()?, segments.next()?)
+    } else {
+        segments.next()?.to_string()
+    };
+    Some(format!("{prefix}node_modules/{package_name}/package.json"))
+}
+
 fn add_resolution_input(root: &Path, inputs: &mut BTreeMap<String, String>, relative_path: &str) {
     let path = root.join(relative_path);
     let value = match fs::read(&path) {
@@ -138,6 +162,24 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
     ] {
         if root.join(relative_path).is_file() {
             add_resolution_input(&root, &mut resolution_inputs, relative_path);
+        }
+    }
+    for dependency in store.indexed_dependencies()? {
+        if let Some(package_path) = dependency
+            .resolved_file
+            .as_deref()
+            .and_then(package_json_from_resolved_file)
+        {
+            add_resolution_input(&root, &mut resolution_inputs, &package_path);
+        } else if let Some(package_name) = node_package_name(&dependency.target)
+            && let Some(package_path) =
+                find_node_modules_package_json(&root, &dependency.source_file, &package_name)
+        {
+            add_resolution_input(
+                &root,
+                &mut resolution_inputs,
+                &package_path.to_string_lossy(),
+            );
         }
     }
     if force {
@@ -9089,8 +9131,38 @@ describe("routes", function () {
             Some("node_modules/typed-lib/dist/index.js")
         );
 
-        let third = index_project(dir.path(), false).unwrap();
-        assert_eq!(third.changed_files, 0);
-        assert_eq!(third.unchanged_files, 1);
+        std::fs::write(
+            dir.path().join("node_modules/typed-lib/package.json"),
+            r#"{
+  "name": "typed-lib",
+  "exports": {
+    ".": {
+      "import": "./dist/runtime-v2.js",
+      "default": "./dist/default.js"
+    }
+  }
+}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            dir.path().join("node_modules/typed-lib/dist/runtime-v2.js"),
+            "export const typedValue = { value: \"runtime-v2\" };\n",
+        )
+        .unwrap();
+        let package_changed = index_project(dir.path(), false).unwrap();
+        assert_eq!(package_changed.changed_files, 0);
+        assert_eq!(package_changed.unchanged_files, 1);
+        let package_dependencies = Store::open(dir.path())
+            .unwrap()
+            .resolved_dependencies_for_files(&files)
+            .unwrap();
+        assert_eq!(
+            package_dependencies[0].resolved_file.as_deref(),
+            Some("node_modules/typed-lib/dist/runtime-v2.js")
+        );
+
+        let fourth = index_project(dir.path(), false).unwrap();
+        assert_eq!(fourth.changed_files, 0);
+        assert_eq!(fourth.unchanged_files, 1);
     }
 }
