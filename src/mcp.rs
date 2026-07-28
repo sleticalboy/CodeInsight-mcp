@@ -443,15 +443,17 @@ fn repository_fingerprint(root: &Path) -> Result<Option<RepositoryFingerprint>> 
     let tracked_diff = successful_git_stdout(root, &["diff", "--binary", "HEAD", "--"])?;
     let untracked =
         successful_git_stdout(root, &["ls-files", "--others", "--exclude-standard", "-z"])?;
+    let untracked_paths = untracked
+        .split(|byte| *byte == 0)
+        .filter(|path| !path.is_empty())
+        .filter(|path| *path != b".codeinsight" && !path.starts_with(b".codeinsight/"))
+        .collect::<Vec<_>>();
 
     let mut hasher = Sha256::new();
     hasher.update(head.as_bytes());
     hasher.update([0]);
     hasher.update(&tracked_diff);
-    for raw_path in untracked
-        .split(|byte| *byte == 0)
-        .filter(|path| !path.is_empty())
-    {
+    for raw_path in &untracked_paths {
         hasher.update([0]);
         hasher.update(raw_path);
         let relative = PathBuf::from(String::from_utf8_lossy(raw_path).into_owned());
@@ -468,7 +470,7 @@ fn repository_fingerprint(root: &Path) -> Result<Option<RepositoryFingerprint>> 
     Ok(Some(RepositoryFingerprint {
         value: format!("{:x}", hasher.finalize()),
         head,
-        dirty: !tracked_diff.is_empty() || !untracked.is_empty(),
+        dirty: !tracked_diff.is_empty() || !untracked_paths.is_empty(),
     }))
 }
 
@@ -484,13 +486,42 @@ fn codebase_memory_index_cache_key(
     )
 }
 
+fn codebase_memory_index_fingerprint_path(key: &CodebaseMemoryIndexCacheKey) -> PathBuf {
+    let mut hasher = Sha256::new();
+    hasher.update(key.1.as_bytes());
+    hasher.update([0]);
+    hasher.update(key.2.to_string_lossy().as_bytes());
+    let cache_name = format!("codebase-memory-index-{:x}.fingerprint", hasher.finalize());
+    crate::storage::cache_dir(&key.0).join(cache_name)
+}
+
+fn valid_repository_fingerprint(value: &str) -> bool {
+    value.len() == 64 && value.bytes().all(|byte| byte.is_ascii_hexdigit())
+}
+
 fn codebase_memory_cached_index_fingerprint(key: &CodebaseMemoryIndexCacheKey) -> Option<String> {
-    CODEBASE_MEMORY_INDEX_FINGERPRINTS
+    let in_memory = CODEBASE_MEMORY_INDEX_FINGERPRINTS
         .get_or_init(|| Mutex::new(HashMap::new()))
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner())
         .get(key)
-        .cloned()
+        .cloned();
+    if in_memory.is_some() {
+        return in_memory;
+    }
+
+    let persisted = std::fs::read_to_string(codebase_memory_index_fingerprint_path(key))
+        .ok()
+        .map(|value| value.trim().to_ascii_lowercase())
+        .filter(|value| valid_repository_fingerprint(value));
+    if let Some(fingerprint) = persisted.as_ref() {
+        CODEBASE_MEMORY_INDEX_FINGERPRINTS
+            .get_or_init(|| Mutex::new(HashMap::new()))
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .insert(key.clone(), fingerprint.clone());
+    }
+    persisted
 }
 
 fn codebase_memory_cache_index(
@@ -501,7 +532,12 @@ fn codebase_memory_cache_index(
         .get_or_init(|| Mutex::new(HashMap::new()))
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner())
-        .insert(key, fingerprint.value.clone());
+        .insert(key.clone(), fingerprint.value.clone());
+    let path = codebase_memory_index_fingerprint_path(&key);
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    let _ = std::fs::write(path, &fingerprint.value);
 }
 
 fn codebase_memory_indexed_heads(
@@ -2872,6 +2908,13 @@ esac
 
         assert_eq!(route().candidate_files, vec!["target.rs"]);
         assert_eq!(std::fs::read(&marker).unwrap().len(), 1);
+        let cache_key = codebase_memory_index_cache_key(&root, "fixture", backend.as_os_str());
+        CODEBASE_MEMORY_INDEX_FINGERPRINTS
+            .get()
+            .unwrap()
+            .lock()
+            .unwrap()
+            .remove(&cache_key);
         assert_eq!(route().candidate_files, vec!["target.rs"]);
         assert_eq!(std::fs::read(&marker).unwrap().len(), 1);
 
