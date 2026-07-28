@@ -14536,19 +14536,20 @@ case "$2" in
       printf '%s\n' '{"error":"project not found or not indexed"}'
       exit 1
     fi
-    if test "$6" = "inspect src/main.ts without backend match"; then
+    case "$6" in
+    *"without backend match"*)
       printf '%s\n' '{"results":[]}'
       exit 0
-    fi
-    if test "$6" = "inspect src/main.ts when backend unavailable"; then
+      ;;
+    *"when backend unavailable"*)
       printf '%s\n' 'backend unavailable' >&2
       exit 9
-    fi
-    if test "$6" = "inspect explicit file without backend call" ||
-       test "$6" = "inspect explicit symbol without backend call"; then
+      ;;
+    *"explicit file without backend call"*|*"explicit symbol without backend call"*)
       printf '%s\n' 'explicit seed unexpectedly invoked backend' >&2
       exit 9
-    fi
+      ;;
+    esac
     printf '%s\n' '{"result":{"structuredContent":{"results":[{"name":"targetLater","qualified_name":"fixture.src.multi_long.targetLater","file_path":"src/multi-long.ts"}],"elapsed_ms":4}}}'
     ;;
   *)

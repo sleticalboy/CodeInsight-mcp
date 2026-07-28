@@ -408,6 +408,63 @@ fn codebase_memory_project(root: &Path, configured: Option<String>) -> Result<St
         .context("agent_first_read backend.project is required when root has no file name")
 }
 
+fn codebase_memory_search_query(task: &str) -> String {
+    let is_noise = |keyword: &str| {
+        matches!(
+            keyword,
+            "the"
+                | "and"
+                | "for"
+                | "with"
+                | "from"
+                | "into"
+                | "this"
+                | "that"
+                | "find"
+                | "inspect"
+                | "understand"
+                | "locate"
+                | "analyze"
+                | "review"
+                | "explain"
+                | "identify"
+                | "show"
+                | "code"
+                | "file"
+                | "module"
+                | "implementation"
+                | "behavior"
+        )
+    };
+    let mut keywords = task
+        .split(|character: char| !character.is_ascii_alphanumeric() && character != '_')
+        .filter_map(|word| {
+            let normalized = word.to_ascii_lowercase();
+            (normalized.len() >= 3 && !is_noise(&normalized)).then(|| word.to_string())
+        })
+        .take(8)
+        .collect::<Vec<_>>();
+    if !task.is_ascii() && keywords.len() < 2 {
+        for keyword in tools::task_keywords(task) {
+            if !is_noise(&keyword)
+                && !keywords
+                    .iter()
+                    .any(|existing| existing.eq_ignore_ascii_case(&keyword))
+            {
+                keywords.push(keyword);
+                if keywords.len() == 8 {
+                    break;
+                }
+            }
+        }
+    }
+    if keywords.is_empty() {
+        task.trim().to_string()
+    } else {
+        keywords.join(" ")
+    }
+}
+
 fn codebase_memory_agent_first_read_evidence(
     root: &Path,
     task: &str,
@@ -427,6 +484,7 @@ fn codebase_memory_agent_first_read_evidence_with_binary(
     config.validate()?;
     let project = codebase_memory_project(root, config.project)?;
     let timeout = Duration::from_millis(config.timeout_ms);
+    let search_query = codebase_memory_search_query(task);
 
     let index_project = || {
         codebase_memory_cli_value(
@@ -451,7 +509,7 @@ fn codebase_memory_agent_first_read_evidence_with_binary(
                 OsString::from("--project"),
                 OsString::from(&project),
                 OsString::from("--query"),
-                OsString::from(task),
+                OsString::from(&search_query),
                 OsString::from("--limit"),
                 OsString::from(AGENT_FIRST_READ_BACKEND_CANDIDATE_LIMIT.to_string()),
             ],
@@ -2189,6 +2247,31 @@ int login(void) {
             first_read["inputSchema"]["required"],
             serde_json::json!(["root", "task"])
         );
+    }
+
+    #[test]
+    fn codebase_memory_search_query_prioritizes_domain_terms() {
+        let query = codebase_memory_search_query("find backend failure policy implementation");
+        let keywords = query.split_whitespace().collect::<Vec<_>>();
+        assert!(keywords.contains(&"backend"));
+        assert!(keywords.contains(&"failure"));
+        assert!(keywords.contains(&"policy"));
+        assert!(!keywords.contains(&"find"));
+        assert!(!keywords.contains(&"implementation"));
+        assert!(keywords.len() <= 8);
+        assert_eq!(query, "backend failure policy");
+        assert_eq!(
+            codebase_memory_search_query("find AgentFirstReadBackendFailurePolicy"),
+            "AgentFirstReadBackendFailurePolicy"
+        );
+        let chinese_query = codebase_memory_search_query("修复安全漏洞");
+        assert!(chinese_query.is_ascii());
+        assert!(
+            chinese_query
+                .split_whitespace()
+                .any(|word| word == "security")
+        );
+        assert_eq!(codebase_memory_search_query("find inspect"), "find inspect");
     }
 
     #[test]

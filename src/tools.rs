@@ -14766,7 +14766,7 @@ fn auto_seed_file_role(file: &str) -> &'static str {
     }
 }
 
-fn task_keywords(task: &str) -> Vec<String> {
+pub(crate) fn task_keywords(task: &str) -> Vec<String> {
     let mut keywords = Vec::new();
     // Preserve localized intent when a long mixed-language prompt also expands
     // many English aliases and reaches the keyword budget.
