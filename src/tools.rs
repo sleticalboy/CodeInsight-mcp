@@ -3424,7 +3424,7 @@ fn empty_context_pack_for_invalid_seed_route(
             "Context pack could not resolve an explicit seed file: {error_message}. Provide an existing --file path under the project root or use --symbol."
         ),
         seed_strategy: "explicit_invalid_seed".to_string(),
-        selected_seeds: explicit_context_seeds(&[], seed_files),
+        selected_seeds: explicit_context_seeds(&[], seed_files, &BTreeMap::new()),
         reading_plan: Vec::new(),
         semantic_status: ContextSemanticStatus {
             provider: "disabled".to_string(),
@@ -4300,7 +4300,7 @@ pub fn context_pack_value(
     let auto_seeded = seed_symbols.is_empty() && seed_files.is_empty();
     let store = Store::open(&root)?;
     let mut seed_strategy = "explicit".to_string();
-    let mut selected_seeds = explicit_context_seeds(&seed_symbols, &seed_files);
+    let mut selected_seeds = Vec::new();
     let mut task_path_locations = BTreeMap::new();
     if auto_seeded {
         let auto_selection = auto_context_seed_files(&store, &root, &task, &task_keywords)?;
@@ -4324,12 +4324,17 @@ pub fn context_pack_value(
 
     let mut symbols = Vec::new();
     let mut references = Vec::new();
-    let seed_files = seed_files
-        .iter()
-        .map(|file| normalize_seed_file(&root, file))
-        .collect::<Result<Vec<_>>>()?;
-    if !auto_seeded {
-        selected_seeds = explicit_context_seeds(&seed_symbols, &seed_files);
+    if auto_seeded {
+        seed_files = seed_files
+            .iter()
+            .map(|file| normalize_seed_file(&root, file))
+            .collect::<Result<Vec<_>>>()?;
+    } else {
+        let (normalized_files, explicit_locations) =
+            normalize_explicit_seed_files(&root, &seed_files)?;
+        seed_files = normalized_files;
+        task_path_locations = explicit_locations;
+        selected_seeds = explicit_context_seeds(&seed_symbols, &seed_files, &task_path_locations);
     }
     let seed_file_set = seed_files.iter().cloned().collect::<BTreeSet<_>>();
     let seed_file_order = seed_files
@@ -10311,7 +10316,7 @@ struct AutoContextSeedSelection {
     strategy: String,
     files: Vec<String>,
     seeds: Vec<ContextSeed>,
-    task_path_locations: BTreeMap<String, Vec<TaskPathLocation>>,
+    task_path_locations: TaskPathLocations,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -10319,6 +10324,8 @@ struct TaskPathLocation {
     start_line: usize,
     end_line: usize,
 }
+
+type TaskPathLocations = BTreeMap<String, Vec<TaskPathLocation>>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct TaskPathReference {
@@ -14960,7 +14967,11 @@ fn auto_seed_package_name_keyword_allowed(keyword: &str) -> bool {
         )
 }
 
-fn explicit_context_seeds(seed_symbols: &[String], seed_files: &[String]) -> Vec<ContextSeed> {
+fn explicit_context_seeds(
+    seed_symbols: &[String],
+    seed_files: &[String],
+    task_path_locations: &TaskPathLocations,
+) -> Vec<ContextSeed> {
     let mut seeds = seed_symbols
         .iter()
         .map(|symbol| ContextSeed {
@@ -14974,15 +14985,23 @@ fn explicit_context_seeds(seed_symbols: &[String], seed_files: &[String]) -> Vec
             matched_symbols: Vec::new(),
         })
         .collect::<Vec<_>>();
-    seeds.extend(seed_files.iter().map(|file| ContextSeed {
-        kind: "file".to_string(),
-        value: file.clone(),
-        source: "explicit".to_string(),
-        start_line: None,
-        end_line: None,
-        role: Some(auto_seed_file_role(file).to_string()),
-        matched_keywords: Vec::new(),
-        matched_symbols: Vec::new(),
+    seeds.extend(seed_files.iter().map(|file| {
+        ContextSeed {
+            kind: "file".to_string(),
+            value: file.clone(),
+            source: "explicit".to_string(),
+            start_line: task_path_locations
+                .get(file)
+                .and_then(|locations| locations.first())
+                .map(|location| location.start_line),
+            end_line: task_path_locations
+                .get(file)
+                .and_then(|locations| locations.first())
+                .map(|location| location.end_line),
+            role: Some(auto_seed_file_role(file).to_string()),
+            matched_keywords: Vec::new(),
+            matched_symbols: Vec::new(),
+        }
     }));
     seeds
 }
@@ -15439,7 +15458,36 @@ fn is_task_stop_word(word: &str) -> bool {
 }
 
 fn normalize_seed_file(root: &Path, file: &str) -> Result<String> {
-    let path = PathBuf::from(file);
+    Ok(normalize_seed_file_reference(root, file)?.file)
+}
+
+fn normalize_explicit_seed_files(
+    root: &Path,
+    seed_files: &[String],
+) -> Result<(Vec<String>, TaskPathLocations)> {
+    let mut files = Vec::new();
+    let mut locations = TaskPathLocations::new();
+
+    for seed_file in seed_files {
+        let reference = normalize_seed_file_reference(root, seed_file)?;
+        if !files.contains(&reference.file) {
+            files.push(reference.file.clone());
+        }
+        if let Some(location) = reference.location {
+            let file_locations = locations.entry(reference.file).or_default();
+            if !file_locations.contains(&location) {
+                file_locations.push(location);
+            }
+        }
+    }
+
+    Ok((files, locations))
+}
+
+fn normalize_seed_file_reference(root: &Path, file: &str) -> Result<TaskPathReference> {
+    let normalized = file.replace('\\', "/");
+    let (path_token, location) = split_auto_seed_task_path_location(&normalized);
+    let path = PathBuf::from(path_token);
     let absolute = if path.is_absolute() {
         path
     } else {
@@ -15451,7 +15499,10 @@ fn normalize_seed_file(root: &Path, file: &str) -> Result<String> {
     let relative = canonical
         .strip_prefix(root)
         .with_context(|| format!("seed file is outside project root: {file}"))?;
-    Ok(relative.to_string_lossy().replace('\\', "/"))
+    Ok(TaskPathReference {
+        file: relative.to_string_lossy().replace('\\', "/"),
+        location,
+    })
 }
 
 fn normalize_dependency_languages(languages: &[String]) -> Result<Vec<String>> {

@@ -154,7 +154,10 @@ pub struct ContextPackArgs {
     pub task: String,
     #[arg(long = "symbol")]
     pub symbols: Vec<String>,
-    #[arg(long = "file")]
+    #[arg(
+        long = "file",
+        help = "Seed file path, optionally with :line[:column] or #Lstart-Lend"
+    )]
     pub files: Vec<String>,
     #[arg(long, default_value_t = 6000)]
     pub token_budget: usize,

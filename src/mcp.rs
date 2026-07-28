@@ -1775,7 +1775,10 @@ fn tool_definitions() -> Value {
                     },
                     "files": {
                         "type": "array",
-                        "items": {"type": "string"}
+                        "items": {
+                            "type": "string",
+                            "description": "Seed file path, optionally with :line[:column] or #Lstart-Lend."
+                        }
                     },
                     "token_budget": {"type": "integer", "minimum": 500}
                 },
@@ -1796,7 +1799,10 @@ fn tool_definitions() -> Value {
                     },
                     "files": {
                         "type": "array",
-                        "items": {"type": "string"}
+                        "items": {
+                            "type": "string",
+                            "description": "Seed file path, optionally with :line[:column] or #Lstart-Lend."
+                        }
                     },
                     "token_budget": {"type": "integer", "minimum": 500, "default": 6000},
                     "response_token_budget": {
@@ -1860,7 +1866,10 @@ fn tool_definitions() -> Value {
                     },
                     "files": {
                         "type": "array",
-                        "items": {"type": "string"}
+                        "items": {
+                            "type": "string",
+                            "description": "Seed file path, optionally with :line[:column] or #Lstart-Lend."
+                        }
                     },
                     "token_budget": {"type": "integer", "minimum": 500},
                     "force_index": {"type": "boolean"},
@@ -2472,20 +2481,62 @@ def helper():
             "arguments": {
                 "root": dir.path(),
                 "task": "understand auth file",
-                "files": ["auth.py"],
+                "files": ["auth.py:4"],
                 "token_budget": 1200
             }
         }))
         .unwrap();
         assert_eq!(
+            file_context_result["structuredContent"]["selected_seeds"][0]["value"].as_str(),
+            Some("auth.py")
+        );
+        assert_eq!(
+            file_context_result["structuredContent"]["selected_seeds"][0]["start_line"].as_u64(),
+            Some(4)
+        );
+        assert_eq!(
+            file_context_result["structuredContent"]["selected_seeds"][0]["end_line"].as_u64(),
+            Some(4)
+        );
+        assert_eq!(
             file_context_result["structuredContent"]["files"][0]["file"].as_str(),
             Some("auth.py")
+        );
+        assert!(
+            file_context_result["structuredContent"]["files"][0]["ranges"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|range| range["source"] == "task_location"
+                    && range["start_line"].as_u64().unwrap() <= 4
+                    && range["end_line"].as_u64().unwrap() >= 4)
         );
         assert!(
             file_context_result["structuredContent"]["summary"]
                 .as_str()
                 .unwrap()
                 .contains("seed files")
+        );
+
+        let located_route_result = handle_tool_call(json!({
+            "name": "agent_route",
+            "arguments": {
+                "root": dir.path(),
+                "task": "inspect auth class",
+                "files": ["auth.py:4"],
+                "token_budget": 1200
+            }
+        }))
+        .unwrap();
+        assert_eq!(
+            located_route_result["structuredContent"]["context_pack"]["selected_seeds"][0]
+                ["start_line"]
+                .as_u64(),
+            Some(4)
+        );
+        assert_eq!(
+            located_route_result["structuredContent"]["impact_seed_files"][0].as_str(),
+            Some("auth.py")
         );
 
         let callers_result = handle_tool_call(json!({
