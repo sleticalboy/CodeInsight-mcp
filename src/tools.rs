@@ -117,6 +117,7 @@ impl BackendContextSelection {
 }
 
 const CONTEXT_SCORE_SEED_HEADER: i32 = 140;
+const CONTEXT_SCORE_TASK_LOCATION: i32 = 220;
 const CONTEXT_SCORE_SYMBOL_DEFINITION: i32 = 90;
 const CONTEXT_SCORE_TYPE_RELATION: i32 = 82;
 const CONTEXT_SCORE_CALL_GRAPH: i32 = 75;
@@ -4299,11 +4300,13 @@ pub fn context_pack_value(
     let store = Store::open(&root)?;
     let mut seed_strategy = "explicit".to_string();
     let mut selected_seeds = explicit_context_seeds(&seed_symbols, &seed_files);
+    let mut task_path_locations = BTreeMap::new();
     if auto_seeded {
         let auto_selection = auto_context_seed_files(&store, &root, &task, &task_keywords)?;
         seed_strategy = auto_selection.strategy;
         seed_files = auto_selection.files;
         selected_seeds = auto_selection.seeds;
+        task_path_locations = auto_selection.task_path_locations;
         if seed_files.is_empty() {
             if seed_strategy == "auto_task_path_unindexed" {
                 let baseline_source_lines = store.overview(&root)?.total_lines;
@@ -4368,7 +4371,14 @@ pub fn context_pack_value(
 
     let mut ranges_by_file: BTreeMap<String, Vec<ContextCandidateRange>> = BTreeMap::new();
     for file in &seed_files {
-        for range in seed_file_ranges(&root, file, &symbols, &task_keywords, &seed_symbols) {
+        for range in seed_file_ranges(
+            &root,
+            file,
+            &symbols,
+            &task_keywords,
+            &seed_symbols,
+            task_path_locations.get(file).copied(),
+        ) {
             push_context_range(
                 &mut ranges_by_file,
                 file.clone(),
@@ -9562,12 +9572,29 @@ fn seed_file_ranges(
     symbols: &[Symbol],
     task_keywords: &[String],
     seed_symbols: &[String],
+    task_path_location: Option<TaskPathLocation>,
 ) -> Vec<ContextCandidateRange> {
     let path = root.join(file);
     let source = fs::read_to_string(path).unwrap_or_default();
     let lines = source.lines().collect::<Vec<_>>();
     let line_count = lines.len().max(1);
     let mut ranges = Vec::new();
+
+    if let Some(location) = task_path_location {
+        let requested_start = location.start_line.clamp(1, line_count);
+        let requested_end = location.end_line.clamp(requested_start, line_count);
+        ranges.push(ContextCandidateRange {
+            start_line: requested_start.saturating_sub(3).max(1),
+            end_line: requested_end.saturating_add(3).min(line_count),
+            reason: if requested_start == requested_end {
+                format!("Task requested {file} near line {requested_start}")
+            } else {
+                format!("Task requested {file} lines {requested_start}-{requested_end}")
+            },
+            source: "task_location".to_string(),
+            score: CONTEXT_SCORE_TASK_LOCATION,
+        });
+    }
 
     if let Some(end_line) = header_range_end(&lines) {
         let matched_keywords = auto_seed_file_matched_keywords(root, file, None, task_keywords);
@@ -10267,6 +10294,19 @@ struct AutoContextSeedSelection {
     strategy: String,
     files: Vec<String>,
     seeds: Vec<ContextSeed>,
+    task_path_locations: BTreeMap<String, TaskPathLocation>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct TaskPathLocation {
+    start_line: usize,
+    end_line: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct TaskPathReference {
+    file: String,
+    location: Option<TaskPathLocation>,
 }
 
 #[derive(Debug, Clone)]
@@ -10286,7 +10326,22 @@ fn auto_context_seed_files(
     task_keywords: &[String],
 ) -> Result<AutoContextSeedSelection> {
     let indexed_files = store.indexed_files()?;
-    let task_path_files = auto_seed_task_path_files(root, task, &indexed_files);
+    let indexed_file_set = indexed_files.iter().cloned().collect::<BTreeSet<_>>();
+    let task_path_references = auto_seed_task_path_references(root, task);
+    let mut task_path_files = Vec::new();
+    let mut task_path_locations = BTreeMap::new();
+    for reference in &task_path_references {
+        if !indexed_file_set.contains(&reference.file)
+            || task_path_files.contains(&reference.file)
+            || task_path_files.len() >= 3
+        {
+            continue;
+        }
+        task_path_files.push(reference.file.clone());
+        if let Some(location) = reference.location {
+            task_path_locations.insert(reference.file.clone(), location);
+        }
+    }
     if !task_path_files.is_empty() {
         let seeds = task_path_files
             .iter()
@@ -10294,6 +10349,12 @@ fn auto_context_seed_files(
                 kind: "file".to_string(),
                 value: file.clone(),
                 source: "task_path".to_string(),
+                start_line: task_path_locations
+                    .get(file)
+                    .map(|location| location.start_line),
+                end_line: task_path_locations
+                    .get(file)
+                    .map(|location| location.end_line),
                 role: Some(auto_seed_file_role(file).to_string()),
                 matched_keywords: Vec::new(),
                 matched_symbols: Vec::new(),
@@ -10303,9 +10364,18 @@ fn auto_context_seed_files(
             strategy: "auto_task_path".to_string(),
             files: task_path_files,
             seeds,
+            task_path_locations,
         });
     }
-    let unindexed_task_path_files = auto_seed_unindexed_task_path_files(root, task, &indexed_files);
+    let mut seen_unindexed_task_paths = BTreeSet::new();
+    let unindexed_task_path_files = task_path_references
+        .iter()
+        .filter(|reference| !indexed_file_set.contains(&reference.file))
+        .filter(|reference| auto_seed_task_path_exists_in_project(root, &reference.file))
+        .filter(|reference| seen_unindexed_task_paths.insert(reference.file.clone()))
+        .map(|reference| reference.file.clone())
+        .take(3)
+        .collect::<Vec<_>>();
     if !unindexed_task_path_files.is_empty() {
         let seeds = unindexed_task_path_files
             .iter()
@@ -10313,6 +10383,16 @@ fn auto_context_seed_files(
                 kind: "file".to_string(),
                 value: file.clone(),
                 source: "task_path_unindexed".to_string(),
+                start_line: task_path_references
+                    .iter()
+                    .find(|reference| reference.file == *file)
+                    .and_then(|reference| reference.location)
+                    .map(|location| location.start_line),
+                end_line: task_path_references
+                    .iter()
+                    .find(|reference| reference.file == *file)
+                    .and_then(|reference| reference.location)
+                    .map(|location| location.end_line),
                 role: Some(auto_seed_file_role(file).to_string()),
                 matched_keywords: Vec::new(),
                 matched_symbols: Vec::new(),
@@ -10322,6 +10402,7 @@ fn auto_context_seed_files(
             strategy: "auto_task_path_unindexed".to_string(),
             files: Vec::new(),
             seeds,
+            task_path_locations: BTreeMap::new(),
         });
     }
 
@@ -10769,6 +10850,8 @@ fn auto_context_seed_files(
             kind: "file".to_string(),
             value: file,
             source,
+            start_line: None,
+            end_line: None,
             role: Some(candidate.role.clone()),
             matched_keywords: candidate.matched_keywords.clone(),
             matched_symbols: candidate.matched_symbols.clone(),
@@ -10779,6 +10862,8 @@ fn auto_context_seed_files(
                 kind: "file".to_string(),
                 value: entrypoint.file,
                 source: entrypoint.source,
+                start_line: None,
+                end_line: None,
                 role: Some(entrypoint.role),
                 matched_keywords: entrypoint.matched_keywords,
                 matched_symbols: entrypoint.matched_symbols,
@@ -10788,6 +10873,7 @@ fn auto_context_seed_files(
             strategy: strategy.to_string(),
             files,
             seeds,
+            task_path_locations: BTreeMap::new(),
         });
     }
 
@@ -10802,6 +10888,8 @@ fn auto_context_seed_files(
             kind: "file".to_string(),
             value: file.clone(),
             source: "indexed_file_fallback".to_string(),
+            start_line: None,
+            end_line: None,
             role: Some(auto_seed_file_role(file).to_string()),
             matched_keywords: Vec::new(),
             matched_symbols: Vec::new(),
@@ -10812,36 +10900,14 @@ fn auto_context_seed_files(
         strategy: "auto_source_fallback".to_string(),
         files,
         seeds,
+        task_path_locations: BTreeMap::new(),
     })
-}
-
-fn auto_seed_task_path_files(root: &Path, task: &str, indexed_files: &[String]) -> Vec<String> {
-    let indexed_file_set = indexed_files.iter().cloned().collect::<BTreeSet<_>>();
-    auto_seed_task_path_tokens(root, task)
-        .into_iter()
-        .filter(|token| indexed_file_set.contains(token))
-        .take(3)
-        .collect()
 }
 
 pub(crate) fn task_has_existing_path(root: &Path, task: &str) -> bool {
     auto_seed_task_path_tokens(root, task)
         .into_iter()
         .any(|token| auto_seed_task_path_exists_in_project(root, &token))
-}
-
-fn auto_seed_unindexed_task_path_files(
-    root: &Path,
-    task: &str,
-    indexed_files: &[String],
-) -> Vec<String> {
-    let indexed_file_set = indexed_files.iter().cloned().collect::<BTreeSet<_>>();
-    auto_seed_task_path_tokens(root, task)
-        .into_iter()
-        .filter(|token| !indexed_file_set.contains(token))
-        .filter(|token| auto_seed_task_path_exists_in_project(root, token))
-        .take(3)
-        .collect()
 }
 
 fn auto_seed_task_path_exists_in_project(root: &Path, token: &str) -> bool {
@@ -10855,13 +10921,31 @@ fn auto_seed_task_path_exists_in_project(root: &Path, token: &str) -> bool {
 }
 
 fn auto_seed_task_path_tokens(root: &Path, task: &str) -> Vec<String> {
+    let mut seen = BTreeSet::new();
+    auto_seed_task_path_references(root, task)
+        .into_iter()
+        .filter(|reference| seen.insert(reference.file.clone()))
+        .map(|reference| reference.file)
+        .collect()
+}
+
+fn auto_seed_task_path_references(root: &Path, task: &str) -> Vec<TaskPathReference> {
     let canonical_root = root.canonicalize().ok();
     let mut seen = BTreeSet::new();
     auto_seed_task_path_candidates(task)
         .into_iter()
-        .filter_map(|token| normalize_auto_seed_task_path_token(canonical_root.as_deref(), token))
-        .filter(|token| token.contains('/'))
-        .filter(|token| seen.insert(token.clone()))
+        .filter_map(|token| {
+            normalize_auto_seed_task_path_reference(canonical_root.as_deref(), token)
+        })
+        .filter(|reference| reference.file.contains('/'))
+        .filter(|reference| {
+            seen.insert((
+                reference.file.clone(),
+                reference
+                    .location
+                    .map(|location| (location.start_line, location.end_line)),
+            ))
+        })
         .collect()
 }
 
@@ -10909,55 +10993,94 @@ fn auto_seed_task_path_is_project_relative(token: &str) -> bool {
 
 fn auto_seed_task_path_character(character: char) -> bool {
     character.is_ascii_alphanumeric()
-        || matches!(character, '/' | '\\' | '.' | '_' | '-' | '+' | '#')
+        || matches!(character, '/' | '\\' | '.' | '_' | '-' | '+' | '#' | ':')
 }
 
-fn normalize_auto_seed_task_path_token(
+fn normalize_auto_seed_task_path_reference(
     canonical_root: Option<&Path>,
     token: &str,
-) -> Option<String> {
+) -> Option<TaskPathReference> {
     let normalized = token.replace('\\', "/");
-    let normalized = strip_auto_seed_task_path_location(&normalized);
-    let path = Path::new(normalized);
-    if path.is_absolute() {
+    let (path_token, location) = split_auto_seed_task_path_location(&normalized);
+    let path = Path::new(path_token);
+    let file = if path.is_absolute() {
         let canonical_path = path.canonicalize().ok()?;
         let relative_path = canonical_path.strip_prefix(canonical_root?).ok()?;
         let relative_path = relative_path.to_string_lossy().replace('\\', "/");
-        return auto_seed_task_path_is_project_relative(&relative_path).then_some(relative_path);
-    }
+        auto_seed_task_path_is_project_relative(&relative_path).then_some(relative_path)?
+    } else {
+        let relative_path = path_token.trim_start_matches("./").to_string();
+        auto_seed_task_path_is_project_relative(&relative_path).then_some(relative_path)?
+    };
 
-    let relative_path = normalized.trim_start_matches("./").to_string();
-    auto_seed_task_path_is_project_relative(&relative_path).then_some(relative_path)
+    Some(TaskPathReference { file, location })
 }
 
-fn strip_auto_seed_task_path_location(token: &str) -> &str {
+fn split_auto_seed_task_path_location(token: &str) -> (&str, Option<TaskPathLocation>) {
     if let Some(fragment_start) = token.rfind("#L") {
         let fragment = &token[fragment_start + 2..];
-        let valid_fragment = fragment.split_once("-L").map_or_else(
-            || decimal_location(fragment),
-            |(start, end)| decimal_location(start) && decimal_location(end),
+        let location = fragment.split_once("-L").map_or_else(
+            || {
+                decimal_location_value(fragment).map(|line| TaskPathLocation {
+                    start_line: line,
+                    end_line: line,
+                })
+            },
+            |(start, end)| {
+                Some(TaskPathLocation {
+                    start_line: decimal_location_value(start)?,
+                    end_line: decimal_location_value(end)?,
+                })
+            },
         );
-        if valid_fragment {
-            return &token[..fragment_start];
+        if let Some(location) = location {
+            return (
+                &token[..fragment_start],
+                Some(normalize_task_path_location(location)),
+            );
         }
     }
 
     let Some(last_colon) = token.rfind(':') else {
-        return token;
+        return (token, None);
     };
-    if !decimal_location(&token[last_colon + 1..]) {
-        return token;
+    let Some(last_value) = decimal_location_value(&token[last_colon + 1..]) else {
+        return (token, None);
+    };
+
+    if let Some(previous_colon) = token[..last_colon].rfind(':')
+        && let Some(line) = decimal_location_value(&token[previous_colon + 1..last_colon])
+    {
+        return (
+            &token[..previous_colon],
+            Some(TaskPathLocation {
+                start_line: line,
+                end_line: line,
+            }),
+        );
     }
 
-    let path_end = token[..last_colon]
-        .rfind(':')
-        .filter(|previous_colon| decimal_location(&token[previous_colon + 1..last_colon]))
-        .unwrap_or(last_colon);
-    &token[..path_end]
+    (
+        &token[..last_colon],
+        Some(TaskPathLocation {
+            start_line: last_value,
+            end_line: last_value,
+        }),
+    )
 }
 
-fn decimal_location(value: &str) -> bool {
-    !value.is_empty() && value.bytes().all(|byte| byte.is_ascii_digit())
+fn normalize_task_path_location(location: TaskPathLocation) -> TaskPathLocation {
+    TaskPathLocation {
+        start_line: location.start_line.min(location.end_line),
+        end_line: location.start_line.max(location.end_line),
+    }
+}
+
+fn decimal_location_value(value: &str) -> Option<usize> {
+    (!value.is_empty() && value.bytes().all(|byte| byte.is_ascii_digit()))
+        .then(|| value.parse::<usize>().ok())
+        .flatten()
+        .filter(|value| *value > 0)
 }
 
 fn auto_seed_task_symbol_matches(
@@ -14819,6 +14942,8 @@ fn explicit_context_seeds(seed_symbols: &[String], seed_files: &[String]) -> Vec
             kind: "symbol".to_string(),
             value: symbol.clone(),
             source: "explicit".to_string(),
+            start_line: None,
+            end_line: None,
             role: None,
             matched_keywords: Vec::new(),
             matched_symbols: Vec::new(),
@@ -14828,6 +14953,8 @@ fn explicit_context_seeds(seed_symbols: &[String], seed_files: &[String]) -> Vec
         kind: "file".to_string(),
         value: file.clone(),
         source: "explicit".to_string(),
+        start_line: None,
+        end_line: None,
         role: Some(auto_seed_file_role(file).to_string()),
         matched_keywords: Vec::new(),
         matched_symbols: Vec::new(),
@@ -15414,14 +15541,39 @@ mod tests {
             vec!["src/main.ts"]
         );
         assert!(task_has_existing_path(&root, &absolute_task));
-        for located_task in [
-            "inspect \"src/main.ts:12:4\"".to_string(),
-            "inspect src/main.ts#L2-L4".to_string(),
-            format!("inspect '{}#L1'", root.join("src/main.ts").display()),
+        for (located_task, expected_location) in [
+            (
+                "inspect \"src/main.ts:12:4\"".to_string(),
+                TaskPathLocation {
+                    start_line: 12,
+                    end_line: 12,
+                },
+            ),
+            (
+                "inspect src/main.ts#L4-L2".to_string(),
+                TaskPathLocation {
+                    start_line: 2,
+                    end_line: 4,
+                },
+            ),
+            (
+                format!("inspect '{}#L1'", root.join("src/main.ts").display()),
+                TaskPathLocation {
+                    start_line: 1,
+                    end_line: 1,
+                },
+            ),
         ] {
             assert_eq!(
                 auto_seed_task_path_tokens(&root, &located_task),
                 vec!["src/main.ts"]
+            );
+            assert_eq!(
+                auto_seed_task_path_references(&root, &located_task),
+                vec![TaskPathReference {
+                    file: "src/main.ts".to_string(),
+                    location: Some(expected_location),
+                }]
             );
             assert!(task_has_existing_path(&root, &located_task));
         }
@@ -15459,9 +15611,9 @@ mod tests {
                 &root,
                 "inspect src/outside-link.ts"
             ));
-            assert!(
-                auto_seed_unindexed_task_path_files(&root, "inspect src/outside-link.ts", &[])
-                    .is_empty()
+            assert_eq!(
+                auto_seed_task_path_tokens(&root, "inspect src/outside-link.ts"),
+                vec!["src/outside-link.ts"]
             );
         }
     }

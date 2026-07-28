@@ -1189,7 +1189,7 @@ fn cli_indexes_and_queries_fixture_project() {
         "context-pack",
         fixture.path().to_str().unwrap(),
         "--task",
-        "inspect src/auth.py before editing login behavior",
+        "inspect src/auth.py:2 before editing login behavior",
         "--token-budget",
         "1600",
     ]);
@@ -1202,8 +1202,19 @@ fn cli_indexes_and_queries_fixture_project() {
         task_path_context["selected_seeds"][0]["source"],
         "task_path"
     );
+    assert_eq!(task_path_context["selected_seeds"][0]["start_line"], 2);
+    assert_eq!(task_path_context["selected_seeds"][0]["end_line"], 2);
     assert_eq!(task_path_context["files"][0]["file"], "src/auth.py");
     assert_eq!(task_path_context["files"][0]["source"], "seed_file");
+    assert!(
+        task_path_context["files"][0]["ranges"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|range| range["source"] == "task_location"
+                && range["start_line"].as_u64().unwrap() <= 2
+                && range["end_line"].as_u64().unwrap() >= 2)
+    );
 
     let semantic_context = run_json([
         "context-pack",
@@ -14837,6 +14848,25 @@ esac
     assert_eq!(
         task_path_response["result"]["structuredContent"]["context_pack"]["files"][0]["file"],
         "src/main.ts"
+    );
+    assert_eq!(
+        task_path_response["result"]["structuredContent"]["context_pack"]["selected_seeds"][0]["start_line"],
+        12
+    );
+    assert_eq!(
+        task_path_response["result"]["structuredContent"]["context_pack"]["selected_seeds"][0]["end_line"],
+        12
+    );
+    let task_path_ranges =
+        task_path_response["result"]["structuredContent"]["context_pack"]["files"][0]["ranges"]
+            .as_array()
+            .unwrap();
+    assert!(
+        task_path_ranges
+            .iter()
+            .any(|range| range["start_line"].as_u64().unwrap() <= 12
+                && range["end_line"].as_u64().unwrap() >= 12),
+        "unexpected task path ranges: {task_path_ranges:#?}"
     );
     assert!(absolute_task_path_response.get("error").is_none());
     assert_eq!(
