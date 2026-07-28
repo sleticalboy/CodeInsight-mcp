@@ -1216,6 +1216,37 @@ fn cli_indexes_and_queries_fixture_project() {
                 && range["end_line"].as_u64().unwrap() >= 2)
     );
 
+    let multi_location_context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "inspect src/long.ts:20 and src/long.ts#L70-L75 before editing",
+        "--token-budget",
+        "1600",
+    ]);
+    assert_eq!(multi_location_context["seed_strategy"], "auto_task_path");
+    assert_eq!(
+        multi_location_context["selected_seeds"][0]["value"],
+        "src/long.ts"
+    );
+    assert_eq!(
+        multi_location_context["selected_seeds"][0]["start_line"],
+        20
+    );
+    assert_eq!(multi_location_context["selected_seeds"][0]["end_line"], 20);
+    let requested_ranges = multi_location_context["files"][0]["ranges"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|range| range["source"] == "task_location")
+        .collect::<Vec<_>>();
+    assert!(requested_ranges.iter().any(|range| {
+        range["start_line"].as_u64().unwrap() <= 20 && range["end_line"].as_u64().unwrap() >= 20
+    }));
+    assert!(requested_ranges.iter().any(|range| {
+        range["start_line"].as_u64().unwrap() <= 70 && range["end_line"].as_u64().unwrap() >= 75
+    }));
+
     let semantic_context = run_json([
         "context-pack",
         fixture.path().to_str().unwrap(),

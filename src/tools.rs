@@ -4377,7 +4377,10 @@ pub fn context_pack_value(
             &symbols,
             &task_keywords,
             &seed_symbols,
-            task_path_locations.get(file).copied(),
+            task_path_locations
+                .get(file)
+                .map(Vec::as_slice)
+                .unwrap_or_default(),
         ) {
             push_context_range(
                 &mut ranges_by_file,
@@ -9572,7 +9575,7 @@ fn seed_file_ranges(
     symbols: &[Symbol],
     task_keywords: &[String],
     seed_symbols: &[String],
-    task_path_location: Option<TaskPathLocation>,
+    task_path_locations: &[TaskPathLocation],
 ) -> Vec<ContextCandidateRange> {
     let path = root.join(file);
     let source = fs::read_to_string(path).unwrap_or_default();
@@ -9580,7 +9583,7 @@ fn seed_file_ranges(
     let line_count = lines.len().max(1);
     let mut ranges = Vec::new();
 
-    if let Some(location) = task_path_location {
+    for location in task_path_locations {
         let requested_start = location.start_line.clamp(1, line_count);
         let requested_end = location.end_line.clamp(requested_start, line_count);
         ranges.push(ContextCandidateRange {
@@ -10294,7 +10297,7 @@ struct AutoContextSeedSelection {
     strategy: String,
     files: Vec<String>,
     seeds: Vec<ContextSeed>,
-    task_path_locations: BTreeMap<String, TaskPathLocation>,
+    task_path_locations: BTreeMap<String, Vec<TaskPathLocation>>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -10329,17 +10332,23 @@ fn auto_context_seed_files(
     let indexed_file_set = indexed_files.iter().cloned().collect::<BTreeSet<_>>();
     let task_path_references = auto_seed_task_path_references(root, task);
     let mut task_path_files = Vec::new();
-    let mut task_path_locations = BTreeMap::new();
+    let mut task_path_locations = BTreeMap::<String, Vec<TaskPathLocation>>::new();
     for reference in &task_path_references {
-        if !indexed_file_set.contains(&reference.file)
-            || task_path_files.contains(&reference.file)
-            || task_path_files.len() >= 3
-        {
+        if !indexed_file_set.contains(&reference.file) {
             continue;
         }
-        task_path_files.push(reference.file.clone());
+
+        if !task_path_files.contains(&reference.file) {
+            if task_path_files.len() >= 3 {
+                continue;
+            }
+            task_path_files.push(reference.file.clone());
+        }
         if let Some(location) = reference.location {
-            task_path_locations.insert(reference.file.clone(), location);
+            task_path_locations
+                .entry(reference.file.clone())
+                .or_default()
+                .push(location);
         }
     }
     if !task_path_files.is_empty() {
@@ -10351,9 +10360,11 @@ fn auto_context_seed_files(
                 source: "task_path".to_string(),
                 start_line: task_path_locations
                     .get(file)
+                    .and_then(|locations| locations.first())
                     .map(|location| location.start_line),
                 end_line: task_path_locations
                     .get(file)
+                    .and_then(|locations| locations.first())
                     .map(|location| location.end_line),
                 role: Some(auto_seed_file_role(file).to_string()),
                 matched_keywords: Vec::new(),
