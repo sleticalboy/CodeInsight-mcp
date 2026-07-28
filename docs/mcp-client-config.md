@@ -222,8 +222,10 @@ mode automatically. `on_failure` defaults to `fallback_local`, so missing
 binaries, command failures, timeouts, and invalid backend responses do not
 block the standalone local route. Set it to `error` for strict behavior.
 Invalid backend configuration always returns an MCP error. The structured
-`backend_status.status` is `used`, `no_candidates`, or `fallback_local`; the
-latter includes a bounded `reason` for diagnostics.
+`backend_status.status` is `used`, `no_candidates`, `fallback_local`, or
+`skipped_explicit_seed`; the latter status avoids a redundant backend process
+when `files` or `symbols` already provide an exact seed, while
+`fallback_local` includes a bounded `reason` for diagnostics.
 
 The response is the default first-read bundle. A minimal client should:
 
@@ -256,7 +258,7 @@ Expected first-call signals:
 | --- | --- | --- |
 | `response_mode` | Is `compact`. | Consume `structuredContent` instead of parsing the concise text summary. |
 | `response_budget` | Reports the requested and estimated structured-response tokens. | Treat `omitted_excerpts` as a signal to use the returned range coordinates or focused follow-up tools. |
-| `backend_status` | Reports `used`, `no_candidates`, or `fallback_local` when automatic backend invocation was requested. | Continue with returned local context on fallback and surface `reason` only as a diagnostic. |
+| `backend_status` | Reports `used`, `no_candidates`, `fallback_local`, or `skipped_explicit_seed` when automatic backend invocation was requested. | Continue with returned local context on fallback or explicit-seed skip, and surface `reason` only as a diagnostic. |
 | `context_pack.files[]` | Contains the bounded files or excerpts to read first. | Read these files before broad `rg` or full-file scans. |
 | `agent_first_read.current_reading_step` | Mirrors `context_pack.reading_plan[0]` when a reading plan exists. | Use it as the first checklist row without rebuilding it from nested fields. |
 | `context_pack.reading_plan[].focus` | Gives the compact scan label for the selected file. | Show it beside the file path or current step. |

@@ -14544,6 +14544,11 @@ case "$2" in
       printf '%s\n' 'backend unavailable' >&2
       exit 9
     fi
+    if test "$6" = "inspect explicit file without backend call" ||
+       test "$6" = "inspect explicit symbol without backend call"; then
+      printf '%s\n' 'explicit seed unexpectedly invoked backend' >&2
+      exit 9
+    fi
     printf '%s\n' '{"result":{"structuredContent":{"results":[{"name":"targetLater","qualified_name":"fixture.src.multi_long.targetLater","file_path":"src/multi-long.ts"}],"elapsed_ms":4}}}'
     ;;
   *)
@@ -14631,6 +14636,46 @@ esac
             }
         }
     });
+    let explicit_file_request = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 10,
+        "method": "tools/call",
+        "params": {
+            "name": "agent_first_read",
+            "arguments": {
+                "root": fixture.path(),
+                "task": "inspect explicit file without backend call",
+                "files": ["src/main.ts"],
+                "token_budget": 500,
+                "backend": {
+                    "provider": "codebase-memory-mcp",
+                    "project": "fixture",
+                    "timeout_ms": 1000,
+                    "on_failure": "error"
+                }
+            }
+        }
+    });
+    let explicit_symbol_request = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 11,
+        "method": "tools/call",
+        "params": {
+            "name": "agent_first_read",
+            "arguments": {
+                "root": fixture.path(),
+                "task": "inspect explicit symbol without backend call",
+                "symbols": ["main"],
+                "token_budget": 500,
+                "backend": {
+                    "provider": "codebase-memory-mcp",
+                    "project": "fixture",
+                    "timeout_ms": 1000,
+                    "on_failure": "error"
+                }
+            }
+        }
+    });
 
     let mut command = Command::cargo_bin("codeinsight").unwrap();
     command
@@ -14638,7 +14683,7 @@ esac
         .env("CODEINSIGHT_CODEBASE_MEMORY_BIN", &backend)
         .env("CODEINSIGHT_FAKE_INDEX_MARKER", &marker)
         .write_stdin(format!(
-            "{request}\n{empty_request}\n{fallback_request}\n{strict_request}\n"
+            "{request}\n{empty_request}\n{fallback_request}\n{strict_request}\n{explicit_file_request}\n{explicit_symbol_request}\n"
         ));
     let output = command.assert().success().get_output().stdout.clone();
     let responses = String::from_utf8(output)
@@ -14650,6 +14695,8 @@ esac
     let empty_response = &responses[1];
     let fallback_response = &responses[2];
     let strict_response = &responses[3];
+    let explicit_file_response = &responses[4];
+    let explicit_symbol_response = &responses[5];
     let route = &response["result"]["structuredContent"];
     let selected_excerpt = route["context_pack"]["files"][0]["ranges"]
         .as_array()
@@ -14715,6 +14762,17 @@ esac
             .unwrap()
             .contains("backend unavailable")
     );
+    for response in [explicit_file_response, explicit_symbol_response] {
+        assert!(response.get("error").is_none());
+        assert_eq!(
+            response["result"]["structuredContent"]["backend_status"]["status"],
+            "skipped_explicit_seed"
+        );
+        assert_eq!(
+            response["result"]["structuredContent"]["context_pack"]["files"][0]["file"],
+            "src/main.ts"
+        );
+    }
 }
 
 #[test]

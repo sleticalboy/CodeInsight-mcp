@@ -659,46 +659,59 @@ fn handle_tool_call(params: Value) -> Result<Value> {
             if backend_config.is_some() && arguments.get("backend_candidates").is_some() {
                 bail!("agent_first_read backend cannot be combined with backend_candidates");
             }
+            let has_explicit_seed = !symbols.is_empty() || !files.is_empty();
             let (backend_evidence, backend_status) = match backend_config {
                 Some(config) => {
                     config.validate()?;
                     let provider = config.provider.clone();
                     let failure_policy = config.on_failure;
-                    match codebase_memory_agent_first_read_evidence(&root, &task, config) {
-                        Ok(Some(evidence)) => (
-                            Some(evidence),
-                            Some(AgentRouteBackendStatus {
-                                provider,
-                                status: "used".to_string(),
-                                failure_policy: failure_policy.as_str().to_string(),
-                                reason: None,
-                            }),
-                        ),
-                        Ok(None) => (
+                    if has_explicit_seed {
+                        (
                             None,
                             Some(AgentRouteBackendStatus {
                                 provider,
-                                status: "no_candidates".to_string(),
+                                status: "skipped_explicit_seed".to_string(),
                                 failure_policy: failure_policy.as_str().to_string(),
                                 reason: None,
                             }),
-                        ),
-                        Err(error)
-                            if failure_policy
-                                == AgentFirstReadBackendFailurePolicy::FallbackLocal =>
-                        {
-                            let reason = error.to_string().chars().take(240).collect();
-                            (
+                        )
+                    } else {
+                        match codebase_memory_agent_first_read_evidence(&root, &task, config) {
+                            Ok(Some(evidence)) => (
+                                Some(evidence),
+                                Some(AgentRouteBackendStatus {
+                                    provider,
+                                    status: "used".to_string(),
+                                    failure_policy: failure_policy.as_str().to_string(),
+                                    reason: None,
+                                }),
+                            ),
+                            Ok(None) => (
                                 None,
                                 Some(AgentRouteBackendStatus {
                                     provider,
-                                    status: "fallback_local".to_string(),
+                                    status: "no_candidates".to_string(),
                                     failure_policy: failure_policy.as_str().to_string(),
-                                    reason: Some(reason),
+                                    reason: None,
                                 }),
-                            )
+                            ),
+                            Err(error)
+                                if failure_policy
+                                    == AgentFirstReadBackendFailurePolicy::FallbackLocal =>
+                            {
+                                let reason = error.to_string().chars().take(240).collect();
+                                (
+                                    None,
+                                    Some(AgentRouteBackendStatus {
+                                        provider,
+                                        status: "fallback_local".to_string(),
+                                        failure_policy: failure_policy.as_str().to_string(),
+                                        reason: Some(reason),
+                                    }),
+                                )
+                            }
+                            Err(error) => return Err(error),
                         }
-                        Err(error) => return Err(error),
                     }
                 }
                 None => (
@@ -1205,7 +1218,7 @@ fn tool_definitions() -> Value {
                                 "type": "string",
                                 "enum": ["fallback_local", "error"],
                                 "default": "fallback_local",
-                                "description": "Continue with the standalone local route when the backend command fails, or return an MCP error. Invalid backend configuration always returns an error."
+                                "description": "Continue with the standalone local route when the backend command fails, or return an MCP error. Invalid backend configuration always returns an error. Automatic backend invocation is skipped when files or symbols provide an explicit seed."
                             }
                         },
                         "required": ["provider"],
