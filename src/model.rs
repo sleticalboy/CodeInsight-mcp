@@ -272,6 +272,8 @@ pub struct AgentRouteBackendStatus {
     pub status: String,
     pub failure_policy: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub index_status: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub reason: Option<String>,
 }
 

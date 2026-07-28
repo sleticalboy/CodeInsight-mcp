@@ -46,6 +46,12 @@ struct RepositoryFingerprint {
     dirty: bool,
 }
 
+#[derive(Debug)]
+struct CodebaseMemoryAgentFirstReadResult {
+    evidence: Option<AgentRouteBackendEvidence>,
+    index_status: &'static str,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct AgentFirstReadBackendCandidates {
@@ -665,22 +671,22 @@ fn codebase_memory_search_query(task: &str) -> String {
     }
 }
 
-fn codebase_memory_agent_first_read_evidence(
+fn codebase_memory_agent_first_read_result(
     root: &Path,
     task: &str,
     config: AgentFirstReadBackendConfig,
-) -> Result<Option<AgentRouteBackendEvidence>> {
+) -> Result<CodebaseMemoryAgentFirstReadResult> {
     let binary = std::env::var_os(CODEBASE_MEMORY_BINARY_ENV)
         .unwrap_or_else(|| OsString::from(AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER));
-    codebase_memory_agent_first_read_evidence_with_binary(root, task, config, &binary)
+    codebase_memory_agent_first_read_result_with_binary(root, task, config, &binary)
 }
 
-fn codebase_memory_agent_first_read_evidence_with_binary(
+fn codebase_memory_agent_first_read_result_with_binary(
     root: &Path,
     task: &str,
     config: AgentFirstReadBackendConfig,
     binary: &OsStr,
-) -> Result<Option<AgentRouteBackendEvidence>> {
+) -> Result<CodebaseMemoryAgentFirstReadResult> {
     config.validate()?;
     let project = codebase_memory_project(root, config.project)?;
     let timeout = Duration::from_millis(config.timeout_ms);
@@ -722,30 +728,34 @@ fn codebase_memory_agent_first_read_evidence_with_binary(
     let cache_matches = fingerprint.as_ref().is_some_and(|fingerprint| {
         cached_fingerprint.as_deref() == Some(fingerprint.value.as_str())
     });
-    let should_refresh = if config.refresh_index {
-        true
+    let (should_refresh, mut index_status) = if config.refresh_index {
+        (true, "refreshed_forced")
     } else if cache_matches {
-        false
+        (false, "reused_cached_fingerprint")
     } else if cached_fingerprint.is_some() {
-        true
+        (true, "refreshed_repository_changed")
     } else if let Some(fingerprint) = fingerprint.as_ref() {
         if fingerprint.dirty {
-            true
+            (true, "refreshed_dirty_worktree")
         } else {
             match codebase_memory_indexed_heads(binary, &project, timeout) {
                 Ok(heads) => {
                     let current = heads.iter().any(|head| head == &fingerprint.head);
                     if current {
                         codebase_memory_cache_index(cache_key.clone(), fingerprint);
+                        (false, "reused_graph_head")
+                    } else {
+                        (true, "refreshed_stale_graph")
                     }
-                    !current
                 }
-                Err(error) if codebase_memory_project_missing(&error) => true,
-                Err(_) => false,
+                Err(error) if codebase_memory_project_missing(&error) => {
+                    (true, "refreshed_missing_project")
+                }
+                Err(_) => (false, "reused_unverified_graph"),
             }
         }
     } else {
-        false
+        (false, "not_checked_non_git")
     };
 
     let search_graph = if should_refresh {
@@ -759,6 +769,7 @@ fn codebase_memory_agent_first_read_evidence_with_binary(
             Ok(value) => value,
             Err(error) if codebase_memory_project_missing(&error) => {
                 index_project()?;
+                index_status = "refreshed_missing_project";
                 if let Some(fingerprint) = fingerprint.as_ref() {
                     codebase_memory_cache_index(cache_key, fingerprint);
                 }
@@ -767,11 +778,15 @@ fn codebase_memory_agent_first_read_evidence_with_binary(
             Err(error) => return Err(error),
         }
     };
-    match agent_first_read_backend_evidence(&search_graph) {
-        Ok(evidence) => Ok(Some(evidence)),
-        Err(error) if error.to_string() == CODEBASE_MEMORY_EMPTY_SEARCH_ERROR => Ok(None),
-        Err(error) => Err(error),
-    }
+    let evidence = match agent_first_read_backend_evidence(&search_graph) {
+        Ok(evidence) => Some(evidence),
+        Err(error) if error.to_string() == CODEBASE_MEMORY_EMPTY_SEARCH_ERROR => None,
+        Err(error) => return Err(error),
+    };
+    Ok(CodebaseMemoryAgentFirstReadResult {
+        evidence,
+        index_status,
+    })
 }
 
 pub async fn serve(transport: Transport) -> Result<()> {
@@ -968,29 +983,29 @@ fn handle_tool_call(params: Value) -> Result<Value> {
                                 provider,
                                 status: "skipped_explicit_seed".to_string(),
                                 failure_policy: failure_policy.as_str().to_string(),
+                                index_status: None,
                                 reason: None,
                             }),
                         )
                     } else {
-                        match codebase_memory_agent_first_read_evidence(&root, &task, config) {
-                            Ok(Some(evidence)) => (
-                                Some(evidence),
-                                Some(AgentRouteBackendStatus {
-                                    provider,
-                                    status: "used".to_string(),
-                                    failure_policy: failure_policy.as_str().to_string(),
-                                    reason: None,
-                                }),
-                            ),
-                            Ok(None) => (
-                                None,
-                                Some(AgentRouteBackendStatus {
-                                    provider,
-                                    status: "no_candidates".to_string(),
-                                    failure_policy: failure_policy.as_str().to_string(),
-                                    reason: None,
-                                }),
-                            ),
+                        match codebase_memory_agent_first_read_result(&root, &task, config) {
+                            Ok(result) => {
+                                let status = if result.evidence.is_some() {
+                                    "used"
+                                } else {
+                                    "no_candidates"
+                                };
+                                (
+                                    result.evidence,
+                                    Some(AgentRouteBackendStatus {
+                                        provider,
+                                        status: status.to_string(),
+                                        failure_policy: failure_policy.as_str().to_string(),
+                                        index_status: Some(result.index_status.to_string()),
+                                        reason: None,
+                                    }),
+                                )
+                            }
                             Err(error)
                                 if failure_policy
                                     == AgentFirstReadBackendFailurePolicy::FallbackLocal =>
@@ -1002,6 +1017,7 @@ fn handle_tool_call(params: Value) -> Result<Value> {
                                         provider,
                                         status: "fallback_local".to_string(),
                                         failure_policy: failure_policy.as_str().to_string(),
+                                        index_status: None,
                                         reason: Some(reason),
                                     }),
                                 )
@@ -2647,7 +2663,7 @@ int login(void) {
         );
         assert_eq!(raw_search_graph.latency_ms, Some(9));
 
-        let unsupported_backend = codebase_memory_agent_first_read_evidence(
+        let unsupported_backend = codebase_memory_agent_first_read_result(
             Path::new("/tmp/repo"),
             "find target",
             AgentFirstReadBackendConfig {
@@ -2661,7 +2677,7 @@ int login(void) {
         .unwrap_err();
         assert!(unsupported_backend.to_string().contains("unsupported"));
 
-        let invalid_timeout = codebase_memory_agent_first_read_evidence(
+        let invalid_timeout = codebase_memory_agent_first_read_result(
             Path::new("/tmp/repo"),
             "find target",
             AgentFirstReadBackendConfig {
@@ -2704,7 +2720,7 @@ esac
 
             let root = backend_dir.path().join("fixture");
             std::fs::create_dir_all(&root).unwrap();
-            let evidence = codebase_memory_agent_first_read_evidence_with_binary(
+            let evidence = codebase_memory_agent_first_read_result_with_binary(
                 &root,
                 "find target",
                 AgentFirstReadBackendConfig {
@@ -2717,6 +2733,7 @@ esac
                 backend.as_os_str(),
             )
             .unwrap()
+            .evidence
             .unwrap();
             assert_eq!(evidence.provider, AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER);
             assert_eq!(evidence.candidate_files, vec!["src/target.rs"]);
@@ -2741,7 +2758,7 @@ esac
             let mut permissions = std::fs::metadata(&reuse_backend).unwrap().permissions();
             permissions.set_mode(0o755);
             std::fs::set_permissions(&reuse_backend, permissions).unwrap();
-            let reused = codebase_memory_agent_first_read_evidence_with_binary(
+            let reused = codebase_memory_agent_first_read_result_with_binary(
                 &root,
                 "find reused",
                 AgentFirstReadBackendConfig {
@@ -2754,6 +2771,7 @@ esac
                 reuse_backend.as_os_str(),
             )
             .unwrap()
+            .evidence
             .unwrap();
             assert_eq!(reused.candidate_files, vec!["src/reused.rs"]);
 
@@ -2766,7 +2784,7 @@ esac
             let mut permissions = std::fs::metadata(&empty_backend).unwrap().permissions();
             permissions.set_mode(0o755);
             std::fs::set_permissions(&empty_backend, permissions).unwrap();
-            let empty = codebase_memory_agent_first_read_evidence_with_binary(
+            let empty = codebase_memory_agent_first_read_result_with_binary(
                 &root,
                 "find missing",
                 AgentFirstReadBackendConfig {
@@ -2778,7 +2796,8 @@ esac
                 },
                 empty_backend.as_os_str(),
             )
-            .unwrap();
+            .unwrap()
+            .evidence;
             assert!(empty.is_none());
 
             let slow_backend = backend_dir.path().join("slow-codebase-memory-mcp");
@@ -2896,17 +2915,18 @@ esac
             on_failure: AgentFirstReadBackendFailurePolicy::FallbackLocal,
         };
         let route = || {
-            codebase_memory_agent_first_read_evidence_with_binary(
+            codebase_memory_agent_first_read_result_with_binary(
                 &root,
                 "find target",
                 config(),
                 backend.as_os_str(),
             )
             .unwrap()
-            .unwrap()
         };
 
-        assert_eq!(route().candidate_files, vec!["target.rs"]);
+        let result = route();
+        assert_eq!(result.index_status, "refreshed_stale_graph");
+        assert_eq!(result.evidence.unwrap().candidate_files, vec!["target.rs"]);
         assert_eq!(std::fs::read(&marker).unwrap().len(), 1);
         let cache_key = codebase_memory_index_cache_key(&root, "fixture", backend.as_os_str());
         CODEBASE_MEMORY_INDEX_FINGERPRINTS
@@ -2915,19 +2935,29 @@ esac
             .lock()
             .unwrap()
             .remove(&cache_key);
-        assert_eq!(route().candidate_files, vec!["target.rs"]);
+        let result = route();
+        assert_eq!(result.index_status, "reused_cached_fingerprint");
+        assert_eq!(result.evidence.unwrap().candidate_files, vec!["target.rs"]);
         assert_eq!(std::fs::read(&marker).unwrap().len(), 1);
 
         std::fs::write(root.join("target.rs"), "fn target() { changed(); }\n").unwrap();
-        assert_eq!(route().candidate_files, vec!["target.rs"]);
+        let result = route();
+        assert_eq!(result.index_status, "refreshed_repository_changed");
+        assert_eq!(result.evidence.unwrap().candidate_files, vec!["target.rs"]);
         assert_eq!(std::fs::read(&marker).unwrap().len(), 2);
-        assert_eq!(route().candidate_files, vec!["target.rs"]);
+        let result = route();
+        assert_eq!(result.index_status, "reused_cached_fingerprint");
+        assert_eq!(result.evidence.unwrap().candidate_files, vec!["target.rs"]);
         assert_eq!(std::fs::read(&marker).unwrap().len(), 2);
 
         std::fs::write(root.join("target.rs"), "fn target() {}\n").unwrap();
-        assert_eq!(route().candidate_files, vec!["target.rs"]);
+        let result = route();
+        assert_eq!(result.index_status, "refreshed_repository_changed");
+        assert_eq!(result.evidence.unwrap().candidate_files, vec!["target.rs"]);
         assert_eq!(std::fs::read(&marker).unwrap().len(), 3);
-        assert_eq!(route().candidate_files, vec!["target.rs"]);
+        let result = route();
+        assert_eq!(result.index_status, "reused_cached_fingerprint");
+        assert_eq!(result.evidence.unwrap().candidate_files, vec!["target.rs"]);
         assert_eq!(std::fs::read(&marker).unwrap().len(), 3);
     }
 
@@ -2993,7 +3023,7 @@ esac
         permissions.set_mode(0o755);
         std::fs::set_permissions(&backend, permissions).unwrap();
 
-        let evidence = codebase_memory_agent_first_read_evidence_with_binary(
+        let result = codebase_memory_agent_first_read_result_with_binary(
             &root,
             "find target",
             AgentFirstReadBackendConfig {
@@ -3005,9 +3035,9 @@ esac
             },
             backend.as_os_str(),
         )
-        .unwrap()
         .unwrap();
-        assert_eq!(evidence.candidate_files, vec!["target.rs"]);
+        assert_eq!(result.index_status, "reused_graph_head");
+        assert_eq!(result.evidence.unwrap().candidate_files, vec!["target.rs"]);
     }
 
     #[test]

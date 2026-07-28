@@ -14725,6 +14725,10 @@ esac
     );
     assert_eq!(route["backend_status"]["status"], "used");
     assert_eq!(route["backend_status"]["failure_policy"], "fallback_local");
+    assert_eq!(
+        route["backend_status"]["index_status"],
+        "refreshed_missing_project"
+    );
     assert_eq!(empty_response["id"], 7);
     assert!(empty_response.get("error").is_none());
     assert_eq!(
@@ -14739,6 +14743,10 @@ esac
     assert_eq!(
         empty_response["result"]["structuredContent"]["backend_status"]["status"],
         "no_candidates"
+    );
+    assert_eq!(
+        empty_response["result"]["structuredContent"]["backend_status"]["index_status"],
+        "not_checked_non_git"
     );
     assert_eq!(fallback_response["id"], 8);
     assert!(fallback_response.get("error").is_none());
