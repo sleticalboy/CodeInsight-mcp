@@ -22,6 +22,13 @@ pub struct Store {
     conn: Connection,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FileIndexMetadata {
+    pub hash: String,
+    pub size: Option<i64>,
+    pub modified_ns: Option<i64>,
+}
+
 impl Store {
     pub fn open(root: &Path) -> Result<Self> {
         let dir = cache_dir(root);
@@ -116,19 +123,33 @@ impl Store {
         Ok(())
     }
 
+    #[cfg(test)]
     pub fn upsert_file(&mut self, file: &SourceFile) -> Result<i64> {
+        self.upsert_file_with_metadata(file, None, None)
+    }
+
+    pub fn upsert_file_with_metadata(
+        &mut self,
+        file: &SourceFile,
+        size: Option<i64>,
+        modified_ns: Option<i64>,
+    ) -> Result<i64> {
         self.conn.execute(
-            "insert into files (path, language, hash, line_count)
-             values (?1, ?2, ?3, ?4)
+            "insert into files (path, language, hash, line_count, size, modified_ns)
+             values (?1, ?2, ?3, ?4, ?5, ?6)
              on conflict(path) do update set
                language = excluded.language,
                hash = excluded.hash,
-               line_count = excluded.line_count",
+               line_count = excluded.line_count,
+               size = excluded.size,
+               modified_ns = excluded.modified_ns",
             params![
                 file.relative_path,
                 file.language.as_str(),
                 file.hash,
-                file.line_count as i64
+                file.line_count as i64,
+                size,
+                modified_ns
             ],
         )?;
         Ok(self.conn.query_row(
@@ -138,13 +159,17 @@ impl Store {
         )?)
     }
 
-    pub fn file_hash(&self, relative_path: &str) -> Result<Option<String>> {
+    pub fn file_index_metadata(&self, relative_path: &str) -> Result<Option<FileIndexMetadata>> {
         let mut stmt = self
             .conn
-            .prepare("select hash from files where path = ?1")?;
+            .prepare("select hash, size, modified_ns from files where path = ?1")?;
         let mut rows = stmt.query(params![relative_path])?;
         if let Some(row) = rows.next()? {
-            Ok(Some(row.get(0)?))
+            Ok(Some(FileIndexMetadata {
+                hash: row.get(0)?,
+                size: row.get(1)?,
+                modified_ns: row.get(2)?,
+            }))
         } else {
             Ok(None)
         }
@@ -2641,7 +2666,9 @@ impl Store {
                 path text not null unique,
                 language text not null,
                 hash text not null,
-                line_count integer not null
+                line_count integer not null,
+                size integer,
+                modified_ns integer
             );
 
             create table if not exists symbols (
@@ -2718,6 +2745,8 @@ impl Store {
             ",
         )?;
         self.ensure_column("dependencies", "resolved_file", "resolved_file text")?;
+        self.ensure_column("files", "size", "size integer")?;
+        self.ensure_column("files", "modified_ns", "modified_ns integer")?;
         self.ensure_column("dependencies", "local_alias", "local_alias text")?;
         self.ensure_column("dependencies", "imported_symbol", "imported_symbol text")?;
         self.ensure_column("calls", "callee_file", "callee_file text")?;
@@ -3372,6 +3401,14 @@ mod tests {
             hash: "hash".to_string(),
             line_count: 1,
         })?;
+        assert_eq!(
+            store.file_index_metadata("src/main.rs")?,
+            Some(FileIndexMetadata {
+                hash: "hash".to_string(),
+                size: None,
+                modified_ns: None,
+            })
+        );
         store.replace_dependencies(
             file_id,
             &[Dependency {

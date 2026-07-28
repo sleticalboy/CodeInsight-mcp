@@ -2,7 +2,7 @@ use std::{
     collections::{BTreeSet, HashMap, HashSet},
     fs,
     path::{Component, Path, PathBuf},
-    time::Instant,
+    time::{Instant, UNIX_EPOCH},
 };
 
 use anyhow::{Context, Result};
@@ -37,6 +37,17 @@ fn default_package_conditions() -> Vec<String> {
         .iter()
         .map(|condition| condition.to_string())
         .collect()
+}
+
+fn file_modified_ns(metadata: &fs::Metadata) -> Option<i64> {
+    metadata
+        .modified()
+        .ok()?
+        .duration_since(UNIX_EPOCH)
+        .ok()?
+        .as_nanos()
+        .try_into()
+        .ok()
 }
 
 fn project_package_conditions(config: &ProjectConfig) -> Vec<String> {
@@ -120,6 +131,31 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
                 continue;
             };
 
+            let metadata = match fs::metadata(path) {
+                Ok(metadata) => metadata,
+                Err(error) => {
+                    errors.push(index_error(path, "metadata", error));
+                    skipped_files += 1;
+                    continue;
+                }
+            };
+            let size = i64::try_from(metadata.len()).unwrap_or(i64::MAX);
+            let modified_ns = file_modified_ns(&metadata);
+            let stored_metadata = if force {
+                None
+            } else {
+                store.file_index_metadata(&relative_path)?
+            };
+            if stored_metadata.as_ref().is_some_and(|stored| {
+                stored.size == Some(size)
+                    && modified_ns.is_some()
+                    && stored.modified_ns == modified_ns
+            }) {
+                seen_source_files.push(relative_path);
+                unchanged_files += 1;
+                continue;
+            }
+
             let source = match fs::read_to_string(path) {
                 Ok(source) => source,
                 Err(error) => {
@@ -131,7 +167,28 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
 
             seen_source_files.push(relative_path.clone());
             let hash = hash_source(&source);
-            if !force && store.file_hash(&relative_path)?.as_deref() == Some(hash.as_str()) {
+            let source_file = SourceFile {
+                path: path.to_path_buf(),
+                relative_path: relative_path.clone(),
+                language,
+                hash,
+                line_count: source.lines().count(),
+            };
+            if stored_metadata
+                .as_ref()
+                .is_some_and(|stored| stored.hash == source_file.hash)
+            {
+                if let Err(error) =
+                    store.upsert_file_with_metadata(&source_file, Some(size), modified_ns)
+                {
+                    errors.push(IndexError {
+                        file: relative_path,
+                        stage: "store_file".to_string(),
+                        message: error.to_string(),
+                    });
+                    skipped_files += 1;
+                    continue;
+                }
                 unchanged_files += 1;
                 continue;
             }
@@ -162,25 +219,19 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
             };
             resolve_dependencies(&root, &mut dependencies, &package_conditions);
             let calls = extract_calls(&source, language, &relative_path, &symbols);
-            let source_file = SourceFile {
-                path: path.to_path_buf(),
-                relative_path: relative_path.clone(),
-                language,
-                hash,
-                line_count: source.lines().count(),
-            };
-            let file_id = match store.upsert_file(&source_file) {
-                Ok(file_id) => file_id,
-                Err(error) => {
-                    errors.push(IndexError {
-                        file: relative_path.clone(),
-                        stage: "store_file".to_string(),
-                        message: error.to_string(),
-                    });
-                    skipped_files += 1;
-                    continue;
-                }
-            };
+            let file_id =
+                match store.upsert_file_with_metadata(&source_file, Some(size), modified_ns) {
+                    Ok(file_id) => file_id,
+                    Err(error) => {
+                        errors.push(IndexError {
+                            file: relative_path.clone(),
+                            stage: "store_file".to_string(),
+                            message: error.to_string(),
+                        });
+                        skipped_files += 1;
+                        continue;
+                    }
+                };
             if let Err(error) = store.replace_symbols(file_id, &symbols) {
                 errors.push(IndexError {
                     file: relative_path.clone(),
@@ -214,7 +265,9 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
         }
     }
     let deleted_files = store.delete_files_not_in(&seen_source_files)?;
-    store.resolve_imported_calls()?;
+    if changed_files > 0 || deleted_files > 0 {
+        store.resolve_imported_calls()?;
+    }
     let total_indexed_files = store.count_files()?;
     let total_symbols = store.count_symbols()?;
     store.mark_indexed()?;
@@ -8834,10 +8887,31 @@ describe("routes", function () {
         assert_eq!(second.indexed_files, 1);
         assert_eq!(second.changed_files, 0);
         assert_eq!(second.unchanged_files, 1);
+        let metadata = Store::open(dir.path())
+            .unwrap()
+            .file_index_metadata("auth.py")
+            .unwrap()
+            .unwrap();
+        assert_eq!(metadata.size, Some(22));
+        assert!(metadata.modified_ns.is_some());
+
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        std::fs::write(&source_path, "def login():\n    pass\n").unwrap();
+        let touched = index_project(dir.path(), false).unwrap();
+        assert_eq!(touched.indexed_files, 1);
+        assert_eq!(touched.changed_files, 0);
+        assert_eq!(touched.unchanged_files, 1);
+
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        std::fs::write(&source_path, "def admin():\n    pass\n").unwrap();
+        let third = index_project(dir.path(), false).unwrap();
+        assert_eq!(third.indexed_files, 1);
+        assert_eq!(third.changed_files, 1);
+        assert_eq!(third.unchanged_files, 0);
 
         std::fs::remove_file(&source_path).unwrap();
-        let third = index_project(dir.path(), false).unwrap();
-        assert_eq!(third.indexed_files, 0);
-        assert_eq!(third.deleted_files, 1);
+        let fourth = index_project(dir.path(), false).unwrap();
+        assert_eq!(fourth.indexed_files, 0);
+        assert_eq!(fourth.deleted_files, 1);
     }
 }
