@@ -10849,8 +10849,16 @@ fn auto_seed_task_path_tokens(task: &str) -> Vec<String> {
     task.split(|character: char| !auto_seed_task_path_character(character))
         .map(normalize_auto_seed_task_path_token)
         .filter(|token| token.contains('/'))
+        .filter(|token| auto_seed_task_path_is_project_relative(token))
         .filter(|token| seen.insert(token.clone()))
         .collect()
+}
+
+fn auto_seed_task_path_is_project_relative(token: &str) -> bool {
+    !token.is_empty()
+        && Path::new(token)
+            .components()
+            .all(|component| matches!(component, Component::Normal(_) | Component::CurDir))
 }
 
 fn auto_seed_task_path_character(character: char) -> bool {
@@ -15292,6 +15300,28 @@ fn normalize_dependency_kind(kind: &str) -> Result<String> {
 mod tests {
     use super::*;
     use std::sync::Mutex;
+
+    #[test]
+    fn task_paths_cannot_escape_project_root() {
+        let parent = tempfile::TempDir::new().unwrap();
+        let root = parent.path().join("repo");
+        std::fs::create_dir_all(root.join("src")).unwrap();
+        std::fs::write(root.join("src/main.ts"), "export const main = true;\n").unwrap();
+        std::fs::write(
+            parent.path().join("outside.ts"),
+            "export const secret = true;\n",
+        )
+        .unwrap();
+
+        assert!(task_has_existing_path(&root, "inspect src/main.ts"));
+        assert!(!task_has_existing_path(&root, "inspect ../outside.ts"));
+        assert_eq!(
+            auto_seed_task_path_tokens(
+                "inspect src/main.ts, ../outside.ts, src/../../outside.ts and ./src/main.ts"
+            ),
+            vec!["src/main.ts"]
+        );
+    }
 
     #[test]
     fn selected_context_metadata_is_bounded_to_returned_ranges() {
