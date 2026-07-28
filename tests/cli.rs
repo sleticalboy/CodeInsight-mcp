@@ -14545,7 +14545,7 @@ case "$2" in
       printf '%s\n' 'backend unavailable' >&2
       exit 9
       ;;
-    *"explicit file without backend call"*|*"explicit symbol without backend call"*|*"task path without backend call"*)
+    *"explicit file without backend call"*|*"explicit symbol without backend call"*|*"task path without backend call"*|*"absolute task path without backend call"*)
       printf '%s\n' 'explicit seed unexpectedly invoked backend' >&2
       exit 9
       ;;
@@ -14576,7 +14576,7 @@ esac
                 "backend": {
                     "provider": "codebase-memory-mcp",
                     "project": "fixture",
-                    "timeout_ms": 1000
+                    "timeout_ms": 5000
                 },
                 "force_index": true
             }
@@ -14595,7 +14595,7 @@ esac
                 "backend": {
                     "provider": "codebase-memory-mcp",
                     "project": "fixture",
-                    "timeout_ms": 1000
+                    "timeout_ms": 5000
                 }
             }
         }
@@ -14613,7 +14613,7 @@ esac
                 "backend": {
                     "provider": "codebase-memory-mcp",
                     "project": "fixture",
-                    "timeout_ms": 1000
+                    "timeout_ms": 5000
                 }
             }
         }
@@ -14631,7 +14631,7 @@ esac
                 "backend": {
                     "provider": "codebase-memory-mcp",
                     "project": "fixture",
-                    "timeout_ms": 1000,
+                    "timeout_ms": 5000,
                     "on_failure": "error"
                 }
             }
@@ -14651,7 +14651,7 @@ esac
                 "backend": {
                     "provider": "codebase-memory-mcp",
                     "project": "fixture",
-                    "timeout_ms": 1000,
+                    "timeout_ms": 5000,
                     "on_failure": "error"
                 }
             }
@@ -14671,7 +14671,7 @@ esac
                 "backend": {
                     "provider": "codebase-memory-mcp",
                     "project": "fixture",
-                    "timeout_ms": 1000,
+                    "timeout_ms": 5000,
                     "on_failure": "error"
                 }
             }
@@ -14690,7 +14690,29 @@ esac
                 "backend": {
                     "provider": "codebase-memory-mcp",
                     "project": "fixture",
-                    "timeout_ms": 1000,
+                    "timeout_ms": 5000,
+                    "on_failure": "error"
+                }
+            }
+        }
+    });
+    let absolute_task_path_request = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 13,
+        "method": "tools/call",
+        "params": {
+            "name": "agent_first_read",
+            "arguments": {
+                "root": fixture.path(),
+                "task": format!(
+                    "inspect {} absolute task path without backend call",
+                    fixture.path().join("src/main.ts").display()
+                ),
+                "token_budget": 500,
+                "backend": {
+                    "provider": "codebase-memory-mcp",
+                    "project": "fixture",
+                    "timeout_ms": 5000,
                     "on_failure": "error"
                 }
             }
@@ -14703,7 +14725,7 @@ esac
         .env("CODEINSIGHT_CODEBASE_MEMORY_BIN", &backend)
         .env("CODEINSIGHT_FAKE_INDEX_MARKER", &marker)
         .write_stdin(format!(
-            "{request}\n{empty_request}\n{fallback_request}\n{strict_request}\n{explicit_file_request}\n{explicit_symbol_request}\n{task_path_request}\n"
+            "{request}\n{empty_request}\n{fallback_request}\n{strict_request}\n{explicit_file_request}\n{explicit_symbol_request}\n{task_path_request}\n{absolute_task_path_request}\n"
         ));
     let output = command.assert().success().get_output().stdout.clone();
     let responses = String::from_utf8(output)
@@ -14718,6 +14740,7 @@ esac
     let explicit_file_response = &responses[4];
     let explicit_symbol_response = &responses[5];
     let task_path_response = &responses[6];
+    let absolute_task_path_response = &responses[7];
     let route = &response["result"]["structuredContent"];
     let selected_excerpt = route["context_pack"]["files"][0]["ranges"]
         .as_array()
@@ -14813,6 +14836,15 @@ esac
     );
     assert_eq!(
         task_path_response["result"]["structuredContent"]["context_pack"]["files"][0]["file"],
+        "src/main.ts"
+    );
+    assert!(absolute_task_path_response.get("error").is_none());
+    assert_eq!(
+        absolute_task_path_response["result"]["structuredContent"]["backend_status"]["status"],
+        "skipped_task_path"
+    );
+    assert_eq!(
+        absolute_task_path_response["result"]["structuredContent"]["context_pack"]["files"][0]["file"],
         "src/main.ts"
     );
 }

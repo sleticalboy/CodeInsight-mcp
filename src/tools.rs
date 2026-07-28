@@ -10286,7 +10286,7 @@ fn auto_context_seed_files(
     task_keywords: &[String],
 ) -> Result<AutoContextSeedSelection> {
     let indexed_files = store.indexed_files()?;
-    let task_path_files = auto_seed_task_path_files(task, &indexed_files);
+    let task_path_files = auto_seed_task_path_files(root, task, &indexed_files);
     if !task_path_files.is_empty() {
         let seeds = task_path_files
             .iter()
@@ -10815,9 +10815,9 @@ fn auto_context_seed_files(
     })
 }
 
-fn auto_seed_task_path_files(task: &str, indexed_files: &[String]) -> Vec<String> {
+fn auto_seed_task_path_files(root: &Path, task: &str, indexed_files: &[String]) -> Vec<String> {
     let indexed_file_set = indexed_files.iter().cloned().collect::<BTreeSet<_>>();
-    auto_seed_task_path_tokens(task)
+    auto_seed_task_path_tokens(root, task)
         .into_iter()
         .filter(|token| indexed_file_set.contains(token))
         .take(3)
@@ -10825,7 +10825,7 @@ fn auto_seed_task_path_files(task: &str, indexed_files: &[String]) -> Vec<String
 }
 
 pub(crate) fn task_has_existing_path(root: &Path, task: &str) -> bool {
-    auto_seed_task_path_tokens(task)
+    auto_seed_task_path_tokens(root, task)
         .into_iter()
         .any(|token| auto_seed_task_path_exists_in_project(root, &token))
 }
@@ -10836,7 +10836,7 @@ fn auto_seed_unindexed_task_path_files(
     indexed_files: &[String],
 ) -> Vec<String> {
     let indexed_file_set = indexed_files.iter().cloned().collect::<BTreeSet<_>>();
-    auto_seed_task_path_tokens(task)
+    auto_seed_task_path_tokens(root, task)
         .into_iter()
         .filter(|token| !indexed_file_set.contains(token))
         .filter(|token| auto_seed_task_path_exists_in_project(root, token))
@@ -10854,12 +10854,12 @@ fn auto_seed_task_path_exists_in_project(root: &Path, token: &str) -> bool {
     canonical_path.is_file() && canonical_path.starts_with(canonical_root)
 }
 
-fn auto_seed_task_path_tokens(task: &str) -> Vec<String> {
+fn auto_seed_task_path_tokens(root: &Path, task: &str) -> Vec<String> {
+    let canonical_root = root.canonicalize().ok();
     let mut seen = BTreeSet::new();
     task.split(|character: char| !auto_seed_task_path_character(character))
-        .map(normalize_auto_seed_task_path_token)
+        .filter_map(|token| normalize_auto_seed_task_path_token(canonical_root.as_deref(), token))
         .filter(|token| token.contains('/'))
-        .filter(|token| auto_seed_task_path_is_project_relative(token))
         .filter(|token| seen.insert(token.clone()))
         .collect()
 }
@@ -10876,12 +10876,21 @@ fn auto_seed_task_path_character(character: char) -> bool {
         || matches!(character, '/' | '\\' | '.' | '_' | '-' | '+' | '#')
 }
 
-fn normalize_auto_seed_task_path_token(token: &str) -> String {
-    token
-        .replace('\\', "/")
-        .trim_start_matches("./")
-        .trim_start_matches('/')
-        .to_string()
+fn normalize_auto_seed_task_path_token(
+    canonical_root: Option<&Path>,
+    token: &str,
+) -> Option<String> {
+    let normalized = token.replace('\\', "/");
+    let path = Path::new(&normalized);
+    if path.is_absolute() {
+        let canonical_path = path.canonicalize().ok()?;
+        let relative_path = canonical_path.strip_prefix(canonical_root?).ok()?;
+        let relative_path = relative_path.to_string_lossy().replace('\\', "/");
+        return auto_seed_task_path_is_project_relative(&relative_path).then_some(relative_path);
+    }
+
+    let relative_path = normalized.trim_start_matches("./").to_string();
+    auto_seed_task_path_is_project_relative(&relative_path).then_some(relative_path)
 }
 
 fn auto_seed_task_symbol_matches(
@@ -15327,10 +15336,17 @@ mod tests {
         assert!(!task_has_existing_path(&root, "inspect ../outside.ts"));
         assert_eq!(
             auto_seed_task_path_tokens(
+                &root,
                 "inspect src/main.ts, ../outside.ts, src/../../outside.ts and ./src/main.ts"
             ),
             vec!["src/main.ts"]
         );
+        let absolute_task = format!("inspect {}", root.join("src/main.ts").display());
+        assert_eq!(
+            auto_seed_task_path_tokens(&root, &absolute_task),
+            vec!["src/main.ts"]
+        );
+        assert!(task_has_existing_path(&root, &absolute_task));
 
         #[cfg(unix)]
         {
