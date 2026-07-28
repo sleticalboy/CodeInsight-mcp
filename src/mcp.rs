@@ -178,18 +178,7 @@ impl AgentFirstReadBackendCandidate {
 fn agent_first_read_search_graph_candidates(
     search_graph: &Value,
 ) -> Result<(Vec<AgentRouteBackendCandidate>, usize, Option<u64>)> {
-    let mut payload = search_graph;
-    loop {
-        if let Some(result) = payload.get("result") {
-            payload = result;
-            continue;
-        }
-        if let Some(structured_content) = payload.get("structuredContent") {
-            payload = structured_content;
-            continue;
-        }
-        break;
-    }
+    let payload = agent_first_read_backend_payload(search_graph);
 
     let semantic_results = payload
         .get("semantic_results")
@@ -214,6 +203,98 @@ fn agent_first_read_search_graph_candidates(
     let evidence_count = candidates.len();
     let latency_ms = payload.get("elapsed_ms").and_then(Value::as_u64);
     Ok((candidates, evidence_count, latency_ms))
+}
+
+fn agent_first_read_backend_payload(mut payload: &Value) -> &Value {
+    loop {
+        if let Some(result) = payload.get("result") {
+            payload = result;
+            continue;
+        }
+        if let Some(structured_content) = payload.get("structuredContent") {
+            payload = structured_content;
+            continue;
+        }
+        break;
+    }
+    payload
+}
+
+fn codebase_memory_prefers_architecture_entrypoints(task: &str) -> bool {
+    let normalized = task.to_lowercase();
+    if ["入口", "启动", "架构", "从哪里开始", "项目概览", "理解项目"]
+        .iter()
+        .any(|phrase| normalized.contains(phrase))
+    {
+        return true;
+    }
+
+    let query = codebase_memory_search_query(task);
+    let mut terms = query
+        .split_whitespace()
+        .map(|term| term.to_ascii_lowercase())
+        .peekable();
+    terms.peek().is_some()
+        && terms.all(|term| {
+            matches!(
+                term.as_str(),
+                "architecture"
+                    | "codebase"
+                    | "entry"
+                    | "entrypoint"
+                    | "main"
+                    | "overview"
+                    | "project"
+                    | "repo"
+                    | "repository"
+                    | "start"
+                    | "startup"
+            )
+        })
+}
+
+fn agent_first_read_architecture_evidence(
+    architecture: &Value,
+    task: &str,
+) -> Option<AgentRouteBackendEvidence> {
+    let payload = agent_first_read_backend_payload(architecture);
+    let mut candidates = payload
+        .get("entry_points")?
+        .as_array()?
+        .iter()
+        .filter_map(|entrypoint| {
+            serde_json::from_value::<AgentFirstReadBackendCandidate>(entrypoint.clone()).ok()
+        })
+        .filter_map(|candidate| candidate.into_route_candidate().ok())
+        .take(AGENT_FIRST_READ_BACKEND_CANDIDATE_LIMIT)
+        .collect::<Vec<_>>();
+    if candidates.is_empty() {
+        return None;
+    }
+
+    for candidate in &mut candidates {
+        candidate.source = Some("get_architecture.entry_points".to_string());
+        candidate.reason = Some("graph architecture entry point".to_string());
+    }
+    let candidate_files = candidates
+        .iter()
+        .map(|candidate| candidate.file.clone())
+        .collect::<Vec<_>>();
+    let prefer_for_context = codebase_memory_prefers_architecture_entrypoints(task);
+    Some(AgentRouteBackendEvidence {
+        provider: AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER.to_string(),
+        use_as_fallback: !prefer_for_context,
+        prefer_for_context,
+        evidence_count: candidates.len(),
+        candidate_files,
+        candidates,
+        evidence_sources: vec!["get_architecture.entry_points".to_string()],
+        latency_ms: payload.get("elapsed_ms").and_then(Value::as_u64),
+        confidence: None,
+        notes: Vec::new(),
+        tool_results: None,
+        normalization: None,
+    })
 }
 
 impl AgentFirstReadBackendCandidates {
@@ -724,6 +805,19 @@ fn codebase_memory_agent_first_read_result_with_binary(
             timeout,
         )
     };
+    let get_architecture = || {
+        codebase_memory_cli_value(
+            binary,
+            "get_architecture",
+            &[
+                OsString::from("--project"),
+                OsString::from(&project),
+                OsString::from("--aspects"),
+                OsString::from("entry_points"),
+            ],
+            timeout,
+        )
+    };
     let cached_fingerprint = codebase_memory_cached_index_fingerprint(&cache_key);
     let cache_matches = fingerprint.as_ref().is_some_and(|fingerprint| {
         cached_fingerprint.as_deref() == Some(fingerprint.value.as_str())
@@ -780,7 +874,9 @@ fn codebase_memory_agent_first_read_result_with_binary(
     };
     let evidence = match agent_first_read_backend_evidence(&search_graph) {
         Ok(evidence) => Some(evidence),
-        Err(error) if error.to_string() == CODEBASE_MEMORY_EMPTY_SEARCH_ERROR => None,
+        Err(error) if error.to_string() == CODEBASE_MEMORY_EMPTY_SEARCH_ERROR => get_architecture()
+            .ok()
+            .and_then(|architecture| agent_first_read_architecture_evidence(&architecture, task)),
         Err(error) => return Err(error),
     };
     Ok(CodebaseMemoryAgentFirstReadResult {
@@ -2663,6 +2759,48 @@ int login(void) {
         );
         assert_eq!(raw_search_graph.latency_ms, Some(9));
 
+        let architecture = agent_first_read_architecture_evidence(
+            &json!({
+                "result": {
+                    "structuredContent": {
+                        "entry_points": [{
+                            "file": "src/main.rs",
+                            "name": "main",
+                            "qualified_name": "fixture.src.main.main"
+                        }],
+                        "elapsed_ms": 4
+                    }
+                }
+            }),
+            "understand this repository",
+        )
+        .unwrap();
+        assert_eq!(architecture.candidate_files, vec!["src/main.rs"]);
+        assert_eq!(architecture.candidates[0].symbol.as_deref(), Some("main"));
+        assert_eq!(
+            architecture.candidates[0].source.as_deref(),
+            Some("get_architecture.entry_points")
+        );
+        assert!(architecture.prefer_for_context);
+        assert!(!architecture.use_as_fallback);
+        assert_eq!(architecture.evidence_count, 1);
+        assert_eq!(architecture.latency_ms, Some(4));
+
+        let specific_architecture = agent_first_read_architecture_evidence(
+            &json!({"entry_points": [{"file": "src/main.rs", "name": "main"}]}),
+            "fix authentication token validation",
+        )
+        .unwrap();
+        assert!(!specific_architecture.prefer_for_context);
+        assert!(specific_architecture.use_as_fallback);
+        assert!(
+            agent_first_read_architecture_evidence(
+                &json!({"entry_points": []}),
+                "understand this repository"
+            )
+            .is_none()
+        );
+
         let unsupported_backend = codebase_memory_agent_first_read_result(
             Path::new("/tmp/repo"),
             "find target",
@@ -2799,6 +2937,51 @@ esac
             .unwrap()
             .evidence;
             assert!(empty.is_none());
+
+            let architecture_backend = backend_dir.path().join("architecture-codebase-memory-mcp");
+            std::fs::write(
+                &architecture_backend,
+                r#"#!/bin/sh
+case "$2" in
+  search_graph)
+    printf '%s\n' '{"results":[]}'
+    ;;
+  get_architecture)
+    printf '%s\n' '{"entry_points":[{"file":"src/main.rs","name":"main"}],"elapsed_ms":3}'
+    ;;
+  *)
+    exit 2
+    ;;
+esac
+"#,
+            )
+            .unwrap();
+            let mut permissions = std::fs::metadata(&architecture_backend)
+                .unwrap()
+                .permissions();
+            permissions.set_mode(0o755);
+            std::fs::set_permissions(&architecture_backend, permissions).unwrap();
+            let architecture = codebase_memory_agent_first_read_result_with_binary(
+                &root,
+                "understand this repository",
+                AgentFirstReadBackendConfig {
+                    provider: AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER.to_string(),
+                    project: Some("fixture".to_string()),
+                    refresh_index: false,
+                    timeout_ms: CODEBASE_MEMORY_TIMEOUT_MS,
+                    on_failure: AgentFirstReadBackendFailurePolicy::FallbackLocal,
+                },
+                architecture_backend.as_os_str(),
+            )
+            .unwrap()
+            .evidence
+            .unwrap();
+            assert_eq!(architecture.candidate_files, vec!["src/main.rs"]);
+            assert!(architecture.prefer_for_context);
+            assert_eq!(
+                architecture.evidence_sources,
+                vec!["get_architecture.entry_points"]
+            );
 
             let slow_backend = backend_dir.path().join("slow-codebase-memory-mcp");
             std::fs::write(&slow_backend, "#!/bin/sh\nexec sleep 1\n").unwrap();

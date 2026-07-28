@@ -14785,6 +14785,84 @@ esac
 }
 
 #[test]
+#[cfg(unix)]
+fn mcp_stdio_agent_first_read_uses_architecture_entrypoint_when_graph_search_is_empty() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let fixture = fixture_project();
+    let backend_dir = TempDir::new().unwrap();
+    let backend = backend_dir.path().join("fake-codebase-memory-mcp");
+    std::fs::write(
+        &backend,
+        r#"#!/bin/sh
+case "$2" in
+  search_graph)
+    printf '%s\n' '{"results":[]}'
+    ;;
+  get_architecture)
+    printf '%s\n' '{"entry_points":[{"file":"src/multi-long.ts","name":"targetLater","qualified_name":"fixture.src.multi_long.targetLater"}],"elapsed_ms":3}'
+    ;;
+  *)
+    exit 2
+    ;;
+esac
+"#,
+    )
+    .unwrap();
+    let mut permissions = std::fs::metadata(&backend).unwrap().permissions();
+    permissions.set_mode(0o755);
+    std::fs::set_permissions(&backend, permissions).unwrap();
+
+    let request = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 12,
+        "method": "tools/call",
+        "params": {
+            "name": "agent_first_read",
+            "arguments": {
+                "root": fixture.path(),
+                "task": "understand this repository architecture",
+                "token_budget": 500,
+                "backend": {
+                    "provider": "codebase-memory-mcp",
+                    "project": "fixture",
+                    "timeout_ms": 1000
+                },
+                "force_index": true
+            }
+        }
+    });
+
+    let mut command = Command::cargo_bin("codeinsight").unwrap();
+    command
+        .args(["serve", "--transport", "stdio"])
+        .env("CODEINSIGHT_CODEBASE_MEMORY_BIN", &backend)
+        .write_stdin(format!("{request}\n"));
+    let output = command.assert().success().get_output().stdout.clone();
+    let response: Value = serde_json::from_slice(&output).unwrap();
+    let route = &response["result"]["structuredContent"];
+
+    assert_eq!(response["id"], 12);
+    assert_eq!(route["backend_status"]["status"], "used");
+    assert_eq!(
+        route["context_pack"]["files"][0]["file"],
+        "src/multi-long.ts"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["status"],
+        "backend_preferred"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_selected_candidate"]["source"],
+        "get_architecture.entry_points"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_selected_candidate"]["symbol"],
+        "targetLater"
+    );
+}
+
+#[test]
 fn mcp_stdio_executes_agent_first_read_with_bounded_compact_response() {
     let fixture = fixture_project();
     let request = serde_json::json!({
