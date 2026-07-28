@@ -2113,6 +2113,45 @@ fn cli_indexes_and_queries_fixture_project() {
 }
 
 #[test]
+fn cli_context_pack_prioritizes_requested_line_under_tight_budget() {
+    let fixture = TempDir::new().unwrap();
+    let padding = "x".repeat(4_000);
+    write_file(
+        &fixture,
+        "src/target.ts",
+        &format!(
+            "export const paddingA = \"{padding}\";\nexport const paddingB = \"{padding}\";\nexport const paddingC = \"{padding}\";\nexport const requestedTarget = true;\n"
+        ),
+    );
+    run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+
+    let context = run_json([
+        "context-pack",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "inspect src/target.ts:4 before editing",
+        "--token-budget",
+        "20",
+    ]);
+    let target_range = context["files"][0]["ranges"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|range| {
+            range["source"] == "task_location"
+                && range["start_line"].as_u64().unwrap() <= 4
+                && range["end_line"].as_u64().unwrap() >= 4
+        })
+        .expect("requested task line should survive tight context budgets");
+    assert!(
+        target_range["excerpt"]
+            .as_str()
+            .unwrap()
+            .contains("requestedTarget")
+    );
+}
+
+#[test]
 fn cli_agent_route_runs_first_read_pipeline() {
     let fixture = fixture_project();
 

@@ -117,7 +117,8 @@ impl BackendContextSelection {
 }
 
 const CONTEXT_SCORE_SEED_HEADER: i32 = 140;
-const CONTEXT_SCORE_TASK_LOCATION: i32 = 220;
+const CONTEXT_SCORE_TASK_LOCATION: i32 = 240;
+const CONTEXT_SCORE_TASK_LOCATION_CONTEXT: i32 = 220;
 const CONTEXT_SCORE_SYMBOL_DEFINITION: i32 = 90;
 const CONTEXT_SCORE_TYPE_RELATION: i32 = 82;
 const CONTEXT_SCORE_CALL_GRAPH: i32 = 75;
@@ -9587,15 +9588,28 @@ fn seed_file_ranges(
         let requested_start = location.start_line.clamp(1, line_count);
         let requested_end = location.end_line.clamp(requested_start, line_count);
         ranges.push(ContextCandidateRange {
-            start_line: requested_start.saturating_sub(3).max(1),
-            end_line: requested_end.saturating_add(3).min(line_count),
+            start_line: requested_start,
+            end_line: requested_end,
             reason: if requested_start == requested_end {
-                format!("Task requested {file} near line {requested_start}")
+                format!("Task requested {file} at line {requested_start}")
             } else {
                 format!("Task requested {file} lines {requested_start}-{requested_end}")
             },
             source: "task_location".to_string(),
             score: CONTEXT_SCORE_TASK_LOCATION,
+        });
+
+        let context_start = requested_start.saturating_sub(3).max(1);
+        let context_end = requested_end.saturating_add(3).min(line_count);
+        if context_start == requested_start && context_end == requested_end {
+            continue;
+        }
+        ranges.push(ContextCandidateRange {
+            start_line: context_start,
+            end_line: context_end,
+            reason: format!("Context around task-requested lines in {file}"),
+            source: "task_location".to_string(),
+            score: CONTEXT_SCORE_TASK_LOCATION_CONTEXT,
         });
     }
 
