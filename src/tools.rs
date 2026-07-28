@@ -23,13 +23,14 @@ use crate::{
         AgentRouteQuality, AgentRouteReport, AgentRouteRoutingDecision, AgentRouteStep, CallEdge,
         ConfigInitReport, ConfigStatusReport, ContextBudget, ContextContinuationSummary,
         ContextFile, ContextOmittedCandidate, ContextPack, ContextRange, ContextReadLess,
-        ContextReadingRange, ContextReadingStep, ContextSeed, ContextSemanticStatus,
-        ContextSourceCount, ContextSuggestedTool, Dependency, DependencyGraph,
-        EmbeddingProviderStatus, ImpactAnalysisReport, ImpactBreakdown, ImpactCounts, ImpactFile,
-        ImpactPath, IndexError, IndexScopeReport, Language, OllamaEmbeddingStatus,
-        OpenAiEmbeddingStatus, ProjectIndexReport, ProjectOverview, ReferenceMatch, SemanticChunk,
-        SemanticChunkInput, SemanticEmbeddingInput, SemanticEmbeddingMatch, SemanticIndexReport,
-        SemanticIndexStatus, SemanticSearchResult, SuggestedCheck, Symbol, SymbolKind, VersionInfo,
+        ContextReadingRange, ContextReadingStep, ContextSeed, ContextSeedLocation,
+        ContextSemanticStatus, ContextSourceCount, ContextSuggestedTool, Dependency,
+        DependencyGraph, EmbeddingProviderStatus, ImpactAnalysisReport, ImpactBreakdown,
+        ImpactCounts, ImpactFile, ImpactPath, IndexError, IndexScopeReport, Language,
+        OllamaEmbeddingStatus, OpenAiEmbeddingStatus, ProjectIndexReport, ProjectOverview,
+        ReferenceMatch, SemanticChunk, SemanticChunkInput, SemanticEmbeddingInput,
+        SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus, SemanticSearchResult,
+        SuggestedCheck, Symbol, SymbolKind, VersionInfo,
     },
     storage::Store,
 };
@@ -10366,10 +10367,12 @@ fn auto_context_seed_files(
             task_path_files.push(reference.file.clone());
         }
         if let Some(location) = reference.location {
-            task_path_locations
+            let locations = task_path_locations
                 .entry(reference.file.clone())
-                .or_default()
-                .push(location);
+                .or_default();
+            if !locations.contains(&location) {
+                locations.push(location);
+            }
         }
     }
     if !task_path_files.is_empty() {
@@ -10387,6 +10390,7 @@ fn auto_context_seed_files(
                     .get(file)
                     .and_then(|locations| locations.first())
                     .map(|location| location.end_line),
+                locations: context_seed_locations(task_path_locations.get(file).map(Vec::as_slice)),
                 role: Some(auto_seed_file_role(file).to_string()),
                 matched_keywords: Vec::new(),
                 matched_symbols: Vec::new(),
@@ -10425,6 +10429,7 @@ fn auto_context_seed_files(
                     .find(|reference| reference.file == *file)
                     .and_then(|reference| reference.location)
                     .map(|location| location.end_line),
+                locations: context_seed_locations_from_references(&task_path_references, file),
                 role: Some(auto_seed_file_role(file).to_string()),
                 matched_keywords: Vec::new(),
                 matched_symbols: Vec::new(),
@@ -10884,6 +10889,7 @@ fn auto_context_seed_files(
             source,
             start_line: None,
             end_line: None,
+            locations: Vec::new(),
             role: Some(candidate.role.clone()),
             matched_keywords: candidate.matched_keywords.clone(),
             matched_symbols: candidate.matched_symbols.clone(),
@@ -10896,6 +10902,7 @@ fn auto_context_seed_files(
                 source: entrypoint.source,
                 start_line: None,
                 end_line: None,
+                locations: Vec::new(),
                 role: Some(entrypoint.role),
                 matched_keywords: entrypoint.matched_keywords,
                 matched_symbols: entrypoint.matched_symbols,
@@ -10922,6 +10929,7 @@ fn auto_context_seed_files(
             source: "indexed_file_fallback".to_string(),
             start_line: None,
             end_line: None,
+            locations: Vec::new(),
             role: Some(auto_seed_file_role(file).to_string()),
             matched_keywords: Vec::new(),
             matched_symbols: Vec::new(),
@@ -14980,6 +14988,7 @@ fn explicit_context_seeds(
             source: "explicit".to_string(),
             start_line: None,
             end_line: None,
+            locations: Vec::new(),
             role: None,
             matched_keywords: Vec::new(),
             matched_symbols: Vec::new(),
@@ -14998,12 +15007,41 @@ fn explicit_context_seeds(
                 .get(file)
                 .and_then(|locations| locations.first())
                 .map(|location| location.end_line),
+            locations: context_seed_locations(task_path_locations.get(file).map(Vec::as_slice)),
             role: Some(auto_seed_file_role(file).to_string()),
             matched_keywords: Vec::new(),
             matched_symbols: Vec::new(),
         }
     }));
     seeds
+}
+
+fn context_seed_locations(locations: Option<&[TaskPathLocation]>) -> Vec<ContextSeedLocation> {
+    locations
+        .into_iter()
+        .flatten()
+        .map(|location| ContextSeedLocation {
+            start_line: location.start_line,
+            end_line: location.end_line,
+        })
+        .collect()
+}
+
+fn context_seed_locations_from_references(
+    references: &[TaskPathReference],
+    file: &str,
+) -> Vec<ContextSeedLocation> {
+    let mut locations = Vec::new();
+    for location in references
+        .iter()
+        .filter(|reference| reference.file == file)
+        .filter_map(|reference| reference.location)
+    {
+        if !locations.contains(&location) {
+            locations.push(location);
+        }
+    }
+    context_seed_locations(Some(locations.as_slice()))
 }
 
 fn auto_seed_role_allowed(role: &str, task_keywords: &[String]) -> bool {

@@ -596,6 +596,12 @@ pub struct ContextOmittedCandidate {
 }
 
 #[derive(Debug, Clone, Serialize)]
+pub struct ContextSeedLocation {
+    pub start_line: usize,
+    pub end_line: usize,
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct ContextSeed {
     pub kind: String,
     pub value: String,
@@ -604,6 +610,8 @@ pub struct ContextSeed {
     pub start_line: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub end_line: Option<usize>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub locations: Vec<ContextSeedLocation>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub role: Option<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]

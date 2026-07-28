@@ -2499,6 +2499,10 @@ def helper():
             Some(4)
         );
         assert_eq!(
+            file_context_result["structuredContent"]["selected_seeds"][0]["locations"],
+            json!([{"start_line": 4, "end_line": 4}])
+        );
+        assert_eq!(
             file_context_result["structuredContent"]["files"][0]["file"].as_str(),
             Some("auth.py")
         );
@@ -2533,6 +2537,10 @@ def helper():
                 ["start_line"]
                 .as_u64(),
             Some(4)
+        );
+        assert_eq!(
+            located_route_result["structuredContent"]["context_pack"]["selected_seeds"][0]["locations"],
+            json!([{"start_line": 4, "end_line": 4}])
         );
         assert_eq!(
             located_route_result["structuredContent"]["impact_seed_files"][0].as_str(),

@@ -3,7 +3,7 @@ use std::path::Path;
 
 use assert_cmd::Command;
 use predicates::str::{contains, is_match};
-use serde_json::Value;
+use serde_json::{Value, json};
 use tempfile::TempDir;
 
 #[test]
@@ -1234,6 +1234,13 @@ fn cli_indexes_and_queries_fixture_project() {
         20
     );
     assert_eq!(multi_location_context["selected_seeds"][0]["end_line"], 20);
+    assert_eq!(
+        multi_location_context["selected_seeds"][0]["locations"],
+        json!([
+            {"start_line": 20, "end_line": 20},
+            {"start_line": 70, "end_line": 75}
+        ])
+    );
     let requested_ranges = multi_location_context["files"][0]["ranges"]
         .as_array()
         .unwrap()
@@ -1278,6 +1285,13 @@ fn cli_indexes_and_queries_fixture_project() {
     assert_eq!(
         explicit_location_context["selected_seeds"][0]["end_line"],
         20
+    );
+    assert_eq!(
+        explicit_location_context["selected_seeds"][0]["locations"],
+        json!([
+            {"start_line": 20, "end_line": 20},
+            {"start_line": 70, "end_line": 75}
+        ])
     );
     let requested_ranges = explicit_location_context["files"][0]["ranges"]
         .as_array()
