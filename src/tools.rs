@@ -10917,7 +10917,8 @@ fn normalize_auto_seed_task_path_token(
     token: &str,
 ) -> Option<String> {
     let normalized = token.replace('\\', "/");
-    let path = Path::new(&normalized);
+    let normalized = strip_auto_seed_task_path_location(&normalized);
+    let path = Path::new(normalized);
     if path.is_absolute() {
         let canonical_path = path.canonicalize().ok()?;
         let relative_path = canonical_path.strip_prefix(canonical_root?).ok()?;
@@ -10927,6 +10928,36 @@ fn normalize_auto_seed_task_path_token(
 
     let relative_path = normalized.trim_start_matches("./").to_string();
     auto_seed_task_path_is_project_relative(&relative_path).then_some(relative_path)
+}
+
+fn strip_auto_seed_task_path_location(token: &str) -> &str {
+    if let Some(fragment_start) = token.rfind("#L") {
+        let fragment = &token[fragment_start + 2..];
+        let valid_fragment = fragment.split_once("-L").map_or_else(
+            || decimal_location(fragment),
+            |(start, end)| decimal_location(start) && decimal_location(end),
+        );
+        if valid_fragment {
+            return &token[..fragment_start];
+        }
+    }
+
+    let Some(last_colon) = token.rfind(':') else {
+        return token;
+    };
+    if !decimal_location(&token[last_colon + 1..]) {
+        return token;
+    }
+
+    let path_end = token[..last_colon]
+        .rfind(':')
+        .filter(|previous_colon| decimal_location(&token[previous_colon + 1..last_colon]))
+        .unwrap_or(last_colon);
+    &token[..path_end]
+}
+
+fn decimal_location(value: &str) -> bool {
+    !value.is_empty() && value.bytes().all(|byte| byte.is_ascii_digit())
 }
 
 fn auto_seed_task_symbol_matches(
@@ -15383,6 +15414,17 @@ mod tests {
             vec!["src/main.ts"]
         );
         assert!(task_has_existing_path(&root, &absolute_task));
+        for located_task in [
+            "inspect \"src/main.ts:12:4\"".to_string(),
+            "inspect src/main.ts#L2-L4".to_string(),
+            format!("inspect '{}#L1'", root.join("src/main.ts").display()),
+        ] {
+            assert_eq!(
+                auto_seed_task_path_tokens(&root, &located_task),
+                vec!["src/main.ts"]
+            );
+            assert!(task_has_existing_path(&root, &located_task));
+        }
 
         let spaced_root = parent.path().join("repo with spaces");
         std::fs::create_dir_all(spaced_root.join("src")).unwrap();
