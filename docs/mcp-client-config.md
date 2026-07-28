@@ -218,7 +218,9 @@ directly, add the optional backend configuration:
 ```
 
 The existing backend graph is reused. A missing project is indexed in fast
-mode automatically. `on_failure` defaults to `fallback_local`, so missing
+mode automatically. `timeout_ms` is one total budget shared by freshness
+checks, indexing, and candidate lookup fallbacks. `on_failure` defaults to
+`fallback_local`, so missing
 binaries, command failures, timeouts, and invalid backend responses do not
 block the standalone local route. Set it to `error` for strict behavior.
 Invalid backend configuration always returns an MCP error. The structured

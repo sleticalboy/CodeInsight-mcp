@@ -52,6 +52,39 @@ struct CodebaseMemoryAgentFirstReadResult {
     index_status: &'static str,
 }
 
+#[derive(Debug, Clone, Copy)]
+struct CodebaseMemoryDeadline {
+    deadline: Instant,
+    budget: Duration,
+}
+
+impl CodebaseMemoryDeadline {
+    fn new(budget: Duration) -> Self {
+        Self {
+            deadline: Instant::now() + budget,
+            budget,
+        }
+    }
+
+    fn remaining(self, tool: &str) -> Result<Duration> {
+        self.deadline
+            .checked_duration_since(Instant::now())
+            .filter(|remaining| !remaining.is_zero())
+            .ok_or_else(|| self.timeout_error(tool))
+    }
+
+    fn exhausted(self) -> bool {
+        Instant::now() >= self.deadline
+    }
+
+    fn timeout_error(self, tool: &str) -> anyhow::Error {
+        anyhow!(
+            "codebase-memory-mcp backend timeout budget of {} ms exhausted before or during {tool}",
+            self.budget.as_millis()
+        )
+    }
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct AgentFirstReadBackendCandidates {
@@ -563,6 +596,36 @@ fn codebase_memory_cli_value(
         .with_context(|| format!("codebase-memory-mcp {tool} returned invalid JSON"))
 }
 
+fn codebase_memory_cli_value_with_deadline(
+    binary: &OsStr,
+    tool: &str,
+    args: &[OsString],
+    deadline: CodebaseMemoryDeadline,
+) -> Result<Value> {
+    let timeout = deadline.remaining(tool)?;
+    match codebase_memory_cli_value(binary, tool, args, timeout) {
+        Ok(value) => Ok(value),
+        Err(_) if deadline.exhausted() => Err(deadline.timeout_error(tool)),
+        Err(error) => Err(error),
+    }
+}
+
+fn optional_codebase_memory_value(
+    result: Result<Value>,
+    deadline: CodebaseMemoryDeadline,
+    tool: &str,
+) -> Result<Option<Value>> {
+    match result {
+        Ok(value) => Ok(Some(value)),
+        Err(error)
+            if deadline.exhausted() || error.to_string().contains("backend timeout budget of") =>
+        {
+            Err(deadline.timeout_error(tool))
+        }
+        Err(_) => Ok(None),
+    }
+}
+
 fn codebase_memory_project_missing(error: &anyhow::Error) -> bool {
     error.chain().any(|cause| {
         cause
@@ -705,9 +768,9 @@ fn codebase_memory_cache_index(
 fn codebase_memory_indexed_heads(
     binary: &OsStr,
     project: &str,
-    timeout: Duration,
+    deadline: CodebaseMemoryDeadline,
 ) -> Result<Vec<String>> {
-    let value = codebase_memory_cli_value(
+    let value = codebase_memory_cli_value_with_deadline(
         binary,
         "query_graph",
         &[
@@ -716,7 +779,7 @@ fn codebase_memory_indexed_heads(
             OsString::from("--query"),
             OsString::from("MATCH (b:Branch) RETURN b.head_sha LIMIT 32"),
         ],
-        timeout,
+        deadline,
     )?;
     let mut payload = &value;
     loop {
@@ -846,6 +909,7 @@ fn codebase_memory_agent_first_read_result_with_binary(
     config.validate()?;
     let project = codebase_memory_project(root, config.project)?;
     let timeout = Duration::from_millis(config.timeout_ms);
+    let deadline = CodebaseMemoryDeadline::new(timeout);
     let search_query = codebase_memory_search_query(task);
     let search_code_pattern = codebase_memory_search_code_pattern(task);
     let prefers_architecture = codebase_memory_prefers_architecture_entrypoints(task);
@@ -853,7 +917,7 @@ fn codebase_memory_agent_first_read_result_with_binary(
     let cache_key = codebase_memory_index_cache_key(root, &project, binary);
 
     let index_project = || {
-        codebase_memory_cli_value(
+        codebase_memory_cli_value_with_deadline(
             binary,
             "index_repository",
             &[
@@ -864,11 +928,11 @@ fn codebase_memory_agent_first_read_result_with_binary(
                 OsString::from("--mode"),
                 OsString::from("fast"),
             ],
-            timeout,
+            deadline,
         )
     };
     let search_graph = || {
-        codebase_memory_cli_value(
+        codebase_memory_cli_value_with_deadline(
             binary,
             "search_graph",
             &[
@@ -879,11 +943,11 @@ fn codebase_memory_agent_first_read_result_with_binary(
                 OsString::from("--limit"),
                 OsString::from(AGENT_FIRST_READ_BACKEND_CANDIDATE_LIMIT.to_string()),
             ],
-            timeout,
+            deadline,
         )
     };
     let get_architecture = || {
-        codebase_memory_cli_value(
+        codebase_memory_cli_value_with_deadline(
             binary,
             "get_architecture",
             &[
@@ -892,14 +956,14 @@ fn codebase_memory_agent_first_read_result_with_binary(
                 OsString::from("--aspects"),
                 OsString::from("entry_points"),
             ],
-            timeout,
+            deadline,
         )
     };
     let search_code = || -> Result<Option<Value>> {
         let Some(pattern) = search_code_pattern.as_ref() else {
             return Ok(None);
         };
-        codebase_memory_cli_value(
+        codebase_memory_cli_value_with_deadline(
             binary,
             "search_code",
             &[
@@ -912,7 +976,7 @@ fn codebase_memory_agent_first_read_result_with_binary(
                 OsString::from("--limit"),
                 OsString::from(AGENT_FIRST_READ_BACKEND_CANDIDATE_LIMIT.to_string()),
             ],
-            timeout,
+            deadline,
         )
         .map(Some)
     };
@@ -937,7 +1001,7 @@ fn codebase_memory_agent_first_read_result_with_binary(
         if fingerprint.dirty {
             (true, "refreshed_dirty_worktree")
         } else {
-            match codebase_memory_indexed_heads(binary, &project, timeout) {
+            match codebase_memory_indexed_heads(binary, &project, deadline) {
                 Ok(heads) => {
                     let current = heads.iter().any(|head| head == &fingerprint.head);
                     if current {
@@ -949,6 +1013,9 @@ fn codebase_memory_agent_first_read_result_with_binary(
                 }
                 Err(error) if codebase_memory_project_missing(&error) => {
                     (true, "refreshed_missing_project")
+                }
+                Err(_) if deadline.exhausted() => {
+                    return Err(deadline.timeout_error("query_graph"));
                 }
                 Err(_) => (false, "reused_unverified_graph"),
             }
@@ -978,23 +1045,36 @@ fn codebase_memory_agent_first_read_result_with_binary(
         }
     };
     let evidence = if prefers_architecture {
-        agent_first_read_architecture_evidence(&primary_result, task).or_else(|| {
-            search_graph()
-                .ok()
-                .and_then(|search_graph| agent_first_read_backend_evidence(&search_graph).ok())
-        })
+        match agent_first_read_architecture_evidence(&primary_result, task) {
+            Some(evidence) => Some(evidence),
+            None => optional_codebase_memory_value(search_graph(), deadline, "search_graph")?
+                .and_then(|search_graph| agent_first_read_backend_evidence(&search_graph).ok()),
+        }
     } else {
         match agent_first_read_backend_evidence(&primary_result) {
             Ok(evidence) => Some(evidence),
-            Err(error) if error.to_string() == CODEBASE_MEMORY_EMPTY_SEARCH_ERROR => search_code()
-                .ok()
-                .flatten()
-                .and_then(|search_code| agent_first_read_search_code_evidence(&search_code))
-                .or_else(|| {
-                    get_architecture().ok().and_then(|architecture| {
+            Err(error) if error.to_string() == CODEBASE_MEMORY_EMPTY_SEARCH_ERROR => {
+                let search_code = match search_code() {
+                    Ok(value) => value,
+                    Err(error) => {
+                        optional_codebase_memory_value(Err(error), deadline, "search_code")?
+                    }
+                };
+                match search_code
+                    .as_ref()
+                    .and_then(agent_first_read_search_code_evidence)
+                {
+                    Some(evidence) => Some(evidence),
+                    None => optional_codebase_memory_value(
+                        get_architecture(),
+                        deadline,
+                        "get_architecture",
+                    )?
+                    .and_then(|architecture| {
                         agent_first_read_architecture_evidence(&architecture, task)
-                    })
-                }),
+                    }),
+                }
+            }
             Err(error) => return Err(error),
         }
     };
@@ -1739,7 +1819,7 @@ fn tool_definitions() -> Value {
                                 "minimum": 1000,
                                 "maximum": 300000,
                                 "default": 60000,
-                                "description": "Maximum time allowed for each backend index or search command."
+                                "description": "Total time budget shared by backend freshness checks, indexing, and candidate lookup fallbacks."
                             },
                             "on_failure": {
                                 "type": "string",
@@ -3218,6 +3298,52 @@ esac
             assert_eq!(
                 timeout_error.to_string(),
                 "codebase-memory-mcp search_graph timed out after 20 ms"
+            );
+
+            let budget_backend = backend_dir.path().join("budget-codebase-memory-mcp");
+            std::fs::write(
+                &budget_backend,
+                r#"#!/bin/sh
+case "$2" in
+  search_graph)
+    sleep 0.2
+    printf '%s\n' '{"results":[]}'
+    ;;
+  search_code)
+    exec sleep 2
+    ;;
+  *)
+    exit 2
+    ;;
+esac
+"#,
+            )
+            .unwrap();
+            let mut permissions = std::fs::metadata(&budget_backend).unwrap().permissions();
+            permissions.set_mode(0o755);
+            std::fs::set_permissions(&budget_backend, permissions).unwrap();
+            let started = Instant::now();
+            let timeout_error = codebase_memory_agent_first_read_result_with_binary(
+                &root,
+                "find refreshed_repository_changed status",
+                AgentFirstReadBackendConfig {
+                    provider: AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER.to_string(),
+                    project: Some("fixture".to_string()),
+                    refresh_index: false,
+                    timeout_ms: CODEBASE_MEMORY_MIN_TIMEOUT_MS,
+                    on_failure: AgentFirstReadBackendFailurePolicy::FallbackLocal,
+                },
+                budget_backend.as_os_str(),
+            )
+            .unwrap_err();
+            let elapsed = started.elapsed();
+            assert!(
+                elapsed < Duration::from_millis(1_500),
+                "shared timeout budget took {elapsed:?}"
+            );
+            assert_eq!(
+                timeout_error.to_string(),
+                "codebase-memory-mcp backend timeout budget of 1000 ms exhausted before or during search_code"
             );
         }
 
