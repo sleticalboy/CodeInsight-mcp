@@ -2503,6 +2503,10 @@ def helper():
             json!([{"start_line": 4, "end_line": 4}])
         );
         assert_eq!(
+            file_context_result["structuredContent"]["reading_plan"][0]["requested_locations"],
+            json!([{"start_line": 4, "end_line": 4}])
+        );
+        assert_eq!(
             file_context_result["structuredContent"]["files"][0]["file"].as_str(),
             Some("auth.py")
         );
@@ -2540,6 +2544,10 @@ def helper():
         );
         assert_eq!(
             located_route_result["structuredContent"]["context_pack"]["selected_seeds"][0]["locations"],
+            json!([{"start_line": 4, "end_line": 4}])
+        );
+        assert_eq!(
+            located_route_result["structuredContent"]["current_reading_step"]["requested_locations"],
             json!([{"start_line": 4, "end_line": 4}])
         );
         assert_eq!(

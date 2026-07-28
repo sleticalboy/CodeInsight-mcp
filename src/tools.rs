@@ -4802,7 +4802,7 @@ pub fn context_pack_value(
         count_selected_ranges_with_reason(&files, "Semantic chunk match");
     semantic_status.status.recommendation =
         context_semantic_recommendation(&semantic_status.status);
-    let reading_plan = context_reading_plan(&root, &task, &files);
+    let reading_plan = context_reading_plan(&root, &task, &files, &selected_seeds);
     let selected_files = files.len();
     let selected_ranges = files.iter().map(|file| file.ranges.len()).sum::<usize>();
     let selected_source_lines = context_selected_source_lines(&files);
@@ -5166,7 +5166,12 @@ fn context_omitted_candidate(
     })
 }
 
-fn context_reading_plan(root: &Path, task: &str, files: &[ContextFile]) -> Vec<ContextReadingStep> {
+fn context_reading_plan(
+    root: &Path,
+    task: &str,
+    files: &[ContextFile],
+    selected_seeds: &[ContextSeed],
+) -> Vec<ContextReadingStep> {
     files
         .iter()
         .take(8)
@@ -5190,6 +5195,7 @@ fn context_reading_plan(root: &Path, task: &str, files: &[ContextFile]) -> Vec<C
                 order: index + 1,
                 file: file.file.clone(),
                 selection_rank: file.selection_rank,
+                requested_locations: context_requested_locations(selected_seeds, &file.file),
                 focus: context_reading_focus(file, task),
                 next_action,
                 question: question.clone(),
@@ -5202,6 +5208,20 @@ fn context_reading_plan(root: &Path, task: &str, files: &[ContextFile]) -> Vec<C
                 ranges,
             }
         })
+        .collect()
+}
+
+fn context_requested_locations(
+    selected_seeds: &[ContextSeed],
+    file: &str,
+) -> Vec<ContextSeedLocation> {
+    let mut seen = BTreeSet::new();
+    selected_seeds
+        .iter()
+        .filter(|seed| seed.kind == "file" && seed.value == file)
+        .flat_map(|seed| seed.locations.iter())
+        .filter(|location| seen.insert((location.start_line, location.end_line)))
+        .cloned()
         .collect()
 }
 

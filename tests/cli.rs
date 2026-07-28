@@ -1241,6 +1241,10 @@ fn cli_indexes_and_queries_fixture_project() {
             {"start_line": 70, "end_line": 75}
         ])
     );
+    assert_eq!(
+        multi_location_context["reading_plan"][0]["requested_locations"],
+        multi_location_context["selected_seeds"][0]["locations"]
+    );
     let requested_ranges = multi_location_context["files"][0]["ranges"]
         .as_array()
         .unwrap()
@@ -1292,6 +1296,10 @@ fn cli_indexes_and_queries_fixture_project() {
             {"start_line": 20, "end_line": 20},
             {"start_line": 70, "end_line": 75}
         ])
+    );
+    assert_eq!(
+        explicit_location_context["reading_plan"][0]["requested_locations"],
+        explicit_location_context["selected_seeds"][0]["locations"]
     );
     let requested_ranges = explicit_location_context["files"][0]["ranges"]
         .as_array()
@@ -2455,6 +2463,11 @@ fn cli_agent_route_compact_keeps_the_execution_contract_and_selected_excerpts() 
     assert!(route["routing_decision"].get("backend_evidence").is_none());
     assert!(!route["execution_plan"].as_array().unwrap().is_empty());
     assert!(!route["current_reading_step"].is_null());
+    assert!(
+        route["current_reading_step"]
+            .get("requested_locations")
+            .is_none()
+    );
 
     let context_pack = route["context_pack"].as_object().unwrap();
     for omitted_key in [

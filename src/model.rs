@@ -638,6 +638,8 @@ pub struct ContextReadingStep {
     pub order: usize,
     pub file: String,
     pub selection_rank: usize,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub requested_locations: Vec<ContextSeedLocation>,
     pub focus: String,
     pub next_action: String,
     pub question: String,
