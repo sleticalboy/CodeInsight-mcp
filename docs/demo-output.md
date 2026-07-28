@@ -38,7 +38,7 @@ token_budget: 6000
    errors: 0
 
 2. project_overview
-   total_lines: 91621
+   total_lines: 91672
    entrypoints: 12
    first_entrypoint: src/main.rs
    recommended_next_tools: 5
@@ -56,7 +56,7 @@ token_budget: 6000
    routing_decision_first_file: src/tools.rs
    routing_decision_first_selection_rank: 1
    routing_decision_suggested_tool: file_outline
-   routing_decision_read_less: 99.4%, 166.6x
+   routing_decision_read_less: 99.4%, 166.7x
    routing_decision_continuation: omitted_candidates_available
    routing_decision_impact_status: complete
    routing_decision_quality: high (100/100, 24 evidence signals)
@@ -65,12 +65,12 @@ token_budget: 6000
    first_reading_focus: Start with seed file context routing, first-read handoff, and read-less evidence.
    first_reading_question: Which seed selection, reading-plan handoff, or read-less evidence controls the agent first-read workflow here?
    first_selection_rank: 1
-   blind_first_read_lines: 91621
+   blind_first_read_lines: 91672
    routed_first_read_lines: 550
    selected_lines: 550
-   source_lines_avoided: 91071
+   source_lines_avoided: 91122
    line_reduction: 99.4%
-   read_less_ratio: 166.6x
+   read_less_ratio: 166.7x
    estimated_tokens: 6000
    continuation: omitted_candidates_available
    continuation_next_action: run_omitted_candidate_context_pack
@@ -102,12 +102,12 @@ Save the raw agent_route JSON:
   CODEINSIGHT_DEMO_SAVE_JSON=/tmp/codeinsight-agent-route.json scripts/two-minute-demo.sh
 
 [Evidence summary]
-Blind first-read baseline: 91621 source lines.
+Blind first-read baseline: 91672 source lines.
 Routed first-read: 550 source lines across 1 files.
-Read less: avoided 91071 source lines, 166.6x less text before follow-up tools.
+Read less: avoided 91122 source lines, 166.7x less text before follow-up tools.
 Routing decision: seed=task_match:src/tools.rs, first_file=src/tools.rs, rank=1, tool=file_outline, continuation=omitted_candidates_available, impact=complete.
 Route quality: high (100/100) from 24 evidence signals; next=read_selected_context_then_use_continuation_if_needed.
-agent_route selected 550/91621 source lines (99.4% reduction) across 1 files.
+agent_route selected 550/91672 source lines (99.4% reduction) across 1 files.
 First reading focus: Start with seed file context routing, first-read handoff, and read-less evidence.
 First reading question: Which seed selection, reading-plan handoff, or read-less evidence controls the agent first-read workflow here?
 The first selected file is src/tools.rs; reading_plan starts at src/tools.rs as candidate rank 1.
@@ -124,7 +124,7 @@ Before edits, impact_analysis reports high risk across 8 impacted files.
 3. context_pack selected 1 files and 11 ranges, then produced 1 reading-plan steps.
 4. execution_plan starts with read_selected_context, then use_current_reading_step_suggested_tool; this keeps suggested tools behind selected-context reading.
 5. The first execution-plan suggested tool is file_outline; offer it only after the selected file has been read.
-6. routing_decision summarizes the same choice: seed=task_match:src/tools.rs, first_file=src/tools.rs, rank=1, read_less=99.4%/166.6x.
+6. routing_decision summarizes the same choice: seed=task_match:src/tools.rs, first_file=src/tools.rs, rank=1, read_less=99.4%/166.7x.
 7. route_quality is high (100/100) from 24 evidence signals; recommended_action=read_selected_context_then_use_continuation_if_needed.
 8. The first reading-plan focus is: Start with seed file context routing, first-read handoff, and read-less evidence.
 9. The first reading-plan question is: Which seed selection, reading-plan handoff, or read-less evidence controls the agent first-read workflow here?
@@ -134,7 +134,7 @@ Before edits, impact_analysis reports high risk across 8 impacted files.
 13. Current reading step contract is true; agent_route.current_reading_step mirrors reading_plan[0].
 14. Suggested-tool handoff contract is true; execution_plan[1] points to the current reading step.
 15. Continuation timing contract is true; continuation is only considered after selected context is read.
-16. The selected context avoided 91071 source lines (99.4%, 166.6x less text); selected 1 files, 11 ranges, and 1 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; first omitted candidate src/main.rs (candidate rank 2, reason token_budget_exhausted) can be revisited via run_omitted_candidate_context_pack using context_pack after selected context; continuation run_omitted_candidate_context_pack
+16. The selected context avoided 91122 source lines (99.4%, 166.7x less text); selected 1 files, 11 ranges, and 1 reading-plan steps within the token budget; read src/tools.rs first (candidate rank 1) via inspect_seed_file, use file_outline when deeper evidence is needed; first omitted candidate src/main.rs (candidate rank 2, reason token_budget_exhausted) can be revisited via run_omitted_candidate_context_pack using context_pack after selected context; continuation run_omitted_candidate_context_pack
 17. Selection evidence: candidate rank 1; Selected for high relevance via seed_file: Seed file defines symbol agent_route; matched task keywords: agent, route; evidence mix: seed file x10, call graph x1
 18. Continuation status is omitted_candidates_available; next follow-up is src/main.rs at candidate rank 2 because token_budget_exhausted; next_action=run_omitted_candidate_context_pack.
 19. impact_analysis reports high risk across 8 impacted files with 4 suggested checks; after selected context is read, pre-edit impact check estimated 8 impacted files at high risk, including 7 call-related files, 3 dependency-related files, 50 call paths, and 0 dependency paths

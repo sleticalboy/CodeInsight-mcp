@@ -14797,7 +14797,15 @@ fn mcp_stdio_agent_first_read_uses_architecture_entrypoint_when_graph_search_is_
         r#"#!/bin/sh
 case "$2" in
   search_graph)
-    printf '%s\n' '{"results":[]}'
+    case "$6" in
+    *"backend_only_literal"*)
+      printf '%s\n' '{"results":[]}'
+      ;;
+    *)
+      printf '%s\n' 'broad task unexpectedly invoked search_graph' >&2
+      exit 9
+      ;;
+    esac
     ;;
   get_architecture)
     printf '%s\n' '{"entry_points":[{"file":"src/multi-long.ts","name":"targetLater","qualified_name":"fixture.src.multi_long.targetLater"}],"elapsed_ms":3}'

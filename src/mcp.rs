@@ -222,9 +222,24 @@ fn agent_first_read_backend_payload(mut payload: &Value) -> &Value {
 
 fn codebase_memory_prefers_architecture_entrypoints(task: &str) -> bool {
     let normalized = task.to_lowercase();
-    if ["入口", "启动", "架构", "从哪里开始", "项目概览", "理解项目"]
-        .iter()
-        .any(|phrase| normalized.contains(phrase))
+    if [
+        "入口",
+        "启动",
+        "架构",
+        "代码库",
+        "项目结构",
+        "代码结构",
+        "从哪开始",
+        "从哪里开始",
+        "从哪里入手",
+        "先读哪个文件",
+        "先看哪个文件",
+        "项目概览",
+        "了解项目",
+        "理解项目",
+    ]
+    .iter()
+    .any(|phrase| normalized.contains(phrase))
     {
         return true;
     }
@@ -241,16 +256,23 @@ fn codebase_memory_architecture_term(term: &str) -> bool {
     matches!(
         term,
         "architecture"
+            | "begin"
             | "codebase"
             | "entry"
             | "entrypoint"
+            | "first"
             | "main"
             | "overview"
             | "project"
+            | "read"
             | "repo"
             | "repository"
+            | "should"
             | "start"
             | "startup"
+            | "structure"
+            | "where"
+            | "which"
     )
 }
 
@@ -826,6 +848,7 @@ fn codebase_memory_agent_first_read_result_with_binary(
     let timeout = Duration::from_millis(config.timeout_ms);
     let search_query = codebase_memory_search_query(task);
     let search_code_pattern = codebase_memory_search_code_pattern(task);
+    let prefers_architecture = codebase_memory_prefers_architecture_entrypoints(task);
     let fingerprint = repository_fingerprint(root).ok().flatten();
     let cache_key = codebase_memory_index_cache_key(root, &project, binary);
 
@@ -893,6 +916,13 @@ fn codebase_memory_agent_first_read_result_with_binary(
         )
         .map(Some)
     };
+    let primary_lookup = || {
+        if prefers_architecture {
+            get_architecture()
+        } else {
+            search_graph()
+        }
+    };
     let cached_fingerprint = codebase_memory_cached_index_fingerprint(&cache_key);
     let cache_matches = fingerprint.as_ref().is_some_and(|fingerprint| {
         cached_fingerprint.as_deref() == Some(fingerprint.value.as_str())
@@ -927,14 +957,14 @@ fn codebase_memory_agent_first_read_result_with_binary(
         (false, "not_checked_non_git")
     };
 
-    let search_graph = if should_refresh {
+    let primary_result = if should_refresh {
         index_project()?;
         if let Some(fingerprint) = fingerprint.as_ref() {
             codebase_memory_cache_index(cache_key.clone(), fingerprint);
         }
-        search_graph()?
+        primary_lookup()?
     } else {
-        match search_graph() {
+        match primary_lookup() {
             Ok(value) => value,
             Err(error) if codebase_memory_project_missing(&error) => {
                 index_project()?;
@@ -942,30 +972,31 @@ fn codebase_memory_agent_first_read_result_with_binary(
                 if let Some(fingerprint) = fingerprint.as_ref() {
                     codebase_memory_cache_index(cache_key, fingerprint);
                 }
-                search_graph()?
+                primary_lookup()?
             }
             Err(error) => return Err(error),
         }
     };
-    let evidence = match agent_first_read_backend_evidence(&search_graph) {
-        Ok(evidence) => Some(evidence),
-        Err(error) if error.to_string() == CODEBASE_MEMORY_EMPTY_SEARCH_ERROR => {
-            let architecture = || {
-                get_architecture().ok().and_then(|architecture| {
-                    agent_first_read_architecture_evidence(&architecture, task)
-                })
-            };
-            if codebase_memory_prefers_architecture_entrypoints(task) {
-                architecture()
-            } else {
-                search_code()
-                    .ok()
-                    .flatten()
-                    .and_then(|search_code| agent_first_read_search_code_evidence(&search_code))
-                    .or_else(architecture)
-            }
+    let evidence = if prefers_architecture {
+        agent_first_read_architecture_evidence(&primary_result, task).or_else(|| {
+            search_graph()
+                .ok()
+                .and_then(|search_graph| agent_first_read_backend_evidence(&search_graph).ok())
+        })
+    } else {
+        match agent_first_read_backend_evidence(&primary_result) {
+            Ok(evidence) => Some(evidence),
+            Err(error) if error.to_string() == CODEBASE_MEMORY_EMPTY_SEARCH_ERROR => search_code()
+                .ok()
+                .flatten()
+                .and_then(|search_code| agent_first_read_search_code_evidence(&search_code))
+                .or_else(|| {
+                    get_architecture().ok().and_then(|architecture| {
+                        agent_first_read_architecture_evidence(&architecture, task)
+                    })
+                }),
+            Err(error) => return Err(error),
         }
-        Err(error) => return Err(error),
     };
     Ok(CodebaseMemoryAgentFirstReadResult {
         evidence,
@@ -2847,6 +2878,18 @@ int login(void) {
         );
         assert_eq!(raw_search_graph.latency_ms, Some(9));
 
+        assert!(codebase_memory_prefers_architecture_entrypoints(
+            "我应该先读哪个文件"
+        ));
+        assert!(codebase_memory_prefers_architecture_entrypoints(
+            "which file should I read first"
+        ));
+        assert!(codebase_memory_prefers_architecture_entrypoints(
+            "where should I begin"
+        ));
+        assert!(!codebase_memory_prefers_architecture_entrypoints(
+            "which authentication file validates JWT"
+        ));
         assert_eq!(
             codebase_memory_search_code_pattern(
                 "find the refreshed_repository_changed status handling"
@@ -3073,7 +3116,7 @@ esac
                 r#"#!/bin/sh
 case "$2" in
   search_graph)
-    printf '%s\n' '{"results":[]}'
+    exit 9
     ;;
   get_architecture)
     printf '%s\n' '{"entry_points":[{"file":"src/main.rs","name":"main"}],"elapsed_ms":3}'
