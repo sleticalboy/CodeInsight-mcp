@@ -10857,11 +10857,47 @@ fn auto_seed_task_path_exists_in_project(root: &Path, token: &str) -> bool {
 fn auto_seed_task_path_tokens(root: &Path, task: &str) -> Vec<String> {
     let canonical_root = root.canonicalize().ok();
     let mut seen = BTreeSet::new();
-    task.split(|character: char| !auto_seed_task_path_character(character))
+    auto_seed_task_path_candidates(task)
+        .into_iter()
         .filter_map(|token| normalize_auto_seed_task_path_token(canonical_root.as_deref(), token))
         .filter(|token| token.contains('/'))
         .filter(|token| seen.insert(token.clone()))
         .collect()
+}
+
+fn auto_seed_task_path_candidates(task: &str) -> Vec<&str> {
+    let mut candidates = Vec::new();
+    let mut token_start = None;
+    let mut quote = None;
+
+    for (index, character) in task.char_indices() {
+        if let Some(active_quote) = quote {
+            if character == active_quote {
+                if let Some(start) = token_start.take() {
+                    candidates.push(&task[start..index]);
+                }
+                quote = None;
+            }
+            continue;
+        }
+
+        if matches!(character, '\'' | '"' | '`') {
+            if let Some(start) = token_start.take() {
+                candidates.push(&task[start..index]);
+            }
+            quote = Some(character);
+            token_start = Some(index + character.len_utf8());
+        } else if auto_seed_task_path_character(character) {
+            token_start.get_or_insert(index);
+        } else if let Some(start) = token_start.take() {
+            candidates.push(&task[start..index]);
+        }
+    }
+
+    if let Some(start) = token_start {
+        candidates.push(&task[start..]);
+    }
+    candidates
 }
 
 fn auto_seed_task_path_is_project_relative(token: &str) -> bool {
@@ -15347,6 +15383,28 @@ mod tests {
             vec!["src/main.ts"]
         );
         assert!(task_has_existing_path(&root, &absolute_task));
+
+        let spaced_root = parent.path().join("repo with spaces");
+        std::fs::create_dir_all(spaced_root.join("src")).unwrap();
+        std::fs::write(
+            spaced_root.join("src/main file.ts"),
+            "export const main = true;\n",
+        )
+        .unwrap();
+        for quoted_task in [
+            "inspect 'src/main file.ts'".to_string(),
+            "inspect `src/main file.ts`".to_string(),
+            format!(
+                "inspect \"{}\"",
+                spaced_root.join("src/main file.ts").display()
+            ),
+        ] {
+            assert_eq!(
+                auto_seed_task_path_tokens(&spaced_root, &quoted_task),
+                vec!["src/main file.ts"]
+            );
+            assert!(task_has_existing_path(&spaced_root, &quoted_task));
+        }
 
         #[cfg(unix)]
         {

@@ -14685,7 +14685,7 @@ esac
             "name": "agent_first_read",
             "arguments": {
                 "root": fixture.path(),
-                "task": "inspect src/main.ts task path without backend call",
+                "task": "inspect 'src/main.ts' task path without backend call",
                 "token_budget": 500,
                 "backend": {
                     "provider": "codebase-memory-mcp",
