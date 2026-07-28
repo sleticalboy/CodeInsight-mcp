@@ -99,6 +99,27 @@ fn package_json_from_resolved_file(path: &str) -> Option<String> {
     Some(format!("{prefix}node_modules/{package_name}/package.json"))
 }
 
+fn add_dependency_resolution_inputs(
+    root: &Path,
+    inputs: &mut BTreeMap<String, String>,
+    dependencies: &[Dependency],
+) {
+    for dependency in dependencies {
+        if let Some(package_path) = dependency
+            .resolved_file
+            .as_deref()
+            .and_then(package_json_from_resolved_file)
+        {
+            add_resolution_input(root, inputs, &package_path);
+        } else if let Some(package_name) = node_package_name(&dependency.target)
+            && let Some(package_path) =
+                find_node_modules_package_json(root, &dependency.source_file, &package_name)
+        {
+            add_resolution_input(root, inputs, &package_path.to_string_lossy());
+        }
+    }
+}
+
 fn add_resolution_input(root: &Path, inputs: &mut BTreeMap<String, String>, relative_path: &str) {
     let path = root.join(relative_path);
     let value = match fs::read(&path) {
@@ -151,6 +172,7 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
     let walk_roots = path_scope.walk_roots(&root);
     let mut store = Store::open(&root)?;
     let stored_resolution_fingerprint = store.resolution_fingerprint()?;
+    let stored_dependencies = store.indexed_dependencies()?;
     let mut resolution_inputs = BTreeMap::new();
     add_resolution_input(&root, &mut resolution_inputs, PROJECT_CONFIG_PATH);
     for relative_path in [
@@ -162,24 +184,6 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
     ] {
         if root.join(relative_path).is_file() {
             add_resolution_input(&root, &mut resolution_inputs, relative_path);
-        }
-    }
-    for dependency in store.indexed_dependencies()? {
-        if let Some(package_path) = dependency
-            .resolved_file
-            .as_deref()
-            .and_then(package_json_from_resolved_file)
-        {
-            add_resolution_input(&root, &mut resolution_inputs, &package_path);
-        } else if let Some(package_name) = node_package_name(&dependency.target)
-            && let Some(package_path) =
-                find_node_modules_package_json(&root, &dependency.source_file, &package_name)
-        {
-            add_resolution_input(
-                &root,
-                &mut resolution_inputs,
-                &package_path.to_string_lossy(),
-            );
         }
     }
     if force {
@@ -387,10 +391,17 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
             indexed_source_files.push((path.to_path_buf(), relative_path, language));
         }
     }
+    let mut comparison_resolution_inputs = resolution_inputs.clone();
+    add_dependency_resolution_inputs(
+        &root,
+        &mut comparison_resolution_inputs,
+        &stored_dependencies,
+    );
     let resolution_fingerprint =
-        resolution_inputs_fingerprint(&resolution_inputs, &package_conditions);
+        resolution_inputs_fingerprint(&comparison_resolution_inputs, &package_conditions);
     let resolution_changed =
         force || stored_resolution_fingerprint.as_deref() != Some(resolution_fingerprint.as_str());
+    let deleted_files = store.delete_files_not_in(&seen_source_files)?;
     if resolution_changed {
         for (path, relative_path, language) in &indexed_source_files {
             if let Err(error) = refresh_file_dependencies(
@@ -410,13 +421,20 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
             }
         }
     }
-    let deleted_files = store.delete_files_not_in(&seen_source_files)?;
     if changed_files > 0 || deleted_files > 0 || resolution_changed {
         store.resolve_imported_calls()?;
     }
     let total_indexed_files = store.count_files()?;
     let total_symbols = store.count_symbols()?;
-    store.mark_indexed(&resolution_fingerprint)?;
+    let mut final_resolution_inputs = resolution_inputs;
+    add_dependency_resolution_inputs(
+        &root,
+        &mut final_resolution_inputs,
+        &store.indexed_dependencies()?,
+    );
+    let final_resolution_fingerprint =
+        resolution_inputs_fingerprint(&final_resolution_inputs, &package_conditions);
+    store.mark_indexed(&final_resolution_fingerprint)?;
 
     Ok(ProjectIndexReport {
         root: root.display().to_string(),
@@ -9113,6 +9131,19 @@ describe("routes", function () {
             first_dependencies[0].resolved_file.as_deref(),
             Some("node_modules/typed-lib/dist/index.d.ts")
         );
+        let fingerprint_after_first = Store::open(dir.path())
+            .unwrap()
+            .resolution_fingerprint()
+            .unwrap();
+
+        let unchanged = index_project(dir.path(), false).unwrap();
+        assert_eq!(unchanged.changed_files, 0);
+        assert_eq!(unchanged.unchanged_files, 1);
+        let fingerprint_after_unchanged = Store::open(dir.path())
+            .unwrap()
+            .resolution_fingerprint()
+            .unwrap();
+        assert_eq!(fingerprint_after_unchanged, fingerprint_after_first);
 
         std::fs::write(
             dir.path().join(".codeinsight/config.toml"),
