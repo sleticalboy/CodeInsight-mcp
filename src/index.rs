@@ -1,5 +1,5 @@
 use std::{
-    collections::{BTreeSet, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     fs,
     path::{Component, Path, PathBuf},
     time::{Instant, UNIX_EPOCH},
@@ -13,7 +13,7 @@ use sha2::{Digest, Sha256};
 use tree_sitter::{Node, Parser, TreeCursor};
 
 use crate::{
-    config::{IndexConfig, ProjectConfig, load_project_config},
+    config::{IndexConfig, PROJECT_CONFIG_PATH, ProjectConfig, load_project_config},
     language::{detect_language, tree_sitter_language},
     model::{
         CallEdge, Dependency, IndexError, IndexScopeReport, Language, ProjectIndexReport,
@@ -58,6 +58,66 @@ fn project_package_conditions(config: &ProjectConfig) -> Vec<String> {
     }
 }
 
+fn hash_bytes(bytes: &[u8]) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(bytes);
+    format!("{:x}", hasher.finalize())
+}
+
+fn is_resolution_input(path: &Path) -> bool {
+    matches!(
+        path.file_name().and_then(|name| name.to_str()),
+        Some("package.json")
+            | Some("tsconfig.json")
+            | Some("jsconfig.json")
+            | Some("pnpm-workspace.yaml")
+            | Some("go.mod")
+    )
+}
+
+fn add_resolution_input(root: &Path, inputs: &mut BTreeMap<String, String>, relative_path: &str) {
+    let path = root.join(relative_path);
+    let value = match fs::read(&path) {
+        Ok(bytes) => hash_bytes(&bytes),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => "missing".to_string(),
+        Err(error) => format!("error:{error}"),
+    };
+    inputs.insert(relative_path.to_string(), value);
+}
+
+fn resolution_inputs_fingerprint(
+    inputs: &BTreeMap<String, String>,
+    package_conditions: &[String],
+) -> String {
+    let mut hasher = Sha256::new();
+    for condition in package_conditions {
+        hasher.update(b"condition\0");
+        hasher.update(condition.as_bytes());
+        hasher.update(b"\0");
+    }
+    for (path, value) in inputs {
+        hasher.update(path.as_bytes());
+        hasher.update(b"\0");
+        hasher.update(value.as_bytes());
+        hasher.update(b"\0");
+    }
+    format!("{:x}", hasher.finalize())
+}
+
+fn refresh_file_dependencies(
+    root: &Path,
+    store: &mut Store,
+    path: &Path,
+    relative_path: &str,
+    language: Language,
+    package_conditions: &[String],
+) -> Result<()> {
+    let source = fs::read_to_string(path)?;
+    let mut dependencies = extract_dependencies(&source, language, relative_path)?;
+    resolve_dependencies(root, &mut dependencies, package_conditions);
+    store.replace_dependencies_for_file(relative_path, &dependencies)
+}
+
 pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
     let started = Instant::now();
     let root = root.canonicalize()?;
@@ -66,6 +126,20 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
     let path_scope = IndexPathScope::from_config(&project_config.index)?;
     let walk_roots = path_scope.walk_roots(&root);
     let mut store = Store::open(&root)?;
+    let stored_resolution_fingerprint = store.resolution_fingerprint()?;
+    let mut resolution_inputs = BTreeMap::new();
+    add_resolution_input(&root, &mut resolution_inputs, PROJECT_CONFIG_PATH);
+    for relative_path in [
+        "package.json",
+        "tsconfig.json",
+        "jsconfig.json",
+        "pnpm-workspace.yaml",
+        "go.mod",
+    ] {
+        if root.join(relative_path).is_file() {
+            add_resolution_input(&root, &mut resolution_inputs, relative_path);
+        }
+    }
     if force {
         store.reset()?;
     }
@@ -75,6 +149,7 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
     let mut skipped_files = 0;
     let mut symbol_count = 0;
     let mut seen_source_files = Vec::new();
+    let mut indexed_source_files = Vec::new();
     let mut errors = Vec::new();
     let mut visited_paths = HashSet::new();
 
@@ -121,6 +196,9 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
                 .unwrap_or(path)
                 .to_string_lossy()
                 .replace('\\', "/");
+            if is_resolution_input(path) {
+                add_resolution_input(&root, &mut resolution_inputs, &relative_path);
+            }
             if !path_scope.matches(&relative_path) {
                 skipped_files += 1;
                 continue;
@@ -151,7 +229,8 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
                     && modified_ns.is_some()
                     && stored.modified_ns == modified_ns
             }) {
-                seen_source_files.push(relative_path);
+                seen_source_files.push(relative_path.clone());
+                indexed_source_files.push((path.to_path_buf(), relative_path, language));
                 unchanged_files += 1;
                 continue;
             }
@@ -190,6 +269,7 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
                     continue;
                 }
                 unchanged_files += 1;
+                indexed_source_files.push((path.to_path_buf(), relative_path, language));
                 continue;
             }
 
@@ -262,15 +342,39 @@ pub fn index_project(root: &Path, force: bool) -> Result<ProjectIndexReport> {
 
             changed_files += 1;
             symbol_count += symbols.len();
+            indexed_source_files.push((path.to_path_buf(), relative_path, language));
+        }
+    }
+    let resolution_fingerprint =
+        resolution_inputs_fingerprint(&resolution_inputs, &package_conditions);
+    let resolution_changed =
+        force || stored_resolution_fingerprint.as_deref() != Some(resolution_fingerprint.as_str());
+    if resolution_changed {
+        for (path, relative_path, language) in &indexed_source_files {
+            if let Err(error) = refresh_file_dependencies(
+                &root,
+                &mut store,
+                path,
+                relative_path,
+                *language,
+                &package_conditions,
+            ) {
+                errors.push(IndexError {
+                    file: relative_path.clone(),
+                    stage: "parse_dependencies".to_string(),
+                    message: error.to_string(),
+                });
+                skipped_files += 1;
+            }
         }
     }
     let deleted_files = store.delete_files_not_in(&seen_source_files)?;
-    if changed_files > 0 || deleted_files > 0 {
+    if changed_files > 0 || deleted_files > 0 || resolution_changed {
         store.resolve_imported_calls()?;
     }
     let total_indexed_files = store.count_files()?;
     let total_symbols = store.count_symbols()?;
-    store.mark_indexed()?;
+    store.mark_indexed(&resolution_fingerprint)?;
 
     Ok(ProjectIndexReport {
         root: root.display().to_string(),
@@ -8913,5 +9017,80 @@ describe("routes", function () {
         let fourth = index_project(dir.path(), false).unwrap();
         assert_eq!(fourth.indexed_files, 0);
         assert_eq!(fourth.deleted_files, 1);
+    }
+
+    #[test]
+    fn re_resolves_dependencies_when_resolution_inputs_change() {
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::create_dir_all(dir.path().join(".codeinsight")).unwrap();
+        std::fs::create_dir_all(dir.path().join("src")).unwrap();
+        std::fs::create_dir_all(dir.path().join("node_modules/typed-lib/dist")).unwrap();
+        std::fs::write(
+            dir.path().join(".codeinsight/config.toml"),
+            "[javascript]\npackage_conditions = [\"types\", \"import\", \"default\"]\n",
+        )
+        .unwrap();
+        std::fs::write(
+            dir.path().join("src/main.ts"),
+            "import type { TypedValue } from \"typed-lib\";\n\nexport type AppValue = TypedValue;\n",
+        )
+        .unwrap();
+        std::fs::write(
+            dir.path().join("node_modules/typed-lib/package.json"),
+            r#"{
+  "name": "typed-lib",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/default.js"
+    }
+  }
+}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            dir.path().join("node_modules/typed-lib/dist/index.d.ts"),
+            "export interface TypedValue { value: string; }\n",
+        )
+        .unwrap();
+        std::fs::write(
+            dir.path().join("node_modules/typed-lib/dist/index.js"),
+            "export const typedValue = { value: \"runtime\" };\n",
+        )
+        .unwrap();
+
+        let first = index_project(dir.path(), false).unwrap();
+        assert_eq!(first.changed_files, 1);
+        let files = vec!["src/main.ts".to_string()];
+        let first_dependencies = Store::open(dir.path())
+            .unwrap()
+            .resolved_dependencies_for_files(&files)
+            .unwrap();
+        assert_eq!(
+            first_dependencies[0].resolved_file.as_deref(),
+            Some("node_modules/typed-lib/dist/index.d.ts")
+        );
+
+        std::fs::write(
+            dir.path().join(".codeinsight/config.toml"),
+            "[javascript]\npackage_conditions = [\"import\", \"default\"]\n",
+        )
+        .unwrap();
+        let second = index_project(dir.path(), false).unwrap();
+        assert_eq!(second.changed_files, 0);
+        assert_eq!(second.unchanged_files, 1);
+        let second_dependencies = Store::open(dir.path())
+            .unwrap()
+            .resolved_dependencies_for_files(&files)
+            .unwrap();
+        assert_eq!(
+            second_dependencies[0].resolved_file.as_deref(),
+            Some("node_modules/typed-lib/dist/index.js")
+        );
+
+        let third = index_project(dir.path(), false).unwrap();
+        assert_eq!(third.changed_files, 0);
+        assert_eq!(third.unchanged_files, 1);
     }
 }

@@ -4,7 +4,9 @@ use std::{
 };
 
 use anyhow::{Context, Result, bail};
-use rusqlite::{Connection, Row, params, params_from_iter, types::Value as SqlValue};
+use rusqlite::{
+    Connection, OptionalExtension, Row, params, params_from_iter, types::Value as SqlValue,
+};
 use serde_json::json;
 
 use crate::model::{
@@ -54,11 +56,16 @@ impl Store {
         Ok(())
     }
 
-    pub fn mark_indexed(&self) -> Result<()> {
+    pub fn mark_indexed(&self, resolution_fingerprint: &str) -> Result<()> {
         self.set_meta("schema_version", &SCHEMA_VERSION.to_string())?;
         self.set_meta("index_version", INDEX_VERSION)?;
+        self.set_meta("resolution_fingerprint", resolution_fingerprint)?;
         self.set_meta("last_indexed_at", &unix_timestamp().to_string())?;
         Ok(())
+    }
+
+    pub fn resolution_fingerprint(&self) -> Result<Option<String>> {
+        self.get_meta("resolution_fingerprint")
     }
 
     pub fn replace_dependencies(
@@ -92,6 +99,23 @@ impl Store {
         }
         tx.commit()?;
         Ok(())
+    }
+
+    pub fn replace_dependencies_for_file(
+        &mut self,
+        relative_path: &str,
+        dependencies: &[Dependency],
+    ) -> Result<()> {
+        let file_id = self
+            .conn
+            .query_row(
+                "select id from files where path = ?1",
+                params![relative_path],
+                |row| row.get(0),
+            )
+            .optional()?
+            .with_context(|| format!("indexed file not found: {relative_path}"))?;
+        self.replace_dependencies(file_id, dependencies)
     }
 
     pub fn replace_calls(&mut self, file_id: i64, calls: &[CallEdge]) -> Result<()> {

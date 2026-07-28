@@ -3,7 +3,7 @@ use std::{fs, path::Path};
 use anyhow::{Context, Result, bail};
 use serde::{Deserialize, Serialize};
 
-const PROJECT_CONFIG_PATH: &str = ".codeinsight/config.toml";
+pub const PROJECT_CONFIG_PATH: &str = ".codeinsight/config.toml";
 const SAMPLE_PROJECT_CONFIG_TEMPLATE: &str = r#"# CodeInsight project configuration.
 #
 # This file is optional. impact_analysis uses built-in suggested check
