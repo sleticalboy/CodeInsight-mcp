@@ -234,23 +234,76 @@ fn codebase_memory_prefers_architecture_entrypoints(task: &str) -> bool {
         .split_whitespace()
         .map(|term| term.to_ascii_lowercase())
         .peekable();
-    terms.peek().is_some()
-        && terms.all(|term| {
-            matches!(
-                term.as_str(),
-                "architecture"
-                    | "codebase"
-                    | "entry"
-                    | "entrypoint"
-                    | "main"
-                    | "overview"
-                    | "project"
-                    | "repo"
-                    | "repository"
-                    | "start"
-                    | "startup"
-            )
+    terms.peek().is_some() && terms.all(|term| codebase_memory_architecture_term(&term))
+}
+
+fn codebase_memory_architecture_term(term: &str) -> bool {
+    matches!(
+        term,
+        "architecture"
+            | "codebase"
+            | "entry"
+            | "entrypoint"
+            | "main"
+            | "overview"
+            | "project"
+            | "repo"
+            | "repository"
+            | "start"
+            | "startup"
+    )
+}
+
+fn codebase_memory_search_code_pattern(task: &str) -> Option<String> {
+    codebase_memory_search_query(task)
+        .split_whitespace()
+        .filter(|term| !codebase_memory_architecture_term(&term.to_ascii_lowercase()))
+        .max_by_key(|term| {
+            let has_identifier_separator = term.contains('_') || term.contains('-');
+            let has_case_signal = term.chars().any(char::is_uppercase);
+            (has_identifier_separator, has_case_signal, term.len())
         })
+        .map(str::to_string)
+}
+
+fn agent_first_read_search_code_evidence(search_code: &Value) -> Option<AgentRouteBackendEvidence> {
+    let payload = agent_first_read_backend_payload(search_code);
+    let mut candidates = payload
+        .get("results")?
+        .as_array()?
+        .iter()
+        .filter_map(|result| {
+            serde_json::from_value::<AgentFirstReadBackendCandidate>(result.clone()).ok()
+        })
+        .filter_map(|candidate| candidate.into_route_candidate().ok())
+        .take(AGENT_FIRST_READ_BACKEND_CANDIDATE_LIMIT)
+        .collect::<Vec<_>>();
+    if candidates.is_empty() {
+        return None;
+    }
+
+    for candidate in &mut candidates {
+        candidate.source = Some("search_code".to_string());
+        candidate.reason = Some("graph-augmented code search match".to_string());
+    }
+    let candidate_files = candidates
+        .iter()
+        .map(|candidate| candidate.file.clone())
+        .collect::<Vec<_>>();
+    Some(AgentRouteBackendEvidence {
+        provider: AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER.to_string(),
+        use_as_fallback: false,
+        prefer_for_context: true,
+        evidence_count: candidates.len(),
+        candidate_files,
+        candidates,
+        evidence_sources: vec!["search_code".to_string()],
+        latency_ms: payload.get("elapsed_ms").and_then(Value::as_u64),
+        confidence: None,
+        notes: Vec::new(),
+        tool_results: None,
+        normalization: None,
+    })
 }
 
 fn agent_first_read_architecture_evidence(
@@ -772,6 +825,7 @@ fn codebase_memory_agent_first_read_result_with_binary(
     let project = codebase_memory_project(root, config.project)?;
     let timeout = Duration::from_millis(config.timeout_ms);
     let search_query = codebase_memory_search_query(task);
+    let search_code_pattern = codebase_memory_search_code_pattern(task);
     let fingerprint = repository_fingerprint(root).ok().flatten();
     let cache_key = codebase_memory_index_cache_key(root, &project, binary);
 
@@ -817,6 +871,27 @@ fn codebase_memory_agent_first_read_result_with_binary(
             ],
             timeout,
         )
+    };
+    let search_code = || -> Result<Option<Value>> {
+        let Some(pattern) = search_code_pattern.as_ref() else {
+            return Ok(None);
+        };
+        codebase_memory_cli_value(
+            binary,
+            "search_code",
+            &[
+                OsString::from("--project"),
+                OsString::from(&project),
+                OsString::from("--pattern"),
+                OsString::from(pattern),
+                OsString::from("--mode"),
+                OsString::from("compact"),
+                OsString::from("--limit"),
+                OsString::from(AGENT_FIRST_READ_BACKEND_CANDIDATE_LIMIT.to_string()),
+            ],
+            timeout,
+        )
+        .map(Some)
     };
     let cached_fingerprint = codebase_memory_cached_index_fingerprint(&cache_key);
     let cache_matches = fingerprint.as_ref().is_some_and(|fingerprint| {
@@ -874,9 +949,22 @@ fn codebase_memory_agent_first_read_result_with_binary(
     };
     let evidence = match agent_first_read_backend_evidence(&search_graph) {
         Ok(evidence) => Some(evidence),
-        Err(error) if error.to_string() == CODEBASE_MEMORY_EMPTY_SEARCH_ERROR => get_architecture()
-            .ok()
-            .and_then(|architecture| agent_first_read_architecture_evidence(&architecture, task)),
+        Err(error) if error.to_string() == CODEBASE_MEMORY_EMPTY_SEARCH_ERROR => {
+            let architecture = || {
+                get_architecture().ok().and_then(|architecture| {
+                    agent_first_read_architecture_evidence(&architecture, task)
+                })
+            };
+            if codebase_memory_prefers_architecture_entrypoints(task) {
+                architecture()
+            } else {
+                search_code()
+                    .ok()
+                    .flatten()
+                    .and_then(|search_code| agent_first_read_search_code_evidence(&search_code))
+                    .or_else(architecture)
+            }
+        }
         Err(error) => return Err(error),
     };
     Ok(CodebaseMemoryAgentFirstReadResult {
@@ -2759,6 +2847,47 @@ int login(void) {
         );
         assert_eq!(raw_search_graph.latency_ms, Some(9));
 
+        assert_eq!(
+            codebase_memory_search_code_pattern(
+                "find the refreshed_repository_changed status handling"
+            )
+            .as_deref(),
+            Some("refreshed_repository_changed")
+        );
+        assert_eq!(
+            codebase_memory_search_code_pattern("fix authentication token validation").as_deref(),
+            Some("authentication")
+        );
+        assert_eq!(
+            codebase_memory_search_code_pattern("fix JWT validation in repository").as_deref(),
+            Some("JWT")
+        );
+        let search_code = agent_first_read_search_code_evidence(&json!({
+            "result": {
+                "structuredContent": {
+                    "results": [{
+                        "file": "src/mcp.rs",
+                        "node": "codebase_memory_agent_first_read_result_with_binary",
+                        "qualified_name": "fixture.src.mcp.codebase_memory_agent_first_read_result_with_binary"
+                    }],
+                    "elapsed_ms": 6
+                }
+            }
+        }))
+        .unwrap();
+        assert_eq!(search_code.candidate_files, vec!["src/mcp.rs"]);
+        assert_eq!(
+            search_code.candidates[0].symbol.as_deref(),
+            Some("codebase_memory_agent_first_read_result_with_binary")
+        );
+        assert_eq!(
+            search_code.candidates[0].source.as_deref(),
+            Some("search_code")
+        );
+        assert!(search_code.prefer_for_context);
+        assert_eq!(search_code.evidence_count, 1);
+        assert_eq!(search_code.latency_ms, Some(6));
+
         let architecture = agent_first_read_architecture_evidence(
             &json!({
                 "result": {
@@ -2982,6 +3111,54 @@ esac
                 architecture.evidence_sources,
                 vec!["get_architecture.entry_points"]
             );
+
+            let search_code_backend = backend_dir.path().join("search-codebase-memory-mcp");
+            std::fs::write(
+                &search_code_backend,
+                r#"#!/bin/sh
+case "$2" in
+  search_graph)
+    printf '%s\n' '{"results":[]}'
+    ;;
+  search_code)
+    printf '%s\n' '{"results":[{"file":"src/target.rs","qualified_name":"fixture.src.target.target"}],"elapsed_ms":2}'
+    ;;
+  get_architecture)
+    printf '%s\n' '{"entry_points":[{"file":"src/main.rs","name":"main"}]}'
+    ;;
+  *)
+    exit 2
+    ;;
+esac
+"#,
+            )
+            .unwrap();
+            let mut permissions = std::fs::metadata(&search_code_backend)
+                .unwrap()
+                .permissions();
+            permissions.set_mode(0o755);
+            std::fs::set_permissions(&search_code_backend, permissions).unwrap();
+            let search_code = codebase_memory_agent_first_read_result_with_binary(
+                &root,
+                "find refreshed_repository_changed status",
+                AgentFirstReadBackendConfig {
+                    provider: AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER.to_string(),
+                    project: Some("fixture".to_string()),
+                    refresh_index: false,
+                    timeout_ms: CODEBASE_MEMORY_TIMEOUT_MS,
+                    on_failure: AgentFirstReadBackendFailurePolicy::FallbackLocal,
+                },
+                search_code_backend.as_os_str(),
+            )
+            .unwrap()
+            .evidence
+            .unwrap();
+            assert_eq!(search_code.candidate_files, vec!["src/target.rs"]);
+            assert_eq!(
+                search_code.candidates[0].source.as_deref(),
+                Some("search_code")
+            );
+            assert_eq!(search_code.evidence_sources, vec!["search_code"]);
 
             let slow_backend = backend_dir.path().join("slow-codebase-memory-mcp");
             std::fs::write(&slow_backend, "#!/bin/sh\nexec sleep 1\n").unwrap();

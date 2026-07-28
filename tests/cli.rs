@@ -14802,6 +14802,9 @@ case "$2" in
   get_architecture)
     printf '%s\n' '{"entry_points":[{"file":"src/multi-long.ts","name":"targetLater","qualified_name":"fixture.src.multi_long.targetLater"}],"elapsed_ms":3}'
     ;;
+  search_code)
+    printf '%s\n' '{"results":[{"file":"src/multi-long.ts","node":"targetLater","qualified_name":"fixture.src.multi_long.targetLater"}],"elapsed_ms":2}'
+    ;;
   *)
     exit 2
     ;;
@@ -14832,15 +14835,40 @@ esac
             }
         }
     });
+    let search_code_request = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 13,
+        "method": "tools/call",
+        "params": {
+            "name": "agent_first_read",
+            "arguments": {
+                "root": fixture.path(),
+                "task": "inspect backend_only_literal handling",
+                "token_budget": 500,
+                "backend": {
+                    "provider": "codebase-memory-mcp",
+                    "project": "fixture",
+                    "timeout_ms": 1000
+                }
+            }
+        }
+    });
 
     let mut command = Command::cargo_bin("codeinsight").unwrap();
     command
         .args(["serve", "--transport", "stdio"])
         .env("CODEINSIGHT_CODEBASE_MEMORY_BIN", &backend)
-        .write_stdin(format!("{request}\n"));
+        .write_stdin(format!("{request}\n{search_code_request}\n"));
     let output = command.assert().success().get_output().stdout.clone();
-    let response: Value = serde_json::from_slice(&output).unwrap();
+    let responses = String::from_utf8(output)
+        .unwrap()
+        .lines()
+        .map(|line| serde_json::from_str::<Value>(line).unwrap())
+        .collect::<Vec<_>>();
+    let response = &responses[0];
+    let search_code_response = &responses[1];
     let route = &response["result"]["structuredContent"];
+    let search_code_route = &search_code_response["result"]["structuredContent"];
 
     assert_eq!(response["id"], 12);
     assert_eq!(route["backend_status"]["status"], "used");
@@ -14859,6 +14887,16 @@ esac
     assert_eq!(
         route["routing_decision"]["backend_selected_candidate"]["symbol"],
         "targetLater"
+    );
+    assert_eq!(search_code_response["id"], 13);
+    assert_eq!(search_code_route["backend_status"]["status"], "used");
+    assert_eq!(
+        search_code_route["context_pack"]["files"][0]["file"],
+        "src/multi-long.ts"
+    );
+    assert_eq!(
+        search_code_route["routing_decision"]["backend_selected_candidate"]["source"],
+        "search_code"
     );
 }
 
