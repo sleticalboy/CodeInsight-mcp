@@ -10827,7 +10827,7 @@ fn auto_seed_task_path_files(task: &str, indexed_files: &[String]) -> Vec<String
 pub(crate) fn task_has_existing_path(root: &Path, task: &str) -> bool {
     auto_seed_task_path_tokens(task)
         .into_iter()
-        .any(|token| root.join(token).is_file())
+        .any(|token| auto_seed_task_path_exists_in_project(root, &token))
 }
 
 fn auto_seed_unindexed_task_path_files(
@@ -10839,9 +10839,19 @@ fn auto_seed_unindexed_task_path_files(
     auto_seed_task_path_tokens(task)
         .into_iter()
         .filter(|token| !indexed_file_set.contains(token))
-        .filter(|token| root.join(token).is_file())
+        .filter(|token| auto_seed_task_path_exists_in_project(root, token))
         .take(3)
         .collect()
+}
+
+fn auto_seed_task_path_exists_in_project(root: &Path, token: &str) -> bool {
+    let Ok(canonical_root) = root.canonicalize() else {
+        return false;
+    };
+    let Ok(canonical_path) = root.join(token).canonicalize() else {
+        return false;
+    };
+    canonical_path.is_file() && canonical_path.starts_with(canonical_root)
 }
 
 fn auto_seed_task_path_tokens(task: &str) -> Vec<String> {
@@ -15321,6 +15331,23 @@ mod tests {
             ),
             vec!["src/main.ts"]
         );
+
+        #[cfg(unix)]
+        {
+            std::os::unix::fs::symlink(
+                parent.path().join("outside.ts"),
+                root.join("src/outside-link.ts"),
+            )
+            .unwrap();
+            assert!(!task_has_existing_path(
+                &root,
+                "inspect src/outside-link.ts"
+            ));
+            assert!(
+                auto_seed_unindexed_task_path_files(&root, "inspect src/outside-link.ts", &[])
+                    .is_empty()
+            );
+        }
     }
 
     #[test]

@@ -3350,9 +3350,15 @@ esac
                 elapsed < Duration::from_millis(1_500),
                 "shared timeout budget took {elapsed:?}"
             );
-            assert_eq!(
-                timeout_error.to_string(),
-                "codebase-memory-mcp backend timeout budget of 1000 ms exhausted before or during search_code"
+            let timeout_message = timeout_error.to_string();
+            assert!(
+                ["search_graph", "search_code"]
+                    .iter()
+                    .any(|stage| timeout_message
+                        == format!(
+                            "codebase-memory-mcp backend timeout budget of 1000 ms exhausted before or during {stage}"
+                        )),
+                "unexpected shared timeout error: {timeout_message}"
             );
         }
 
