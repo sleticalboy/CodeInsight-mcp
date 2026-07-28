@@ -1,8 +1,10 @@
 use std::{
+    collections::HashMap,
     ffi::{OsStr, OsString},
     io::Read,
     path::{Path, PathBuf},
     process::{Command, Stdio},
+    sync::{Mutex, OnceLock},
     thread,
     time::{Duration, Instant},
 };
@@ -10,6 +12,7 @@ use std::{
 use anyhow::{Context, Result, anyhow, bail};
 use serde::Deserialize;
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
 use crate::{
@@ -29,6 +32,19 @@ const CODEBASE_MEMORY_MAX_TIMEOUT_MS: u64 = 300_000;
 const CODEBASE_MEMORY_MISSING_PROJECT_ERROR: &str = "project not found or not indexed";
 const CODEBASE_MEMORY_EMPTY_SEARCH_ERROR: &str =
     "agent_first_read backend_candidates.search_graph contained no candidate files";
+
+type CodebaseMemoryIndexCacheKey = (PathBuf, String, OsString);
+
+static CODEBASE_MEMORY_INDEX_FINGERPRINTS: OnceLock<
+    Mutex<HashMap<CodebaseMemoryIndexCacheKey, String>>,
+> = OnceLock::new();
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct RepositoryFingerprint {
+    value: String,
+    head: String,
+    dirty: bool,
+}
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -393,6 +409,154 @@ fn codebase_memory_project_missing(error: &anyhow::Error) -> bool {
     })
 }
 
+fn git_output(root: &Path, args: &[&str]) -> Result<std::process::Output> {
+    Command::new("git")
+        .arg("-C")
+        .arg(root)
+        .args(args)
+        .output()
+        .with_context(|| format!("failed to inspect Git repository at {}", root.display()))
+}
+
+fn successful_git_stdout(root: &Path, args: &[&str]) -> Result<Vec<u8>> {
+    let output = git_output(root, args)?;
+    if !output.status.success() {
+        bail!(
+            "git {} failed with status {}: {}",
+            args.join(" "),
+            output.status,
+            String::from_utf8_lossy(&output.stderr).trim()
+        );
+    }
+    Ok(output.stdout)
+}
+
+fn repository_fingerprint(root: &Path) -> Result<Option<RepositoryFingerprint>> {
+    let head = git_output(root, &["rev-parse", "--verify", "HEAD"])?;
+    if !head.status.success() {
+        return Ok(None);
+    }
+    let head = String::from_utf8(head.stdout)
+        .context("git rev-parse HEAD returned non-UTF-8 output")?
+        .trim()
+        .to_string();
+    let tracked_diff = successful_git_stdout(root, &["diff", "--binary", "HEAD", "--"])?;
+    let untracked =
+        successful_git_stdout(root, &["ls-files", "--others", "--exclude-standard", "-z"])?;
+
+    let mut hasher = Sha256::new();
+    hasher.update(head.as_bytes());
+    hasher.update([0]);
+    hasher.update(&tracked_diff);
+    for raw_path in untracked
+        .split(|byte| *byte == 0)
+        .filter(|path| !path.is_empty())
+    {
+        hasher.update([0]);
+        hasher.update(raw_path);
+        let relative = PathBuf::from(String::from_utf8_lossy(raw_path).into_owned());
+        let contents = std::fs::read(root.join(&relative)).with_context(|| {
+            format!(
+                "failed to fingerprint untracked file {}",
+                relative.display()
+            )
+        })?;
+        hasher.update((contents.len() as u64).to_le_bytes());
+        hasher.update(contents);
+    }
+
+    Ok(Some(RepositoryFingerprint {
+        value: format!("{:x}", hasher.finalize()),
+        head,
+        dirty: !tracked_diff.is_empty() || !untracked.is_empty(),
+    }))
+}
+
+fn codebase_memory_index_cache_key(
+    root: &Path,
+    project: &str,
+    binary: &OsStr,
+) -> CodebaseMemoryIndexCacheKey {
+    (
+        root.canonicalize().unwrap_or_else(|_| root.to_path_buf()),
+        project.to_string(),
+        binary.to_os_string(),
+    )
+}
+
+fn codebase_memory_cached_index_fingerprint(key: &CodebaseMemoryIndexCacheKey) -> Option<String> {
+    CODEBASE_MEMORY_INDEX_FINGERPRINTS
+        .get_or_init(|| Mutex::new(HashMap::new()))
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+        .get(key)
+        .cloned()
+}
+
+fn codebase_memory_cache_index(
+    key: CodebaseMemoryIndexCacheKey,
+    fingerprint: &RepositoryFingerprint,
+) {
+    CODEBASE_MEMORY_INDEX_FINGERPRINTS
+        .get_or_init(|| Mutex::new(HashMap::new()))
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+        .insert(key, fingerprint.value.clone());
+}
+
+fn codebase_memory_indexed_heads(
+    binary: &OsStr,
+    project: &str,
+    timeout: Duration,
+) -> Result<Vec<String>> {
+    let value = codebase_memory_cli_value(
+        binary,
+        "query_graph",
+        &[
+            OsString::from("--project"),
+            OsString::from(project),
+            OsString::from("--query"),
+            OsString::from("MATCH (b:Branch) RETURN b.head_sha LIMIT 32"),
+        ],
+        timeout,
+    )?;
+    let mut payload = &value;
+    loop {
+        if let Some(result) = payload.get("result") {
+            payload = result;
+            continue;
+        }
+        if let Some(structured_content) = payload.get("structuredContent") {
+            payload = structured_content;
+            continue;
+        }
+        break;
+    }
+    let columns = payload
+        .get("columns")
+        .and_then(Value::as_array)
+        .context("codebase-memory-mcp query_graph response omitted columns")?;
+    let head_index = columns
+        .iter()
+        .position(|column| {
+            column
+                .as_str()
+                .is_some_and(|column| column == "head_sha" || column.ends_with(".head_sha"))
+        })
+        .context("codebase-memory-mcp query_graph response omitted head_sha")?;
+    let rows = payload
+        .get("rows")
+        .and_then(Value::as_array)
+        .context("codebase-memory-mcp query_graph response omitted rows")?;
+    Ok(rows
+        .iter()
+        .filter_map(Value::as_array)
+        .filter_map(|row| row.get(head_index))
+        .filter_map(Value::as_str)
+        .map(str::to_string)
+        .collect())
+}
+
 fn codebase_memory_project(root: &Path, configured: Option<String>) -> Result<String> {
     if let Some(project) = configured {
         let project = project.trim();
@@ -485,6 +649,8 @@ fn codebase_memory_agent_first_read_evidence_with_binary(
     let project = codebase_memory_project(root, config.project)?;
     let timeout = Duration::from_millis(config.timeout_ms);
     let search_query = codebase_memory_search_query(task);
+    let fingerprint = repository_fingerprint(root).ok().flatten();
+    let cache_key = codebase_memory_index_cache_key(root, &project, binary);
 
     let index_project = || {
         codebase_memory_cli_value(
@@ -516,14 +682,50 @@ fn codebase_memory_agent_first_read_evidence_with_binary(
             timeout,
         )
     };
-    let search_graph = if config.refresh_index {
+    let cached_fingerprint = codebase_memory_cached_index_fingerprint(&cache_key);
+    let cache_matches = fingerprint.as_ref().is_some_and(|fingerprint| {
+        cached_fingerprint.as_deref() == Some(fingerprint.value.as_str())
+    });
+    let should_refresh = if config.refresh_index {
+        true
+    } else if cache_matches {
+        false
+    } else if cached_fingerprint.is_some() {
+        true
+    } else if let Some(fingerprint) = fingerprint.as_ref() {
+        if fingerprint.dirty {
+            true
+        } else {
+            match codebase_memory_indexed_heads(binary, &project, timeout) {
+                Ok(heads) => {
+                    let current = heads.iter().any(|head| head == &fingerprint.head);
+                    if current {
+                        codebase_memory_cache_index(cache_key.clone(), fingerprint);
+                    }
+                    !current
+                }
+                Err(error) if codebase_memory_project_missing(&error) => true,
+                Err(_) => false,
+            }
+        }
+    } else {
+        false
+    };
+
+    let search_graph = if should_refresh {
         index_project()?;
+        if let Some(fingerprint) = fingerprint.as_ref() {
+            codebase_memory_cache_index(cache_key.clone(), fingerprint);
+        }
         search_graph()?
     } else {
         match search_graph() {
             Ok(value) => value,
             Err(error) if codebase_memory_project_missing(&error) => {
                 index_project()?;
+                if let Some(fingerprint) = fingerprint.as_ref() {
+                    codebase_memory_cache_index(cache_key, fingerprint);
+                }
                 search_graph()?
             }
             Err(error) => return Err(error),
@@ -1263,7 +1465,7 @@ fn tool_definitions() -> Value {
                             "refresh_index": {
                                 "type": "boolean",
                                 "default": false,
-                                "description": "Force a backend fast-index refresh before searching. When false, an existing graph is reused and a missing project is indexed automatically."
+                                "description": "Force a backend fast-index refresh before searching. When false, a current graph is reused while stale commits, changed worktree content, and missing projects are refreshed automatically."
                             },
                             "timeout_ms": {
                                 "type": "integer",
@@ -2591,6 +2793,178 @@ esac
         .into_evidence()
         .unwrap_err();
         assert!(missing_path.to_string().contains("file or file_path"));
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn codebase_memory_refreshes_only_when_repository_content_changes() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = TempDir::new().unwrap();
+        let root = dir.path().join("fixture");
+        std::fs::create_dir_all(&root).unwrap();
+        std::fs::write(root.join("target.rs"), "fn target() {}\n").unwrap();
+
+        let git = |args: &[&str]| {
+            let output = Command::new("git")
+                .arg("-C")
+                .arg(&root)
+                .args(args)
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "git {} failed: {}",
+                args.join(" "),
+                String::from_utf8_lossy(&output.stderr)
+            );
+        };
+        git(&["init"]);
+        git(&["config", "user.email", "codeinsight@example.invalid"]);
+        git(&["config", "user.name", "CodeInsight Test"]);
+        git(&["add", "target.rs"]);
+        git(&["commit", "-m", "fixture"]);
+
+        let backend = dir.path().join("fake-codebase-memory-mcp");
+        std::fs::write(
+            &backend,
+            r#"#!/bin/sh
+marker="$(dirname "$0")/index-count"
+case "$2" in
+  query_graph)
+    printf '%s\n' '{"columns":["b.head_sha"],"rows":[["stale"]]}'
+    ;;
+  index_repository)
+    printf x >> "$marker"
+    printf '%s\n' '{"project":"fixture","status":"indexed"}'
+    ;;
+  search_graph)
+    printf '%s\n' '{"results":[{"file_path":"target.rs","name":"target"}]}'
+    ;;
+  *)
+    exit 2
+    ;;
+esac
+"#,
+        )
+        .unwrap();
+        let mut permissions = std::fs::metadata(&backend).unwrap().permissions();
+        permissions.set_mode(0o755);
+        std::fs::set_permissions(&backend, permissions).unwrap();
+        let marker = dir.path().join("index-count");
+        let config = || AgentFirstReadBackendConfig {
+            provider: AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER.to_string(),
+            project: Some("fixture".to_string()),
+            refresh_index: false,
+            timeout_ms: CODEBASE_MEMORY_TIMEOUT_MS,
+            on_failure: AgentFirstReadBackendFailurePolicy::FallbackLocal,
+        };
+        let route = || {
+            codebase_memory_agent_first_read_evidence_with_binary(
+                &root,
+                "find target",
+                config(),
+                backend.as_os_str(),
+            )
+            .unwrap()
+            .unwrap()
+        };
+
+        assert_eq!(route().candidate_files, vec!["target.rs"]);
+        assert_eq!(std::fs::read(&marker).unwrap().len(), 1);
+        assert_eq!(route().candidate_files, vec!["target.rs"]);
+        assert_eq!(std::fs::read(&marker).unwrap().len(), 1);
+
+        std::fs::write(root.join("target.rs"), "fn target() { changed(); }\n").unwrap();
+        assert_eq!(route().candidate_files, vec!["target.rs"]);
+        assert_eq!(std::fs::read(&marker).unwrap().len(), 2);
+        assert_eq!(route().candidate_files, vec!["target.rs"]);
+        assert_eq!(std::fs::read(&marker).unwrap().len(), 2);
+
+        std::fs::write(root.join("target.rs"), "fn target() {}\n").unwrap();
+        assert_eq!(route().candidate_files, vec!["target.rs"]);
+        assert_eq!(std::fs::read(&marker).unwrap().len(), 3);
+        assert_eq!(route().candidate_files, vec!["target.rs"]);
+        assert_eq!(std::fs::read(&marker).unwrap().len(), 3);
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn codebase_memory_reuses_graph_at_current_head() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = TempDir::new().unwrap();
+        let root = dir.path().join("fixture-current");
+        std::fs::create_dir_all(&root).unwrap();
+        std::fs::write(root.join("target.rs"), "fn target() {}\n").unwrap();
+        for args in [
+            vec!["init"],
+            vec!["config", "user.email", "codeinsight@example.invalid"],
+            vec!["config", "user.name", "CodeInsight Test"],
+            vec!["add", "target.rs"],
+            vec!["commit", "-m", "fixture"],
+        ] {
+            assert!(
+                Command::new("git")
+                    .arg("-C")
+                    .arg(&root)
+                    .args(args)
+                    .status()
+                    .unwrap()
+                    .success()
+            );
+        }
+        let head = String::from_utf8(
+            Command::new("git")
+                .arg("-C")
+                .arg(&root)
+                .args(["rev-parse", "HEAD"])
+                .output()
+                .unwrap()
+                .stdout,
+        )
+        .unwrap();
+
+        let backend = dir.path().join("current-codebase-memory-mcp");
+        std::fs::write(
+            &backend,
+            format!(
+                r#"#!/bin/sh
+case "$2" in
+  query_graph)
+    printf '%s\n' '{{"columns":["b.head_sha"],"rows":[["{}"]]}}'
+    ;;
+  index_repository)
+    exit 9
+    ;;
+  search_graph)
+    printf '%s\n' '{{"results":[{{"file_path":"target.rs","name":"target"}}]}}'
+    ;;
+esac
+"#,
+                head.trim()
+            ),
+        )
+        .unwrap();
+        let mut permissions = std::fs::metadata(&backend).unwrap().permissions();
+        permissions.set_mode(0o755);
+        std::fs::set_permissions(&backend, permissions).unwrap();
+
+        let evidence = codebase_memory_agent_first_read_evidence_with_binary(
+            &root,
+            "find target",
+            AgentFirstReadBackendConfig {
+                provider: AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER.to_string(),
+                project: Some("fixture-current".to_string()),
+                refresh_index: false,
+                timeout_ms: CODEBASE_MEMORY_TIMEOUT_MS,
+                on_failure: AgentFirstReadBackendFailurePolicy::FallbackLocal,
+            },
+            backend.as_os_str(),
+        )
+        .unwrap()
+        .unwrap();
+        assert_eq!(evidence.candidate_files, vec!["target.rs"]);
     }
 
     #[test]
