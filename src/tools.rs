@@ -10824,6 +10824,12 @@ fn auto_seed_task_path_files(task: &str, indexed_files: &[String]) -> Vec<String
         .collect()
 }
 
+pub(crate) fn task_has_existing_path(root: &Path, task: &str) -> bool {
+    auto_seed_task_path_tokens(task)
+        .into_iter()
+        .any(|token| root.join(token).is_file())
+}
+
 fn auto_seed_unindexed_task_path_files(
     root: &Path,
     task: &str,

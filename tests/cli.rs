@@ -14545,7 +14545,7 @@ case "$2" in
       printf '%s\n' 'backend unavailable' >&2
       exit 9
       ;;
-    *"explicit file without backend call"*|*"explicit symbol without backend call"*)
+    *"explicit file without backend call"*|*"explicit symbol without backend call"*|*"task path without backend call"*)
       printf '%s\n' 'explicit seed unexpectedly invoked backend' >&2
       exit 9
       ;;
@@ -14590,7 +14590,7 @@ esac
             "name": "agent_first_read",
             "arguments": {
                 "root": fixture.path(),
-                "task": "inspect src/main.ts without backend match",
+                "task": "understand routing without backend match",
                 "token_budget": 500,
                 "backend": {
                     "provider": "codebase-memory-mcp",
@@ -14608,7 +14608,7 @@ esac
             "name": "agent_first_read",
             "arguments": {
                 "root": fixture.path(),
-                "task": "inspect src/main.ts when backend unavailable",
+                "task": "understand authentication when backend unavailable",
                 "token_budget": 500,
                 "backend": {
                     "provider": "codebase-memory-mcp",
@@ -14626,7 +14626,7 @@ esac
             "name": "agent_first_read",
             "arguments": {
                 "root": fixture.path(),
-                "task": "inspect src/main.ts when backend unavailable",
+                "task": "understand authentication when backend unavailable",
                 "token_budget": 500,
                 "backend": {
                     "provider": "codebase-memory-mcp",
@@ -14677,6 +14677,25 @@ esac
             }
         }
     });
+    let task_path_request = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 12,
+        "method": "tools/call",
+        "params": {
+            "name": "agent_first_read",
+            "arguments": {
+                "root": fixture.path(),
+                "task": "inspect src/main.ts task path without backend call",
+                "token_budget": 500,
+                "backend": {
+                    "provider": "codebase-memory-mcp",
+                    "project": "fixture",
+                    "timeout_ms": 1000,
+                    "on_failure": "error"
+                }
+            }
+        }
+    });
 
     let mut command = Command::cargo_bin("codeinsight").unwrap();
     command
@@ -14684,7 +14703,7 @@ esac
         .env("CODEINSIGHT_CODEBASE_MEMORY_BIN", &backend)
         .env("CODEINSIGHT_FAKE_INDEX_MARKER", &marker)
         .write_stdin(format!(
-            "{request}\n{empty_request}\n{fallback_request}\n{strict_request}\n{explicit_file_request}\n{explicit_symbol_request}\n"
+            "{request}\n{empty_request}\n{fallback_request}\n{strict_request}\n{explicit_file_request}\n{explicit_symbol_request}\n{task_path_request}\n"
         ));
     let output = command.assert().success().get_output().stdout.clone();
     let responses = String::from_utf8(output)
@@ -14698,6 +14717,7 @@ esac
     let strict_response = &responses[3];
     let explicit_file_response = &responses[4];
     let explicit_symbol_response = &responses[5];
+    let task_path_response = &responses[6];
     let route = &response["result"]["structuredContent"];
     let selected_excerpt = route["context_pack"]["files"][0]["ranges"]
         .as_array()
@@ -14731,9 +14751,9 @@ esac
     );
     assert_eq!(empty_response["id"], 7);
     assert!(empty_response.get("error").is_none());
-    assert_eq!(
-        empty_response["result"]["structuredContent"]["context_pack"]["files"][0]["file"],
-        "src/main.ts"
+    assert!(
+        empty_response["result"]["structuredContent"]["context_pack"]["files"][0]["file"]
+            .is_string()
     );
     assert!(
         empty_response["result"]["structuredContent"]["routing_decision"]
@@ -14750,9 +14770,9 @@ esac
     );
     assert_eq!(fallback_response["id"], 8);
     assert!(fallback_response.get("error").is_none());
-    assert_eq!(
-        fallback_response["result"]["structuredContent"]["context_pack"]["files"][0]["file"],
-        "src/main.ts"
+    assert!(
+        fallback_response["result"]["structuredContent"]["context_pack"]["files"][0]["file"]
+            .is_string()
     );
     assert_eq!(
         fallback_response["result"]["structuredContent"]["backend_status"]["status"],
@@ -14782,6 +14802,19 @@ esac
             "src/main.ts"
         );
     }
+    assert!(task_path_response.get("error").is_none());
+    assert_eq!(
+        task_path_response["result"]["structuredContent"]["backend_status"]["status"],
+        "skipped_task_path"
+    );
+    assert_eq!(
+        task_path_response["result"]["structuredContent"]["backend_status"]["reason"],
+        "task contains an existing local file path"
+    );
+    assert_eq!(
+        task_path_response["result"]["structuredContent"]["context_pack"]["files"][0]["file"],
+        "src/main.ts"
+    );
 }
 
 #[test]

@@ -1266,20 +1266,29 @@ fn handle_tool_call(params: Value) -> Result<Value> {
                 bail!("agent_first_read backend cannot be combined with backend_candidates");
             }
             let has_explicit_seed = !symbols.is_empty() || !files.is_empty();
+            let has_task_path_seed = tools::task_has_existing_path(&root, &task);
             let (backend_evidence, backend_status) = match backend_config {
                 Some(config) => {
                     config.validate()?;
                     let provider = config.provider.clone();
                     let failure_policy = config.on_failure;
-                    if has_explicit_seed {
+                    if has_explicit_seed || has_task_path_seed {
+                        let (status, reason) = if has_explicit_seed {
+                            ("skipped_explicit_seed", None)
+                        } else {
+                            (
+                                "skipped_task_path",
+                                Some("task contains an existing local file path".to_string()),
+                            )
+                        };
                         (
                             None,
                             Some(AgentRouteBackendStatus {
                                 provider,
-                                status: "skipped_explicit_seed".to_string(),
+                                status: status.to_string(),
                                 failure_policy: failure_policy.as_str().to_string(),
                                 index_status: None,
-                                reason: None,
+                                reason,
                             }),
                         )
                     } else {
@@ -1825,7 +1834,7 @@ fn tool_definitions() -> Value {
                                 "type": "string",
                                 "enum": ["fallback_local", "error"],
                                 "default": "fallback_local",
-                                "description": "Continue with the standalone local route when the backend command fails, or return an MCP error. Invalid backend configuration always returns an error. Automatic backend invocation is skipped when files or symbols provide an explicit seed."
+                                "description": "Continue with the standalone local route when the backend command fails, or return an MCP error. Invalid backend configuration always returns an error. Automatic backend invocation is skipped when files or symbols provide an explicit seed, or when the task names an existing local file path."
                             }
                         },
                         "required": ["provider"],
