@@ -1399,6 +1399,9 @@ fn handle_tool_call(params: Value) -> Result<Value> {
                 20,
                 false,
                 backend_evidence,
+                backend_status
+                    .as_ref()
+                    .and_then(|status| status.index_status.as_deref()),
             )?;
             report.backend_status = backend_status;
             tools::agent_route_response_value(&report, true, Some(response_token_budget))?
@@ -1441,6 +1444,7 @@ fn handle_tool_call(params: Value) -> Result<Value> {
                 impact_evidence_limit,
                 include_impact,
                 backend_evidence,
+                None,
             )?;
             tools::agent_route_response_value(&report, compact, response_token_budget)?
         }

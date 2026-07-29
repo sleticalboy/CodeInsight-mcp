@@ -337,6 +337,7 @@ pub fn agent_route(
         impact_evidence_limit,
         include_impact,
         backend_evidence,
+        None,
     )?;
     print_json(&agent_route_response_value(
         &report,
@@ -770,6 +771,7 @@ pub fn agent_route_value(
     impact_evidence_limit: usize,
     include_impact: bool,
     backend_evidence: Option<AgentRouteBackendEvidence>,
+    backend_index_status: Option<&str>,
 ) -> Result<AgentRouteReport> {
     let root = root.canonicalize()?;
     let index_report = index_project_value(root.clone(), force_index)?;
@@ -817,6 +819,7 @@ pub fn agent_route_value(
             token_budget,
             evidence,
             BackendContextMode::Preferred,
+            backend_index_status,
         )?;
         if let Some(preferred_context) = attempt.context_pack {
             context_pack = preferred_context;
@@ -834,6 +837,7 @@ pub fn agent_route_value(
             token_budget,
             evidence,
             BackendContextMode::Fallback,
+            backend_index_status,
         )?;
         if let Some(fallback_context) = attempt.context_pack {
             context_pack = fallback_context;
@@ -3038,6 +3042,7 @@ fn backend_seed_context_pack(
     token_budget: usize,
     backend_evidence: &AgentRouteBackendEvidence,
     mode: BackendContextMode,
+    backend_index_status: Option<&str>,
 ) -> Result<BackendContextAttempt> {
     let store = Store::open(root)?;
     let indexed_files = store.indexed_files()?.into_iter().collect::<BTreeSet<_>>();
@@ -3182,6 +3187,7 @@ fn backend_seed_context_pack(
                     &candidates,
                     &selected_candidates,
                     mode,
+                    backend_index_status,
                 );
                 return Ok(BackendContextAttempt {
                     context_pack: Some(context_pack),
@@ -3209,6 +3215,7 @@ fn backend_seed_context_pack(
                 &candidates,
                 &[],
                 mode,
+                backend_index_status,
             ),
         },
     })
@@ -3223,6 +3230,7 @@ fn backend_candidate_dispositions(
     valid_candidates: &[AgentRouteBackendCandidate],
     selected_candidates: &[AgentRouteBackendCandidate],
     mode: BackendContextMode,
+    backend_index_status: Option<&str>,
 ) -> Vec<AgentRouteBackendCandidateDisposition> {
     let selected_files = selected_candidates
         .iter()
@@ -3355,9 +3363,14 @@ fn backend_candidate_dispositions(
                     "path": root.join(file).display().to_string()
                 }),
             });
+            let backend_was_refreshed = backend_index_status
+                .is_some_and(|status| status.starts_with("refreshed_"));
             let context_suggested_tool = if selected_candidates.is_empty() && index == 0 {
                 match context_reason {
-                    "missing_file" if backend_evidence.provider == "codebase-memory-mcp" => {
+                    "missing_file"
+                        if backend_evidence.provider == "codebase-memory-mcp"
+                            && !backend_was_refreshed =>
+                    {
                         Some(ContextSuggestedTool {
                             tool: "agent_first_read".to_string(),
                             priority: 5,
@@ -3372,6 +3385,17 @@ fn backend_candidate_dispositions(
                                     "on_failure": "fallback_local"
                                 },
                                 "force_index": true
+                            }),
+                        })
+                    }
+                    "missing_file" if backend_evidence.provider == "codebase-memory-mcp" => {
+                        Some(ContextSuggestedTool {
+                            tool: "config_status".to_string(),
+                            priority: 5,
+                            reason: "The backend index was already refreshed; inspect the local root and index scope instead of retrying the refresh."
+                                .to_string(),
+                            suggested_arguments: json!({
+                                "root": root.display().to_string()
                             }),
                         })
                     }
@@ -16346,6 +16370,53 @@ fn normalize_dependency_kind(kind: &str) -> Result<String> {
 mod tests {
     use super::*;
     use std::sync::Mutex;
+
+    #[test]
+    fn refreshed_backend_candidates_do_not_request_another_refresh() {
+        let root = tempfile::TempDir::new().unwrap();
+        let backend_evidence = serde_json::from_value(json!({
+            "provider": "codebase-memory-mcp",
+            "use_as_fallback": true,
+            "candidate_files": ["src/removed.rs"]
+        }))
+        .unwrap();
+
+        let report = agent_route_value(
+            root.path().to_path_buf(),
+            "find removed implementation".to_string(),
+            Vec::new(),
+            Vec::new(),
+            500,
+            false,
+            50,
+            1,
+            20,
+            false,
+            Some(backend_evidence),
+            Some("refreshed_stale_candidates"),
+        )
+        .unwrap();
+        let agreement = &report.routing_decision.backend_route_agreement;
+        let disposition = &agreement.candidate_dispositions[0];
+
+        assert_eq!(agreement.status, "backend_unavailable");
+        assert_eq!(
+            agreement.recommended_action,
+            "inspect_index_scope_before_retrying_backend_candidate"
+        );
+        assert_eq!(
+            disposition
+                .context_suggested_tool
+                .as_ref()
+                .map(|tool| tool.tool.as_str()),
+            Some("config_status")
+        );
+        assert_eq!(report.routing_decision.route_quality.level, "blocked");
+        assert_eq!(
+            report.routing_decision.route_quality.recommended_action,
+            "inspect_index_scope_before_retrying_backend_candidate"
+        );
+    }
 
     #[test]
     fn compact_response_trimming_preserves_requested_location_excerpts() {
