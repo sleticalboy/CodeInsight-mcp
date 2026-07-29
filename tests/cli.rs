@@ -4495,6 +4495,14 @@ fn cli_agent_route_falls_back_to_file_context_for_stale_backend_location() {
             .unwrap()
             .ends_with("src/server.ts")
     );
+    assert_eq!(
+        route["routing_decision"]["route_quality"]["level"],
+        "medium"
+    );
+    assert_eq!(
+        route["routing_decision"]["route_quality"]["recommended_action"],
+        "inspect_file_outline_for_current_location"
+    );
 
     let compact_route = run_json([
         "agent-route",
@@ -4522,6 +4530,10 @@ fn cli_agent_route_falls_back_to_file_context_for_stale_backend_location() {
     assert_eq!(
         compact_disposition["location_suggested_tool"]["tool"],
         "file_outline"
+    );
+    assert_eq!(
+        compact_route["routing_decision"]["route_quality"]["recommended_action"],
+        "inspect_file_outline_for_current_location"
     );
     let compact_tokens = serde_json::to_string(&compact_route)
         .unwrap()
@@ -5320,6 +5332,14 @@ fn cli_agent_route_falls_back_to_file_when_backend_symbol_is_stale() {
     assert_eq!(route["impact_status"], "complete");
     assert_eq!(route["impact_seed_symbols"], serde_json::json!([]));
     assert_eq!(
+        route["routing_decision"]["route_quality"]["level"],
+        "medium"
+    );
+    assert_eq!(
+        route["routing_decision"]["route_quality"]["recommended_action"],
+        "inspect_file_outline_for_current_symbol"
+    );
+    assert_eq!(
         route["routing_decision"]["backend_route_agreement"]["status"],
         "backend_fallback"
     );
@@ -5419,6 +5439,10 @@ fn cli_agent_route_falls_back_to_file_when_backend_symbol_is_stale() {
     assert_eq!(
         compact_disposition["symbol_suggested_tool"]["tool"],
         "file_outline"
+    );
+    assert_eq!(
+        compact_route["routing_decision"]["route_quality"]["recommended_action"],
+        "inspect_file_outline_for_current_symbol"
     );
     let compact_tokens = serde_json::to_string(&compact_route)
         .unwrap()

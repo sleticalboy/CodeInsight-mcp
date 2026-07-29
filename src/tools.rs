@@ -1706,6 +1706,22 @@ fn agent_route_quality(
             .iter()
             .filter(|candidate| candidate.location_status.as_deref() == Some("ambiguous"))
             .count();
+        let selected_stale_symbol_count = backend_route_agreement
+            .candidate_dispositions
+            .iter()
+            .filter(|candidate| {
+                candidate.context_status == "selected"
+                    && candidate.symbol_status.as_deref() == Some("stale")
+            })
+            .count();
+        let selected_stale_location_count = backend_route_agreement
+            .candidate_dispositions
+            .iter()
+            .filter(|candidate| {
+                candidate.context_status == "selected"
+                    && candidate.location_status.as_deref() == Some("stale")
+            })
+            .count();
         if ambiguous_candidate_count > 0 {
             score = score.min(79);
             backend_route_recommended_action =
@@ -1716,6 +1732,30 @@ fn agent_route_quality(
             ));
             verification_steps.push(
                 "Choose a qualified symbol from location_alternatives, then rerun context_pack before editing."
+                    .to_string(),
+            );
+        } else if selected_stale_symbol_count > 0 {
+            score = score.min(79);
+            backend_route_recommended_action =
+                Some("inspect_file_outline_for_current_symbol".to_string());
+            warnings.push(format!(
+                "{} selected backend symbol(s) are absent from the current local index; file-level context must be re-anchored before edits.",
+                selected_stale_symbol_count
+            ));
+            verification_steps.push(
+                "Run the disposition's symbol_suggested_tool, then select the current local symbol before editing."
+                    .to_string(),
+            );
+        } else if selected_stale_location_count > 0 {
+            score = score.min(79);
+            backend_route_recommended_action =
+                Some("inspect_file_outline_for_current_location".to_string());
+            warnings.push(format!(
+                "{} selected backend location(s) are outside the current local source bounds; file-level context must be re-anchored before edits.",
+                selected_stale_location_count
+            ));
+            verification_steps.push(
+                "Run the disposition's location_suggested_tool, then select the current local range before editing."
                     .to_string(),
             );
         }
