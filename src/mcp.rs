@@ -1118,7 +1118,7 @@ fn codebase_memory_agent_first_read_result_with_binary(
                 && evidence
                     .candidate_files
                     .iter()
-                    .all(|file| !root.join(file).is_file())
+                    .all(|file| !codebase_memory_candidate_file_exists(root, file))
         })
     {
         index_project()?;
@@ -1133,6 +1133,10 @@ fn codebase_memory_agent_first_read_result_with_binary(
         evidence,
         index_status,
     })
+}
+
+fn codebase_memory_candidate_file_exists(root: &Path, file: &str) -> bool {
+    root.join(file.replace('\\', "/")).is_file()
 }
 
 pub async fn serve(transport: Transport) -> Result<()> {
@@ -3482,7 +3486,7 @@ case "$2" in
     exit 9
     ;;
   search_graph)
-    printf '%s\n' '{"results":[{"file_path":"src/reused.rs","name":"reused"}]}'
+    printf '%s\n' '{"results":[{"file_path":"src\\reused.rs","name":"reused"}]}'
     ;;
 esac
 "#,
@@ -3506,7 +3510,7 @@ esac
             .unwrap()
             .evidence
             .unwrap();
-            assert_eq!(reused.candidate_files, vec!["src/reused.rs"]);
+            assert_eq!(reused.candidate_files, vec!["src\\reused.rs"]);
 
             let stale_backend = backend_dir.path().join("stale-codebase-memory-mcp");
             std::fs::write(
