@@ -2917,20 +2917,30 @@ fn cli_agent_route_normalizes_inline_backend_tool_results() {
     assert_eq!(evidence["candidates"][0]["symbol"], "main");
     assert_eq!(evidence["candidates"][0]["source"], "search_graph");
     assert_eq!(evidence["candidates"][0]["reason"], "search_graph Function");
+    let main_locations = evidence["candidates"][0]["locations"].as_array().unwrap();
     assert_eq!(
-        evidence["candidates"][0]["locations"],
-        serde_json::json!([
-            {"start_line": 1, "end_line": 1},
-            {"start_line": 2, "end_line": 2}
-        ])
+        main_locations[0],
+        serde_json::json!({"start_line": 1, "end_line": 1})
     );
+    assert_eq!(
+        main_locations[1],
+        serde_json::json!({"start_line": 2, "end_line": 2})
+    );
+    assert!(main_locations.iter().any(|location| {
+        location["start_line"].as_u64().unwrap() > 2
+            && location["end_line"].as_u64().unwrap() >= location["start_line"].as_u64().unwrap()
+    }));
     assert_eq!(
         evidence["candidates"][0]["evidence"],
         serde_json::json!(["search_graph", "search_code", "trace_path"])
     );
     assert_eq!(
         evidence["candidates"][2]["locations"],
-        serde_json::json!([{"start_line": 4, "end_line": 7}])
+        serde_json::json!([
+            {"start_line": 4, "end_line": 7},
+            {"start_line": 5, "end_line": 6},
+            {"start_line": 8, "end_line": 9}
+        ])
     );
     assert_eq!(evidence["evidence_count"], 8);
     assert!(evidence.get("normalization").is_none());
@@ -3020,12 +3030,27 @@ export function helper() {
     );
     assert_eq!(evidence["candidates"][0]["symbol"], "main");
     assert_eq!(evidence["candidates"][0]["reason"], "trace_path subject");
+    assert_eq!(
+        evidence["candidates"][0]["locations"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
     assert_eq!(evidence["candidates"][1]["symbol"], "helper");
     assert_eq!(evidence["candidates"][1]["file"], "src/auth.py");
+    assert_eq!(
+        evidence["candidates"][1]["locations"],
+        serde_json::json!([{"start_line": 8, "end_line": 9}])
+    );
     assert_eq!(route["routing_decision"]["first_file"], "src/main.ts");
     assert_eq!(
         route["routing_decision"]["seed_strategy"],
         "backend_preferred"
+    );
+    assert_eq!(
+        route["context_pack"]["reading_plan"][0]["requested_locations"],
+        evidence["candidates"][0]["locations"]
     );
 }
 

@@ -2378,7 +2378,9 @@ fn normalize_backend_trace_path_result(root: &Path, raw: Value) -> Result<Value>
                 results.push(json!({
                     "file_path": local_symbol.file,
                     "name": local_symbol.qualified_name,
-                    "label": "subject"
+                    "label": "subject",
+                    "start_line": local_symbol.start_line,
+                    "end_line": local_symbol.end_line
                 }));
             }
         }
@@ -2415,7 +2417,9 @@ fn normalize_backend_trace_path_result(root: &Path, raw: Value) -> Result<Value>
                 results.push(json!({
                     "file_path": local_symbol.file,
                     "name": local_symbol.qualified_name,
-                    "label": label
+                    "label": label,
+                    "start_line": local_symbol.start_line,
+                    "end_line": local_symbol.end_line
                 }));
             }
         }
