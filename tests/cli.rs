@@ -2546,7 +2546,9 @@ fn cli_agent_route_compact_enforces_structured_response_token_budget() {
         "--task",
         "inspect the large route handler module",
         "--file",
-        "src/large.ts",
+        "src/large.ts:600",
+        "--file",
+        "src/large.ts#L900-L905",
         "--token-budget",
         "8000",
         "--compact",
@@ -2579,6 +2581,25 @@ fn cli_agent_route_compact_enforces_structured_response_token_budget() {
             .unwrap()
             .is_empty()
     );
+    assert_eq!(
+        route["execution_plan"][0]["requested_locations_by_file"],
+        json!({
+            "src/large.ts": [
+                {"start_line": 600, "end_line": 600},
+                {"start_line": 900, "end_line": 905}
+            ]
+        })
+    );
+    let ranges = route["context_pack"]["files"][0]["ranges"]
+        .as_array()
+        .unwrap();
+    for requested_line in [600, 900] {
+        assert!(ranges.iter().any(|range| {
+            range["start_line"].as_u64().unwrap() <= requested_line
+                && range["end_line"].as_u64().unwrap() >= requested_line
+                && range["excerpt"].as_str().is_some()
+        }));
+    }
 }
 
 #[test]

@@ -407,7 +407,7 @@ fn apply_compact_response_budget(value: &mut Value, requested_tokens: usize) -> 
             return Ok(());
         }
 
-        if !remove_last_compact_excerpt(value) {
+        if !remove_last_non_requested_compact_excerpt(value) {
             bail!(
                 "response_token_budget {requested_tokens} is too small; compact route contract requires at least {estimated_tokens} estimated tokens"
             );
@@ -442,7 +442,64 @@ fn refresh_response_token_estimate(value: &mut Value) -> Result<usize> {
     Ok(estimate_tokens(&serde_json::to_string(value)?))
 }
 
-fn remove_last_compact_excerpt(value: &mut Value) -> bool {
+fn compact_requested_locations(value: &Value) -> BTreeMap<String, Vec<(u64, u64)>> {
+    let mut requested_locations = BTreeMap::<String, Vec<(u64, u64)>>::new();
+    let Some(seeds) = value
+        .pointer("/context_pack/selected_seeds")
+        .and_then(Value::as_array)
+    else {
+        return requested_locations;
+    };
+
+    for seed in seeds {
+        if seed.get("kind").and_then(Value::as_str) != Some("file") {
+            continue;
+        }
+        let Some(file) = seed.get("value").and_then(Value::as_str) else {
+            continue;
+        };
+        let Some(locations) = seed.get("locations").and_then(Value::as_array) else {
+            continue;
+        };
+        for location in locations {
+            let Some(start_line) = location.get("start_line").and_then(Value::as_u64) else {
+                continue;
+            };
+            let end_line = location
+                .get("end_line")
+                .and_then(Value::as_u64)
+                .unwrap_or(start_line);
+            requested_locations
+                .entry(file.to_string())
+                .or_default()
+                .push((start_line, end_line));
+        }
+    }
+
+    requested_locations
+}
+
+fn compact_range_overlaps_requested_location(
+    file: &str,
+    range: &Value,
+    requested_locations: &BTreeMap<String, Vec<(u64, u64)>>,
+) -> bool {
+    let Some(start_line) = range.get("start_line").and_then(Value::as_u64) else {
+        return false;
+    };
+    let end_line = range
+        .get("end_line")
+        .and_then(Value::as_u64)
+        .unwrap_or(start_line);
+    requested_locations.get(file).is_some_and(|locations| {
+        locations.iter().any(|(requested_start, requested_end)| {
+            start_line <= *requested_end && end_line >= *requested_start
+        })
+    })
+}
+
+fn remove_last_non_requested_compact_excerpt(value: &mut Value) -> bool {
+    let requested_locations = compact_requested_locations(value);
     let Some(files) = value
         .pointer_mut("/context_pack/files")
         .and_then(Value::as_array_mut)
@@ -451,10 +508,18 @@ fn remove_last_compact_excerpt(value: &mut Value) -> bool {
     };
 
     for file in files.iter_mut().rev() {
+        let file_name = file
+            .get("file")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_string();
         let Some(ranges) = file.get_mut("ranges").and_then(Value::as_array_mut) else {
             continue;
         };
         for range in ranges.iter_mut().rev() {
+            if compact_range_overlaps_requested_location(&file_name, range, &requested_locations) {
+                continue;
+            }
             if range
                 .as_object_mut()
                 .is_some_and(|range| range.remove("excerpt").is_some())
@@ -15659,6 +15724,57 @@ fn normalize_dependency_kind(kind: &str) -> Result<String> {
 mod tests {
     use super::*;
     use std::sync::Mutex;
+
+    #[test]
+    fn compact_response_trimming_preserves_requested_location_excerpts() {
+        let mut route = json!({
+            "context_pack": {
+                "selected_seeds": [{
+                    "kind": "file",
+                    "value": "src/main.ts",
+                    "locations": [
+                        {"start_line": 20, "end_line": 20},
+                        {"start_line": 70, "end_line": 75}
+                    ]
+                }],
+                "files": [
+                    {
+                        "file": "src/main.ts",
+                        "ranges": [
+                            {"start_line": 1, "end_line": 5, "excerpt": "header"},
+                            {"start_line": 18, "end_line": 22, "excerpt": "requested first"},
+                            {"start_line": 70, "end_line": 75, "excerpt": "requested second"},
+                            {"start_line": 90, "end_line": 95, "excerpt": "tail"}
+                        ]
+                    },
+                    {
+                        "file": "src/helper.ts",
+                        "ranges": [
+                            {"start_line": 1, "end_line": 4, "excerpt": "helper"}
+                        ]
+                    }
+                ]
+            }
+        });
+
+        assert!(remove_last_non_requested_compact_excerpt(&mut route));
+        assert!(remove_last_non_requested_compact_excerpt(&mut route));
+        assert!(remove_last_non_requested_compact_excerpt(&mut route));
+        assert!(!remove_last_non_requested_compact_excerpt(&mut route));
+
+        let ranges = route["context_pack"]["files"][0]["ranges"]
+            .as_array()
+            .unwrap();
+        assert!(ranges[0].get("excerpt").is_none());
+        assert_eq!(ranges[1]["excerpt"], "requested first");
+        assert_eq!(ranges[2]["excerpt"], "requested second");
+        assert!(ranges[3].get("excerpt").is_none());
+        assert!(
+            route["context_pack"]["files"][1]["ranges"][0]
+                .get("excerpt")
+                .is_none()
+        );
+    }
 
     #[test]
     fn task_paths_cannot_escape_project_root() {
