@@ -2860,8 +2860,8 @@ fn cli_agent_route_normalizes_inline_backend_tool_results() {
                 }
             },
             "query_graph": {
-                "columns": ["f.name", "f.file_path", "f.qualified_name"],
-                "rows": [["AuthService", "src/auth.py", "AuthService"]],
+                "columns": ["f.name", "f.file_path", "f.qualified_name", "f.start_line", "f.end_line"],
+                "rows": [["AuthService", "src/auth.py", "AuthService", 4, 7]],
                 "total": 1,
                 "elapsed_ms": 13
             },
@@ -2927,6 +2927,10 @@ fn cli_agent_route_normalizes_inline_backend_tool_results() {
     assert_eq!(
         evidence["candidates"][0]["evidence"],
         serde_json::json!(["search_graph", "search_code", "trace_path"])
+    );
+    assert_eq!(
+        evidence["candidates"][2]["locations"],
+        serde_json::json!([{"start_line": 4, "end_line": 7}])
     );
     assert_eq!(evidence["evidence_count"], 8);
     assert!(evidence.get("normalization").is_none());

@@ -56,7 +56,7 @@ Expected output shape:
    routing_decision_first_file: src/tools.rs
    routing_decision_first_selection_rank: 1
    routing_decision_suggested_tool: file_outline
-   routing_decision_read_less: 99.4%, 169.2x
+   routing_decision_read_less: 99.4%, 169.3x
    routing_decision_continuation: omitted_candidates_available
    routing_decision_impact_status: complete
    routing_decision_quality: high (100/100, 24 evidence signals)
@@ -66,14 +66,14 @@ Expected output shape:
 
 4. impact_analysis
    risk_level: high
-   impacted_files: 8
+   impacted_files: 9
    suggested_checks: 4
 
 [Evidence summary]
 Routing decision: seed=task_match:src/tools.rs, first_file=src/tools.rs, rank=1, tool=file_outline, continuation=omitted_candidates_available, impact=complete.
 Route quality: high (100/100) from 24 evidence signals; next=read_selected_context_then_use_continuation_if_needed.
 Read src/tools.rs before offering file_outline.
-Before edits, impact_analysis reports high risk across 8 impacted files.
+Before edits, impact_analysis reports high risk across 9 impacted files.
 ```
 
 Exact numbers vary by repository and current source state. The stable signal is

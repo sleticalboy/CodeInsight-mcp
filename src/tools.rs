@@ -2210,6 +2210,9 @@ fn normalize_backend_query_graph_result(raw: Value) -> Result<Value> {
             })?;
         let symbol_index = backend_query_graph_column_index(columns, &["name"])
             .or_else(|| backend_query_graph_column_index(columns, &["qualified_name"]));
+        let start_line_index = backend_query_graph_column_index(columns, &["start_line"])
+            .or_else(|| backend_query_graph_column_index(columns, &["line"]));
+        let end_line_index = backend_query_graph_column_index(columns, &["end_line"]);
         let mut results = Vec::new();
         for row in rows.iter().take(BACKEND_EVIDENCE_TOOL_RESULT_ITEMS_LIMIT) {
             let row = row.as_array().ok_or_else(|| {
@@ -2229,11 +2232,25 @@ fn normalize_backend_query_graph_result(raw: Value) -> Result<Value> {
                 .and_then(Value::as_str)
                 .map(str::trim)
                 .filter(|symbol| !symbol.is_empty());
-            results.push(json!({
+            let mut result = json!({
                 "file_path": file,
                 "name": symbol,
                 "label": "row"
-            }));
+            });
+            if let Some(start_line) = start_line_index
+                .and_then(|index| row.get(index))
+                .and_then(Value::as_u64)
+                .filter(|line| *line > 0)
+            {
+                let end_line = end_line_index
+                    .and_then(|index| row.get(index))
+                    .and_then(Value::as_u64)
+                    .filter(|line| *line >= start_line)
+                    .unwrap_or(start_line);
+                result["start_line"] = json!(start_line);
+                result["end_line"] = json!(end_line);
+            }
+            results.push(result);
         }
         normalized_pages.push(json!({
             "results": results,
@@ -16263,8 +16280,8 @@ mod tests {
     #[test]
     fn query_graph_backend_results_normalize_tabular_rows() {
         let normalized = normalize_backend_query_graph_result(json!({
-            "columns": ["f.name", "f.file_path", "f.qualified_name"],
-            "rows": [["authenticate", "src/auth.ts", "app.auth.authenticate"]],
+            "columns": ["f.name", "f.file_path", "f.qualified_name", "f.line", "f.start_line", "f.end_line"],
+            "rows": [["authenticate", "src/auth.ts", "app.auth.authenticate", 99, 4, 7]],
             "total": 1,
             "elapsed_ms": 9
         }))
@@ -16272,6 +16289,8 @@ mod tests {
 
         assert_eq!(normalized["results"][0]["file_path"], "src/auth.ts");
         assert_eq!(normalized["results"][0]["name"], "authenticate");
+        assert_eq!(normalized["results"][0]["start_line"], 4);
+        assert_eq!(normalized["results"][0]["end_line"], 7);
         assert_eq!(normalized["total"], 1);
         assert_eq!(normalized["elapsed_ms"], 9);
     }
