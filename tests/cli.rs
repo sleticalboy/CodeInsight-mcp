@@ -5228,6 +5228,7 @@ fn cli_agent_route_uses_structured_backend_candidate_metadata_in_fallback() {
 #[test]
 fn cli_agent_route_falls_back_to_file_when_backend_symbol_is_stale() {
     let fixture = fixture_project();
+    let canonical_root = std::fs::canonicalize(fixture.path()).unwrap();
     let backend_evidence = serde_json::json!({
         "provider": "codebase-memory-mcp",
         "use_as_fallback": true,
@@ -5279,7 +5280,16 @@ fn cli_agent_route_falls_back_to_file_when_backend_symbol_is_stale() {
                 "context_status": "selected",
                 "context_reason": "selected_within_token_budget",
                 "next_action": "read_selected_context",
-                "symbol_status": "stale"
+                "symbol_status": "stale",
+                "symbol_next_action": "inspect_file_outline_for_current_symbol",
+                "symbol_suggested_tool": {
+                    "tool": "file_outline",
+                    "priority": 5,
+                    "reason": "Find the current local symbol after stale backend evidence.",
+                    "suggested_arguments": {
+                        "path": canonical_root.join("src/main.ts")
+                    }
+                }
             },
             {
                 "file": "src/ui.ts",
@@ -5328,6 +5338,45 @@ fn cli_agent_route_falls_back_to_file_when_backend_symbol_is_stale() {
         route["routing_decision"]["continuation_next_action"],
         continuation_step["action"]
     );
+
+    let compact_route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand invalid explicit seed",
+        "--file",
+        "does/not/exist.ts",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence-json",
+        &backend_evidence,
+        "--compact",
+        "--response-token-budget",
+        "4000",
+        "--skip-impact",
+    ]);
+    let compact_disposition =
+        &compact_route["routing_decision"]["backend_route_agreement"]["candidate_dispositions"][0];
+    assert_eq!(compact_disposition["symbol_status"], "stale");
+    assert_eq!(
+        compact_disposition["symbol_next_action"],
+        "inspect_file_outline_for_current_symbol"
+    );
+    assert_eq!(
+        compact_disposition["symbol_suggested_tool"]["tool"],
+        "file_outline"
+    );
+    let compact_tokens = serde_json::to_string(&compact_route)
+        .unwrap()
+        .len()
+        .div_ceil(4);
+    assert!(compact_tokens <= 4000);
+    assert_eq!(
+        compact_route["response_budget"]["estimated_tokens"],
+        compact_tokens
+    );
+    assert_eq!(compact_route["response_budget"]["truncated"], true);
 }
 
 #[test]

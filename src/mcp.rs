@@ -1480,6 +1480,22 @@ fn tool_text_content(name: &str, result: &Value) -> Result<String> {
         .pointer("/routing_decision/backend_selected_candidate/symbol")
         .and_then(Value::as_str)
         .unwrap_or("-");
+    let backend_symbol_handoff = result
+        .pointer(
+            "/routing_decision/backend_route_agreement/candidate_dispositions/0/symbol_status",
+        )
+        .and_then(Value::as_str)
+        .filter(|status| *status == "stale")
+        .map(|status| {
+            let recovery_tool = result
+                .pointer(
+                    "/routing_decision/backend_route_agreement/candidate_dispositions/0/symbol_suggested_tool/tool",
+                )
+                .and_then(Value::as_str)
+                .unwrap_or("-");
+            format!("; backend_symbol_status={status}; symbol_recovery_tool={recovery_tool}")
+        })
+        .unwrap_or_default();
     let backend_location_handoff = result
         .pointer(
             "/routing_decision/backend_route_agreement/candidate_dispositions/0/location_status",
@@ -1523,7 +1539,7 @@ fn tool_text_content(name: &str, result: &Value) -> Result<String> {
         .unwrap_or("unknown");
 
     Ok(format!(
-        "Compact agent route: first_file={first_file}; selected_files={selected_files}; selected_ranges={selected_ranges}; backend_status={backend_status}; backend_provider={backend_provider}; backend_symbol={backend_symbol}{backend_location_handoff}; next_action={next_action}; impact_status={impact_status}. Read structuredContent for selected excerpts and execution_plan."
+        "Compact agent route: first_file={first_file}; selected_files={selected_files}; selected_ranges={selected_ranges}; backend_status={backend_status}; backend_provider={backend_provider}; backend_symbol={backend_symbol}{backend_symbol_handoff}{backend_location_handoff}; next_action={next_action}; impact_status={impact_status}. Read structuredContent for selected excerpts and execution_plan."
     ))
 }
 
@@ -3847,6 +3863,46 @@ esac
         }))
         .unwrap_err();
         assert!(error.to_string().contains("root"));
+    }
+
+    #[test]
+    fn compact_tool_text_exposes_stale_symbol_recovery() {
+        let result = json!({
+            "response_mode": "compact",
+            "routing_decision": {
+                "first_file": "src/main.ts",
+                "route_quality": {
+                    "recommended_action": "inspect_file_outline_for_current_symbol"
+                },
+                "backend_route_agreement": {
+                    "status": "backend_fallback",
+                    "provider": "codebase-memory-mcp",
+                    "candidate_dispositions": [{
+                        "symbol_status": "stale",
+                        "symbol_suggested_tool": {
+                            "tool": "file_outline"
+                        }
+                    }]
+                },
+                "backend_selected_candidate": {
+                    "symbol": "removedGraphSymbol"
+                }
+            },
+            "context_pack": {
+                "budget": {
+                    "selected_files": 1,
+                    "selected_ranges": 2
+                }
+            },
+            "impact_status": "deferred_by_request"
+        });
+
+        let text = tool_text_content("agent_first_read", &result).unwrap();
+
+        assert!(text.contains("backend_symbol=removedGraphSymbol"));
+        assert!(text.contains("backend_symbol_status=stale"));
+        assert!(text.contains("symbol_recovery_tool=file_outline"));
+        assert!(text.contains("next_action=inspect_file_outline_for_current_symbol"));
     }
 
     #[test]

@@ -581,9 +581,11 @@ fn remove_compact_optional_metadata(value: &mut Value) -> usize {
                         "context_status",
                         "context_reason",
                         "next_action",
-                        "symbol_status",
                     ] {
                         removed += usize::from(disposition.remove(key).is_some());
+                    }
+                    if !disposition.contains_key("symbol_next_action") {
+                        removed += usize::from(disposition.remove("symbol_status").is_some());
                     }
                 }
             }
@@ -3281,6 +3283,17 @@ fn backend_candidate_dispositions(
                     BackendContextMode::Fallback => ("omitted", "fallback_not_selected"),
                 }
             };
+            let symbol_next_action = (symbol_status == Some("stale")
+                && context_status == "selected")
+                .then_some("inspect_file_outline_for_current_symbol");
+            let symbol_suggested_tool = symbol_next_action.map(|_| ContextSuggestedTool {
+                tool: "file_outline".to_string(),
+                priority: 5,
+                reason: "Find the current local symbol after stale backend evidence.".to_string(),
+                suggested_arguments: json!({
+                    "path": root.join(file).display().to_string()
+                }),
+            });
             let next_action = match context_reason {
                 "selected_within_token_budget" => "read_selected_context",
                 "token_budget_exhausted" => "run_backend_candidate_context_pack",
@@ -3300,6 +3313,8 @@ fn backend_candidate_dispositions(
                 context_reason: context_reason.to_string(),
                 next_action: next_action.to_string(),
                 symbol_status: symbol_status.map(str::to_string),
+                symbol_next_action: symbol_next_action.map(str::to_string),
+                symbol_suggested_tool,
                 location_status: location_status.map(str::to_string),
                 location_next_action: location_next_action.map(str::to_string),
                 location_suggested_tool,
