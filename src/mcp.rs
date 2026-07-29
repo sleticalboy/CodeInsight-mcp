@@ -1533,13 +1533,29 @@ fn tool_text_content(name: &str, result: &Value) -> Result<String> {
             )
         })
         .unwrap_or_default();
+    let backend_stale_location_handoff = result
+        .pointer(
+            "/routing_decision/backend_route_agreement/candidate_dispositions/0/location_status",
+        )
+        .and_then(Value::as_str)
+        .filter(|status| *status == "stale")
+        .map(|status| {
+            let recovery_tool = result
+                .pointer(
+                    "/routing_decision/backend_route_agreement/candidate_dispositions/0/location_suggested_tool/tool",
+                )
+                .and_then(Value::as_str)
+                .unwrap_or("-");
+            format!("; backend_location_status={status}; location_recovery_tool={recovery_tool}")
+        })
+        .unwrap_or_default();
     let impact_status = result
         .get("impact_status")
         .and_then(Value::as_str)
         .unwrap_or("unknown");
 
     Ok(format!(
-        "Compact agent route: first_file={first_file}; selected_files={selected_files}; selected_ranges={selected_ranges}; backend_status={backend_status}; backend_provider={backend_provider}; backend_symbol={backend_symbol}{backend_symbol_handoff}{backend_location_handoff}; next_action={next_action}; impact_status={impact_status}. Read structuredContent for selected excerpts and execution_plan."
+        "Compact agent route: first_file={first_file}; selected_files={selected_files}; selected_ranges={selected_ranges}; backend_status={backend_status}; backend_provider={backend_provider}; backend_symbol={backend_symbol}{backend_symbol_handoff}{backend_location_handoff}{backend_stale_location_handoff}; next_action={next_action}; impact_status={impact_status}. Read structuredContent for selected excerpts and execution_plan."
     ))
 }
 
@@ -3903,6 +3919,42 @@ esac
         assert!(text.contains("backend_symbol_status=stale"));
         assert!(text.contains("symbol_recovery_tool=file_outline"));
         assert!(text.contains("next_action=inspect_file_outline_for_current_symbol"));
+
+        let location_result = json!({
+            "response_mode": "compact",
+            "routing_decision": {
+                "first_file": "src/server.ts",
+                "route_quality": {
+                    "recommended_action": "inspect_file_outline_for_current_location"
+                },
+                "backend_route_agreement": {
+                    "status": "backend_preferred",
+                    "provider": "codebase-memory-mcp",
+                    "candidate_dispositions": [{
+                        "location_status": "stale",
+                        "location_suggested_tool": {
+                            "tool": "file_outline"
+                        }
+                    }]
+                },
+                "backend_selected_candidate": {
+                    "symbol": "startServer"
+                }
+            },
+            "context_pack": {
+                "budget": {
+                    "selected_files": 1,
+                    "selected_ranges": 1
+                }
+            },
+            "impact_status": "deferred_by_request"
+        });
+
+        let location_text = tool_text_content("agent_route", &location_result).unwrap();
+
+        assert!(location_text.contains("backend_location_status=stale"));
+        assert!(location_text.contains("location_recovery_tool=file_outline"));
+        assert!(location_text.contains("next_action=inspect_file_outline_for_current_location"));
     }
 
     #[test]

@@ -4479,6 +4479,59 @@ fn cli_agent_route_falls_back_to_file_context_for_stale_backend_location() {
         route["routing_decision"]["backend_route_agreement"]["candidate_dispositions"][0]["location_status"],
         "stale"
     );
+    let disposition =
+        &route["routing_decision"]["backend_route_agreement"]["candidate_dispositions"][0];
+    assert_eq!(
+        disposition["location_next_action"],
+        "inspect_file_outline_for_current_location"
+    );
+    assert_eq!(
+        disposition["location_suggested_tool"]["tool"],
+        "file_outline"
+    );
+    assert!(
+        disposition["location_suggested_tool"]["suggested_arguments"]["path"]
+            .as_str()
+            .unwrap()
+            .ends_with("src/server.ts")
+    );
+
+    let compact_route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand server startup",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence-json",
+        &backend_evidence,
+        "--prefer-backend-context",
+        "--compact",
+        "--response-token-budget",
+        "2500",
+        "--skip-impact",
+    ]);
+    let compact_disposition =
+        &compact_route["routing_decision"]["backend_route_agreement"]["candidate_dispositions"][0];
+    assert_eq!(compact_disposition["location_status"], "stale");
+    assert_eq!(
+        compact_disposition["location_next_action"],
+        "inspect_file_outline_for_current_location"
+    );
+    assert_eq!(
+        compact_disposition["location_suggested_tool"]["tool"],
+        "file_outline"
+    );
+    let compact_tokens = serde_json::to_string(&compact_route)
+        .unwrap()
+        .len()
+        .div_ceil(4);
+    assert!(compact_tokens <= 2500);
+    assert_eq!(
+        compact_route["response_budget"]["estimated_tokens"],
+        compact_tokens
+    );
 }
 
 #[test]

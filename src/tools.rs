@@ -3245,6 +3245,7 @@ fn backend_candidate_dispositions(
             });
             let location_next_action = match location_status {
                 Some("ambiguous") => Some("choose_symbol_alternative_then_run_context_pack"),
+                Some("stale") => Some("inspect_file_outline_for_current_location"),
                 _ => None,
             };
             let all_location_alternatives = match (location_status, symbol.as_deref()) {
@@ -3256,17 +3257,29 @@ fn backend_candidate_dispositions(
             let omitted_location_alternatives = all_location_alternatives
                 .len()
                 .saturating_sub(BACKEND_SYMBOL_ALTERNATIVE_LIMIT);
-            let location_suggested_tool = (omitted_location_alternatives > 0).then(|| {
-                ContextSuggestedTool {
+            let location_suggested_tool = match location_status {
+                Some("ambiguous") if omitted_location_alternatives > 0 => {
+                    Some(ContextSuggestedTool {
+                        tool: "file_outline".to_string(),
+                        priority: 5,
+                        reason: "List the candidate file's full symbol outline when the bounded alternatives do not contain the intended symbol."
+                            .to_string(),
+                        suggested_arguments: json!({
+                            "path": root.join(file).display().to_string()
+                        }),
+                    })
+                }
+                Some("stale") => Some(ContextSuggestedTool {
                     tool: "file_outline".to_string(),
                     priority: 5,
-                    reason: "List the candidate file's full symbol outline when the bounded alternatives do not contain the intended symbol."
+                    reason: "Find the current local symbol range after stale backend location evidence."
                         .to_string(),
                     suggested_arguments: json!({
                         "path": root.join(file).display().to_string()
                     }),
-                }
-            });
+                }),
+                _ => None,
+            };
             let location_alternatives = all_location_alternatives
                 .into_iter()
                 .take(BACKEND_SYMBOL_ALTERNATIVE_LIMIT)
