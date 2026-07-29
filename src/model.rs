@@ -481,6 +481,7 @@ pub struct AgentRouteBackendNormalization {
     pub unfetched_tool_result_items: usize,
     pub omitted_tool_result_items: usize,
     pub omitted_candidates: usize,
+    pub omitted_candidate_location_items: usize,
     pub omitted_candidate_evidence_items: usize,
     pub omitted_evidence_sources: usize,
     pub omitted_notes: usize,

@@ -95,6 +95,7 @@ struct BackendToolCandidateBatch {
     evidence_count: usize,
     unfetched_items: usize,
     omitted_items: usize,
+    omitted_location_items: usize,
     latency_ms: u64,
 }
 
@@ -1633,10 +1634,11 @@ fn backend_evidence_sources(backend: &AgentRouteBackendEvidence) -> Vec<String> 
 fn backend_normalization_warning(backend: &AgentRouteBackendEvidence) -> Option<String> {
     let normalization = backend.normalization.as_ref()?;
     Some(format!(
-        "Backend evidence was bounded for token safety or reported incomplete: backend reported {} unfetched tool result item(s); CodeInsight omitted {} raw tool result item(s), {} candidate(s), {} candidate evidence item(s), {} source(s), and {} note(s); truncated {} text field(s).",
+        "Backend evidence was bounded for token safety or reported incomplete: backend reported {} unfetched tool result item(s); CodeInsight omitted {} raw tool result item(s), {} candidate(s), {} candidate location item(s), {} candidate evidence item(s), {} source(s), and {} note(s); truncated {} text field(s).",
         normalization.unfetched_tool_result_items,
         normalization.omitted_tool_result_items,
         normalization.omitted_candidates,
+        normalization.omitted_candidate_location_items,
         normalization.omitted_candidate_evidence_items,
         normalization.omitted_evidence_sources,
         normalization.omitted_notes,
@@ -1871,7 +1873,7 @@ fn normalize_agent_route_backend_evidence(
     {
         bail!("backend evidence confidence must be between 0.0 and 1.0");
     }
-    let (omitted_tool_result_items, unfetched_tool_result_items) =
+    let (omitted_tool_result_items, unfetched_tool_result_items, omitted_location_items) =
         merge_backend_tool_results(root, &mut evidence)?;
 
     let legacy_files = evidence
@@ -1891,6 +1893,7 @@ fn normalize_agent_route_backend_evidence(
         candidate_limit: BACKEND_EVIDENCE_CANDIDATE_LIMIT,
         unfetched_tool_result_items,
         omitted_tool_result_items,
+        omitted_candidate_location_items: omitted_location_items,
         ..AgentRouteBackendNormalization::default()
     };
     let mut remaining_candidate_evidence = BACKEND_EVIDENCE_TOTAL_CANDIDATE_ITEMS_LIMIT;
@@ -1950,7 +1953,8 @@ fn normalize_agent_route_backend_evidence(
         }
         if let Some(candidate_index) = candidate_indexes_by_file.get(&candidate.file).copied() {
             let existing_candidate = &mut candidates[candidate_index];
-            merge_backend_candidate_locations(existing_candidate, candidate.locations);
+            normalization.omitted_candidate_location_items +=
+                merge_backend_candidate_locations(existing_candidate, candidate.locations);
             merge_backend_candidate_evidence(
                 existing_candidate,
                 candidate_evidence,
@@ -2020,9 +2024,9 @@ fn normalize_agent_route_backend_evidence(
 fn merge_backend_tool_results(
     root: &Path,
     evidence: &mut AgentRouteBackendEvidence,
-) -> Result<(usize, usize)> {
+) -> Result<(usize, usize, usize)> {
     let Some(tool_results) = evidence.tool_results.take() else {
-        return Ok((0, 0));
+        return Ok((0, 0, 0));
     };
     let get_code_snippet = tool_results
         .get_code_snippet
@@ -2116,6 +2120,7 @@ fn merge_backend_tool_results(
     let mut evidence_count = 0usize;
     let mut unfetched_items = 0usize;
     let mut omitted_items = 0usize;
+    let mut omitted_location_items = 0usize;
     let mut latency_ms = 0u64;
     for (raw, spec) in tool_inputs {
         let Some(raw) = raw else {
@@ -2129,6 +2134,8 @@ fn merge_backend_tool_results(
         evidence_count = evidence_count.saturating_add(batch.evidence_count);
         unfetched_items = unfetched_items.saturating_add(batch.unfetched_items);
         omitted_items = omitted_items.saturating_add(batch.omitted_items);
+        omitted_location_items =
+            omitted_location_items.saturating_add(batch.omitted_location_items);
         latency_ms = latency_ms.saturating_add(batch.latency_ms);
     }
 
@@ -2152,7 +2159,7 @@ fn merge_backend_tool_results(
     evidence
         .notes
         .push("normalized from inline backend tool_results".to_string());
-    Ok((omitted_items, unfetched_items))
+    Ok((omitted_items, unfetched_items, omitted_location_items))
 }
 
 fn normalize_backend_query_graph_result(raw: Value) -> Result<Value> {
@@ -2446,6 +2453,7 @@ fn collect_backend_tool_candidates(
     let mut reported_total_items = 0usize;
     let mut last_page_has_more = false;
     let mut latency_ms = 0u64;
+    let mut omitted_location_items = 0usize;
     let mut seen_candidate_files = BTreeSet::new();
     let mut candidate_indexes_by_file = BTreeMap::new();
     let candidate_dedupe_limit = BACKEND_EVIDENCE_TOOL_RESULT_ITEMS_LIMIT
@@ -2523,7 +2531,7 @@ fn collect_backend_tool_candidates(
                 let locations = backend_tool_candidate_locations(item);
                 if seen_candidate_files.contains(&file) {
                     if let Some(candidate_index) = candidate_indexes_by_file.get(&file).copied() {
-                        merge_backend_candidate_locations(
+                        omitted_location_items += merge_backend_candidate_locations(
                             &mut candidates[candidate_index],
                             locations,
                         );
@@ -2604,6 +2612,7 @@ fn collect_backend_tool_candidates(
         evidence_count,
         unfetched_items,
         omitted_items: item_count.saturating_sub(BACKEND_EVIDENCE_TOOL_RESULT_ITEMS_LIMIT),
+        omitted_location_items,
         latency_ms,
     })
 }
@@ -2611,17 +2620,21 @@ fn collect_backend_tool_candidates(
 fn merge_backend_candidate_locations(
     candidate: &mut AgentRouteBackendCandidate,
     locations: Vec<ContextSeedLocation>,
-) {
+) -> usize {
+    let mut omitted = 0usize;
     for location in locations {
-        if candidate.locations.len() >= BACKEND_EVIDENCE_CANDIDATE_LOCATION_LIMIT {
-            break;
-        }
-        if !candidate.locations.iter().any(|existing| {
+        if candidate.locations.iter().any(|existing| {
             existing.start_line == location.start_line && existing.end_line == location.end_line
         }) {
-            candidate.locations.push(location);
+            continue;
         }
+        if candidate.locations.len() >= BACKEND_EVIDENCE_CANDIDATE_LOCATION_LIMIT {
+            omitted += 1;
+            continue;
+        }
+        candidate.locations.push(location);
     }
+    omitted
 }
 
 fn merge_backend_candidate_evidence(
@@ -3240,6 +3253,7 @@ fn backend_normalization_changed(normalization: &AgentRouteBackendNormalization)
     normalization.unfetched_tool_result_items > 0
         || normalization.omitted_tool_result_items > 0
         || normalization.omitted_candidates > 0
+        || normalization.omitted_candidate_location_items > 0
         || normalization.omitted_candidate_evidence_items > 0
         || normalization.omitted_evidence_sources > 0
         || normalization.omitted_notes > 0

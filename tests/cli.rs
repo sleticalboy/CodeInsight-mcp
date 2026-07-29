@@ -3398,12 +3398,17 @@ fn cli_agent_route_deduplicates_tool_results_before_budget_accounting() {
     let fixture = fixture_project();
     let mut results = (0..64)
         .map(|index| {
+            let line = if index < 17 {
+                index + 1
+            } else {
+                index % 16 + 1
+            };
             serde_json::json!({
                 "name": format!("serverSymbol{index}"),
                 "label": "Function",
                 "file_path": "src/server.ts",
-                "start_line": index % 2 + 1,
-                "end_line": index % 2 + 1
+                "start_line": line,
+                "end_line": line
             })
         })
         .collect::<Vec<_>>();
@@ -3444,21 +3449,28 @@ fn cli_agent_route_deduplicates_tool_results_before_budget_accounting() {
     assert_eq!(evidence["candidates"][0]["symbol"], "serverSymbol0");
     assert_eq!(
         evidence["candidates"][0]["locations"],
-        serde_json::json!([
-            {"start_line": 1, "end_line": 1},
-            {"start_line": 2, "end_line": 2}
-        ])
+        serde_json::Value::Array(
+            (1..=16)
+                .map(|line| serde_json::json!({"start_line": line, "end_line": line}))
+                .collect()
+        )
     );
     assert_eq!(evidence["candidates"][1]["symbol"], "main");
     assert_eq!(evidence["evidence_count"], 2);
-    assert!(evidence.get("normalization").is_none());
+    assert_eq!(
+        evidence["normalization"]["omitted_candidate_location_items"],
+        1
+    );
     assert_eq!(evidence["latency_ms"], 6);
     assert!(
         route["routing_decision"]["route_quality"]["warnings"]
             .as_array()
             .unwrap()
             .iter()
-            .all(|warning| !warning.as_str().unwrap().contains("raw tool result item"))
+            .any(|warning| warning
+                .as_str()
+                .unwrap()
+                .contains("1 candidate location item"))
     );
 }
 
