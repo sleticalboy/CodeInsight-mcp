@@ -17,7 +17,10 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
 use crate::{
     cli::Transport,
-    model::{AgentRouteBackendCandidate, AgentRouteBackendEvidence, AgentRouteBackendStatus},
+    model::{
+        AgentRouteBackendCandidate, AgentRouteBackendEvidence, AgentRouteBackendStatus,
+        ContextSeedLocation,
+    },
     tools,
 };
 
@@ -1173,7 +1176,8 @@ fn handle_tool_call(params: Value) -> Result<Value> {
         }
         "file_outline" => {
             let path = required_path(&arguments, "path")?;
-            serde_json::to_value(tools::file_outline_value(path)?)?
+            let locations = optional_locations(&arguments, "locations")?;
+            serde_json::to_value(tools::file_outline_for_locations_value(path, &locations)?)?
         }
         "dependency_graph" => {
             let root = required_path(&arguments, "root")?;
@@ -1650,7 +1654,21 @@ fn tool_definitions() -> Value {
             "inputSchema": {
                 "type": "object",
                 "properties": {
-                    "path": {"type": "string"}
+                    "path": {"type": "string"},
+                    "locations": {
+                        "type": "array",
+                        "maxItems": 16,
+                        "description": "Optional one-based line ranges. Only symbols overlapping at least one range are returned.",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "start_line": {"type": "integer", "minimum": 1},
+                                "end_line": {"type": "integer", "minimum": 1}
+                            },
+                            "required": ["start_line", "end_line"],
+                            "additionalProperties": false
+                        }
+                    }
                 },
                 "required": ["path"]
             }
@@ -1987,6 +2005,43 @@ fn optional_string_array(arguments: &Value, key: &str) -> Result<Vec<String>> {
     }
 }
 
+fn optional_locations(arguments: &Value, key: &str) -> Result<Vec<ContextSeedLocation>> {
+    let Some(value) = arguments.get(key) else {
+        return Ok(Vec::new());
+    };
+    let Some(locations) = value.as_array() else {
+        bail!("invalid location array argument: {key}");
+    };
+    if locations.len() > 16 {
+        bail!("location array argument {key} must contain at most 16 items");
+    }
+
+    locations
+        .iter()
+        .map(|location| {
+            let Some(location) = location.as_object() else {
+                bail!("invalid location object in argument: {key}");
+            };
+            let start_line = location
+                .get("start_line")
+                .and_then(Value::as_u64)
+                .and_then(|line| usize::try_from(line).ok())
+                .filter(|line| *line > 0)
+                .with_context(|| format!("invalid start_line in argument: {key}"))?;
+            let end_line = location
+                .get("end_line")
+                .and_then(Value::as_u64)
+                .and_then(|line| usize::try_from(line).ok())
+                .filter(|line| *line >= start_line)
+                .with_context(|| format!("invalid end_line in argument: {key}"))?;
+            Ok(ContextSeedLocation {
+                start_line,
+                end_line,
+            })
+        })
+        .collect()
+}
+
 fn optional_json_object<T>(arguments: &Value, key: &str) -> Result<Option<T>>
 where
     T: serde::de::DeserializeOwned,
@@ -2153,6 +2208,26 @@ def helper():
         assert_eq!(
             search_result["structuredContent"][0]["name"].as_str(),
             Some("AuthService")
+        );
+
+        let located_outline_result = handle_tool_call(json!({
+            "name": "file_outline",
+            "arguments": {
+                "path": source_path,
+                "locations": [{"start_line": 9, "end_line": 9}]
+            }
+        }))
+        .unwrap();
+        assert_eq!(
+            located_outline_result["structuredContent"]
+                .as_array()
+                .unwrap()
+                .len(),
+            1
+        );
+        assert_eq!(
+            located_outline_result["structuredContent"][0]["name"].as_str(),
+            Some("helper")
         );
 
         let graph_result = handle_tool_call(json!({
@@ -2564,6 +2639,22 @@ def helper():
                     {"start_line": 7, "end_line": 8}
                 ]
             })
+        );
+        assert_eq!(
+            located_route_result["structuredContent"]["current_reading_step"]["suggested_tool"]["suggested_arguments"]
+                ["locations"],
+            json!([
+                {"start_line": 4, "end_line": 4},
+                {"start_line": 7, "end_line": 8}
+            ])
+        );
+        assert_eq!(
+            located_route_result["structuredContent"]["execution_plan"][1]["suggested_tool"]["suggested_arguments"]
+                ["locations"],
+            json!([
+                {"start_line": 4, "end_line": 4},
+                {"start_line": 7, "end_line": 8}
+            ])
         );
         assert_eq!(
             located_route_result["structuredContent"]["impact_seed_files"][0].as_str(),
@@ -3749,6 +3840,16 @@ esac
         }))
         .unwrap_err();
         assert!(error.to_string().contains("token_budget"));
+
+        let error = handle_tool_call(json!({
+            "name": "file_outline",
+            "arguments": {
+                "path": ".",
+                "locations": [{"start_line": 9, "end_line": 4}]
+            }
+        }))
+        .unwrap_err();
+        assert!(error.to_string().contains("end_line"));
     }
 
     fn is_known_context_source(source: &str) -> bool {

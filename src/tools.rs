@@ -3716,6 +3716,25 @@ pub fn file_outline_value(path: PathBuf) -> Result<Vec<Symbol>> {
     index::outline_file(&path)
 }
 
+pub fn file_outline_for_locations_value(
+    path: PathBuf,
+    locations: &[ContextSeedLocation],
+) -> Result<Vec<Symbol>> {
+    let symbols = file_outline_value(path)?;
+    if locations.is_empty() {
+        return Ok(symbols);
+    }
+
+    Ok(symbols
+        .into_iter()
+        .filter(|symbol| {
+            locations.iter().any(|location| {
+                symbol.start_line <= location.end_line && symbol.end_line >= location.start_line
+            })
+        })
+        .collect())
+}
+
 pub fn dependency_graph_value(
     root: PathBuf,
     files: Vec<String>,
@@ -5256,7 +5275,9 @@ fn context_reading_plan(
         .map(|(index, file)| {
             let next_action = context_reading_next_action(file).to_string();
             let question = context_reading_question(file, task);
-            let suggested_tool = context_reading_suggested_tool(root, task, file);
+            let requested_locations = context_requested_locations(selected_seeds, &file.file);
+            let suggested_tool =
+                context_reading_suggested_tool(root, task, file, &requested_locations);
             let ranges = file
                 .ranges
                 .iter()
@@ -5272,7 +5293,7 @@ fn context_reading_plan(
                 order: index + 1,
                 file: file.file.clone(),
                 selection_rank: file.selection_rank,
-                requested_locations: context_requested_locations(selected_seeds, &file.file),
+                requested_locations,
                 focus: context_reading_focus(file, task),
                 next_action,
                 question: question.clone(),
@@ -5327,8 +5348,22 @@ fn context_reading_suggested_tool(
     root: &Path,
     task: &str,
     file: &ContextFile,
+    requested_locations: &[ContextSeedLocation],
 ) -> ContextSuggestedTool {
     let root_arg = root.display().to_string();
+    if !requested_locations.is_empty() {
+        return ContextSuggestedTool {
+            tool: "file_outline".to_string(),
+            priority: 5,
+            reason: "Inspect symbols overlapping the explicitly requested line ranges before expanding to broader relationships."
+                .to_string(),
+            suggested_arguments: json!({
+                "path": root.join(&file.file).display().to_string(),
+                "locations": requested_locations
+            }),
+        };
+    }
+
     match context_reading_next_action(file) {
         "inspect_seed_file" | "inspect_symbol_definition" => ContextSuggestedTool {
             tool: "file_outline".to_string(),
