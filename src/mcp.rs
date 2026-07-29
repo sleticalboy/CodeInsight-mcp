@@ -1487,6 +1487,13 @@ fn tool_text_content(name: &str, result: &Value) -> Result<String> {
                 .and_then(Value::as_str)
         })
         .unwrap_or("-");
+    let backend_candidate_recovery_handoff = result
+        .pointer(
+            "/routing_decision/backend_route_agreement/candidate_dispositions/0/context_suggested_tool/tool",
+        )
+        .and_then(Value::as_str)
+        .map(|tool| format!("; candidate_recovery_tool={tool}"))
+        .unwrap_or_default();
     let backend_symbol_handoff = result
         .pointer(
             "/routing_decision/backend_route_agreement/candidate_dispositions/0/symbol_status",
@@ -1562,7 +1569,7 @@ fn tool_text_content(name: &str, result: &Value) -> Result<String> {
         .unwrap_or("unknown");
 
     Ok(format!(
-        "Compact agent route: first_file={first_file}; selected_files={selected_files}; selected_ranges={selected_ranges}; backend_status={backend_status}; backend_provider={backend_provider}; backend_symbol={backend_symbol}{backend_symbol_handoff}{backend_location_handoff}{backend_stale_location_handoff}; next_action={next_action}; impact_status={impact_status}. Read structuredContent for selected excerpts and execution_plan."
+        "Compact agent route: first_file={first_file}; selected_files={selected_files}; selected_ranges={selected_ranges}; backend_status={backend_status}; backend_provider={backend_provider}; backend_symbol={backend_symbol}{backend_candidate_recovery_handoff}{backend_symbol_handoff}{backend_location_handoff}{backend_stale_location_handoff}; next_action={next_action}; impact_status={impact_status}. Read structuredContent for selected excerpts and execution_plan."
     ))
 }
 
@@ -3901,6 +3908,9 @@ esac
                     "status": "backend_fallback",
                     "provider": "codebase-memory-mcp",
                     "candidate_dispositions": [{
+                        "context_suggested_tool": {
+                            "tool": "agent_first_read"
+                        },
                         "symbol_status": "stale",
                         "symbol_suggested_tool": {
                             "tool": "file_outline"
@@ -3923,6 +3933,7 @@ esac
         let text = tool_text_content("agent_first_read", &result).unwrap();
 
         assert!(text.contains("backend_symbol=removedGraphSymbol"));
+        assert!(text.contains("candidate_recovery_tool=agent_first_read"));
         assert!(text.contains("backend_symbol_status=stale"));
         assert!(text.contains("symbol_recovery_tool=file_outline"));
         assert!(text.contains("next_action=inspect_file_outline_for_current_symbol"));

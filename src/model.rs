@@ -420,6 +420,8 @@ pub struct AgentRouteBackendCandidateDisposition {
     pub context_reason: String,
     pub next_action: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub context_suggested_tool: Option<ContextSuggestedTool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub symbol_status: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub symbol_next_action: Option<String>,

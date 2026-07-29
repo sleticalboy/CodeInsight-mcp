@@ -1141,10 +1141,15 @@ fn agent_route_backend_agreement(
             )
         })
     {
-        let recommended_action = if local_first_file.is_some() {
-            "read_selected_context"
-        } else {
-            "provide_valid_backend_candidate"
+        let recommended_action = match candidate_dispositions
+            .first()
+            .and_then(|candidate| candidate.context_suggested_tool.as_ref())
+            .map(|suggested_tool| suggested_tool.tool.as_str())
+        {
+            _ if local_first_file.is_some() => "read_selected_context",
+            Some("agent_first_read") => "refresh_backend_indexes_then_retry_agent_first_read",
+            Some("config_status") => "inspect_index_scope_before_retrying_backend_candidate",
+            _ => "provide_valid_backend_candidate",
         };
         let message = if candidate_dispositions
             .iter()
@@ -3170,6 +3175,7 @@ fn backend_seed_context_pack(
                 );
                 let candidate_dispositions = backend_candidate_dispositions(
                     root,
+                    task,
                     &indexed_files,
                     &indexed_symbols,
                     backend_evidence,
@@ -3196,6 +3202,7 @@ fn backend_seed_context_pack(
             candidates: Vec::new(),
             candidate_dispositions: backend_candidate_dispositions(
                 root,
+                task,
                 &indexed_files,
                 &indexed_symbols,
                 backend_evidence,
@@ -3209,6 +3216,7 @@ fn backend_seed_context_pack(
 
 fn backend_candidate_dispositions(
     root: &Path,
+    task: &str,
     indexed_files: &BTreeSet<String>,
     indexed_symbols: &[Symbol],
     backend_evidence: &AgentRouteBackendEvidence,
@@ -3347,6 +3355,40 @@ fn backend_candidate_dispositions(
                     "path": root.join(file).display().to_string()
                 }),
             });
+            let context_suggested_tool = if selected_candidates.is_empty() && index == 0 {
+                match context_reason {
+                    "missing_file" if backend_evidence.provider == "codebase-memory-mcp" => {
+                        Some(ContextSuggestedTool {
+                            tool: "agent_first_read".to_string(),
+                            priority: 5,
+                            reason: "Refresh local and backend indexes once before retrying stale file candidates."
+                                .to_string(),
+                            suggested_arguments: json!({
+                                "root": root.display().to_string(),
+                                "task": task,
+                                "backend": {
+                                    "provider": "codebase-memory-mcp",
+                                    "refresh_index": true,
+                                    "on_failure": "fallback_local"
+                                },
+                                "force_index": true
+                            }),
+                        })
+                    }
+                    "unindexed_file" => Some(ContextSuggestedTool {
+                        tool: "config_status".to_string(),
+                        priority: 5,
+                        reason: "Inspect the configured index scope before retrying an unindexed candidate."
+                            .to_string(),
+                        suggested_arguments: json!({
+                            "root": root.display().to_string()
+                        }),
+                    }),
+                    _ => None,
+                }
+            } else {
+                None
+            };
             let next_action = match context_reason {
                 "selected_within_token_budget" => "read_selected_context",
                 "token_budget_exhausted" => "run_backend_candidate_context_pack",
@@ -3365,6 +3407,7 @@ fn backend_candidate_dispositions(
                 context_status: context_status.to_string(),
                 context_reason: context_reason.to_string(),
                 next_action: next_action.to_string(),
+                context_suggested_tool,
                 symbol_status: symbol_status.map(str::to_string),
                 symbol_next_action: symbol_next_action.map(str::to_string),
                 symbol_suggested_tool,

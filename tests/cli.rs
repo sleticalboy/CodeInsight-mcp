@@ -4981,8 +4981,47 @@ fn cli_agent_route_prefers_task_source_over_backend_documentation_noise() {
         dispositions[0]["next_action"],
         "use_indexed_source_candidate"
     );
+    assert!(dispositions[0].get("context_suggested_tool").is_none());
     assert_eq!(dispositions[1]["file"], "src/server.ts");
     assert_eq!(dispositions[1]["context_status"], "selected");
+
+    let unindexed_only_evidence = serde_json::json!({
+        "provider": "codebase-memory-mcp",
+        "candidates": [{
+            "file": "docs/server-startup.md",
+            "source": "search_code",
+            "score": 0.99
+        }]
+    })
+    .to_string();
+    let unindexed_route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "change server startup behavior",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence-json",
+        &unindexed_only_evidence,
+        "--prefer-backend-context",
+    ]);
+    let unindexed_disposition = &unindexed_route["routing_decision"]["backend_route_agreement"]["candidate_dispositions"]
+        [0];
+
+    assert_eq!(
+        unindexed_route["routing_decision"]["backend_route_agreement"]["recommended_action"],
+        "read_selected_context"
+    );
+    assert_eq!(unindexed_disposition["context_reason"], "unindexed_file");
+    assert_eq!(
+        unindexed_disposition["context_suggested_tool"]["tool"],
+        "config_status"
+    );
+    assert_eq!(
+        unindexed_disposition["context_suggested_tool"]["suggested_arguments"]["root"],
+        serde_json::json!(std::fs::canonicalize(fixture.path()).unwrap())
+    );
 }
 
 #[test]
@@ -12750,6 +12789,7 @@ fn cli_init_config_prefills_detected_test_commands() {
 #[test]
 fn cli_agent_route_explains_when_all_backend_candidates_are_missing() {
     let fixture = fixture_project();
+    let canonical_root = std::fs::canonicalize(fixture.path()).unwrap();
     let backend_evidence = serde_json::json!({
         "provider": "codebase-memory-mcp",
         "use_as_fallback": true,
@@ -12779,7 +12819,11 @@ fn cli_agent_route_explains_when_all_backend_candidates_are_missing() {
     assert_eq!(agreement["status"], "backend_unavailable");
     assert_eq!(
         agreement["recommended_action"],
-        "provide_valid_backend_candidate"
+        "refresh_backend_indexes_then_retry_agent_first_read"
+    );
+    assert_eq!(
+        route["routing_decision"]["route_quality"]["recommended_action"],
+        "refresh_backend_indexes_then_retry_agent_first_read"
     );
     assert_eq!(
         agreement["candidate_dispositions"],
@@ -12791,6 +12835,21 @@ fn cli_agent_route_explains_when_all_backend_candidates_are_missing() {
                 "context_status": "omitted",
                 "context_reason": "missing_file",
                 "next_action": "refresh_backend_evidence",
+                "context_suggested_tool": {
+                    "tool": "agent_first_read",
+                    "priority": 5,
+                    "reason": "Refresh local and backend indexes once before retrying stale file candidates.",
+                    "suggested_arguments": {
+                        "root": canonical_root,
+                        "task": "understand invalid explicit seed",
+                        "backend": {
+                            "provider": "codebase-memory-mcp",
+                            "refresh_index": true,
+                            "on_failure": "fallback_local"
+                        },
+                        "force_index": true
+                    }
+                },
                 "symbol_status": "not_checked"
             },
             {
@@ -12819,6 +12878,43 @@ fn cli_agent_route_explains_when_all_backend_candidates_are_missing() {
         route["context_pack"]["continuation_summary"]["next_action"]
     );
     assert_eq!(route["impact_status"], "skipped_invalid_seed");
+
+    let compact_route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand invalid explicit seed",
+        "--file",
+        "does/not/exist.ts",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence-json",
+        &backend_evidence,
+        "--compact",
+        "--response-token-budget",
+        "4000",
+        "--skip-impact",
+    ]);
+    let compact_disposition =
+        &compact_route["routing_decision"]["backend_route_agreement"]["candidate_dispositions"][0];
+    assert_eq!(
+        compact_route["routing_decision"]["route_quality"]["recommended_action"],
+        "refresh_backend_indexes_then_retry_agent_first_read"
+    );
+    assert_eq!(
+        compact_disposition["context_suggested_tool"]["tool"],
+        "agent_first_read"
+    );
+    let compact_tokens = serde_json::to_string(&compact_route)
+        .unwrap()
+        .len()
+        .div_ceil(4);
+    assert!(compact_tokens <= 4000);
+    assert_eq!(
+        compact_route["response_budget"]["estimated_tokens"],
+        compact_tokens
+    );
 
     let local_route = run_json([
         "agent-route",
