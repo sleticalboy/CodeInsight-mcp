@@ -1896,6 +1896,7 @@ fn normalize_agent_route_backend_evidence(
     let mut remaining_candidate_evidence = BACKEND_EVIDENCE_TOTAL_CANDIDATE_ITEMS_LIMIT;
     let mut seen_files = BTreeSet::new();
     let mut candidates = Vec::new();
+    let mut candidate_indexes_by_file = BTreeMap::new();
     for mut candidate in evidence.candidates {
         let raw_file = candidate.file.trim();
         if raw_file.is_empty() {
@@ -1947,6 +1948,17 @@ fn normalize_agent_route_backend_evidence(
         {
             bail!("backend evidence candidate score must be finite");
         }
+        if let Some(candidate_index) = candidate_indexes_by_file.get(&candidate.file).copied() {
+            let existing_candidate = &mut candidates[candidate_index];
+            merge_backend_candidate_locations(existing_candidate, candidate.locations);
+            merge_backend_candidate_evidence(
+                existing_candidate,
+                candidate_evidence,
+                &mut remaining_candidate_evidence,
+                &mut normalization,
+            );
+            continue;
+        }
         if !seen_files.insert(candidate.file.clone()) {
             normalization.omitted_candidate_evidence_items += candidate_evidence.len();
             continue;
@@ -1964,6 +1976,8 @@ fn normalize_agent_route_backend_evidence(
         remaining_candidate_evidence =
             remaining_candidate_evidence.saturating_sub(candidate_evidence.len());
         candidate.evidence = candidate_evidence;
+        let candidate_index = candidates.len();
+        candidate_indexes_by_file.insert(candidate.file.clone(), candidate_index);
         candidates.push(candidate);
     }
     let mut candidate_files = candidates
@@ -2607,6 +2621,27 @@ fn merge_backend_candidate_locations(
         }) {
             candidate.locations.push(location);
         }
+    }
+}
+
+fn merge_backend_candidate_evidence(
+    candidate: &mut AgentRouteBackendCandidate,
+    evidence: Vec<String>,
+    remaining_candidate_evidence: &mut usize,
+    normalization: &mut AgentRouteBackendNormalization,
+) {
+    for item in evidence {
+        if candidate.evidence.contains(&item) {
+            continue;
+        }
+        if candidate.evidence.len() >= BACKEND_EVIDENCE_PER_CANDIDATE_LIMIT
+            || *remaining_candidate_evidence == 0
+        {
+            normalization.omitted_candidate_evidence_items += 1;
+            continue;
+        }
+        candidate.evidence.push(item);
+        *remaining_candidate_evidence -= 1;
     }
 }
 

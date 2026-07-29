@@ -2805,7 +2805,9 @@ fn cli_agent_route_normalizes_inline_backend_tool_results() {
                             "name": "main",
                             "label": "Function",
                             "file_path": fixture.path().join("src/main.ts"),
-                            "score": 0.97
+                            "score": 0.97,
+                            "start_line": 1,
+                            "end_line": 1
                         },
                         {
                             "name": "startServer",
@@ -2845,7 +2847,9 @@ fn cli_agent_route_normalizes_inline_backend_tool_results() {
                         {
                             "node": "main",
                             "label": "Function",
-                            "file": "src/main.ts"
+                            "file": "src/main.ts",
+                            "start_line": 2,
+                            "end_line": 2
                         },
                         {
                             "node": "startServer",
@@ -2913,9 +2917,19 @@ fn cli_agent_route_normalizes_inline_backend_tool_results() {
     assert_eq!(evidence["candidates"][0]["symbol"], "main");
     assert_eq!(evidence["candidates"][0]["source"], "search_graph");
     assert_eq!(evidence["candidates"][0]["reason"], "search_graph Function");
+    assert_eq!(
+        evidence["candidates"][0]["locations"],
+        serde_json::json!([
+            {"start_line": 1, "end_line": 1},
+            {"start_line": 2, "end_line": 2}
+        ])
+    );
+    assert_eq!(
+        evidence["candidates"][0]["evidence"],
+        serde_json::json!(["search_graph", "search_code", "trace_path"])
+    );
     assert_eq!(evidence["evidence_count"], 8);
-    assert_eq!(evidence["normalization"]["unfetched_tool_result_items"], 0);
-    assert_eq!(evidence["normalization"]["omitted_tool_result_items"], 0);
+    assert!(evidence.get("normalization").is_none());
     assert!(
         !evidence["candidate_files"]
             .as_array()
