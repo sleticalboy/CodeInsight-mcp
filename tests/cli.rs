@@ -4418,6 +4418,59 @@ fn cli_agent_route_prefers_backend_candidate_for_bounded_context() {
 }
 
 #[test]
+fn cli_agent_route_falls_back_to_file_context_for_stale_backend_location() {
+    let fixture = fixture_project();
+    write_file(
+        &fixture,
+        "src/server.ts",
+        "export function startServer() { return 'started'; }\n",
+    );
+    let backend_evidence = serde_json::json!({
+        "provider": "codebase-memory-mcp",
+        "candidates": [{
+            "file": "src/server.ts",
+            "symbol": "startServer",
+            "locations": [{"start_line": 999, "end_line": 1000}],
+            "source": "search_graph",
+            "score": 0.97,
+            "reason": "stale graph location",
+            "evidence": ["definition"]
+        }]
+    })
+    .to_string();
+
+    let route = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand server startup",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence-json",
+        &backend_evidence,
+        "--prefer-backend-context",
+    ]);
+
+    assert_eq!(route["routing_decision"]["first_file"], "src/server.ts");
+    assert_eq!(
+        route["routing_decision"]["seed_strategy"],
+        "backend_preferred"
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_evidence"]["candidates"][0]["locations"],
+        serde_json::json!([{"start_line": 999, "end_line": 1000}])
+    );
+    let server_step = route["context_pack"]["reading_plan"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|step| step["file"] == "src/server.ts")
+        .unwrap();
+    assert!(server_step.get("requested_locations").is_none());
+}
+
+#[test]
 fn cli_agent_route_routes_ranked_backend_candidates_within_budget() {
     let fixture = fixture_project();
     let mut candidates = vec![

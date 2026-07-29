@@ -144,6 +144,30 @@ fn backend_candidate_context_seed_files(candidates: &[AgentRouteBackendCandidate
         .collect()
 }
 
+fn bound_backend_candidate_locations(root: &Path, candidate: &mut AgentRouteBackendCandidate) {
+    if candidate.locations.is_empty() {
+        return;
+    }
+    let Ok(source) = fs::read_to_string(root.join(&candidate.file)) else {
+        candidate.locations.clear();
+        return;
+    };
+    let line_count = source.lines().count();
+    candidate.locations.retain_mut(|location| {
+        if location.start_line > line_count {
+            return false;
+        }
+        location.end_line = location.end_line.min(line_count);
+        true
+    });
+    candidate
+        .locations
+        .sort_by_key(|location| (location.start_line, location.end_line));
+    candidate
+        .locations
+        .dedup_by_key(|location| (location.start_line, location.end_line));
+}
+
 const CONTEXT_SCORE_SEED_HEADER: i32 = 140;
 const CONTEXT_SCORE_TASK_LOCATION: i32 = 240;
 const CONTEXT_SCORE_TASK_LOCATION_CONTEXT: i32 = 220;
@@ -2854,6 +2878,7 @@ fn backend_seed_context_pack(
             }) {
                 candidate.symbol = None;
             }
+            bound_backend_candidate_locations(root, &mut candidate);
             candidate
         })
         .collect::<Vec<_>>();
