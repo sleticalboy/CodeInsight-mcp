@@ -4536,10 +4536,13 @@ class SecondaryWorker:
     );
 
     let ambiguous = route_for("run");
-    assert!(
-        ambiguous["routing_decision"]["backend_route_agreement"]["candidate_dispositions"][0]
-            .get("location_status")
-            .is_none()
+    assert_eq!(
+        ambiguous["routing_decision"]["backend_route_agreement"]["candidate_dispositions"][0]["location_status"],
+        "ambiguous"
+    );
+    assert_eq!(
+        ambiguous["routing_decision"]["backend_route_agreement"]["candidate_dispositions"][0]["location_next_action"],
+        "run_symbol_search_or_file_outline"
     );
     assert!(
         ambiguous["context_pack"]["reading_plan"][0]

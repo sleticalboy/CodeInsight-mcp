@@ -3066,6 +3066,13 @@ fn backend_candidate_dispositions(
                 Some(valid) if candidate.locations.is_empty() && !valid.locations.is_empty() => {
                     Some("inferred")
                 }
+                Some(valid)
+                    if candidate.locations.is_empty()
+                        && candidate.symbol.is_some()
+                        && valid.symbol.is_some() =>
+                {
+                    Some("ambiguous")
+                }
                 Some(_) if candidate.locations.is_empty() => None,
                 Some(valid) if valid.locations == candidate.locations => Some("valid"),
                 Some(valid) if valid.locations.is_empty() => Some("stale"),
@@ -3073,6 +3080,10 @@ fn backend_candidate_dispositions(
                 None if candidate.locations.is_empty() => None,
                 None => Some("not_checked"),
             });
+            let location_next_action = match location_status {
+                Some("ambiguous") => Some("run_symbol_search_or_file_outline"),
+                _ => None,
+            };
             let (context_status, context_reason) = if !root.join(file).is_file() {
                 ("omitted", "missing_file")
             } else if !indexed_files.contains(file) {
@@ -3105,6 +3116,7 @@ fn backend_candidate_dispositions(
                 next_action: next_action.to_string(),
                 symbol_status: symbol_status.map(str::to_string),
                 location_status: location_status.map(str::to_string),
+                location_next_action: location_next_action.map(str::to_string),
             }
         })
         .collect()
