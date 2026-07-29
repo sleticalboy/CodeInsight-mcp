@@ -2320,12 +2320,20 @@ fn normalize_backend_code_snippet_result(raw: Value) -> Result<Value> {
         let symbol = first_backend_tool_string(&payload, &["qualified_name", "name"]);
         let label = first_backend_tool_string(&payload, &["label"])
             .unwrap_or_else(|| "snippet".to_string());
+        let mut result = json!({
+            "file_path": file,
+            "qualified_name": symbol,
+            "label": label
+        });
+        if let Some(location) = backend_tool_candidate_locations(&payload)
+            .into_iter()
+            .next()
+        {
+            result["start_line"] = json!(location.start_line);
+            result["end_line"] = json!(location.end_line);
+        }
         normalized_pages.push(json!({
-            "results": [{
-                "file_path": file,
-                "qualified_name": symbol,
-                "label": label
-            }],
+            "results": [result],
             "total": 1,
             "elapsed_ms": payload
                 .get("elapsed_ms")

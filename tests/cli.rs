@@ -3093,6 +3093,10 @@ fn cli_agent_route_normalizes_get_code_snippet_without_source_body() {
         serde_json::json!(["src/auth.py"])
     );
     assert_eq!(evidence["candidates"][0]["symbol"], "AuthService.login");
+    assert_eq!(
+        evidence["candidates"][0]["locations"],
+        serde_json::json!([{"start_line": 4, "end_line": 5}])
+    );
     assert_eq!(evidence["candidates"][0]["source"], "get_code_snippet");
     assert_eq!(
         evidence["candidates"][0]["reason"],
@@ -3101,6 +3105,10 @@ fn cli_agent_route_normalizes_get_code_snippet_without_source_body() {
     assert_eq!(evidence["evidence_count"], 1);
     assert_eq!(evidence["latency_ms"], 4);
     assert_eq!(route["routing_decision"]["first_file"], "src/auth.py");
+    assert_eq!(
+        route["context_pack"]["reading_plan"][0]["requested_locations"],
+        evidence["candidates"][0]["locations"]
+    );
     assert!(
         !route
             .to_string()
