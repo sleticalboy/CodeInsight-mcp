@@ -4554,6 +4554,25 @@ fn cli_agent_route_infers_only_unique_best_backend_symbol_location() {
         ambiguous["routing_decision"]["backend_route_agreement"]["candidate_dispositions"][0]["omitted_location_alternatives"],
         2
     );
+    assert_eq!(
+        ambiguous["routing_decision"]["route_quality"]["level"],
+        "medium"
+    );
+    assert_eq!(ambiguous["routing_decision"]["route_quality"]["score"], 79);
+    assert_eq!(
+        ambiguous["routing_decision"]["route_quality"]["recommended_action"],
+        "choose_symbol_alternative_then_run_context_pack"
+    );
+    assert!(
+        ambiguous["routing_decision"]["route_quality"]["warnings"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|warning| warning
+                .as_str()
+                .unwrap()
+                .contains("file-level context is not exact symbol evidence"))
+    );
     assert!(
         ambiguous["context_pack"]["reading_plan"][0]
             .get("requested_locations")

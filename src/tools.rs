@@ -1560,6 +1560,24 @@ fn agent_route_quality(
                     .to_string(),
             );
         }
+        let ambiguous_candidate_count = backend_route_agreement
+            .candidate_dispositions
+            .iter()
+            .filter(|candidate| candidate.location_status.as_deref() == Some("ambiguous"))
+            .count();
+        if ambiguous_candidate_count > 0 {
+            score = score.min(79);
+            backend_route_recommended_action =
+                Some("choose_symbol_alternative_then_run_context_pack".to_string());
+            warnings.push(format!(
+                "{} backend candidate symbol(s) matched multiple local definitions; file-level context is not exact symbol evidence.",
+                ambiguous_candidate_count
+            ));
+            verification_steps.push(
+                "Choose a qualified symbol from location_alternatives, then rerun context_pack before editing."
+                    .to_string(),
+            );
+        }
         verification_steps.push(format!(
             "Treat backend {} evidence as advisory unless the selected file and verification checks agree.",
             backend.provider
