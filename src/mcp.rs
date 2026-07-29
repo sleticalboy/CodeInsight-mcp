@@ -1062,22 +1062,28 @@ fn codebase_memory_agent_first_read_result_with_binary(
                 index_project()?;
                 index_status = "refreshed_missing_project";
                 if let Some(fingerprint) = fingerprint.as_ref() {
-                    codebase_memory_cache_index(cache_key, fingerprint);
+                    codebase_memory_cache_index(cache_key.clone(), fingerprint);
                 }
                 primary_lookup()?
             }
             Err(error) => return Err(error),
         }
     };
-    let evidence = if prefers_architecture {
-        match agent_first_read_architecture_evidence(&primary_result, task) {
-            Some(evidence) => Some(evidence),
-            None => optional_codebase_memory_value(search_graph(), deadline, "search_graph")?
-                .and_then(|search_graph| agent_first_read_backend_evidence(&search_graph).ok()),
+    let extract_evidence = |primary_result: &Value| -> Result<Option<_>> {
+        if prefers_architecture {
+            return match agent_first_read_architecture_evidence(primary_result, task) {
+                Some(evidence) => Ok(Some(evidence)),
+                None => optional_codebase_memory_value(search_graph(), deadline, "search_graph")
+                    .map(|search_graph| {
+                        search_graph.and_then(|search_graph| {
+                            agent_first_read_backend_evidence(&search_graph).ok()
+                        })
+                    }),
+            };
         }
-    } else {
-        match agent_first_read_backend_evidence(&primary_result) {
-            Ok(evidence) => Some(evidence),
+
+        match agent_first_read_backend_evidence(primary_result) {
+            Ok(evidence) => Ok(Some(evidence)),
             Err(error) if error.to_string() == CODEBASE_MEMORY_EMPTY_SEARCH_ERROR => {
                 let search_code = match search_code() {
                     Ok(value) => value,
@@ -1089,20 +1095,40 @@ fn codebase_memory_agent_first_read_result_with_binary(
                     .as_ref()
                     .and_then(agent_first_read_search_code_evidence)
                 {
-                    Some(evidence) => Some(evidence),
+                    Some(evidence) => Ok(Some(evidence)),
                     None => optional_codebase_memory_value(
                         get_architecture(),
                         deadline,
                         "get_architecture",
-                    )?
-                    .and_then(|architecture| {
-                        agent_first_read_architecture_evidence(&architecture, task)
+                    )
+                    .map(|architecture| {
+                        architecture.and_then(|architecture| {
+                            agent_first_read_architecture_evidence(&architecture, task)
+                        })
                     }),
                 }
             }
-            Err(error) => return Err(error),
+            Err(error) => Err(error),
         }
     };
+    let mut evidence = extract_evidence(&primary_result)?;
+    if !should_refresh
+        && evidence.as_ref().is_some_and(|evidence| {
+            !evidence.candidate_files.is_empty()
+                && evidence
+                    .candidate_files
+                    .iter()
+                    .all(|file| !root.join(file).is_file())
+        })
+    {
+        index_project()?;
+        if let Some(fingerprint) = fingerprint.as_ref() {
+            codebase_memory_cache_index(cache_key, fingerprint);
+        }
+        index_status = "refreshed_stale_candidates";
+        let refreshed_primary = primary_lookup()?;
+        evidence = extract_evidence(&refreshed_primary)?;
+    }
     Ok(CodebaseMemoryAgentFirstReadResult {
         evidence,
         index_status,
@@ -3400,6 +3426,8 @@ int login(void) {
                 r#"#!/bin/sh
 case "$2" in
   index_repository)
+    [ ! -f "$0.indexed" ] || exit 8
+    touch "$0.indexed"
     printf '%s\n' '{"project":"fixture","status":"indexed"}'
     ;;
   search_graph)
@@ -3417,8 +3445,11 @@ esac
             std::fs::set_permissions(&backend, permissions).unwrap();
 
             let root = backend_dir.path().join("fixture");
-            std::fs::create_dir_all(&root).unwrap();
-            let evidence = codebase_memory_agent_first_read_result_with_binary(
+            std::fs::create_dir_all(root.join("src")).unwrap();
+            for file in ["main.rs", "target.rs", "reused.rs", "recovered.rs"] {
+                std::fs::write(root.join("src").join(file), "fn fixture() {}\n").unwrap();
+            }
+            let result = codebase_memory_agent_first_read_result_with_binary(
                 &root,
                 "find target",
                 AgentFirstReadBackendConfig {
@@ -3430,9 +3461,9 @@ esac
                 },
                 backend.as_os_str(),
             )
-            .unwrap()
-            .evidence
             .unwrap();
+            assert_eq!(result.index_status, "refreshed_forced");
+            let evidence = result.evidence.unwrap();
             assert_eq!(evidence.provider, AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER);
             assert_eq!(evidence.candidate_files, vec!["src/target.rs"]);
             assert_eq!(evidence.candidates[0].symbol.as_deref(), Some("target"));
@@ -3472,6 +3503,51 @@ esac
             .evidence
             .unwrap();
             assert_eq!(reused.candidate_files, vec!["src/reused.rs"]);
+
+            let stale_backend = backend_dir.path().join("stale-codebase-memory-mcp");
+            std::fs::write(
+                &stale_backend,
+                r#"#!/bin/sh
+case "$2" in
+  index_repository)
+    touch "$0.refreshed"
+    printf '%s\n' '{"project":"fixture","status":"indexed"}'
+    ;;
+  search_graph)
+    if [ -f "$0.refreshed" ]; then
+      printf '%s\n' '{"results":[{"file_path":"src/recovered.rs","name":"recovered"}]}'
+    else
+      printf '%s\n' '{"results":[{"file_path":"src/removed.rs","name":"removed"}]}'
+    fi
+    ;;
+  *)
+    exit 2
+    ;;
+esac
+"#,
+            )
+            .unwrap();
+            let mut permissions = std::fs::metadata(&stale_backend).unwrap().permissions();
+            permissions.set_mode(0o755);
+            std::fs::set_permissions(&stale_backend, permissions).unwrap();
+            let recovered = codebase_memory_agent_first_read_result_with_binary(
+                &root,
+                "find recovered",
+                AgentFirstReadBackendConfig {
+                    provider: AGENT_FIRST_READ_SEARCH_GRAPH_PROVIDER.to_string(),
+                    project: Some("fixture".to_string()),
+                    refresh_index: false,
+                    timeout_ms: CODEBASE_MEMORY_TIMEOUT_MS,
+                    on_failure: AgentFirstReadBackendFailurePolicy::FallbackLocal,
+                },
+                stale_backend.as_os_str(),
+            )
+            .unwrap();
+            assert_eq!(recovered.index_status, "refreshed_stale_candidates");
+            assert_eq!(
+                recovered.evidence.unwrap().candidate_files,
+                vec!["src/recovered.rs"]
+            );
 
             let empty_backend = backend_dir.path().join("empty-codebase-memory-mcp");
             std::fs::write(
