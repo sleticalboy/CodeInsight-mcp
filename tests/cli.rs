@@ -9948,8 +9948,8 @@ fn cli_resolves_go_module_imports() {
     let fixture = go_module_import_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 6);
-    assert_eq!(index["changed_files"], 6);
+    assert_eq!(index["indexed_files"], 7);
+    assert_eq!(index["changed_files"], 7);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -9966,6 +9966,16 @@ fn cli_resolves_go_module_imports() {
             .any(|dependency| {
                 dependency["target"] == "github.com/example/codeinsight/internal/auth"
                     && dependency["resolved_file"] == "internal/auth/service.go"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "github.com/example/reporting/log"
+                    && dependency["resolved_file"] == "third_party/reporting/log/log.go"
             })
     );
     assert!(
@@ -10034,6 +10044,9 @@ fn cli_resolves_go_module_imports() {
     }));
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "metrics.Track" && call["callee_file"] == "internal/metrics/metrics.go"
+    }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "log.Write" && call["callee_file"] == "third_party/reporting/log/log.go"
     }));
     assert!(
         callees
@@ -18807,6 +18820,8 @@ fn go_module_import_fixture_project() -> TempDir {
 module github.com/example/codeinsight
 
 go 1.22
+
+replace github.com/example/reporting => ./third_party/reporting
 "#,
     );
     write_file(
@@ -18822,10 +18837,11 @@ import (
   "github.com/example/codeinsight/internal/auth"
   cfg "github.com/example/codeinsight/internal/config"
   "github.com/example/codeinsight/internal/metrics"
+  "github.com/example/reporting/log"
 )
 
 func main() {
-  fmt.Println(remote.Name, auth.Login(), cfg.Load(), metrics.Track())
+  fmt.Println(remote.Name, auth.Login(), cfg.Load(), metrics.Track(), log.Write())
 }
 "#,
     );
@@ -18879,6 +18895,22 @@ package metrics
 
 func Track() string {
   return "tracked"
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "third_party/reporting/go.mod",
+        "module github.com/example/reporting\n",
+    );
+    write_file(
+        &dir,
+        "third_party/reporting/log/log.go",
+        r#"
+package log
+
+func Write() string {
+  return "reported"
 }
 "#,
     );

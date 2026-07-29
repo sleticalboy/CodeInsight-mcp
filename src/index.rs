@@ -3407,15 +3407,18 @@ fn resolve_bash_target(root: &Path, dependency: &Dependency) -> Option<String> {
 
 fn resolve_go_target(root: &Path, dependency: &Dependency) -> Option<String> {
     let go_mod_path = find_nearest_go_mod(root, &dependency.source_file)?;
-    let module_path = go_module_path(root, &go_mod_path)?;
-    let package_suffix = dependency.target.strip_prefix(&module_path)?;
-    if !package_suffix.is_empty() && !package_suffix.starts_with('/') {
-        return None;
+    let go_mod_text = fs::read_to_string(root.join(&go_mod_path)).ok()?;
+    if let Some(module_path) = parse_go_module_path(&go_mod_text)
+        && let Some(package_suffix) = go_package_suffix(&dependency.target, &module_path)
+    {
+        let module_dir = go_mod_path.parent().unwrap_or(Path::new(""));
+        let package_dir = module_dir.join(package_suffix.trim_start_matches('/'));
+        if let Some(resolved) = resolve_go_package_dir(root, package_dir) {
+            return Some(resolved);
+        }
     }
 
-    let module_dir = go_mod_path.parent().unwrap_or(Path::new(""));
-    let package_dir = module_dir.join(package_suffix.trim_start_matches('/'));
-    resolve_go_package_dir(root, package_dir)
+    resolve_go_replacement_target(root, &go_mod_path, dependency, &go_mod_text)
 }
 
 fn find_nearest_go_mod(root: &Path, source_file: &str) -> Option<PathBuf> {
@@ -3437,9 +3440,9 @@ fn find_nearest_go_mod(root: &Path, source_file: &str) -> Option<PathBuf> {
     }
 }
 
-fn go_module_path(root: &Path, go_mod_path: &Path) -> Option<String> {
-    let text = fs::read_to_string(root.join(go_mod_path)).ok()?;
-    parse_go_module_path(&text)
+fn go_package_suffix<'a>(target: &'a str, module_path: &str) -> Option<&'a str> {
+    let suffix = target.strip_prefix(module_path)?;
+    (suffix.is_empty() || suffix.starts_with('/')).then_some(suffix)
 }
 
 fn parse_go_module_path(text: &str) -> Option<String> {
@@ -3458,6 +3461,88 @@ fn parse_go_module_path(text: &str) -> Option<String> {
         let module_path = module_path.trim().trim_matches(['"', '`']);
         if !module_path.is_empty() {
             return Some(module_path.to_string());
+        }
+    }
+    None
+}
+
+fn parse_go_local_replacements(text: &str) -> Vec<(String, PathBuf)> {
+    let mut replacements = Vec::new();
+    let mut in_replace_block = false;
+    for raw_line in text.lines() {
+        let line = raw_line
+            .split_once("//")
+            .map(|(before, _)| before)
+            .unwrap_or(raw_line)
+            .trim();
+        if line
+            .strip_prefix("replace")
+            .is_some_and(|rest| rest.trim() == "(")
+        {
+            in_replace_block = true;
+            continue;
+        }
+        if in_replace_block && line == ")" {
+            in_replace_block = false;
+            continue;
+        }
+
+        let replacement = if in_replace_block {
+            line
+        } else {
+            let Some(replacement) = line.strip_prefix("replace") else {
+                continue;
+            };
+            if !replacement.chars().next().is_some_and(char::is_whitespace) {
+                continue;
+            }
+            replacement.trim()
+        };
+        let Some((module, target)) = replacement.split_once("=>") else {
+            continue;
+        };
+        let Some(module) = module.split_whitespace().next() else {
+            continue;
+        };
+        let Some(target) = target.split_whitespace().next() else {
+            continue;
+        };
+        let target = target.trim_matches(['"', '`']);
+        let target_path = Path::new(target);
+        if target.starts_with('.') && !target_path.is_absolute() {
+            replacements.push((module.to_string(), target_path.to_path_buf()));
+        }
+    }
+    replacements
+}
+
+fn resolve_go_replacement_target(
+    root: &Path,
+    go_mod_path: &Path,
+    dependency: &Dependency,
+    go_mod_text: &str,
+) -> Option<String> {
+    let canonical_root = root.canonicalize().ok()?;
+    let module_dir = go_mod_path.parent().unwrap_or(Path::new(""));
+    let mut replacements = parse_go_local_replacements(go_mod_text);
+    replacements.sort_by(|left, right| right.0.len().cmp(&left.0.len()));
+    for (module_path, replacement) in replacements {
+        let Some(package_suffix) = go_package_suffix(&dependency.target, &module_path) else {
+            continue;
+        };
+        let Ok(package_dir) = root
+            .join(module_dir)
+            .join(replacement)
+            .join(package_suffix.trim_start_matches('/'))
+            .canonicalize()
+        else {
+            continue;
+        };
+        let Ok(relative_package_dir) = package_dir.strip_prefix(&canonical_root) else {
+            continue;
+        };
+        if let Some(resolved) = resolve_go_package_dir(root, relative_package_dir.to_path_buf()) {
+            return Some(resolved);
         }
     }
     None
@@ -7559,6 +7644,31 @@ go 1.22
             Some("github.com/example/codeinsight")
         );
         assert_eq!(parse_go_module_path("modulefoo invalid"), None);
+    }
+
+    #[test]
+    fn parses_go_local_replacements() {
+        let text = r#"
+replace github.com/example/inline v1.2.3 => ./third_party/inline
+replace github.com/example/remote => github.com/fork/remote v1.0.0
+replace (
+    github.com/example/block => ../shared/block
+    github.com/example/absolute => /tmp/absolute
+)
+"#;
+        assert_eq!(
+            parse_go_local_replacements(text),
+            vec![
+                (
+                    "github.com/example/inline".to_string(),
+                    PathBuf::from("./third_party/inline")
+                ),
+                (
+                    "github.com/example/block".to_string(),
+                    PathBuf::from("../shared/block")
+                ),
+            ]
+        );
     }
 
     #[test]
