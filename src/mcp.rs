@@ -1479,6 +1479,13 @@ fn tool_text_content(name: &str, result: &Value) -> Result<String> {
     let backend_symbol = result
         .pointer("/routing_decision/backend_selected_candidate/symbol")
         .and_then(Value::as_str)
+        .or_else(|| {
+            result
+                .pointer(
+                    "/routing_decision/backend_route_agreement/candidate_dispositions/0/symbol",
+                )
+                .and_then(Value::as_str)
+        })
         .unwrap_or("-");
     let backend_symbol_handoff = result
         .pointer(

@@ -15876,6 +15876,7 @@ fn mcp_stdio_agent_first_read_preserves_ambiguous_backend_symbol_handoff() {
     assert!(route_tokens <= 2500);
     assert_eq!(route["response_budget"]["estimated_tokens"], route_tokens);
     assert!(text.contains("backend_location_status=ambiguous"));
+    assert!(text.contains("backend_symbol=run"));
     assert!(text.contains("backend_location_alternatives=4"));
     assert!(text.contains("backend_location_alternatives_omitted=6"));
     assert!(text.contains("first_context_pack_file=src/workers.py#L2-L3"));
