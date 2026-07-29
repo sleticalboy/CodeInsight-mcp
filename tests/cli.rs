@@ -4602,7 +4602,7 @@ fn cli_agent_route_infers_only_unique_best_backend_symbol_location() {
         "--prefer-backend-context",
         "--compact",
         "--response-token-budget",
-        "4000",
+        "2500",
         "--skip-impact",
     ]);
     let compact_disposition =
@@ -4616,6 +4616,34 @@ fn cli_agent_route_infers_only_unique_best_backend_symbol_location() {
     );
     assert_eq!(compact_disposition["omitted_location_alternatives"], 6);
     assert_eq!(compact_disposition["location_status"], "ambiguous");
+    let compact_tokens = serde_json::to_string(&compact).unwrap().len().div_ceil(4);
+    assert!(compact_tokens <= 2500);
+    assert_eq!(
+        compact["response_budget"]["estimated_tokens"],
+        compact_tokens
+    );
+    assert!(
+        compact["response_budget"]["omitted_metadata_fields"]
+            .as_u64()
+            .unwrap()
+            > 0
+    );
+    assert_eq!(compact["response_budget"]["truncated"], true);
+    assert!(
+        compact["routing_decision"]["route_quality"]
+            .get("decision_summary")
+            .is_none()
+    );
+    assert!(
+        compact["routing_decision"]["route_quality"]["warnings"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|warning| warning
+                .as_str()
+                .unwrap()
+                .contains("file-level context is not exact symbol evidence"))
+    );
     assert_eq!(
         compact["routing_decision"]["route_quality"]["recommended_action"],
         "choose_symbol_alternative_then_run_context_pack"

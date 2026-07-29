@@ -481,11 +481,13 @@ fn apply_compact_response_budget(value: &mut Value, requested_tokens: usize) -> 
             "estimated_tokens": 0,
             "truncated": false,
             "omitted_excerpts": 0,
+            "omitted_metadata_fields": 0,
             "estimator": "utf8_bytes_div_4"
         }),
     );
 
     let mut omitted_excerpts = 0;
+    let mut omitted_metadata_fields = 0;
     loop {
         let estimated_tokens = refresh_response_token_estimate(value)?;
         if estimated_tokens <= requested_tokens {
@@ -493,6 +495,21 @@ fn apply_compact_response_budget(value: &mut Value, requested_tokens: usize) -> 
         }
 
         if !remove_last_non_requested_compact_excerpt(value) {
+            let removed_fields = remove_compact_optional_metadata(value);
+            if removed_fields > 0 {
+                omitted_metadata_fields += removed_fields;
+                if let Some(response_budget) = value
+                    .get_mut("response_budget")
+                    .and_then(Value::as_object_mut)
+                {
+                    response_budget.insert("truncated".to_string(), json!(true));
+                    response_budget.insert(
+                        "omitted_metadata_fields".to_string(),
+                        json!(omitted_metadata_fields),
+                    );
+                }
+                continue;
+            }
             bail!(
                 "response_token_budget {requested_tokens} is too small; compact route contract requires at least {estimated_tokens} estimated tokens"
             );
@@ -506,6 +523,94 @@ fn apply_compact_response_budget(value: &mut Value, requested_tokens: usize) -> 
             response_budget.insert("omitted_excerpts".to_string(), json!(omitted_excerpts));
         }
     }
+}
+
+fn remove_compact_optional_metadata(value: &mut Value) -> usize {
+    let Some(route) = value.as_object_mut() else {
+        return 0;
+    };
+    let mut removed = 0;
+    if let Some(routing_decision) = route
+        .get_mut("routing_decision")
+        .and_then(Value::as_object_mut)
+    {
+        for key in [
+            "backend_selected_candidate",
+            "first_focus",
+            "first_question",
+            "first_selection_reason",
+            "first_suggested_tool",
+            "first_seed_matched_keywords",
+            "first_seed_matched_symbols",
+        ] {
+            removed += usize::from(routing_decision.remove(key).is_some());
+        }
+        if let Some(route_quality) = routing_decision
+            .get_mut("route_quality")
+            .and_then(Value::as_object_mut)
+        {
+            for key in [
+                "decision_summary",
+                "evidence_count",
+                "evidence_sources",
+                "confidence_factors",
+                "verification_steps",
+            ] {
+                removed += usize::from(route_quality.remove(key).is_some());
+            }
+        }
+        if let Some(agreement) = routing_decision
+            .get_mut("backend_route_agreement")
+            .and_then(Value::as_object_mut)
+        {
+            for key in ["message", "common_files"] {
+                removed += usize::from(agreement.remove(key).is_some());
+            }
+            if let Some(dispositions) = agreement
+                .get_mut("candidate_dispositions")
+                .and_then(Value::as_array_mut)
+            {
+                for disposition in dispositions {
+                    let Some(disposition) = disposition.as_object_mut() else {
+                        continue;
+                    };
+                    for key in [
+                        "context_rank",
+                        "routing_reason",
+                        "context_status",
+                        "context_reason",
+                        "next_action",
+                        "symbol_status",
+                    ] {
+                        removed += usize::from(disposition.remove(key).is_some());
+                    }
+                }
+            }
+        }
+    }
+    if let Some(context_pack) = route.get_mut("context_pack").and_then(Value::as_object_mut)
+        && let Some(reading_plan) = context_pack
+            .get_mut("reading_plan")
+            .and_then(Value::as_array_mut)
+    {
+        for step in reading_plan {
+            let Some(step) = step.as_object_mut() else {
+                continue;
+            };
+            for key in ["reason", "selection_reason", "source_mix"] {
+                removed += usize::from(step.remove(key).is_some());
+            }
+        }
+    }
+    if let Some(current_step) = route
+        .get_mut("current_reading_step")
+        .and_then(Value::as_object_mut)
+    {
+        for key in ["reason", "selection_reason", "source_mix"] {
+            removed += usize::from(current_step.remove(key).is_some());
+        }
+    }
+    removed
 }
 
 fn refresh_response_token_estimate(value: &mut Value) -> Result<usize> {
