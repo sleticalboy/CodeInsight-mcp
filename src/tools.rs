@@ -2866,17 +2866,27 @@ fn backend_seed_context_pack(
                     reason: None,
                     evidence: Vec::new(),
                 });
-            if candidate.symbol.as_ref().is_some_and(|candidate_symbol| {
-                !indexed_symbols.iter().any(|symbol| {
+            if let Some(candidate_symbol) = candidate.symbol.as_ref() {
+                let mut matching_symbols = indexed_symbols.iter().filter(|symbol| {
                     symbol.file == *candidate_file
                         && backend_symbol_name_matches(
                             candidate_symbol,
                             &symbol.name,
                             &symbol.qualified_name,
                         )
-                })
-            }) {
-                candidate.symbol = None;
+                });
+                let matching_symbol = matching_symbols.next();
+                if matching_symbol.is_none() {
+                    candidate.symbol = None;
+                } else if candidate.locations.is_empty()
+                    && matching_symbols.next().is_none()
+                    && let Some(symbol) = matching_symbol
+                {
+                    candidate.locations.push(ContextSeedLocation {
+                        start_line: symbol.start_line,
+                        end_line: symbol.end_line,
+                    });
+                }
             }
             bound_backend_candidate_locations(root, &mut candidate);
             candidate
@@ -3050,14 +3060,17 @@ fn backend_candidate_dispositions(
                 Some(_) => "stale",
                 None => "not_checked",
             });
-            let location_status = original_candidate
-                .filter(|candidate| !candidate.locations.is_empty())
-                .map(|candidate| match valid_candidate {
-                    Some(valid) if valid.locations == candidate.locations => "valid",
-                    Some(valid) if valid.locations.is_empty() => "stale",
-                    Some(_) => "bounded",
-                    None => "not_checked",
-                });
+            let location_status = original_candidate.and_then(|candidate| match valid_candidate {
+                Some(valid) if candidate.locations.is_empty() && !valid.locations.is_empty() => {
+                    Some("inferred")
+                }
+                Some(_) if candidate.locations.is_empty() => None,
+                Some(valid) if valid.locations == candidate.locations => Some("valid"),
+                Some(valid) if valid.locations.is_empty() => Some("stale"),
+                Some(_) => Some("bounded"),
+                None if candidate.locations.is_empty() => None,
+                None => Some("not_checked"),
+            });
             let (context_status, context_reason) = if !root.join(file).is_file() {
                 ("omitted", "missing_file")
             } else if !indexed_files.contains(file) {

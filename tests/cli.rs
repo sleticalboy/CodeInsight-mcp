@@ -4561,6 +4561,17 @@ fn cli_agent_route_routes_ranked_backend_candidates_within_budget() {
     assert_eq!(dispositions[0]["context_status"], "selected");
     assert_eq!(dispositions[0]["next_action"], "read_selected_context");
     assert_eq!(dispositions[0]["symbol_status"], "valid");
+    assert_eq!(dispositions[0]["location_status"], "inferred");
+    assert!(
+        route["context_pack"]["reading_plan"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|step| step["file"] == "src/ui.ts")
+            .unwrap()["requested_locations"]
+            .as_array()
+            .is_some_and(|locations| !locations.is_empty())
+    );
     assert_eq!(dispositions[1]["file"], "src/main.ts");
     assert_eq!(dispositions[1]["context_status"], "selected");
     assert_eq!(dispositions[1]["next_action"], "read_selected_context");
@@ -4901,7 +4912,8 @@ fn cli_agent_route_preserves_backend_rank_after_skipping_missing_candidate() {
                 "context_status": "selected",
                 "context_reason": "selected_within_token_budget",
                 "next_action": "read_selected_context",
-                "symbol_status": "valid"
+                "symbol_status": "valid",
+                "location_status": "inferred"
             }
         ])
     );
