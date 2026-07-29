@@ -4484,19 +4484,13 @@ fn cli_agent_route_falls_back_to_file_context_for_stale_backend_location() {
 #[test]
 fn cli_agent_route_infers_only_unique_best_backend_symbol_location() {
     let fixture = fixture_project();
-    write_file(
-        &fixture,
-        "src/workers.py",
-        r#"
-class PrimaryWorker:
-    def run(self):
-        return "primary"
-
-class SecondaryWorker:
-    def run(self):
-        return "secondary"
-"#,
-    );
+    let mut workers = String::new();
+    for index in 1..=10 {
+        workers.push_str(&format!(
+            "class Worker{index:02}:\n    def run(self):\n        return {index}\n\n"
+        ));
+    }
+    write_file(&fixture, "src/workers.py", &workers);
 
     let route_for = |symbol: &str| {
         let backend_evidence = serde_json::json!({
@@ -4523,7 +4517,7 @@ class SecondaryWorker:
         ])
     };
 
-    let qualified = route_for("PrimaryWorker.run");
+    let qualified = route_for("Worker01.run");
     assert_eq!(
         qualified["routing_decision"]["backend_route_agreement"]["candidate_dispositions"][0]["location_status"],
         "inferred"
@@ -4542,7 +4536,23 @@ class SecondaryWorker:
     );
     assert_eq!(
         ambiguous["routing_decision"]["backend_route_agreement"]["candidate_dispositions"][0]["location_next_action"],
-        "run_symbol_search_or_file_outline"
+        "choose_symbol_alternative_then_run_context_pack"
+    );
+    let alternatives = ambiguous["routing_decision"]["backend_route_agreement"]
+        ["candidate_dispositions"][0]["location_alternatives"]
+        .as_array()
+        .unwrap();
+    assert_eq!(alternatives.len(), 8);
+    assert_eq!(alternatives[0]["symbol"], "Worker01.run");
+    assert_eq!(alternatives[7]["symbol"], "Worker08.run");
+    assert!(alternatives.iter().all(|alternative| {
+        alternative["start_line"].as_u64().unwrap() > 0
+            && alternative["end_line"].as_u64().unwrap()
+                >= alternative["start_line"].as_u64().unwrap()
+    }));
+    assert_eq!(
+        ambiguous["routing_decision"]["backend_route_agreement"]["candidate_dispositions"][0]["omitted_location_alternatives"],
+        2
     );
     assert!(
         ambiguous["context_pack"]["reading_plan"][0]

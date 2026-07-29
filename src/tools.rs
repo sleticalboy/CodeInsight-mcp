@@ -19,18 +19,18 @@ use crate::{
     model::{
         AgentRouteBackendAgreement, AgentRouteBackendCandidate,
         AgentRouteBackendCandidateContinuation, AgentRouteBackendCandidateDisposition,
-        AgentRouteBackendEvidence, AgentRouteBackendNormalization, AgentRouteExecutionStep,
-        AgentRouteQuality, AgentRouteReport, AgentRouteRoutingDecision, AgentRouteStep, CallEdge,
-        ConfigInitReport, ConfigStatusReport, ContextBudget, ContextContinuationSummary,
-        ContextFile, ContextOmittedCandidate, ContextPack, ContextRange, ContextReadLess,
-        ContextReadingRange, ContextReadingStep, ContextSeed, ContextSeedLocation,
-        ContextSemanticStatus, ContextSourceCount, ContextSuggestedTool, Dependency,
-        DependencyGraph, EmbeddingProviderStatus, ImpactAnalysisReport, ImpactBreakdown,
-        ImpactCounts, ImpactFile, ImpactPath, IndexError, IndexScopeReport, Language,
-        OllamaEmbeddingStatus, OpenAiEmbeddingStatus, ProjectIndexReport, ProjectOverview,
-        ReferenceMatch, SemanticChunk, SemanticChunkInput, SemanticEmbeddingInput,
-        SemanticEmbeddingMatch, SemanticIndexReport, SemanticIndexStatus, SemanticSearchResult,
-        SuggestedCheck, Symbol, SymbolKind, VersionInfo,
+        AgentRouteBackendEvidence, AgentRouteBackendNormalization,
+        AgentRouteBackendSymbolAlternative, AgentRouteExecutionStep, AgentRouteQuality,
+        AgentRouteReport, AgentRouteRoutingDecision, AgentRouteStep, CallEdge, ConfigInitReport,
+        ConfigStatusReport, ContextBudget, ContextContinuationSummary, ContextFile,
+        ContextOmittedCandidate, ContextPack, ContextRange, ContextReadLess, ContextReadingRange,
+        ContextReadingStep, ContextSeed, ContextSeedLocation, ContextSemanticStatus,
+        ContextSourceCount, ContextSuggestedTool, Dependency, DependencyGraph,
+        EmbeddingProviderStatus, ImpactAnalysisReport, ImpactBreakdown, ImpactCounts, ImpactFile,
+        ImpactPath, IndexError, IndexScopeReport, Language, OllamaEmbeddingStatus,
+        OpenAiEmbeddingStatus, ProjectIndexReport, ProjectOverview, ReferenceMatch, SemanticChunk,
+        SemanticChunkInput, SemanticEmbeddingInput, SemanticEmbeddingMatch, SemanticIndexReport,
+        SemanticIndexStatus, SemanticSearchResult, SuggestedCheck, Symbol, SymbolKind, VersionInfo,
     },
     storage::Store,
 };
@@ -38,6 +38,7 @@ use crate::{
 const CONTEXT_SCORE_SEED_FILE: i32 = 130;
 const BACKEND_EVIDENCE_CANDIDATE_LIMIT: usize = 16;
 const BACKEND_EVIDENCE_CANDIDATE_LOCATION_LIMIT: usize = 16;
+const BACKEND_SYMBOL_ALTERNATIVE_LIMIT: usize = 8;
 const BACKEND_EVIDENCE_TOOL_ERROR_CHARS_LIMIT: usize = 256;
 const BACKEND_EVIDENCE_TOOL_RESULT_WRAPPER_LIMIT: usize = 4;
 const BACKEND_EVIDENCE_TOOL_RESULT_PAGES_LIMIT: usize = 16;
@@ -2971,6 +2972,7 @@ fn backend_seed_context_pack(
                 let candidate_dispositions = backend_candidate_dispositions(
                     root,
                     &indexed_files,
+                    &indexed_symbols,
                     backend_evidence,
                     &candidates,
                     &selected_candidates,
@@ -2996,6 +2998,7 @@ fn backend_seed_context_pack(
             candidate_dispositions: backend_candidate_dispositions(
                 root,
                 &indexed_files,
+                &indexed_symbols,
                 backend_evidence,
                 &candidates,
                 &[],
@@ -3008,6 +3011,7 @@ fn backend_seed_context_pack(
 fn backend_candidate_dispositions(
     root: &Path,
     indexed_files: &BTreeSet<String>,
+    indexed_symbols: &[Symbol],
     backend_evidence: &AgentRouteBackendEvidence,
     valid_candidates: &[AgentRouteBackendCandidate],
     selected_candidates: &[AgentRouteBackendCandidate],
@@ -3081,9 +3085,22 @@ fn backend_candidate_dispositions(
                 None => Some("not_checked"),
             });
             let location_next_action = match location_status {
-                Some("ambiguous") => Some("run_symbol_search_or_file_outline"),
+                Some("ambiguous") => Some("choose_symbol_alternative_then_run_context_pack"),
                 _ => None,
             };
+            let all_location_alternatives = match (location_status, symbol.as_deref()) {
+                (Some("ambiguous"), Some(symbol)) => {
+                    backend_symbol_alternatives(indexed_symbols, file, symbol)
+                }
+                _ => Vec::new(),
+            };
+            let omitted_location_alternatives = all_location_alternatives
+                .len()
+                .saturating_sub(BACKEND_SYMBOL_ALTERNATIVE_LIMIT);
+            let location_alternatives = all_location_alternatives
+                .into_iter()
+                .take(BACKEND_SYMBOL_ALTERNATIVE_LIMIT)
+                .collect();
             let (context_status, context_reason) = if !root.join(file).is_file() {
                 ("omitted", "missing_file")
             } else if !indexed_files.contains(file) {
@@ -3117,9 +3134,46 @@ fn backend_candidate_dispositions(
                 symbol_status: symbol_status.map(str::to_string),
                 location_status: location_status.map(str::to_string),
                 location_next_action: location_next_action.map(str::to_string),
+                location_alternatives,
+                omitted_location_alternatives,
             }
         })
         .collect()
+}
+
+fn backend_symbol_alternatives(
+    indexed_symbols: &[Symbol],
+    file: &str,
+    candidate_symbol: &str,
+) -> Vec<AgentRouteBackendSymbolAlternative> {
+    let matching_symbols = indexed_symbols
+        .iter()
+        .filter(|symbol| symbol.file == file)
+        .filter_map(|symbol| {
+            let score =
+                backend_symbol_match_score(candidate_symbol, &symbol.name, &symbol.qualified_name);
+            (score > 0).then_some((score, symbol))
+        })
+        .collect::<Vec<_>>();
+    let Some(best_score) = matching_symbols.iter().map(|(score, _)| *score).max() else {
+        return Vec::new();
+    };
+    let mut alternatives = matching_symbols
+        .into_iter()
+        .filter(|(score, _)| *score == best_score)
+        .map(|(_, symbol)| AgentRouteBackendSymbolAlternative {
+            symbol: symbol.qualified_name.clone(),
+            start_line: symbol.start_line,
+            end_line: symbol.end_line,
+        })
+        .collect::<Vec<_>>();
+    alternatives.sort_by(|left, right| left.symbol.cmp(&right.symbol));
+    alternatives.dedup_by(|left, right| {
+        left.symbol == right.symbol
+            && left.start_line == right.start_line
+            && left.end_line == right.end_line
+    });
+    alternatives
 }
 
 fn backend_symbol_name_matches(candidate: &str, name: &str, qualified_name: &str) -> bool {

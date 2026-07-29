@@ -83,7 +83,7 @@ main() {
     'routing_decision_impact_status: complete' \
     "routing decision impact status metric"
   require_pattern docs/demo-output.md \
-'routing_decision_quality: high \(100/100, 24 evidence signals\)' \
+'routing_decision_quality: high \(100/100, 22 evidence signals\)' \
     "routing decision route quality metric"
   require_pattern docs/demo-output.md \
     'routing_decision_recommended_action: read_selected_context_then_use_continuation_if_needed' \
