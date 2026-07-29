@@ -3072,7 +3072,9 @@ fn cli_agent_route_normalizes_json_rpc_text_backend_tool_result() {
         "results": [{
             "node": "startServer",
             "label": "Function",
-            "file": "src/server.ts"
+            "file": "src/server.ts",
+            "start_line": 1,
+            "end_line": 3
         }],
         "total_results": 1,
         "elapsed_ms": 19
@@ -3118,6 +3120,10 @@ fn cli_agent_route_normalizes_json_rpc_text_backend_tool_result() {
         serde_json::json!(["src/server.ts"])
     );
     assert_eq!(evidence["candidates"][0]["symbol"], "startServer");
+    assert_eq!(
+        evidence["candidates"][0]["locations"],
+        serde_json::json!([{"start_line": 1, "end_line": 3}])
+    );
     assert_eq!(evidence["candidates"][0]["source"], "search_code");
     assert_eq!(evidence["evidence_count"], 1);
     assert_eq!(evidence["latency_ms"], 19);
@@ -4251,6 +4257,7 @@ fn cli_agent_route_prefers_backend_candidate_for_bounded_context() {
         "candidates": [{
             "file": "src/ui.ts",
             "symbol": "render",
+            "locations": [{"start_line": 1, "end_line": 2}],
             "source": "search_graph",
             "score": 0.97,
             "reason": "graph-ranked implementation",
@@ -4309,6 +4316,14 @@ fn cli_agent_route_prefers_backend_candidate_for_bounded_context() {
     );
     assert_eq!(route["impact_seed_files"], serde_json::json!(["src/ui.ts"]));
     assert_eq!(route["impact_seed_symbols"], serde_json::json!(["render"]));
+    assert_eq!(
+        route["context_pack"]["reading_plan"][0]["requested_locations"],
+        serde_json::json!([{"start_line": 1, "end_line": 2}])
+    );
+    assert_eq!(
+        route["current_reading_step"]["suggested_tool"]["suggested_arguments"]["locations"],
+        serde_json::json!([{"start_line": 1, "end_line": 2}])
+    );
     assert_eq!(
         route["routing_decision"]["backend_evidence"]["prefer_for_context"],
         true

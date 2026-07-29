@@ -37,6 +37,7 @@ use crate::{
 
 const CONTEXT_SCORE_SEED_FILE: i32 = 130;
 const BACKEND_EVIDENCE_CANDIDATE_LIMIT: usize = 16;
+const BACKEND_EVIDENCE_CANDIDATE_LOCATION_LIMIT: usize = 16;
 const BACKEND_EVIDENCE_TOOL_ERROR_CHARS_LIMIT: usize = 256;
 const BACKEND_EVIDENCE_TOOL_RESULT_WRAPPER_LIMIT: usize = 4;
 const BACKEND_EVIDENCE_TOOL_RESULT_PAGES_LIMIT: usize = 16;
@@ -115,6 +116,31 @@ impl BackendContextSelection {
     fn dispositions(&self) -> Vec<AgentRouteBackendCandidateDisposition> {
         self.candidate_dispositions.clone()
     }
+}
+
+fn backend_candidate_context_seed_files(candidates: &[AgentRouteBackendCandidate]) -> Vec<String> {
+    candidates
+        .iter()
+        .flat_map(|candidate| {
+            if candidate.locations.is_empty() {
+                return vec![candidate.file.clone()];
+            }
+            candidate
+                .locations
+                .iter()
+                .map(|location| {
+                    if location.start_line == location.end_line {
+                        format!("{}#L{}", candidate.file, location.start_line)
+                    } else {
+                        format!(
+                            "{}#L{}-L{}",
+                            candidate.file, location.start_line, location.end_line
+                        )
+                    }
+                })
+                .collect::<Vec<_>>()
+        })
+        .collect()
 }
 
 const CONTEXT_SCORE_SEED_HEADER: i32 = 140;
@@ -1877,6 +1903,23 @@ fn normalize_agent_route_backend_evidence(
         }
         candidate.file = normalize_backend_candidate_file(root, raw_file)
             .with_context(|| format!("invalid backend evidence candidate file: {raw_file}"))?;
+        if candidate.locations.len() > BACKEND_EVIDENCE_CANDIDATE_LOCATION_LIMIT {
+            bail!(
+                "backend evidence candidate locations must contain at most {} items",
+                BACKEND_EVIDENCE_CANDIDATE_LOCATION_LIMIT
+            );
+        }
+        for location in &candidate.locations {
+            if location.start_line == 0 || location.end_line < location.start_line {
+                bail!("backend evidence candidate location must be a valid one-based line range");
+            }
+        }
+        candidate
+            .locations
+            .sort_by_key(|location| (location.start_line, location.end_line));
+        candidate
+            .locations
+            .dedup_by_key(|location| (location.start_line, location.end_line));
         candidate.symbol = bounded_optional_string(
             candidate.symbol,
             BACKEND_EVIDENCE_SYMBOL_CHARS_LIMIT,
@@ -2486,6 +2529,7 @@ fn collect_backend_tool_candidates(
                 candidates.push(AgentRouteBackendCandidate {
                     file,
                     symbol,
+                    locations: backend_tool_candidate_locations(item),
                     source: Some(spec.source.to_string()),
                     score,
                     reason: Some(reason),
@@ -2634,6 +2678,27 @@ fn first_backend_tool_string(value: &Value, keys: &[&str]) -> Option<String> {
     })
 }
 
+fn backend_tool_candidate_locations(value: &Value) -> Vec<ContextSeedLocation> {
+    let Some(start_line) = value
+        .get("start_line")
+        .and_then(Value::as_u64)
+        .and_then(|line| usize::try_from(line).ok())
+        .filter(|line| *line > 0)
+    else {
+        return Vec::new();
+    };
+    let end_line = value
+        .get("end_line")
+        .and_then(Value::as_u64)
+        .and_then(|line| usize::try_from(line).ok())
+        .filter(|line| *line >= start_line)
+        .unwrap_or(start_line);
+    vec![ContextSeedLocation {
+        start_line,
+        end_line,
+    }]
+}
+
 fn backend_seed_context_pack(
     root: &Path,
     task: &str,
@@ -2667,6 +2732,7 @@ fn backend_seed_context_pack(
                 .unwrap_or_else(|| AgentRouteBackendCandidate {
                     file: candidate_file.clone(),
                     symbol: None,
+                    locations: Vec::new(),
                     source: None,
                     score: None,
                     reason: None,
@@ -2706,10 +2772,7 @@ fn backend_seed_context_pack(
                 .filter_map(|candidate| candidate.symbol.clone())
                 .collect(),
         };
-        let ranked_files = ranked_candidates
-            .iter()
-            .map(|candidate| candidate.file.clone())
-            .collect::<Vec<_>>();
+        let ranked_files = backend_candidate_context_seed_files(ranked_candidates);
         let context_result = context_pack_value(
             root.to_path_buf(),
             task.to_string(),

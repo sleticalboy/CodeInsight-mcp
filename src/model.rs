@@ -420,6 +420,8 @@ pub struct AgentRouteBackendCandidate {
     pub file: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub symbol: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub locations: Vec<ContextSeedLocation>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub source: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -597,7 +599,7 @@ pub struct ContextOmittedCandidate {
     pub suggested_tool: ContextSuggestedTool,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ContextSeedLocation {
     pub start_line: usize,
     pub end_line: usize,

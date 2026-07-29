@@ -176,6 +176,10 @@ struct AgentFirstReadBackendCandidate {
     qualified_name: Option<String>,
     #[serde(default)]
     name: Option<String>,
+    #[serde(default)]
+    start_line: Option<usize>,
+    #[serde(default)]
+    end_line: Option<usize>,
 }
 
 impl AgentFirstReadBackendCandidate {
@@ -199,10 +203,28 @@ impl AgentFirstReadBackendCandidate {
                         .map(str::to_string)
                 })
             });
+        let locations = match self.start_line {
+            Some(start_line) if start_line > 0 => {
+                let end_line = self.end_line.unwrap_or(start_line);
+                if end_line < start_line {
+                    bail!("agent_first_read backend candidate end_line must be >= start_line");
+                }
+                vec![ContextSeedLocation {
+                    start_line,
+                    end_line,
+                }]
+            }
+            Some(_) => bail!("agent_first_read backend candidate start_line must be >= 1"),
+            None if self.end_line.is_some() => {
+                bail!("agent_first_read backend candidate end_line requires start_line")
+            }
+            None => Vec::new(),
+        };
 
         Ok(AgentRouteBackendCandidate {
             file,
             symbol,
+            locations,
             source: None,
             score: None,
             reason: None,
@@ -1504,6 +1526,19 @@ fn tool_definitions() -> Value {
                     "properties": {
                         "file": {"type": "string", "maxLength": 512},
                         "symbol": {"type": "string", "maxLength": 160},
+                        "locations": {
+                            "type": "array",
+                            "maxItems": 16,
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "start_line": {"type": "integer", "minimum": 1},
+                                    "end_line": {"type": "integer", "minimum": 1}
+                                },
+                                "required": ["start_line", "end_line"],
+                                "additionalProperties": false
+                            }
+                        },
                         "source": {"type": "string", "maxLength": 160},
                         "score": {"type": "number"},
                         "reason": {"type": "string", "maxLength": 320},
@@ -1566,7 +1601,9 @@ fn tool_definitions() -> Value {
                         "file_path": {"type": "string", "maxLength": 512},
                         "symbol": {"type": "string", "maxLength": 512},
                         "qualified_name": {"type": "string", "maxLength": 512},
-                        "name": {"type": "string", "maxLength": 512}
+                        "name": {"type": "string", "maxLength": 512},
+                        "start_line": {"type": "integer", "minimum": 1},
+                        "end_line": {"type": "integer", "minimum": 1}
                     },
                     "anyOf": [
                         {"required": ["file"]},
@@ -3058,6 +3095,8 @@ int login(void) {
                 "qualified_name": "fixture.src.auth.AuthService",
                 "label": "Class",
                 "file_path": "src/auth.py",
+                "start_line": 4,
+                "end_line": 7,
                 "in_degree": 4,
                 "out_degree": 2
             }]
@@ -3069,6 +3108,10 @@ int login(void) {
         assert_eq!(
             search_graph.candidates[0].symbol.as_deref(),
             Some("AuthService")
+        );
+        assert_eq!(
+            serde_json::to_value(&search_graph.candidates[0].locations).unwrap(),
+            json!([{"start_line": 4, "end_line": 7}])
         );
 
         let complete_search_graph =
