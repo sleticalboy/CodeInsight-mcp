@@ -9948,8 +9948,8 @@ fn cli_resolves_go_module_imports() {
     let fixture = go_module_import_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 5);
-    assert_eq!(index["changed_files"], 5);
+    assert_eq!(index["indexed_files"], 6);
+    assert_eq!(index["changed_files"], 6);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -9986,7 +9986,7 @@ fn cli_resolves_go_module_imports() {
             .iter()
             .any(|dependency| {
                 dependency["target"] == "github.com/example/codeinsight/internal/metrics"
-                    && dependency["resolved_file"] == "internal/metrics/metrics.go"
+                    && dependency["resolved_file"] == "internal/metrics/a_helpers.go"
             })
     );
     assert!(
@@ -18858,6 +18858,17 @@ func Load() string {
 package metrics
 
 // Package metrics records runtime counters.
+"#,
+    );
+    write_file(
+        &dir,
+        "internal/metrics/a_helpers.go",
+        r#"
+package metrics
+
+func Helper() string {
+  return "helper"
+}
 "#,
     );
     write_file(

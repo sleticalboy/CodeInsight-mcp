@@ -1772,6 +1772,7 @@ impl Store {
                     join files target_files on target_files.path = d.resolved_file
                     join symbols s on s.file_id = target_files.id
                     where c.callee_file is null
+                      and (d.language != 'go' or s.kind = 'function')
                       and (
                         s.name = c.callee
                         or s.qualified_name = c.callee
@@ -2692,6 +2693,77 @@ impl Store {
         self.conn
             .execute("drop table if exists temp.csharp_property_call_parts", [])?;
 
+        Ok(updated + self.resolve_go_package_calls()?)
+    }
+
+    fn resolve_go_package_calls(&self) -> Result<usize> {
+        let unresolved_calls = {
+            let mut stmt = self.conn.prepare(
+                "select distinct c.id, c.callee, d.local_alias, d.resolved_file
+                 from calls c
+                 join dependencies d on d.source_file_id = c.source_file_id
+                 where c.callee_file is null
+                   and c.language = 'go'
+                   and d.language = 'go'
+                   and d.local_alias is not null
+                   and d.resolved_file is not null
+                   and c.callee like d.local_alias || '.%'
+                 order by c.id, d.line",
+            )?;
+            let rows = stmt.query_map([], |row| {
+                Ok((
+                    row.get::<_, i64>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                ))
+            })?;
+            rows.collect::<rusqlite::Result<Vec<_>>>()?
+        };
+
+        let mut targets = Vec::new();
+        let mut symbol_stmt = self.conn.prepare(
+            "select f.path
+             from symbols s
+             join files f on f.id = s.file_id
+             where f.language = 'go'
+               and s.kind = 'function'
+               and s.name = ?1
+             order by f.path, s.start_line",
+        )?;
+        for (call_id, callee, local_alias, resolved_file) in unresolved_calls {
+            let Some(member) = callee.strip_prefix(&format!("{local_alias}.")) else {
+                continue;
+            };
+            if member.is_empty() || member.contains('.') {
+                continue;
+            }
+            let Some(package_dir) = Path::new(&resolved_file).parent() else {
+                continue;
+            };
+            let rows = symbol_stmt.query_map(params![member], |row| row.get::<_, String>(0))?;
+            let mut package_matches = rows
+                .collect::<rusqlite::Result<Vec<_>>>()?
+                .into_iter()
+                .filter(|file| Path::new(file).parent() == Some(package_dir))
+                .collect::<Vec<_>>();
+            package_matches.sort();
+            package_matches.dedup();
+            if package_matches.len() == 1 {
+                targets.push((call_id, package_matches.remove(0)));
+            }
+        }
+        drop(symbol_stmt);
+
+        let mut updated = 0;
+        let mut update = self.conn.prepare(
+            "update calls
+             set callee_file = ?1, confidence = max(confidence, 0.72)
+             where id = ?2 and callee_file is null",
+        )?;
+        for (call_id, callee_file) in targets {
+            updated += update.execute(params![callee_file, call_id])?;
+        }
         Ok(updated)
     }
 
