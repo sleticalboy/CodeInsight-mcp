@@ -1506,8 +1506,14 @@ fn tool_text_content(name: &str, result: &Value) -> Result<String> {
                 )
                 .and_then(Value::as_str)
                 .unwrap_or("-");
+            let omitted_alternatives_tool = result
+                .pointer(
+                    "/routing_decision/backend_route_agreement/candidate_dispositions/0/location_suggested_tool/tool",
+                )
+                .and_then(Value::as_str)
+                .unwrap_or("-");
             format!(
-                "; backend_location_status={status}; backend_location_alternatives={alternatives}; backend_location_alternatives_omitted={omitted}; first_context_pack_file={first_context_pack_file}"
+                "; backend_location_status={status}; backend_location_alternatives={alternatives}; backend_location_alternatives_omitted={omitted}; first_context_pack_file={first_context_pack_file}; omitted_alternatives_tool={omitted_alternatives_tool}"
             )
         })
         .unwrap_or_default();

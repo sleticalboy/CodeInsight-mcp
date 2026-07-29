@@ -4528,6 +4528,11 @@ fn cli_agent_route_infers_only_unique_best_backend_symbol_location() {
             .unwrap()
             .is_empty()
     );
+    assert!(
+        qualified["routing_decision"]["backend_route_agreement"]["candidate_dispositions"][0]
+            .get("location_suggested_tool")
+            .is_none()
+    );
 
     let ambiguous = route_for("run");
     assert_eq!(
@@ -4556,6 +4561,16 @@ fn cli_agent_route_infers_only_unique_best_backend_symbol_location() {
     assert_eq!(
         ambiguous["routing_decision"]["backend_route_agreement"]["candidate_dispositions"][0]["omitted_location_alternatives"],
         2
+    );
+    let location_suggested_tool = &ambiguous["routing_decision"]["backend_route_agreement"]["candidate_dispositions"]
+        [0]["location_suggested_tool"];
+    assert_eq!(location_suggested_tool["tool"], "file_outline");
+    assert_eq!(location_suggested_tool["priority"], 5);
+    assert!(
+        location_suggested_tool["suggested_arguments"]["path"]
+            .as_str()
+            .unwrap()
+            .ends_with("src/workers.py")
     );
     assert_eq!(
         ambiguous["routing_decision"]["route_quality"]["level"],
@@ -4619,6 +4634,10 @@ fn cli_agent_route_infers_only_unique_best_backend_symbol_location() {
     );
     assert_eq!(compact_disposition["omitted_location_alternatives"], 6);
     assert_eq!(compact_disposition["location_status"], "ambiguous");
+    assert_eq!(
+        compact_disposition["location_suggested_tool"]["tool"],
+        "file_outline"
+    );
     let compact_tokens = serde_json::to_string(&compact).unwrap().len().div_ceil(4);
     assert!(compact_tokens <= 2500);
     assert_eq!(
@@ -15702,6 +15721,10 @@ fn mcp_stdio_agent_first_read_preserves_ambiguous_backend_symbol_handoff() {
     );
     assert_eq!(disposition["omitted_location_alternatives"], 6);
     assert_eq!(
+        disposition["location_suggested_tool"]["tool"],
+        "file_outline"
+    );
+    assert_eq!(
         disposition["location_alternatives"][0]["context_pack_file"],
         "src/workers.py#L2-L3"
     );
@@ -15730,6 +15753,7 @@ fn mcp_stdio_agent_first_read_preserves_ambiguous_backend_symbol_handoff() {
     assert!(text.contains("backend_location_alternatives=4"));
     assert!(text.contains("backend_location_alternatives_omitted=6"));
     assert!(text.contains("first_context_pack_file=src/workers.py#L2-L3"));
+    assert!(text.contains("omitted_alternatives_tool=file_outline"));
 
     let context_pack_file = disposition["location_alternatives"][0]["context_pack_file"]
         .as_str()

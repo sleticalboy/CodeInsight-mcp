@@ -425,6 +425,8 @@ pub struct AgentRouteBackendCandidateDisposition {
     pub location_status: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub location_next_action: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub location_suggested_tool: Option<ContextSuggestedTool>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub location_alternatives: Vec<AgentRouteBackendSymbolAlternative>,
     #[serde(skip_serializing_if = "usize_is_zero")]

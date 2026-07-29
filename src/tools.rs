@@ -3254,6 +3254,17 @@ fn backend_candidate_dispositions(
             let omitted_location_alternatives = all_location_alternatives
                 .len()
                 .saturating_sub(BACKEND_SYMBOL_ALTERNATIVE_LIMIT);
+            let location_suggested_tool = (omitted_location_alternatives > 0).then(|| {
+                ContextSuggestedTool {
+                    tool: "file_outline".to_string(),
+                    priority: 5,
+                    reason: "List the candidate file's full symbol outline when the bounded alternatives do not contain the intended symbol."
+                        .to_string(),
+                    suggested_arguments: json!({
+                        "path": root.join(file).display().to_string()
+                    }),
+                }
+            });
             let location_alternatives = all_location_alternatives
                 .into_iter()
                 .take(BACKEND_SYMBOL_ALTERNATIVE_LIMIT)
@@ -3291,6 +3302,7 @@ fn backend_candidate_dispositions(
                 symbol_status: symbol_status.map(str::to_string),
                 location_status: location_status.map(str::to_string),
                 location_next_action: location_next_action.map(str::to_string),
+                location_suggested_tool,
                 location_alternatives,
                 omitted_location_alternatives,
             }
