@@ -39,6 +39,7 @@ const CONTEXT_SCORE_SEED_FILE: i32 = 130;
 const BACKEND_EVIDENCE_CANDIDATE_LIMIT: usize = 16;
 const BACKEND_EVIDENCE_CANDIDATE_LOCATION_LIMIT: usize = 16;
 const BACKEND_SYMBOL_ALTERNATIVE_LIMIT: usize = 8;
+const COMPACT_BACKEND_SYMBOL_ALTERNATIVE_LIMIT: usize = 4;
 const BACKEND_EVIDENCE_TOOL_ERROR_CHARS_LIMIT: usize = 256;
 const BACKEND_EVIDENCE_TOOL_RESULT_WRAPPER_LIMIT: usize = 4;
 const BACKEND_EVIDENCE_TOOL_RESULT_PAGES_LIMIT: usize = 16;
@@ -373,6 +374,38 @@ pub fn agent_route_response_value(
         .and_then(Value::as_object_mut)
     {
         routing_decision.remove("backend_evidence");
+        if let Some(dispositions) = routing_decision
+            .get_mut("backend_route_agreement")
+            .and_then(Value::as_object_mut)
+            .and_then(|agreement| agreement.get_mut("candidate_dispositions"))
+            .and_then(Value::as_array_mut)
+        {
+            for disposition in dispositions {
+                let Some(disposition) = disposition.as_object_mut() else {
+                    continue;
+                };
+                let Some(alternatives) = disposition
+                    .get_mut("location_alternatives")
+                    .and_then(Value::as_array_mut)
+                else {
+                    continue;
+                };
+                let compact_omitted = alternatives
+                    .len()
+                    .saturating_sub(COMPACT_BACKEND_SYMBOL_ALTERNATIVE_LIMIT);
+                alternatives.truncate(COMPACT_BACKEND_SYMBOL_ALTERNATIVE_LIMIT);
+                if compact_omitted > 0 {
+                    let omitted = disposition
+                        .get("omitted_location_alternatives")
+                        .and_then(Value::as_u64)
+                        .unwrap_or_default() as usize;
+                    disposition.insert(
+                        "omitted_location_alternatives".to_string(),
+                        json!(omitted + compact_omitted),
+                    );
+                }
+            }
+        }
     }
 
     if let Some(context_pack) = route.get_mut("context_pack").and_then(Value::as_object_mut) {

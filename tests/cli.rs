@@ -4578,6 +4578,48 @@ fn cli_agent_route_infers_only_unique_best_backend_symbol_location() {
             .get("requested_locations")
             .is_none()
     );
+
+    let compact_evidence = serde_json::json!({
+        "provider": "codebase-memory-mcp",
+        "candidates": [{
+            "file": "src/workers.py",
+            "symbol": "run",
+            "source": "search_graph",
+            "score": 0.97
+        }]
+    })
+    .to_string();
+    let compact = run_json([
+        "agent-route",
+        fixture.path().to_str().unwrap(),
+        "--task",
+        "understand worker run behavior",
+        "--token-budget",
+        "1600",
+        "--force-index",
+        "--backend-evidence-json",
+        &compact_evidence,
+        "--prefer-backend-context",
+        "--compact",
+        "--response-token-budget",
+        "4000",
+        "--skip-impact",
+    ]);
+    let compact_disposition =
+        &compact["routing_decision"]["backend_route_agreement"]["candidate_dispositions"][0];
+    assert_eq!(
+        compact_disposition["location_alternatives"]
+            .as_array()
+            .unwrap()
+            .len(),
+        4
+    );
+    assert_eq!(compact_disposition["omitted_location_alternatives"], 6);
+    assert_eq!(compact_disposition["location_status"], "ambiguous");
+    assert_eq!(
+        compact["routing_decision"]["route_quality"]["recommended_action"],
+        "choose_symbol_alternative_then_run_context_pack"
+    );
 }
 
 #[test]
