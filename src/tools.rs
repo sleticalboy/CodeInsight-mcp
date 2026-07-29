@@ -132,18 +132,19 @@ fn backend_candidate_context_seed_files(candidates: &[AgentRouteBackendCandidate
                 .locations
                 .iter()
                 .map(|location| {
-                    if location.start_line == location.end_line {
-                        format!("{}#L{}", candidate.file, location.start_line)
-                    } else {
-                        format!(
-                            "{}#L{}-L{}",
-                            candidate.file, location.start_line, location.end_line
-                        )
-                    }
+                    context_pack_file_seed(&candidate.file, location.start_line, location.end_line)
                 })
                 .collect::<Vec<_>>()
         })
         .collect()
+}
+
+fn context_pack_file_seed(file: &str, start_line: usize, end_line: usize) -> String {
+    if start_line == end_line {
+        format!("{file}#L{start_line}")
+    } else {
+        format!("{file}#L{start_line}-L{end_line}")
+    }
 }
 
 fn bound_backend_candidate_locations(root: &Path, candidate: &mut AgentRouteBackendCandidate) {
@@ -3321,6 +3322,7 @@ fn backend_symbol_alternatives(
             symbol: symbol.qualified_name.clone(),
             start_line: symbol.start_line,
             end_line: symbol.end_line,
+            context_pack_file: context_pack_file_seed(file, symbol.start_line, symbol.end_line),
         })
         .collect::<Vec<_>>();
     alternatives.sort_by(|left, right| left.symbol.cmp(&right.symbol));

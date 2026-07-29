@@ -1500,8 +1500,14 @@ fn tool_text_content(name: &str, result: &Value) -> Result<String> {
                 )
                 .and_then(Value::as_u64)
                 .unwrap_or(0);
+            let first_context_pack_file = result
+                .pointer(
+                    "/routing_decision/backend_route_agreement/candidate_dispositions/0/location_alternatives/0/context_pack_file",
+                )
+                .and_then(Value::as_str)
+                .unwrap_or("-");
             format!(
-                "; backend_location_status={status}; backend_location_alternatives={alternatives}; backend_location_alternatives_omitted={omitted}"
+                "; backend_location_status={status}; backend_location_alternatives={alternatives}; backend_location_alternatives_omitted={omitted}; first_context_pack_file={first_context_pack_file}"
             )
         })
         .unwrap_or_default();

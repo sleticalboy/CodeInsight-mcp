@@ -403,6 +403,7 @@ pub struct AgentRouteBackendSymbolAlternative {
     pub symbol: String,
     pub start_line: usize,
     pub end_line: usize,
+    pub context_pack_file: String,
 }
 
 #[derive(Debug, Clone, Serialize)]

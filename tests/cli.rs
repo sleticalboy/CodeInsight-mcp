@@ -4546,9 +4546,12 @@ fn cli_agent_route_infers_only_unique_best_backend_symbol_location() {
     assert_eq!(alternatives[0]["symbol"], "Worker01.run");
     assert_eq!(alternatives[7]["symbol"], "Worker08.run");
     assert!(alternatives.iter().all(|alternative| {
-        alternative["start_line"].as_u64().unwrap() > 0
-            && alternative["end_line"].as_u64().unwrap()
-                >= alternative["start_line"].as_u64().unwrap()
+        let start_line = alternative["start_line"].as_u64().unwrap();
+        let end_line = alternative["end_line"].as_u64().unwrap();
+        start_line > 0
+            && end_line >= start_line
+            && alternative["context_pack_file"]
+                == format!("src/workers.py#L{start_line}-L{end_line}")
     }));
     assert_eq!(
         ambiguous["routing_decision"]["backend_route_agreement"]["candidate_dispositions"][0]["omitted_location_alternatives"],
@@ -15699,6 +15702,10 @@ fn mcp_stdio_agent_first_read_preserves_ambiguous_backend_symbol_handoff() {
     );
     assert_eq!(disposition["omitted_location_alternatives"], 6);
     assert_eq!(
+        disposition["location_alternatives"][0]["context_pack_file"],
+        "src/workers.py#L2-L3"
+    );
+    assert_eq!(
         route["routing_decision"]["route_quality"]["level"],
         "medium"
     );
@@ -15722,6 +15729,58 @@ fn mcp_stdio_agent_first_read_preserves_ambiguous_backend_symbol_handoff() {
     assert!(text.contains("backend_location_status=ambiguous"));
     assert!(text.contains("backend_location_alternatives=4"));
     assert!(text.contains("backend_location_alternatives_omitted=6"));
+    assert!(text.contains("first_context_pack_file=src/workers.py#L2-L3"));
+
+    let context_pack_file = disposition["location_alternatives"][0]["context_pack_file"]
+        .as_str()
+        .unwrap();
+    let follow_up_request = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 7,
+        "method": "tools/call",
+        "params": {
+            "name": "context_pack",
+            "arguments": {
+                "root": fixture.path(),
+                "task": "inspect the selected worker run implementation",
+                "files": [context_pack_file],
+                "token_budget": 600
+            }
+        }
+    });
+    let mut follow_up_command = Command::cargo_bin("codeinsight").unwrap();
+    follow_up_command.args(["serve", "--transport", "stdio"]);
+    follow_up_command.write_stdin(format!("{follow_up_request}\n"));
+    let follow_up_output = follow_up_command
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let follow_up_response: Value = serde_json::from_slice(&follow_up_output).unwrap();
+    let context_pack = &follow_up_response["result"]["structuredContent"];
+
+    assert_eq!(follow_up_response["id"], 7);
+    assert!(follow_up_response["error"].is_null());
+    assert_eq!(context_pack["seed_strategy"], "explicit");
+    assert_eq!(context_pack["selected_seeds"][0]["value"], "src/workers.py");
+    assert_eq!(
+        context_pack["selected_seeds"][0]["locations"],
+        serde_json::json!([{"start_line": 2, "end_line": 3}])
+    );
+    assert_eq!(
+        context_pack["reading_plan"][0]["requested_locations"],
+        context_pack["selected_seeds"][0]["locations"]
+    );
+    assert!(
+        context_pack["files"][0]["ranges"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|range| range["source"] == "task_location"
+                && range["start_line"].as_u64().unwrap() <= 2
+                && range["end_line"].as_u64().unwrap() >= 3)
+    );
 }
 
 #[test]
