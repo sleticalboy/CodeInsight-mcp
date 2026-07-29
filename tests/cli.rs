@@ -3088,7 +3088,8 @@ fn cli_agent_route_normalizes_json_rpc_text_backend_tool_result() {
             "label": "Function",
             "file": "src/server.ts",
             "start_line": 1,
-            "end_line": 3
+            "end_line": 3,
+            "line": 99
         }],
         "total_results": 1,
         "elapsed_ms": 19
@@ -3322,6 +3323,10 @@ fn cli_agent_route_normalizes_search_code_raw_matches() {
         serde_json::json!(["src/server.ts", "src/main.ts"])
     );
     assert_eq!(evidence["candidates"][1]["reason"], "search_code raw match");
+    assert_eq!(
+        evidence["candidates"][1]["locations"],
+        serde_json::json!([{"start_line": 1, "end_line": 1}])
+    );
     assert_eq!(evidence["evidence_count"], 2);
     assert_eq!(evidence["normalization"]["unfetched_tool_result_items"], 2);
     assert_eq!(evidence["latency_ms"], 13);

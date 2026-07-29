@@ -2755,6 +2755,7 @@ fn first_backend_tool_string(value: &Value, keys: &[&str]) -> Option<String> {
 fn backend_tool_candidate_locations(value: &Value) -> Vec<ContextSeedLocation> {
     let Some(start_line) = value
         .get("start_line")
+        .or_else(|| value.get("line"))
         .and_then(Value::as_u64)
         .and_then(|line| usize::try_from(line).ok())
         .filter(|line| *line > 0)
