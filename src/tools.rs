@@ -3050,6 +3050,14 @@ fn backend_candidate_dispositions(
                 Some(_) => "stale",
                 None => "not_checked",
             });
+            let location_status = original_candidate
+                .filter(|candidate| !candidate.locations.is_empty())
+                .map(|candidate| match valid_candidate {
+                    Some(valid) if valid.locations == candidate.locations => "valid",
+                    Some(valid) if valid.locations.is_empty() => "stale",
+                    Some(_) => "bounded",
+                    None => "not_checked",
+                });
             let (context_status, context_reason) = if !root.join(file).is_file() {
                 ("omitted", "missing_file")
             } else if !indexed_files.contains(file) {
@@ -3081,6 +3089,7 @@ fn backend_candidate_dispositions(
                 context_reason: context_reason.to_string(),
                 next_action: next_action.to_string(),
                 symbol_status: symbol_status.map(str::to_string),
+                location_status: location_status.map(str::to_string),
             }
         })
         .collect()

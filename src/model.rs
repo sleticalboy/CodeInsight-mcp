@@ -413,6 +413,8 @@ pub struct AgentRouteBackendCandidateDisposition {
     pub next_action: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub symbol_status: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub location_status: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -600,7 +602,7 @@ pub struct ContextOmittedCandidate {
     pub suggested_tool: ContextSuggestedTool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ContextSeedLocation {
     pub start_line: usize,
     pub end_line: usize,

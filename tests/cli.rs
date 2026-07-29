@@ -4334,7 +4334,7 @@ fn cli_agent_route_prefers_backend_candidate_for_bounded_context() {
         "candidates": [{
             "file": "src/ui.ts",
             "symbol": "render",
-            "locations": [{"start_line": 1, "end_line": 2}],
+            "locations": [{"start_line": 1, "end_line": 999}],
             "source": "search_graph",
             "score": 0.97,
             "reason": "graph-ranked implementation",
@@ -4393,13 +4393,20 @@ fn cli_agent_route_prefers_backend_candidate_for_bounded_context() {
     );
     assert_eq!(route["impact_seed_files"], serde_json::json!(["src/ui.ts"]));
     assert_eq!(route["impact_seed_symbols"], serde_json::json!(["render"]));
-    assert_eq!(
-        route["context_pack"]["reading_plan"][0]["requested_locations"],
-        serde_json::json!([{"start_line": 1, "end_line": 2}])
-    );
+    let requested_locations = &route["context_pack"]["reading_plan"][0]["requested_locations"];
+    assert_eq!(requested_locations[0]["start_line"], 1);
+    assert!(requested_locations[0]["end_line"].as_u64().unwrap() < 999);
     assert_eq!(
         route["current_reading_step"]["suggested_tool"]["suggested_arguments"]["locations"],
-        serde_json::json!([{"start_line": 1, "end_line": 2}])
+        *requested_locations
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_evidence"]["candidates"][0]["locations"],
+        serde_json::json!([{"start_line": 1, "end_line": 999}])
+    );
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["candidate_dispositions"][0]["location_status"],
+        "bounded"
     );
     assert_eq!(
         route["routing_decision"]["backend_evidence"]["prefer_for_context"],
@@ -4468,6 +4475,10 @@ fn cli_agent_route_falls_back_to_file_context_for_stale_backend_location() {
         .find(|step| step["file"] == "src/server.ts")
         .unwrap();
     assert!(server_step.get("requested_locations").is_none());
+    assert_eq!(
+        route["routing_decision"]["backend_route_agreement"]["candidate_dispositions"][0]["location_status"],
+        "stale"
+    );
 }
 
 #[test]
