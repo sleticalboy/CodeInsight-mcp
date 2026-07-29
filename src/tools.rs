@@ -2867,20 +2867,22 @@ fn backend_seed_context_pack(
                     evidence: Vec::new(),
                 });
             if let Some(candidate_symbol) = candidate.symbol.as_ref() {
-                let mut matching_symbols = indexed_symbols.iter().filter(|symbol| {
-                    symbol.file == *candidate_file
-                        && backend_symbol_name_matches(
+                let matching_symbols = indexed_symbols
+                    .iter()
+                    .filter(|symbol| symbol.file == *candidate_file)
+                    .filter_map(|symbol| {
+                        let score = backend_symbol_match_score(
                             candidate_symbol,
                             &symbol.name,
                             &symbol.qualified_name,
-                        )
-                });
-                let matching_symbol = matching_symbols.next();
-                if matching_symbol.is_none() {
+                        );
+                        (score > 0).then_some((score, symbol))
+                    })
+                    .collect::<Vec<_>>();
+                if matching_symbols.is_empty() {
                     candidate.symbol = None;
                 } else if candidate.locations.is_empty()
-                    && matching_symbols.next().is_none()
-                    && let Some(symbol) = matching_symbol
+                    && let Some(symbol) = unique_best_backend_symbol_match(&matching_symbols)
                 {
                     candidate.locations.push(ContextSeedLocation {
                         start_line: symbol.start_line,
@@ -3109,10 +3111,33 @@ fn backend_candidate_dispositions(
 }
 
 fn backend_symbol_name_matches(candidate: &str, name: &str, qualified_name: &str) -> bool {
-    candidate == name
-        || candidate == qualified_name
-        || candidate.ends_with(&format!(".{qualified_name}"))
-        || qualified_name.ends_with(&format!(".{candidate}"))
+    backend_symbol_match_score(candidate, name, qualified_name) > 0
+}
+
+fn backend_symbol_match_score(candidate: &str, name: &str, qualified_name: &str) -> usize {
+    if candidate == qualified_name {
+        4
+    } else if candidate.ends_with(&format!(".{qualified_name}")) {
+        3
+    } else if qualified_name.ends_with(&format!(".{candidate}")) {
+        2
+    } else if candidate == name {
+        1
+    } else {
+        0
+    }
+}
+
+fn unique_best_backend_symbol_match<'a>(
+    matching_symbols: &[(usize, &'a Symbol)],
+) -> Option<&'a Symbol> {
+    let best_score = matching_symbols.iter().map(|(score, _)| *score).max()?;
+    let mut best = matching_symbols
+        .iter()
+        .filter(|(score, _)| *score == best_score)
+        .map(|(_, symbol)| *symbol);
+    let symbol = best.next()?;
+    best.next().is_none().then_some(symbol)
 }
 
 fn backend_trace_symbol_match_score(backend_symbol: &str, local_symbol: &Symbol) -> usize {

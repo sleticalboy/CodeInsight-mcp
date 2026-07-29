@@ -4482,6 +4482,73 @@ fn cli_agent_route_falls_back_to_file_context_for_stale_backend_location() {
 }
 
 #[test]
+fn cli_agent_route_infers_only_unique_best_backend_symbol_location() {
+    let fixture = fixture_project();
+    write_file(
+        &fixture,
+        "src/workers.py",
+        r#"
+class PrimaryWorker:
+    def run(self):
+        return "primary"
+
+class SecondaryWorker:
+    def run(self):
+        return "secondary"
+"#,
+    );
+
+    let route_for = |symbol: &str| {
+        let backend_evidence = serde_json::json!({
+            "provider": "codebase-memory-mcp",
+            "candidates": [{
+                "file": "src/workers.py",
+                "symbol": symbol,
+                "source": "search_graph",
+                "score": 0.97
+            }]
+        })
+        .to_string();
+        run_json([
+            "agent-route",
+            fixture.path().to_str().unwrap(),
+            "--task",
+            "understand worker run behavior",
+            "--token-budget",
+            "1600",
+            "--force-index",
+            "--backend-evidence-json",
+            &backend_evidence,
+            "--prefer-backend-context",
+        ])
+    };
+
+    let qualified = route_for("PrimaryWorker.run");
+    assert_eq!(
+        qualified["routing_decision"]["backend_route_agreement"]["candidate_dispositions"][0]["location_status"],
+        "inferred"
+    );
+    assert!(
+        !qualified["context_pack"]["reading_plan"][0]["requested_locations"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+
+    let ambiguous = route_for("run");
+    assert!(
+        ambiguous["routing_decision"]["backend_route_agreement"]["candidate_dispositions"][0]
+            .get("location_status")
+            .is_none()
+    );
+    assert!(
+        ambiguous["context_pack"]["reading_plan"][0]
+            .get("requested_locations")
+            .is_none()
+    );
+}
+
+#[test]
 fn cli_agent_route_routes_ranked_backend_candidates_within_budget() {
     let fixture = fixture_project();
     let mut candidates = vec![
