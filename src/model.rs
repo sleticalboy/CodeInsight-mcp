@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{collections::BTreeMap, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -293,6 +293,8 @@ pub struct AgentRouteExecutionStep {
     pub instruction: String,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub files: Vec<String>,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    pub requested_locations_by_file: BTreeMap<String, Vec<ContextSeedLocation>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub suggested_tool: Option<ContextSuggestedTool>,
     #[serde(skip_serializing_if = "Vec::is_empty")]

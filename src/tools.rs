@@ -1567,6 +1567,12 @@ fn agent_route_execution_plan(
         .iter()
         .map(|step| step.file.clone())
         .collect::<Vec<_>>();
+    let requested_locations_by_file = context_pack
+        .reading_plan
+        .iter()
+        .filter(|step| !step.requested_locations.is_empty())
+        .map(|step| (step.file.clone(), step.requested_locations.clone()))
+        .collect::<BTreeMap<_, _>>();
     let first_step = context_pack.reading_plan.first();
 
     let mut plan = vec![AgentRouteExecutionStep {
@@ -1603,6 +1609,7 @@ fn agent_route_execution_plan(
             }
         },
         files: reading_files,
+        requested_locations_by_file,
         suggested_tool: None,
         suggested_checks: Vec::new(),
     }];
@@ -1643,6 +1650,7 @@ fn agent_route_execution_plan(
             },
             instruction,
             files,
+            requested_locations_by_file: BTreeMap::new(),
             suggested_tool: None,
             suggested_checks: Vec::new(),
         });
@@ -1658,6 +1666,7 @@ fn agent_route_execution_plan(
                 step.file, step.suggested_tool.tool, step.next_action, step.focus, step.question
             ),
             files: vec![step.file.clone()],
+            requested_locations_by_file: BTreeMap::new(),
             suggested_tool: Some(step.suggested_tool.clone()),
             suggested_checks: Vec::new(),
         });
@@ -1668,6 +1677,7 @@ fn agent_route_execution_plan(
             status: "blocked_no_current_reading_step".to_string(),
             instruction: "No current_reading_step is available; provide a seed file or symbol, or add source files before requesting a suggested follow-up tool.".to_string(),
             files: Vec::new(),
+            requested_locations_by_file: BTreeMap::new(),
             suggested_tool: None,
             suggested_checks: Vec::new(),
         });
@@ -1700,6 +1710,7 @@ fn agent_route_execution_plan(
                     .cloned()
                     .collect::<Vec<_>>()
             }),
+        requested_locations_by_file: BTreeMap::new(),
         suggested_tool: continuation_suggested_tool,
         suggested_checks: Vec::new(),
     });
@@ -1725,6 +1736,7 @@ fn agent_route_execution_plan(
                     Vec::new()
                 }
             }),
+        requested_locations_by_file: BTreeMap::new(),
         suggested_tool: impact_analysis
             .map(agent_route_impact_suggested_tool)
             .or(deferred_impact_tool),

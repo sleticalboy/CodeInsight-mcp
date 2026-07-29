@@ -2377,7 +2377,9 @@ fn cli_agent_route_can_defer_impact_for_fast_first_read() {
         "--task",
         "inspect application entrypoint",
         "--file",
-        "src/main.ts",
+        "src/main.ts:2",
+        "--file",
+        "src/main.ts#L4-L5",
         "--token-budget",
         "1600",
         "--impact-limit",
@@ -2396,6 +2398,15 @@ fn cli_agent_route_can_defer_impact_for_fast_first_read() {
     assert_eq!(
         route["routing_decision"]["impact_status"],
         "deferred_by_request"
+    );
+    assert_eq!(
+        route["execution_plan"][0]["requested_locations_by_file"],
+        json!({
+            "src/main.ts": [
+                {"start_line": 2, "end_line": 2},
+                {"start_line": 4, "end_line": 5}
+            ]
+        })
     );
     assert!(
         route["routing_decision"]["route_quality"]["warnings"]
@@ -2466,6 +2477,11 @@ fn cli_agent_route_compact_keeps_the_execution_contract_and_selected_excerpts() 
     assert!(
         route["current_reading_step"]
             .get("requested_locations")
+            .is_none()
+    );
+    assert!(
+        route["execution_plan"][0]
+            .get("requested_locations_by_file")
             .is_none()
     );
 

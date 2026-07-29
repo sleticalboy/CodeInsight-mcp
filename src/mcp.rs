@@ -2531,7 +2531,7 @@ def helper():
             "arguments": {
                 "root": dir.path(),
                 "task": "inspect auth class",
-                "files": ["auth.py:4"],
+                "files": ["auth.py:4", "auth.py#L7-L8"],
                 "token_budget": 1200
             }
         }))
@@ -2544,11 +2544,26 @@ def helper():
         );
         assert_eq!(
             located_route_result["structuredContent"]["context_pack"]["selected_seeds"][0]["locations"],
-            json!([{"start_line": 4, "end_line": 4}])
+            json!([
+                {"start_line": 4, "end_line": 4},
+                {"start_line": 7, "end_line": 8}
+            ])
         );
         assert_eq!(
             located_route_result["structuredContent"]["current_reading_step"]["requested_locations"],
-            json!([{"start_line": 4, "end_line": 4}])
+            json!([
+                {"start_line": 4, "end_line": 4},
+                {"start_line": 7, "end_line": 8}
+            ])
+        );
+        assert_eq!(
+            located_route_result["structuredContent"]["execution_plan"][0]["requested_locations_by_file"],
+            json!({
+                "auth.py": [
+                    {"start_line": 4, "end_line": 4},
+                    {"start_line": 7, "end_line": 8}
+                ]
+            })
         );
         assert_eq!(
             located_route_result["structuredContent"]["impact_seed_files"][0].as_str(),
