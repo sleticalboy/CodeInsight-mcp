@@ -1480,13 +1480,38 @@ fn tool_text_content(name: &str, result: &Value) -> Result<String> {
         .pointer("/routing_decision/backend_selected_candidate/symbol")
         .and_then(Value::as_str)
         .unwrap_or("-");
+    let backend_location_handoff = result
+        .pointer(
+            "/routing_decision/backend_route_agreement/candidate_dispositions/0/location_status",
+        )
+        .and_then(Value::as_str)
+        .filter(|status| *status == "ambiguous")
+        .map(|status| {
+            let alternatives = result
+                .pointer(
+                    "/routing_decision/backend_route_agreement/candidate_dispositions/0/location_alternatives",
+                )
+                .and_then(Value::as_array)
+                .map(Vec::len)
+                .unwrap_or(0);
+            let omitted = result
+                .pointer(
+                    "/routing_decision/backend_route_agreement/candidate_dispositions/0/omitted_location_alternatives",
+                )
+                .and_then(Value::as_u64)
+                .unwrap_or(0);
+            format!(
+                "; backend_location_status={status}; backend_location_alternatives={alternatives}; backend_location_alternatives_omitted={omitted}"
+            )
+        })
+        .unwrap_or_default();
     let impact_status = result
         .get("impact_status")
         .and_then(Value::as_str)
         .unwrap_or("unknown");
 
     Ok(format!(
-        "Compact agent route: first_file={first_file}; selected_files={selected_files}; selected_ranges={selected_ranges}; backend_status={backend_status}; backend_provider={backend_provider}; backend_symbol={backend_symbol}; next_action={next_action}; impact_status={impact_status}. Read structuredContent for selected excerpts and execution_plan."
+        "Compact agent route: first_file={first_file}; selected_files={selected_files}; selected_ranges={selected_ranges}; backend_status={backend_status}; backend_provider={backend_provider}; backend_symbol={backend_symbol}{backend_location_handoff}; next_action={next_action}; impact_status={impact_status}. Read structuredContent for selected excerpts and execution_plan."
     ))
 }
 

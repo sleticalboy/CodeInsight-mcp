@@ -15628,6 +15628,103 @@ fn mcp_stdio_executes_agent_first_read_with_bounded_compact_response() {
 }
 
 #[test]
+fn mcp_stdio_agent_first_read_preserves_ambiguous_backend_symbol_handoff() {
+    let fixture = fixture_project();
+    let mut workers = String::new();
+    for index in 1..=10 {
+        workers.push_str(&format!(
+            "class Worker{index:02}:\n    def run(self):\n        return {index}\n\n"
+        ));
+    }
+    write_file(&fixture, "src/workers.py", &workers);
+
+    let request = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 6,
+        "method": "tools/call",
+        "params": {
+            "name": "agent_first_read",
+            "arguments": {
+                "root": fixture.path(),
+                "task": "understand worker run behavior",
+                "token_budget": 1600,
+                "response_token_budget": 2500,
+                "backend_candidates": {
+                    "result": {
+                        "structuredContent": {
+                            "total": 1,
+                            "results": [{
+                                "name": "run",
+                                "qualified_name": "run",
+                                "label": "Method",
+                                "file_path": "src/workers.py",
+                                "in_degree": 1,
+                                "out_degree": 0
+                            }],
+                            "semantic_results": [],
+                            "elapsed_ms": 5
+                        }
+                    }
+                },
+                "force_index": true
+            }
+        }
+    });
+
+    let mut command = Command::cargo_bin("codeinsight").unwrap();
+    command.args(["serve", "--transport", "stdio"]);
+    command.write_stdin(format!("{request}\n"));
+    let output = command.assert().success().get_output().stdout.clone();
+    let response: Value = serde_json::from_slice(&output).unwrap();
+    let route = &response["result"]["structuredContent"];
+    let text = response["result"]["content"][0]["text"].as_str().unwrap();
+    let disposition =
+        &route["routing_decision"]["backend_route_agreement"]["candidate_dispositions"][0];
+
+    assert_eq!(response["id"], 6);
+    assert!(response["error"].is_null());
+    assert_eq!(route["response_mode"], "compact");
+    assert_eq!(route["response_budget"]["requested_tokens"], 2500);
+    assert_eq!(disposition["location_status"], "ambiguous");
+    assert_eq!(
+        disposition["location_next_action"],
+        "choose_symbol_alternative_then_run_context_pack"
+    );
+    assert_eq!(
+        disposition["location_alternatives"]
+            .as_array()
+            .unwrap()
+            .len(),
+        4
+    );
+    assert_eq!(disposition["omitted_location_alternatives"], 6);
+    assert_eq!(
+        route["routing_decision"]["route_quality"]["level"],
+        "medium"
+    );
+    assert_eq!(
+        route["routing_decision"]["route_quality"]["recommended_action"],
+        "choose_symbol_alternative_then_run_context_pack"
+    );
+    assert!(
+        route["routing_decision"]["route_quality"]["warnings"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|warning| warning
+                .as_str()
+                .unwrap()
+                .contains("file-level context is not exact symbol evidence"))
+    );
+    let route_tokens = serde_json::to_string(route).unwrap().len().div_ceil(4);
+    assert!(route_tokens <= 2500);
+    assert_eq!(route["response_budget"]["estimated_tokens"], route_tokens);
+    assert!(text.contains("backend_location_status=ambiguous"));
+    assert!(text.contains("backend_location_alternatives=4"));
+    assert!(text.contains("backend_location_alternatives_omitted=6"));
+}
+
+#[test]
 fn mcp_stdio_executes_agent_route() {
     let fixture = fixture_project();
     let request = serde_json::json!({
