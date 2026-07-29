@@ -2433,6 +2433,7 @@ fn collect_backend_tool_candidates(
     let mut last_page_has_more = false;
     let mut latency_ms = 0u64;
     let mut seen_candidate_files = BTreeSet::new();
+    let mut candidate_indexes_by_file = BTreeMap::new();
     let candidate_dedupe_limit = BACKEND_EVIDENCE_TOOL_RESULT_ITEMS_LIMIT
         .saturating_mul(BACKEND_EVIDENCE_TOOL_RESULT_PAGES_LIMIT);
     let page_count = pages.len();
@@ -2505,7 +2506,14 @@ fn collect_backend_tool_candidates(
                         (file, symbol, label)
                     }
                 };
+                let locations = backend_tool_candidate_locations(item);
                 if seen_candidate_files.contains(&file) {
+                    if let Some(candidate_index) = candidate_indexes_by_file.get(&file).copied() {
+                        merge_backend_candidate_locations(
+                            &mut candidates[candidate_index],
+                            locations,
+                        );
+                    }
                     continue;
                 }
                 if seen_candidate_files.len() < candidate_dedupe_limit {
@@ -2526,15 +2534,17 @@ fn collect_backend_tool_candidates(
                     .or_else(|| item.get("similarity"))
                     .or_else(|| item.get("confidence"))
                     .and_then(Value::as_f64);
+                let candidate_index = candidates.len();
                 candidates.push(AgentRouteBackendCandidate {
-                    file,
+                    file: file.clone(),
                     symbol,
-                    locations: backend_tool_candidate_locations(item),
+                    locations,
                     source: Some(spec.source.to_string()),
                     score,
                     reason: Some(reason),
                     evidence: vec![spec.source.to_string()],
                 });
+                candidate_indexes_by_file.insert(file, candidate_index);
             }
         }
         if !found_items {
@@ -2582,6 +2592,22 @@ fn collect_backend_tool_candidates(
         omitted_items: item_count.saturating_sub(BACKEND_EVIDENCE_TOOL_RESULT_ITEMS_LIMIT),
         latency_ms,
     })
+}
+
+fn merge_backend_candidate_locations(
+    candidate: &mut AgentRouteBackendCandidate,
+    locations: Vec<ContextSeedLocation>,
+) {
+    for location in locations {
+        if candidate.locations.len() >= BACKEND_EVIDENCE_CANDIDATE_LOCATION_LIMIT {
+            break;
+        }
+        if !candidate.locations.iter().any(|existing| {
+            existing.start_line == location.start_line && existing.end_line == location.end_line
+        }) {
+            candidate.locations.push(location);
+        }
+    }
 }
 
 fn backend_tool_result_payload(raw: Value, source: &str) -> Result<Value> {

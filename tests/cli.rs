@@ -3387,7 +3387,9 @@ fn cli_agent_route_deduplicates_tool_results_before_budget_accounting() {
             serde_json::json!({
                 "name": format!("serverSymbol{index}"),
                 "label": "Function",
-                "file_path": "src/server.ts"
+                "file_path": "src/server.ts",
+                "start_line": index % 2 + 1,
+                "end_line": index % 2 + 1
             })
         })
         .collect::<Vec<_>>();
@@ -3426,6 +3428,13 @@ fn cli_agent_route_deduplicates_tool_results_before_budget_accounting() {
         serde_json::json!(["src/server.ts", "src/main.ts"])
     );
     assert_eq!(evidence["candidates"][0]["symbol"], "serverSymbol0");
+    assert_eq!(
+        evidence["candidates"][0]["locations"],
+        serde_json::json!([
+            {"start_line": 1, "end_line": 1},
+            {"start_line": 2, "end_line": 2}
+        ])
+    );
     assert_eq!(evidence["candidates"][1]["symbol"], "main");
     assert_eq!(evidence["evidence_count"], 2);
     assert!(evidence.get("normalization").is_none());
