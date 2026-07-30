@@ -12215,6 +12215,9 @@ fn cli_resolves_rust_crate_and_super_use_imports() {
     assert!(root_callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "public_record" && call["callee_file"] == "src/support/audit.rs"
     }));
+    assert!(root_callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "glob_record" && call["callee_file"] == "src/support/audit.rs"
+    }));
     assert!(
         root_callees
             .as_array()
@@ -20352,7 +20355,7 @@ mod support;
 use crate::support::{audit, facade_record as save_record, nested::{tool as nested_tool, *}};
 use crate::support::*;
 use crate::support as facade;
-use crate::prelude::public_record;
+use crate::prelude::{facade_record as glob_record, public_record};
 use serde::Serialize;
 
 pub fn run() {
@@ -20366,6 +20369,7 @@ pub fn run() {
     self::support::audit::record("self-qualified");
     let _ = facade::nested::tool();
     public_record("two-hop");
+    glob_record("two-hop-glob");
     record();
 }
 "#,
@@ -20375,6 +20379,7 @@ pub fn run() {
         "src/prelude.rs",
         r#"
 pub use crate::support::facade_record as public_record;
+pub use crate::support::*;
 "#,
     );
     write_file(

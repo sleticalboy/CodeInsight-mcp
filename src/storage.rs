@@ -1895,24 +1895,48 @@ impl Store {
                       and rd2.language = 'rust'
                       and rd.kind = 'rust_reexport'
                       and rd2.kind = 'rust_reexport'
-                      and rd.local_alias is not null
-                      and rd2.local_alias = case
-                        when rd.imported_symbol = '*' then rd.local_alias
-                        else rd.imported_symbol
-                      end
                       and (
-                        rd.local_alias = c.callee
-                        or (
-                          d.local_alias = c.callee
-                          and d.imported_symbol is not null
-                          and d.imported_symbol != '*'
-                          and rd.local_alias = d.imported_symbol
+                        (
+                          rd.local_alias is not null
+                          and rd2.local_alias = case
+                            when rd.imported_symbol = '*' then rd.local_alias
+                            else rd.imported_symbol
+                          end
+                          and (
+                            rd.local_alias = c.callee
+                            or (
+                              d.local_alias = c.callee
+                              and d.imported_symbol is not null
+                              and d.imported_symbol != '*'
+                              and rd.local_alias = d.imported_symbol
+                            )
+                            or (
+                              d.local_alias is not null
+                              and c.callee like d.local_alias || '.%'
+                              and rd.local_alias =
+                                substr(c.callee, length(d.local_alias) + 2)
+                            )
+                          )
                         )
                         or (
-                          d.local_alias is not null
-                          and c.callee like d.local_alias || '.%'
-                          and rd.local_alias =
-                            substr(c.callee, length(d.local_alias) + 2)
+                          rd.local_alias is null
+                          and rd.imported_symbol = '*'
+                          and rd2.local_alias is not null
+                          and (
+                            rd2.local_alias = c.callee
+                            or (
+                              d.local_alias = c.callee
+                              and d.imported_symbol is not null
+                              and d.imported_symbol != '*'
+                              and rd2.local_alias = d.imported_symbol
+                            )
+                            or (
+                              d.local_alias is not null
+                              and c.callee like d.local_alias || '.%'
+                              and rd2.local_alias =
+                                substr(c.callee, length(d.local_alias) + 2)
+                            )
+                          )
                         )
                       )
                       and (
