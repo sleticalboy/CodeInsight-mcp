@@ -12254,6 +12254,49 @@ fn cli_resolves_rust_crate_and_super_use_imports() {
         call["callee"] == "super.support.helper"
             && call["callee_file"] == "src/controllers/support.rs"
     }));
+
+    write_file(
+        &fixture,
+        "src/prelude.rs",
+        r#"
+pub fn marker() {}
+"#,
+    );
+    let incremental_index = run_json(["index", fixture.path().to_str().unwrap()]);
+    assert_eq!(incremental_index["changed_files"], 1);
+    assert_eq!(incremental_index["unchanged_files"], 12);
+    assert_eq!(incremental_index["errors"].as_array().unwrap().len(), 0);
+
+    let refreshed_root_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "run",
+        "--limit",
+        "20",
+    ]);
+    assert!(
+        refreshed_root_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| { call["callee"] == "public_record" && call["callee_file"].is_null() })
+    );
+    assert!(
+        refreshed_root_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| { call["callee"] == "glob_record" && call["callee_file"].is_null() })
+    );
+    assert!(
+        refreshed_root_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| {
+                call["callee"] == "save_record" && call["callee_file"] == "src/support/audit.rs"
+            })
+    );
 }
 
 #[test]
