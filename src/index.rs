@@ -4079,7 +4079,7 @@ fn resolve_rust_use_target(root: &Path, dependency: &Dependency) -> Option<Strin
     existing_relative(root, candidates)
 }
 
-fn rust_crate_source_root(source_file: &str) -> PathBuf {
+pub(crate) fn rust_crate_source_root(source_file: &str) -> PathBuf {
     let normalized = source_file.replace('\\', "/");
     if normalized.starts_with("src/") || normalized == "src" {
         return PathBuf::from("src");
@@ -4090,7 +4090,7 @@ fn rust_crate_source_root(source_file: &str) -> PathBuf {
     PathBuf::new()
 }
 
-fn rust_super_module_dir(source_file: &str) -> PathBuf {
+pub(crate) fn rust_super_module_dir(source_file: &str) -> PathBuf {
     let source_path = Path::new(source_file);
     let source_dir = source_path.parent().unwrap_or(Path::new(""));
     if source_path.file_name().and_then(|name| name.to_str()) == Some("mod.rs") {
@@ -4099,10 +4099,13 @@ fn rust_super_module_dir(source_file: &str) -> PathBuf {
     source_dir.to_path_buf()
 }
 
-fn rust_current_module_dir(source_file: &str) -> PathBuf {
+pub(crate) fn rust_current_module_dir(source_file: &str) -> PathBuf {
     let source_path = Path::new(source_file);
     let source_dir = source_path.parent().unwrap_or(Path::new(""));
-    if source_path.file_name().and_then(|name| name.to_str()) == Some("mod.rs") {
+    if matches!(
+        source_path.file_name().and_then(|name| name.to_str()),
+        Some("lib.rs" | "main.rs" | "mod.rs")
+    ) {
         return source_dir.to_path_buf();
     }
     let Some(stem) = source_path.file_stem() else {
@@ -4111,7 +4114,7 @@ fn rust_current_module_dir(source_file: &str) -> PathBuf {
     source_dir.join(stem)
 }
 
-fn rust_use_path_candidates(base: PathBuf, target: &str) -> Vec<PathBuf> {
+pub(crate) fn rust_use_path_candidates(base: PathBuf, target: &str) -> Vec<PathBuf> {
     let segments = target
         .split("::")
         .map(|segment| segment.trim())
@@ -8960,6 +8963,11 @@ fn helper() {}
         assert_eq!(
             rust_super_module_dir("src/controllers/auth.rs"),
             PathBuf::from("src/controllers")
+        );
+        assert_eq!(rust_current_module_dir("src/lib.rs"), PathBuf::from("src"));
+        assert_eq!(
+            rust_current_module_dir("src/support.rs"),
+            PathBuf::from("src/support")
         );
     }
 

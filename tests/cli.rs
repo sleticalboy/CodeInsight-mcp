@@ -12201,6 +12201,14 @@ fn cli_resolves_rust_crate_and_super_use_imports() {
     assert!(root_callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "facade.facade_record" && call["callee_file"] == "src/support/audit.rs"
     }));
+    assert!(root_callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "crate.support.audit.record"
+            && call["callee_file"] == "src/support/audit.rs"
+    }));
+    assert!(root_callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "self.support.audit.record"
+            && call["callee_file"] == "src/support/audit.rs"
+    }));
     assert!(
         root_callees
             .as_array()
@@ -12219,6 +12227,9 @@ fn cli_resolves_rust_crate_and_super_use_imports() {
     assert!(support_callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "tool" && call["callee_file"] == "src/support/nested.rs"
     }));
+    assert!(support_callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "self.nested.tool" && call["callee_file"] == "src/support/nested.rs"
+    }));
 
     let auth_callees = run_json([
         "callees",
@@ -12229,6 +12240,10 @@ fn cli_resolves_rust_crate_and_super_use_imports() {
     ]);
     assert!(auth_callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "helper" && call["callee_file"] == "src/controllers/support.rs"
+    }));
+    assert!(auth_callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "super.support.helper"
+            && call["callee_file"] == "src/controllers/support.rs"
     }));
 }
 
@@ -20339,6 +20354,8 @@ pub fn run() {
     save_record("alias");
     facade_only();
     facade::facade_record("scoped");
+    crate::support::audit::record("qualified");
+    self::support::audit::record("self-qualified");
     record();
 }
 "#,
@@ -20398,6 +20415,7 @@ pub use self::facade::*;
 use self::nested::tool;
 
 pub fn run_nested() -> String {
+    let _ = self::nested::tool();
     tool()
 }
 "#,
@@ -20446,6 +20464,7 @@ pub mod support;
 use super::support::helper;
 
 pub fn login(id: &str) -> String {
+    let _ = super::support::helper(id);
     helper(id)
 }
 "#,
