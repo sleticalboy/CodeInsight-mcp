@@ -10017,7 +10017,12 @@ int c_main(void) {
 #[test]
 fn cli_resolves_transitive_c_like_include_calls() {
     let fixture = TempDir::new().unwrap();
-    write_file(&fixture, "include/cpp_api.h", "#include \"cpp_detail.h\"\n");
+    write_file(&fixture, "include/cpp_api.h", "#include \"cpp_layer.h\"\n");
+    write_file(
+        &fixture,
+        "include/cpp_layer.h",
+        "#include \"cpp_detail.h\"\n#include \"cpp_api.h\"\n",
+    );
     write_file(
         &fixture,
         "include/cpp_detail.h",
@@ -10049,7 +10054,7 @@ int c_main(void) {
     );
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 6);
+    assert_eq!(index["indexed_files"], 7);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let cpp_callees = run_json([
@@ -10072,6 +10077,42 @@ int c_main(void) {
     ]);
     assert!(c_callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "c_nested_value" && call["callee_file"] == "include/detail.h"
+    }));
+
+    write_file(&fixture, "include/cpp_layer.h", "#include \"cpp_api.h\"\n");
+    let remove_detail = run_json(["index", fixture.path().to_str().unwrap()]);
+    assert_eq!(remove_detail["changed_files"], 1);
+    let unresolved = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "main",
+        "--limit",
+        "10",
+    ]);
+    assert!(
+        unresolved
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| { call["callee"] == "nested_value" && call["callee_file"].is_null() })
+    );
+
+    write_file(
+        &fixture,
+        "include/cpp_layer.h",
+        "#include \"cpp_detail.h\"\n#include \"cpp_api.h\"\n",
+    );
+    let restore_detail = run_json(["index", fixture.path().to_str().unwrap()]);
+    assert_eq!(restore_detail["changed_files"], 1);
+    let restored = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "main",
+        "--limit",
+        "10",
+    ]);
+    assert!(restored.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "nested_value" && call["callee_file"] == "include/cpp_detail.h"
     }));
 }
 

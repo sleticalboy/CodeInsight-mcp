@@ -3016,34 +3016,45 @@ impl Store {
             .execute("drop table if exists temp.csharp_property_call_parts", [])?;
 
         Ok(updated
-            + self.resolve_c_like_transitive_include_calls()?
+            + self.resolve_c_like_include_closure_calls()?
             + self.resolve_go_package_calls()?
             + self.resolve_rust_qualified_calls()?
             + self.resolve_rust_imported_module_calls()?)
     }
 
-    fn resolve_c_like_transitive_include_calls(&self) -> Result<usize> {
+    fn resolve_c_like_include_closure_calls(&self) -> Result<usize> {
         let candidates = {
             let mut stmt = self.conn.prepare(
-                "select distinct c.id, target_files.path
-                 from calls c
-                 join dependencies direct
-                   on direct.source_file_id = c.source_file_id
-                 join files direct_files
-                   on direct_files.path = direct.resolved_file
-                 join dependencies nested
-                   on nested.source_file_id = direct_files.id
-                 join files target_files
-                   on target_files.path = nested.resolved_file
-                 join symbols s on s.file_id = target_files.id
+                "with recursive include_closure(call_id, file_id, path) as (
+                    select c.id, direct_files.id, direct_files.path
+                    from calls c
+                    join dependencies direct
+                      on direct.source_file_id = c.source_file_id
+                    join files direct_files
+                      on direct_files.path = direct.resolved_file
+                    where c.callee_file is null
+                      and c.language in ('c', 'cpp')
+                      and direct.language = c.language
+                      and direct.kind = 'include'
+
+                    union
+
+                    select closure.call_id, nested_files.id, nested_files.path
+                    from include_closure closure
+                    join dependencies nested
+                      on nested.source_file_id = closure.file_id
+                    join files nested_files
+                      on nested_files.path = nested.resolved_file
+                    where nested.language in ('c', 'cpp')
+                      and nested.kind = 'include'
+                 )
+                 select distinct closure.call_id, closure.path
+                 from include_closure closure
+                 join calls c on c.id = closure.call_id
+                 join symbols s on s.file_id = closure.file_id
                  where c.callee_file is null
-                   and c.language in ('c', 'cpp')
-                   and direct.language = c.language
-                   and direct.kind = 'include'
-                   and nested.language in ('c', 'cpp')
-                   and nested.kind = 'include'
                    and s.name = c.callee
-                 order by c.id, target_files.path",
+                 order by closure.call_id, closure.path",
             )?;
             let rows = stmt.query_map([], |row| {
                 Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?))
