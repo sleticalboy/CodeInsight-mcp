@@ -2209,6 +2209,11 @@ fn rust_use_dependencies(
 ) -> Vec<Dependency> {
     let text = node.utf8_text(source).unwrap_or_default();
     let line = node.start_position().row + 1;
+    let kind = if rust_use_target(text).is_some_and(|(_, public)| public) {
+        "rust_reexport"
+    } else {
+        "use"
+    };
     rust_use_entries(text)
         .into_iter()
         .map(|(target, explicit_alias)| {
@@ -2219,7 +2224,7 @@ fn rust_use_dependencies(
                 target,
                 local_alias,
                 imported_symbol,
-                kind: "use".to_string(),
+                kind: kind.to_string(),
                 language,
                 line,
             }
@@ -4052,7 +4057,7 @@ fn resolve_rust_target(root: &Path, dependency: &Dependency) -> Option<String> {
         return existing_relative(root, vec![direct, nested]);
     }
 
-    if dependency.kind == "use" {
+    if matches!(dependency.kind.as_str(), "use" | "rust_reexport") {
         return resolve_rust_use_target(root, dependency);
     }
 
@@ -6037,13 +6042,31 @@ fn rust_use_targets(text: &str) -> Vec<String> {
 }
 
 fn rust_use_entries(text: &str) -> Vec<(String, Option<String>)> {
-    let Some(target) = text.trim().strip_prefix("use ") else {
+    let Some((target, _)) = rust_use_target(text) else {
         return Vec::new();
     };
     let target = compact_whitespace(target.trim_end_matches(';').trim());
     let mut entries = Vec::new();
     expand_rust_use_tree(&target, "", &mut entries);
     entries
+}
+
+fn rust_use_target(text: &str) -> Option<(&str, bool)> {
+    let text = text.trim();
+    if let Some(target) = text.strip_prefix("use ") {
+        return Some((target, false));
+    }
+    let visibility = text.strip_prefix("pub")?;
+    let after_visibility = if let Some(rest) = visibility.strip_prefix('(') {
+        let close = rest.find(')')?;
+        &rest[close + 1..]
+    } else {
+        visibility
+    };
+    after_visibility
+        .trim_start()
+        .strip_prefix("use ")
+        .map(|target| (target, true))
 }
 
 fn expand_rust_use_tree(
@@ -8972,6 +8995,21 @@ fn helper() {}
         assert_eq!(
             rust_use_alias("crate::support::nested::*", None),
             (None, Some("*".to_string()))
+        );
+        assert_eq!(
+            rust_use_entries("pub use crate::support::audit::record as facade_record;"),
+            vec![(
+                "crate::support::audit::record".to_string(),
+                Some("facade_record".to_string())
+            )]
+        );
+        assert_eq!(
+            rust_use_entries("pub(crate) use self::nested::*;"),
+            vec![("self::nested::*".to_string(), None)]
+        );
+        assert_eq!(
+            rust_use_target("pub(in crate::support) use self::nested::tool;"),
+            Some(("self::nested::tool;", true))
         );
     }
 

@@ -12045,15 +12045,15 @@ fn cli_resolves_rust_crate_and_super_use_imports() {
     let fixture = rust_use_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 11);
-    assert_eq!(index["changed_files"], 11);
+    assert_eq!(index["indexed_files"], 12);
+    assert_eq!(index["changed_files"], 12);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
         "dependency-graph",
         fixture.path().to_str().unwrap(),
         "--limit",
-        "30",
+        "100",
     ]);
     assert!(
         deps["dependencies"]
@@ -12063,6 +12063,32 @@ fn cli_resolves_rust_crate_and_super_use_imports() {
             .any(|dependency| {
                 dependency["target"] == "crate::support::audit"
                     && dependency["resolved_file"] == "src/support/audit.rs"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "self::audit::record"
+                    && dependency["resolved_file"] == "src/support/audit.rs"
+                    && dependency["local_alias"] == "facade_record"
+                    && dependency["imported_symbol"] == "record"
+                    && dependency["kind"] == "rust_reexport"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "self::facade::*"
+                    && dependency["resolved_file"] == "src/support/facade.rs"
+                    && dependency["local_alias"].is_null()
+                    && dependency["imported_symbol"] == "*"
+                    && dependency["kind"] == "rust_reexport"
             })
     );
     assert!(
@@ -12165,6 +12191,15 @@ fn cli_resolves_rust_crate_and_super_use_imports() {
     }));
     assert!(root_callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "other" && call["callee_file"] == "src/support/nested.rs"
+    }));
+    assert!(root_callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "save_record" && call["callee_file"] == "src/support/audit.rs"
+    }));
+    assert!(root_callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "facade_only" && call["callee_file"] == "src/support/facade.rs"
+    }));
+    assert!(root_callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "facade.facade_record" && call["callee_file"] == "src/support/audit.rs"
     }));
     assert!(
         root_callees
@@ -12455,7 +12490,7 @@ fn cli_context_pack_routes_rust_trait_impl_relations() {
     let fixture = rust_use_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 11);
+    assert_eq!(index["indexed_files"], 12);
 
     let context = run_json([
         "context-pack",
@@ -12500,7 +12535,7 @@ fn cli_overview_reports_type_relation_signals() {
     let fixture = rust_use_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 11);
+    assert_eq!(index["indexed_files"], 12);
 
     let overview = run_json(["overview", fixture.path().to_str().unwrap()]);
     assert!(
@@ -20292,13 +20327,18 @@ mod repository;
 mod store;
 mod support;
 
-use crate::support::{audit, nested::{tool as nested_tool, *}};
+use crate::support::{audit, facade_record as save_record, nested::{tool as nested_tool, *}};
+use crate::support::*;
+use crate::support as facade;
 use serde::Serialize;
 
 pub fn run() {
     audit::record("root");
     let _ = nested_tool();
     let _ = other();
+    save_record("alias");
+    facade_only();
+    facade::facade_record("scoped");
     record();
 }
 "#,
@@ -20350,13 +20390,23 @@ pub fn nested() -> &'static str {
         "src/support/mod.rs",
         r#"
 pub mod audit;
+mod facade;
 pub mod nested;
 
+pub use self::audit::record as facade_record;
+pub use self::facade::*;
 use self::nested::tool;
 
 pub fn run_nested() -> String {
     tool()
 }
+"#,
+    );
+    write_file(
+        &dir,
+        "src/support/facade.rs",
+        r#"
+pub fn facade_only() {}
 "#,
     );
     write_file(
