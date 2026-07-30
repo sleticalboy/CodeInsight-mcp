@@ -12209,6 +12209,9 @@ fn cli_resolves_rust_crate_and_super_use_imports() {
         call["callee"] == "self.support.audit.record"
             && call["callee_file"] == "src/support/audit.rs"
     }));
+    assert!(root_callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "facade.nested.tool" && call["callee_file"] == "src/support/nested.rs"
+    }));
     assert!(
         root_callees
             .as_array()
@@ -20356,6 +20359,7 @@ pub fn run() {
     facade::facade_record("scoped");
     crate::support::audit::record("qualified");
     self::support::audit::record("self-qualified");
+    let _ = facade::nested::tool();
     record();
 }
 "#,

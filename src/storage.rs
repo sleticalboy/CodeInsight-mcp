@@ -2810,7 +2810,10 @@ impl Store {
         self.conn
             .execute("drop table if exists temp.csharp_property_call_parts", [])?;
 
-        Ok(updated + self.resolve_go_package_calls()? + self.resolve_rust_qualified_calls()?)
+        Ok(updated
+            + self.resolve_go_package_calls()?
+            + self.resolve_rust_qualified_calls()?
+            + self.resolve_rust_imported_module_calls()?)
     }
 
     fn resolve_go_package_calls(&self) -> Result<usize> {
@@ -2962,6 +2965,91 @@ impl Store {
         let mut update = self.conn.prepare(
             "update calls
              set callee_file = ?1, confidence = max(confidence, 0.76)
+             where id = ?2 and callee_file is null",
+        )?;
+        for (call_id, callee_file) in targets {
+            updated += update.execute(params![callee_file, call_id])?;
+        }
+        Ok(updated)
+    }
+
+    fn resolve_rust_imported_module_calls(&self) -> Result<usize> {
+        let unresolved_calls = {
+            let mut stmt = self.conn.prepare(
+                "select distinct c.id, c.callee, d.local_alias, d.resolved_file
+                 from calls c
+                 join dependencies d on d.source_file_id = c.source_file_id
+                 where c.callee_file is null
+                   and c.language = 'rust'
+                   and d.language = 'rust'
+                   and d.kind = 'use'
+                   and d.local_alias is not null
+                   and d.resolved_file is not null
+                   and c.callee like d.local_alias || '.%'
+                 order by c.id, d.line",
+            )?;
+            let rows = stmt.query_map([], |row| {
+                Ok((
+                    row.get::<_, i64>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                ))
+            })?;
+            rows.collect::<rusqlite::Result<Vec<_>>>()?
+        };
+
+        let mut symbol_exists = self.conn.prepare(
+            "select 1
+             from symbols s
+             join files f on f.id = s.file_id
+             where f.path = ?1 and s.name = ?2
+             limit 1",
+        )?;
+        let mut targets = Vec::new();
+        for (call_id, callee, local_alias, resolved_file) in unresolved_calls {
+            let Some(target) = callee.strip_prefix(&format!("{local_alias}.")) else {
+                continue;
+            };
+            if !target.contains('.') {
+                continue;
+            }
+            let Some(member) = target
+                .rsplit('.')
+                .next()
+                .filter(|member| !member.is_empty())
+            else {
+                continue;
+            };
+            let resolved_path = Path::new(&resolved_file);
+            let base = if resolved_path.file_name().and_then(|name| name.to_str()) == Some("mod.rs")
+            {
+                resolved_path
+                    .parent()
+                    .unwrap_or(Path::new(""))
+                    .to_path_buf()
+            } else {
+                resolved_path.with_extension("")
+            };
+            let rust_target = target.replace('.', "::");
+            for candidate in rust_use_path_candidates(base, &rust_target) {
+                let candidate = candidate.to_string_lossy();
+                if symbol_exists
+                    .query_row(params![candidate.as_ref(), member], |_| Ok(()))
+                    .optional()?
+                    .is_some()
+                {
+                    targets.push((call_id, candidate.into_owned()));
+                    break;
+                }
+            }
+        }
+        drop(symbol_exists);
+
+        let mut updated = 0;
+        let mut update = self.conn.prepare(
+            "update calls
+             set callee_file = ?1, confidence = max(confidence, 0.74)
              where id = ?2 and callee_file is null",
         )?;
         for (call_id, callee_file) in targets {
