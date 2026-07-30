@@ -4133,18 +4133,22 @@ pub(crate) fn rust_use_path_candidates(base: PathBuf, target: &str) -> Vec<PathB
     candidates
 }
 
-fn resolve_c_like_target(root: &Path, dependency: &Dependency) -> Option<String> {
-    const EXTENSIONS: &[&str] = &["h", "hpp", "hh", "hxx", "c", "cc", "cpp", "cxx"];
+const C_LIKE_EXTENSIONS: &[&str] = &["h", "hpp", "hh", "hxx", "c", "cc", "cpp", "cxx"];
 
-    if dependency.target.starts_with('<') {
-        return None;
+fn resolve_c_like_target(root: &Path, dependency: &Dependency) -> Option<String> {
+    if let Some(target) = dependency
+        .target
+        .strip_prefix('<')
+        .and_then(|target| target.strip_suffix('>'))
+    {
+        return resolve_unique_c_like_include_root(root, target, &["include", "includes", "inc"]);
     }
 
     if let Some(resolved) = resolve_relative_target(
         root,
         &dependency.source_file,
         &dependency.target,
-        EXTENSIONS,
+        C_LIKE_EXTENSIONS,
     ) {
         return Some(resolved);
     }
@@ -4152,14 +4156,28 @@ fn resolve_c_like_target(root: &Path, dependency: &Dependency) -> Option<String>
     let source_dir = Path::new(&dependency.source_file)
         .parent()
         .unwrap_or(Path::new(""));
-    if let Some(resolved) = resolve_base(root, source_dir.join(&dependency.target), EXTENSIONS) {
+    if let Some(resolved) =
+        resolve_base(root, source_dir.join(&dependency.target), C_LIKE_EXTENSIONS)
+    {
         return Some(resolved);
     }
 
+    resolve_unique_c_like_include_root(
+        root,
+        &dependency.target,
+        &["", "include", "includes", "inc"],
+    )
+}
+
+fn resolve_unique_c_like_include_root(
+    root: &Path,
+    target: &str,
+    include_roots: &[&str],
+) -> Option<String> {
     let mut include_root_matches = BTreeSet::new();
-    for include_root in ["", "include", "includes", "inc"] {
-        let candidate = Path::new(include_root).join(&dependency.target);
-        if let Some(resolved) = resolve_base(root, candidate, EXTENSIONS) {
+    for include_root in include_roots {
+        let candidate = Path::new(include_root).join(target);
+        if let Some(resolved) = resolve_base(root, candidate, C_LIKE_EXTENSIONS) {
             include_root_matches.insert(resolved);
         }
     }

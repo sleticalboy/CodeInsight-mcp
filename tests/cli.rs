@@ -10037,6 +10037,126 @@ int main(void) {
 }
 
 #[test]
+fn cli_resolves_unique_local_angle_bracket_includes() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        "include/project/shared.hpp",
+        "int shared_value(void);\n",
+    );
+    write_file(
+        &fixture,
+        "src/main.cpp",
+        r#"
+#include <project/shared.hpp>
+#include <stdio.h>
+
+int main(void) {
+  return shared_value();
+}
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 2);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let dependencies = run_json([
+        "dependency-graph",
+        fixture.path().to_str().unwrap(),
+        "--file",
+        "src/main.cpp",
+        "--limit",
+        "10",
+    ]);
+    assert!(
+        dependencies["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "<project/shared.hpp>"
+                    && dependency["resolved_file"] == "include/project/shared.hpp"
+            })
+    );
+    assert!(
+        dependencies["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "<stdio.h>" && dependency["resolved_file"].is_null()
+            })
+    );
+
+    let callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "main",
+        "--limit",
+        "10",
+    ]);
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "shared_value" && call["callee_file"] == "include/project/shared.hpp"
+    }));
+}
+
+#[test]
+fn cli_leaves_ambiguous_local_angle_bracket_includes_unresolved() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        "include/project/shared.hpp",
+        "int shared_value(void);\n",
+    );
+    write_file(
+        &fixture,
+        "inc/project/shared.hpp",
+        "int shared_value(void);\n",
+    );
+    write_file(
+        &fixture,
+        "src/main.cpp",
+        r#"
+#include <project/shared.hpp>
+
+int main(void) {
+  return shared_value();
+}
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 3);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let dependencies = run_json([
+        "dependency-graph",
+        fixture.path().to_str().unwrap(),
+        "--file",
+        "src/main.cpp",
+        "--limit",
+        "10",
+    ]);
+    assert!(dependencies["dependencies"][0]["resolved_file"].is_null());
+
+    let callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "main",
+        "--limit",
+        "10",
+    ]);
+    assert!(
+        callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| { call["callee"] == "shared_value" && call["callee_file"].is_null() })
+    );
+}
+
+#[test]
 fn cli_leaves_ambiguous_c_like_include_calls_unresolved() {
     let fixture = TempDir::new().unwrap();
     write_file(&fixture, "include/primary.hpp", "int shared_value(void);\n");
