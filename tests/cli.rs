@@ -9944,6 +9944,77 @@ fn cli_resolves_c_like_local_includes() {
 }
 
 #[test]
+fn cli_leaves_ambiguous_c_like_include_calls_unresolved() {
+    let fixture = TempDir::new().unwrap();
+    write_file(&fixture, "include/primary.hpp", "int shared_value(void);\n");
+    write_file(
+        &fixture,
+        "include/fallback.hpp",
+        "int shared_value(void);\n",
+    );
+    write_file(
+        &fixture,
+        "src/main.cpp",
+        r#"
+#include "../include/primary.hpp"
+#include "../include/fallback.hpp"
+
+int main(void) {
+  return shared_value();
+}
+"#,
+    );
+    write_file(&fixture, "include/primary.h", "int c_value(void);\n");
+    write_file(&fixture, "include/fallback.h", "int c_value(void);\n");
+    write_file(
+        &fixture,
+        "src/main.c",
+        r#"
+#include "../include/primary.h"
+#include "../include/fallback.h"
+
+int c_main(void) {
+  return c_value();
+}
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 6);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "main",
+        "--limit",
+        "10",
+    ]);
+    let shared_value = callees
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|call| call["callee"] == "shared_value")
+        .expect("shared_value call should remain indexed");
+    assert!(shared_value["callee_file"].is_null());
+
+    let c_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "c_main",
+        "--limit",
+        "10",
+    ]);
+    let c_value = c_callees
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|call| call["callee"] == "c_value")
+        .expect("c_value call should remain indexed");
+    assert!(c_value["callee_file"].is_null());
+}
+
+#[test]
 fn cli_resolves_go_module_imports() {
     let fixture = go_module_import_fixture_project();
 

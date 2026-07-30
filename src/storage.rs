@@ -2973,6 +2973,21 @@ impl Store {
             )
             where target_rank = 1;
 
+            delete from imported_call_targets
+            where call_id in (
+                select c.id
+                from calls c
+                join dependencies d on d.source_file_id = c.source_file_id
+                join files target_files on target_files.path = d.resolved_file
+                join symbols s on s.file_id = target_files.id
+                where c.language in ('c', 'cpp')
+                  and d.language = c.language
+                  and d.kind = 'include'
+                  and s.name = c.callee
+                group by c.id
+                having count(distinct target_files.path) > 1
+            );
+
             create unique index imported_call_targets_call_id
                 on imported_call_targets(call_id);
             ",
