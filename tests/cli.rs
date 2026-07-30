@@ -12045,8 +12045,8 @@ fn cli_resolves_rust_crate_and_super_use_imports() {
     let fixture = rust_use_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 12);
-    assert_eq!(index["changed_files"], 12);
+    assert_eq!(index["indexed_files"], 13);
+    assert_eq!(index["changed_files"], 13);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -12181,7 +12181,7 @@ fn cli_resolves_rust_crate_and_super_use_imports() {
         fixture.path().to_str().unwrap(),
         "run",
         "--limit",
-        "10",
+        "20",
     ]);
     assert!(root_callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "audit.record" && call["callee_file"] == "src/support/audit.rs"
@@ -12211,6 +12211,9 @@ fn cli_resolves_rust_crate_and_super_use_imports() {
     }));
     assert!(root_callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "facade.nested.tool" && call["callee_file"] == "src/support/nested.rs"
+    }));
+    assert!(root_callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "public_record" && call["callee_file"] == "src/support/audit.rs"
     }));
     assert!(
         root_callees
@@ -12508,7 +12511,7 @@ fn cli_context_pack_routes_rust_trait_impl_relations() {
     let fixture = rust_use_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 12);
+    assert_eq!(index["indexed_files"], 13);
 
     let context = run_json([
         "context-pack",
@@ -12553,7 +12556,7 @@ fn cli_overview_reports_type_relation_signals() {
     let fixture = rust_use_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 12);
+    assert_eq!(index["indexed_files"], 13);
 
     let overview = run_json(["overview", fixture.path().to_str().unwrap()]);
     assert!(
@@ -20341,6 +20344,7 @@ fn rust_use_fixture_project() -> TempDir {
         r#"
 mod controllers;
 mod plain;
+mod prelude;
 mod repository;
 mod store;
 mod support;
@@ -20348,6 +20352,7 @@ mod support;
 use crate::support::{audit, facade_record as save_record, nested::{tool as nested_tool, *}};
 use crate::support::*;
 use crate::support as facade;
+use crate::prelude::public_record;
 use serde::Serialize;
 
 pub fn run() {
@@ -20360,8 +20365,16 @@ pub fn run() {
     crate::support::audit::record("qualified");
     self::support::audit::record("self-qualified");
     let _ = facade::nested::tool();
+    public_record("two-hop");
     record();
 }
+"#,
+    );
+    write_file(
+        &dir,
+        "src/prelude.rs",
+        r#"
+pub use crate::support::facade_record as public_record;
 "#,
     );
     write_file(
