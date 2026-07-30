@@ -12071,6 +12071,17 @@ fn cli_resolves_rust_crate_and_super_use_imports() {
             .unwrap()
             .iter()
             .any(|dependency| {
+                dependency["target"] == "crate::support::nested::tool"
+                    && dependency["resolved_file"] == "src/support/nested.rs"
+                    && dependency["local_alias"] == "nested_tool"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
                 dependency["target"] == "super::support::helper"
                     && dependency["resolved_file"] == "src/controllers/support.rs"
             })
@@ -12136,6 +12147,9 @@ fn cli_resolves_rust_crate_and_super_use_imports() {
     ]);
     assert!(root_callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "audit.record" && call["callee_file"] == "src/support/audit.rs"
+    }));
+    assert!(root_callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "nested_tool" && call["callee_file"] == "src/support/nested.rs"
     }));
 
     let support_callees = run_json([
@@ -20256,11 +20270,12 @@ mod repository;
 mod store;
 mod support;
 
-use crate::support::audit;
+use crate::support::{audit, nested::{tool as nested_tool}};
 use serde::Serialize;
 
 pub fn run() {
     audit::record("root");
+    let _ = nested_tool();
 }
 "#,
     );

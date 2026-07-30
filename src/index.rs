@@ -6037,23 +6037,81 @@ fn rust_use_targets(text: &str) -> Vec<String> {
 }
 
 fn rust_use_entries(text: &str) -> Vec<(String, Option<String>)> {
-    text.trim()
-        .strip_prefix("use ")
-        .map(|target| {
-            let cleaned = target
-                .trim_end_matches(';')
-                .trim()
-                .replace("::{", "::")
-                .replace(['{', '}'], "");
-            let cleaned = compact_whitespace(&cleaned);
-            let (target, alias) = if let Some((target, alias)) = cleaned.rsplit_once(" as ") {
-                (target.trim(), Some(alias.trim().to_string()))
-            } else {
-                (cleaned.trim(), None)
-            };
-            vec![(target.to_string(), alias.filter(|alias| !alias.is_empty()))]
-        })
-        .unwrap_or_default()
+    let Some(target) = text.trim().strip_prefix("use ") else {
+        return Vec::new();
+    };
+    let target = compact_whitespace(target.trim_end_matches(';').trim());
+    let mut entries = Vec::new();
+    expand_rust_use_tree(&target, "", &mut entries);
+    entries
+}
+
+fn expand_rust_use_tree(
+    tree: &str,
+    inherited_prefix: &str,
+    entries: &mut Vec<(String, Option<String>)>,
+) {
+    let tree = tree.trim();
+    if let Some(open) = tree.find('{')
+        && let Some(close) = tree.rfind('}')
+        && close > open
+        && tree[close + 1..].trim().is_empty()
+    {
+        let group_prefix = join_rust_use_path(inherited_prefix, tree[..open].trim());
+        for member in split_rust_use_group(&tree[open + 1..close]) {
+            expand_rust_use_tree(member, &group_prefix, entries);
+        }
+        return;
+    }
+
+    let (target, alias) = if let Some((target, alias)) = tree.rsplit_once(" as ") {
+        (target.trim(), Some(alias.trim().to_string()))
+    } else {
+        (tree, None)
+    };
+    let target = if target == "self" {
+        inherited_prefix.trim_end_matches("::").to_string()
+    } else {
+        join_rust_use_path(inherited_prefix, target)
+    };
+    if !target.is_empty() {
+        entries.push((target, alias.filter(|alias| !alias.is_empty())));
+    }
+}
+
+fn join_rust_use_path(prefix: &str, suffix: &str) -> String {
+    let prefix = prefix.trim().trim_end_matches("::");
+    let suffix = suffix.trim().trim_start_matches("::");
+    match (prefix.is_empty(), suffix.is_empty()) {
+        (true, _) => suffix.to_string(),
+        (_, true) => prefix.to_string(),
+        (false, false) => format!("{prefix}::{suffix}"),
+    }
+}
+
+fn split_rust_use_group(group: &str) -> Vec<&str> {
+    let mut members = Vec::new();
+    let mut depth = 0usize;
+    let mut start = 0usize;
+    for (index, ch) in group.char_indices() {
+        match ch {
+            '{' => depth += 1,
+            '}' => depth = depth.saturating_sub(1),
+            ',' if depth == 0 => {
+                let member = group[start..index].trim();
+                if !member.is_empty() {
+                    members.push(member);
+                }
+                start = index + ch.len_utf8();
+            }
+            _ => {}
+        }
+    }
+    let member = group[start..].trim();
+    if !member.is_empty() {
+        members.push(member);
+    }
+    members
 }
 
 fn rust_use_alias(target: &str, explicit_alias: Option<&str>) -> (Option<String>, Option<String>) {
@@ -8892,6 +8950,20 @@ fn helper() {}
         assert_eq!(
             rust_use_alias("super::support::helper", None),
             (Some("helper".to_string()), Some("*".to_string()))
+        );
+        assert_eq!(
+            rust_use_entries(
+                "use crate::support::{self, audit, nested::{tool as nested_tool, other}};"
+            ),
+            vec![
+                ("crate::support".to_string(), None),
+                ("crate::support::audit".to_string(), None),
+                (
+                    "crate::support::nested::tool".to_string(),
+                    Some("nested_tool".to_string())
+                ),
+                ("crate::support::nested::other".to_string(), None),
+            ]
         );
     }
 
