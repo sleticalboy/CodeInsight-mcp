@@ -1783,6 +1783,19 @@ impl Store {
                     where c.callee_file is null
                       and (d.language != 'go' or s.kind = 'function')
                       and (
+                        d.language != 'go'
+                        or (
+                          d.local_alias = '.'
+                          and s.name = c.callee
+                        )
+                        or (
+                          d.local_alias is not null
+                          and d.local_alias not in ('_', '.')
+                          and c.callee like d.local_alias || '.%'
+                          and s.name = substr(c.callee, length(d.local_alias) + 2)
+                        )
+                      )
+                      and (
                         s.name = c.callee
                         or s.qualified_name = c.callee
                         or s.qualified_name like '%.' || c.callee
@@ -2715,8 +2728,12 @@ impl Store {
                    and c.language = 'go'
                    and d.language = 'go'
                    and d.local_alias is not null
+                   and d.local_alias != '_'
                    and d.resolved_file is not null
-                   and c.callee like d.local_alias || '.%'
+                   and (
+                     d.local_alias = '.'
+                     or c.callee like d.local_alias || '.%'
+                   )
                  order by c.id, d.line",
             )?;
             let rows = stmt.query_map([], |row| {
@@ -2741,8 +2758,13 @@ impl Store {
              order by f.path, s.start_line",
         )?;
         for (call_id, callee, local_alias, resolved_file) in unresolved_calls {
-            let Some(member) = callee.strip_prefix(&format!("{local_alias}.")) else {
-                continue;
+            let member = if local_alias == "." {
+                callee.as_str()
+            } else {
+                let Some(member) = callee.strip_prefix(&format!("{local_alias}.")) else {
+                    continue;
+                };
+                member
             };
             if member.is_empty() || member.contains('.') {
                 continue;

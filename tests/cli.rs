@@ -9948,8 +9948,8 @@ fn cli_resolves_go_module_imports() {
     let fixture = go_module_import_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 7);
-    assert_eq!(index["changed_files"], 7);
+    assert_eq!(index["indexed_files"], 10);
+    assert_eq!(index["changed_files"], 10);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -9976,6 +9976,26 @@ fn cli_resolves_go_module_imports() {
             .any(|dependency| {
                 dependency["target"] == "github.com/example/reporting/log"
                     && dependency["resolved_file"] == "third_party/reporting/log/log.go"
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "github.com/example/codeinsight/internal/helpers"
+                    && dependency["local_alias"] == "."
+            })
+    );
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "github.com/example/codeinsight/internal/sideeffect"
+                    && dependency["local_alias"] == "_"
             })
     );
     assert!(
@@ -10048,6 +10068,23 @@ fn cli_resolves_go_module_imports() {
     assert!(callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "log.Write" && call["callee_file"] == "third_party/reporting/log/log.go"
     }));
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "Decorate" && call["callee_file"] == "internal/helpers/decorate.go"
+    }));
+    assert!(
+        callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| { call["callee"] == "Register" && call["callee_file"].is_null() })
+    );
+    assert!(
+        callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| { call["callee"] == "Track" && call["callee_file"].is_null() })
+    );
     assert!(
         callees
             .as_array()
@@ -18910,12 +18947,14 @@ import (
   "github.com/acme/remote"
   "github.com/example/codeinsight/internal/auth"
   cfg "github.com/example/codeinsight/internal/config"
+  . "github.com/example/codeinsight/internal/helpers"
   "github.com/example/codeinsight/internal/metrics"
+  _ "github.com/example/codeinsight/internal/sideeffect"
   "github.com/example/reporting/log"
 )
 
 func main() {
-  fmt.Println(remote.Name, auth.Login(), cfg.Load(), metrics.Track(), log.Write())
+  fmt.Println(remote.Name, auth.Login(), cfg.Load(), Decorate(), metrics.Track(), log.Write(), Track(), Register())
 }
 "#,
     );
@@ -18938,6 +18977,28 @@ package config
 
 func Load() string {
   return "local"
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "internal/helpers/a_helpers.go",
+        r#"
+package helpers
+
+func Helper() string {
+  return "helper"
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "internal/helpers/decorate.go",
+        r#"
+package helpers
+
+func Decorate() string {
+  return "decorated"
 }
 "#,
     );
@@ -18969,6 +19030,17 @@ package metrics
 
 func Track() string {
   return "tracked"
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "internal/sideeffect/register.go",
+        r#"
+package sideeffect
+
+func Register() string {
+  return "registered"
 }
 "#,
     );

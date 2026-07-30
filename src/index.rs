@@ -5394,7 +5394,6 @@ fn go_import_spec(spec: &str) -> Option<(String, Option<String>)> {
         .next()?;
     let alias = spec[..quote_index].split_whitespace().last();
     let local_alias = match alias {
-        Some("_" | ".") => None,
         Some(alias) => Some(alias.to_string()),
         None => target
             .rsplit('/')
@@ -7669,6 +7668,7 @@ func (s *Service) Login() {}
 import (
   "fmt"
   authsvc "github.com/example/codeinsight/internal/auth"
+  . "github.com/example/codeinsight/internal/helpers"
   _ "github.com/example/codeinsight/internal/sideeffect"
 )
 "#
@@ -7680,8 +7680,12 @@ import (
                     Some("authsvc".to_string())
                 ),
                 (
+                    "github.com/example/codeinsight/internal/helpers".to_string(),
+                    Some(".".to_string())
+                ),
+                (
                     "github.com/example/codeinsight/internal/sideeffect".to_string(),
-                    None
+                    Some("_".to_string())
                 ),
             ]
         );
