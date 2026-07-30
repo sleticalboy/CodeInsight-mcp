@@ -72,6 +72,7 @@ fn is_resolution_input(path: &Path) -> bool {
             | Some("jsconfig.json")
             | Some("pnpm-workspace.yaml")
             | Some("go.mod")
+            | Some("go.work")
     )
 }
 
@@ -3419,16 +3420,21 @@ fn resolve_go_target(root: &Path, dependency: &Dependency) -> Option<String> {
     }
 
     resolve_go_replacement_target(root, &go_mod_path, dependency, &go_mod_text)
+        .or_else(|| resolve_go_workspace_target(root, dependency))
 }
 
 fn find_nearest_go_mod(root: &Path, source_file: &str) -> Option<PathBuf> {
+    find_nearest_go_file(root, source_file, "go.mod")
+}
+
+fn find_nearest_go_file(root: &Path, source_file: &str, file_name: &str) -> Option<PathBuf> {
     let mut current = Path::new(source_file)
         .parent()
         .unwrap_or(Path::new(""))
         .to_path_buf();
 
     loop {
-        let candidate = current.join("go.mod");
+        let candidate = current.join(file_name);
         if root.join(&candidate).is_file() {
             return Some(candidate);
         }
@@ -3516,6 +3522,50 @@ fn parse_go_local_replacements(text: &str) -> Vec<(String, PathBuf)> {
     replacements
 }
 
+fn parse_go_work_local_uses(text: &str) -> Vec<PathBuf> {
+    let mut uses = Vec::new();
+    let mut in_use_block = false;
+    for raw_line in text.lines() {
+        let line = raw_line
+            .split_once("//")
+            .map(|(before, _)| before)
+            .unwrap_or(raw_line)
+            .trim();
+        if line
+            .strip_prefix("use")
+            .is_some_and(|rest| rest.trim() == "(")
+        {
+            in_use_block = true;
+            continue;
+        }
+        if in_use_block && line == ")" {
+            in_use_block = false;
+            continue;
+        }
+
+        let target = if in_use_block {
+            line
+        } else {
+            let Some(target) = line.strip_prefix("use") else {
+                continue;
+            };
+            if !target.chars().next().is_some_and(char::is_whitespace) {
+                continue;
+            }
+            target.trim()
+        };
+        let Some(target) = target.split_whitespace().next() else {
+            continue;
+        };
+        let target = target.trim_matches(['"', '`']);
+        let target_path = Path::new(target);
+        if target.starts_with('.') && !target_path.is_absolute() {
+            uses.push(target_path.to_path_buf());
+        }
+    }
+    uses
+}
+
 fn resolve_go_replacement_target(
     root: &Path,
     go_mod_path: &Path,
@@ -3546,6 +3596,39 @@ fn resolve_go_replacement_target(
         }
     }
     None
+}
+
+fn resolve_go_workspace_target(root: &Path, dependency: &Dependency) -> Option<String> {
+    let go_work_path = find_nearest_go_file(root, &dependency.source_file, "go.work")?;
+    let go_work_text = fs::read_to_string(root.join(&go_work_path)).ok()?;
+    let canonical_root = root.canonicalize().ok()?;
+    let workspace_dir = go_work_path.parent().unwrap_or(Path::new(""));
+    let mut modules = Vec::new();
+    for use_path in parse_go_work_local_uses(&go_work_text) {
+        let Ok(module_dir) = root.join(workspace_dir).join(use_path).canonicalize() else {
+            continue;
+        };
+        let Ok(relative_module_dir) = module_dir.strip_prefix(&canonical_root) else {
+            continue;
+        };
+        let Ok(go_mod_text) = fs::read_to_string(module_dir.join("go.mod")) else {
+            continue;
+        };
+        let Some(module_path) = parse_go_module_path(&go_mod_text) else {
+            continue;
+        };
+        let Some(package_suffix) = go_package_suffix(&dependency.target, &module_path) else {
+            continue;
+        };
+        modules.push((
+            module_path.len(),
+            relative_module_dir.join(package_suffix.trim_start_matches('/')),
+        ));
+    }
+    modules.sort_by(|left, right| right.0.cmp(&left.0));
+    modules
+        .into_iter()
+        .find_map(|(_, package_dir)| resolve_go_package_dir(root, package_dir))
 }
 
 fn resolve_go_package_dir(root: &Path, package_dir: PathBuf) -> Option<String> {
@@ -7667,6 +7750,27 @@ replace (
                     "github.com/example/block".to_string(),
                     PathBuf::from("../shared/block")
                 ),
+            ]
+        );
+    }
+
+    #[test]
+    fn parses_go_work_local_uses() {
+        let text = r#"
+go 1.22
+use ./apps/server
+use (
+    ./libs/reporting
+    ../outside
+    /tmp/absolute
+)
+"#;
+        assert_eq!(
+            parse_go_work_local_uses(text),
+            vec![
+                PathBuf::from("./apps/server"),
+                PathBuf::from("./libs/reporting"),
+                PathBuf::from("../outside"),
             ]
         );
     }

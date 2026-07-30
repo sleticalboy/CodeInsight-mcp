@@ -1556,6 +1556,15 @@ impl Store {
     }
 
     pub fn resolve_imported_calls(&self) -> Result<usize> {
+        self.conn.execute(
+            "update calls
+             set callee_file = null, confidence = 0.55
+             where callee_file is not null
+               and callee_file != (
+                   select path from files where id = calls.source_file_id
+               )",
+            [],
+        )?;
         self.conn.execute_batch(
             "
             drop table if exists temp.imported_call_targets;

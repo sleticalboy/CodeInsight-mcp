@@ -10058,6 +10058,80 @@ fn cli_resolves_go_module_imports() {
 }
 
 #[test]
+fn cli_resolves_go_work_modules() {
+    let fixture = go_work_fixture_project();
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 2);
+    assert_eq!(index["changed_files"], 2);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let deps = run_json([
+        "dependency-graph",
+        fixture.path().to_str().unwrap(),
+        "--limit",
+        "10",
+    ]);
+    assert!(
+        deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "github.com/example/reporting/log"
+                    && dependency["resolved_file"] == "libs/reporting/log/log.go"
+            })
+    );
+
+    let callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "main",
+        "--limit",
+        "10",
+    ]);
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "log.Write" && call["callee_file"] == "libs/reporting/log/log.go"
+    }));
+
+    write_file(&fixture, "go.work", "go 1.22\n\nuse ./apps/server\n");
+    let reindex = run_json(["index", fixture.path().to_str().unwrap()]);
+    assert_eq!(reindex["changed_files"], 0);
+    assert_eq!(reindex["unchanged_files"], 2);
+
+    let refreshed_deps = run_json([
+        "dependency-graph",
+        fixture.path().to_str().unwrap(),
+        "--limit",
+        "10",
+    ]);
+    assert!(
+        refreshed_deps["dependencies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|dependency| {
+                dependency["target"] == "github.com/example/reporting/log"
+                    && dependency["resolved_file"].is_null()
+            })
+    );
+    let refreshed_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "main",
+        "--limit",
+        "10",
+    ]);
+    assert!(
+        refreshed_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| { call["callee"] == "log.Write" && call["callee_file"].is_null() })
+    );
+}
+
+#[test]
 fn cli_resolves_java_source_imports() {
     let fixture = java_source_import_fixture_project();
 
@@ -18906,6 +18980,57 @@ func Track() string {
     write_file(
         &dir,
         "third_party/reporting/log/log.go",
+        r#"
+package log
+
+func Write() string {
+  return "reported"
+}
+"#,
+    );
+    dir
+}
+
+fn go_work_fixture_project() -> TempDir {
+    let dir = TempDir::new().unwrap();
+    write_file(
+        &dir,
+        "go.work",
+        r#"
+go 1.22
+
+use (
+  ./apps/server
+  ./libs/reporting
+)
+"#,
+    );
+    write_file(
+        &dir,
+        "apps/server/go.mod",
+        "module github.com/example/server\n",
+    );
+    write_file(
+        &dir,
+        "apps/server/main.go",
+        r#"
+package main
+
+import "github.com/example/reporting/log"
+
+func main() {
+  log.Write()
+}
+"#,
+    );
+    write_file(
+        &dir,
+        "libs/reporting/go.mod",
+        "module github.com/example/reporting\n",
+    );
+    write_file(
+        &dir,
+        "libs/reporting/log/log.go",
         r#"
 package log
 
