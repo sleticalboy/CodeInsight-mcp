@@ -1954,6 +1954,93 @@ impl Store {
 
                     select
                         c.id as call_id,
+                        second_reexport_files.path as callee_file,
+                        s.qualified_name as qualified_name,
+                        rd.line as dependency_line,
+                        s.start_line as start_line,
+                        -2 as match_rank
+                    from calls c
+                    join dependencies d on d.source_file_id = c.source_file_id
+                    join files target_files on target_files.path = d.resolved_file
+                    join dependencies rd on rd.source_file_id = target_files.id
+                    join files first_reexport_files
+                      on first_reexport_files.path = rd.resolved_file
+                    join dependencies rd2
+                      on rd2.source_file_id = first_reexport_files.id
+                    join files second_reexport_files
+                      on second_reexport_files.path = rd2.resolved_file
+                    join symbols s on s.file_id = second_reexport_files.id
+                    where c.callee_file is null
+                      and c.language = 'rust'
+                      and d.language = 'rust'
+                      and rd.language = 'rust'
+                      and rd2.language = 'rust'
+                      and rd.kind = 'rust_reexport'
+                      and rd2.kind = 'rust_reexport'
+                      and rd2.local_alias is null
+                      and rd2.imported_symbol = '*'
+                      and (
+                        (
+                          rd.local_alias is not null
+                          and rd.imported_symbol is not null
+                          and rd.imported_symbol != '*'
+                          and (
+                            rd.local_alias = c.callee
+                            or (
+                              d.local_alias = c.callee
+                              and d.imported_symbol is not null
+                              and d.imported_symbol != '*'
+                              and rd.local_alias = d.imported_symbol
+                            )
+                            or (
+                              d.local_alias is not null
+                              and c.callee like d.local_alias || '.%'
+                              and rd.local_alias =
+                                substr(c.callee, length(d.local_alias) + 2)
+                            )
+                          )
+                          and s.name = rd.imported_symbol
+                        )
+                        or (
+                          rd.local_alias is null
+                          and rd.imported_symbol = '*'
+                          and (
+                            s.name = c.callee
+                            or (
+                              d.local_alias = c.callee
+                              and d.imported_symbol is not null
+                              and d.imported_symbol != '*'
+                              and s.name = d.imported_symbol
+                            )
+                            or (
+                              d.local_alias is not null
+                              and c.callee like d.local_alias || '.%'
+                              and s.name =
+                                substr(c.callee, length(d.local_alias) + 2)
+                            )
+                          )
+                        )
+                      )
+                      and not exists (
+                        select 1
+                        from dependencies competing_rd2
+                        join files competing_files
+                          on competing_files.path = competing_rd2.resolved_file
+                        join symbols competing_symbols
+                          on competing_symbols.file_id = competing_files.id
+                        where competing_rd2.source_file_id = first_reexport_files.id
+                          and competing_rd2.id != rd2.id
+                          and competing_rd2.language = 'rust'
+                          and competing_rd2.kind = 'rust_reexport'
+                          and competing_rd2.local_alias is null
+                          and competing_rd2.imported_symbol = '*'
+                          and competing_symbols.name = s.name
+                      )
+
+                    union all
+
+                    select
+                        c.id as call_id,
                         target_files.path as callee_file,
                         s.qualified_name as qualified_name,
                         0 as dependency_line,
@@ -2644,6 +2731,12 @@ impl Store {
                           and rd.imported_symbol = '*'
                           and (
                             s.name = c.callee
+                            or (
+                              d.local_alias = c.callee
+                              and d.imported_symbol is not null
+                              and d.imported_symbol != '*'
+                              and s.name = d.imported_symbol
+                            )
                             or (
                               d.local_alias is not null
                               and c.callee like d.local_alias || '.%'

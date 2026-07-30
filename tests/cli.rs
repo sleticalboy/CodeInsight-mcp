@@ -12045,8 +12045,8 @@ fn cli_resolves_rust_crate_and_super_use_imports() {
     let fixture = rust_use_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 13);
-    assert_eq!(index["changed_files"], 13);
+    assert_eq!(index["indexed_files"], 14);
+    assert_eq!(index["changed_files"], 14);
     assert_eq!(index["errors"].as_array().unwrap().len(), 0);
 
     let deps = run_json([
@@ -12218,6 +12218,17 @@ fn cli_resolves_rust_crate_and_super_use_imports() {
     assert!(root_callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "glob_record" && call["callee_file"] == "src/support/audit.rs"
     }));
+    assert!(root_callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "aliased_glob_only" && call["callee_file"] == "src/support/facade.rs"
+    }));
+    assert!(root_callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "deep_glob_only" && call["callee_file"] == "src/support/facade.rs"
+    }));
+    assert!(
+        root_callees.as_array().unwrap().iter().any(|call| {
+            call["callee"] == "deep_ambiguous_glob" && call["callee_file"].is_null()
+        })
+    );
     assert!(
         root_callees
             .as_array()
@@ -12264,7 +12275,7 @@ pub fn marker() {}
     );
     let incremental_index = run_json(["index", fixture.path().to_str().unwrap()]);
     assert_eq!(incremental_index["changed_files"], 1);
-    assert_eq!(incremental_index["unchanged_files"], 12);
+    assert_eq!(incremental_index["unchanged_files"], 13);
     assert_eq!(incremental_index["errors"].as_array().unwrap().len(), 0);
 
     let refreshed_root_callees = run_json([
@@ -12287,6 +12298,32 @@ pub fn marker() {}
             .unwrap()
             .iter()
             .any(|call| { call["callee"] == "glob_record" && call["callee_file"].is_null() })
+    );
+    assert!(
+        refreshed_root_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| { call["callee"] == "deep_glob_only" && call["callee_file"].is_null() })
+    );
+    assert!(
+        refreshed_root_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| {
+                call["callee"] == "deep_ambiguous_glob" && call["callee_file"].is_null()
+            })
+    );
+    assert!(
+        refreshed_root_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| {
+                call["callee"] == "aliased_glob_only"
+                    && call["callee_file"] == "src/support/facade.rs"
+            })
     );
     assert!(
         refreshed_root_callees
@@ -12557,7 +12594,7 @@ fn cli_context_pack_routes_rust_trait_impl_relations() {
     let fixture = rust_use_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 13);
+    assert_eq!(index["indexed_files"], 14);
 
     let context = run_json([
         "context-pack",
@@ -12602,7 +12639,7 @@ fn cli_overview_reports_type_relation_signals() {
     let fixture = rust_use_fixture_project();
 
     let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
-    assert_eq!(index["indexed_files"], 13);
+    assert_eq!(index["indexed_files"], 14);
 
     let overview = run_json(["overview", fixture.path().to_str().unwrap()]);
     assert!(
@@ -20395,10 +20432,10 @@ mod repository;
 mod store;
 mod support;
 
-use crate::support::{audit, facade_record as save_record, nested::{tool as nested_tool, *}};
+use crate::support::{audit, facade_record as save_record, glob_only as aliased_glob_only, nested::{tool as nested_tool, *}};
 use crate::support::*;
 use crate::support as facade;
-use crate::prelude::{facade_record as glob_record, public_record};
+use crate::prelude::{ambiguous_glob as deep_ambiguous_glob, facade_record as glob_record, glob_only as deep_glob_only, public_record};
 use serde::Serialize;
 
 pub fn run() {
@@ -20413,6 +20450,9 @@ pub fn run() {
     let _ = facade::nested::tool();
     public_record("two-hop");
     glob_record("two-hop-glob");
+    aliased_glob_only();
+    deep_glob_only();
+    deep_ambiguous_glob();
     record();
 }
 "#,
@@ -20472,10 +20512,12 @@ pub fn nested() -> &'static str {
         "src/support/mod.rs",
         r#"
 pub mod audit;
+mod alternate;
 mod facade;
 pub mod nested;
 
 pub use self::audit::record as facade_record;
+pub use self::alternate::*;
 pub use self::facade::*;
 use self::nested::tool;
 
@@ -20490,6 +20532,17 @@ pub fn run_nested() -> String {
         "src/support/facade.rs",
         r#"
 pub fn facade_only() {}
+
+pub fn glob_only() {}
+
+pub fn ambiguous_glob() {}
+"#,
+    );
+    write_file(
+        &dir,
+        "src/support/alternate.rs",
+        r#"
+pub fn ambiguous_glob() {}
 "#,
     );
     write_file(
