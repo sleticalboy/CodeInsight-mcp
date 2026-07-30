@@ -2744,6 +2744,21 @@ impl Store {
                                 substr(c.callee, length(d.local_alias) + 2)
                             )
                           )
+                          and not exists (
+                            select 1
+                            from dependencies competing_rd
+                            join files competing_files
+                              on competing_files.path = competing_rd.resolved_file
+                            join symbols competing_symbols
+                              on competing_symbols.file_id = competing_files.id
+                            where competing_rd.source_file_id = target_files.id
+                              and competing_rd.id != rd.id
+                              and competing_rd.language = 'rust'
+                              and competing_rd.kind = 'rust_reexport'
+                              and competing_rd.local_alias is null
+                              and competing_rd.imported_symbol = '*'
+                              and competing_symbols.name = s.name
+                          )
                         )
                       )
 

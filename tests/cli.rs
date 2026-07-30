@@ -12222,6 +12222,9 @@ fn cli_resolves_rust_crate_and_super_use_imports() {
         call["callee"] == "aliased_glob_only" && call["callee_file"] == "src/support/facade.rs"
     }));
     assert!(root_callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "aliased_ambiguous_glob" && call["callee_file"].is_null()
+    }));
+    assert!(root_callees.as_array().unwrap().iter().any(|call| {
         call["callee"] == "deep_glob_only" && call["callee_file"] == "src/support/facade.rs"
     }));
     assert!(
@@ -12313,6 +12316,15 @@ pub fn marker() {}
             .iter()
             .any(|call| {
                 call["callee"] == "deep_ambiguous_glob" && call["callee_file"].is_null()
+            })
+    );
+    assert!(
+        refreshed_root_callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| {
+                call["callee"] == "aliased_ambiguous_glob" && call["callee_file"].is_null()
             })
     );
     assert!(
@@ -20432,7 +20444,7 @@ mod repository;
 mod store;
 mod support;
 
-use crate::support::{audit, facade_record as save_record, glob_only as aliased_glob_only, nested::{tool as nested_tool, *}};
+use crate::support::{ambiguous_glob as aliased_ambiguous_glob, audit, facade_record as save_record, glob_only as aliased_glob_only, nested::{tool as nested_tool, *}};
 use crate::support::*;
 use crate::support as facade;
 use crate::prelude::{ambiguous_glob as deep_ambiguous_glob, facade_record as glob_record, glob_only as deep_glob_only, public_record};
@@ -20451,6 +20463,7 @@ pub fn run() {
     public_record("two-hop");
     glob_record("two-hop-glob");
     aliased_glob_only();
+    aliased_ambiguous_glob();
     deep_glob_only();
     deep_ambiguous_glob();
     record();
