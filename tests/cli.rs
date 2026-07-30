@@ -9944,6 +9944,99 @@ fn cli_resolves_c_like_local_includes() {
 }
 
 #[test]
+fn cli_resolves_unique_conventional_c_like_include_roots() {
+    let fixture = TempDir::new().unwrap();
+    write_file(&fixture, "include/shared.hpp", "int shared_value(void);\n");
+    write_file(
+        &fixture,
+        "src/app/main.cpp",
+        r#"
+#include "shared.hpp"
+
+int main(void) {
+  return shared_value();
+}
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 2);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let dependencies = run_json([
+        "dependency-graph",
+        fixture.path().to_str().unwrap(),
+        "--file",
+        "src/app/main.cpp",
+        "--limit",
+        "10",
+    ]);
+    assert_eq!(dependencies["dependencies"][0]["target"], "shared.hpp");
+    assert_eq!(
+        dependencies["dependencies"][0]["resolved_file"],
+        "include/shared.hpp"
+    );
+
+    let callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "main",
+        "--limit",
+        "10",
+    ]);
+    assert!(callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "shared_value" && call["callee_file"] == "include/shared.hpp"
+    }));
+}
+
+#[test]
+fn cli_leaves_ambiguous_conventional_c_like_include_roots_unresolved() {
+    let fixture = TempDir::new().unwrap();
+    write_file(&fixture, "shared.hpp", "int shared_value(void);\n");
+    write_file(&fixture, "include/shared.hpp", "int shared_value(void);\n");
+    write_file(
+        &fixture,
+        "src/app/main.cpp",
+        r#"
+#include "shared.hpp"
+
+int main(void) {
+  return shared_value();
+}
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 3);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let dependencies = run_json([
+        "dependency-graph",
+        fixture.path().to_str().unwrap(),
+        "--file",
+        "src/app/main.cpp",
+        "--limit",
+        "10",
+    ]);
+    assert!(dependencies["dependencies"][0]["resolved_file"].is_null());
+
+    let callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "main",
+        "--limit",
+        "10",
+    ]);
+    assert!(
+        callees
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|call| { call["callee"] == "shared_value" && call["callee_file"].is_null() })
+    );
+}
+
+#[test]
 fn cli_leaves_ambiguous_c_like_include_calls_unresolved() {
     let fixture = TempDir::new().unwrap();
     write_file(&fixture, "include/primary.hpp", "int shared_value(void);\n");

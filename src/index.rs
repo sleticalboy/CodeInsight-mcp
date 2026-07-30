@@ -4134,6 +4134,8 @@ pub(crate) fn rust_use_path_candidates(base: PathBuf, target: &str) -> Vec<PathB
 }
 
 fn resolve_c_like_target(root: &Path, dependency: &Dependency) -> Option<String> {
+    const EXTENSIONS: &[&str] = &["h", "hpp", "hh", "hxx", "c", "cc", "cpp", "cxx"];
+
     if dependency.target.starts_with('<') {
         return None;
     }
@@ -4142,7 +4144,7 @@ fn resolve_c_like_target(root: &Path, dependency: &Dependency) -> Option<String>
         root,
         &dependency.source_file,
         &dependency.target,
-        &["h", "hpp", "hh", "hxx", "c", "cc", "cpp", "cxx"],
+        EXTENSIONS,
     ) {
         return Some(resolved);
     }
@@ -4150,23 +4152,22 @@ fn resolve_c_like_target(root: &Path, dependency: &Dependency) -> Option<String>
     let source_dir = Path::new(&dependency.source_file)
         .parent()
         .unwrap_or(Path::new(""));
-    if let Some(resolved) = resolve_base(
-        root,
-        source_dir.join(&dependency.target),
-        &["h", "hpp", "hh", "hxx", "c", "cc", "cpp", "cxx"],
-    ) {
+    if let Some(resolved) = resolve_base(root, source_dir.join(&dependency.target), EXTENSIONS) {
         return Some(resolved);
     }
 
-    if dependency.target.contains('/') {
-        return resolve_base(
-            root,
-            PathBuf::from(&dependency.target),
-            &["h", "hpp", "hh", "hxx", "c", "cc", "cpp", "cxx"],
-        );
+    let mut include_root_matches = BTreeSet::new();
+    for include_root in ["", "include", "includes", "inc"] {
+        let candidate = Path::new(include_root).join(&dependency.target);
+        if let Some(resolved) = resolve_base(root, candidate, EXTENSIONS) {
+            include_root_matches.insert(resolved);
+        }
     }
-
-    None
+    if include_root_matches.len() == 1 {
+        include_root_matches.into_iter().next()
+    } else {
+        None
+    }
 }
 
 fn resolve_javascript_like_target(
