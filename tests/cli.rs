@@ -10015,6 +10015,123 @@ int c_main(void) {
 }
 
 #[test]
+fn cli_resolves_transitive_c_like_include_calls() {
+    let fixture = TempDir::new().unwrap();
+    write_file(&fixture, "include/cpp_api.h", "#include \"cpp_detail.h\"\n");
+    write_file(
+        &fixture,
+        "include/cpp_detail.h",
+        "int nested_value(void);\n",
+    );
+    write_file(
+        &fixture,
+        "src/main.cpp",
+        r#"
+#include "../include/cpp_api.h"
+
+int main(void) {
+  return nested_value();
+}
+"#,
+    );
+    write_file(&fixture, "include/api.h", "#include \"detail.h\"\n");
+    write_file(&fixture, "include/detail.h", "int c_nested_value(void);\n");
+    write_file(
+        &fixture,
+        "src/main.c",
+        r#"
+#include "../include/api.h"
+
+int c_main(void) {
+  return c_nested_value();
+}
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 6);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let cpp_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "main",
+        "--limit",
+        "10",
+    ]);
+    assert!(cpp_callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "nested_value" && call["callee_file"] == "include/cpp_detail.h"
+    }));
+
+    let c_callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "c_main",
+        "--limit",
+        "10",
+    ]);
+    assert!(c_callees.as_array().unwrap().iter().any(|call| {
+        call["callee"] == "c_nested_value" && call["callee_file"] == "include/detail.h"
+    }));
+}
+
+#[test]
+fn cli_leaves_ambiguous_transitive_c_like_include_calls_unresolved() {
+    let fixture = TempDir::new().unwrap();
+    write_file(
+        &fixture,
+        "include/primary.hpp",
+        "#include \"primary_detail.hpp\"\n",
+    );
+    write_file(
+        &fixture,
+        "include/fallback.hpp",
+        "#include \"fallback_detail.hpp\"\n",
+    );
+    write_file(
+        &fixture,
+        "include/primary_detail.hpp",
+        "int nested_value(void);\n",
+    );
+    write_file(
+        &fixture,
+        "include/fallback_detail.hpp",
+        "int nested_value(void);\n",
+    );
+    write_file(
+        &fixture,
+        "src/main.cpp",
+        r#"
+#include "../include/primary.hpp"
+#include "../include/fallback.hpp"
+
+int main(void) {
+  return nested_value();
+}
+"#,
+    );
+
+    let index = run_json(["index", fixture.path().to_str().unwrap(), "--force"]);
+    assert_eq!(index["indexed_files"], 5);
+    assert_eq!(index["errors"].as_array().unwrap().len(), 0);
+
+    let callees = run_json([
+        "callees",
+        fixture.path().to_str().unwrap(),
+        "main",
+        "--limit",
+        "10",
+    ]);
+    let nested_value = callees
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|call| call["callee"] == "nested_value")
+        .expect("nested_value call should remain indexed");
+    assert!(nested_value["callee_file"].is_null());
+}
+
+#[test]
 fn cli_resolves_go_module_imports() {
     let fixture = go_module_import_fixture_project();
 

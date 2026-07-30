@@ -3016,9 +3016,59 @@ impl Store {
             .execute("drop table if exists temp.csharp_property_call_parts", [])?;
 
         Ok(updated
+            + self.resolve_c_like_transitive_include_calls()?
             + self.resolve_go_package_calls()?
             + self.resolve_rust_qualified_calls()?
             + self.resolve_rust_imported_module_calls()?)
+    }
+
+    fn resolve_c_like_transitive_include_calls(&self) -> Result<usize> {
+        let candidates = {
+            let mut stmt = self.conn.prepare(
+                "select distinct c.id, target_files.path
+                 from calls c
+                 join dependencies direct
+                   on direct.source_file_id = c.source_file_id
+                 join files direct_files
+                   on direct_files.path = direct.resolved_file
+                 join dependencies nested
+                   on nested.source_file_id = direct_files.id
+                 join files target_files
+                   on target_files.path = nested.resolved_file
+                 join symbols s on s.file_id = target_files.id
+                 where c.callee_file is null
+                   and c.language in ('c', 'cpp')
+                   and direct.language = c.language
+                   and direct.kind = 'include'
+                   and nested.language in ('c', 'cpp')
+                   and nested.kind = 'include'
+                   and s.name = c.callee
+                 order by c.id, target_files.path",
+            )?;
+            let rows = stmt.query_map([], |row| {
+                Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?))
+            })?;
+            rows.collect::<rusqlite::Result<Vec<_>>>()?
+        };
+
+        let mut targets = BTreeMap::<i64, BTreeSet<String>>::new();
+        for (call_id, target_file) in candidates {
+            targets.entry(call_id).or_default().insert(target_file);
+        }
+
+        let mut updated = 0;
+        let mut update = self.conn.prepare(
+            "update calls
+             set callee_file = ?1, confidence = max(confidence, 0.68)
+             where id = ?2 and callee_file is null",
+        )?;
+        for (call_id, target_files) in targets {
+            if target_files.len() != 1 {
+                continue;
+            }
+            updated += update.execute(params![target_files.first().unwrap(), call_id])?;
+        }
+        Ok(updated)
     }
 
     fn resolve_go_package_calls(&self) -> Result<usize> {
