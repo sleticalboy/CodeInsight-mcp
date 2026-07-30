@@ -1796,6 +1796,33 @@ impl Store {
                         )
                       )
                       and (
+                        d.language != 'rust'
+                        or (
+                          d.imported_symbol = '*'
+                          and d.local_alias is null
+                          and s.name = c.callee
+                        )
+                        or (
+                          d.local_alias is not null
+                          and c.callee = d.local_alias
+                          and (
+                            (
+                              d.imported_symbol = '*'
+                              and s.name = d.local_alias
+                            )
+                            or (
+                              d.imported_symbol != '*'
+                              and s.name = d.imported_symbol
+                            )
+                          )
+                        )
+                        or (
+                          d.local_alias is not null
+                          and c.callee like d.local_alias || '.%'
+                          and s.name = substr(c.callee, length(d.local_alias) + 2)
+                        )
+                      )
+                      and (
                         s.name = c.callee
                         or s.qualified_name = c.callee
                         or s.qualified_name like '%.' || c.callee

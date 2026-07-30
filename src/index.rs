@@ -6127,6 +6127,9 @@ fn rust_use_alias(target: &str, explicit_alias: Option<&str>) -> (Option<String>
             !part.is_empty() && !matches!(part, "crate" | "self" | "super")
         })
         .map(str::to_string);
+    if imported_symbol.as_deref() == Some("*") {
+        return (None, imported_symbol);
+    }
     let local_alias = explicit_alias
         .filter(|alias| !alias.is_empty())
         .map(str::to_string)
@@ -8953,7 +8956,7 @@ fn helper() {}
         );
         assert_eq!(
             rust_use_entries(
-                "use crate::support::{self, audit, nested::{tool as nested_tool, other}};"
+                "use crate::support::{self, audit, nested::{tool as nested_tool, other, *}};"
             ),
             vec![
                 ("crate::support".to_string(), None),
@@ -8963,7 +8966,12 @@ fn helper() {}
                     Some("nested_tool".to_string())
                 ),
                 ("crate::support::nested::other".to_string(), None),
+                ("crate::support::nested::*".to_string(), None),
             ]
+        );
+        assert_eq!(
+            rust_use_alias("crate::support::nested::*", None),
+            (None, Some("*".to_string()))
         );
     }
 
